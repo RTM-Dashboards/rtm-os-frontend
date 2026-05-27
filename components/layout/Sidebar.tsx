@@ -23,28 +23,28 @@ interface NavItem {
   href: string;
   icon: React.ComponentType<{ className?: string }>;
   section?: string;
+  badge?: string;
 }
 
 const navItems: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: IconDashboard, section: "overview" },
+  { label: "Overview", href: "/dashboard", icon: IconDashboard, section: "overview" },
   { label: "Account Management", href: "/account-management", icon: IconBuilding, section: "departments" },
-  { label: "Sales", href: "/sales", icon: IconTrending, section: "departments" },
+  { label: "Sales", href: "/sales", icon: IconTrending, section: "departments", badge: "24" },
   { label: "Billing", href: "/billing", icon: IconCreditCard, section: "departments" },
   { label: "Content", href: "/content", icon: IconFile, section: "departments" },
   { label: "Design", href: "/design", icon: IconPalette, section: "departments" },
-  { label: "SEO / GBP / Yelp", href: "/seo", icon: IconSearch, section: "marketing" },
-  { label: "Meta Ads & PPC", href: "/meta-ads", icon: IconTarget, section: "marketing" },
-  { label: "Reporting", href: "/reporting", icon: IconBarChart, section: "marketing" },
-  { label: "LSA & Reviews", href: "/lsa-reviews", icon: IconStar, section: "marketing" },
-  { label: "IT & Security", href: "/it-security", icon: IconShield, section: "admin" },
-  { label: "Settings", href: "/settings", icon: IconSettings, section: "admin" },
+  { label: "SEO / GBP / Yelp", href: "/seo", icon: IconSearch, section: "departments" },
+  { label: "Meta Ads & PPC", href: "/meta-ads", icon: IconTarget, section: "departments" },
+  { label: "Reporting", href: "/reporting", icon: IconBarChart, section: "departments" },
+  { label: "Local Service Ads", href: "/lsa-reviews", icon: IconStar, section: "departments" },
+  { label: "IT & Security", href: "/it-security", icon: IconShield, section: "departments" },
+  { label: "Settings", href: "/settings", icon: IconSettings, section: "settings" },
 ];
 
 const sectionLabels: Record<string, string> = {
-  overview: "Overview",
+  overview: "",
   departments: "Departments",
-  marketing: "Marketing",
-  admin: "Admin",
+  settings: "",
 };
 
 interface SidebarProps {
@@ -62,14 +62,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     return acc;
   }, {});
 
-  const sectionOrder = ["overview", "departments", "marketing", "admin"];
+  const sectionOrder = ["overview", "departments", "settings"];
 
   return (
     <>
       {/* Mobile backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-20 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-20 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
@@ -77,27 +77,27 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
       <aside
         className={`
-          fixed inset-y-0 left-0 z-30 flex flex-col w-64 flex-shrink-0
-          bg-slate-900 border-r border-slate-800
+          fixed inset-y-0 left-0 z-30 flex flex-col w-[240px] flex-shrink-0
+          bg-[#0f1117] border-r border-white/[0.06]
           transition-transform duration-300 ease-in-out
           ${open ? "translate-x-0" : "-translate-x-full"}
           lg:relative lg:translate-x-0 lg:z-auto lg:inset-auto
         `}
       >
         {/* Logo header */}
-        <div className="flex items-center justify-between px-5 h-16 border-b border-slate-800 flex-shrink-0">
+        <div className="flex items-center justify-between px-4 h-[60px] border-b border-white/[0.06] flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/30">
               <span className="text-white font-bold text-sm">R</span>
             </div>
             <div>
               <span className="text-white font-bold text-sm tracking-tight">RTM OS</span>
-              <span className="block text-slate-500 text-xs leading-none">Marketing Platform</span>
+              <span className="block text-slate-500 text-[10px] leading-none mt-0.5">Marketing Platform</span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="lg:hidden p-1.5 rounded-md text-slate-500 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Close sidebar"
           >
             <IconX className="w-4 h-4" />
@@ -105,15 +105,17 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
           {sectionOrder.map((section) => {
             const items = grouped[section];
             if (!items?.length) return null;
             return (
               <div key={section}>
-                <p className="px-3 mb-1.5 text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
-                  {sectionLabels[section]}
-                </p>
+                {sectionLabels[section] && (
+                  <p className="px-2 mb-1 text-[10px] font-semibold text-slate-600 uppercase tracking-widest">
+                    {sectionLabels[section]}
+                  </p>
+                )}
                 <ul className="space-y-0.5">
                   {items.map((item) => {
                     const isActive =
@@ -127,16 +129,24 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                           href={item.href}
                           onClick={() => onClose()}
                           className={`
-                            flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                            flex items-center gap-3 px-2.5 py-2 rounded-lg text-sm font-medium transition-all
                             ${
                               isActive
-                                ? "bg-indigo-600 text-white"
-                                : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                                ? "bg-indigo-600/20 text-indigo-400 border border-indigo-500/30"
+                                : "text-slate-400 hover:bg-white/[0.05] hover:text-slate-200 border border-transparent"
                             }
                           `}
                         >
-                          <Icon className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate">{item.label}</span>
+                          <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-indigo-400" : ""}`} />
+                          <span className="truncate flex-1">{item.label}</span>
+                          {item.badge && !isActive && (
+                            <span className="text-[10px] font-semibold bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full leading-none">
+                              {item.badge}
+                            </span>
+                          )}
+                          {isActive && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 flex-shrink-0" />
+                          )}
                         </Link>
                       </li>
                     );
@@ -148,15 +158,18 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-slate-800 px-4 py-4 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold">
+        <div className="border-t border-white/[0.06] px-3 py-4 flex-shrink-0">
+          <div className="flex items-center gap-3 px-1.5 py-2 rounded-lg hover:bg-white/[0.05] transition-colors cursor-pointer">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-lg">
               A
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white truncate">Admin</p>
-              <p className="text-xs text-slate-500 truncate">admin@rtm.io</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-slate-300 truncate">Admin</p>
+              <p className="text-xs text-slate-600 truncate">admin@rtm.io</p>
             </div>
+            <svg className="w-4 h-4 text-slate-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+            </svg>
           </div>
         </div>
       </aside>
