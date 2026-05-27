@@ -19,9 +19,7 @@ import {
   IconSettings,
   IconX,
   IconUsers,
-  IconClipboard,
 } from "./icons";
-import { workspaces } from "@/lib/workspaces";
 
 interface NavItem {
   label: string;
@@ -40,23 +38,38 @@ const IconChevronDown = ({ className }: { className?: string }) => (
 );
 
 // ── Nav definition ────────────────────────────────────────────────
+// Main navigation — clean, no duplicates.
+// Departments with sub-sections expose nested links only.
+// Task pages live inside each workspace, not here.
 const navItems: NavItem[] = [
-  { label: "Overview",           href: "/admin",              icon: IconDashboard, section: "overview" },
-  { label: "Clients",            href: "/clients",            icon: IconUsers,     section: "clients" },
-  { label: "Account Management", href: "/account-management", icon: IconBuilding,  section: "departments" },
-  { label: "Sales",              href: "/sales",              icon: IconTrending,  section: "departments", badge: "24" },
-  { label: "Billing",            href: "/billing",            icon: IconCreditCard,section: "departments" },
-  { label: "Content",            href: "/content",            icon: IconFile,      section: "departments" },
-  { label: "Design",             href: "/design",             icon: IconPalette,   section: "departments" },
+  // ── Overview & global ─────────────────────────────────────────
+  { label: "Admin Overview",      href: "/admin",              icon: IconDashboard, section: "overview" },
+  { label: "Clients",             href: "/clients",            icon: IconUsers,     section: "overview" },
+
+  // ── Departments ───────────────────────────────────────────────
+  { label: "Account Management",  href: "/account-management", icon: IconBuilding,  section: "departments" },
+  { label: "Sales",               href: "/sales",              icon: IconTrending,  section: "departments", badge: "24" },
+  { label: "Billing",             href: "/billing",            icon: IconCreditCard,section: "departments" },
+  { label: "Content",             href: "/content",            icon: IconFile,      section: "departments" },
+  {
+    label: "Web Development & Design",
+    href: "/web-development-design",
+    icon: IconPalette,
+    section: "departments",
+    children: [
+      { label: "Web Development", href: "/web-development-design/web-development" },
+      { label: "Design",          href: "/web-development-design/design" },
+    ],
+  },
   {
     label: "SEO & Local",
     href: "/seo-local",
     icon: IconSearch,
     section: "departments",
     children: [
-      { label: "SEO",    href: "/seo-local/seo" },
-      { label: "GBP",    href: "/seo-local/gbp" },
-      { label: "Yelp",   href: "/seo-local/yelp" },
+      { label: "SEO",  href: "/seo-local/seo" },
+      { label: "GBP",  href: "/seo-local/gbp" },
+      { label: "Yelp", href: "/seo-local/yelp" },
     ],
   },
   {
@@ -69,42 +82,17 @@ const navItems: NavItem[] = [
       { label: "Google Ads", href: "/paid-advertising/google-ads" },
     ],
   },
-  {
-    label: "Web Dev & Design",
-    href: "/web-development-design",
-    icon: IconPalette,
-    section: "departments",
-    children: [
-      { label: "Web Development", href: "/web-development-design/web-development" },
-      { label: "Design",          href: "/web-development-design/design" },
-    ],
-  },
   { label: "Reporting",         href: "/reporting",          icon: IconBarChart,  section: "departments" },
   { label: "Local Service Ads", href: "/local-service-ads",  icon: IconStar,      section: "departments" },
   { label: "IT & Security",     href: "/it-security",        icon: IconShield,    section: "departments" },
-  { label: "Tasks",             href: "/tasks",              icon: IconClipboard, section: "departments" },
+
+  // ── Settings ──────────────────────────────────────────────────
   { label: "Settings",          href: "/settings",           icon: IconSettings,  section: "settings" },
 ];
 
-// Workspace slugs that should show in the global sidebar
-const workspaceNavLabels: Record<string, string> = {
-  "account-management":    "Account Mgmt",
-  "sales":                 "Sales",
-  "billing":               "Billing",
-  "content":               "Content",
-  "web-development-design":"Web Dev & Design",
-  "seo-local":             "SEO & Local",
-  "paid-advertising":      "Paid Ads",
-  "reporting":             "Reporting",
-  "local-service-ads":     "Local Svc Ads",
-  "it-security":           "IT & Security",
-};
-
 const sectionLabels: Record<string, string> = {
   overview:    "",
-  clients:     "",
   departments: "Departments",
-  workspaces:  "Workspaces",
   settings:    "",
 };
 
@@ -133,7 +121,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     return acc;
   }, {});
 
-  const sectionOrder = ["overview", "clients", "departments", "workspaces", "settings"];
+  const sectionOrder = ["overview", "departments", "settings"];
 
   const linkStyle = (isActive: boolean): React.CSSProperties =>
     isActive
@@ -202,54 +190,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-1">
           {sectionOrder.map((section) => {
-            // Inject workspace links for the "workspaces" virtual section
-            if (section === "workspaces") {
-              return (
-                <div key="workspaces" className="pt-4">
-                  <p
-                    className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest"
-                    style={{ color: "rgba(200,213,238,0.45)" }}
-                  >
-                    Workspaces
-                  </p>
-                  <ul className="space-y-0.5">
-                    {workspaces.map((ws) => {
-                      const isActive = pathname === ws.baseRoute || pathname.startsWith(ws.baseRoute + "/");
-                      return (
-                        <li key={ws.slug}>
-                          <Link
-                            href={ws.dashboardRoute}
-                            onClick={onClose}
-                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
-                            style={
-                              isActive
-                                ? { background: "rgba(59,110,245,0.22)", color: "#ffffff", boxShadow: "inset 2px 0 0 #3B6EF5" }
-                                : { color: "var(--rtm-sidebar-text)" }
-                            }
-                            onMouseEnter={(e) => {
-                              if (!isActive) {
-                                e.currentTarget.style.background = "rgba(255,255,255,0.07)";
-                                e.currentTarget.style.color = "#ffffff";
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              if (!isActive) {
-                                e.currentTarget.style.background = "transparent";
-                                e.currentTarget.style.color = "var(--rtm-sidebar-text)";
-                              }
-                            }}
-                          >
-                            <span className="text-sm flex-shrink-0 w-5 text-center">{ws.icon}</span>
-                            <span className="truncate flex-1 text-xs">{workspaceNavLabels[ws.slug] ?? ws.name}</span>
-                          </Link>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              );
-            }
-
             const items = grouped[section];
             if (!items?.length) return null;
             return (

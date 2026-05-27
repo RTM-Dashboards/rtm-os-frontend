@@ -1,11 +1,5 @@
-import DepartmentTasksPage from "@/components/tasks/DepartmentTasksPage";
+import { redirect } from "next/navigation";
 
-export default function DesignTasksPage() {
-  return (
-    <DepartmentTasksPage
-      department="Design"
-      title="Design Tasks"
-      description="Deliverables and tasks for the Design department"
-    />
-  );
+export default function DesignTasksRedirect() {
+  redirect("/web-development-design/design/tasks");
 }
