@@ -12,40 +12,28 @@ interface StatusBadgeProps {
   size?: "sm" | "md";
 }
 
-const variantStyles: Record<StatusVariant, string> = {
-  success:
-    "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
-  warning:
-    "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-  error: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-  info: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  neutral:
-    "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
-  pending:
-    "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400",
+const variantMap: Record<StatusVariant, { bg: string; color: string; dot: string; border: string }> = {
+  success: { bg: "#ECFDF5", color: "#059669", dot: "#10B981", border: "#A7F3D0" },
+  warning: { bg: "#FFFBEB", color: "#B45309", dot: "#F59E0B", border: "#FDE68A" },
+  error:   { bg: "#FEF2F2", color: "#DC2626", dot: "#EF4444", border: "#FECACA" },
+  info:    { bg: "var(--rtm-blue-xlight)", color: "var(--rtm-blue)", dot: "var(--rtm-blue-mid)", border: "var(--rtm-blue-light)" },
+  neutral: { bg: "#F8FAFC", color: "#64748B", dot: "#94A3B8", border: "#E2E8F0" },
+  pending: { bg: "#EFF6FF", color: "#3B82F6", dot: "#6366F1", border: "#BFDBFE" },
 };
 
-const dotStyles: Record<StatusVariant, string> = {
-  success: "bg-emerald-500",
-  warning: "bg-amber-500",
-  error: "bg-red-500",
-  info: "bg-blue-500",
-  neutral: "bg-slate-400",
-  pending: "bg-indigo-500",
-};
-
-export default function StatusBadge({
-  variant,
-  label,
-  size = "md",
-}: StatusBadgeProps) {
+export default function StatusBadge({ variant, label, size = "md" }: StatusBadgeProps) {
+  const s = variantMap[variant];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full font-medium ${
-        size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-xs"
-      } ${variantStyles[variant]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full font-semibold border ${
+        size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs"
+      }`}
+      style={{ background: s.bg, color: s.color, borderColor: s.border }}
     >
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotStyles[variant]}`} />
+      <span
+        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+        style={{ background: s.dot }}
+      />
       {label}
     </span>
   );

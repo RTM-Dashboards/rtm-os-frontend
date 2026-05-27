@@ -27,8 +27,15 @@ export default function DonutChart({
   let offset = 0;
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-5">
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Track */}
+        <circle
+          cx={cx} cy={cy} r={r}
+          fill="none"
+          stroke="var(--rtm-border-light)"
+          strokeWidth={thickness}
+        />
         {segments.map((seg, i) => {
           const pct = seg.value / total;
           const dash = pct * circumference;
@@ -36,15 +43,14 @@ export default function DonutChart({
           const el = (
             <circle
               key={i}
-              cx={cx}
-              cy={cy}
-              r={r}
+              cx={cx} cy={cy} r={r}
               fill="none"
               stroke={seg.color}
               strokeWidth={thickness}
               strokeDasharray={`${dash} ${gap}`}
               strokeDashoffset={-offset}
               transform={`rotate(-90 ${cx} ${cy})`}
+              strokeLinecap="round"
             />
           );
           offset += dash;
@@ -52,23 +58,38 @@ export default function DonutChart({
         })}
         {centerLabel && (
           <>
-            <text x={cx} y={cy - 4} textAnchor="middle" dominantBaseline="middle" className="fill-slate-800 dark:fill-white" fontSize={size * 0.16} fontWeight="700">
+            <text
+              x={cx} y={cy - 4}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={size * 0.16}
+              fontWeight="700"
+              fill="var(--rtm-text-primary)"
+            >
               {centerLabel}
             </text>
             {centerSub && (
-              <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle" className="fill-slate-400" fontSize={size * 0.1}>
+              <text
+                x={cx} y={cy + 14}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={size * 0.1}
+                fill="var(--rtm-text-muted)"
+              >
                 {centerSub}
               </text>
             )}
           </>
         )}
       </svg>
-      <ul className="space-y-1.5">
+      <ul className="space-y-2 flex-1">
         {segments.map((seg) => (
           <li key={seg.label} className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: seg.color }} />
-            <span className="text-xs text-slate-600 dark:text-slate-400">{seg.label}</span>
-            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 ml-auto">{Math.round((seg.value / total) * 100)}%</span>
+            <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{seg.label}</span>
+            <span className="text-xs font-semibold ml-auto" style={{ color: "var(--rtm-text-primary)" }}>
+              {Math.round((seg.value / total) * 100)}%
+            </span>
           </li>
         ))}
       </ul>

@@ -8,7 +8,7 @@ interface BarChartProps {
 export default function BarChart({
   data,
   height = 120,
-  barColor = "#6366f1",
+  barColor = "var(--rtm-blue)",
   showLabels = true,
 }: BarChartProps) {
   if (!data.length) return null;
@@ -16,7 +16,12 @@ export default function BarChart({
   const barW = 100 / data.length;
   return (
     <div className="w-full" style={{ height }}>
-      <svg viewBox={`0 0 100 100`} preserveAspectRatio="none" className="w-full" style={{ height: showLabels ? height - 20 : height }}>
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="w-full"
+        style={{ height: showLabels ? height - 20 : height }}
+      >
         {data.map((d, i) => {
           const barH = (d.value / max) * 90;
           const x = i * barW + barW * 0.1;
@@ -29,8 +34,8 @@ export default function BarChart({
               width={w}
               height={barH}
               fill={d.color || barColor}
-              rx={1}
-              opacity={0.85}
+              rx={1.5}
+              opacity={0.9}
             />
           );
         })}
@@ -38,7 +43,11 @@ export default function BarChart({
       {showLabels && (
         <div className="flex justify-around mt-1">
           {data.map((d) => (
-            <span key={d.label} className="text-[10px] text-slate-400 truncate" style={{ width: `${barW}%`, textAlign: "center" }}>
+            <span
+              key={d.label}
+              className="text-[10px] truncate"
+              style={{ width: `${barW}%`, textAlign: "center", color: "var(--rtm-text-muted)" }}
+            >
               {d.label}
             </span>
           ))}

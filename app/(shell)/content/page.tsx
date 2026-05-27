@@ -1,3 +1,5 @@
+"use client";
+
 import {
   KpiCard, SectionWrapper, StatusBadge, DataTable,
   ActivityFeed, AlertBanner, QuickActions, ProgressBar, MiniSparkline
@@ -31,7 +33,7 @@ const columns: Column<ContentItem>[] = [
     key: "progress", header: "Progress", width: "150px",
     render: (value) => {
       const v = Number(value);
-      return <ProgressBar value={v} height={5} color={v >= 80 ? "bg-emerald-500" : v >= 40 ? "bg-indigo-500" : "bg-slate-300"} showLabel />;
+      return <ProgressBar value={v} height={5} color={v >= 80 ? "bg-emerald-500" : v >= 40 ? "bg-[var(--rtm-blue)]" : "bg-slate-300"} showLabel />;
     },
   },
   {
@@ -55,7 +57,7 @@ const sparkOutput = [70, 80, 75, 90, 85, 95, 88, 92, 98, 94, 100, 94];
 const activityItems: ActivityItem[] = [
   { id: "1", actor: "Alex R.", action: "submitted blog post for", target: "Apex Roofing — May Edition", timestamp: "2h ago", type: "task", avatarColor: "#10b981" },
   { id: "2", actor: "Lisa P.", action: "completed social pack for", target: "Harbor Auto Group", timestamp: "4h ago", type: "task", avatarColor: "#ec4899" },
-  { id: "3", actor: "Jordan M.", action: "requested brief for", target: "Pacific Dental — Q2 Blog", timestamp: "6h ago", type: "task", avatarColor: "#6366f1" },
+  { id: "3", actor: "Jordan M.", action: "requested brief for", target: "Pacific Dental — Q2 Blog", timestamp: "6h ago", type: "task", avatarColor: "var(--rtm-blue)" },
 ];
 
 const alerts: AlertItem[] = [
@@ -64,7 +66,7 @@ const alerts: AlertItem[] = [
 ];
 
 const quickActions: QuickAction[] = [
-  { label: "New Brief", description: "Create content brief", icon: "📝", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+  { label: "New Brief", description: "Create content brief", icon: "📝", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
   { label: "Assign Writer", description: "Delegate content work", icon: "👤", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
   { label: "Review Queue", description: "Approve content", icon: "✓", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
   { label: "Publish Content", description: "Go live", icon: "🚀", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
@@ -81,15 +83,15 @@ export default function ContentPage() {
         </div>
         <div className="flex items-center gap-2">
           <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors">Calendar</button>
-          <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">+ New Brief</button>
+          <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors">+ New Brief</button>
         </div>
       </div>
 
       <AlertBanner alerts={alerts} />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title="In Production" value="28" trend="neutral" accentColor="bg-indigo-100 dark:bg-indigo-900/30"
-          icon={<svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+        <KpiCard title="In Production" value="28" trend="neutral" accentColor="bg-[var(--rtm-blue-xlight)]"
+          icon={<svg className="w-5 h-5 text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
         />
         <KpiCard title="Published (MTD)" value="94" trend="up" trendValue="+12% MoM" accentColor="bg-emerald-100 dark:bg-emerald-900/30"
           icon={<svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5 13l4 4L19 7" /></svg>}
@@ -104,7 +106,7 @@ export default function ContentPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionWrapper title="Output Trend" description="Pieces published per month" className="lg:col-span-2">
-          <MiniSparkline data={sparkOutput} color="#6366f1" height={80} width={600} />
+          <MiniSparkline data={sparkOutput} color="var(--rtm-blue)" height={80} width={600} />
           <div className="mt-3 flex gap-2 text-xs text-slate-400">
             {["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"].map(m => (
               <span key={m} className="flex-1 text-center">{m}</span>
@@ -117,7 +119,7 @@ export default function ContentPage() {
       </div>
 
       <SectionWrapper title="Content Queue" description={`${items.length} active items`} noPadding
-        actions={<button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View full queue</button>}
+        actions={<button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">View full queue</button>}
       >
         <DataTable columns={columns} data={items} />
       </SectionWrapper>

@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import EmptyState from "./EmptyState";
 
@@ -34,31 +36,45 @@ export default function DataTable<T extends Record<string, unknown>>({
   }
 
   return (
-    <div className={`overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800 ${className}`}>
+    <div
+      className={`overflow-x-auto rounded-xl border ${className}`}
+      style={{ borderColor: "var(--rtm-border)" }}
+    >
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+          <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
             {columns.map((col) => (
               <th
                 key={String(col.key)}
-                style={col.width ? { width: col.width } : undefined}
-                className="px-4 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide whitespace-nowrap"
+                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
+                style={{
+                  color: "var(--rtm-text-muted)",
+                  ...(col.width ? { width: col.width } : {}),
+                }}
               >
                 {col.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+        <tbody>
           {data.map((row, rowIdx) => (
             <tr
               key={rowIdx}
-              className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+              className="transition-colors"
+              style={{ borderBottom: "1px solid var(--rtm-border-light)", background: "var(--rtm-surface)" }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLTableRowElement).style.background = "var(--rtm-bg)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLTableRowElement).style.background = "var(--rtm-surface)";
+              }}
             >
               {columns.map((col) => (
                 <td
                   key={String(col.key)}
-                  className="px-4 py-3 text-slate-700 dark:text-slate-300 whitespace-nowrap"
+                  className="px-4 py-3 whitespace-nowrap"
+                  style={{ color: "var(--rtm-text-secondary)" }}
                 >
                   {col.render
                     ? col.render(row[col.key], row)

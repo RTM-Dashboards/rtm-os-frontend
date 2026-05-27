@@ -19,26 +19,35 @@ export default function SectionWrapper({
 }: SectionWrapperProps) {
   return (
     <section
-      className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 ${className}`}
+      className={`rounded-xl border ${className}`}
+      style={{
+        background: "var(--rtm-surface)",
+        borderColor: "var(--rtm-border)",
+        boxShadow: "0 1px 3px rgba(15,28,56,0.05)",
+      }}
     >
       {(title || actions) && (
-        <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+        <div
+          className="flex items-start justify-between gap-4 px-5 py-4"
+          style={{ borderBottom: "1px solid var(--rtm-border-light)" }}
+        >
           <div>
             {title && (
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+              <h2
+                className="text-sm font-semibold"
+                style={{ color: "var(--rtm-text-primary)" }}
+              >
                 {title}
               </h2>
             )}
             {description && (
-              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+              <p className="mt-0.5 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
                 {description}
               </p>
             )}
           </div>
           {actions && (
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {actions}
-            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>
           )}
         </div>
       )}

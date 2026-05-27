@@ -10,7 +10,8 @@ interface EmptyStateProps {
 
 const DefaultIcon = () => (
   <svg
-    className="w-10 h-10 text-slate-300 dark:text-slate-600"
+    className="w-10 h-10"
+    style={{ color: "var(--rtm-border)" }}
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
@@ -40,13 +41,16 @@ export default function EmptyState({
 
   return (
     <div className={`flex flex-col items-center justify-center text-center ${containerClass}`}>
-      <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4">
+      <div
+        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+        style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
+      >
         {icon ?? <DefaultIcon />}
       </div>
-      <h3 className="text-base font-semibold text-slate-700 dark:text-slate-300 mb-1">
+      <h3 className="text-base font-semibold mb-1" style={{ color: "var(--rtm-text-secondary)" }}>
         {title}
       </h3>
-      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+      <p className="text-sm max-w-sm" style={{ color: "var(--rtm-text-muted)" }}>
         {description}
       </p>
       {action && <div className="mt-5">{action}</div>}

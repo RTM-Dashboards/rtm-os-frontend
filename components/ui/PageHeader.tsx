@@ -17,15 +17,18 @@ export default function PageHeader({
     <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
       <div>
         {breadcrumb && (
-          <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1">
+          <p
+            className="text-[11px] font-bold uppercase tracking-widest mb-1"
+            style={{ color: "var(--rtm-blue)" }}
+          >
             {breadcrumb}
           </p>
         )}
-        <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+        <h1 className="text-xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>
           {title}
         </h1>
         {description && (
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-xl">
+          <p className="mt-1 text-sm max-w-xl" style={{ color: "var(--rtm-text-secondary)" }}>
             {description}
           </p>
         )}

@@ -7,10 +7,10 @@ export interface TeamMember {
   avatarColor?: string;
 }
 
-const statusStyles = {
-  online: "bg-emerald-500",
-  away: "bg-amber-500",
-  offline: "bg-slate-400",
+const statusDot: Record<TeamMember["status"], string> = {
+  online:  "#10B981",
+  away:    "#F59E0B",
+  offline: "#CBD5E1",
 };
 
 interface TeamWidgetProps {
@@ -25,22 +25,35 @@ export default function TeamWidget({ members }: TeamWidgetProps) {
           <div className="relative flex-shrink-0">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-              style={{ background: member.avatarColor || "#6366f1" }}
+              style={{ background: member.avatarColor ?? "var(--rtm-blue)" }}
             >
               {member.name.charAt(0).toUpperCase()}
             </div>
-            <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white dark:border-slate-900 ${statusStyles[member.status]}`} />
+            <span
+              className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white"
+              style={{ background: statusDot[member.status] }}
+            />
           </div>
+
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{member.name}</p>
-            <p className="text-xs text-slate-500 truncate">{member.role}</p>
+            <p className="text-sm font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>
+              {member.name}
+            </p>
+            <p className="text-xs truncate" style={{ color: "var(--rtm-text-muted)" }}>
+              {member.role}
+            </p>
           </div>
+
           <div className="flex-shrink-0 text-right">
             {member.clients !== undefined && (
-              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{member.clients} clients</p>
+              <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                {member.clients} clients
+              </p>
             )}
             {member.tasks !== undefined && (
-              <p className="text-xs text-slate-400">{member.tasks} tasks</p>
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                {member.tasks} tasks
+              </p>
             )}
           </div>
         </li>

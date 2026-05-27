@@ -1,3 +1,5 @@
+"use client";
+
 import {
   KpiCard, SectionWrapper, StatusBadge, DataTable,
   ActivityFeed, AlertBanner, QuickActions, ProgressBar, MiniSparkline
@@ -33,7 +35,7 @@ const columns: Column<Report>[] = [
     key: "progress", header: "Progress", width: "140px",
     render: (value) => {
       const v = Number(value);
-      return <ProgressBar value={v} height={5} color={v >= 100 ? "bg-emerald-500" : v >= 50 ? "bg-indigo-500" : "bg-amber-500"} showLabel />;
+      return <ProgressBar value={v} height={5} color={v >= 100 ? "bg-emerald-500" : v >= 50 ? "bg-[var(--rtm-blue)]" : "bg-amber-500"} showLabel />;
     },
   },
   {
@@ -55,7 +57,7 @@ const columns: Column<Report>[] = [
 const sparkSent = [42, 45, 48, 44, 50, 52, 49, 54, 56, 51, 58, 61];
 
 const activityItems: ActivityItem[] = [
-  { id: "1", actor: "Jordan M.", action: "sent monthly report to", target: "Summit Landscaping", timestamp: "2h ago", type: "report", avatarColor: "#6366f1" },
+  { id: "1", actor: "Jordan M.", action: "sent monthly report to", target: "Summit Landscaping", timestamp: "2h ago", type: "report", avatarColor: "var(--rtm-blue)" },
   { id: "2", actor: "Lisa P.", action: "started Q2 SEO report for", target: "Pacific Dental", timestamp: "4h ago", type: "task", avatarColor: "#ec4899" },
   { id: "3", actor: "System", action: "overdue alert — report not started for", target: "Sunbelt HVAC", timestamp: "8h ago", type: "alert", avatarColor: "#64748b" },
 ];
@@ -67,7 +69,7 @@ const alerts: AlertItem[] = [
 
 const quickActions: QuickAction[] = [
   { label: "New Report", description: "Start from template", icon: "📊", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
-  { label: "Assign Writer", description: "Delegate work", icon: "👤", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+  { label: "Assign Writer", description: "Delegate work", icon: "👤", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
   { label: "Send Report", description: "Email to client", icon: "📧", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
   { label: "Templates", description: "Manage templates", icon: "📋", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
 ];
@@ -83,15 +85,15 @@ export default function ReportingPage() {
         </div>
         <div className="flex items-center gap-2">
           <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors">Templates</button>
-          <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">+ New Report</button>
+          <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors">+ New Report</button>
         </div>
       </div>
 
       <AlertBanner alerts={alerts} />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title="Reports Due (30d)" value="28" trend="neutral" accentColor="bg-indigo-100 dark:bg-indigo-900/30"
-          icon={<svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+        <KpiCard title="Reports Due (30d)" value="28" trend="neutral" accentColor="bg-[var(--rtm-blue-xlight)]"
+          icon={<svg className="w-5 h-5 text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
         />
         <KpiCard title="Sent (MTD)" value="61" trend="up" trendValue="+8 vs last month" accentColor="bg-emerald-100 dark:bg-emerald-900/30"
           icon={<svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5 13l4 4L19 7" /></svg>}
@@ -106,7 +108,7 @@ export default function ReportingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionWrapper title="Reports Sent Trend" description="Monthly reports delivered — last 12 months" className="lg:col-span-2">
-          <MiniSparkline data={sparkSent} color="#6366f1" height={80} width={600} />
+          <MiniSparkline data={sparkSent} color="var(--rtm-blue)" height={80} width={600} />
           <div className="mt-3 flex gap-2 text-xs text-slate-400">
             {["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"].map(m => (
               <span key={m} className="flex-1 text-center">{m}</span>
@@ -119,7 +121,7 @@ export default function ReportingPage() {
       </div>
 
       <SectionWrapper title="Report Queue" description={`${reports.length} reports this cycle`} noPadding
-        actions={<button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View all</button>}
+        actions={<button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">View all</button>}
       >
         <DataTable columns={columns} data={reports} />
       </SectionWrapper>

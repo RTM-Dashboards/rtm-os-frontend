@@ -1,3 +1,5 @@
+"use client";
+
 import { SectionWrapper } from "@/components/ui";
 import BillingKPICards from "@/components/billing/BillingKPICards";
 import ActiveCampaignsTable from "@/components/billing/ActiveCampaignsTable";
@@ -107,7 +109,7 @@ export default function BillingDashboard() {
           <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
             Export CSV
           </button>
-          <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">
+          <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors">
             + Send Invoice
           </button>
         </div>
@@ -191,7 +193,7 @@ export default function BillingDashboard() {
         <SectionWrapper title="Revenue by AM" description="This month">
           <ul className="space-y-3">
             {[
-              { name: "Maria Santos", revenue: 38200, pct: 82, color: "bg-indigo-500" },
+              { name: "Maria Santos", revenue: 38200, pct: 82, color: "bg-[var(--rtm-blue)]" },
               { name: "Jordan Lee", revenue: 29700, pct: 64, color: "bg-blue-500" },
               { name: "Chris Park", revenue: 26900, pct: 58, color: "bg-violet-500" },
             ].map((am) => (
@@ -218,7 +220,7 @@ export default function BillingDashboard() {
         description={`${activeCampaigns.length} total campaigns`}
         noPadding
         actions={
-          <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+          <button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">
             Export
           </button>
         }
@@ -235,7 +237,7 @@ export default function BillingDashboard() {
           description={`${invoices.length} invoices`}
           noPadding
           actions={
-            <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+            <button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">
               View all
             </button>
           }
@@ -267,7 +269,7 @@ export default function BillingDashboard() {
         description={`${renewalQueue.length} upcoming renewals`}
         noPadding
         actions={
-          <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+          <button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">
             Export
           </button>
         }
@@ -281,7 +283,7 @@ export default function BillingDashboard() {
       <SectionWrapper title="Quick Actions">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Send Invoice", desc: "Bill a client", icon: "💳", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+            { label: "Send Invoice", desc: "Bill a client", icon: "💳", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
             { label: "Apply Credit", desc: "Issue credit/refund", icon: "↩️", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600" },
             { label: "New Subscription", desc: "Add tier upgrade", icon: "⬆️", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
             { label: "Revenue Report", desc: "Export MRR data", icon: "📊", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },

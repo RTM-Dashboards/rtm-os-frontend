@@ -1,3 +1,5 @@
+"use client";
+
 import {
   KpiCard, SectionWrapper, StatusBadge, DataTable,
   ActivityFeed, AlertBanner, QuickActions, TeamWidget, MiniSparkline, ProgressBar
@@ -64,9 +66,9 @@ const columns: Column<Lead>[] = [
 const sparkRevenue = [28, 30, 27, 32, 35, 31, 38, 36, 40, 38, 42, 44];
 
 const activityItems: ActivityItem[] = [
-  { id: "1", actor: "Jordan M.", action: "sent proposal to", target: "Summit Landscaping", timestamp: "1h ago", type: "task", avatarColor: "#6366f1" },
+  { id: "1", actor: "Jordan M.", action: "sent proposal to", target: "Summit Landscaping", timestamp: "1h ago", type: "task", avatarColor: "var(--rtm-blue)" },
   { id: "2", actor: "Mike T.", action: "closed deal with", target: "Sunstate Solar — $6K/mo", timestamp: "3h ago", type: "campaign", avatarColor: "#8b5cf6" },
-  { id: "3", actor: "Sarah K.", action: "scheduled discovery call with", target: "Blue Ridge Plumbing", timestamp: "5h ago", type: "client", avatarColor: "#f59e0b" },
+  { id: "3", actor: "Sarah K.", action: "scheduled discovery call with", target: "Blue Ridge Plumbing", timestamp: "5h ago", type: "client", avatarColor: "var(--rtm-blue-mid)" },
   { id: "4", actor: "Alex R.", action: "followed up with", target: "Cascade Flooring", timestamp: "1d ago", type: "task", avatarColor: "#10b981" },
 ];
 
@@ -76,15 +78,15 @@ const alerts: AlertItem[] = [
 ];
 
 const quickActions: QuickAction[] = [
-  { label: "Add Lead", description: "New prospect", icon: "➕", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+  { label: "Add Lead", description: "New prospect", icon: "➕", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
   { label: "Log Call", description: "Record touchpoint", icon: "📞", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
   { label: "Send Proposal", description: "Draft & send", icon: "📋", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
   { label: "View Forecast", description: "Q2 projections", icon: "📈", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
 ];
 
 const salesTeam: TeamMember[] = [
-  { name: "Jordan M.", role: "Sales Lead", status: "online", tasks: 8, avatarColor: "#6366f1" },
-  { name: "Sarah K.", role: "BDR", status: "online", tasks: 5, avatarColor: "#f59e0b" },
+  { name: "Jordan M.", role: "Sales Lead", status: "online", tasks: 8, avatarColor: "var(--rtm-blue)" },
+  { name: "Sarah K.", role: "BDR", status: "online", tasks: 5, avatarColor: "var(--rtm-blue-mid)" },
   { name: "Mike T.", role: "Account Executive", status: "away", tasks: 11, avatarColor: "#8b5cf6" },
   { name: "Alex R.", role: "BDR", status: "online", tasks: 6, avatarColor: "#10b981" },
 ];
@@ -100,7 +102,7 @@ export default function SalesPage() {
         </div>
         <div className="flex items-center gap-2">
           <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors">Export</button>
-          <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors shadow-sm shadow-indigo-500/30">+ Add Lead</button>
+          <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors shadow-sm ">+ Add Lead</button>
         </div>
       </div>
 
@@ -110,8 +112,8 @@ export default function SalesPage() {
         <KpiCard title="Pipeline Value" value="$38,400" trend="up" trendValue="18%" accentColor="bg-emerald-100 dark:bg-emerald-900/30"
           icon={<svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
         />
-        <KpiCard title="Open Leads" value="24" trend="up" trendValue="+5 this week" accentColor="bg-indigo-100 dark:bg-indigo-900/30"
-          icon={<svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+        <KpiCard title="Open Leads" value="24" trend="up" trendValue="+5 this week" accentColor="bg-[var(--rtm-blue-xlight)]"
+          icon={<svg className="w-5 h-5 text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
         />
         <KpiCard title="Close Rate" value="34%" trend="up" trendValue="+3% MoM" accentColor="bg-purple-100 dark:bg-purple-900/30"
           icon={<svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -136,7 +138,7 @@ export default function SalesPage() {
       </div>
 
       <SectionWrapper title="Active Pipeline" description={`${leads.length} leads · Sorted by close probability`} noPadding
-        actions={<button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View CRM</button>}
+        actions={<button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">View CRM</button>}
       >
         <DataTable columns={columns} data={leads} />
       </SectionWrapper>

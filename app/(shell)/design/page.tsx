@@ -1,3 +1,5 @@
+"use client";
+
 import {
   KpiCard, SectionWrapper, StatusBadge, DataTable,
   ActivityFeed, AlertBanner, QuickActions, ProgressBar
@@ -66,7 +68,7 @@ const columns: Column<DesignRequest>[] = [
 const activityItems: ActivityItem[] = [
   { id: "1", actor: "Mia S.", action: "submitted social templates for review —", target: "Harbor Auto", timestamp: "1h ago", type: "task", avatarColor: "#ec4899" },
   { id: "2", actor: "Chris D.", action: "started brand refresh for", target: "Apex Roofing", timestamp: "3h ago", type: "task", avatarColor: "#8b5cf6" },
-  { id: "3", actor: "Jordan M.", action: "approved ad creatives for", target: "Blue Ridge Plumbing", timestamp: "1d ago", type: "task", avatarColor: "#6366f1" },
+  { id: "3", actor: "Jordan M.", action: "approved ad creatives for", target: "Blue Ridge Plumbing", timestamp: "1d ago", type: "task", avatarColor: "var(--rtm-blue)" },
 ];
 
 const alerts: AlertItem[] = [
@@ -75,7 +77,7 @@ const alerts: AlertItem[] = [
 
 const quickActions: QuickAction[] = [
   { label: "New Request", description: "Submit design brief", icon: "🎨", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
-  { label: "Assign Designer", description: "Delegate work", icon: "👤", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+  { label: "Assign Designer", description: "Delegate work", icon: "👤", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
   { label: "Review Assets", description: "Approve deliverables", icon: "✓", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
   { label: "Asset Library", description: "Browse brand files", icon: "📁", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
 ];
@@ -89,7 +91,7 @@ export default function DesignPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Design</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Brand assets, creative deliverables & design requests.</p>
         </div>
-        <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors self-start">+ Design Request</button>
+        <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors self-start">+ Design Request</button>
       </div>
 
       <AlertBanner alerts={alerts} />
@@ -110,7 +112,7 @@ export default function DesignPage() {
       </div>
 
       <SectionWrapper title="Active Requests" description={`${requests.length} open design requests`} noPadding
-        actions={<button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View all</button>}
+        actions={<button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">View all</button>}
       >
         <DataTable columns={columns} data={requests} />
       </SectionWrapper>

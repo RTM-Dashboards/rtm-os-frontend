@@ -31,7 +31,8 @@ export default function BillingSearchFilter({
       {/* Search */}
       <div className="relative flex-1 min-w-0">
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+          style={{ color: "var(--rtm-text-muted)" }}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -43,12 +44,20 @@ export default function BillingSearchFilter({
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={searchPlaceholder}
-          className="w-full pl-9 pr-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent transition"
+          className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border outline-none transition"
+          style={{
+            background: "var(--rtm-surface)",
+            borderColor: "var(--rtm-border)",
+            color: "var(--rtm-text-primary)",
+          }}
+          onFocus={(e) => (e.currentTarget.style.borderColor = "var(--rtm-blue)")}
+          onBlur={(e) => (e.currentTarget.style.borderColor = "var(--rtm-border)")}
         />
         {searchValue && (
           <button
             onClick={() => onSearchChange("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 transition-opacity hover:opacity-70"
+            style={{ color: "var(--rtm-text-muted)" }}
             aria-label="Clear search"
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,20 +72,23 @@ export default function BillingSearchFilter({
         <select
           value={filterValue ?? ""}
           onChange={(e) => onFilterChange(e.target.value)}
-          className="px-3 py-2 text-sm rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 focus:border-transparent cursor-pointer transition"
+          className="px-3 py-2 text-sm rounded-lg border cursor-pointer outline-none"
+          style={{
+            background: "var(--rtm-surface)",
+            borderColor: "var(--rtm-border)",
+            color: "var(--rtm-text-secondary)",
+          }}
         >
           <option value="">{filterPlaceholder}</option>
           {filterOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
       )}
 
       {/* Result count */}
       {resultCount !== undefined && (
-        <span className="shrink-0 self-center text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
+        <span className="shrink-0 self-center text-xs whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>
           {resultCount} result{resultCount !== 1 ? "s" : ""}
         </span>
       )}

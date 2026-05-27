@@ -8,11 +8,26 @@ export interface AlertItem {
   action?: string;
 }
 
-const severityStyles: Record<AlertSeverity, { bg: string; border: string; text: string; icon: string }> = {
-  critical: { bg: "bg-red-50 dark:bg-red-950/30", border: "border-red-200 dark:border-red-800", text: "text-red-800 dark:text-red-300", icon: "🔴" },
-  warning: { bg: "bg-amber-50 dark:bg-amber-950/30", border: "border-amber-200 dark:border-amber-800", text: "text-amber-800 dark:text-amber-300", icon: "🟡" },
-  info: { bg: "bg-blue-50 dark:bg-blue-950/30", border: "border-blue-200 dark:border-blue-800", text: "text-blue-800 dark:text-blue-300", icon: "🔵" },
-  success: { bg: "bg-emerald-50 dark:bg-emerald-950/30", border: "border-emerald-200 dark:border-emerald-800", text: "text-emerald-800 dark:text-emerald-300", icon: "🟢" },
+const severityMap: Record<AlertSeverity, {
+  bg: string; border: string; titleColor: string; textColor: string;
+  iconBg: string; icon: string;
+}> = {
+  critical: {
+    bg: "#FEF2F2", border: "#FECACA", titleColor: "#991B1B", textColor: "#DC2626",
+    iconBg: "#FEE2E2", icon: "⚠",
+  },
+  warning: {
+    bg: "#FFFBEB", border: "#FDE68A", titleColor: "#92400E", textColor: "#B45309",
+    iconBg: "#FEF3C7", icon: "!",
+  },
+  info: {
+    bg: "var(--rtm-blue-xlight)", border: "var(--rtm-blue-light)", titleColor: "var(--rtm-blue-dark)", textColor: "var(--rtm-blue)",
+    iconBg: "var(--rtm-blue-light)", icon: "i",
+  },
+  success: {
+    bg: "#ECFDF5", border: "#A7F3D0", titleColor: "#065F46", textColor: "#059669",
+    iconBg: "#D1FAE5", icon: "✓",
+  },
 };
 
 interface AlertBannerProps {
@@ -24,18 +39,37 @@ export default function AlertBanner({ alerts }: AlertBannerProps) {
   return (
     <div className="space-y-2">
       {alerts.map((alert) => {
-        const s = severityStyles[alert.severity];
+        const s = severityMap[alert.severity];
         return (
-          <div key={alert.id} className={`flex items-start gap-3 p-3 rounded-lg border ${s.bg} ${s.border}`}>
-            <span className="text-base flex-shrink-0 mt-0.5">{s.icon}</span>
+          <div
+            key={alert.id}
+            className="flex items-start gap-3 p-3.5 rounded-xl border"
+            style={{ background: s.bg, borderColor: s.border }}
+          >
+            {/* Icon circle */}
+            <span
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0 mt-0.5"
+              style={{ background: s.iconBg, color: s.textColor }}
+            >
+              {s.icon}
+            </span>
+
             <div className="min-w-0 flex-1">
-              <p className={`text-sm font-semibold ${s.text}`}>{alert.title}</p>
+              <p className="text-sm font-semibold" style={{ color: s.titleColor }}>
+                {alert.title}
+              </p>
               {alert.description && (
-                <p className={`text-xs mt-0.5 opacity-80 ${s.text}`}>{alert.description}</p>
+                <p className="text-xs mt-0.5 leading-relaxed" style={{ color: s.textColor, opacity: 0.85 }}>
+                  {alert.description}
+                </p>
               )}
             </div>
+
             {alert.action && (
-              <button className={`text-xs font-medium flex-shrink-0 underline underline-offset-2 ${s.text}`}>
+              <button
+                className="text-xs font-semibold flex-shrink-0 px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"
+                style={{ color: s.titleColor, borderColor: s.border, background: s.iconBg }}
+              >
                 {alert.action}
               </button>
             )}

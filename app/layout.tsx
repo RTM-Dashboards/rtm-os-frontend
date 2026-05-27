@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RTM OS",
-  description: "Real-Time Marketing Operating System",
+  title: "Real Time Marketing Operational Dashboards",
+  description: "Real Time Marketing — Operational Dashboards for the modern home service marketing agency.",
 };
 
 export default function RootLayout({

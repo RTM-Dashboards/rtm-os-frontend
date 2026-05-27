@@ -1,3 +1,5 @@
+"use client";
+
 import { SectionWrapper, StatusBadge, AlertBanner } from "@/components/ui";
 import type { AlertItem } from "@/components/ui";
 
@@ -43,13 +45,13 @@ export default function SettingsPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Settings</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Platform configuration, team management & integrations.</p>
         </div>
-        <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors self-start">Save Changes</button>
+        <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors self-start">Save Changes</button>
       </div>
 
       <AlertBanner alerts={alerts} />
 
       {/* Platform Info */}
-      <SectionWrapper title="Platform" description="RTM OS configuration">
+      <SectionWrapper title="Platform" description="Real Time Marketing Operational Dashboards — Configuration">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { label: "Agency Name", value: "RTM Agency" },
@@ -69,15 +71,15 @@ export default function SettingsPage() {
 
       {/* Team Members */}
       <SectionWrapper title="Team Members" description={`${teamMembers.length} active users`}
-        actions={<button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">+ Invite User</button>}
+        actions={<button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">+ Invite User</button>}
       >
         <div className="space-y-2">
           {teamMembers.map((member) => (
-            <div key={member.email} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-700 transition-colors">
+            <div key={member.email} className="flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 hover:border-[var(--rtm-blue)]/30 dark:hover:border-[var(--rtm-blue)]/30 transition-colors">
               <div className="flex items-center gap-3">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: "#6366f1" }}
+                  style={{ background: "var(--rtm-blue)" }}
                 >
                   {member.name.charAt(0)}
                 </div>
@@ -103,7 +105,7 @@ export default function SettingsPage() {
       <SectionWrapper title="Integrations" description="Connected services & platforms">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {integrations.map((integration) => (
-            <div key={integration.name} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-700 transition-colors">
+            <div key={integration.name} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-[var(--rtm-blue)]/40 dark:hover:border-[var(--rtm-blue)]/40 transition-colors">
               <div className="flex items-center gap-3">
                 <span className="text-xl">{integration.icon}</span>
                 <div>
@@ -114,7 +116,7 @@ export default function SettingsPage() {
               {integration.status === "connected" ? (
                 <StatusBadge variant="success" label="Connected" size="sm" />
               ) : (
-                <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline px-2 py-1 rounded border border-indigo-200 dark:border-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors">
+                <button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline px-2 py-1 rounded border border-[var(--rtm-blue)]/30 dark:border-[var(--rtm-blue)]/30 hover:bg-[var(--rtm-blue-xlight)]  transition-colors">
                   Connect
                 </button>
               )}

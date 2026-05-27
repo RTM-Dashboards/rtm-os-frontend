@@ -287,7 +287,7 @@ const activityFeed: ActivityItem[] = [
     target: "Apex Roofing Co.",
     timestamp: "45 min ago",
     type: "client",
-    avatarColor: "#6366f1",
+    avatarColor: "var(--rtm-blue)",
   },
   {
     id: "2",
@@ -296,7 +296,7 @@ const activityFeed: ActivityItem[] = [
     target: "Cascade Flooring (health: 55)",
     timestamp: "1h ago",
     type: "alert",
-    avatarColor: "#f59e0b",
+    avatarColor: "var(--rtm-blue-mid)",
   },
   {
     id: "3",
@@ -332,7 +332,7 @@ const activityFeed: ActivityItem[] = [
     target: "Summit Landscaping (renews Nov 2025)",
     timestamp: "6h ago",
     type: "client",
-    avatarColor: "#6366f1",
+    avatarColor: "var(--rtm-blue)",
   },
   {
     id: "7",
@@ -350,7 +350,7 @@ const activityFeed: ActivityItem[] = [
     target: "Sunbelt HVAC (awaiting PPC approval)",
     timestamp: "Yesterday",
     type: "system",
-    avatarColor: "#f59e0b",
+    avatarColor: "var(--rtm-blue-mid)",
   },
 ];
 
@@ -358,7 +358,7 @@ const activityFeed: ActivityItem[] = [
 
 const healthSegments = [
   { label: "Healthy (85+)", value: 4, color: "#10b981" },
-  { label: "Moderate (70–84)", value: 3, color: "#f59e0b" },
+  { label: "Moderate (70–84)", value: 3, color: "var(--rtm-blue-mid)" },
   { label: "At Risk (<70)", value: 3, color: "#ef4444" },
 ];
 
@@ -442,7 +442,7 @@ const campaignColumns: Column<CampaignRow>[] = [
     key: "nextAction",
     header: "Next Action",
     render: (value) => (
-      <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+      <span className="text-xs text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] font-medium">
         {String(value)}
       </span>
     ),
@@ -556,7 +556,7 @@ export default function AccountManagementPage() {
           <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors">
             Export
           </button>
-          <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">
+          <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors">
             + Add Client
           </button>
         </div>
@@ -570,10 +570,10 @@ export default function AccountManagementPage() {
           value="148"
           trend="up"
           trendValue="+6 this month"
-          accentColor="bg-indigo-100 dark:bg-indigo-900/30"
+          accentColor="bg-[var(--rtm-blue-xlight)]"
           icon={
             <svg
-              className="w-5 h-5 text-indigo-600 dark:text-indigo-400"
+              className="w-5 h-5 text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -776,7 +776,7 @@ export default function AccountManagementPage() {
           description={`${clientPortfolio.length} clients shown`}
           noPadding
           actions={
-            <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+            <button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">
               View all 148
             </button>
           }
@@ -791,7 +791,7 @@ export default function AccountManagementPage() {
           description={`${campaigns.length} campaigns tracked`}
           noPadding
           actions={
-            <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+            <button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">
               View all campaigns
             </button>
           }
@@ -806,7 +806,7 @@ export default function AccountManagementPage() {
           description={`${tasks.length} open items`}
           noPadding
           actions={
-            <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+            <button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">
               + New Task
             </button>
           }

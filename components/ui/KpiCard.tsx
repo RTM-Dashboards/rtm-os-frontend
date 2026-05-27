@@ -8,7 +8,10 @@ export interface KpiCardProps {
   trendValue?: string;
   trendLabel?: string;
   icon?: React.ReactNode;
+  /** CSS class or inline style is passed via iconBg / iconColor */
   accentColor?: string;
+  iconBg?: string;
+  iconColor?: string;
 }
 
 export default function KpiCard({
@@ -19,37 +22,51 @@ export default function KpiCard({
   trendValue,
   trendLabel = "vs last month",
   icon,
-  accentColor = "bg-indigo-100 dark:bg-indigo-900/30",
+  iconBg = "var(--rtm-blue-light)",
+  iconColor,
 }: KpiCardProps) {
-  const trendColorClass =
+  const trendStyle =
     trend === "up"
-      ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
+      ? { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" }
       : trend === "down"
-        ? "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20"
-        : "text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800";
+        ? { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" }
+        : { bg: "#F4F7FF", color: "var(--rtm-text-secondary)", border: "var(--rtm-border)" };
 
-  const trendArrow =
-    trend === "up" ? "↑" : trend === "down" ? "↓" : "→";
+  const trendArrow = trend === "up" ? "↑" : trend === "down" ? "↓" : "→";
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col gap-4 hover:shadow-md transition-shadow">
+    <div
+      className="flex flex-col gap-4 p-5 rounded-xl border transition-shadow duration-200 hover:shadow-md"
+      style={{
+        background: "var(--rtm-surface)",
+        borderColor: "var(--rtm-border)",
+        boxShadow: "0 1px 3px rgba(15,28,56,0.05)",
+      }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
+          <p
+            className="text-xs font-semibold uppercase tracking-wide truncate"
+            style={{ color: "var(--rtm-text-muted)" }}
+          >
             {title}
           </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <p
+            className="mt-1.5 text-2xl font-bold tracking-tight"
+            style={{ color: "var(--rtm-text-primary)" }}
+          >
             {value}
           </p>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
+            <p className="mt-0.5 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
               {subtitle}
             </p>
           )}
         </div>
         {icon && (
           <div
-            className={`w-11 h-11 rounded-xl ${accentColor} flex items-center justify-center flex-shrink-0`}
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{ background: iconBg ?? "var(--rtm-blue-light)", color: iconColor ?? "var(--rtm-blue)" }}
           >
             {icon}
           </div>
@@ -59,11 +76,12 @@ export default function KpiCard({
       {trendValue && trend && (
         <div className="flex items-center gap-2">
           <span
-            className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${trendColorClass}`}
+            className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border"
+            style={{ background: trendStyle.bg, color: trendStyle.color, borderColor: trendStyle.border }}
           >
             {trendArrow} {trendValue}
           </span>
-          <span className="text-xs text-slate-400 dark:text-slate-500">
+          <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
             {trendLabel}
           </span>
         </div>

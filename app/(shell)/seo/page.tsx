@@ -1,3 +1,5 @@
+"use client";
+
 import {
   KpiCard, SectionWrapper, StatusBadge, DataTable,
   ActivityFeed, AlertBanner, QuickActions, ProgressBar, MiniSparkline
@@ -64,7 +66,7 @@ const columns: Column<SeoClient>[] = [
 const sparkImpressions = [8.2, 8.8, 9.1, 8.7, 9.5, 10.2, 9.8, 10.8, 11.2, 10.9, 11.8, 12.4];
 const activityItems: ActivityItem[] = [
   { id: "1", actor: "Lisa P.", action: "completed GBP audit for", target: "Apex Roofing Co.", timestamp: "2h ago", type: "task", avatarColor: "#ec4899" },
-  { id: "2", actor: "Jordan M.", action: "updated keyword strategy for", target: "Sunbelt HVAC", timestamp: "4h ago", type: "task", avatarColor: "#6366f1" },
+  { id: "2", actor: "Jordan M.", action: "updated keyword strategy for", target: "Sunbelt HVAC", timestamp: "4h ago", type: "task", avatarColor: "var(--rtm-blue)" },
   { id: "3", actor: "System", action: "detected ranking drop for", target: "Blue Ridge Plumbing — plumber asheville", timestamp: "6h ago", type: "alert", avatarColor: "#64748b" },
 ];
 
@@ -76,7 +78,7 @@ const alerts: AlertItem[] = [
 const quickActions: QuickAction[] = [
   { label: "Run Audit", description: "Full SEO audit", icon: "🔍", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
   { label: "Update GBP", description: "Edit Google profile", icon: "📍", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
-  { label: "Keyword Research", description: "Find opportunities", icon: "🔑", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+  { label: "Keyword Research", description: "Find opportunities", icon: "🔑", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
   { label: "Yelp Manager", description: "Manage listings", icon: "⭐", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600" },
 ];
 
@@ -89,7 +91,7 @@ export default function SeoPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">SEO / GBP / Yelp</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Search rankings, Google Business Profiles & Yelp listings.</p>
         </div>
-        <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors self-start">+ Run Audit</button>
+        <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors self-start">+ Run Audit</button>
       </div>
 
       <AlertBanner alerts={alerts} />
@@ -98,8 +100,8 @@ export default function SeoPage() {
         <KpiCard title="Avg. Keyword Position" value="#4.2" trend="up" trendValue="+1.3 pos" accentColor="bg-blue-100 dark:bg-blue-900/30"
           icon={<svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
         />
-        <KpiCard title="GBP Profiles" value="148" trend="up" trendValue="+6 new" accentColor="bg-indigo-100 dark:bg-indigo-900/30"
-          icon={<svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+        <KpiCard title="GBP Profiles" value="148" trend="up" trendValue="+6 new" accentColor="bg-[var(--rtm-blue-xlight)]"
+          icon={<svg className="w-5 h-5 text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
         />
         <KpiCard title="Yelp Listings Active" value="102" trend="neutral" accentColor="bg-emerald-100 dark:bg-emerald-900/30"
           icon={<svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>}
@@ -124,7 +126,7 @@ export default function SeoPage() {
       </div>
 
       <SectionWrapper title="Client SEO Overview" description={`${clients.length} active clients`} noPadding
-        actions={<button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Export data</button>}
+        actions={<button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">Export data</button>}
       >
         <DataTable columns={columns} data={clients} />
       </SectionWrapper>

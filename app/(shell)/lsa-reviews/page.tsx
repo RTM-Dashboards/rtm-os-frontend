@@ -1,3 +1,5 @@
+"use client";
+
 import {
   KpiCard, SectionWrapper, StatusBadge, DataTable,
   ActivityFeed, AlertBanner, QuickActions, MiniSparkline
@@ -61,8 +63,8 @@ const sparkLeads = [28, 32, 30, 35, 38, 36, 40, 42, 39, 44, 41, 45];
 
 const activityItems: ActivityItem[] = [
   { id: "1", actor: "System", action: "received 3 new LSA leads for", target: "Apex Roofing Co.", timestamp: "1h ago", type: "client", avatarColor: "#64748b" },
-  { id: "2", actor: "Jordan M.", action: "responded to negative review for", target: "Harbor Auto Group", timestamp: "3h ago", type: "task", avatarColor: "#6366f1" },
-  { id: "3", actor: "Sarah K.", action: "paused LSA campaign for", target: "Sunbelt HVAC — Budget exhausted", timestamp: "5h ago", type: "alert", avatarColor: "#f59e0b" },
+  { id: "2", actor: "Jordan M.", action: "responded to negative review for", target: "Harbor Auto Group", timestamp: "3h ago", type: "task", avatarColor: "var(--rtm-blue)" },
+  { id: "3", actor: "Sarah K.", action: "paused LSA campaign for", target: "Sunbelt HVAC — Budget exhausted", timestamp: "5h ago", type: "alert", avatarColor: "var(--rtm-blue-mid)" },
   { id: "4", actor: "Alex R.", action: "requested review from new customer —", target: "Blue Ridge Plumbing", timestamp: "7h ago", type: "task", avatarColor: "#10b981" },
 ];
 
@@ -75,7 +77,7 @@ const quickActions: QuickAction[] = [
   { label: "Request Review", description: "Send to client", icon: "⭐", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600" },
   { label: "Respond to Review", description: "Draft response", icon: "💬", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
   { label: "Adjust Budget", description: "Change weekly spend", icon: "💰", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
-  { label: "LSA Report", description: "Performance summary", icon: "📊", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+  { label: "LSA Report", description: "Performance summary", icon: "📊", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
 ];
 
 export default function LsaReviewsPage() {
@@ -87,14 +89,14 @@ export default function LsaReviewsPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Local Service Ads</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">LSA management, lead tracking & review response.</p>
         </div>
-        <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors self-start">+ Setup LSA</button>
+        <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors self-start">+ Setup LSA</button>
       </div>
 
       <AlertBanner alerts={alerts} />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title="LSA Leads (MTD)" value="45" trend="up" trendValue="+12% MoM" accentColor="bg-indigo-100 dark:bg-indigo-900/30"
-          icon={<svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+        <KpiCard title="LSA Leads (MTD)" value="45" trend="up" trendValue="+12% MoM" accentColor="bg-[var(--rtm-blue-xlight)]"
+          icon={<svg className="w-5 h-5 text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
         />
         <KpiCard title="Active LSA Clients" value="3" trend="neutral" accentColor="bg-emerald-100 dark:bg-emerald-900/30"
           icon={<svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
@@ -109,7 +111,7 @@ export default function LsaReviewsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionWrapper title="LSA Lead Trend" description="Weekly leads — last 12 months" className="lg:col-span-2">
-          <MiniSparkline data={sparkLeads} color="#f59e0b" height={80} width={600} />
+          <MiniSparkline data={sparkLeads} color="var(--rtm-blue-mid)" height={80} width={600} />
           <div className="mt-3 flex gap-2 text-xs text-slate-400">
             {["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"].map(m => (
               <span key={m} className="flex-1 text-center">{m}</span>

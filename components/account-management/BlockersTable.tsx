@@ -116,7 +116,7 @@ export function BlockersTable({ blockers }: BlockersTableProps) {
                   <span
                     className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                       b.blockedBy === "Client"
-                        ? "bg-orange-100 text-orange-700"
+                        ? "bg-[var(--rtm-blue-light)] text-orange-700"
                         : "bg-purple-100 text-purple-700"
                     }`}
                   >

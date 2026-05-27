@@ -21,7 +21,7 @@ const variantStyles: Record<string, string> = {
   // Health
   Healthy: "bg-emerald-100 text-emerald-700 border-emerald-200",
   "Needs Attention": "bg-amber-100 text-amber-700 border-amber-200",
-  "At-Risk": "bg-orange-100 text-orange-700 border-orange-200",
+  "At-Risk": "bg-[var(--rtm-blue-light)] text-orange-700 border-orange-200",
   Critical: "bg-red-100 text-red-700 border-red-200",
 
   // Campaign
@@ -35,7 +35,7 @@ const variantStyles: Record<string, string> = {
   "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
   Overdue: "bg-red-100 text-red-700 border-red-200",
   "Not Started": "bg-slate-100 text-slate-600 border-slate-200",
-  Blocked: "bg-orange-100 text-orange-700 border-orange-200",
+  Blocked: "bg-[var(--rtm-blue-light)] text-orange-700 border-orange-200",
 
   // Escalation
   Open: "bg-red-100 text-red-700 border-red-200",
@@ -44,10 +44,10 @@ const variantStyles: Record<string, string> = {
 
   // Blocker
   "In Review": "bg-amber-100 text-amber-700 border-amber-200",
-  "Awaiting Client": "bg-orange-100 text-orange-700 border-orange-200",
+  "Awaiting Client": "bg-[var(--rtm-blue-light)] text-orange-700 border-orange-200",
 
   // Onboarding
-  Stalled: "bg-orange-100 text-orange-700 border-orange-200",
+  Stalled: "bg-[var(--rtm-blue-light)] text-orange-700 border-orange-200",
   "Awaiting Assets": "bg-amber-100 text-amber-700 border-amber-200",
 
   // Priority

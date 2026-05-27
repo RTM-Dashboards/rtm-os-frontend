@@ -1,3 +1,5 @@
+"use client";
+
 import {
   KpiCard, SectionWrapper, StatusBadge, DataTable,
   ActivityFeed, AlertBanner, QuickActions, MiniSparkline, CampaignCard
@@ -68,7 +70,7 @@ const alerts: AlertItem[] = [
 
 const quickActions: QuickAction[] = [
   { label: "New Campaign", description: "Launch paid ads", icon: "🎯", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600" },
-  { label: "Ad Creative", description: "Submit creative brief", icon: "🖼️", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+  { label: "Ad Creative", description: "Submit creative brief", icon: "🖼️", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
   { label: "Budget Review", description: "Adjust spend limits", icon: "💰", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
   { label: "Performance Report", description: "Export campaign data", icon: "📊", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
 ];
@@ -126,7 +128,7 @@ export default function MetaAdsPage() {
         </div>
         <div className="flex items-center gap-2">
           <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors">Export</button>
-          <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">+ New Campaign</button>
+          <button className="px-4 py-2 rounded-lg bg-[var(--rtm-blue)] hover:bg-[var(--rtm-blue-dark)] text-white text-sm font-semibold transition-colors">+ New Campaign</button>
         </div>
       </div>
 
@@ -139,8 +141,8 @@ export default function MetaAdsPage() {
         <KpiCard title="Avg. ROAS" value="4.5x" trend="up" trendValue="+0.3x" accentColor="bg-emerald-100 dark:bg-emerald-900/30"
           icon={<svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
         />
-        <KpiCard title="Total Leads (MTD)" value="333" trend="up" trendValue="+42 vs last month" accentColor="bg-indigo-100 dark:bg-indigo-900/30"
-          icon={<svg className="w-5 h-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+        <KpiCard title="Total Leads (MTD)" value="333" trend="up" trendValue="+42 vs last month" accentColor="bg-[var(--rtm-blue-xlight)]"
+          icon={<svg className="w-5 h-5 text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
         />
         <KpiCard title="Avg. CPL" value="$26.75" trend="down" trendValue="-$2.10 improved" accentColor="bg-blue-100 dark:bg-blue-900/30"
           icon={<svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
@@ -171,7 +173,7 @@ export default function MetaAdsPage() {
       </SectionWrapper>
 
       <SectionWrapper title="All Active Campaigns" description={`${campaigns.length} campaigns running`} noPadding
-        actions={<button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View all</button>}
+        actions={<button className="text-xs font-medium text-[var(--rtm-blue)] dark:text-[color:var(--rtm-blue)] hover:underline">View all</button>}
       >
         <DataTable columns={columns} data={campaigns} />
       </SectionWrapper>

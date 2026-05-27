@@ -1,8 +1,60 @@
 @import "tailwindcss";
 
+/* ── Force dark: variants to require a .dark ancestor class (class strategy).
+   Since no .dark class is ever applied, all dark: utilities are inert and
+   the app always renders in light mode regardless of OS preference. ── */
+@custom-variant dark (&:is(.dark *));
+
+/* ──────────────────────────────────────────────
+   Real Time Marketing — RTM Blue Enterprise Design System
+   Primary Blue:   #1B4FD8  (RTM core blue)
+   Blue Dark:      #1340B0  (hover states)
+   Blue Light:     #EBF0FD  (tints, backgrounds)
+   Blue Mid:       #3B6EF5  (gradient end)
+   Surface:        #F7F9FC  (page background)
+   Card:           #FFFFFF  (card backgrounds)
+   Border:         #E4E8F0  (card / input borders)
+   Text Primary:   #0F1C38  (headings)
+   Text Secondary: #5A6A85  (labels)
+   Text Muted:     #9AAABB  (captions)
+   Sidebar BG:     #0E2055  (deep RTM navy-blue)
+   Sidebar Text:   #C8D5EE  (sidebar labels)
+────────────────────────────────────────────── */
+
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #F7F9FC;
+  --foreground: #0F1C38;
+
+  /* RTM Blue palette */
+  --rtm-blue:           #1B4FD8;
+  --rtm-blue-dark:      #1340B0;
+  --rtm-blue-mid:       #3B6EF5;
+  --rtm-blue-light:     #EBF0FD;
+  --rtm-blue-xlight:    #F4F7FF;
+
+  /* Sidebar */
+  --rtm-sidebar-bg:     #0E2055;
+  --rtm-sidebar-hover:  rgba(255,255,255,0.07);
+  --rtm-sidebar-active: rgba(59,110,245,0.22);
+  --rtm-sidebar-border: rgba(255,255,255,0.08);
+  --rtm-sidebar-text:   #C8D5EE;
+
+  /* Surfaces */
+  --rtm-surface:        #FFFFFF;
+  --rtm-bg:             #F7F9FC;
+  --rtm-border:         #E4E8F0;
+  --rtm-border-light:   #EEF1F7;
+
+  /* Text */
+  --rtm-text-primary:   #0F1C38;
+  --rtm-text-secondary: #5A6A85;
+  --rtm-text-muted:     #9AAABB;
+
+  /* Status colors (unchanged — readable on light) */
+  --rtm-success:        #059669;
+  --rtm-warning:        #D97706;
+  --rtm-danger:         #DC2626;
+  --rtm-info:           #2563EB;
 }
 
 @theme inline {
@@ -12,20 +64,61 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
-  }
-}
-
 html,
 body {
   height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans, Arial, sans-serif);
+  background: var(--rtm-bg);
+  color: var(--rtm-text-primary);
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  -webkit-font-smoothing: antialiased;
 }
+
+/* ── RTM Blue active nav item ── */
+.rtm-nav-active {
+  background: var(--rtm-sidebar-active);
+  color: #ffffff;
+}
+
+/* ── RTM blue pulse for live indicator ── */
+@keyframes rtm-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+.rtm-live-dot {
+  animation: rtm-pulse 2s ease-in-out infinite;
+}
+
+/* ── Soft card shadow utility ── */
+.rtm-card {
+  background: var(--rtm-surface);
+  border: 1px solid var(--rtm-border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(15,28,56,0.06), 0 1px 2px rgba(15,28,56,0.04);
+}
+
+/* ── Blue gradient button ── */
+.rtm-btn-primary {
+  background: linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%);
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 6px rgba(27,79,216,0.3);
+}
+.rtm-btn-primary:hover {
+  opacity: 0.92;
+  box-shadow: 0 4px 12px rgba(27,79,216,0.38);
+}
+
+/* ── Scrollbar polish ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1D9E6; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #B0BCCE; }
