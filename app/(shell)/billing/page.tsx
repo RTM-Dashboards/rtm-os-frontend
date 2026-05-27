@@ -1,141 +1,305 @@
+import { SectionWrapper } from "@/components/ui";
+import BillingKPICards from "@/components/billing/BillingKPICards";
+import ActiveCampaignsTable from "@/components/billing/ActiveCampaignsTable";
+import InvoiceTrackingTable from "@/components/billing/InvoiceTrackingTable";
+import OverdueAccountsTable from "@/components/billing/OverdueAccountsTable";
+import RenewalQueueTable from "@/components/billing/RenewalQueueTable";
 import {
-  KpiCard, SectionWrapper, StatusBadge, DataTable,
-  AlertBanner, QuickActions, MiniSparkline, ProgressBar
-} from "@/components/ui";
-import type { Column, AlertItem, QuickAction } from "@/components/ui";
+  billingKPIs,
+  activeCampaigns,
+  invoices,
+  overdueAccounts,
+  renewalQueue,
+} from "@/lib/billing/mock-data";
 
-interface Invoice extends Record<string, unknown> {
-  client: string;
-  amount: string;
-  due: string;
-  status: string;
-  tier: string;
+// ─── Revenue Trend Sparkline (server-renderable SVG) ─────────────────────────
+
+const MRR_TREND = [78, 80, 82, 79, 83, 85, 86, 88, 87, 91, 93, 94.8];
+
+function RevenueSparkline() {
+  const max = Math.max(...MRR_TREND);
+  const min = Math.min(...MRR_TREND);
+  const w = 480;
+  const h = 80;
+  const pad = 4;
+  const pts = MRR_TREND.map((v, i) => {
+    const x = pad + (i / (MRR_TREND.length - 1)) * (w - pad * 2);
+    const y = pad + ((max - v) / (max - min)) * (h - pad * 2);
+    return `${x},${y}`;
+  }).join(" ");
+
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-20" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#10b981" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#10b981" stopOpacity="0.01" />
+        </linearGradient>
+      </defs>
+      <polyline
+        points={pts}
+        fill="none"
+        stroke="#10b981"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <polygon
+        points={`${pad},${h} ${pts} ${w - pad},${h}`}
+        fill="url(#mrrGrad)"
+      />
+    </svg>
+  );
 }
 
-const invoices: Invoice[] = [
-  { client: "Apex Roofing Co.", amount: "$2,500", due: "May 25", status: "paid", tier: "Pro" },
-  { client: "Harbor Auto Group", amount: "$5,000", due: "May 25", status: "paid", tier: "Pro" },
-  { client: "Sunbelt HVAC", amount: "$1,200", due: "May 28", status: "pending", tier: "Growth" },
-  { client: "Pacific Dental", amount: "$2,500", due: "May 30", status: "overdue", tier: "Pro" },
-  { client: "Blue Ridge Plumbing", amount: "$500", due: "Jun 1", status: "pending", tier: "Starter" },
-  { client: "Summit Landscaping", amount: "$1,200", due: "Jun 1", status: "draft", tier: "Growth" },
-];
+// ─── Summary bar (quick stats strip) ─────────────────────────────────────────
 
-const columns: Column<Invoice>[] = [
-  { key: "client", header: "Client" },
-  { key: "tier", header: "Tier", width: "100px" },
-  { key: "amount", header: "Amount", width: "110px" },
-  { key: "due", header: "Due Date", width: "110px" },
-  {
-    key: "status", header: "Status", width: "120px",
-    render: (value) => {
-      const v = String(value);
-      const map: Record<string, { variant: "success" | "pending" | "error" | "neutral"; label: string }> = {
-        paid: { variant: "success", label: "Paid" },
-        pending: { variant: "pending", label: "Pending" },
-        overdue: { variant: "error", label: "Overdue" },
-        draft: { variant: "neutral", label: "Draft" },
-      };
-      const c = map[v] ?? { variant: "neutral" as const, label: v };
-      return <StatusBadge variant={c.variant} label={c.label} size="sm" />;
-    },
-  },
-];
+function SummaryStrip() {
+  const activeCampaignCount = activeCampaigns.filter((c) => c.campaignStatus === "active").length;
+  const overdueCount = overdueAccounts.length;
+  const pendingInvoiceCount = invoices.filter((i) => i.status === "pending").length;
+  const renewalCount = renewalQueue.filter((r) => r.status === "at_risk").length;
 
-const sparkMRR = [78, 80, 82, 79, 83, 85, 86, 88, 87, 91, 93, 94.8];
+  const items = [
+    { label: "Active Campaigns", value: activeCampaignCount, color: "text-emerald-600 dark:text-emerald-400" },
+    { label: "Overdue Accounts", value: overdueCount, color: "text-red-600 dark:text-red-400" },
+    { label: "Pending Invoices", value: pendingInvoiceCount, color: "text-amber-600 dark:text-amber-400" },
+    { label: "At-Risk Renewals", value: renewalCount, color: "text-orange-600 dark:text-orange-400" },
+  ];
 
-const alerts: AlertItem[] = [
-  { id: "1", severity: "critical", title: "2 invoices are overdue (>30 days)", description: "Pacific Dental ($2,500) and Green Valley Pools ($1,200) need escalation.", action: "Collect" },
-  { id: "2", severity: "warning", title: "5 clients up for renewal in 30 days", description: "Total renewal value at risk: $8,700 MRR.", action: "Review" },
-];
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {items.map((item) => (
+        <div
+          key={item.label}
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 flex items-center gap-3"
+        >
+          <span className={`text-2xl font-bold ${item.color}`}>{item.value}</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">{item.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
-const quickActions: QuickAction[] = [
-  { label: "Send Invoice", description: "Bill a client", icon: "💳", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
-  { label: "Apply Credit", description: "Issue credit/refund", icon: "↩️", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600" },
-  { label: "New Subscription", description: "Add tier upgrade", icon: "⬆️", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
-  { label: "Revenue Report", description: "Export MRR data", icon: "📊", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
-];
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
-const tiers = [
-  { tier: "Starter", count: 42, price: "$500/mo", revenue: "$21,000", pct: 22 },
-  { tier: "Growth", count: 71, price: "$1,200/mo", revenue: "$85,200", pct: 65 },
-  { tier: "Pro", count: 35, price: "$2,500/mo", revenue: "$87,500", pct: 92 },
-];
+export default function BillingDashboard() {
+  const overdueTotal = overdueAccounts.reduce((sum, a) => sum + (a.amount as number), 0);
+  const atRiskRenewalValue = renewalQueue
+    .filter((r) => r.status === "at_risk")
+    .reduce((sum, r) => sum + (r.contractValue as number), 0);
 
-export default function BillingPage() {
   return (
     <div className="space-y-6">
+      {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-1">Departments</p>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Billing</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Revenue, invoices, subscriptions & financial health.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Billing Dashboard
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Active campaigns, revenue tracking, invoices, overdue accounts &amp; renewals.
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors">Export CSV</button>
-          <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">+ Send Invoice</button>
+          <button className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+            Export CSV
+          </button>
+          <button className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-colors">
+            + Send Invoice
+          </button>
         </div>
       </div>
 
-      <AlertBanner alerts={alerts} />
+      {/* ── Alert Banner ── */}
+      {(overdueTotal > 0 || atRiskRenewalValue > 0) && (
+        <div className="space-y-2">
+          {overdueTotal > 0 && (
+            <div className="flex items-start gap-3 rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 px-4 py-3">
+              <svg className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.694-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+                  {overdueAccounts.length} account{overdueAccounts.length !== 1 ? "s" : ""} overdue — ${overdueTotal.toLocaleString()} at risk
+                </p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
+                  Review the Overdue Accounts table and escalate critical cases.
+                </p>
+              </div>
+              <button className="text-xs font-semibold text-red-700 dark:text-red-300 hover:underline flex-shrink-0">
+                Collect
+              </button>
+            </div>
+          )}
+          {atRiskRenewalValue > 0 && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/10 px-4 py-3">
+              <svg className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.694-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                  {renewalQueue.filter((r) => r.status === "at_risk").length} renewal{renewalQueue.filter((r) => r.status === "at_risk").length !== 1 ? "s" : ""} at risk — ${atRiskRenewalValue.toLocaleString()} contract value
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+                  Proactively engage at-risk clients before renewal date.
+                </p>
+              </div>
+              <button className="text-xs font-semibold text-amber-700 dark:text-amber-300 hover:underline flex-shrink-0">
+                Review
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard title="MRR" value="$94,800" trend="up" trendValue="11.2%" accentColor="bg-emerald-100 dark:bg-emerald-900/30"
-          icon={<svg className="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-        />
-        <KpiCard title="ARR" value="$1.14M" trend="up" trendValue="11.2%" accentColor="bg-blue-100 dark:bg-blue-900/30"
-          icon={<svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
-        />
-        <KpiCard title="Outstanding" value="$6,240" trend="neutral" accentColor="bg-amber-100 dark:bg-amber-900/30"
-          icon={<svg className="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
-        />
-        <KpiCard title="Past Due" value="$3,700" trend="down" trendValue="-$400 MoM" accentColor="bg-red-100 dark:bg-red-900/30"
-          icon={<svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.694-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>}
-        />
-      </div>
+      {/* ── KPI Cards ── */}
+      <BillingKPICards kpis={billingKPIs} />
 
+      {/* ── Summary Strip ── */}
+      <SummaryStrip />
+
+      {/* ── Revenue Trend ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <SectionWrapper title="MRR Growth" description="Last 12 months" className="lg:col-span-2">
+        <SectionWrapper
+          title="MRR Growth"
+          description="Last 12 months — May 2024"
+          className="lg:col-span-2"
+        >
           <div className="flex items-end justify-between mb-4">
             <div>
               <p className="text-3xl font-bold text-slate-900 dark:text-white">$94,800</p>
-              <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">↑ +11.2% from last month</p>
+              <p className="text-sm text-emerald-600 dark:text-emerald-400 mt-1">
+                ↑ +11.2% from last month
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-400">ARR</p>
+              <p className="text-lg font-bold text-slate-700 dark:text-slate-300">$1.14M</p>
             </div>
           </div>
-          <MiniSparkline data={sparkMRR} color="#10b981" height={80} width={600} />
+          <RevenueSparkline />
           <div className="mt-3 flex gap-2 text-xs text-slate-400">
-            {["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"].map(m => (
+            {["Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>
             ))}
           </div>
         </SectionWrapper>
 
-        <SectionWrapper title="Subscription Tiers" description="Revenue by plan">
-          <ul className="space-y-4">
-            {tiers.map((tier) => (
-              <li key={tier.tier}>
+        <SectionWrapper title="Revenue by AM" description="This month">
+          <ul className="space-y-3">
+            {[
+              { name: "Maria Santos", revenue: 38200, pct: 82, color: "bg-indigo-500" },
+              { name: "Jordan Lee", revenue: 29700, pct: 64, color: "bg-blue-500" },
+              { name: "Chris Park", revenue: 26900, pct: 58, color: "bg-violet-500" },
+            ].map((am) => (
+              <li key={am.name}>
                 <div className="flex items-center justify-between mb-1.5">
-                  <div>
-                    <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{tier.tier}</span>
-                    <span className="text-xs text-slate-400 ml-2">{tier.count} clients · {tier.price}</span>
-                  </div>
-                  <span className="text-sm font-bold text-slate-900 dark:text-white">{tier.revenue}</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{am.name}</span>
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">${am.revenue.toLocaleString()}</span>
                 </div>
-                <ProgressBar value={tier.pct} color={tier.tier === "Pro" ? "bg-indigo-500" : tier.tier === "Growth" ? "bg-blue-500" : "bg-slate-400"} height={6} />
+                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className={`h-1.5 rounded-full ${am.color}`}
+                    style={{ width: `${am.pct}%` }}
+                  />
+                </div>
               </li>
             ))}
           </ul>
         </SectionWrapper>
       </div>
 
-      <SectionWrapper title="Recent Invoices" description="Last 30 days" noPadding
-        actions={<button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">View all invoices</button>}
+      {/* ── Active Campaigns ── */}
+      <SectionWrapper
+        title="Active Campaigns"
+        description={`${activeCampaigns.length} total campaigns`}
+        noPadding
+        actions={
+          <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+            Export
+          </button>
+        }
       >
-        <DataTable columns={columns} data={invoices} />
+        <div className="p-4">
+          <ActiveCampaignsTable data={activeCampaigns} />
+        </div>
       </SectionWrapper>
 
+      {/* ── Invoice Tracking + Overdue (side by side on xl) ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <SectionWrapper
+          title="Invoice Tracking"
+          description={`${invoices.length} invoices`}
+          noPadding
+          actions={
+            <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+              View all
+            </button>
+          }
+        >
+          <div className="p-4">
+            <InvoiceTrackingTable data={invoices} />
+          </div>
+        </SectionWrapper>
+
+        <SectionWrapper
+          title="Overdue Accounts"
+          description={`${overdueAccounts.length} accounts — $${overdueTotal.toLocaleString()} total`}
+          noPadding
+          actions={
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              Action Required
+            </span>
+          }
+        >
+          <div className="p-4">
+            <OverdueAccountsTable data={overdueAccounts} />
+          </div>
+        </SectionWrapper>
+      </div>
+
+      {/* ── Renewal Queue ── */}
+      <SectionWrapper
+        title="Renewal Queue"
+        description={`${renewalQueue.length} upcoming renewals`}
+        noPadding
+        actions={
+          <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
+            Export
+          </button>
+        }
+      >
+        <div className="p-4">
+          <RenewalQueueTable data={renewalQueue} />
+        </div>
+      </SectionWrapper>
+
+      {/* ── Quick Actions ── */}
       <SectionWrapper title="Quick Actions">
-        <QuickActions actions={quickActions} cols={4} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: "Send Invoice", desc: "Bill a client", icon: "💳", color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600" },
+            { label: "Apply Credit", desc: "Issue credit/refund", icon: "↩️", color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600" },
+            { label: "New Subscription", desc: "Add tier upgrade", icon: "⬆️", color: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600" },
+            { label: "Revenue Report", desc: "Export MRR data", icon: "📊", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600" },
+          ].map((action) => (
+            <button
+              key={action.label}
+              className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:shadow-sm hover:border-indigo-200 dark:hover:border-indigo-800 transition-all text-left"
+            >
+              <span className={`w-9 h-9 rounded-lg ${action.color} flex items-center justify-center text-lg flex-shrink-0`}>
+                {action.icon}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{action.label}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{action.desc}</p>
+              </div>
+            </button>
+          ))}
+        </div>
       </SectionWrapper>
     </div>
   );
