@@ -28,6 +28,7 @@ const DEPARTMENTS: (Department | "All")[] = [
 interface Props {
   filters: FilterState;
   onChange: (filters: FilterState) => void;
+  hideDepartmentFilter?: boolean;
 }
 
 interface SelectProps {
@@ -60,7 +61,7 @@ function FilterSelect({ value, onChange, options, label }: SelectProps) {
   );
 }
 
-export default function TaskFilters({ filters, onChange }: Props) {
+export default function TaskFilters({ filters, onChange, hideDepartmentFilter }: Props) {
   return (
     <div className="flex flex-wrap gap-3 items-center">
       {/* Search */}
@@ -100,15 +101,17 @@ export default function TaskFilters({ filters, onChange }: Props) {
         onChange={(v) => onChange({ ...filters, priority: v as TaskPriority | "All" })}
         options={PRIORITIES}
       />
-      <FilterSelect
-        label="Department"
-        value={filters.department}
-        onChange={(v) => onChange({ ...filters, department: v as Department | "All" })}
-        options={DEPARTMENTS}
-      />
+      {!hideDepartmentFilter && (
+        <FilterSelect
+          label="Department"
+          value={filters.department}
+          onChange={(v) => onChange({ ...filters, department: v as Department | "All" })}
+          options={DEPARTMENTS}
+        />
+      )}
 
       {/* Clear */}
-      {(filters.search || filters.status !== "All" || filters.priority !== "All" || filters.department !== "All") && (
+      {(filters.search || filters.status !== "All" || filters.priority !== "All" || (!hideDepartmentFilter && filters.department !== "All")) && (
         <button
           onClick={() => onChange({ search: "", status: "All", priority: "All", department: "All" })}
           className="text-xs font-semibold px-3 py-2 rounded-lg transition-colors"

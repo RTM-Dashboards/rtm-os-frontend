@@ -4,12 +4,17 @@ import { usePathname } from "next/navigation";
 import { IconMenu, IconBell, IconSearch } from "./icons";
 
 const routeLabels: Record<string, { title: string; sub: string }> = {
+  "/admin":              { title: "Overview",             sub: "All departments at a glance" },
   "/dashboard":          { title: "Overview",             sub: "All departments at a glance" },
   "/account-management": { title: "Account Management",   sub: "Client portfolio & health tracking" },
   "/sales":              { title: "Sales",                sub: "Pipeline, leads & new business" },
   "/billing":            { title: "Billing",              sub: "Revenue, invoices & subscriptions" },
   "/content":            { title: "Content",              sub: "Blog, social & email production" },
   "/design":             { title: "Design",               sub: "Creative assets & brand requests" },
+  "/seo-local":          { title: "SEO & Local",          sub: "Search rankings, GBP & Yelp" },
+  "/paid-advertising":   { title: "Paid Advertising",     sub: "Meta Ads & Google Ads" },
+  "/web-development-design": { title: "Web Dev & Design",  sub: "Websites, redesigns & creative" },
+  "/local-service-ads":  { title: "Local Service Ads",    sub: "LSA setup, reviews & budgets" },
   "/seo":                { title: "SEO / GBP / Yelp",     sub: "Search, maps & local listings" },
   "/meta-ads":           { title: "Meta Ads & PPC",       sub: "Paid social & search campaigns" },
   "/reporting":          { title: "Reporting",            sub: "Client reports & performance analytics" },
@@ -26,7 +31,7 @@ interface TopNavProps {
 export default function TopNav({ onMenuClick }: TopNavProps) {
   const pathname = usePathname();
   const pageKey = Object.keys(routeLabels).find(
-    (k) => pathname === k || (k !== "/dashboard" && pathname.startsWith(k))
+    (k) => pathname === k || (k !== "/dashboard" && k !== "/admin" && pathname.startsWith(k))
   );
   const page = pageKey
     ? routeLabels[pageKey]

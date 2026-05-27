@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import {
   IconDashboard,
   IconBuilding,
@@ -20,6 +21,7 @@ import {
   IconUsers,
   IconClipboard,
 } from "./icons";
+import { workspaces } from "@/lib/workspaces";
 
 interface NavItem {
   label: string;
@@ -27,29 +29,82 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   section?: string;
   badge?: string;
+  children?: { label: string; href: string }[];
 }
 
+// ── Icon helpers ──────────────────────────────────────────────────
+const IconChevronDown = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+  </svg>
+);
+
+// ── Nav definition ────────────────────────────────────────────────
 const navItems: NavItem[] = [
-  { label: "Overview",          href: "/dashboard",          icon: IconDashboard, section: "overview" },
-  { label: "Clients",           href: "/clients",            icon: IconUsers,     section: "clients" },
-  { label: "Account Management",href: "/account-management", icon: IconBuilding,  section: "departments" },
-  { label: "Sales",             href: "/sales",              icon: IconTrending,  section: "departments", badge: "24" },
-  { label: "Billing",           href: "/billing",            icon: IconCreditCard,section: "departments" },
-  { label: "Content",           href: "/content",            icon: IconFile,      section: "departments" },
-  { label: "Design",            href: "/design",             icon: IconPalette,   section: "departments" },
-  { label: "SEO / GBP / Yelp",  href: "/seo",                icon: IconSearch,    section: "departments" },
-  { label: "Meta Ads & PPC",    href: "/meta-ads",           icon: IconTarget,    section: "departments" },
+  { label: "Overview",           href: "/admin",              icon: IconDashboard, section: "overview" },
+  { label: "Clients",            href: "/clients",            icon: IconUsers,     section: "clients" },
+  { label: "Account Management", href: "/account-management", icon: IconBuilding,  section: "departments" },
+  { label: "Sales",              href: "/sales",              icon: IconTrending,  section: "departments", badge: "24" },
+  { label: "Billing",            href: "/billing",            icon: IconCreditCard,section: "departments" },
+  { label: "Content",            href: "/content",            icon: IconFile,      section: "departments" },
+  { label: "Design",             href: "/design",             icon: IconPalette,   section: "departments" },
+  {
+    label: "SEO & Local",
+    href: "/seo-local",
+    icon: IconSearch,
+    section: "departments",
+    children: [
+      { label: "SEO",    href: "/seo-local/seo" },
+      { label: "GBP",    href: "/seo-local/gbp" },
+      { label: "Yelp",   href: "/seo-local/yelp" },
+    ],
+  },
+  {
+    label: "Paid Advertising",
+    href: "/paid-advertising",
+    icon: IconTarget,
+    section: "departments",
+    children: [
+      { label: "Meta Ads",   href: "/paid-advertising/meta-ads" },
+      { label: "Google Ads", href: "/paid-advertising/google-ads" },
+    ],
+  },
+  {
+    label: "Web Dev & Design",
+    href: "/web-development-design",
+    icon: IconPalette,
+    section: "departments",
+    children: [
+      { label: "Web Development", href: "/web-development-design/web-development" },
+      { label: "Design",          href: "/web-development-design/design" },
+    ],
+  },
   { label: "Reporting",         href: "/reporting",          icon: IconBarChart,  section: "departments" },
-  { label: "Local Service Ads", href: "/lsa-reviews",        icon: IconStar,      section: "departments" },
+  { label: "Local Service Ads", href: "/local-service-ads",  icon: IconStar,      section: "departments" },
   { label: "IT & Security",     href: "/it-security",        icon: IconShield,    section: "departments" },
   { label: "Tasks",             href: "/tasks",              icon: IconClipboard, section: "departments" },
   { label: "Settings",          href: "/settings",           icon: IconSettings,  section: "settings" },
 ];
 
+// Workspace slugs that should show in the global sidebar
+const workspaceNavLabels: Record<string, string> = {
+  "account-management":    "Account Mgmt",
+  "sales":                 "Sales",
+  "billing":               "Billing",
+  "content":               "Content",
+  "web-development-design":"Web Dev & Design",
+  "seo-local":             "SEO & Local",
+  "paid-advertising":      "Paid Ads",
+  "reporting":             "Reporting",
+  "local-service-ads":     "Local Svc Ads",
+  "it-security":           "IT & Security",
+};
+
 const sectionLabels: Record<string, string> = {
   overview:    "",
   clients:     "",
   departments: "Departments",
+  workspaces:  "Workspaces",
   settings:    "",
 };
 
@@ -61,6 +116,16 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
 
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => ({
+    "/seo-local":                true,
+    "/paid-advertising":         true,
+    "/web-development-design":   true,
+  }));
+
+  const toggleExpand = (href: string) => {
+    setExpandedItems((prev) => ({ ...prev, [href]: !prev[href] }));
+  };
+
   const grouped = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     const key = item.section ?? "other";
     if (!acc[key]) acc[key] = [];
@@ -68,7 +133,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     return acc;
   }, {});
 
-  const sectionOrder = ["overview", "clients", "departments", "settings"];
+  const sectionOrder = ["overview", "clients", "departments", "workspaces", "settings"];
+
+  const linkStyle = (isActive: boolean): React.CSSProperties =>
+    isActive
+      ? { background: "rgba(59,110,245,0.22)", color: "#ffffff", boxShadow: "inset 2px 0 0 #3B6EF5" }
+      : { color: "var(--rtm-sidebar-text)" };
+
+  const iconColor = (isActive: boolean) =>
+    isActive ? "#7AABFF" : "rgba(200,213,238,0.7)";
 
   return (
     <>
@@ -100,7 +173,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           style={{ borderBottom: "1px solid var(--rtm-sidebar-border)" }}
         >
           <Link
-            href="/dashboard"
+            href="/admin"
             className="flex items-center gap-2 py-1 focus:outline-none group"
             onClick={onClose}
           >
@@ -129,6 +202,54 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         {/* ── Navigation ── */}
         <nav className="flex-1 overflow-y-auto px-3 py-5 space-y-1">
           {sectionOrder.map((section) => {
+            // Inject workspace links for the "workspaces" virtual section
+            if (section === "workspaces") {
+              return (
+                <div key="workspaces" className="pt-4">
+                  <p
+                    className="px-3 mb-2 text-[10px] font-bold uppercase tracking-widest"
+                    style={{ color: "rgba(200,213,238,0.45)" }}
+                  >
+                    Workspaces
+                  </p>
+                  <ul className="space-y-0.5">
+                    {workspaces.map((ws) => {
+                      const isActive = pathname === ws.baseRoute || pathname.startsWith(ws.baseRoute + "/");
+                      return (
+                        <li key={ws.slug}>
+                          <Link
+                            href={ws.dashboardRoute}
+                            onClick={onClose}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+                            style={
+                              isActive
+                                ? { background: "rgba(59,110,245,0.22)", color: "#ffffff", boxShadow: "inset 2px 0 0 #3B6EF5" }
+                                : { color: "var(--rtm-sidebar-text)" }
+                            }
+                            onMouseEnter={(e) => {
+                              if (!isActive) {
+                                e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                                e.currentTarget.style.color = "#ffffff";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isActive) {
+                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.color = "var(--rtm-sidebar-text)";
+                              }
+                            }}
+                          >
+                            <span className="text-sm flex-shrink-0 w-5 text-center">{ws.icon}</span>
+                            <span className="truncate flex-1 text-xs">{workspaceNavLabels[ws.slug] ?? ws.name}</span>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            }
+
             const items = grouped[section];
             if (!items?.length) return null;
             return (
@@ -143,63 +264,131 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 )}
                 <ul className="space-y-0.5">
                   {items.map((item) => {
-                    const isActive =
-                      item.href === "/dashboard"
-                        ? pathname === "/dashboard"
+                    const hasChildren = item.children && item.children.length > 0;
+                    const isExpanded  = expandedItems[item.href] ?? false;
+
+                    const isActive = hasChildren
+                      ? pathname === item.href || pathname.startsWith(item.href + "/")
+                      : item.href === "/admin"
+                        ? pathname === "/admin"
                         : pathname.startsWith(item.href);
+
                     const Icon = item.icon;
+
                     return (
                       <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          onClick={() => onClose()}
-                          className={`
-                            flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
-                            transition-all duration-150 group
-                          `}
-                          style={
-                            isActive
-                              ? {
-                                  background: "rgba(59,110,245,0.22)",
-                                  color: "#ffffff",
-                                  boxShadow: "inset 2px 0 0 #3B6EF5",
+                        {hasChildren ? (
+                          <div>
+                            <button
+                              onClick={() => toggleExpand(item.href)}
+                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
+                              style={linkStyle(isActive)}
+                              onMouseEnter={(e) => {
+                                if (!isActive) {
+                                  e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                                  e.currentTarget.style.color = "#ffffff";
                                 }
-                              : {
-                                  color: "var(--rtm-sidebar-text)",
+                              }}
+                              onMouseLeave={(e) => {
+                                if (!isActive) {
+                                  e.currentTarget.style.background = "transparent";
+                                  e.currentTarget.style.color = "var(--rtm-sidebar-text)";
                                 }
-                          }
-                          onMouseEnter={(e) => {
-                            if (!isActive) {
-                              e.currentTarget.style.background = "rgba(255,255,255,0.07)";
-                              e.currentTarget.style.color = "#ffffff";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isActive) {
-                              e.currentTarget.style.background = "transparent";
-                              e.currentTarget.style.color = "var(--rtm-sidebar-text)";
-                            }
-                          }}
-                        >
-                          <span
-                            className="w-[18px] h-[18px] flex-shrink-0 flex items-center justify-center"
-                            style={{ color: isActive ? "#7AABFF" : "rgba(200,213,238,0.7)" }}
-                          >
-                            <Icon className="w-full h-full" />
-                          </span>
-                          <span className="truncate flex-1">{item.label}</span>
-                          {item.badge && (
-                            <span
-                              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
-                              style={{
-                                background: isActive ? "rgba(122,171,255,0.25)" : "rgba(27,79,216,0.35)",
-                                color: isActive ? "#BFDFFF" : "#93C5FD",
                               }}
                             >
-                              {item.badge}
+                              <span
+                                className="w-[18px] h-[18px] flex-shrink-0 flex items-center justify-center"
+                                style={{ color: iconColor(isActive) }}
+                              >
+                                <Icon className="w-full h-full" />
+                              </span>
+                              <Link
+                                href={item.href}
+                                onClick={(e) => { e.stopPropagation(); onClose(); }}
+                                className="truncate flex-1 text-left hover:underline"
+                              >
+                                {item.label}
+                              </Link>
+                              <IconChevronDown
+                                className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                              />
+                            </button>
+
+                            {isExpanded && (
+                              <ul className="mt-0.5 ml-[30px] space-y-0.5 border-l border-white/10 pl-3">
+                                {item.children!.map((child) => {
+                                  const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
+                                  return (
+                                    <li key={child.href}>
+                                      <Link
+                                        href={child.href}
+                                        onClick={() => onClose()}
+                                        className="block px-2 py-2 rounded-lg text-sm font-medium transition-all duration-150"
+                                        style={
+                                          isChildActive
+                                            ? { background: "rgba(59,110,245,0.22)", color: "#ffffff", boxShadow: "inset 2px 0 0 #3B6EF5" }
+                                            : { color: "var(--rtm-sidebar-text)" }
+                                        }
+                                        onMouseEnter={(e) => {
+                                          if (!isChildActive) {
+                                            e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                                            e.currentTarget.style.color = "#ffffff";
+                                          }
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          if (!isChildActive) {
+                                            e.currentTarget.style.background = "transparent";
+                                            e.currentTarget.style.color = "var(--rtm-sidebar-text)";
+                                          }
+                                        }}
+                                      >
+                                        {child.label}
+                                      </Link>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
+                          </div>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            onClick={() => onClose()}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"
+                            style={linkStyle(isActive)}
+                            onMouseEnter={(e) => {
+                              if (!isActive) {
+                                e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                                e.currentTarget.style.color = "#ffffff";
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isActive) {
+                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.color = "var(--rtm-sidebar-text)";
+                              }
+                            }}
+                          >
+                            <span
+                              className="w-[18px] h-[18px] flex-shrink-0 flex items-center justify-center"
+                              style={{ color: iconColor(isActive) }}
+                            >
+                              <Icon className="w-full h-full" />
                             </span>
-                          )}
-                        </Link>
+                            <span className="truncate flex-1">{item.label}</span>
+                            {item.badge && (
+                              <span
+                                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                                style={{
+                                  background: isActive ? "rgba(122,171,255,0.25)" : "rgba(27,79,216,0.35)",
+                                  color:      isActive ? "#BFDFFF" : "#93C5FD",
+                                }}
+                              >
+                                {item.badge}
+                              </span>
+                            )}
+                          </Link>
+                        )}
                       </li>
                     );
                   })}
