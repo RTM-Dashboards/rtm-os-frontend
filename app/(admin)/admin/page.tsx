@@ -98,6 +98,60 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* ── Admin quick nav ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[
+          {
+            href:        "/admin/users",
+            icon:        "👥",
+            title:       "Users",
+            description: "Manage team members, roles, and client assignments.",
+            accent:      "#1B4FD8",
+          },
+          {
+            href:        "/admin/workspaces",
+            icon:        "🏢",
+            title:       "Workspaces",
+            description: "View department workspaces, admins, member counts, and access matrix.",
+            accent:      "#059669",
+          },
+          {
+            href:        "/admin/settings",
+            icon:        "⚙️",
+            title:       "Settings",
+            description: "System config, role architecture, and permission matrix.",
+            accent:      "#7C3AED",
+          },
+        ].map((card) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className="group flex items-start gap-4 p-5 rounded-xl border transition-all duration-150"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = card.accent;
+              (e.currentTarget as HTMLAnchorElement).style.background   = `${card.accent}08`;
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--rtm-border)";
+              (e.currentTarget as HTMLAnchorElement).style.background   = "var(--rtm-surface)";
+            }}
+          >
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+              style={{ background: `${card.accent}18` }}
+            >
+              {card.icon}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{card.title}</p>
+              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "var(--rtm-text-secondary)" }}>{card.description}</p>
+              <p className="text-xs mt-2 font-semibold" style={{ color: card.accent }}>Open →</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+
       {/* ── Workspace grid ── */}
       <div
         className="rounded-xl border p-5"

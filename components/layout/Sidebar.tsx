@@ -46,6 +46,11 @@ const navItems: NavItem[] = [
   { label: "Admin Overview",      href: "/admin",              icon: IconDashboard, section: "overview" },
   { label: "Clients",             href: "/clients",            icon: IconUsers,     section: "overview" },
 
+  // ── Admin section ─────────────────────────────────────────────
+  { label: "Users",               href: "/admin/users",        icon: IconUsers,     section: "admin" },
+  { label: "Workspaces",          href: "/admin/workspaces",   icon: IconBuilding,  section: "admin" },
+  { label: "Admin Settings",      href: "/admin/settings",     icon: IconSettings,  section: "admin" },
+
   // ── Departments ───────────────────────────────────────────────
   { label: "Account Management",  href: "/account-management", icon: IconBuilding,  section: "departments" },
   { label: "Sales",               href: "/sales",              icon: IconTrending,  section: "departments", badge: "24" },
@@ -92,6 +97,7 @@ const navItems: NavItem[] = [
 
 const sectionLabels: Record<string, string> = {
   overview:    "",
+  admin:       "Admin",
   departments: "Departments",
   settings:    "",
 };
@@ -121,7 +127,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     return acc;
   }, {});
 
-  const sectionOrder = ["overview", "departments", "settings"];
+  const sectionOrder = ["overview", "admin", "departments", "settings"];
 
   const linkStyle = (isActive: boolean): React.CSSProperties =>
     isActive

@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { IconMenu, IconBell, IconSearch } from "./icons";
 
 const routeLabels: Record<string, { title: string; sub: string }> = {
@@ -28,8 +29,58 @@ interface TopNavProps {
   onMenuClick: () => void;
 }
 
+// Workspace slug → settings route map
+const workspaceSettingsRoutes: Record<string, string> = {
+  "account-management":    "/account-management/settings",
+  "sales":                  "/sales/settings",
+  "billing":                "/billing/settings",
+  "content":                "/content/settings",
+  "web-development-design": "/web-development-design/settings",
+  "seo-local":              "/seo-local/settings",
+  "paid-advertising":       "/paid-advertising/settings",
+  "reporting":              "/reporting/settings",
+  "local-service-ads":      "/local-service-ads/settings",
+  "it-security":            "/it-security/settings",
+};
+
+function getWorkspaceSettingsHref(pathname: string): string {
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return "/admin/settings";
+  for (const [slug, route] of Object.entries(workspaceSettingsRoutes)) {
+    if (pathname === "/" + slug || pathname.startsWith("/" + slug + "/")) return route;
+  }
+  // Default fallback
+  return "/settings";
+}
+
 export default function TopNav({ onMenuClick }: TopNavProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (avatarRef.current && !avatarRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [dropdownOpen]);
+
+  const workspaceSettingsHref = getWorkspaceSettingsHref(pathname);
+
+  // Avatar dropdown profile links always point to the account-management
+  // profile pages (confirmed working routes).
+  const profileLinks = [
+    { label: "My Profile",         href: "/account-management/profile" },
+    { label: "Team Members",        href: "/account-management/team-members" },
+    { label: "Roles & Permissions", href: "/account-management/roles" },
+  ];
+
   const pageKey = Object.keys(routeLabels).find(
     (k) => pathname === k || (k !== "/dashboard" && k !== "/admin" && pathname.startsWith(k))
   );
@@ -154,12 +205,87 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
           />
         </button>
 
-        {/* Avatar */}
-        <div
-          className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white"
-          style={{ background: "linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%)" }}
-        >
-          A
+        {/* Avatar + dropdown */}
+        <div className="relative" ref={avatarRef}>
+          <button
+            onClick={() => setDropdownOpen((v) => !v)}
+            className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white transition-opacity hover:opacity-80"
+            style={{ background: "linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%)" }}
+            aria-label="Account menu"
+            aria-haspopup="true"
+            aria-expanded={dropdownOpen}
+          >
+            A
+          </button>
+
+          {dropdownOpen && (
+            <div
+              className="absolute right-0 mt-2 w-56 rounded-xl shadow-lg py-1 z-50"
+              style={{
+                background: "#ffffff",
+                border: "1px solid var(--rtm-border)",
+                boxShadow: "0 8px 24px rgba(15,28,56,0.12)",
+              }}
+            >
+              {/* Profile header */}
+              <div
+                className="px-4 py-3 border-b"
+                style={{ borderColor: "var(--rtm-border)" }}
+              >
+                <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Admin User</p>
+                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>admin@rtmos.com</p>
+              </div>
+
+              {/* Menu items */}
+              <div className="py-1">
+                {profileLinks.map((item) => (
+                  <button
+                    key={item.href}
+                    onClick={() => { router.push(item.href); setDropdownOpen(false); }}
+                    className="w-full text-left px-4 py-2 text-sm transition-colors"
+                    style={{ color: "var(--rtm-text-primary)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rtm-blue-xlight)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+
+                {/* Workspace Settings — context-aware */}
+                <button
+                  onClick={() => { router.push(workspaceSettingsHref); setDropdownOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm transition-colors"
+                  style={{ color: "var(--rtm-text-primary)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rtm-blue-xlight)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  Workspace Settings
+                  <span
+                    className="block text-xs mt-0.5"
+                    style={{ color: "var(--rtm-text-muted)" }}
+                  >
+                    {workspaceSettingsHref}
+                  </span>
+                </button>
+              </div>
+
+              {/* Divider + Sign Out */}
+              <div
+                className="border-t pt-1"
+                style={{ borderColor: "var(--rtm-border)" }}
+              >
+                <button
+                  onClick={() => setDropdownOpen(false)}
+                  className="w-full text-left px-4 py-2 text-sm transition-colors"
+                  style={{ color: "#DC2626" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#FEF2F2")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
