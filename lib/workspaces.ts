@@ -18,8 +18,9 @@ export const workspaces: WorkspaceConfig[] = [
     role: "Account Managers",
     navItems: [
       { label: "Dashboard",          href: "/account-management",            icon: "📊" },
-      { label: "Client Onboarding", href: "/account-management/onboarding", icon: "🚀" },
-      { label: "Tasks",              href: "/account-management/tasks",      icon: "✅" },
+      { label: "Client Onboarding",  href: "/account-management/onboarding",     icon: "🚀" },
+      { label: "Centralized Tasks",   href: "/account-management/tasks-central", icon: "📋" },
+      { label: "Tasks",               href: "/account-management/tasks",          icon: "✅" },
       { label: "Clients",          href: "/account-management/clients",   icon: "👥" },
       { label: "Check-ins",        href: "/account-management/checkins",  icon: "📞" },
       { label: "Performance",      href: "/account-management/performance",icon: "📈" },
