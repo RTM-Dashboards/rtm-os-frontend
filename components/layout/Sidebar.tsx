@@ -52,9 +52,9 @@ const navItems: NavItem[] = [
   { label: "Admin Settings",      href: "/admin/settings",     icon: IconSettings,  section: "admin" },
 
   // ── Departments ───────────────────────────────────────────────
-  { label: "Account Management",  href: "/account-management", icon: IconBuilding,  section: "departments" },
   { label: "Sales",               href: "/sales",              icon: IconTrending,  section: "departments", badge: "24" },
   { label: "Billing",             href: "/billing",            icon: IconCreditCard,section: "departments" },
+  { label: "Account Management",  href: "/account-management", icon: IconBuilding,  section: "departments" },
   { label: "Content",             href: "/content",            icon: IconFile,      section: "departments" },
   {
     label: "Web Development & Design",

@@ -29,27 +29,52 @@ interface TopNavProps {
   onMenuClick: () => void;
 }
 
-// Workspace slug → settings route map
-const workspaceSettingsRoutes: Record<string, string> = {
-  "account-management":    "/account-management/settings",
-  "sales":                  "/sales/settings",
-  "billing":                "/billing/settings",
-  "content":                "/content/settings",
-  "web-development-design": "/web-development-design/settings",
-  "seo-local":              "/seo-local/settings",
-  "paid-advertising":       "/paid-advertising/settings",
-  "reporting":              "/reporting/settings",
-  "local-service-ads":      "/local-service-ads/settings",
-  "it-security":            "/it-security/settings",
-};
+const WORKSPACE_SLUGS = [
+  "account-management",
+  "sales",
+  "billing",
+  "content",
+  "web-development-design",
+  "seo-local",
+  "paid-advertising",
+  "reporting",
+  "local-service-ads",
+  "it-security",
+] as const;
 
-function getWorkspaceSettingsHref(pathname: string): string {
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) return "/admin/settings";
-  for (const [slug, route] of Object.entries(workspaceSettingsRoutes)) {
-    if (pathname === "/" + slug || pathname.startsWith("/" + slug + "/")) return route;
+function detectWorkspace(pathname: string): string | null {
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return "admin";
+  for (const slug of WORKSPACE_SLUGS) {
+    if (pathname === "/" + slug || pathname.startsWith("/" + slug + "/")) return slug;
   }
-  // Default fallback
-  return "/settings";
+  return null;
+}
+
+function getAvatarLinks(pathname: string): { label: string; href: string }[] {
+  const ws = detectWorkspace(pathname);
+  if (ws === "admin") {
+    return [
+      { label: "My Profile",         href: "/admin/profile" },
+      { label: "Team Members",        href: "/admin/users" },
+      { label: "Roles & Permissions", href: "/admin/users" },
+      { label: "Workspace Settings",  href: "/admin/settings" },
+    ];
+  }
+  if (ws) {
+    return [
+      { label: "My Profile",         href: `/${ws}/profile` },
+      { label: "Team Members",        href: `/${ws}/team-members` },
+      { label: "Roles & Permissions", href: `/${ws}/roles` },
+      { label: "Workspace Settings",  href: `/${ws}/settings` },
+    ];
+  }
+  // Fallback — no recognised workspace
+  return [
+    { label: "My Profile",         href: "/account-management/profile" },
+    { label: "Team Members",        href: "/account-management/team-members" },
+    { label: "Roles & Permissions", href: "/account-management/roles" },
+    { label: "Workspace Settings",  href: "/account-management/settings" },
+  ];
 }
 
 export default function TopNav({ onMenuClick }: TopNavProps) {
@@ -71,15 +96,8 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
     }
   }, [dropdownOpen]);
 
-  const workspaceSettingsHref = getWorkspaceSettingsHref(pathname);
-
-  // Avatar dropdown profile links always point to the account-management
-  // profile pages (confirmed working routes).
-  const profileLinks = [
-    { label: "My Profile",         href: "/account-management/profile" },
-    { label: "Team Members",        href: "/account-management/team-members" },
-    { label: "Roles & Permissions", href: "/account-management/roles" },
-  ];
+  const avatarLinks = getAvatarLinks(pathname);
+  const workspaceSettingsHref = avatarLinks.find((l) => l.label === "Workspace Settings")?.href ?? "/settings";
 
   const pageKey = Object.keys(routeLabels).find(
     (k) => pathname === k || (k !== "/dashboard" && k !== "/admin" && pathname.startsWith(k))
@@ -238,9 +256,9 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
 
               {/* Menu items */}
               <div className="py-1">
-                {profileLinks.map((item) => (
+                {avatarLinks.map((item) => (
                   <button
-                    key={item.href}
+                    key={item.label}
                     onClick={() => { router.push(item.href); setDropdownOpen(false); }}
                     className="w-full text-left px-4 py-2 text-sm transition-colors"
                     style={{ color: "var(--rtm-text-primary)" }}
@@ -250,23 +268,6 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
                     {item.label}
                   </button>
                 ))}
-
-                {/* Workspace Settings — context-aware */}
-                <button
-                  onClick={() => { router.push(workspaceSettingsHref); setDropdownOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-sm transition-colors"
-                  style={{ color: "var(--rtm-text-primary)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rtm-blue-xlight)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                >
-                  Workspace Settings
-                  <span
-                    className="block text-xs mt-0.5"
-                    style={{ color: "var(--rtm-text-muted)" }}
-                  >
-                    {workspaceSettingsHref}
-                  </span>
-                </button>
               </div>
 
               {/* Divider + Sign Out */}

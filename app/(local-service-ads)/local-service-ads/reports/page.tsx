@@ -1,43 +1,46 @@
-"use client";
+import DeptReportPage from "@/components/reporting/DeptReportPage";
+import { lsaDeptReports } from "@/lib/reporting/mock-data";
+import { SectionWrapper } from "@/components/ui";
 
-import Link from "next/link";
-import { SectionWrapper, StatusBadge } from "@/components/ui";
-import { getWorkspace } from "@/lib/workspaces";
-
-const workspace = getWorkspace("local-service-ads")!;
-
-const reports = [
-  { title: "May LSA Report — Apex Roofing",    client: "Apex Roofing",  date: "Jun 5",  status: "success" as const, label: "Delivered"   },
-  { title: "Q2 LSA Review — Pacific Dental",   client: "Pacific Dental",date: "Jun 8",  status: "pending" as const, label: "Pending"     },
-  { title: "LSA Performance — Harbor Auto",    client: "Harbor Auto",   date: "Jun 9",  status: "pending" as const, label: "Pending"     },
-  { title: "Monthly Summary — Summit",         client: "Summit",        date: "Jun 7",  status: "warning" as const, label: "Overdue"     },
+const kpis = [
+  { title: "Reports This Month",  value: "4",      iconBg: "#FFFBEB", iconColor: "#B45309" },
+  { title: "Sent",                value: "1",      trend: "up" as const, trendValue: "1",  iconBg: "#ECFDF5", iconColor: "#059669" },
+  { title: "Needs Revision",      value: "1",      iconBg: "#FEF2F2", iconColor: "#DC2626" },
+  { title: "In Progress / Draft", value: "2",      iconBg: "#EFF6FF", iconColor: "#2563EB" },
 ];
 
-export default function LsaReportsPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>{workspace.name}</p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>LSA Reports</h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>LSA performance and lead quality reports.</p>
-      </div>
-      <SectionWrapper title="LSA Reports" description={`${reports.length} reports`}>
-        <div className="space-y-2">
-          {reports.map((r) => (
-            <div key={r.title} className="flex items-center justify-between p-3 rounded-lg border" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)" }}>
-              <div>
-                <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{r.title}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{r.client} · Due {r.date}</p>
-              </div>
-              <StatusBadge variant={r.status} label={r.label} size="sm" />
-            </div>
-          ))}
+const kpiSections = (
+  <SectionWrapper title="LSA Report Data Points" description="Metrics included in each LSA department report">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {[
+        { label: "Leads",                desc: "Total LSA leads for the reporting period" },
+        { label: "Calls",                desc: "Calls received via LSA profile" },
+        { label: "Booked Leads",         desc: "Confirmed bookings from LSA leads" },
+        { label: "Disputed Leads",       desc: "Leads submitted for dispute resolution" },
+        { label: "Lead Quality",         desc: "Qualified lead percentage and quality score" },
+        { label: "Budget Pacing",        desc: "Monthly budget usage rate and projection" },
+        { label: "Service Area Coverage",desc: "Geographic coverage and impression share" },
+      ].map((item) => (
+        <div key={item.label} className="p-3 rounded-lg border" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{item.label}</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{item.desc}</p>
         </div>
-      </SectionWrapper>
-      <div className="flex gap-2">
-        <Link href={workspace.dashboardRoute} className="rtm-btn-secondary text-sm inline-flex items-center gap-1">← Dashboard</Link>
-        <Link href={workspace.tasksRoute}     className="rtm-btn-primary  text-sm inline-flex items-center gap-1">Tasks →</Link>
-      </div>
+      ))}
     </div>
+  </SectionWrapper>
+);
+
+export default function LSAReportsPage() {
+  return (
+    <DeptReportPage
+      title="LSA Reports"
+      description="Local Service Ads report management — source data for Reporting Workspace."
+      accent="#B45309"
+      dept="LSA"
+      reports={lsaDeptReports}
+      kpis={kpis}
+      reportingWorkspaceHref="/reporting/lsa"
+      kpiSections={kpiSections}
+    />
   );
 }
