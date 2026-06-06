@@ -22,6 +22,7 @@ export const workspaces: WorkspaceConfig[] = [
       { label: "Account Assignments", href: "/account-management/assignments" },
       { label: "Centralized Tasks", href: "/account-management/tasks-central" },
       { label: "Client Health", href: "/account-management/client-health" },
+      { label: "Renewals", href: "/account-management/renewals" },
       { label: "Tasks",               href: "/account-management/tasks"},
       { label: "Clients",          href: "/account-management/clients"},
       { label: "Check-ins",        href: "/account-management/checkins"},
