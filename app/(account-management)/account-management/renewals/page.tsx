@@ -36,19 +36,23 @@ const renewalRows = [
 ];
 
 const upsellRows = [
-  { client: "Apex Digital", currentService: "SEO, PPC", recommended: "Add Reporting", expectedRevenue: "$6,000/yr", confidence: 88, priority: "High", assignedAM: "Sarah Chen" },
-  { client: "CloudPath Solutions", currentService: "PPC, GBP", recommended: "Add Content Marketing", expectedRevenue: "$12,000/yr", confidence: 76, priority: "Medium", assignedAM: "Priya Nair" },
-  { client: "Frontier Brands", currentService: "SEO, PPC", recommended: "Add Social Media", expectedRevenue: "$9,600/yr", confidence: 91, priority: "High", assignedAM: "Marcus Lee" },
-  { client: "HorizonTech", currentService: "SEO, Reporting", recommended: "Add GBP Management", expectedRevenue: "$4,800/yr", confidence: 82, priority: "Medium", assignedAM: "Jordan Wells" },
-  { client: "EdgeMark Media", currentService: "Social", recommended: "Add PPC", expectedRevenue: "$18,000/yr", confidence: 69, priority: "Low", assignedAM: "Sarah Chen" },
-  { client: "GrowthLab Co", currentService: "GBP", recommended: "Upgrade to Full Local SEO", expectedRevenue: "$8,400/yr", confidence: 57, priority: "Low", assignedAM: "Priya Nair" },
+  { client: "Apex Digital", currentServices: "SEO, PPC", recommended: "GBP + Content Marketing", reason: "SEO client with no local presence or content strategy", expectedRevenue: "$750/mo", confidence: 88, priority: "High", assignedAM: "Sarah Chen", nextAction: "Schedule upsell call" },
+  { client: "CloudPath Solutions", currentServices: "PPC, GBP", recommended: "Landing Pages + Call Tracking", reason: "Meta Ads client needs dedicated landing pages to improve conversion", expectedRevenue: "$1,100/mo", confidence: 76, priority: "Medium", assignedAM: "Priya Nair", nextAction: "Send landing page proposal" },
+  { client: "Frontier Brands", currentServices: "LSA", recommended: "GBP + Review Management", reason: "LSA client missing GMB presence and review generation strategy", expectedRevenue: "$600/mo", confidence: 91, priority: "High", assignedAM: "Marcus Lee", nextAction: "Present GBP package" },
+  { client: "HorizonTech", currentServices: "Google Ads", recommended: "Reporting + Conversion Tracking", reason: "Google Ads client lacks attribution and reporting visibility", expectedRevenue: "$400/mo", confidence: 82, priority: "Medium", assignedAM: "Jordan Wells", nextAction: "Demo reporting dashboard" },
+  { client: "EdgeMark Media", currentServices: "Meta Ads, Social", recommended: "Landing Pages + Call Tracking", reason: "Meta Ads traffic has no dedicated conversion path", expectedRevenue: "$1,500/mo", confidence: 69, priority: "Medium", assignedAM: "Sarah Chen", nextAction: "Share landing page case study" },
+  { client: "GrowthLab Co", currentServices: "GBP", recommended: "GBP + Review Management", reason: "Client has GBP but no review generation or response management", expectedRevenue: "$700/mo", confidence: 57, priority: "Low", assignedAM: "Priya Nair", nextAction: "Add to review drip campaign" },
+  { client: "BrightScale Agency", currentServices: "SEO, Content", recommended: "GBP + Content", reason: "SEO client with no GBP optimization limiting local pack visibility", expectedRevenue: "$800/mo", confidence: 73, priority: "Medium", assignedAM: "Marcus Lee", nextAction: "Audit GBP profile" },
+  { client: "DeltaForge Inc", currentServices: "SEO", recommended: "GBP + Content Marketing", reason: "Underperforming SEO client — GBP and content would accelerate results", expectedRevenue: "$950/mo", confidence: 44, priority: "Low", assignedAM: "Jordan Wells", nextAction: "Hold health review first" },
 ];
 
 const revenueForecast = [
-  { label: "Monthly Forecast", value: "$124,500", growth: "+8.2%", note: "vs prior month", color: "text-emerald-600" },
-  { label: "Quarterly Forecast", value: "$368,200", growth: "+11.4%", note: "vs prior quarter", color: "text-blue-600" },
-  { label: "Annual Forecast", value: "$1.42M", growth: "+14.7%", note: "vs prior year", color: "text-violet-600" },
-  { label: "Upsell Forecast", value: "$318,000", growth: "+22.1%", note: "pipeline total", color: "text-amber-600" },
+  { label: "Monthly Renewal Forecast", value: "$124,500", growth: "+8.2%", note: "vs prior month", color: "text-emerald-600", icon: "📅" },
+  { label: "Quarterly Renewal Forecast", value: "$368,200", growth: "+11.4%", note: "vs prior quarter", color: "text-blue-600", icon: "📆" },
+  { label: "Annual Renewal Forecast", value: "$1.42M", growth: "+14.7%", note: "vs prior year", color: "text-violet-600", icon: "📊" },
+  { label: "Upsell Forecast", value: "$318,000", growth: "+22.1%", note: "pipeline total", color: "text-amber-600", icon: "🚀" },
+  { label: "Revenue At Risk", value: "$76,400", growth: "-5.3%", note: "churn risk clients", color: "text-red-600", icon: "⚠️" },
+  { label: "Expected Expansion Revenue", value: "$212,800", growth: "+18.6%", note: "upsell + upgrades", color: "text-sky-600", icon: "📈" },
 ];
 
 const aiInsights = [
@@ -385,12 +389,14 @@ export default function RenewalsPage() {
               <tr className="border-b border-slate-100 bg-slate-50 text-left">
                 {[
                   "Client",
-                  "Current Service",
+                  "Current Services",
                   "Recommended Service",
-                  "Expected Revenue",
+                  "Reason",
+                  "Expected Monthly Revenue",
                   "Confidence Score",
                   "Priority",
                   "Assigned AM",
+                  "Next Action",
                 ].map((h) => (
                   <th
                     key={h}
@@ -411,10 +417,13 @@ export default function RenewalsPage() {
                     {u.client}
                   </td>
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                    {u.currentService}
+                    {u.currentServices}
                   </td>
                   <td className="px-4 py-3 text-violet-700 font-medium whitespace-nowrap">
                     {u.recommended}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 max-w-[220px]">
+                    <span className="block leading-snug">{u.reason}</span>
                   </td>
                   <td className="px-4 py-3 font-semibold text-emerald-700 whitespace-nowrap">
                     {u.expectedRevenue}
@@ -432,6 +441,14 @@ export default function RenewalsPage() {
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
                     {u.assignedAM}
                   </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <button
+                      onClick={() => showToast(`Next action: ${u.nextAction} — ${u.client}`)}
+                      className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 hover:bg-violet-100 transition-colors"
+                    >
+                      {u.nextAction}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -444,16 +461,21 @@ export default function RenewalsPage() {
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
           Revenue Forecast
         </h2>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
           {revenueForecast.map((f) => (
             <div
               key={f.label}
               className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
             >
-              <p className="text-xs text-slate-500 mb-1">{f.label}</p>
+              <div className="mb-2 flex items-center gap-1.5">
+                <span className="text-base">{f.icon}</span>
+                <p className="text-xs text-slate-500 leading-snug">{f.label}</p>
+              </div>
               <p className={`text-2xl font-bold ${f.color}`}>{f.value}</p>
               <div className="mt-2 flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-emerald-600">{f.growth}</span>
+                <span className={`text-xs font-semibold ${f.growth.startsWith("-") ? "text-red-500" : "text-emerald-600"}`}>
+                  {f.growth}
+                </span>
                 <span className="text-xs text-slate-400">{f.note}</span>
               </div>
             </div>
@@ -463,9 +485,14 @@ export default function RenewalsPage() {
 
       {/* ── 6. AI Renewal Insights ────────────────────────────────────────── */}
       <section>
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">
-          AI Renewal Insights
-        </h2>
+        <div className="mb-3 flex items-center gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
+            AI Renewal Insights
+          </h2>
+          <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700">
+            AI-Powered
+          </span>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {aiInsights.map((ins) => (
             <div
@@ -511,19 +538,21 @@ export default function RenewalsPage() {
           </p>
           <div className="flex flex-wrap gap-3">
             {[
-              { label: "Start Renewal", style: "bg-blue-600 text-white hover:bg-blue-700" },
-              { label: "Schedule Renewal Meeting", style: "bg-violet-600 text-white hover:bg-violet-700" },
-              { label: "Create Upsell Opportunity", style: "bg-emerald-600 text-white hover:bg-emerald-700" },
-              { label: "Generate Renewal Summary", style: "bg-amber-600 text-white hover:bg-amber-700" },
-              { label: "Send Proposal", style: "bg-sky-600 text-white hover:bg-sky-700" },
-              { label: "Mark Renewed", style: "bg-green-600 text-white hover:bg-green-700" },
-              { label: "Escalate Risk", style: "bg-red-600 text-white hover:bg-red-700" },
+              { label: "Start Renewal", style: "bg-blue-600 text-white hover:bg-blue-700", icon: "▶️" },
+              { label: "Schedule Renewal Meeting", style: "bg-violet-600 text-white hover:bg-violet-700", icon: "📅" },
+              { label: "Create Upsell Opportunity", style: "bg-emerald-600 text-white hover:bg-emerald-700", icon: "🚀" },
+              { label: "Generate Renewal Summary", style: "bg-amber-600 text-white hover:bg-amber-700", icon: "📋" },
+              { label: "Send Proposal", style: "bg-sky-600 text-white hover:bg-sky-700", icon: "📤" },
+              { label: "Mark Renewed", style: "bg-green-600 text-white hover:bg-green-700", icon: "✅" },
+              { label: "Escalate Risk", style: "bg-red-600 text-white hover:bg-red-700", icon: "⚠️" },
+              { label: "Open Client Health", style: "bg-slate-700 text-white hover:bg-slate-800", icon: "❤️" },
             ].map((btn) => (
               <button
                 key={btn.label}
                 onClick={() => showToast(`${btn.label} initiated.`)}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors shadow-sm ${btn.style}`}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold transition-colors shadow-sm ${btn.style}`}
               >
+                <span>{btn.icon}</span>
                 {btn.label}
               </button>
             ))}
