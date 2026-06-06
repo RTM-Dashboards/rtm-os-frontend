@@ -9,6 +9,101 @@ import {
   type AMRole,
 } from "@/lib/am-role-mock-data";
 
+// ── Reporting Health Mock Data ────────────────────────────────────────────────
+
+const reportingHealthData = [
+  {
+    id: "rh-1",
+    client: "Apex Roofing",
+    assignedAM: "Jordan M.",
+    lastReportSent: "Nov 5, 2024",
+    nextReportDue: "Jan 20, 2025",
+    reportStatus: "Drafting",
+    qaStatus: "Pending",
+    amReviewStatus: "Not Started",
+    reportingRisk: "Low",
+    healthImpact: "None — on schedule",
+  },
+  {
+    id: "rh-2",
+    client: "Pacific Dental",
+    assignedAM: "Jordan M.",
+    lastReportSent: "Nov 8, 2024",
+    nextReportDue: "Jan 22, 2025",
+    reportStatus: "QA Review",
+    qaStatus: "In Review",
+    amReviewStatus: "Not Started",
+    reportingRisk: "Low",
+    healthImpact: "None — progressing normally",
+  },
+  {
+    id: "rh-3",
+    client: "Sunbelt HVAC",
+    assignedAM: "Sarah K.",
+    lastReportSent: "Oct 15, 2024",
+    nextReportDue: "Jan 10, 2025",
+    reportStatus: "Overdue",
+    qaStatus: "Not Started",
+    amReviewStatus: "Not Started",
+    reportingRisk: "Critical",
+    healthImpact: "Report overdue — client health score reduced by 12 points",
+  },
+  {
+    id: "rh-4",
+    client: "Harbor Auto Group",
+    assignedAM: "Mike T.",
+    lastReportSent: "Oct 10, 2024",
+    nextReportDue: "Jan 25, 2025",
+    reportStatus: "AM Review",
+    qaStatus: "Approved",
+    amReviewStatus: "Pending",
+    reportingRisk: "Medium",
+    healthImpact: "AM review overdue creates client communication risk",
+  },
+  {
+    id: "rh-5",
+    client: "Metro Dental",
+    assignedAM: "Sarah K.",
+    lastReportSent: "Dec 5, 2024",
+    nextReportDue: "Jan 18, 2025",
+    reportStatus: "Ready To Send",
+    qaStatus: "Approved",
+    amReviewStatus: "Approved",
+    reportingRisk: "None",
+    healthImpact: "None — report ready",
+  },
+  {
+    id: "rh-6",
+    client: "Green Valley Pools",
+    assignedAM: "Alex R.",
+    lastReportSent: "Nov 20, 2024",
+    nextReportDue: "Jan 15, 2025",
+    reportStatus: "Dept Input",
+    qaStatus: "Not Started",
+    amReviewStatus: "Not Started",
+    reportingRisk: "High",
+    healthImpact: "Missing Meta Ads input creates reporting risk — client communication delayed",
+  },
+];
+
+const riskBadge = (risk: string) => {
+  if (risk === "Critical") return "bg-red-100 text-red-700 border border-red-200";
+  if (risk === "High")     return "bg-orange-100 text-orange-700 border border-orange-200";
+  if (risk === "Medium")   return "bg-yellow-100 text-yellow-700 border border-yellow-200";
+  if (risk === "Low")      return "bg-blue-100 text-blue-700 border border-blue-200";
+  return "bg-green-100 text-green-700 border border-green-200";
+};
+
+const reportStatusBadge = (s: string) => {
+  if (s === "Overdue")        return "bg-red-100 text-red-700";
+  if (s === "Dept Input")     return "bg-amber-100 text-amber-700";
+  if (s === "AM Review" || s === "QA Review") return "bg-violet-100 text-violet-700";
+  if (s === "Drafting")       return "bg-blue-100 text-blue-700";
+  if (s === "Ready To Send")  return "bg-teal-100 text-teal-700";
+  if (s === "Sent")           return "bg-green-100 text-green-700";
+  return "bg-slate-100 text-slate-500";
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function statusBadge(status: string) {
@@ -183,6 +278,84 @@ function HeadView() {
         </div>
       </section>
 
+      {/* ── Reporting Health Section (Head View) ────────────────────────────── */}
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-6 py-4">
+          <h2 className="text-lg font-bold text-slate-900">Reporting Health</h2>
+          <p className="text-sm text-slate-500">
+            Reporting status across all clients — how reporting health affects overall client health scores.
+          </p>
+        </div>
+
+        {/* Reporting Health KPIs */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-5">
+          {[
+            { label: "Reports On Track",    value: reportingHealthData.filter((r) => r.reportingRisk === "None" || r.reportingRisk === "Low").length, color: "text-green-700",  bg: "bg-green-50",  border: "border-green-200"  },
+            { label: "Reporting At Risk",   value: reportingHealthData.filter((r) => r.reportingRisk === "High" || r.reportingRisk === "Critical").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
+            { label: "AM Review Pending",   value: reportingHealthData.filter((r) => r.amReviewStatus === "Pending" || r.amReviewStatus === "Not Started").length, color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
+            { label: "Reports Overdue",     value: reportingHealthData.filter((r) => r.reportStatus === "Overdue").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
+          ].map(({ label, value, color, bg, border }) => (
+            <div key={label} className={`rounded-xl border ${border} ${bg} p-3`}>
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{label}</p>
+              <p className={`mt-1 text-2xl font-bold ${color}`}>{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Reporting Health Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-slate-50">
+              <tr>
+                {["Client", "Account Manager", "Last Report Sent", "Next Report Due", "Report Status", "QA Status", "AM Review Status", "Reporting Risk", "Impact On Client Health"].map((h) => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {reportingHealthData.map((row) => (
+                <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">{row.client}</td>
+                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{row.assignedAM}</td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{row.lastReportSent}</td>
+                  <td className="px-4 py-3 text-blue-700 whitespace-nowrap text-xs font-semibold">{row.nextReportDue}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${reportStatusBadge(row.reportStatus)}`}>{row.reportStatus}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${reportStatusBadge(row.qaStatus)}`}>{row.qaStatus}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${reportStatusBadge(row.amReviewStatus)}`}>{row.amReviewStatus}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${riskBadge(row.reportingRisk)}`}>{row.reportingRisk}</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{row.healthImpact}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Example scenarios */}
+        <div className="p-5 border-t border-slate-100">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Reporting Health Examples</p>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[
+              { title: "Report Overdue → Health Score Impact",       detail: "Sunbelt HVAC report is 10+ days overdue. Client health score reduced by 12 points. Client communication at risk.",           color: "border-red-200 bg-red-50"    },
+              { title: "Missing Dept Input → Reporting Risk",        detail: "Green Valley Pools: Meta Ads input missing due to ad account access issue. Reporting blocked — risk flagged.",            color: "border-orange-200 bg-orange-50"},
+              { title: "AM Review Overdue → Communication Risk",     detail: "Harbor Auto Group: AM review pending 5+ days. Report cannot be sent until AM approves. Client expects delivery Jan 25.",  color: "border-amber-200 bg-amber-50" },
+            ].map(({ title, detail, color }) => (
+              <div key={title} className={`rounded-xl border p-4 ${color}`}>
+                <p className="text-xs font-bold text-slate-800 mb-1">{title}</p>
+                <p className="text-xs text-slate-600">{detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* AM Portfolio Health Comparison */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-6 py-4">
@@ -302,6 +475,55 @@ function AMView() {
         </div>
         <div className="px-6 py-3 border-t border-slate-100">
           <p className="text-xs text-slate-400 italic">You can only see health records for your own assigned clients.</p>
+        </div>
+      </section>
+
+      {/* ── Reporting Health Section (AM View) ─────────────────────────────── */}
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-6 py-4">
+          <h2 className="text-lg font-bold text-slate-900">Reporting Health</h2>
+          <p className="text-sm text-slate-500">
+            Reporting status and health impact for your assigned clients.
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-slate-50">
+              <tr>
+                {["Client", "Last Report Sent", "Next Report Due", "Report Status", "QA Status", "AM Review Status", "Reporting Risk", "Impact On Client Health"].map((h) => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {reportingHealthData.filter((r) => r.assignedAM === SARAH).map((row) => (
+                <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">{row.client}</td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{row.lastReportSent}</td>
+                  <td className="px-4 py-3 text-blue-700 whitespace-nowrap text-xs font-semibold">{row.nextReportDue}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${reportStatusBadge(row.reportStatus)}`}>{row.reportStatus}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${reportStatusBadge(row.qaStatus)}`}>{row.qaStatus}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${reportStatusBadge(row.amReviewStatus)}`}>{row.amReviewStatus}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${riskBadge(row.reportingRisk)}`}>{row.reportingRisk}</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-600">{row.healthImpact}</td>
+                </tr>
+              ))}
+              {reportingHealthData.filter((r) => r.assignedAM === SARAH).length === 0 && (
+                <tr><td colSpan={8} className="px-4 py-6 text-center text-slate-400">No reporting data for your clients.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-6 py-3 border-t border-slate-100">
+          <p className="text-xs text-slate-400 italic">Showing reporting health for your assigned clients only.</p>
         </div>
       </section>
 
