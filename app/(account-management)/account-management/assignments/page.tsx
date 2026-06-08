@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { RoleToggle } from "@/components/am-role-toggle";
 import {
   ALL_ASSIGNMENTS,
@@ -362,6 +362,41 @@ export default function AssignmentsPage() {
         <h1 className="text-2xl font-bold text-slate-900">Account Assignments</h1>
         <p className="text-sm text-slate-500 mt-1">
           Manage client-to-AM assignments, workload balancing, and reassignment workflows.
+        </p>
+      </div>
+
+      {/* Client Lifecycle Status */}
+      <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">Client Lifecycle Status — Assignments</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          {[
+            { stage: "Ready For Assignment", owner: "Billing",            active: true,  color: "#10B981", textC: "#fff" },
+            { stage: "Assigned",             owner: "Account Management", active: true,  color: "#3B82F6", textC: "#fff" },
+            { stage: "Onboarding",           owner: "Account Management", active: false, color: "#ECFDF5", textC: "#065F46" },
+            { stage: "Service Activation",   owner: "Account Management", active: false, color: "#ECFDF5", textC: "#065F46" },
+            { stage: "Department Launch",    owner: "Account Management", active: false, color: "#ECFDF5", textC: "#065F46" },
+            { stage: "Active",               owner: "Account Management", active: false, color: "#ECFDF5", textC: "#065F46" },
+          ].map((s, i, arr) => (
+            <React.Fragment key={s.stage}>
+              <div
+                className="px-2.5 py-1 rounded-lg text-xs font-bold border"
+                style={{
+                  background: s.active ? s.color : "#fff",
+                  color: s.active ? s.textC : "#94A3B8",
+                  borderColor: s.active ? s.color : "#E2E8F0",
+                }}
+              >
+                {s.stage}
+              </div>
+              {i < arr.length - 1 && <span className="text-slate-300">→</span>}
+            </React.Fragment>
+          ))}
+        </div>
+        <p className="text-xs font-semibold text-indigo-700">
+          ⚠️ Assignment only occurs for clients with <strong>Ready For Assignment</strong> status (Billing-confirmed).
+          Sales handoff → Billing → <strong>Ready For Assignment</strong> → AM Assignment begins here.
         </p>
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { RoleToggle } from "@/components/am-role-toggle";
 import {
   ALL_ONBOARDING,
@@ -349,6 +349,42 @@ export default function AccountManagementOnboardingPage() {
         <h1 className="text-2xl font-bold text-slate-900">Client Onboarding</h1>
         <p className="text-sm text-slate-500 mt-1">
           Manage each client through Sales Closed → Intake → Service Activation → Department Launch → Complete.
+        </p>
+      </div>
+
+      {/* Client Lifecycle Status */}
+      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Client Lifecycle Status</p>
+          <div className="flex gap-2">
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200">Sales</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-violet-50 text-violet-700 border-violet-200">Billing</span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">Account Management</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-1">
+          {["Lead","Opportunity","Proposal","Contract","Closed Won","Sent To Billing","Invoice Sent","Awaiting Payment","Payment Confirmed","Activation Approved","Ready For Assignment","Assigned","Onboarding","Service Activation","Department Launch","Active","Renewal Triggered","QBR Scheduled","Renewal Negotiation","Renewed"].map((stage, i, arr) => {
+            const amStages = ["Assigned","Onboarding","Service Activation","Department Launch","Active","Renewal Triggered","QBR Scheduled","Renewal Negotiation","Renewed"];
+            const billingStages = ["Invoice Sent","Awaiting Payment","Payment Confirmed","Activation Approved","Ready For Assignment"];
+            const isAM = amStages.includes(stage);
+            const isBilling = billingStages.includes(stage);
+            const isOnboarding = stage === "Onboarding";
+            const bg = isOnboarding ? "#8B5CF6" : isAM ? "#ECFDF5" : isBilling ? "#F5F3FF" : "#EFF6FF";
+            const color = isOnboarding ? "#fff" : isAM ? "#065F46" : isBilling ? "#6D28D9" : "#1D4ED8";
+            const border = isOnboarding ? "#8B5CF6" : isAM ? "#A7F3D0" : isBilling ? "#DDD6FE" : "#BFDBFE";
+            const opacity = isAM ? 1 : 0.45;
+            return (
+              <React.Fragment key={stage}>
+                <div className="px-2 py-0.5 rounded text-[10px] font-semibold border" style={{ background: bg, color, borderColor: border, opacity }}>
+                  {stage}
+                </div>
+                {i < arr.length - 1 && <span className="text-[10px] text-slate-300">→</span>}
+              </React.Fragment>
+            );
+          })}
+        </div>
+        <p className="text-xs font-semibold text-indigo-700">
+          ⚠️ Onboarding begins only after <strong>Ready For Assignment</strong> is confirmed by Billing.
         </p>
       </div>
 

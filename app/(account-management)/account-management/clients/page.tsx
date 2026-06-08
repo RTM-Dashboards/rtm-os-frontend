@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 
@@ -58,6 +58,78 @@ const paymentVariant = (s: string) => {
   return "error" as const;
 };
 const onboardingVariant = (s: string) => s === "Complete" ? "success" as const : "info" as const;
+
+// ── Client Lifecycle Engine ──────────────────────────────────────────────────
+
+const CLC_STAGES = [
+  { stage: "Lead",                   owner: "Sales",              color: "#94A3B8" },
+  { stage: "Opportunity",            owner: "Sales",              color: "#2563EB" },
+  { stage: "Proposal",               owner: "Sales",              color: "#7C3AED" },
+  { stage: "Contract",               owner: "Sales",              color: "#0891B2" },
+  { stage: "Closed Won",             owner: "Sales",              color: "#059669" },
+  { stage: "Sent To Billing",        owner: "Sales",              color: "#D97706" },
+  { stage: "Invoice Sent",           owner: "Billing",            color: "#6366F1" },
+  { stage: "Awaiting Payment",       owner: "Billing",            color: "#8B5CF6" },
+  { stage: "Payment Confirmed",      owner: "Billing",            color: "#059669" },
+  { stage: "Activation Approved",    owner: "Billing",            color: "#0EA5E9" },
+  { stage: "Ready For Assignment",   owner: "Billing",            color: "#10B981" },
+  { stage: "Assigned",               owner: "Account Management", color: "#3B82F6" },
+  { stage: "Onboarding",             owner: "Account Management", color: "#6366F1" },
+  { stage: "Service Activation",     owner: "Account Management", color: "#8B5CF6" },
+  { stage: "Department Launch",      owner: "Account Management", color: "#A855F7" },
+  { stage: "Active",                 owner: "Account Management", color: "#059669" },
+  { stage: "Renewal Triggered",      owner: "Account Management", color: "#D97706" },
+  { stage: "QBR Scheduled",          owner: "Account Management", color: "#0891B2" },
+  { stage: "Renewal Negotiation",    owner: "Account Management", color: "#F59E0B" },
+  { stage: "Renewed",                owner: "Account Management", color: "#059669" },
+] as const;
+
+const CLC_OWNER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  "Sales":              { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
+  "Billing":            { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE" },
+  "Account Management": { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0" },
+};
+
+function ClientLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
+  const active = activeStages ?? [];
+  return (
+    <div className="rounded-xl border p-4 space-y-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Client Lifecycle Status Engine</p>
+        <div className="flex gap-2">
+          {Object.entries(CLC_OWNER_COLORS).map(([owner, c]) => (
+            <span key={owner} className="text-[10px] font-semibold px-2 py-0.5 rounded-full border" style={{ background: c.bg, color: c.text, borderColor: c.border }}>{owner}</span>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-1">
+        {CLC_STAGES.map((s, i) => {
+          const c = CLC_OWNER_COLORS[s.owner];
+          const isActive = active.includes(s.stage);
+          return (
+            <React.Fragment key={s.stage}>
+              <div
+                className="px-2 py-0.5 rounded text-[10px] font-semibold border"
+                style={{
+                  background: isActive ? s.color : c.bg,
+                  color: isActive ? "#fff" : c.text,
+                  borderColor: isActive ? s.color : c.border,
+                  opacity: active.length === 0 || isActive ? 1 : 0.5,
+                }}
+              >
+                {s.stage}
+              </div>
+              {i < CLC_STAGES.length - 1 && <span className="text-[10px]" style={{ color: "var(--rtm-border)" }}>→</span>}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <p className="text-xs font-semibold" style={{ color: "#065F46" }}>
+        ⚠️ Account Management starts only after <strong>Ready For Assignment</strong> (Billing-confirmed).
+      </p>
+    </div>
+  );
+}
 
 // ─── Selected Client Mock ─────────────────────────────────────────────────────
 
@@ -184,6 +256,14 @@ export default function AccountClientsPage() {
           Single source of truth for all client management — portfolio, health, services, tasks, and renewals.
         </p>
       </div>
+
+      {/* ── Client Lifecycle Status ─────────────────────────────────────────── */}
+      <section aria-label="Client Lifecycle Status">
+        <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+          Client Lifecycle Status
+        </h2>
+        <ClientLifecycleEngine activeStages={["Assigned","Onboarding","Service Activation","Department Launch","Active","Renewal Triggered","QBR Scheduled","Renewal Negotiation","Renewed"]} />
+      </section>
 
       {/* ── SECTION 1 — Client Portfolio Overview ───────────────────────────── */}
       <section aria-label="Client Portfolio Overview">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { RoleToggle } from "@/components/am-role-toggle";
 import {
   ALL_CLIENTS,
@@ -14,6 +14,83 @@ import {
   getWorkloadSummary,
   type AMRole,
 } from "@/lib/am-role-mock-data";
+
+// ── Client Lifecycle Engine (AM module) ──────────────────────────────────────
+
+const AM_LIFECYCLE_STAGES = [
+  { stage: "Lead",                   owner: "Sales",              color: "#94A3B8" },
+  { stage: "Opportunity",            owner: "Sales",              color: "#2563EB" },
+  { stage: "Proposal",               owner: "Sales",              color: "#7C3AED" },
+  { stage: "Contract",               owner: "Sales",              color: "#0891B2" },
+  { stage: "Closed Won",             owner: "Sales",              color: "#059669" },
+  { stage: "Sent To Billing",        owner: "Sales",              color: "#D97706" },
+  { stage: "Invoice Sent",           owner: "Billing",            color: "#6366F1" },
+  { stage: "Awaiting Payment",       owner: "Billing",            color: "#8B5CF6" },
+  { stage: "Payment Confirmed",      owner: "Billing",            color: "#059669" },
+  { stage: "Activation Approved",    owner: "Billing",            color: "#0EA5E9" },
+  { stage: "Ready For Assignment",   owner: "Billing",            color: "#10B981" },
+  { stage: "Assigned",               owner: "Account Management", color: "#3B82F6" },
+  { stage: "Onboarding",             owner: "Account Management", color: "#6366F1" },
+  { stage: "Service Activation",     owner: "Account Management", color: "#8B5CF6" },
+  { stage: "Department Launch",      owner: "Account Management", color: "#A855F7" },
+  { stage: "Active",                 owner: "Account Management", color: "#059669" },
+  { stage: "Renewal Triggered",      owner: "Account Management", color: "#D97706" },
+  { stage: "QBR Scheduled",          owner: "Account Management", color: "#0891B2" },
+  { stage: "Renewal Negotiation",    owner: "Account Management", color: "#F59E0B" },
+  { stage: "Renewed",                owner: "Account Management", color: "#059669" },
+] as const;
+
+const AM_OWNER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  "Sales":              { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
+  "Billing":            { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE" },
+  "Account Management": { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0" },
+};
+
+function AMLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
+  const active = activeStages ?? [];
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Client Lifecycle Status Engine</p>
+        <div className="flex gap-2">
+          {Object.entries(AM_OWNER_COLORS).map(([owner, c]) => (
+            <span key={owner} className="text-[10px] font-semibold px-2 py-0.5 rounded-full border" style={{ background: c.bg, color: c.text, borderColor: c.border }}>{owner}</span>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-1">
+        {AM_LIFECYCLE_STAGES.map((s, i) => {
+          const c = AM_OWNER_COLORS[s.owner];
+          const isActive = active.includes(s.stage);
+          return (
+            <React.Fragment key={s.stage}>
+              <div
+                className="px-2 py-1 rounded-lg text-[10px] font-semibold border"
+                style={{
+                  background: isActive ? s.color : c.bg,
+                  color: isActive ? "#fff" : c.text,
+                  borderColor: isActive ? s.color : c.border,
+                  opacity: active.length === 0 || isActive ? 1 : 0.5,
+                }}
+              >
+                {s.stage}
+              </div>
+              {i < AM_LIFECYCLE_STAGES.length - 1 && (
+                <span className="text-[10px] text-slate-300">→</span>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+      <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-2">
+        <p className="text-xs font-semibold text-indigo-800">
+          ⚠️ Account Management starts only after <strong>Ready For Assignment</strong> (confirmed by Billing).
+          AM owns: Assigned → Onboarding → Service Activation → Department Launch → Active → Renewal Triggered → QBR Scheduled → Renewal Negotiation → Renewed.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
@@ -181,6 +258,9 @@ function HeadView() {
           <KpiCard label="Revenue At Risk" value={`$${Math.round(revenueAtRisk / 100) * 100 / 1000 < 1 ? Math.round(revenueAtRisk) : (revenueAtRisk / 1000).toFixed(1) + "K"}/mo`} color="text-red-700" bg="bg-red-50" border="border-red-200" />
         </div>
       </section>
+
+      {/* ── 0. Client Lifecycle Engine ─────────────────────────────────────────── */}
+      <AMLifecycleEngine activeStages={["Assigned","Onboarding","Service Activation","Department Launch","Active","Renewal Triggered","QBR Scheduled","Renewal Negotiation","Renewed"]} />
 
       {/* ── 2. AM Workload Summary ───────────────────────────────────────────── */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -458,6 +538,9 @@ function AMView() {
         </div>
       </section>
 
+      {/* ── 0b. Client Lifecycle Engine ────────────────────────────────────────── */}
+      <AMLifecycleEngine activeStages={["Assigned","Onboarding","Service Activation","Department Launch","Active","Renewal Triggered","QBR Scheduled","Renewal Negotiation","Renewed"]} />
+
       {/* ── 2. My Client Portfolio ───────────────────────────────────────────── */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <SectionHeader title="My Client Portfolio" subtitle={`All clients assigned to ${SARAH}. Other AM portfolios are not visible in this view.`} />
@@ -675,6 +758,9 @@ export default function AccountManagementDashboard() {
         <h1 className="text-2xl font-bold text-slate-900">Account Management Dashboard</h1>
         <p className="text-sm text-slate-500 mt-1">
           Executive command center — portfolio KPIs, AM workload, client health, renewals, tasks, and AI insights.
+          <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
+            AM starts after Ready For Assignment
+          </span>
         </p>
       </div>
 
