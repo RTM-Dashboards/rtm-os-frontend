@@ -2,7 +2,8 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { IconMenu, IconBell, IconSearch } from "./icons";
+import { IconMenu, IconSearch } from "./icons";
+import NotificationBell from "./NotificationBell";
 
 const routeLabels: Record<string, { title: string; sub: string }> = {
   "/admin":              { title: "Overview",             sub: "All departments at a glance" },
@@ -23,6 +24,7 @@ const routeLabels: Record<string, { title: string; sub: string }> = {
   "/it-security":        { title: "IT & Security",        sub: "Infrastructure, access & monitoring" },
   "/settings":           { title: "Settings",             sub: "Platform configuration & preferences" },
   "/clients":            { title: "Clients",              sub: "Client accounts & portfolios" },
+  "/notifications":      { title: "Notifications",        sub: "Alerts, tasks & workflow events" },
 };
 
 interface TopNavProps {
@@ -210,18 +212,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
         </div>
 
         {/* Notification bell */}
-        <button
-          className="relative p-2 rounded-lg transition-colors"
-          style={{ color: "var(--rtm-text-secondary)" }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rtm-blue-xlight)")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-        >
-          <IconBell className="w-[18px] h-[18px]" />
-          <span
-            className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full ring-2 ring-white"
-            style={{ background: "var(--rtm-blue)" }}
-          />
-        </button>
+        <NotificationBell />
 
         {/* Avatar + dropdown */}
         <div className="relative" ref={avatarRef}>

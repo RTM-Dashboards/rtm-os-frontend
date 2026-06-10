@@ -19,7 +19,9 @@ import {
   IconSettings,
   IconX,
   IconUsers,
+  IconCheckSquare,
 } from "./icons";
+import { NOTIFICATIONS } from "@/lib/notifications";
 
 interface NavItem {
   label: string;
@@ -37,19 +39,30 @@ const IconChevronDown = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// ── Icon: Bell ────────────────────────────────────────────────────
+const IconBellSidebar = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+  </svg>
+);
+
 // ── Nav definition ────────────────────────────────────────────────
 // Main navigation — clean, no duplicates.
 // Departments with sub-sections expose nested links only.
 // Task pages live inside each workspace, not here.
 const navItems: NavItem[] = [
   // ── Overview & global ─────────────────────────────────────────
-  { label: "Admin Overview",      href: "/admin",              icon: IconDashboard, section: "overview" },
-  { label: "Clients",             href: "/clients",            icon: IconUsers,     section: "overview" },
+  { label: "Admin Overview",      href: "/admin",              icon: IconDashboard,    section: "overview" },
+  { label: "Clients",             href: "/clients",            icon: IconUsers,        section: "overview" },
+  { label: "Tasks",               href: "/tasks",              icon: IconCheckSquare,  section: "overview", badge: "124" },
+  { label: "Notifications",       href: "/notifications",      icon: IconBellSidebar,  section: "overview" },
 
   // ── Admin section ─────────────────────────────────────────────
-  { label: "Users",               href: "/admin/users",        icon: IconUsers,     section: "admin" },
-  { label: "Workspaces",          href: "/admin/workspaces",   icon: IconBuilding,  section: "admin" },
-  { label: "Admin Settings",      href: "/admin/settings",     icon: IconSettings,  section: "admin" },
+  { label: "Users",               href: "/admin/users",        icon: IconUsers,        section: "admin" },
+  { label: "Workspaces",          href: "/admin/workspaces",   icon: IconBuilding,     section: "admin" },
+  { label: "Workflow Engine",     href: "/admin/workflows",    icon: IconCheckSquare,  section: "admin" },
+  { label: "Admin Settings",      href: "/admin/settings",     icon: IconSettings,     section: "admin" },
 
   // ── Departments ───────────────────────────────────────────────
   { label: "Sales",               href: "/sales",              icon: IconTrending,  section: "departments", badge: "24" },
@@ -109,6 +122,12 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
+
+  // Live notification badge count
+  const notifUnread = NOTIFICATIONS.filter(
+    (n) => n.status === "Unread" || n.status === "Escalated"
+  ).length;
+  const notifBadge = notifUnread >= 100 ? "99+" : notifUnread > 0 ? String(notifUnread) : undefined;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => ({
     "/seo-local":                true,
@@ -321,8 +340,23 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                             >
                               <Icon className="w-full h-full" />
                             </span>
-                            <span className="truncate flex-1">{item.label}</span>
-                            {item.badge && (
+                            <span className="truncate flex-1">
+                              {item.href === "/notifications" && notifBadge
+                                ? `Notifications`
+                                : item.label}
+                            </span>
+                            {/* Dynamic notifications badge */}
+                            {item.href === "/notifications" && notifBadge ? (
+                              <span
+                                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                                style={{
+                                  background: isActive ? "rgba(239,68,68,0.25)" : "rgba(220,38,38,0.75)",
+                                  color:      isActive ? "#FECACA" : "#FFFFFF",
+                                }}
+                              >
+                                {notifBadge}
+                              </span>
+                            ) : item.badge ? (
                               <span
                                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"
                                 style={{
@@ -332,7 +366,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                               >
                                 {item.badge}
                               </span>
-                            )}
+                            ) : null}
                           </Link>
                         )}
                       </li>

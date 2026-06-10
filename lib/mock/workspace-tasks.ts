@@ -29,8 +29,11 @@ export const salesTasks: WorkspaceTask[] = [
   mkTask("sa-3", "Update pipeline stage — Metro Dental", "Metro Dental",       "Jordan M.", "medium", "open",        "Jun 7"),
   mkTask("sa-4", "Discovery call — Cascade Flooring",    "Cascade Flooring",   "Sarah K.",  "medium", "in-progress", "Jun 5"),
   mkTask("sa-5", "Contract sent — Sunstate Solar",       "Sunstate Solar",     "Sarah K.",  "high",   "done",        "Jun 1"),
-  mkTask("sa-6", "CRM data cleanup",                     "—",                  "Alex R.",   "low",    "open",        "Jun 9"),
-  mkTask("sa-7", "Win/loss analysis — Q1",               "—",                  "Mike T.",   "low",    "done",        "Jun 2"),
+  mkTask("sa-6", "CRM data cleanup",                                    "—",                   "Alex R.",   "low",    "open",        "Jun 9"),
+  mkTask("sa-7", "Win/loss analysis — Q1",                               "—",                   "Mike T.",   "low",    "done",        "Jun 2"),
+  mkTask("sa-8", "Affiliate Follow-Up — Brandon Ellis (new referrals)",  "—",                   "Jordan M.", "high",   "open",        "Jun 8"),
+  mkTask("sa-9", "Commission Review — Lisa Park (Coastal Wellness Spa)",  "Coastal Wellness Spa", "Sarah K.",  "medium", "open",        "Jun 9"),
+  mkTask("sa-10","Referral Verification — Tyler Nguyen lead",            "Blue Ridge Plumbing",  "Mike T.",   "medium", "open",        "Jun 10"),
 ];
 
 // ── Billing ───────────────────────────────────────────────────────────────────

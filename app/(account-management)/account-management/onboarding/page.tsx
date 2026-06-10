@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 import { RoleToggle } from "@/components/am-role-toggle";
 import {
   ALL_ONBOARDING,
@@ -50,6 +51,16 @@ function HeadView() {
 
   return (
     <div className="space-y-6">
+
+      {/* ── Task Management Engine Banner ── */}
+      <TaskAccessCard
+        context="Account Management"
+        variant="banner"
+        counters={{ open: 18, overdue: 4, dueToday: 7, completed: 53 }}
+        createLabel="Create AM Task"
+        examples={["Check-In", "QBR", "Client Follow-Up", "Renewal Prep", "Onboarding Task"]}
+      />
+
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[

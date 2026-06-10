@@ -4,6 +4,7 @@ import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge, ActivityFeed, AlertBanner, QuickActions, TeamWidget, MiniSparkline, DonutChart } from "@/components/ui";
 import type { ActivityItem, AlertItem, QuickAction, TeamMember } from "@/components/ui";
 import { workspaces } from "@/lib/workspaces";
+import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 
 const sparkData = [42, 45, 40, 48, 52, 50, 55, 58, 61, 59, 64, 68];
 
@@ -97,6 +98,13 @@ export default function AdminPage() {
           </button>
         </div>
       </div>
+
+      {/* ── Task Management Engine card ── */}
+      <TaskAccessCard
+        context="Dashboard"
+        counters={{ open: 47, overdue: 8, dueToday: 12, completed: 67, upcoming: 23 }}
+        examples={["Follow-up call", "Create invoice", "Assign AM", "Schedule kickoff", "Renewal review"]}
+      />
 
       {/* ── Admin quick nav ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

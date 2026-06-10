@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
+import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 
 const workspace = getWorkspace("account-management")!;
 
@@ -244,6 +245,16 @@ export default function AccountClientsPage() {
 
   return (
     <div className="space-y-8">
+
+      {/* ── Task Management Engine Banner ── */}
+      <TaskAccessCard
+        context="Account Management"
+        variant="banner"
+        counters={{ open: 18, overdue: 4, dueToday: 7, completed: 53 }}
+        createLabel="Create AM Task"
+        examples={["Check-In", "QBR", "Client Follow-Up", "Renewal Prep", "Onboarding Task"]}
+      />
+
       {/* Page Header */}
       <div>
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>

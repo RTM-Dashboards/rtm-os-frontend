@@ -90,67 +90,589 @@ function ClientLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
   );
 }
 
-// ── Sales Billing Handoff Checklist ──────────────────────────────────────────
+// ── Billing Handoff Readiness (per-lead) ─────────────────────────────────────
 
-const BILLING_HANDOFF_CHECKLIST = [
+const HANDOFF_CHECKLIST_ITEMS = [
   "Proposal accepted",
   "Contract signed",
   "Services sold confirmed",
   "Contract value confirmed",
   "Setup fee confirmed",
   "Billing notes added",
+  "Billing contact confirmed",
   "Sent to Billing",
+] as const;
+
+type HandoffChecklistItem = (typeof HANDOFF_CHECKLIST_ITEMS)[number];
+
+type HandoffStage =
+  | "Proposal Approved"
+  | "Handoff Incomplete"
+  | "Ready to Send"
+  | "Sent to Billing"
+  | "Billing Requested"
+  | "Invoice Created"
+  | "Invoice Sent"
+  | "Invoice Paid"
+  | "Ready for Activation";
+
+interface HandoffDeal {
+  id: string;
+  client: string;
+  proposalName: string;
+  proposalStatus: string;
+  dealValue: string;
+  salesRep: string;
+  checkedItems: HandoffChecklistItem[];
+  handoffStage: HandoffStage;
+  billingNotes: string;
+  nextAction: string;
+  slug: string;
+}
+
+const HANDOFF_MOCK_DEALS: HandoffDeal[] = [
+  {
+    id: "hd-1",
+    client: "Pacific Fitness Centers",
+    proposalName: "Pacific Fitness – Full Service Package",
+    proposalStatus: "Accepted",
+    dealValue: "$54,000 total ($4,500/mo × 12 mo)",
+    salesRep: "Jordan M.",
+    checkedItems: [],
+    handoffStage: "Proposal Approved",
+    billingNotes: "",
+    nextAction: "Begin handoff checklist — proposal just accepted.",
+    slug: "pacific-fitness-centers",
+  },
+  {
+    id: "hd-2",
+    client: "Lakewood Veterinary Clinic",
+    proposalName: "Lakewood Vet – SEO Growth Package",
+    proposalStatus: "Accepted",
+    dealValue: "$10,750 total ($1,500/mo × 6 mo + $750 setup)",
+    salesRep: "Sarah K.",
+    checkedItems: ["Proposal accepted", "Contract signed", "Services sold confirmed"],
+    handoffStage: "Handoff Incomplete",
+    billingNotes: "",
+    nextAction: "Confirm contract value and setup fee with client.",
+    slug: "lakewood-veterinary-clinic",
+  },
+  {
+    id: "hd-3",
+    client: "NorthStar Roofing",
+    proposalName: "NorthStar Roofing – Local Domination",
+    proposalStatus: "Accepted",
+    dealValue: "$27,400 total ($2,200/mo × 12 mo + $1,000 setup)",
+    salesRep: "Mike T.",
+    checkedItems: [
+      "Proposal accepted",
+      "Contract signed",
+      "Services sold confirmed",
+      "Contract value confirmed",
+      "Setup fee confirmed",
+    ],
+    handoffStage: "Handoff Incomplete",
+    billingNotes: "",
+    nextAction: "Add billing notes and confirm billing contact before sending.",
+    slug: "northstar-roofing",
+  },
+  {
+    id: "hd-4",
+    client: "Elite Med Spa",
+    proposalName: "Elite Med Spa – MedSpa Growth Package",
+    proposalStatus: "Accepted",
+    dealValue: "$52,200 total ($4,200/mo × 12 mo + $1,800 setup)",
+    salesRep: "Jordan M.",
+    checkedItems: [
+      "Proposal accepted",
+      "Contract signed",
+      "Services sold confirmed",
+      "Contract value confirmed",
+      "Setup fee confirmed",
+      "Billing notes added",
+      "Billing contact confirmed",
+      "Sent to Billing",
+    ],
+    handoffStage: "Ready to Send",
+    billingNotes: "Net 30 terms. Primary billing contact: Dr. A. Patel (billing@elitemedspa.com).",
+    nextAction: "Send to Billing — all items complete.",
+    slug: "elite-med-spa",
+  },
+  {
+    id: "hd-5",
+    client: "ABC Plumbing",
+    proposalName: "ABC Plumbing – Home Services Growth",
+    proposalStatus: "Accepted",
+    dealValue: "$47,600 total ($3,800/mo × 12 mo + $1,600 setup)",
+    salesRep: "Sarah K.",
+    checkedItems: [
+      "Proposal accepted",
+      "Contract signed",
+      "Services sold confirmed",
+      "Contract value confirmed",
+      "Setup fee confirmed",
+      "Billing notes added",
+      "Billing contact confirmed",
+      "Sent to Billing",
+    ],
+    handoffStage: "Sent to Billing",
+    billingNotes: "Billing contact: Tom Briggs (tom@abcplumbing.com). Auto-pay authorized.",
+    nextAction: "Billing team to confirm receipt and create invoice.",
+    slug: "abc-plumbing",
+  },
+  {
+    id: "hd-6",
+    client: "Sunridge Dental",
+    proposalName: "Sunridge Dental – Local Domination Package",
+    proposalStatus: "Accepted",
+    dealValue: "$27,400 total ($2,200/mo × 12 mo + $1,000 setup)",
+    salesRep: "Mike T.",
+    checkedItems: [
+      "Proposal accepted",
+      "Contract signed",
+      "Services sold confirmed",
+      "Contract value confirmed",
+      "Setup fee confirmed",
+      "Billing notes added",
+      "Billing contact confirmed",
+      "Sent to Billing",
+    ],
+    handoffStage: "Ready for Activation",
+    billingNotes: "Invoice paid in full. Activation approved.",
+    nextAction: "Hand off to Account Management for onboarding.",
+    slug: "sunridge-dental",
+  },
 ];
 
-function BillingHandoffChecklist({ client }: { client?: string }) {
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const toggle = (item: string) => setChecked((p) => ({ ...p, [item]: !p[item] }));
-  const completed = BILLING_HANDOFF_CHECKLIST.filter((i) => checked[i]).length;
-  const allDone = completed === BILLING_HANDOFF_CHECKLIST.length;
+function getHandoffReadiness(deal: HandoffDeal): { label: string; bg: string; color: string; border: string } {
+  const total = HANDOFF_CHECKLIST_ITEMS.length;
+  const done = deal.checkedItems.length;
+  if (deal.handoffStage === "Ready for Activation")
+    return { label: "Ready for Activation", bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" };
+  if (deal.handoffStage === "Sent to Billing" || deal.handoffStage === "Billing Requested" || deal.handoffStage === "Invoice Created" || deal.handoffStage === "Invoice Sent" || deal.handoffStage === "Invoice Paid")
+    return { label: "Sent to Billing", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
+  if (done === total)
+    return { label: "Ready to Send", bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
+  return { label: "Missing Requirements", bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" };
+}
+
+function getHandoffStageBadge(stage: HandoffStage): { bg: string; color: string; border: string } {
+  const map: Record<HandoffStage, { bg: string; color: string; border: string }> = {
+    "Proposal Approved":  { bg: "#F5F3FF", color: "#7C3AED", border: "#DDD6FE" },
+    "Handoff Incomplete": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
+    "Ready to Send":      { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
+    "Sent to Billing":    { bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE" },
+    "Billing Requested":  { bg: "#EFF6FF", color: "#0891B2", border: "#BAE6FD" },
+    "Invoice Created":    { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
+    "Invoice Sent":       { bg: "#FFF7ED", color: "#EA580C", border: "#FDBA74" },
+    "Invoice Paid":       { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" },
+    "Ready for Activation": { bg: "#F0FDF4", color: "#059669", border: "#6EE7B7" },
+  };
+  return map[stage];
+}
+
+function BillingHandoffReadiness() {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [deals, setDeals] = useState<HandoffDeal[]>(HANDOFF_MOCK_DEALS);
+
+  const toggleItem = (dealId: string, item: HandoffChecklistItem) => {
+    setDeals((prev) =>
+      prev.map((d) => {
+        if (d.id !== dealId) return d;
+        const already = d.checkedItems.includes(item);
+        const next = already
+          ? d.checkedItems.filter((i) => i !== item)
+          : [...d.checkedItems, item];
+        const allDone = next.length === HANDOFF_CHECKLIST_ITEMS.length;
+        const sentDone = next.includes("Sent to Billing");
+        let stage: HandoffStage = d.handoffStage;
+        if (d.handoffStage !== "Sent to Billing" && d.handoffStage !== "Billing Requested" &&
+            d.handoffStage !== "Invoice Created" && d.handoffStage !== "Invoice Sent" &&
+            d.handoffStage !== "Invoice Paid" && d.handoffStage !== "Ready for Activation") {
+          if (allDone) stage = "Ready to Send";
+          else if (sentDone) stage = "Sent to Billing";
+          else if (next.length > 0) stage = "Handoff Incomplete";
+          else stage = "Proposal Approved";
+        }
+        return { ...d, checkedItems: next, handoffStage: stage };
+      })
+    );
+  };
+
+  const readySummary = deals.filter(
+    (d) => d.checkedItems.length === HANDOFF_CHECKLIST_ITEMS.length && d.handoffStage === "Ready to Send"
+  ).length;
+  const sentSummary = deals.filter((d) => d.handoffStage === "Sent to Billing").length;
+  const incompleteSummary = deals.filter(
+    (d) => d.handoffStage === "Handoff Incomplete" || d.handoffStage === "Proposal Approved"
+  ).length;
+
   return (
-    <div className="rounded-xl border p-4 space-y-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
-          Billing Handoff Checklist{client ? ` — ${client}` : ""}
-        </p>
-        <span
-          className="text-xs font-semibold px-2.5 py-0.5 rounded-full border"
+    <div className="space-y-4">
+      {/* Summary bar */}
+      <div className="flex flex-wrap gap-3">
+        {[
+          { label: "Ready to Send", count: readySummary, bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
+          { label: "Sent to Billing", count: sentSummary, bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE" },
+          { label: "Incomplete", count: incompleteSummary, bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
+          { label: "Total Deals", count: deals.length, bg: "var(--rtm-surface)", color: "var(--rtm-text-primary)", border: "var(--rtm-border)" },
+        ].map(({ label, count, bg, color, border }) => (
+          <div key={label} className="flex items-center gap-2 px-3 py-2 rounded-lg border" style={{ background: bg, borderColor: border }}>
+            <span className="text-lg font-bold" style={{ color }}>{count}</span>
+            <span className="text-xs font-semibold" style={{ color }}>{label}</span>
+          </div>
+        ))}
+        <a
+          href="/sales/handoffs"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold ml-auto"
+          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+        >
+          Open Full Handoff Center →
+        </a>
+      </div>
+
+      {/* Deal rows */}
+      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+        {/* Table header */}
+        <div
+          className="grid text-[10px] font-bold uppercase tracking-widest px-4 py-2.5"
           style={{
-            background: allDone ? "#ECFDF5" : "#FFFBEB",
-            color: allDone ? "#065F46" : "#92400E",
-            borderColor: allDone ? "#A7F3D0" : "#FDE68A",
+            gridTemplateColumns: "minmax(140px,1.5fr) 90px minmax(140px,1.2fr) 90px 130px minmax(120px,1fr) 140px minmax(140px,1.2fr) 200px",
+            background: "var(--rtm-bg)",
+            borderBottom: "1px solid var(--rtm-border)",
+            color: "var(--rtm-text-muted)",
           }}
         >
-          {completed}/{BILLING_HANDOFF_CHECKLIST.length} complete
-        </span>
-      </div>
-      <div className="space-y-2">
-        {BILLING_HANDOFF_CHECKLIST.map((item) => (
-          <label key={item} className="flex items-center gap-3 cursor-pointer group">
-            <input
-              type="checkbox"
-              checked={!!checked[item]}
-              onChange={() => toggle(item)}
-              className="w-4 h-4 rounded accent-emerald-600"
-            />
-            <span
-              className="text-sm transition-all"
-              style={{ color: checked[item] ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)", textDecoration: checked[item] ? "line-through" : "none" }}
-            >
-              {item}
-            </span>
-            {checked[item] && <span className="text-xs text-emerald-600 font-semibold">✓</span>}
-          </label>
-        ))}
-      </div>
-      {allDone && (
-        <div className="rounded-lg p-3 text-sm font-semibold text-emerald-700" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0" }}>
-          ✅ Ready to send to Billing — all handoff items confirmed.
+          <span>Lead / Client</span>
+          <span>Proposal</span>
+          <span>Deal Value</span>
+          <span>Sales Rep</span>
+          <span>Handoff Readiness</span>
+          <span>Missing Items</span>
+          <span>Handoff Stage</span>
+          <span>Next Action</span>
+          <span>Actions</span>
         </div>
-      )}
+
+        {deals.map((deal, idx) => {
+          const total = HANDOFF_CHECKLIST_ITEMS.length;
+          const done = deal.checkedItems.length;
+          const missing = HANDOFF_CHECKLIST_ITEMS.filter((i) => !deal.checkedItems.includes(i));
+          const readiness = getHandoffReadiness(deal);
+          const stageBadge = getHandoffStageBadge(deal.handoffStage);
+          const isExpanded = expanded === deal.id;
+          const progressPct = Math.round((done / total) * 100);
+
+          return (
+            <div key={deal.id} style={{ borderBottom: idx < deals.length - 1 ? "1px solid var(--rtm-border)" : undefined }}>
+              {/* Main row */}
+              <div
+                className="grid items-center px-4 py-3 text-xs gap-x-2 hover:bg-slate-50/50 transition-colors"
+                style={{
+                  gridTemplateColumns: "minmax(140px,1.5fr) 90px minmax(140px,1.2fr) 90px 130px minmax(120px,1fr) 140px minmax(140px,1.2fr) 200px",
+                  background: idx % 2 === 0 ? "var(--rtm-surface)" : "var(--rtm-bg)",
+                }}
+              >
+                {/* Lead / Client */}
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{deal.client}</span>
+                  <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{deal.proposalName}</span>
+                </div>
+
+                {/* Proposal Status */}
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start mt-0.5"
+                  style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}
+                >
+                  {deal.proposalStatus}
+                </span>
+
+                {/* Deal Value */}
+                <span className="font-semibold text-xs" style={{ color: "#059669" }}>{deal.dealValue}</span>
+
+                {/* Sales Rep */}
+                <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{deal.salesRep}</span>
+
+                {/* Handoff Readiness */}
+                <div className="flex flex-col gap-1">
+                  <span
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start"
+                    style={{ background: readiness.bg, color: readiness.color, border: `1px solid ${readiness.border}` }}
+                  >
+                    {readiness.label}
+                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--rtm-border)" }}>
+                      <div
+                        className="h-1.5 rounded-full transition-all"
+                        style={{
+                          width: `${progressPct}%`,
+                          background: done === total ? "#059669" : done >= 5 ? "#D97706" : "#94A3B8",
+                        }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>
+                      {done}/{total}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Missing Items */}
+                <div className="flex flex-col gap-0.5">
+                  {missing.length === 0 ? (
+                    <span className="text-[10px] font-semibold" style={{ color: "#059669" }}>✓ All complete</span>
+                  ) : (
+                    missing.slice(0, 2).map((m) => (
+                      <span key={m} className="text-[10px]" style={{ color: "#D97706" }}>• {m}</span>
+                    ))
+                  )}
+                  {missing.length > 2 && (
+                    <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>+{missing.length - 2} more</span>
+                  )}
+                </div>
+
+                {/* Handoff Stage */}
+                <span
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start"
+                  style={{ background: stageBadge.bg, color: stageBadge.color, border: `1px solid ${stageBadge.border}` }}
+                >
+                  {deal.handoffStage}
+                </span>
+
+                {/* Next Action */}
+                <span className="text-[10px] italic" style={{ color: "var(--rtm-text-secondary)" }}>{deal.nextAction}</span>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
+                    style={{ background: "#F5F3FF", color: "#7C3AED", borderColor: "#DDD6FE" }}
+                    onClick={() => setExpanded((p) => (p === deal.id ? null : deal.id))}
+                  >
+                    {isExpanded ? "Hide ▲" : "Checklist ▼"}
+                  </button>
+                  <a
+                    href="/sales/handoffs"
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
+                    style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}
+                  >
+                    Handoff
+                  </a>
+                  <a
+                    href="/sales/proposals"
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
+                    style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}
+                  >
+                    Proposal
+                  </a>
+                  <a
+                    href={`/clients/${deal.slug}`}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
+                    style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+                  >
+                    Client
+                  </a>
+                  {done === total && deal.handoffStage === "Ready to Send" && (
+                    <button
+                      className="text-[10px] font-bold px-2 py-0.5 rounded border transition-all hover:opacity-80"
+                      style={{ background: "#D97706", color: "#fff", borderColor: "#D97706" }}
+                      onClick={() =>
+                        setDeals((prev) =>
+                          prev.map((d) =>
+                            d.id === deal.id ? { ...d, handoffStage: "Sent to Billing" as HandoffStage } : d
+                          )
+                        )
+                      }
+                    >
+                      Send →
+                    </button>
+                  )}
+                  <a
+                    href="/tasks"
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
+                    style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}
+                  >
+                    Task
+                  </a>
+                </div>
+              </div>
+
+              {/* Expanded checklist detail */}
+              {isExpanded && (
+                <div
+                  className="px-6 py-4 space-y-4"
+                  style={{ background: "#FAFBFF", borderTop: "1px solid var(--rtm-border)" }}
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Left: Deal info */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Deal Details</p>
+                      {[
+                        { label: "Client", value: deal.client },
+                        { label: "Proposal", value: deal.proposalName },
+                        { label: "Deal Value", value: deal.dealValue },
+                        { label: "Sales Rep", value: deal.salesRep },
+                        { label: "Handoff Stage", value: deal.handoffStage },
+                        { label: "Billing Notes", value: deal.billingNotes || "—" },
+                        { label: "Next Action", value: deal.nextAction },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex gap-2">
+                          <span className="text-[10px] font-semibold w-24 flex-shrink-0" style={{ color: "var(--rtm-text-muted)" }}>{label}</span>
+                          <span className="text-[10px]" style={{ color: "var(--rtm-text-primary)" }}>{value}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Right: Checklist */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Handoff Checklist</p>
+                        <span
+                          className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border"
+                          style={{
+                            background: done === total ? "#ECFDF5" : "#FFFBEB",
+                            color: done === total ? "#059669" : "#D97706",
+                            borderColor: done === total ? "#A7F3D0" : "#FDE68A",
+                          }}
+                        >
+                          {done}/{total} complete
+                        </span>
+                      </div>
+                      {HANDOFF_CHECKLIST_ITEMS.map((item) => {
+                        const checked = deal.checkedItems.includes(item);
+                        return (
+                          <label key={item} className="flex items-center gap-2.5 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleItem(deal.id, item)}
+                              className="w-3.5 h-3.5 rounded accent-emerald-600"
+                            />
+                            <span
+                              className="text-xs transition-all"
+                              style={{
+                                color: checked ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)",
+                                textDecoration: checked ? "line-through" : "none",
+                              }}
+                            >
+                              {item}
+                            </span>
+                            {checked && <span className="text-[10px] text-emerald-600 font-semibold">✓</span>}
+                          </label>
+                        );
+                      })}
+                      {done === total && (
+                        <div className="rounded-lg p-2.5 mt-2 text-xs font-semibold text-emerald-700" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0" }}>
+                          ✅ All checklist items complete — ready to send to Billing.
+                        </div>
+                      )}
+                      {missing.length > 0 && (
+                        <div className="rounded-lg p-2.5 mt-2" style={{ background: "#FFFBEB", border: "1px solid #FDE68A" }}>
+                          <p className="text-[10px] font-bold mb-1" style={{ color: "#D97706" }}>Missing Items ({missing.length})</p>
+                          {missing.map((m) => (
+                            <p key={m} className="text-[10px]" style={{ color: "#92400E" }}>• {m}</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Row action buttons */}
+                  <div className="flex flex-wrap gap-2 pt-1 border-t" style={{ borderColor: "var(--rtm-border)" }}>
+                    {[
+                      { label: "Open Handoff",         href: "/sales/handoffs",            bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE" },
+                      { label: "Open Proposal",        href: "/sales/proposals",            bg: "#F5F3FF", color: "#7C3AED", border: "#DDD6FE" },
+                      { label: `Open Client`,          href: `/clients/${deal.slug}`,       bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
+                      { label: "Create Task",          href: "/tasks",                     bg: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", border: "var(--rtm-border)" },
+                    ].map(({ label, href, bg, color, border }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+                        style={{ background: bg, color, borderColor: border }}
+                      >
+                        {label}
+                      </a>
+                    ))}
+                    <button
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+                      style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+                      onClick={() => alert(`[Mock] Add Note — ${deal.client}`)}
+                    >
+                      Add Note
+                    </button>
+                    {done === total && deal.handoffStage === "Ready to Send" && (
+                      <button
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+                        style={{ background: "#D97706", color: "#fff", borderColor: "#D97706" }}
+                        onClick={() =>
+                          setDeals((prev) =>
+                            prev.map((d) =>
+                              d.id === deal.id ? { ...d, handoffStage: "Sent to Billing" as HandoffStage } : d
+                            )
+                          )
+                        }
+                      >
+                        → Send to Billing
+                      </button>
+                    )}
+                    {deal.handoffStage !== "Ready to Send" && missing.length > 0 && (
+                      <button
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+                        style={{ background: "#FFFBEB", color: "#D97706", borderColor: "#FDE68A" }}
+                        onClick={() => alert(`[Mock] Complete Missing Items — ${deal.client}`)}
+                      >
+                        Complete Missing Items
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+        This widget shows summary visibility only. For full billing operations, open the{" "}
+        <a href="/sales/handoffs" className="underline" style={{ color: "#2563EB" }}>Handoff Center</a>.
+      </p>
     </div>
   );
 }
+
+// ── Affiliate Types & Mock Data ──────────────────────────────────────────────
+
+interface AffiliateKPI {
+  activeAffiliates: number;
+  referralLeads: number;
+  referralRevenue: string;
+  pendingCommissions: string;
+}
+
+interface TopAffiliate extends Record<string, unknown> {
+  affiliate: string;
+  referralCount: number;
+  wonDeals: number;
+  revenueGenerated: string;
+  pendingCommission: string;
+  status: "Active" | "Inactive" | "Pending";
+}
+
+const affiliateKPI: AffiliateKPI = {
+  activeAffiliates: 8,
+  referralLeads: 14,
+  referralRevenue: "$42,800/mo",
+  pendingCommissions: "$3,640",
+};
+
+const topAffiliates: TopAffiliate[] = [
+  { affiliate: "Brandon Ellis (Ellis Consulting)",  referralCount: 5, wonDeals: 3, revenueGenerated: "$14,400/mo", pendingCommission: "$1,440", status: "Active" },
+  { affiliate: "Maria Santos (Santos Partners)",    referralCount: 4, wonDeals: 2, revenueGenerated: "$9,600/mo",  pendingCommission: "$960",   status: "Active" },
+  { affiliate: "Tyler Nguyen (Nguyen Agency)",      referralCount: 3, wonDeals: 2, revenueGenerated: "$8,800/mo",  pendingCommission: "$880",   status: "Active" },
+  { affiliate: "Lisa Park (Park Marketing Group)",  referralCount: 3, wonDeals: 1, revenueGenerated: "$6,000/mo",  pendingCommission: "$360",   status: "Active" },
+  { affiliate: "Carlos Reyes (Reyes Digital)",      referralCount: 2, wonDeals: 1, revenueGenerated: "$4,000/mo",  pendingCommission: "—",      status: "Active" },
+];
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -236,6 +758,9 @@ interface BillingHandoff extends Record<string, unknown> {
   billingStatus: BillingHandoffStatus;
   handoffNotes: string;
   nextAction: string;
+  referralSource: string;
+  affiliateName: string;
+  commissionEligible: boolean;
 }
 
 // ── New Phase 2 Types ─────────────────────────────────────────────────────────
@@ -565,6 +1090,9 @@ const billingHandoffs: BillingHandoff[] = [
     billingStatus: "Billing Accepted",
     handoffNotes: "Kickoff scheduled Jun 1. PM assigned.",
     nextAction: "Send onboarding docs",
+    referralSource: "Direct",
+    affiliateName: "—",
+    commissionEligible: false,
   },
   {
     client: "Harbor Auto Group",
@@ -575,6 +1103,9 @@ const billingHandoffs: BillingHandoff[] = [
     billingStatus: "Sent To Billing",
     handoffNotes: "Contract signed. Awaiting billing confirmation.",
     nextAction: "Billing team to confirm receipt",
+    referralSource: "Direct",
+    affiliateName: "—",
+    commissionEligible: false,
   },
   {
     client: "Metro Dental Group",
@@ -585,6 +1116,35 @@ const billingHandoffs: BillingHandoff[] = [
     billingStatus: "Ready For Billing",
     handoffNotes: "Verbal agreement confirmed. Contract pending signature.",
     nextAction: "Send contract for signature",
+    referralSource: "Affiliate",
+    affiliateName: "Maria Santos",
+    commissionEligible: false,
+  },
+  {
+    client: "Coastal Wellness Spa",
+    servicesSold: "SEO, GBP, Meta Ads, Reporting",
+    contractValue: "$45,600 total",
+    proposalStatus: "Accepted",
+    contractStatus: "Active",
+    billingStatus: "Billing Accepted",
+    handoffNotes: "Invoice paid. Commission eligibility triggered.",
+    nextAction: "Process affiliate commission for Lisa Park",
+    referralSource: "Affiliate",
+    affiliateName: "Lisa Park",
+    commissionEligible: true,
+  },
+  {
+    client: "Summit Landscaping",
+    servicesSold: "SEO, GBP, Reporting",
+    contractValue: "$28,800 total",
+    proposalStatus: "Accepted",
+    contractStatus: "Active",
+    billingStatus: "Billing Accepted",
+    handoffNotes: "Invoice paid. Commission eligibility triggered for Brandon Ellis.",
+    nextAction: "Process affiliate commission for Brandon Ellis",
+    referralSource: "Affiliate",
+    affiliateName: "Brandon Ellis",
+    commissionEligible: true,
   },
 ];
 
@@ -844,15 +1404,41 @@ const closedWonColumns: Column<ClosedWonRecord>[] = [
 
 const billingHandoffColumns: Column<BillingHandoff>[] = [
   { key: "client",          header: "Client",            width: "150px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "servicesSold",    header: "Services Sold",     width: "230px", render: (v) => <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{String(v)}</span> },
-  { key: "contractValue",   header: "Contract Value",    width: "120px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
+  { key: "servicesSold",    header: "Services Sold",     width: "200px", render: (v) => <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{String(v)}</span> },
+  { key: "contractValue",   header: "Contract Value",    width: "110px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
+  {
+    key: "referralSource", header: "Referral Source", width: "120px",
+    render: (v) => {
+      const c = String(v) === "Affiliate" ? "#059669" : "#2563EB";
+      return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${c}15`, color: c }}>{String(v)}</span>;
+    },
+  },
+  {
+    key: "affiliateName", header: "Affiliate", width: "130px",
+    render: (v) => {
+      const s = String(v);
+      if (s === "—") return <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</span>;
+      return <span className="text-xs font-semibold" style={{ color: "#059669" }}>{s}</span>;
+    },
+  },
+  {
+    key: "commissionEligible", header: "Commission", width: "120px",
+    render: (v) =>
+      v ? (
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
+          ✓ Eligible
+        </span>
+      ) : (
+        <span className="text-[10px] font-semibold" style={{ color: "var(--rtm-text-muted)" }}>—</span>
+      ),
+  },
   { key: "proposalStatus",  header: "Proposal Status",   width: "120px", render: (v) => <StatusBadge variant={proposalStatusVariant(v as ProposalStatus)} label={String(v)} size="sm" /> },
   { key: "contractStatus",  header: "Contract Status",   width: "120px", render: (v) => <StatusBadge variant={contractStatusVariant(v as ContractStatus)} label={String(v)} size="sm" /> },
   {
     key: "billingStatus", header: "Billing Status", width: "150px",
     render: (v) => <StatusBadge variant={billingStatusVariant(v as BillingHandoffStatus)} label={String(v)} size="sm" />,
   },
-  { key: "handoffNotes", header: "Handoff Notes", width: "220px", render: (v) => <span className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>{String(v)}</span> },
+  { key: "handoffNotes", header: "Handoff Notes", width: "200px", render: (v) => <span className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>{String(v)}</span> },
   { key: "nextAction",   header: "Next Action",   width: "190px", render: (v) => <span className="text-xs font-medium" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
 ];
 
@@ -1051,12 +1637,15 @@ export default function SalesDashboard() {
         <ClientLifecycleEngine activeStages={["Lead","Opportunity","Proposal","Contract","Closed Won","Sent To Billing"]} />
       </SectionWrapper>
 
-      {/* ── Billing Handoff Checklist ─────────────────────────────────────── */}
+      {/* ── Billing Handoff Readiness ─────────────────────────────────────── */}
       <SectionWrapper
-        title="Billing Handoff Checklist"
-        description="Complete before sending any closed-won deal to Billing. Sales is responsible for all items below."
+        title="Billing Handoff Readiness"
+        description="Track approved proposals and confirm each deal is ready to send to Billing."
+        actions={
+          <a href="/sales/handoffs" className="rtm-btn-secondary text-sm">Open Handoff Center →</a>
+        }
       >
-        <BillingHandoffChecklist />
+        <BillingHandoffReadiness />
       </SectionWrapper>
 
       {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
@@ -1116,6 +1705,78 @@ export default function SalesDashboard() {
           icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
         />
       </div>
+
+      {/* ── Affiliate KPI Cards ─────────────────────────────────────── */}
+      <SectionWrapper
+        title="Affiliate Program Overview"
+        description="Referral pipeline driven by active affiliates and partner channels"
+        actions={
+          <a href="/sales/affiliates" className="rtm-btn-secondary text-sm">Manage Affiliates →</a>
+        }
+      >
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
+          <KpiCard
+            title="Active Affiliates"
+            value={String(affiliateKPI.activeAffiliates)}
+            trend="up" trendValue="2"
+            iconBg="#F0FDF4" iconColor="#16A34A"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+          />
+          <KpiCard
+            title="Referral Leads"
+            value={String(affiliateKPI.referralLeads)}
+            trend="up" trendValue="3"
+            iconBg="#EFF6FF" iconColor="#2563EB"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+          />
+          <KpiCard
+            title="Referral Revenue"
+            value={affiliateKPI.referralRevenue}
+            trend="up" trendValue="8%"
+            iconBg="#ECFDF5" iconColor="#059669"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          />
+          <KpiCard
+            title="Pending Commissions"
+            value={affiliateKPI.pendingCommissions}
+            iconBg="#FFFBEB" iconColor="#D97706"
+            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
+          />
+        </div>
+
+        {/* Top Performing Affiliates Widget */}
+        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+          <div className="px-4 py-3 flex items-center justify-between" style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Top Performing Affiliates</p>
+            <a href="/sales/affiliates" className="text-xs font-semibold" style={{ color: "#059669" }}>View All →</a>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--rtm-border)", background: "var(--rtm-bg)" }}>
+                  {["Affiliate", "Referral Count", "Won Deals", "Revenue Generated", "Pending Commission", "Status"].map((h) => (
+                    <th key={h} className="px-4 py-2.5 text-left font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {topAffiliates.map((aff, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid var(--rtm-border)", background: i % 2 === 0 ? "var(--rtm-surface)" : "var(--rtm-bg)" }}>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{aff.affiliate}</td>
+                    <td className="px-4 py-2.5 font-bold" style={{ color: "#2563EB" }}>{aff.referralCount}</td>
+                    <td className="px-4 py-2.5 font-bold" style={{ color: "#059669" }}>{aff.wonDeals}</td>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: "#059669" }}>{aff.revenueGenerated}</td>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: "#D97706" }}>{aff.pendingCommission}</td>
+                    <td className="px-4 py-2.5">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669" }}>{aff.status}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </SectionWrapper>
 
       {/* ── ACTION CENTER ─────────────────────────────────────────────────── */}
       <SectionWrapper title="Action Center" description="Quick actions for the sales team">

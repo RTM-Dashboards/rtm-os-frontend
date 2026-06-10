@@ -11,13 +11,100 @@ import CampaignsTab from "@/components/clients/tabs/CampaignsTab";
 import DeliverablesTab from "@/components/clients/tabs/DeliverablesTab";
 import NotesTab from "@/components/clients/tabs/NotesTab";
 import HistoryTab from "@/components/clients/tabs/HistoryTab";
+import ClientNotificationAlerts from "@/components/clients/ClientNotificationAlerts";
 
-type TabId = "overview" | "services" | "billing" | "campaigns" | "deliverables" | "notes" | "history";
+type TabId = "overview" | "services" | "billing" | "campaigns" | "deliverables" | "tasks" | "notes" | "history";
 
 interface Tab {
   id: TabId;
   label: string;
   count?: number;
+}
+
+// ── Client Tasks Tab ─────────────────────────────────────────────────────────
+
+type MockTaskStatus = "Open" | "In Progress" | "Blocked" | "Overdue" | "Completed";
+
+const TASK_STATUS_CFG: Record<MockTaskStatus, { bg: string; color: string; border: string }> = {
+  "Open":        { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+  "In Progress": { bg: "#FEF9C3", color: "#A16207", border: "#FDE68A" },
+  "Blocked":     { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" },
+  "Overdue":     { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
+  "Completed":   { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
+};
+
+function ClientTasksTab({ client }: { client: ClientProfile }) {
+  const mockTasks = [
+    { id: "t1", name: "SEO monthly report",         status: "In Progress" as MockTaskStatus, dept: "SEO",              due: "2025-08-01" },
+    { id: "t2", name: "Review ad performance",       status: "Open" as MockTaskStatus,        dept: "PPC",              due: "2025-07-30" },
+    { id: "t3", name: "Send quarterly review deck",  status: "Open" as MockTaskStatus,        dept: "Account Mgmt",     due: "2025-08-05" },
+    { id: "t4", name: "Update GBP listing photos",   status: "Overdue" as MockTaskStatus,     dept: "GBP",              due: "2025-07-22" },
+    { id: "t5", name: "Invoice follow-up",           status: "Blocked" as MockTaskStatus,     dept: "Billing",          due: "2025-07-28" },
+    { id: "t6", name: "Content calendar — July",     status: "Completed" as MockTaskStatus,   dept: "Content",          due: "2025-07-15" },
+  ];
+
+  const counters = {
+    open: mockTasks.filter(t => t.status === "Open" || t.status === "In Progress").length,
+    blocked: mockTasks.filter(t => t.status === "Blocked").length,
+    overdue: mockTasks.filter(t => t.status === "Overdue").length,
+    completed: mockTasks.filter(t => t.status === "Completed").length,
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Counter strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Open Tasks",  value: counters.open,      color: "#1D4ED8", bg: "#EFF6FF" },
+          { label: "Blocked",     value: counters.blocked,   color: "#DC2626", bg: "#FEF2F2" },
+          { label: "Overdue",     value: counters.overdue,   color: "#C2410C", bg: "#FFF7ED" },
+          { label: "Completed",   value: counters.completed, color: "#059669", bg: "#ECFDF5" },
+        ].map(({ label, value, color, bg }) => (
+          <div key={label} className="rounded-xl p-3 text-center" style={{ background: bg, border: `1px solid ${bg}` }}>
+            <div className="text-2xl font-black" style={{ color }}>{value}</div>
+            <div className="text-[11px] font-semibold mt-0.5" style={{ color }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Task list */}
+      <div className="rounded-xl overflow-hidden" style={{ border: "1px solid var(--rtm-border)" }}>
+        <div className="px-4 py-3 flex items-center justify-between" style={{ background: "var(--rtm-blue-xlight)", borderBottom: "1px solid #BFDBFE" }}>
+          <span className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>Client Tasks — {client.companyName}</span>
+          <Link href="/tasks" className="text-xs font-semibold" style={{ color: "var(--rtm-blue)" }}>View All in Task Engine →</Link>
+        </div>
+        <div className="divide-y" style={{ background: "var(--rtm-surface)" }}>
+          {mockTasks.map((task) => {
+            const cfg = TASK_STATUS_CFG[task.status];
+            return (
+              <div key={task.id} className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50/30 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{task.name}</div>
+                  <div className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{task.dept} · Due {task.due}</div>
+                </div>
+                <span
+                  className="text-[11px] font-semibold px-2.5 py-1 rounded-full border whitespace-nowrap"
+                  style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}
+                >
+                  {task.status}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* CTA buttons */}
+      <div className="flex flex-wrap gap-2">
+        <Link href="/tasks" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white transition-opacity hover:opacity-90" style={{ background: "var(--rtm-blue)" }}>
+          Open Task Queue
+        </Link>
+        <Link href="/tasks" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+          Create Task
+        </Link>
+      </div>
+    </div>
+  );
 }
 
 export default function ClientProfileLayout({ client }: { client: ClientProfile }) {
@@ -31,6 +118,7 @@ export default function ClientProfileLayout({ client }: { client: ClientProfile 
     { id: "billing",      label: "Billing" },
     { id: "campaigns",    label: "Campaigns",    count: client.activeCampaigns.length },
     { id: "deliverables", label: "Deliverables", count: openDeliverables },
+    { id: "tasks",        label: "Tasks",        count: 5 },
     { id: "notes",        label: "Notes" },
     { id: "history",      label: "History",      count: client.activity.length },
   ];
@@ -117,13 +205,32 @@ export default function ClientProfileLayout({ client }: { client: ClientProfile 
             </div>
           </div>
 
-          {/* Status badges */}
+          {/* Status badges + task quick actions */}
           <div className="flex flex-wrap sm:flex-col gap-2 sm:items-end flex-shrink-0">
             <BillingBadge status={client.billingStatus} />
             <CampaignBadge status={client.campaignStatus} />
+            <div className="flex gap-2 flex-wrap sm:justify-end mt-1">
+              <Link
+                href="/tasks"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition-opacity hover:opacity-90"
+                style={{ background: "var(--rtm-blue)" }}
+              >
+                Open Tasks
+              </Link>
+              <Link
+                href="/tasks"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors"
+                style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+              >
+                + Create Task
+              </Link>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Client Notification Alerts */}
+      <ClientNotificationAlerts clientSlug={client.slug} clientName={client.companyName} />
 
       {/* Tabs */}
       <div
@@ -185,6 +292,7 @@ export default function ClientProfileLayout({ client }: { client: ClientProfile 
           {activeTab === "deliverables" && <DeliverablesTab client={client} />}
           {activeTab === "notes"        && <NotesTab client={client} />}
           {activeTab === "history"      && <HistoryTab client={client} />}
+          {activeTab === "tasks"        && <ClientTasksTab client={client} />}
         </div>
       </div>
     </div>

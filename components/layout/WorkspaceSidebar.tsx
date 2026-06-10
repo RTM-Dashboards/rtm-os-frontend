@@ -20,8 +20,69 @@ interface WorkspaceSidebarProps {
   onClose: () => void;
 }
 
+// Corrected navItems for workspaces that have bad source data.
+// Keyed by workspace slug; takes priority over workspace.navItems.
+const WORKSPACE_NAV_OVERRIDES: Record<string, Array<{ label: string; href: string; icon?: string; badge?: string; children?: Array<{ label: string; href: string; icon?: string }> }>> = {
+  sales: [
+    { label: "Sales Dashboard", href: "/sales",              icon: "📊" },
+    { label: "Leads",           href: "/sales/leads",        icon: "🎯" },
+    { label: "Audits",          href: "/sales/audits",       icon: "🔎" },
+    { label: "Pipeline",        href: "/sales/pipeline",     icon: "🔄" },
+    { label: "Proposals",       href: "/sales/proposals",    icon: "📝" },
+    { label: "Follow Ups",      href: "/sales/followups",    icon: "📅" },
+    { label: "Affiliates",      href: "/sales/affiliates",   icon: "🤝" },
+    { label: "Team Members",    href: "/sales/team-members", icon: "👥" },
+    { label: "Performance",     href: "/sales/performance",  icon: "📋" },
+    { label: "Settings",        href: "/sales/settings",     icon: "⚙️" },
+  ],
+};
+
+// Mock notification counts per workspace slug
+const WORKSPACE_NOTIF_COUNTS: Record<string, number> = {
+  "sales":                  12,
+  "billing":                 4,
+  "account-management":      8,
+  "seo-local":               6,
+  "paid-advertising":        3,
+  "content":                 5,
+  "reporting":               2,
+  "local-service-ads":       7,
+  "web-development-design":  9,
+  "it-security":            11,
+  "admin":                   1,
+};
+
 export default function WorkspaceSidebar({ workspace, open, onClose }: WorkspaceSidebarProps) {
   const pathname = usePathname();
+
+  // Build deduplicated navItems: use override if present, otherwise dedup source items.
+  // Deduplication guards against both same-href-and-label and same-href-only duplicates.
+  const dedupedNavItems = (() => {
+    const sourceItems = WORKSPACE_NAV_OVERRIDES[workspace.slug] ?? workspace.navItems;
+    const seenHref  = new Set<string>();
+    const seenLabel = new Set<string>();
+    const items: typeof workspace.navItems = [];
+    for (const item of sourceItems) {
+      // Skip if exact href already used (prevents duplicate React keys / routes)
+      if (seenHref.has(item.href)) continue;
+      // Skip if label already used (prevents confusing dupes)
+      if (seenLabel.has(item.label)) continue;
+      seenHref.add(item.href);
+      seenLabel.add(item.label);
+      items.push(item);
+    }
+    // Inject Notifications after the first item
+    const notifCount = WORKSPACE_NOTIF_COUNTS[workspace.slug] ?? 0;
+    const notifItem = {
+      label: "Notifications",
+      href: "/notifications",
+      icon: "🔔",
+      badge: notifCount > 0 ? String(notifCount) : undefined,
+    };
+    return items.length > 0
+      ? [items[0], notifItem, ...items.slice(1)]
+      : [notifItem, ...items];
+  })();
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => {
     // Auto-expand the active parent
@@ -149,7 +210,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
           </p>
 
           <ul className="space-y-0.5">
-            {workspace.navItems.map((item) => {
+            {dedupedNavItems.map((item, idx) => {
               const hasChildren = item.children && item.children.length > 0;
               const expanded = expandedItems[item.href] ?? false;
               const active = hasChildren
@@ -157,7 +218,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
                 : pathname === item.href;
 
               return (
-                <li key={item.href}>
+                <li key={`${item.href}--${item.label}--${idx}`}>
                   {hasChildren ? (
                     <div>
                       <button
@@ -196,10 +257,10 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
 
                       {expanded && (
                         <ul className="mt-0.5 ml-[30px] space-y-0.5 border-l border-white/10 pl-3">
-                          {item.children!.map((child) => {
+                          {item.children!.map((child, cidx) => {
                             const childActive = pathname === child.href || pathname.startsWith(child.href + "/");
                             return (
-                              <li key={child.href}>
+                              <li key={`${child.href}--${child.label}--${cidx}`}>
                                 <Link
                                   href={child.href}
                                   onClick={onClose}
