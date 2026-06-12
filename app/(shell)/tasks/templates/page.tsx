@@ -2031,8 +2031,8 @@ export default function TaskTemplatesPage() {
           {[
             { label: "Finance / Line Items", href: "/billing" },
             { label: "Proposal Generator", href: "/sales/proposals" },
-            { label: "Contracts", href: "/billing" },
-            { label: "Billing", href: "/billing" },
+            { label: "Contracts", href: "/billing/invoices" },
+            { label: "Billing", href: "/billing/client-portfolio" },
             { label: "Activation Engine", href: "/billing/activation" },
             { label: "Task Engine", href: "/tasks" },
             { label: "Onboarding", href: "/account-management/onboarding" },
@@ -2041,7 +2041,7 @@ export default function TaskTemplatesPage() {
             { label: "Clients", href: "/clients" },
           ].map((r) => (
             <Link
-              key={r.href}
+              key={r.label}
               href={r.href}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border hover:opacity-80 transition-opacity"
               style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)", borderColor: "#BFDBFE" }}
