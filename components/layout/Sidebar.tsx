@@ -55,7 +55,19 @@ const navItems: NavItem[] = [
   // ── Overview & global ─────────────────────────────────────────
   { label: "Admin Overview",      href: "/admin",              icon: IconDashboard,    section: "overview" },
   { label: "Clients",             href: "/clients",            icon: IconUsers,        section: "overview" },
-  { label: "Tasks",               href: "/tasks",              icon: IconCheckSquare,  section: "overview", badge: "124" },
+  {
+    label: "Tasks",
+    href: "/tasks",
+    icon: IconCheckSquare,
+    section: "overview",
+    badge: "124",
+    children: [
+      { label: "Tasks",             href: "/tasks" },
+      { label: "Templates",        href: "/tasks/templates" },
+      { label: "Activation Rules", href: "/tasks/activation-rules" },
+      { label: "Workload Planning", href: "/tasks/workload" },
+    ],
+  },
   { label: "Notifications",       href: "/notifications",      icon: IconBellSidebar,  section: "overview" },
 
   // ── Admin section ─────────────────────────────────────────────
@@ -133,6 +145,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     "/seo-local":                true,
     "/paid-advertising":         true,
     "/web-development-design":   true,
+    "/tasks":                    true,
   }));
 
   const toggleExpand = (href: string) => {
@@ -284,7 +297,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                                 {item.children!.map((child) => {
                                   const isChildActive = pathname === child.href || pathname.startsWith(child.href + "/");
                                   return (
-                                    <li key={child.href}>
+                                    <li key={`${item.label}-${child.label}`}>
                                       <Link
                                         href={child.href}
                                         onClick={() => onClose()}
