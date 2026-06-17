@@ -1335,37 +1335,37 @@ function approvalStatusBadge(s: string) {
   }
 }
 
-// ── Workload Management Mock Data ─────────────────────────────────────────────
+// ── Team Throughput Mock Data ──────────────────────────────────────────────────
 
-interface WorkloadUser {
+interface ThroughputUser {
   id: string;
   user: string;
   department: string;
   openTasks: number;
   overdueTasks: number;
   blockedTasks: number;
-  capacity: number;
-  workloadStatus: "Available" | "Balanced" | "Near Capacity" | "Overloaded";
+  slaCompliance: number;
+  queueStatus: "Available" | "On Track" | "At Risk" | "Overdue";
 }
 
-const WORKLOAD_DATA: WorkloadUser[] = [
-  { id: "wl1", user: "Jordan Mills", department: "Account Management", openTasks: 8, overdueTasks: 1, blockedTasks: 0, capacity: 70, workloadStatus: "Balanced" },
-  { id: "wl2", user: "Maya Torres", department: "SEO & Local", openTasks: 14, overdueTasks: 3, blockedTasks: 1, capacity: 95, workloadStatus: "Overloaded" },
-  { id: "wl3", user: "Chris Blake", department: "Paid Advertising", openTasks: 10, overdueTasks: 0, blockedTasks: 2, capacity: 80, workloadStatus: "Near Capacity" },
-  { id: "wl4", user: "Ava Kim", department: "Content", openTasks: 6, overdueTasks: 0, blockedTasks: 0, capacity: 55, workloadStatus: "Balanced" },
-  { id: "wl5", user: "Devon Park", department: "Web Development", openTasks: 4, overdueTasks: 0, blockedTasks: 0, capacity: 40, workloadStatus: "Available" },
-  { id: "wl6", user: "Riley Chen", department: "Reporting", openTasks: 11, overdueTasks: 2, blockedTasks: 0, capacity: 85, workloadStatus: "Near Capacity" },
-  { id: "wl7", user: "Sam Nguyen", department: "Billing", openTasks: 5, overdueTasks: 0, blockedTasks: 0, capacity: 45, workloadStatus: "Available" },
-  { id: "wl8", user: "Sarah Adams", department: "Account Management", openTasks: 9, overdueTasks: 2, blockedTasks: 1, capacity: 90, workloadStatus: "Overloaded" },
-  { id: "wl9", user: "Taylor Ross", department: "Sales", openTasks: 3, overdueTasks: 0, blockedTasks: 0, capacity: 30, workloadStatus: "Available" },
+const WORKLOAD_DATA: ThroughputUser[] = [
+  { id: "wl1", user: "Jordan Mills", department: "Account Management", openTasks: 8, overdueTasks: 1, blockedTasks: 0, slaCompliance: 88, queueStatus: "On Track" },
+  { id: "wl2", user: "Maya Torres", department: "SEO & Local", openTasks: 14, overdueTasks: 3, blockedTasks: 1, slaCompliance: 72, queueStatus: "Overdue" },
+  { id: "wl3", user: "Chris Blake", department: "Paid Advertising", openTasks: 10, overdueTasks: 0, blockedTasks: 2, slaCompliance: 83, queueStatus: "At Risk" },
+  { id: "wl4", user: "Ava Kim", department: "Content", openTasks: 6, overdueTasks: 0, blockedTasks: 0, slaCompliance: 95, queueStatus: "On Track" },
+  { id: "wl5", user: "Devon Park", department: "Web Development", openTasks: 4, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available" },
+  { id: "wl6", user: "Riley Chen", department: "Reporting", openTasks: 11, overdueTasks: 2, blockedTasks: 0, slaCompliance: 82, queueStatus: "At Risk" },
+  { id: "wl7", user: "Sam Nguyen", department: "Billing", openTasks: 5, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available" },
+  { id: "wl8", user: "Sarah Adams", department: "Account Management", openTasks: 9, overdueTasks: 2, blockedTasks: 1, slaCompliance: 76, queueStatus: "Overdue" },
+  { id: "wl9", user: "Taylor Ross", department: "Sales", openTasks: 3, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available" },
 ];
 
 function workloadStatusBadge(s: string) {
   switch (s) {
     case "Available": return "bg-emerald-100 text-emerald-700";
-    case "Balanced": return "bg-blue-100 text-blue-700";
-    case "Near Capacity": return "bg-amber-100 text-amber-700";
-    case "Overloaded": return "bg-red-100 text-red-700";
+    case "On Track": return "bg-blue-100 text-blue-700";
+    case "At Risk": return "bg-amber-100 text-amber-700";
+    case "Overdue": return "bg-red-100 text-red-700";
     default: return "bg-slate-100 text-slate-500";
   }
 }
@@ -1971,7 +1971,7 @@ function ApprovalWorkflowSection() {
   );
 }
 
-// ── Workload Management Section ────────────────────────────────────────────────
+// ── Team Throughput Section ────────────────────────────────────────────────────
 
 function WorkloadManagementSection() {
   const [filterDept, setFilterDept] = useState("All");
@@ -1980,7 +1980,7 @@ function WorkloadManagementSection() {
   const depts = [...new Set(WORKLOAD_DATA.map((w) => w.department))];
   const filtered = WORKLOAD_DATA.filter((w) => {
     if (filterDept !== "All" && w.department !== filterDept) return false;
-    if (filterStatus !== "All" && w.workloadStatus !== filterStatus) return false;
+    if (filterStatus !== "All" && w.queueStatus !== filterStatus) return false;
     return true;
   });
 
@@ -1988,9 +1988,9 @@ function WorkloadManagementSection() {
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="workload-management">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-rose-600 mb-0.5">Workload Management</p>
-          <h2 className="text-lg font-bold text-slate-900">Workload Management</h2>
-          <p className="text-sm text-slate-500">Monitor team capacity and task load by user and department.</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-rose-600 mb-0.5">Team Throughput</p>
+          <h2 className="text-lg font-bold text-slate-900">Team Throughput &amp; SLA Status</h2>
+          <p className="text-sm text-slate-500">Monitor open tasks, overdue tasks, and SLA compliance by team member.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -1999,14 +1999,14 @@ function WorkloadManagementSection() {
           </select>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
             <option value="All">All Statuses</option>
-            {["Available", "Balanced", "Near Capacity", "Overloaded"].map((s) => <option key={s}>{s}</option>)}
+            {["Available", "On Track", "At Risk", "Overdue"].map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
       </div>
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pt-4 pb-2">
-        {["Available", "Balanced", "Near Capacity", "Overloaded"].map((s) => {
-          const count = WORKLOAD_DATA.filter((w) => w.workloadStatus === s).length;
+        {["Available", "On Track", "At Risk", "Overdue"].map((s) => {
+          const count = WORKLOAD_DATA.filter((w) => w.queueStatus === s).length;
           return (
             <div key={s} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
               <p className="text-xs font-semibold text-slate-500 truncate">{s}</p>
@@ -2019,14 +2019,14 @@ function WorkloadManagementSection() {
         <table className="w-full text-sm">
           <thead className="bg-slate-50">
             <tr>
-              {["User", "Department", "Open Tasks", "Overdue Tasks", "Blocked Tasks", "Capacity", "Workload Status"].map((h) => (
+              {["User", "Department", "Open Tasks", "Overdue Tasks", "Blocked Tasks", "SLA Compliance", "Queue Status"].map((h) => (
                 <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((w) => (
-              <tr key={w.id} className={`border-t border-slate-100 hover:bg-slate-50 ${w.workloadStatus === "Overloaded" ? "bg-red-50/30" : ""}`}>
+              <tr key={w.id} className={`border-t border-slate-100 hover:bg-slate-50 ${w.queueStatus === "Overdue" ? "bg-red-50/30" : ""}`}>
                 <td className="px-4 py-3 font-semibold text-slate-800">{w.user}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{w.department}</td>
                 <td className="px-4 py-3 text-center font-bold text-slate-700">{w.openTasks}</td>
@@ -2040,15 +2040,15 @@ function WorkloadManagementSection() {
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-2 rounded-full ${w.capacity >= 90 ? "bg-red-500" : w.capacity >= 75 ? "bg-amber-500" : w.capacity >= 50 ? "bg-blue-500" : "bg-emerald-500"}`}
-                        style={{ width: `${w.capacity}%` }}
+                        className={`h-2 rounded-full ${w.slaCompliance < 75 ? "bg-red-500" : w.slaCompliance < 85 ? "bg-amber-500" : w.slaCompliance < 95 ? "bg-blue-500" : "bg-emerald-500"}`}
+                        style={{ width: `${w.slaCompliance}%` }}
                       />
                     </div>
-                    <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">{w.capacity}%</span>
+                    <span className="text-xs font-semibold text-slate-600 whitespace-nowrap">{w.slaCompliance}%</span>
                   </div>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${workloadStatusBadge(w.workloadStatus)}`}>{w.workloadStatus}</span>
+                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${workloadStatusBadge(w.queueStatus)}`}>{w.queueStatus}</span>
                 </td>
               </tr>
             ))}
@@ -2079,19 +2079,19 @@ function TimeTrackingSection() {
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="time-tracking">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-cyan-600 mb-0.5">Time Tracking</p>
-          <h2 className="text-lg font-bold text-slate-900">Time Tracking</h2>
-          <p className="text-sm text-slate-500">Estimated vs. logged hours per task. No live timer — mock data only.</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-cyan-600 mb-0.5">SLA Dashboard</p>
+          <h2 className="text-lg font-bold text-slate-900">SLA Compliance Dashboard</h2>
+          <p className="text-sm text-slate-500">Task completion times, SLA status, and response timestamps. No hours tracked.</p>
         </div>
-        <button className="bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">+ Log Time</button>
+        <button className="bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">View SLA Report</button>
       </div>
       {/* Summary strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pt-4 pb-2">
         {[
-          { label: "Estimated Hours", value: total.estimated, color: "text-slate-700" },
-          { label: "Logged Hours", value: total.logged, color: "text-blue-700" },
-          { label: "Billable Hours", value: total.billable, color: "text-emerald-700" },
-          { label: "Non-Billable", value: total.nonBillable, color: "text-amber-700" },
+          { label: "Total Tasks", value: TIME_TRACKING_DATA.length, color: "text-slate-700" },
+          { label: "Completed", value: TIME_TRACKING_DATA.filter((t) => t.logged >= t.estimated).length, color: "text-blue-700" },
+          { label: "On Time", value: TIME_TRACKING_DATA.filter((t) => t.billable > 0).length, color: "text-emerald-700" },
+          { label: "Overdue", value: TIME_TRACKING_DATA.filter((t) => t.nonBillable > 0).length, color: "text-amber-700" },
         ].map(({ label, value, color }) => (
           <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
             <p className="text-xs font-semibold text-slate-500">{label}</p>
@@ -2273,8 +2273,8 @@ function ProjectExecutionView() {
     { id: "board", label: "Task Board" },
     { id: "detail", label: "Task Detail" },
     { id: "approvals", label: "Approval Workflow" },
-    { id: "workload", label: "Workload Management" },
-    { id: "time", label: "Time Tracking" },
+    { id: "workload", label: "Team Throughput" },
+    { id: "time", label: "SLA Dashboard" },
     { id: "automation", label: "Automation Rules" },
   ];
 

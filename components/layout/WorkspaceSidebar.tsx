@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { IconX } from "./icons";
-import type { WorkspaceConfig } from "@/types/workspace";
+import type { WorkspaceConfig, WorkspaceNavItem } from "@/types/workspace";
 
 // ── Chevron icon ──────────────────────────────────────────────────────────────
 const IconChevronDown = ({ className }: { className?: string }) => (
@@ -29,6 +29,7 @@ const WORKSPACE_NAV_OVERRIDES: Record<string, Array<{ label: string; href: strin
     { label: "Audits",          href: "/sales/audits",       icon: "🔎" },
     { label: "Pipeline",        href: "/sales/pipeline",     icon: "🔄" },
     { label: "Proposals",       href: "/sales/proposals",    icon: "📝" },
+    { label: "Contracts",       href: "/sales/contracts",    icon: "✍️" },
     { label: "Follow Ups",      href: "/sales/followups",    icon: "📅" },
     { label: "Affiliates",      href: "/sales/affiliates",   icon: "🤝" },
     { label: "Team Members",    href: "/sales/team-members", icon: "👥" },
@@ -61,7 +62,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
     const sourceItems = WORKSPACE_NAV_OVERRIDES[workspace.slug] ?? workspace.navItems;
     const seenHref  = new Set<string>();
     const seenLabel = new Set<string>();
-    const items: typeof workspace.navItems = [];
+    const items: WorkspaceNavItem[] = [];
     for (const item of sourceItems) {
       // Skip if exact href already used (prevents duplicate React keys / routes)
       if (seenHref.has(item.href)) continue;
@@ -73,7 +74,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
     }
     // Inject Notifications after the first item
     const notifCount = WORKSPACE_NOTIF_COUNTS[workspace.slug] ?? 0;
-    const notifItem = {
+    const notifItem: WorkspaceNavItem = {
       label: "Notifications",
       href: "/notifications",
       icon: "🔔",
@@ -257,7 +258,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
 
                       {expanded && (
                         <ul className="mt-0.5 ml-[30px] space-y-0.5 border-l border-white/10 pl-3">
-                          {item.children!.map((child, cidx) => {
+                          {item.children!.map((child: WorkspaceNavItem["children"] extends Array<infer C> | undefined ? NonNullable<WorkspaceNavItem["children"]>[number] : never, cidx: number) => {
                             const childActive = pathname === child.href || pathname.startsWith(child.href + "/");
                             return (
                               <li key={`${child.href}--${child.label}--${cidx}`}>

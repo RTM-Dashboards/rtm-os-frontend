@@ -15,6 +15,21 @@ type BillingType = "One-Time" | "Monthly Recurring" | "Quarterly" | "Annual";
 
 type FinanceStatus = "Approved" | "Pending Review" | "Needs Pricing" | "Inactive";
 
+type SLAPriority = "Standard" | "Priority" | "Rush" | "Custom";
+
+type SLAStatus = "Active" | "Pending Review" | "Needs Approval" | "Inactive";
+
+interface LineItemSLA {
+  firstResponseSLA: string;
+  targetCompletionDays: number;
+  dueDateOffset: number;
+  escalationAfterDays: number;
+  clientUpdateFrequency: string;
+  slaPriority: SLAPriority;
+  slaStatus: SLAStatus;
+  notes: string;
+}
+
 type DependencyStatus = "Required" | "Missing" | "Satisfied" | "Blocked";
 
 type DiscountType = "Percentage" | "Fixed Amount" | "Line Item Discount" | "Package Discount";
@@ -54,7 +69,7 @@ interface LineItemCatalog {
   description: string;
   unitPrice: number;
   billingType: BillingType;
-  workloadHours: number;
+  targetDeliveryDays: number;
   internalCost: number;
   margin: number;
   prerequisites: Prerequisite[];
@@ -64,9 +79,10 @@ interface LineItemCatalog {
   activationRequirements: string[];
   financeStatus: FinanceStatus;
   financeApprovedPrice: number;
-  financeApprovedWorkload: number;
+  financeApprovedDeliveryDays: number;
   financeApprovedCost: number;
   financeMargin: number;
+  sla: LineItemSLA;
 }
 
 interface ProposalLineItem extends LineItemCatalog {
@@ -144,7 +160,7 @@ interface DepartmentActivation {
   status: DepartmentActivationStatus;
   lineItems: string[];
   taskCount: number;
-  estimatedHours: number;
+  targetDeliveryDays: number;
 }
 
 interface TaskActivationRow {
@@ -152,7 +168,7 @@ interface TaskActivationRow {
   taskTemplate: string;
   department: string;
   taskCount: number;
-  estimatedHours: number;
+  targetCompletionDays: number;
   status: TaskActivationStatus;
 }
 
@@ -183,7 +199,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Initial SEO audit, keyword research, baseline reporting, GSC/GA4 setup, and technical recommendations.",
     unitPrice: 1500,
     billingType: "One-Time",
-    workloadHours: 12,
+    targetDeliveryDays: 12,
     internalCost: 600,
     margin: 60,
     prerequisites: [
@@ -197,9 +213,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Website Access Confirmed", "GA4 Connected", "GSC Verified"],
     financeStatus: "Approved",
     financeApprovedPrice: 1500,
-    financeApprovedWorkload: 12,
+    financeApprovedDeliveryDays: 12,
     financeApprovedCost: 600,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, clientUpdateFrequency: "Every 2 business days", slaPriority: "Standard", slaStatus: "Active", notes: "Requires website & GA4 access before clock starts." },
   },
   {
     id: "li-002",
@@ -209,7 +226,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Ongoing SEO management: content optimization, link building, technical fixes, and monthly reporting.",
     unitPrice: 1200,
     billingType: "Monthly Recurring",
-    workloadHours: 10,
+    targetDeliveryDays: 10,
     internalCost: 480,
     margin: 60,
     prerequisites: [
@@ -222,9 +239,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["SEO Setup Confirmed", "Keyword Strategy Approved"],
     financeStatus: "Approved",
     financeApprovedPrice: 1200,
-    financeApprovedWorkload: 10,
+    financeApprovedDeliveryDays: 10,
     financeApprovedCost: 480,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 10, dueDateOffset: 5, escalationAfterDays: 14, clientUpdateFrequency: "Weekly", slaPriority: "Standard", slaStatus: "Active", notes: "Reporting delivered by end of month." },
   },
   {
     id: "li-003",
@@ -234,7 +252,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Google Business Profile audit, optimization, Q&A management, photo uploads, and weekly posting.",
     unitPrice: 500,
     billingType: "Monthly Recurring",
-    workloadHours: 4,
+    targetDeliveryDays: 4,
     internalCost: 150,
     margin: 70,
     prerequisites: [
@@ -247,9 +265,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["GBP Ownership Verified", "GBP Access Granted"],
     financeStatus: "Approved",
     financeApprovedPrice: 500,
-    financeApprovedWorkload: 4,
+    financeApprovedDeliveryDays: 4,
     financeApprovedCost: 150,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 0, escalationAfterDays: 5, clientUpdateFrequency: "Weekly", slaPriority: "Standard", slaStatus: "Active", notes: "GBP access must be granted before activation." },
   },
   {
     id: "li-004",
@@ -259,7 +278,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Full GBP profile claim, verification, initial setup, and category/attribute optimization.",
     unitPrice: 350,
     billingType: "One-Time",
-    workloadHours: 3,
+    targetDeliveryDays: 3,
     internalCost: 105,
     margin: 70,
     prerequisites: [
@@ -272,9 +291,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Owner Authorization", "Address Confirmed"],
     financeStatus: "Approved",
     financeApprovedPrice: 350,
-    financeApprovedWorkload: 3,
+    financeApprovedDeliveryDays: 3,
     financeApprovedCost: 105,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 0, escalationAfterDays: 5, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Active", notes: "Verification postcard may extend timeline." },
   },
   {
     id: "li-005",
@@ -284,7 +304,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Full Google Ads account setup, campaign structure, ad copy creation, audience setup, and conversion tracking.",
     unitPrice: 1200,
     billingType: "One-Time",
-    workloadHours: 14,
+    targetDeliveryDays: 14,
     internalCost: 480,
     margin: 60,
     prerequisites: [
@@ -298,9 +318,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Ads Account Access", "Billing Confirmed", "Landing Page Live"],
     financeStatus: "Approved",
     financeApprovedPrice: 1200,
-    financeApprovedWorkload: 14,
+    financeApprovedDeliveryDays: 14,
     financeApprovedCost: 480,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, clientUpdateFrequency: "Every 2 business days", slaPriority: "Priority", slaStatus: "Active", notes: "Landing page must be live before launch." },
   },
   {
     id: "li-006",
@@ -310,7 +331,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Ongoing Google Ads management: bid optimization, A/B testing, negative keyword pruning, monthly reporting.",
     unitPrice: 1500,
     billingType: "Monthly Recurring",
-    workloadHours: 12,
+    targetDeliveryDays: 12,
     internalCost: 600,
     margin: 60,
     prerequisites: [
@@ -323,9 +344,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Campaign Active", "Conversion Tracking Verified"],
     financeStatus: "Approved",
     financeApprovedPrice: 1500,
-    financeApprovedWorkload: 12,
+    financeApprovedDeliveryDays: 12,
     financeApprovedCost: 600,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 12, dueDateOffset: 5, escalationAfterDays: 15, clientUpdateFrequency: "Weekly", slaPriority: "Standard", slaStatus: "Active", notes: "Budget pacing reviewed mid-month." },
   },
   {
     id: "li-007",
@@ -335,7 +357,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Facebook/Instagram Ads account setup, Pixel installation, audience creation, and initial campaign structure.",
     unitPrice: 900,
     billingType: "One-Time",
-    workloadHours: 10,
+    targetDeliveryDays: 10,
     internalCost: 360,
     margin: 60,
     prerequisites: [
@@ -348,9 +370,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Business Manager Access", "Pixel Verified", "Ad Account Active"],
     financeStatus: "Approved",
     financeApprovedPrice: 900,
-    financeApprovedWorkload: 10,
+    financeApprovedDeliveryDays: 10,
     financeApprovedCost: 360,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, clientUpdateFrequency: "Every 2 business days", slaPriority: "Standard", slaStatus: "Active", notes: "Business Manager access required before start." },
   },
   {
     id: "li-008",
@@ -360,7 +383,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Ongoing Meta Ads management: creative rotation, audience testing, retargeting, monthly performance reports.",
     unitPrice: 1200,
     billingType: "Monthly Recurring",
-    workloadHours: 10,
+    targetDeliveryDays: 10,
     internalCost: 480,
     margin: 60,
     prerequisites: [
@@ -373,9 +396,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Ads Live", "Creative Approved", "Retargeting Active"],
     financeStatus: "Approved",
     financeApprovedPrice: 1200,
-    financeApprovedWorkload: 10,
+    financeApprovedDeliveryDays: 10,
     financeApprovedCost: 480,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 10, dueDateOffset: 5, escalationAfterDays: 14, clientUpdateFrequency: "Weekly", slaPriority: "Standard", slaStatus: "Active", notes: "Creative refresh every 2 weeks." },
   },
   {
     id: "li-009",
@@ -385,7 +409,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Google Local Services Ads account creation, verification, budget setup, and background check coordination.",
     unitPrice: 600,
     billingType: "One-Time",
-    workloadHours: 5,
+    targetDeliveryDays: 5,
     internalCost: 180,
     margin: 70,
     prerequisites: [
@@ -399,9 +423,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Verification Complete", "Background Check Cleared", "GBP Linked"],
     financeStatus: "Approved",
     financeApprovedPrice: 600,
-    financeApprovedWorkload: 5,
+    financeApprovedDeliveryDays: 5,
     financeApprovedCost: 180,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 8, clientUpdateFrequency: "Every 2 business days", slaPriority: "Standard", slaStatus: "Active", notes: "Background check adds 3–5 business days." },
   },
   {
     id: "li-010",
@@ -411,7 +436,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Ongoing LSA management: bid adjustments, lead dispute management, review strategy, and monthly reporting.",
     unitPrice: 800,
     billingType: "Monthly Recurring",
-    workloadHours: 6,
+    targetDeliveryDays: 6,
     internalCost: 240,
     margin: 70,
     prerequisites: [
@@ -424,9 +449,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["LSA Account Verified", "Budget Set"],
     financeStatus: "Approved",
     financeApprovedPrice: 800,
-    financeApprovedWorkload: 6,
+    financeApprovedDeliveryDays: 6,
     financeApprovedCost: 240,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 6, dueDateOffset: 3, escalationAfterDays: 10, clientUpdateFrequency: "Weekly", slaPriority: "Standard", slaStatus: "Active", notes: "Lead disputes responded to within 48 hours." },
   },
   {
     id: "li-011",
@@ -436,7 +462,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Custom reporting dashboard setup in Looker Studio or Data Studio with client-specific KPIs and data sources.",
     unitPrice: 400,
     billingType: "One-Time",
-    workloadHours: 6,
+    targetDeliveryDays: 6,
     internalCost: 120,
     margin: 70,
     prerequisites: [
@@ -450,9 +476,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["All Data Sources Connected", "Dashboard Template Confirmed"],
     financeStatus: "Approved",
     financeApprovedPrice: 400,
-    financeApprovedWorkload: 6,
+    financeApprovedDeliveryDays: 6,
     financeApprovedCost: 120,
     financeMargin: 70,
+    sla: { firstResponseSLA: "2 business days", targetCompletionDays: 7, dueDateOffset: 0, escalationAfterDays: 10, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Active", notes: "All data sources must be connected before delivery." },
   },
   {
     id: "li-012",
@@ -462,7 +489,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Monthly performance reports across all active channels with executive summary and recommendations.",
     unitPrice: 300,
     billingType: "Monthly Recurring",
-    workloadHours: 4,
+    targetDeliveryDays: 4,
     internalCost: 90,
     margin: 70,
     prerequisites: [
@@ -475,9 +502,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Dashboard Active", "Report Template Approved"],
     financeStatus: "Approved",
     financeApprovedPrice: 300,
-    financeApprovedWorkload: 4,
+    financeApprovedDeliveryDays: 4,
     financeApprovedCost: 90,
     financeMargin: 70,
+    sla: { firstResponseSLA: "2 business days", targetCompletionDays: 7, dueDateOffset: 28, escalationAfterDays: 32, clientUpdateFrequency: "Monthly", slaPriority: "Standard", slaStatus: "Active", notes: "Report delivered by the last business day of each month." },
   },
   {
     id: "li-013",
@@ -487,7 +515,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Custom landing page design and development optimized for PPC/paid campaign conversion.",
     unitPrice: 1800,
     billingType: "One-Time",
-    workloadHours: 20,
+    targetDeliveryDays: 20,
     internalCost: 720,
     margin: 60,
     prerequisites: [
@@ -500,9 +528,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Brand Kit Received", "Content Approved", "Hosting Confirmed"],
     financeStatus: "Approved",
     financeApprovedPrice: 1800,
-    financeApprovedWorkload: 20,
+    financeApprovedDeliveryDays: 20,
     financeApprovedCost: 720,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 14, dueDateOffset: 0, escalationAfterDays: 18, clientUpdateFrequency: "Every 3 business days", slaPriority: "Standard", slaStatus: "Active", notes: "Client content and brand assets required upfront." },
   },
   {
     id: "li-014",
@@ -512,7 +541,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Monthly website maintenance: plugin updates, security scans, uptime monitoring, and minor fixes.",
     unitPrice: 250,
     billingType: "Monthly Recurring",
-    workloadHours: 2,
+    targetDeliveryDays: 2,
     internalCost: 75,
     margin: 70,
     prerequisites: [
@@ -525,9 +554,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["CMS Access Confirmed", "Hosting Access Confirmed"],
     financeStatus: "Approved",
     financeApprovedPrice: 250,
-    financeApprovedWorkload: 2,
+    financeApprovedDeliveryDays: 2,
     financeApprovedCost: 75,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 2, dueDateOffset: 5, escalationAfterDays: 4, clientUpdateFrequency: "Monthly summary", slaPriority: "Standard", slaStatus: "Active", notes: "Emergency fixes handled within 4 hours." },
   },
   {
     id: "li-015",
@@ -537,7 +567,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Monthly creative assets: social media graphics, ad creatives, banners, and branded content.",
     unitPrice: 800,
     billingType: "Monthly Recurring",
-    workloadHours: 8,
+    targetDeliveryDays: 8,
     internalCost: 240,
     margin: 70,
     prerequisites: [
@@ -550,9 +580,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Brand Kit Approved", "Content Calendar Confirmed"],
     financeStatus: "Approved",
     financeApprovedPrice: 800,
-    financeApprovedWorkload: 8,
+    financeApprovedDeliveryDays: 8,
     financeApprovedCost: 240,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 8, dueDateOffset: 5, escalationAfterDays: 12, clientUpdateFrequency: "Every 3 business days", slaPriority: "Standard", slaStatus: "Active", notes: "2 revision rounds included." },
   },
   {
     id: "li-016",
@@ -562,7 +593,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Logo design, brand color palette, typography guide, and brand asset package delivery.",
     unitPrice: 2000,
     billingType: "One-Time",
-    workloadHours: 20,
+    targetDeliveryDays: 20,
     internalCost: 800,
     margin: 60,
     prerequisites: [
@@ -574,9 +605,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Discovery Call Completed", "Competitor Analysis Done"],
     financeStatus: "Approved",
     financeApprovedPrice: 2000,
-    financeApprovedWorkload: 20,
+    financeApprovedDeliveryDays: 20,
     financeApprovedCost: 800,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 14, dueDateOffset: 0, escalationAfterDays: 18, clientUpdateFrequency: "Every 3 business days", slaPriority: "Standard", slaStatus: "Active", notes: "Discovery call must precede start." },
   },
   {
     id: "li-017",
@@ -586,7 +618,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Monthly strategic consulting sessions, market analysis, competitive intelligence, and growth planning.",
     unitPrice: 600,
     billingType: "Monthly Recurring",
-    workloadHours: 5,
+    targetDeliveryDays: 5,
     internalCost: 180,
     margin: 70,
     prerequisites: [
@@ -598,9 +630,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Kickoff Call Scheduled", "Goals Document Signed Off"],
     financeStatus: "Approved",
     financeApprovedPrice: 600,
-    financeApprovedWorkload: 5,
+    financeApprovedDeliveryDays: 5,
     financeApprovedCost: 180,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 3, escalationAfterDays: 8, clientUpdateFrequency: "Bi-weekly", slaPriority: "Priority", slaStatus: "Active", notes: "Monthly strategy call scheduled in advance." },
   },
   {
     id: "li-018",
@@ -610,7 +643,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Full tracking setup: GA4, Google Tag Manager, conversion events, call tracking, and form submission tracking.",
     unitPrice: 700,
     billingType: "One-Time",
-    workloadHours: 8,
+    targetDeliveryDays: 8,
     internalCost: 210,
     margin: 70,
     prerequisites: [
@@ -623,9 +656,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Website Access Confirmed", "GTM Container Created"],
     financeStatus: "Approved",
     financeApprovedPrice: 700,
-    financeApprovedWorkload: 8,
+    financeApprovedDeliveryDays: 8,
     financeApprovedCost: 210,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Active", notes: "Website access required before start." },
   },
   {
     id: "li-019",
@@ -635,7 +669,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "In-depth keyword research, competitive gap analysis, content opportunity mapping, and keyword grouping.",
     unitPrice: 500,
     billingType: "One-Time",
-    workloadHours: 6,
+    targetDeliveryDays: 6,
     internalCost: 150,
     margin: 70,
     prerequisites: [
@@ -648,9 +682,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Service Areas Confirmed", "Competitor List Provided"],
     financeStatus: "Approved",
     financeApprovedPrice: 500,
-    financeApprovedWorkload: 6,
+    financeApprovedDeliveryDays: 6,
     financeApprovedCost: 150,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Active", notes: "Service area and competitor list required." },
   },
   {
     id: "li-020",
@@ -660,7 +695,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Four SEO-optimized blog articles per month targeting priority keywords with internal linking strategy.",
     unitPrice: 700,
     billingType: "Monthly Recurring",
-    workloadHours: 8,
+    targetDeliveryDays: 8,
     internalCost: 280,
     margin: 60,
     prerequisites: [
@@ -673,9 +708,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Topic List Approved", "Brand Voice Guide Confirmed"],
     financeStatus: "Approved",
     financeApprovedPrice: 700,
-    financeApprovedWorkload: 8,
+    financeApprovedDeliveryDays: 8,
     financeApprovedCost: 280,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 8, dueDateOffset: 5, escalationAfterDays: 12, clientUpdateFrequency: "Weekly", slaPriority: "Standard", slaStatus: "Active", notes: "Topic list must be approved before writing begins." },
   },
   {
     id: "li-021",
@@ -685,7 +721,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Manual citation submissions to top 50 directories including Yelp, YP, BBB, and niche directories.",
     unitPrice: 400,
     billingType: "One-Time",
-    workloadHours: 5,
+    targetDeliveryDays: 5,
     internalCost: 120,
     margin: 70,
     prerequisites: [
@@ -697,9 +733,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Business Name/Address/Phone Locked"],
     financeStatus: "Approved",
     financeApprovedPrice: 400,
-    financeApprovedWorkload: 5,
+    financeApprovedDeliveryDays: 5,
     financeApprovedCost: 120,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 8, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Active", notes: "NAP information must be locked before start." },
   },
   {
     id: "li-022",
@@ -709,7 +746,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Monthly review monitoring, response management, and review generation campaign for GBP and Google.",
     unitPrice: 350,
     billingType: "Monthly Recurring",
-    workloadHours: 3,
+    targetDeliveryDays: 3,
     internalCost: 105,
     margin: 70,
     prerequisites: [
@@ -722,9 +759,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["GBP Access Confirmed", "Response Templates Approved"],
     financeStatus: "Approved",
     financeApprovedPrice: 350,
-    financeApprovedWorkload: 3,
+    financeApprovedDeliveryDays: 3,
     financeApprovedCost: 105,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 3, escalationAfterDays: 5, clientUpdateFrequency: "Weekly", slaPriority: "Standard", slaStatus: "Active", notes: "Reviews responded to within 48 hours." },
   },
   {
     id: "li-023",
@@ -734,7 +772,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Comprehensive Google Ads audit covering waste, Quality Scores, campaign structure, and recommendations.",
     unitPrice: 500,
     billingType: "One-Time",
-    workloadHours: 5,
+    targetDeliveryDays: 5,
     internalCost: 150,
     margin: 70,
     prerequisites: [
@@ -746,9 +784,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Ads Account Read Access"],
     financeStatus: "Approved",
     financeApprovedPrice: 500,
-    financeApprovedWorkload: 5,
+    financeApprovedDeliveryDays: 5,
     financeApprovedCost: 150,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 0, escalationAfterDays: 5, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Active", notes: "Read-only Ads access required." },
   },
   {
     id: "li-024",
@@ -758,7 +797,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Monthly social media strategy, content calendar planning, platform recommendations, and performance review.",
     unitPrice: 450,
     billingType: "Monthly Recurring",
-    workloadHours: 4,
+    targetDeliveryDays: 4,
     internalCost: 135,
     margin: 70,
     prerequisites: [
@@ -770,9 +809,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Social Account Access Granted", "Content Calendar Template Shared"],
     financeStatus: "Approved",
     financeApprovedPrice: 450,
-    financeApprovedWorkload: 4,
+    financeApprovedDeliveryDays: 4,
     financeApprovedCost: 135,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 3, escalationAfterDays: 7, clientUpdateFrequency: "Bi-weekly", slaPriority: "Standard", slaStatus: "Active", notes: "Content calendar shared by day 5." },
   },
   {
     id: "li-025",
@@ -782,7 +822,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Full website redesign: UX/UI design, development, mobile optimization, and CMS handoff.",
     unitPrice: 5000,
     billingType: "One-Time",
-    workloadHours: 60,
+    targetDeliveryDays: 60,
     internalCost: 2000,
     margin: 60,
     prerequisites: [
@@ -796,9 +836,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Contract Signed", "Content Delivered", "Hosting Confirmed"],
     financeStatus: "Approved",
     financeApprovedPrice: 5000,
-    financeApprovedWorkload: 60,
+    financeApprovedDeliveryDays: 60,
     financeApprovedCost: 2000,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 45, dueDateOffset: 0, escalationAfterDays: 50, clientUpdateFrequency: "Every 3 business days", slaPriority: "Standard", slaStatus: "Active", notes: "Full content delivery required before development phase." },
   },
   {
     id: "li-026",
@@ -808,7 +849,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "In-depth competitor audit covering SEO, PPC, social, and content strategies with actionable recommendations.",
     unitPrice: 600,
     billingType: "One-Time",
-    workloadHours: 7,
+    targetDeliveryDays: 7,
     internalCost: 180,
     margin: 70,
     prerequisites: [
@@ -820,9 +861,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Top 5 Competitors Named"],
     financeStatus: "Approved",
     financeApprovedPrice: 600,
-    financeApprovedWorkload: 7,
+    financeApprovedDeliveryDays: 7,
     financeApprovedCost: 180,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 8, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Active", notes: "Top 5 competitors required upfront." },
   },
   {
     id: "li-027",
@@ -832,7 +874,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Email marketing platform setup, list segmentation, welcome sequence, and first campaign template.",
     unitPrice: 800,
     billingType: "One-Time",
-    workloadHours: 8,
+    targetDeliveryDays: 8,
     internalCost: 240,
     margin: 70,
     prerequisites: [
@@ -845,9 +887,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Platform Account Created", "List Uploaded"],
     financeStatus: "Pending Review",
     financeApprovedPrice: 800,
-    financeApprovedWorkload: 8,
+    financeApprovedDeliveryDays: 8,
     financeApprovedCost: 240,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 6, dueDateOffset: 0, escalationAfterDays: 9, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Pending Review", notes: "SLA pending finance review." },
   },
   {
     id: "li-028",
@@ -857,7 +900,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Short-form video ad production for YouTube, Meta, or TikTok with scripting, editing, and delivery.",
     unitPrice: 1500,
     billingType: "One-Time",
-    workloadHours: 15,
+    targetDeliveryDays: 15,
     internalCost: 600,
     margin: 60,
     prerequisites: [
@@ -870,9 +913,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Script Approved", "Raw Footage or Stock Assets Ready"],
     financeStatus: "Approved",
     financeApprovedPrice: 1500,
-    financeApprovedWorkload: 15,
+    financeApprovedDeliveryDays: 15,
     financeApprovedCost: 600,
     financeMargin: 60,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 10, dueDateOffset: 0, escalationAfterDays: 14, clientUpdateFrequency: "Every 3 business days", slaPriority: "Standard", slaStatus: "Active", notes: "Script must be approved before production begins." },
   },
   {
     id: "li-029",
@@ -882,7 +926,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Monthly local SEO maintenance: citation audits, GBP updates, local link building, and local ranking reports.",
     unitPrice: 400,
     billingType: "Monthly Recurring",
-    workloadHours: 4,
+    targetDeliveryDays: 4,
     internalCost: 120,
     margin: 70,
     prerequisites: [
@@ -895,9 +939,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["SEO Baseline Report Done", "GBP Optimized"],
     financeStatus: "Approved",
     financeApprovedPrice: 400,
-    financeApprovedWorkload: 4,
+    financeApprovedDeliveryDays: 4,
     financeApprovedCost: 120,
     financeMargin: 70,
+    sla: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 5, escalationAfterDays: 8, clientUpdateFrequency: "Weekly", slaPriority: "Standard", slaStatus: "Active", notes: "SEO setup must be complete first." },
   },
   {
     id: "li-030",
@@ -907,7 +952,7 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     description: "Quarterly strategic review: performance deep-dive, goal reassessment, channel reallocation, and Q-plan.",
     unitPrice: 500,
     billingType: "Quarterly",
-    workloadHours: 5,
+    targetDeliveryDays: 5,
     internalCost: 150,
     margin: 70,
     prerequisites: [
@@ -920,9 +965,10 @@ const LINE_ITEM_CATALOG: LineItemCatalog[] = [
     activationRequirements: ["Reports Compiled", "QBR Deck Template Filled"],
     financeStatus: "Approved",
     financeApprovedPrice: 500,
-    financeApprovedWorkload: 5,
+    financeApprovedDeliveryDays: 5,
     financeApprovedCost: 150,
     financeMargin: 70,
+    sla: { firstResponseSLA: "2 business days", targetCompletionDays: 5, dueDateOffset: 85, escalationAfterDays: 90, clientUpdateFrequency: "Quarterly", slaPriority: "Standard", slaStatus: "Active", notes: "Requires all monthly reports compiled before QBR session." },
   },
 ];
 
@@ -1517,7 +1563,7 @@ function calcProposalTotals(lineItems: ProposalLineItem[], discountType: Discoun
   for (const li of lineItems) {
     const base = li.unitPrice * li.quantity * (1 - li.customDiscount / 100);
     rawSubtotal += base;
-    totalWorkload += li.workloadHours * li.quantity;
+    totalWorkload += li.targetDeliveryDays * li.quantity;
     totalInternalCost += li.internalCost * li.quantity;
 
     if (li.billingType === "One-Time") setupFees += base;
@@ -1788,41 +1834,65 @@ function SetupFeesSection({ items }: { items: ProposalLineItem[] }) {
           <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No setup fees added.</p>
         </div>
       ) : (
-        <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
-          <thead>
-            <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)" }}>
-              {["Line Item", "Qty", "Unit Price", "Discount", "Subtotal"].map((h) => (
-                <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
-                  style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((li, i) => {
-              const sub = li.unitPrice * li.quantity * (1 - li.customDiscount / 100);
-              return (
-                <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <CategoryBadge category={li.category} />
-                      <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 text-center" style={{ color: "var(--rtm-text-secondary)" }}>{li.quantity}</td>
-                  <td className="px-3 py-2 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fmtFull(li.unitPrice)}</td>
-                  <td className="px-3 py-2" style={{ color: "#DC2626" }}>{li.customDiscount > 0 ? `${li.customDiscount}%` : "—"}</td>
-                  <td className="px-3 py-2 font-bold" style={{ color: "#C2410C" }}>{fmtFull(sub)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr style={{ background: "#FFF7ED", borderTop: "2px solid #FED7AA" }}>
-              <td colSpan={4} className="px-3 py-2.5 text-xs font-bold" style={{ color: "#C2410C" }}>Setup Total</td>
-              <td className="px-3 py-2.5 text-sm font-black" style={{ color: "#C2410C" }}>{fmtFull(setupTotal)}</td>
-            </tr>
-          </tfoot>
-        </table>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "900px" }}>
+            <thead>
+              <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)" }}>
+                {["Line Item", "Billing Type", "Qty", "Unit Price", "Subtotal", "Task Template", "First Response SLA", "Target Completion", "Due Date Offset", "SLA Priority", "Actions"].map((h) => (
+                  <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
+                    style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((li, i) => {
+                const sub = li.unitPrice * li.quantity * (1 - li.customDiscount / 100);
+                return (
+                  <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <CategoryBadge category={li.category} />
+                        <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{li.billingType}</td>
+                    <td className="px-3 py-2 text-center" style={{ color: "var(--rtm-text-secondary)" }}>{li.quantity}</td>
+                    <td className="px-3 py-2 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fmtFull(li.unitPrice)}</td>
+                    <td className="px-3 py-2 font-bold" style={{ color: "#C2410C" }}>{fmtFull(sub)}</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "#F5F3FF", color: "#6D28D9" }}>{li.taskTemplate}</span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[11px] font-semibold" style={{ color: "#1D4ED8" }}>⚡ {li.sla.firstResponseSLA}</span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[11px] font-bold" style={{ color: "#059669" }}>{li.sla.targetCompletionDays} biz days</span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                      {li.sla.dueDateOffset > 0 ? `Day ${li.sla.dueDateOffset}` : "Immediate"}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: li.sla.slaPriority === "Rush" ? "#FFF1F2" : li.sla.slaPriority === "Priority" ? "#EFF6FF" : "#F3F4F6", color: li.sla.slaPriority === "Rush" ? "#BE123C" : li.sla.slaPriority === "Priority" ? "#1D4ED8" : "#374151" }}>
+                        {li.sla.slaPriority}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <button className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "#FFF7ED", color: "#C2410C" }}
+                        onClick={() => alert("[Mock] Request SLA Review — Finance approval required.")}>Request SLA Review</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: "#FFF7ED", borderTop: "2px solid #FED7AA" }}>
+                <td colSpan={4} className="px-3 py-2.5 text-xs font-bold" style={{ color: "#C2410C" }}>Setup Total</td>
+                <td className="px-3 py-2.5 text-sm font-black" style={{ color: "#C2410C" }}>{fmtFull(setupTotal)}</td>
+                <td colSpan={6} />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
       )}
     </div>
   );
@@ -1846,43 +1916,178 @@ function RecurringFeesSection({ items }: { items: ProposalLineItem[] }) {
           <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No recurring services added.</p>
         </div>
       ) : (
-        <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "900px" }}>
+            <thead>
+              <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)" }}>
+                {["Line Item", "Billing Type", "Qty", "Unit Price", "Subtotal", "Task Template", "First Response SLA", "Target Completion", "Due Date Offset", "SLA Priority", "Actions"].map((h) => (
+                  <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
+                    style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((li, i) => {
+                const sub = li.unitPrice * li.quantity * (1 - li.customDiscount / 100);
+                return (
+                  <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-2">
+                        <CategoryBadge category={li.category} />
+                        <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{li.billingType}</td>
+                    <td className="px-3 py-2 text-center" style={{ color: "var(--rtm-text-secondary)" }}>{li.quantity}</td>
+                    <td className="px-3 py-2 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fmtFull(li.unitPrice)}/mo</td>
+                    <td className="px-3 py-2 font-bold" style={{ color: "#1D4ED8" }}>{fmtFull(sub)}/mo</td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "#F5F3FF", color: "#6D28D9" }}>{li.taskTemplate}</span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[11px] font-semibold" style={{ color: "#1D4ED8" }}>⚡ {li.sla.firstResponseSLA}</span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[11px] font-bold" style={{ color: "#059669" }}>{li.sla.targetCompletionDays} biz days</span>
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                      {li.sla.dueDateOffset > 0 ? `Day ${li.sla.dueDateOffset}` : "Immediate"}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: li.sla.slaPriority === "Rush" ? "#FFF1F2" : li.sla.slaPriority === "Priority" ? "#EFF6FF" : "#F3F4F6", color: li.sla.slaPriority === "Rush" ? "#BE123C" : li.sla.slaPriority === "Priority" ? "#1D4ED8" : "#374151" }}>
+                        {li.sla.slaPriority}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <button className="text-[10px] font-semibold px-2 py-0.5 rounded" style={{ background: "#EFF6FF", color: "#1D4ED8" }}
+                        onClick={() => alert("[Mock] Request SLA Review — Finance approval required.")}>Request SLA Review</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: "#EFF6FF", borderTop: "2px solid #BFDBFE" }}>
+                <td colSpan={4} className="px-3 py-2.5 text-xs font-bold" style={{ color: "#1D4ED8" }}>Monthly Recurring Total</td>
+                <td className="px-3 py-2.5 text-sm font-black" style={{ color: "#1D4ED8" }}>{fmtFull(recurringTotal)}/mo</td>
+                <td colSpan={6} />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Proposal SLA Impact Summary
+// Shows Sales the SLA impact before sending a proposal
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ProposalSLASummary({ lineItems }: { lineItems: ProposalLineItem[] }) {
+  const earliest = Math.min(...lineItems.map((li) => li.sla.targetCompletionDays));
+  const latest = Math.max(...lineItems.map((li) => li.sla.targetCompletionDays));
+  const rushItems = lineItems.filter((li) => li.sla.slaPriority === "Rush");
+  const customItems = lineItems.filter((li) => li.sla.slaPriority === "Custom");
+  const priorityItems = lineItems.filter((li) => li.sla.slaPriority === "Priority");
+
+  return (
+    <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#A7F3D0" }}>
+      <div className="px-4 py-3" style={{ background: "#ECFDF5", borderBottom: "1px solid #A7F3D0" }}>
+        <p className="text-sm font-bold" style={{ color: "#059669" }}>📊 Proposal SLA Impact Summary</p>
+        <p className="text-[10px] mt-0.5" style={{ color: "#047857" }}>SLA commitments come from each selected line item — not from department defaults.</p>
+      </div>
+      <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Estimated Implementation Timeline", value: `${earliest}–${latest} business days`, color: "#059669", bg: "#F0FDF4" },
+          { label: "Earliest Target Completion", value: `${earliest} business days`, color: "#1D4ED8", bg: "#EFF6FF" },
+          { label: "Latest Target Completion", value: `${latest} business days`, color: "#C2410C", bg: "#FFF7ED" },
+          { label: "Rush Items", value: rushItems.length > 0 ? `${rushItems.length} item(s)` : "None", color: rushItems.length > 0 ? "#BE123C" : "#6B7280", bg: rushItems.length > 0 ? "#FFF1F2" : "#F3F4F6" },
+        ].map((r) => (
+          <div key={r.label} className="rounded-lg p-3 text-center" style={{ background: r.bg, border: `1px solid ${r.color}20` }}>
+            <div className="text-[10px] font-semibold mb-1" style={{ color: r.color }}>{r.label}</div>
+            <div className="text-sm font-black" style={{ color: r.color }}>{r.value}</div>
+          </div>
+        ))}
+      </div>
+      {(rushItems.length > 0 || customItems.length > 0 || priorityItems.length > 0) && (
+        <div className="px-4 pb-4">
+          <div className="rounded-lg px-3 py-2" style={{ background: "#FFF7ED", border: "1px solid #FED7AA" }}>
+            <div className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#C2410C" }}>⚠️ Non-Standard SLA Items</div>
+            {rushItems.map((li) => (
+              <div key={li.id} className="text-xs" style={{ color: "#92400E" }}>🚀 Rush: {li.name} — {li.sla.firstResponseSLA} response · {li.sla.targetCompletionDays} day target</div>
+            ))}
+            {customItems.map((li) => (
+              <div key={li.id} className="text-xs" style={{ color: "#6D28D9" }}>⚙️ Custom SLA: {li.name}</div>
+            ))}
+            {priorityItems.map((li) => (
+              <div key={li.id} className="text-xs" style={{ color: "#1D4ED8" }}>⭐ Priority: {li.name} — {li.sla.firstResponseSLA}</div>
+            ))}
+          </div>
+          <div className="mt-2 flex gap-2">
+            <button className="text-[10px] font-semibold px-2 py-1 rounded" style={{ background: "#FFF7ED", color: "#C2410C", border: "1px solid #FED7AA" }}
+              onClick={() => alert("[Mock] SLA Review requested — Finance will be notified.")}>Request SLA Review</button>
+            <span className="text-[10px] mt-1" style={{ color: "var(--rtm-text-muted)" }}>Sales cannot silently change finance-approved SLAs without review.</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Contract Delivery Commitments
+// Shows SLA delivery commitments from line items in the contract
+// ─────────────────────────────────────────────────────────────────────────────
+
+function ContractDeliveryCommitments({ contract }: { contract: ContractData }) {
+  const allItems = [...contract.setupLineItems, ...contract.recurringLineItems];
+
+  return (
+    <SectionCard title="📋 Contract Delivery Commitments (Line Item SLAs)">
+      <div className="rounded-lg px-3 py-2 mb-3" style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}>
+        <p className="text-xs" style={{ color: "#1D4ED8" }}>
+          These delivery commitments are derived from the SLA attached to each selected line item. Department SLAs are fallback defaults and do not override these commitments.
+        </p>
+      </div>
+      <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--rtm-border)" }}>
+        <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "800px" }}>
           <thead>
-            <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)" }}>
-              {["Line Item", "Qty", "Monthly Price", "Discount", "Subtotal"].map((h) => (
-                <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
-                  style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+            <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
+              {["Line Item", "Delivery Commitment", "First Response SLA", "Target Completion", "Client Update Frequency", "Escalation Rule"].map((h) => (
+                <th key={h} className="text-left px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {items.map((li, i) => {
-              const sub = li.unitPrice * li.quantity * (1 - li.customDiscount / 100);
-              return (
-                <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}>
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <CategoryBadge category={li.category} />
-                      <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 text-center" style={{ color: "var(--rtm-text-secondary)" }}>{li.quantity}</td>
-                  <td className="px-3 py-2 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fmtFull(li.unitPrice)}/mo</td>
-                  <td className="px-3 py-2" style={{ color: "#DC2626" }}>{li.customDiscount > 0 ? `${li.customDiscount}%` : "—"}</td>
-                  <td className="px-3 py-2 font-bold" style={{ color: "#1D4ED8" }}>{fmtFull(sub)}/mo</td>
-                </tr>
-              );
-            })}
+            {allItems.map((li, i) => (
+              <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}>
+                <td className="px-3 py-2.5">
+                  <div className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</div>
+                  <div className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{li.billingType}</div>
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap">
+                  <span className="text-[11px] font-bold" style={{ color: "#059669" }}>✓ {li.sla.targetCompletionDays} business days</span>
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap">
+                  <span className="text-[11px] font-semibold" style={{ color: "#1D4ED8" }}>⚡ {li.sla.firstResponseSLA}</span>
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap">
+                  <span className="text-[11px] font-bold" style={{ color: "#059669" }}>{li.sla.targetCompletionDays} biz days</span>
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  {li.sla.clientUpdateFrequency}
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "#C2410C" }}>
+                  Escalate after {li.sla.escalationAfterDays} days
+                </td>
+              </tr>
+            ))}
           </tbody>
-          <tfoot>
-            <tr style={{ background: "#EFF6FF", borderTop: "2px solid #BFDBFE" }}>
-              <td colSpan={4} className="px-3 py-2.5 text-xs font-bold" style={{ color: "#1D4ED8" }}>Monthly Recurring Total</td>
-              <td className="px-3 py-2.5 text-sm font-black" style={{ color: "#1D4ED8" }}>{fmtFull(recurringTotal)}/mo</td>
-            </tr>
-          </tfoot>
         </table>
-      )}
-    </div>
+      </div>
+    </SectionCard>
   );
 }
 
@@ -2002,7 +2207,7 @@ function ContractServicesSummary({ contract }: { contract: ContractData }) {
   const depts = Array.from(new Set(allItems.map((li) => li.department)));
   const templates = allItems.map((li) => li.taskTemplate);
   const totalTasks = allItems.reduce((s, li) => s + li.taskCount, 0);
-  const totalHours = allItems.reduce((s, li) => s + li.workloadHours * li.quantity, 0);
+  const totalDeliveryDays = allItems.reduce((s, li) => s + li.targetDeliveryDays * li.quantity, 0);
   const totalRevenue = calcContractTotals(contract).totalContractValue;
 
   return (
@@ -2029,7 +2234,7 @@ function ContractServicesSummary({ contract }: { contract: ContractData }) {
           {[
             { label: "Task Templates", value: templates.length.toString(), color: "#6D28D9" },
             { label: "Total Tasks", value: `${totalTasks} tasks`, color: "#7C3AED" },
-            { label: "Est. Workload", value: `${totalHours}h/mo`, color: "#1D4ED8" },
+            { label: "Delivery Timeline", value: `${totalDeliveryDays}d target`, color: "#1D4ED8" },
             { label: "Revenue Activated", value: fmtFull(totalRevenue), color: "#059669" },
           ].map((r) => (
             <div key={r.label} className="flex items-center justify-between text-xs rounded px-2 py-1.5 border"
@@ -2240,7 +2445,7 @@ function TaskActivationMapping({ contract }: { contract: ContractData }) {
     taskTemplate: li.taskTemplate,
     department: li.department,
     taskCount: li.taskCount,
-    estimatedHours: li.workloadHours * li.quantity,
+    targetCompletionDays: li.targetDeliveryDays * li.quantity,
     status: contract.status === "Signed" ? "Activated" : contract.status === "Pending Signature" ? "Ready" : "Pending",
   }));
 
@@ -2250,7 +2455,7 @@ function TaskActivationMapping({ contract }: { contract: ContractData }) {
         <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
-              {["Selected Line Item", "Mapped Task Template", "Department Owner", "Task Count", "Est. Hours", "Activation Status"].map((h) => (
+              {["Selected Line Item", "Mapped Task Template", "Department Owner", "Task Count", "Target Days", "Activation Status"].map((h) => (
                 <th key={h} className="text-left px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
                   style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
@@ -2269,7 +2474,7 @@ function TaskActivationMapping({ contract }: { contract: ContractData }) {
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap text-[11px]" style={{ color: "var(--rtm-text-secondary)" }}>{r.department}</td>
                   <td className="px-3 py-2.5 whitespace-nowrap font-bold" style={{ color: "#6D28D9" }}>{r.taskCount}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{r.estimatedHours}h</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{r.targetCompletionDays}d</td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     <Badge label={r.status} bg={sc.bg} text={sc.text} border={sc.border} />
                   </td>
@@ -2309,7 +2514,7 @@ function DepartmentActivationSection({ contract }: { contract: ContractData }) {
     const d = deptMap.get(li.department)!;
     d.lineItems.push(li.name);
     d.taskCount += li.taskCount;
-    d.hours += li.workloadHours * li.quantity;
+    d.hours += li.targetDeliveryDays * li.quantity;
   }
 
   const departments: DepartmentActivation[] = Array.from(deptMap.entries()).map(([dept, data]) => ({
@@ -2318,7 +2523,7 @@ function DepartmentActivationSection({ contract }: { contract: ContractData }) {
     status: contract.status === "Signed" ? "Activated" : contract.status === "Pending Signature" ? "Ready" : "Pending",
     lineItems: data.lineItems,
     taskCount: data.taskCount,
-    estimatedHours: data.hours,
+    targetDeliveryDays: data.hours,
   }));
 
   return (
@@ -2347,7 +2552,7 @@ function DepartmentActivationSection({ contract }: { contract: ContractData }) {
               <div className="flex items-center justify-between text-[10px] pt-2 border-t"
                 style={{ borderColor: sc.border }}>
                 <span style={{ color: sc.text }}>{d.taskCount} tasks</span>
-                <span style={{ color: sc.text }}>{d.estimatedHours}h/mo</span>
+                <span style={{ color: sc.text }}>{d.targetDeliveryDays}d target</span>
               </div>
             </div>
           );
@@ -2601,6 +2806,9 @@ function ContractGeneratorView({
       {/* Discount Impact */}
       <DiscountImpactSection contract={liveContract} />
 
+      {/* Delivery Commitments — Line Item SLAs */}
+      <ContractDeliveryCommitments contract={liveContract} />
+
       {/* Services Summary */}
       <ContractServicesSummary contract={liveContract} />
 
@@ -2764,7 +2972,7 @@ function LineItemCatalogSection({ onAddToProposal }: { onAddToProposal: (item: L
         <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
-              {["Line Item", "Category", "Department", "Unit Price", "Billing", "Workload", "Cost", "Margin", "Finance Status", "Task Template", "Prerequisites", "Actions"].map((h) => (
+              {["Line Item", "Category", "Department", "Unit Price", "Billing", "Target Days", "Cost", "Margin", "Finance Status", "Task Template", "Prerequisites", "Actions"].map((h) => (
                 <th key={h} className="text-left px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
                   style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
@@ -2792,7 +3000,7 @@ function LineItemCatalogSection({ onAddToProposal }: { onAddToProposal: (item: L
                       {li.billingType}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{li.workloadHours}h</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{li.targetDeliveryDays}d</td>
                   <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{fmtFull(li.internalCost)}</td>
                   <td className="px-3 py-2.5 whitespace-nowrap">
                     <span className="font-bold" style={{ color: li.margin >= 65 ? "#059669" : li.margin >= 55 ? "#D97706" : "#DC2626" }}>
@@ -2836,7 +3044,7 @@ function LineItemCatalogSection({ onAddToProposal }: { onAddToProposal: (item: L
                           <div className="rounded-lg border p-3 space-y-1" style={{ background: "#F0F9FF", borderColor: "#BFDBFE" }}>
                             {[
                               ["Approved Price", fmtFull(li.financeApprovedPrice)],
-                              ["Approved Workload", `${li.financeApprovedWorkload}h`],
+                              ["Approved Delivery Target", `${li.financeApprovedDeliveryDays}d`],
                               ["Approved Cost", fmtFull(li.financeApprovedCost)],
                               ["Finance Margin", `${li.financeMargin}%`],
                             ].map(([label, val]) => (
@@ -2943,7 +3151,7 @@ function ProposalBuilder({
             <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
-                  {["Line Item", "Category", "Department", "Qty", "Unit Price", "Line Discount", "Subtotal", "Billing", "Workload", "Prereqs", "Task Template", "Actions"].map((h) => (
+                  {["Line Item", "Category", "Department", "Qty", "Unit Price", "Line Discount", "Subtotal", "Billing", "Target Days", "Prereqs", "Task Template", "Actions"].map((h) => (
                     <th key={h} className="text-left px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
                       style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                   ))}
@@ -2997,7 +3205,7 @@ function ProposalBuilder({
                         </span>
                       </td>
                       <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
-                        {li.workloadHours * li.quantity}h
+                        {li.targetDeliveryDays * li.quantity}d
                       </td>
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         <span className="text-[10px]" style={{ color: li.prerequisites.length > 0 ? "#C2410C" : "#6B7280" }}>
@@ -3094,7 +3302,7 @@ function ProposalTotalsCard({ totals }: { totals: ReturnType<typeof calcProposal
     { label: "Final Quote", value: fmtFull(totals.finalQuote), color: "#059669", bold: true },
     { label: "Internal Cost", value: fmtFull(totals.totalInternalCost), color: "var(--rtm-text-muted)" },
     { label: "Est. Margin", value: `${totals.estimatedMargin.toFixed(1)}%`, color: totals.estimatedMargin >= 55 ? "#059669" : totals.estimatedMargin >= 45 ? "#D97706" : "#DC2626" },
-    { label: "Workload Hours", value: `${totals.totalWorkload}h`, color: "var(--rtm-text-secondary)" },
+    { label: "Delivery Target", value: `${totals.totalWorkload}d`, color: "var(--rtm-text-secondary)" },
   ];
 
   return (
@@ -3157,7 +3365,7 @@ function getBudgetRecommendation(budget: number, budgetType: BudgetType): Budget
 
   const monthlyTotal = items.filter((li) => li.billingType === "Monthly Recurring").reduce((s, li) => s + li.unitPrice, 0);
   const setupTotal = items.filter((li) => li.billingType === "One-Time").reduce((s, li) => s + li.unitPrice, 0);
-  const workload = items.reduce((s, li) => s + li.workloadHours, 0);
+  const workload = items.reduce((s, li) => s + li.targetDeliveryDays, 0);
   const internalCost = items.reduce((s, li) => s + li.internalCost, 0);
   const totalRevenue = monthlyTotal + setupTotal;
   const margin = totalRevenue > 0 ? ((totalRevenue - internalCost) / totalRevenue) * 100 : 0;
@@ -3237,7 +3445,7 @@ function BuildFromBudgetSection({ onAcceptRecommendation }: { onAcceptRecommenda
             {[
               { label: "Monthly Total", value: fmtFull(recommendation.monthlyTotal), color: "#0369A1" },
               { label: "Setup Total", value: fmtFull(recommendation.setupTotal), color: "#C2410C" },
-              { label: "Workload", value: `${recommendation.workload}h`, color: "#6D28D9" },
+              { label: "Delivery Target", value: `${recommendation.workload}d`, color: "#6D28D9" },
               { label: "Internal Cost", value: fmtFull(recommendation.internalCost), color: "#92400E" },
               { label: "Est. Margin", value: `${recommendation.margin.toFixed(1)}%`, color: "#15803D" },
             ].map((c) => (
@@ -3417,8 +3625,8 @@ function AIAuditRecommendationSection({ onAcceptPackage }: { onAcceptPackage: (i
                 <p className="text-xs font-bold" style={{ color: "#6D28D9" }}>{fmtFull(recommendation.budget)}/mo</p>
               </div>
               <div className="text-center">
-                <p className="text-[10px]" style={{ color: "#7C3AED" }}>Est. Workload</p>
-                <p className="text-xs font-bold" style={{ color: "#6D28D9" }}>{recommendation.workload}h</p>
+                <p className="text-[10px]" style={{ color: "#7C3AED" }}>Est. Delivery</p>
+                <p className="text-xs font-bold" style={{ color: "#6D28D9" }}>{recommendation.workload}d</p>
               </div>
             </div>
           </div>
@@ -3575,7 +3783,7 @@ function ApprovalHandoffPanel({
   const handoffOutputs = [
     { label: "Billing Line Items", desc: "Selected line items define billing schedule", icon: "💳", ready: allReady },
     { label: "Activation Tasklists", desc: "Task templates activate per department", icon: "📌", ready: allReady },
-    { label: "Department Workload", desc: "Workload distributed to each department", icon: "👥", ready: allReady },
+    { label: "Department Throughput", desc: "Tasks routed to each department", icon: "👥", ready: allReady },
     { label: "Finance Revenue Forecast", desc: "MRR and setup fees logged to finance", icon: "📊", ready: allReady },
     { label: "Client Services Purchased", desc: "Account management receives service scope", icon: "🤝", ready: allReady },
   ];
@@ -3825,7 +4033,7 @@ function ProposalDetailModal({ proposal, onClose }: { proposal: Proposal; onClos
               <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
-                    {["Name", "Category", "Qty", "Unit Price", "Disc", "Subtotal", "Billing", "Workload", "Task Template"].map((h) => (
+                    {["Name", "Category", "Qty", "Unit Price", "Disc", "Subtotal", "Billing", "Target Days", "Task Template"].map((h) => (
                       <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
                         style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                     ))}
@@ -3846,7 +4054,7 @@ function ProposalDetailModal({ proposal, onClose }: { proposal: Proposal; onClos
                           {li.billingType}
                         </span>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{li.workloadHours}h</td>
+                      <td className="px-3 py-2 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{li.targetDeliveryDays}d</td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "#F5F3FF", color: "#6D28D9" }}>{li.taskTemplate}</span>
                       </td>
@@ -3920,14 +4128,14 @@ function SelectedLineItemsSection({
 
   const setupTotal = setupItems.reduce((s, li) => s + li.unitPrice * li.quantity * (1 - li.customDiscount / 100), 0);
   const recurringTotal = recurringItems.reduce((s, li) => s + li.unitPrice * li.quantity * (1 - li.customDiscount / 100), 0);
-  const totalWorkload = lineItems.reduce((s, li) => s + li.workloadHours * li.quantity, 0);
+  const totalWorkload = lineItems.reduce((s, li) => s + li.targetDeliveryDays * li.quantity, 0);
 
   const renderTable = (items: ProposalLineItem[], kind: "setup" | "recurring") => (
     <div className="overflow-x-auto rounded-xl border" style={{ borderColor: kind === "setup" ? "#FED7AA" : "#BFDBFE" }}>
       <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
         <thead>
           <tr style={{ background: kind === "setup" ? "#FFF7ED" : "#EFF6FF", borderBottom: `1px solid ${kind === "setup" ? "#FED7AA" : "#BFDBFE"}` }}>
-            {["Line Item", "Billing Type", "Quantity", "Unit Price", "Discount", "Subtotal", "Workload Hours", "Task Template", "Actions"].map((h) => (
+            {["Line Item", "Billing Type", "Quantity", "Unit Price", "Discount", "Subtotal", "Task Template", "First Response SLA", "Target Completion", "Due Date Offset", "SLA Priority", "Actions"].map((h) => (
               <th key={h} className="text-left px-3 py-2.5 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
                 style={{ color: kind === "setup" ? "#C2410C" : "#1D4ED8" }}>{h}</th>
             ))}
@@ -3981,12 +4189,23 @@ function SelectedLineItemsSection({
                 <td className="px-3 py-2.5 whitespace-nowrap font-bold" style={{ color: kind === "setup" ? "#C2410C" : "#1D4ED8" }}>
                   {fmtFull(sub)}{kind === "recurring" ? "/mo" : ""}
                 </td>
-                <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
-                  {li.workloadHours * li.quantity}h
-                </td>
                 <td className="px-3 py-2.5 whitespace-nowrap">
                   <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "#F5F3FF", color: "#6D28D9" }}>
                     {li.taskTemplate}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap">
+                  <span className="text-[11px] font-semibold" style={{ color: "#1D4ED8" }}>⚡ {li.sla.firstResponseSLA}</span>
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap">
+                  <span className="text-[11px] font-bold" style={{ color: "#059669" }}>{li.sla.targetCompletionDays} biz days</span>
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  {li.sla.dueDateOffset > 0 ? `Day ${li.sla.dueDateOffset}` : "Immediate"}
+                </td>
+                <td className="px-3 py-2.5 whitespace-nowrap">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: li.sla.slaPriority === "Rush" ? "#FFF1F2" : li.sla.slaPriority === "Priority" ? "#EFF6FF" : "#F3F4F6", color: li.sla.slaPriority === "Rush" ? "#BE123C" : li.sla.slaPriority === "Priority" ? "#1D4ED8" : "#374151" }}>
+                    {li.sla.slaPriority}
                   </span>
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap">
@@ -4008,10 +4227,7 @@ function SelectedLineItemsSection({
             <td className="px-3 py-2.5 text-sm font-black" style={{ color: kind === "setup" ? "#C2410C" : "#1D4ED8" }}>
               {fmtFull(kind === "setup" ? setupTotal : recurringTotal)}{kind === "recurring" ? "/mo" : ""}
             </td>
-            <td className="px-3 py-2.5 text-xs font-bold" style={{ color: kind === "setup" ? "#C2410C" : "#1D4ED8" }}>
-              {items.reduce((s, li) => s + li.workloadHours * li.quantity, 0)}h
-            </td>
-            <td colSpan={2} />
+            <td colSpan={6} />
           </tr>
         </tfoot>
       </table>
@@ -4049,6 +4265,9 @@ function SelectedLineItemsSection({
         </div>
       )}
 
+      {/* — SLA Impact Summary visible to Sales before sending — */}
+      <ProposalSLASummary lineItems={lineItems} />
+
       <div className="rounded-xl border p-3 flex flex-wrap gap-4" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
         <div className="text-center">
           <p className="text-[10px] font-semibold" style={{ color: "var(--rtm-text-muted)" }}>Total Line Items</p>
@@ -4063,8 +4282,8 @@ function SelectedLineItemsSection({
           <p className="text-sm font-black" style={{ color: "#1D4ED8" }}>{fmtFull(recurringTotal)}/mo</p>
         </div>
         <div className="text-center">
-          <p className="text-[10px] font-semibold" style={{ color: "#6D28D9" }}>Total Workload</p>
-          <p className="text-sm font-black" style={{ color: "#6D28D9" }}>{totalWorkload}h/mo</p>
+          <p className="text-[10px] font-semibold" style={{ color: "#6D28D9" }}>Delivery Target</p>
+          <p className="text-sm font-black" style={{ color: "#6D28D9" }}>{totalWorkload}d total</p>
         </div>
       </div>
     </div>
@@ -4166,7 +4385,7 @@ function PricingSummarySection({
     { label: "Total Contract Value", value: fmtFull(Math.max(0, totalContractValue)), color: "#047857", bg: "#ECFDF5", border: "#A7F3D0", icon: "💰" },
     { label: "Internal Cost", value: fmtFull(totals.totalInternalCost), color: "#92400E", bg: "#FFFBEB", border: "#FDE68A", icon: "🏭" },
     { label: "Estimated Margin", value: `${totals.estimatedMargin.toFixed(1)}%`, color: totals.estimatedMargin >= 55 ? "#059669" : totals.estimatedMargin >= 45 ? "#D97706" : "#DC2626", bg: totals.estimatedMargin >= 55 ? "#F0FDF4" : totals.estimatedMargin >= 45 ? "#FFFBEB" : "#FFF1F2", border: totals.estimatedMargin >= 55 ? "#A7F3D0" : totals.estimatedMargin >= 45 ? "#FDE68A" : "#FECDD3", icon: "📊" },
-    { label: "Workload Hours", value: `${totals.totalWorkload}h/mo`, color: "#0369A1", bg: "#F0F9FF", border: "#BAE6FD", icon: "⏱️" },
+    { label: "Total Delivery Target", value: `${totals.totalWorkload}d`, color: "#0369A1", bg: "#F0F9FF", border: "#BAE6FD", icon: "📅" },
   ];
 
   return (
@@ -4333,7 +4552,7 @@ export default function SalesProposalsPage() {
           <div>
             <p className="text-xs font-bold" style={{ color: "#0369A1" }}>Finance-Controlled Pricing</p>
             <p className="text-xs mt-0.5" style={{ color: "#0369A1" }}>
-              Base pricing, workload hours, internal cost, and margin targets are owned by Finance. Sales may select line items, adjust quantity, and apply approved discounts.
+              Base pricing, delivery timelines, internal cost, and margin targets are owned by Finance. Sales may select line items, adjust quantity, and apply approved discounts. Hours are not tracked; delivery timelines and SLA commitments govern service delivery.
               Pricing changes require Finance approval via{" "}
               <Link href="/finance/line-items" className="font-bold underline">/finance/line-items</Link>.
             </p>

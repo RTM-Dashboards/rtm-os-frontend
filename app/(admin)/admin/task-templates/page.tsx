@@ -52,7 +52,7 @@ interface TemplateTask {
   name: string;
   department: Department;
   ownerRole: string;
-  estimatedHours: number;
+  targetCompletionDays: number;
   priority: TaskPriority;
   dependency: string;
   dueOffset: string;
@@ -66,7 +66,8 @@ interface TaskTemplate {
   type: TemplateType;
   mappedLineItem: string;
   taskCount: number;
-  estimatedHours: number;
+  targetCompletionDays: number;
+  firstResponseSLA: string;
   activationTrigger: ActivationTrigger;
   status: TemplateStatus;
   lastUpdated: string;
@@ -74,9 +75,8 @@ interface TaskTemplate {
   tasks: TemplateTask[];
   description: string;
   dependencies: string[];
-  workloadMonthly: number;
-  workloadQuarterly: number;
-  revenuePerHour: number;
+  monthlyTaskCount: number;
+  quarterlyTaskCount: number;
   marginContribution: string;
 }
 
@@ -90,24 +90,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Setup",
     mappedLineItem: "SEO Setup",
     taskCount: 6,
-    estimatedHours: 14,
+    targetCompletionDays: 14,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Invoice Paid",
     status: "Active",
     lastUpdated: "2025-07-20",
     activationReady: true,
     description: "Full technical and access setup for new SEO clients.",
     dependencies: ["Website Access", "GA4 Access"],
-    workloadMonthly: 14,
-    workloadQuarterly: 14,
-    revenuePerHour: 89,
+    monthlyTaskCount: 14,
+    quarterlyTaskCount: 14,
     marginContribution: "High",
     tasks: [
-      { name: "Website Access", department: "SEO", ownerRole: "SEO Specialist", estimatedHours: 0.5, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "GA4 Access", department: "SEO", ownerRole: "SEO Specialist", estimatedHours: 0.5, priority: "High", dependency: "Website Access", dueOffset: "Day 1", status: "Required" },
-      { name: "GSC Access", department: "SEO", ownerRole: "SEO Specialist", estimatedHours: 0.5, priority: "High", dependency: "GA4 Access", dueOffset: "Day 1", status: "Required" },
-      { name: "Technical Audit", department: "SEO", ownerRole: "SEO Lead", estimatedHours: 5, priority: "High", dependency: "GSC Access", dueOffset: "Day 3", status: "Required" },
-      { name: "Keyword Research", department: "SEO", ownerRole: "SEO Specialist", estimatedHours: 6, priority: "High", dependency: "Technical Audit", dueOffset: "Day 5", status: "Required" },
-      { name: "Baseline Report", department: "SEO", ownerRole: "Reporting Specialist", estimatedHours: 1.5, priority: "Medium", dependency: "Keyword Research", dueOffset: "Day 7", status: "Required" },
+      { name: "Website Access", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "GA4 Access", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 1, priority: "High", dependency: "Website Access", dueOffset: "Day 1", status: "Required" },
+      { name: "GSC Access", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 1, priority: "High", dependency: "GA4 Access", dueOffset: "Day 1", status: "Required" },
+      { name: "Technical Audit", department: "SEO", ownerRole: "SEO Lead", targetCompletionDays: 5, priority: "High", dependency: "GSC Access", dueOffset: "Day 3", status: "Required" },
+      { name: "Keyword Research", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 6, priority: "High", dependency: "Technical Audit", dueOffset: "Day 5", status: "Required" },
+      { name: "Baseline Report", department: "SEO", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "Medium", dependency: "Keyword Research", dueOffset: "Day 7", status: "Required" },
     ],
   },
   {
@@ -117,26 +117,26 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Monthly Management",
     mappedLineItem: "SEO Monthly",
     taskCount: 8,
-    estimatedHours: 20,
+    targetCompletionDays: 20,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Client Activated",
     status: "Active",
     lastUpdated: "2025-07-18",
     activationReady: true,
     description: "Recurring monthly SEO deliverables for active clients.",
     dependencies: ["SEO Setup Template"],
-    workloadMonthly: 20,
-    workloadQuarterly: 60,
-    revenuePerHour: 74,
+    monthlyTaskCount: 20,
+    quarterlyTaskCount: 60,
     marginContribution: "High",
     tasks: [
-      { name: "Rankings Review", department: "SEO", ownerRole: "SEO Specialist", estimatedHours: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Content Optimization", department: "SEO", ownerRole: "SEO Specialist", estimatedHours: 4, priority: "High", dependency: "Rankings Review", dueOffset: "Day 3", status: "Required" },
-      { name: "Backlink Analysis", department: "SEO", ownerRole: "SEO Lead", estimatedHours: 2, priority: "Medium", dependency: "None", dueOffset: "Day 5", status: "Optional" },
-      { name: "Technical Health Check", department: "SEO", ownerRole: "SEO Specialist", estimatedHours: 2, priority: "High", dependency: "None", dueOffset: "Day 7", status: "Required" },
-      { name: "GSC Data Pull", department: "SEO", ownerRole: "SEO Specialist", estimatedHours: 1, priority: "Medium", dependency: "None", dueOffset: "Day 2", status: "Required" },
-      { name: "Page Speed Review", department: "Web Development", ownerRole: "Dev", estimatedHours: 1, priority: "Low", dependency: "Technical Health Check", dueOffset: "Day 10", status: "Optional" },
-      { name: "Monthly Report Draft", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 3, priority: "High", dependency: "GSC Data Pull", dueOffset: "Day 25", status: "Required" },
-      { name: "Report Delivery", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Monthly Report Draft", dueOffset: "Day 28", status: "Required" },
+      { name: "Rankings Review", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Content Optimization", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 4, priority: "High", dependency: "Rankings Review", dueOffset: "Day 3", status: "Required" },
+      { name: "Backlink Analysis", department: "SEO", ownerRole: "SEO Lead", targetCompletionDays: 2, priority: "Medium", dependency: "None", dueOffset: "Day 5", status: "Optional" },
+      { name: "Technical Health Check", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 2, priority: "High", dependency: "None", dueOffset: "Day 7", status: "Required" },
+      { name: "GSC Data Pull", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 1, priority: "Medium", dependency: "None", dueOffset: "Day 2", status: "Required" },
+      { name: "Page Speed Review", department: "Web Development", ownerRole: "Dev", targetCompletionDays: 1, priority: "Low", dependency: "Technical Health Check", dueOffset: "Day 10", status: "Optional" },
+      { name: "Monthly Report Draft", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 3, priority: "High", dependency: "GSC Data Pull", dueOffset: "Day 25", status: "Required" },
+      { name: "Report Delivery", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Monthly Report Draft", dueOffset: "Day 28", status: "Required" },
     ],
   },
   {
@@ -146,24 +146,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Launch",
     mappedLineItem: "GBP Optimization",
     taskCount: 6,
-    estimatedHours: 10,
+    targetCompletionDays: 10,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Invoice Paid",
     status: "Active",
     lastUpdated: "2025-07-22",
     activationReady: true,
     description: "Google Business Profile optimization and launch process.",
     dependencies: ["GBP Access"],
-    workloadMonthly: 10,
-    workloadQuarterly: 10,
-    revenuePerHour: 95,
+    monthlyTaskCount: 10,
+    quarterlyTaskCount: 10,
     marginContribution: "High",
     tasks: [
-      { name: "GBP Access", department: "GBP", ownerRole: "GBP Specialist", estimatedHours: 0.5, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Location Verification", department: "GBP", ownerRole: "GBP Specialist", estimatedHours: 1, priority: "High", dependency: "GBP Access", dueOffset: "Day 2", status: "Required" },
-      { name: "Category Optimization", department: "GBP", ownerRole: "GBP Specialist", estimatedHours: 2, priority: "High", dependency: "Location Verification", dueOffset: "Day 3", status: "Required" },
-      { name: "Service Optimization", department: "GBP", ownerRole: "GBP Specialist", estimatedHours: 2, priority: "High", dependency: "Category Optimization", dueOffset: "Day 4", status: "Required" },
-      { name: "Photo Upload", department: "Creative", ownerRole: "Creative Specialist", estimatedHours: 2, priority: "Medium", dependency: "Service Optimization", dueOffset: "Day 5", status: "Optional" },
-      { name: "Baseline Report", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 1.5, priority: "Medium", dependency: "Photo Upload", dueOffset: "Day 7", status: "Required" },
+      { name: "GBP Access", department: "GBP", ownerRole: "GBP Specialist", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Location Verification", department: "GBP", ownerRole: "GBP Specialist", targetCompletionDays: 1, priority: "High", dependency: "GBP Access", dueOffset: "Day 2", status: "Required" },
+      { name: "Category Optimization", department: "GBP", ownerRole: "GBP Specialist", targetCompletionDays: 2, priority: "High", dependency: "Location Verification", dueOffset: "Day 3", status: "Required" },
+      { name: "Service Optimization", department: "GBP", ownerRole: "GBP Specialist", targetCompletionDays: 2, priority: "High", dependency: "Category Optimization", dueOffset: "Day 4", status: "Required" },
+      { name: "Photo Upload", department: "Creative", ownerRole: "Creative Specialist", targetCompletionDays: 2, priority: "Medium", dependency: "Service Optimization", dueOffset: "Day 5", status: "Optional" },
+      { name: "Baseline Report", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "Medium", dependency: "Photo Upload", dueOffset: "Day 7", status: "Required" },
     ],
   },
   {
@@ -173,24 +173,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Monthly Management",
     mappedLineItem: "GBP Monthly Management",
     taskCount: 6,
-    estimatedHours: 8,
+    targetCompletionDays: 8,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Client Activated",
     status: "Active",
     lastUpdated: "2025-07-15",
     activationReady: true,
     description: "Recurring Google Business Profile management tasks.",
     dependencies: ["GBP Launch Template"],
-    workloadMonthly: 8,
-    workloadQuarterly: 24,
-    revenuePerHour: 81,
+    monthlyTaskCount: 8,
+    quarterlyTaskCount: 24,
     marginContribution: "High",
     tasks: [
-      { name: "Post Publishing (4x)", department: "GBP", ownerRole: "GBP Specialist", estimatedHours: 2, priority: "High", dependency: "None", dueOffset: "Weekly", status: "Required" },
-      { name: "Review Response", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "None", dueOffset: "Weekly", status: "Required" },
-      { name: "Q&A Monitoring", department: "GBP", ownerRole: "GBP Specialist", estimatedHours: 0.5, priority: "Medium", dependency: "None", dueOffset: "Day 5", status: "Required" },
-      { name: "Insights Pull", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 1, priority: "Medium", dependency: "None", dueOffset: "Day 25", status: "Required" },
-      { name: "Photo Refresh", department: "Creative", ownerRole: "Creative Specialist", estimatedHours: 1.5, priority: "Low", dependency: "None", dueOffset: "Day 15", status: "Optional" },
-      { name: "Monthly Report", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 2, priority: "High", dependency: "Insights Pull", dueOffset: "Day 28", status: "Required" },
+      { name: "Post Publishing (4x)", department: "GBP", ownerRole: "GBP Specialist", targetCompletionDays: 2, priority: "High", dependency: "None", dueOffset: "Weekly", status: "Required" },
+      { name: "Review Response", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Weekly", status: "Required" },
+      { name: "Q&A Monitoring", department: "GBP", ownerRole: "GBP Specialist", targetCompletionDays: 1, priority: "Medium", dependency: "None", dueOffset: "Day 5", status: "Required" },
+      { name: "Insights Pull", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 1, priority: "Medium", dependency: "None", dueOffset: "Day 25", status: "Required" },
+      { name: "Photo Refresh", department: "Creative", ownerRole: "Creative Specialist", targetCompletionDays: 2, priority: "Low", dependency: "None", dueOffset: "Day 15", status: "Optional" },
+      { name: "Monthly Report", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 2, priority: "High", dependency: "Insights Pull", dueOffset: "Day 28", status: "Required" },
     ],
   },
   {
@@ -200,24 +200,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Launch",
     mappedLineItem: "PPC Management",
     taskCount: 6,
-    estimatedHours: 18,
+    targetCompletionDays: 18,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Invoice Paid",
     status: "Active",
     lastUpdated: "2025-07-21",
     activationReady: true,
     description: "Google Ads PPC campaign setup and launch.",
     dependencies: ["Account Access", "Conversion Tracking"],
-    workloadMonthly: 18,
-    workloadQuarterly: 18,
-    revenuePerHour: 105,
+    monthlyTaskCount: 18,
+    quarterlyTaskCount: 18,
     marginContribution: "High",
     tasks: [
-      { name: "Account Access", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 0.5, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Conversion Tracking", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 3, priority: "High", dependency: "Account Access", dueOffset: "Day 2", status: "Required" },
-      { name: "Campaign Setup", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 8, priority: "High", dependency: "Conversion Tracking", dueOffset: "Day 5", status: "Required" },
-      { name: "Audience Setup", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 2, priority: "High", dependency: "Campaign Setup", dueOffset: "Day 6", status: "Required" },
-      { name: "Landing Page Review", department: "Web Development", ownerRole: "Dev", estimatedHours: 2, priority: "High", dependency: "Campaign Setup", dueOffset: "Day 6", status: "Required" },
-      { name: "Launch Approval", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Landing Page Review", dueOffset: "Day 7", status: "Required" },
+      { name: "Account Access", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Conversion Tracking", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 3, priority: "High", dependency: "Account Access", dueOffset: "Day 2", status: "Required" },
+      { name: "Campaign Setup", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 8, priority: "High", dependency: "Conversion Tracking", dueOffset: "Day 5", status: "Required" },
+      { name: "Audience Setup", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 2, priority: "High", dependency: "Campaign Setup", dueOffset: "Day 6", status: "Required" },
+      { name: "Landing Page Review", department: "Web Development", ownerRole: "Dev", targetCompletionDays: 2, priority: "High", dependency: "Campaign Setup", dueOffset: "Day 6", status: "Required" },
+      { name: "Launch Approval", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Landing Page Review", dueOffset: "Day 7", status: "Required" },
     ],
   },
   {
@@ -227,25 +227,25 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Monthly Management",
     mappedLineItem: "PPC Monthly Management",
     taskCount: 7,
-    estimatedHours: 15,
+    targetCompletionDays: 15,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Client Activated",
     status: "Active",
     lastUpdated: "2025-07-10",
     activationReady: true,
     description: "Recurring Google Ads management and optimization tasks.",
     dependencies: ["PPC Launch Template"],
-    workloadMonthly: 15,
-    workloadQuarterly: 45,
-    revenuePerHour: 92,
+    monthlyTaskCount: 15,
+    quarterlyTaskCount: 45,
     marginContribution: "High",
     tasks: [
-      { name: "Bid Management", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 3, priority: "High", dependency: "None", dueOffset: "Weekly", status: "Required" },
-      { name: "Ad Copy Refresh", department: "Creative", ownerRole: "Copywriter", estimatedHours: 2, priority: "Medium", dependency: "None", dueOffset: "Day 10", status: "Optional" },
-      { name: "Negative Keyword Review", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 1, priority: "Medium", dependency: "None", dueOffset: "Day 5", status: "Required" },
-      { name: "Quality Score Audit", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 2, priority: "Medium", dependency: "None", dueOffset: "Day 7", status: "Optional" },
-      { name: "Budget Pacing Review", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 1, priority: "High", dependency: "None", dueOffset: "Day 15", status: "Required" },
-      { name: "Performance Report", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 3, priority: "High", dependency: "Budget Pacing Review", dueOffset: "Day 25", status: "Required" },
-      { name: "Client Call Prep", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Performance Report", dueOffset: "Day 27", status: "Required" },
+      { name: "Bid Management", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 3, priority: "High", dependency: "None", dueOffset: "Weekly", status: "Required" },
+      { name: "Ad Copy Refresh", department: "Creative", ownerRole: "Copywriter", targetCompletionDays: 2, priority: "Medium", dependency: "None", dueOffset: "Day 10", status: "Optional" },
+      { name: "Negative Keyword Review", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 1, priority: "Medium", dependency: "None", dueOffset: "Day 5", status: "Required" },
+      { name: "Quality Score Audit", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 2, priority: "Medium", dependency: "None", dueOffset: "Day 7", status: "Optional" },
+      { name: "Budget Pacing Review", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 15", status: "Required" },
+      { name: "Performance Report", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 3, priority: "High", dependency: "Budget Pacing Review", dueOffset: "Day 25", status: "Required" },
+      { name: "Client Call Prep", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Performance Report", dueOffset: "Day 27", status: "Required" },
     ],
   },
   {
@@ -255,25 +255,25 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Launch",
     mappedLineItem: "Meta Ads Management",
     taskCount: 7,
-    estimatedHours: 16,
+    targetCompletionDays: 16,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Invoice Paid",
     status: "Active",
     lastUpdated: "2025-07-19",
     activationReady: true,
     description: "Meta (Facebook/Instagram) ads campaign setup and launch.",
     dependencies: ["Business Manager Access", "Pixel Setup"],
-    workloadMonthly: 16,
-    workloadQuarterly: 16,
-    revenuePerHour: 98,
+    monthlyTaskCount: 16,
+    quarterlyTaskCount: 16,
     marginContribution: "High",
     tasks: [
-      { name: "Business Manager Access", department: "Meta Ads", ownerRole: "Meta Ads Manager", estimatedHours: 0.5, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Pixel Setup", department: "Meta Ads", ownerRole: "Meta Ads Manager", estimatedHours: 2, priority: "High", dependency: "Business Manager Access", dueOffset: "Day 2", status: "Required" },
-      { name: "Audience Research", department: "Meta Ads", ownerRole: "Meta Ads Manager", estimatedHours: 3, priority: "High", dependency: "Pixel Setup", dueOffset: "Day 3", status: "Required" },
-      { name: "Creative Brief", department: "Creative", ownerRole: "Creative Lead", estimatedHours: 2, priority: "High", dependency: "Audience Research", dueOffset: "Day 4", status: "Required" },
-      { name: "Ad Creative Production", department: "Creative", ownerRole: "Designer", estimatedHours: 4, priority: "High", dependency: "Creative Brief", dueOffset: "Day 6", status: "Required" },
-      { name: "Campaign Setup", department: "Meta Ads", ownerRole: "Meta Ads Manager", estimatedHours: 3, priority: "High", dependency: "Ad Creative Production", dueOffset: "Day 7", status: "Required" },
-      { name: "Launch Approval", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Campaign Setup", dueOffset: "Day 7", status: "Required" },
+      { name: "Business Manager Access", department: "Meta Ads", ownerRole: "Meta Ads Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Pixel Setup", department: "Meta Ads", ownerRole: "Meta Ads Manager", targetCompletionDays: 2, priority: "High", dependency: "Business Manager Access", dueOffset: "Day 2", status: "Required" },
+      { name: "Audience Research", department: "Meta Ads", ownerRole: "Meta Ads Manager", targetCompletionDays: 3, priority: "High", dependency: "Pixel Setup", dueOffset: "Day 3", status: "Required" },
+      { name: "Creative Brief", department: "Creative", ownerRole: "Creative Lead", targetCompletionDays: 2, priority: "High", dependency: "Audience Research", dueOffset: "Day 4", status: "Required" },
+      { name: "Ad Creative Production", department: "Creative", ownerRole: "Designer", targetCompletionDays: 4, priority: "High", dependency: "Creative Brief", dueOffset: "Day 6", status: "Required" },
+      { name: "Campaign Setup", department: "Meta Ads", ownerRole: "Meta Ads Manager", targetCompletionDays: 3, priority: "High", dependency: "Ad Creative Production", dueOffset: "Day 7", status: "Required" },
+      { name: "Launch Approval", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Campaign Setup", dueOffset: "Day 7", status: "Required" },
     ],
   },
   {
@@ -283,24 +283,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Monthly Management",
     mappedLineItem: "Meta Ads Monthly",
     taskCount: 6,
-    estimatedHours: 14,
+    targetCompletionDays: 14,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Client Activated",
     status: "Active",
     lastUpdated: "2025-07-12",
     activationReady: true,
     description: "Recurring Meta Ads management and creative refresh.",
     dependencies: ["Meta Ads Launch Template"],
-    workloadMonthly: 14,
-    workloadQuarterly: 42,
-    revenuePerHour: 86,
+    monthlyTaskCount: 14,
+    quarterlyTaskCount: 42,
     marginContribution: "High",
     tasks: [
-      { name: "Campaign Optimization", department: "Meta Ads", ownerRole: "Meta Ads Manager", estimatedHours: 3, priority: "High", dependency: "None", dueOffset: "Weekly", status: "Required" },
-      { name: "Creative Refresh", department: "Creative", ownerRole: "Designer", estimatedHours: 3, priority: "Medium", dependency: "None", dueOffset: "Day 10", status: "Optional" },
-      { name: "Audience Update", department: "Meta Ads", ownerRole: "Meta Ads Manager", estimatedHours: 2, priority: "Medium", dependency: "None", dueOffset: "Day 7", status: "Optional" },
-      { name: "Budget Review", department: "Meta Ads", ownerRole: "Meta Ads Manager", estimatedHours: 1, priority: "High", dependency: "None", dueOffset: "Day 15", status: "Required" },
-      { name: "Performance Report", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 3, priority: "High", dependency: "Budget Review", dueOffset: "Day 25", status: "Required" },
-      { name: "Report Delivery", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Performance Report", dueOffset: "Day 28", status: "Required" },
+      { name: "Campaign Optimization", department: "Meta Ads", ownerRole: "Meta Ads Manager", targetCompletionDays: 3, priority: "High", dependency: "None", dueOffset: "Weekly", status: "Required" },
+      { name: "Creative Refresh", department: "Creative", ownerRole: "Designer", targetCompletionDays: 3, priority: "Medium", dependency: "None", dueOffset: "Day 10", status: "Optional" },
+      { name: "Audience Update", department: "Meta Ads", ownerRole: "Meta Ads Manager", targetCompletionDays: 2, priority: "Medium", dependency: "None", dueOffset: "Day 7", status: "Optional" },
+      { name: "Budget Review", department: "Meta Ads", ownerRole: "Meta Ads Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 15", status: "Required" },
+      { name: "Performance Report", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 3, priority: "High", dependency: "Budget Review", dueOffset: "Day 25", status: "Required" },
+      { name: "Report Delivery", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Performance Report", dueOffset: "Day 28", status: "Required" },
     ],
   },
   {
@@ -310,23 +310,23 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Setup",
     mappedLineItem: "Reporting Dashboard",
     taskCount: 5,
-    estimatedHours: 8,
+    targetCompletionDays: 8,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Invoice Paid",
     status: "Active",
     lastUpdated: "2025-07-17",
     activationReady: true,
     description: "Reporting dashboard configuration and initial baseline setup.",
     dependencies: ["GA4 Access", "All Channel Access"],
-    workloadMonthly: 8,
-    workloadQuarterly: 8,
-    revenuePerHour: 72,
+    monthlyTaskCount: 8,
+    quarterlyTaskCount: 8,
     marginContribution: "Medium",
     tasks: [
-      { name: "Dashboard Configuration", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 3, priority: "High", dependency: "None", dueOffset: "Day 2", status: "Required" },
-      { name: "Data Source Connection", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 2, priority: "High", dependency: "Dashboard Configuration", dueOffset: "Day 3", status: "Required" },
-      { name: "KPI Definition", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Test Report Generation", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 1, priority: "Medium", dependency: "Data Source Connection", dueOffset: "Day 5", status: "Required" },
-      { name: "Client Report Walkthrough", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Test Report Generation", dueOffset: "Day 7", status: "Required" },
+      { name: "Dashboard Configuration", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 3, priority: "High", dependency: "None", dueOffset: "Day 2", status: "Required" },
+      { name: "Data Source Connection", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "High", dependency: "Dashboard Configuration", dueOffset: "Day 3", status: "Required" },
+      { name: "KPI Definition", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Test Report Generation", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 1, priority: "Medium", dependency: "Data Source Connection", dueOffset: "Day 5", status: "Required" },
+      { name: "Client Report Walkthrough", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Test Report Generation", dueOffset: "Day 7", status: "Required" },
     ],
   },
   {
@@ -336,22 +336,22 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Monthly Management",
     mappedLineItem: "Monthly Reporting",
     taskCount: 4,
-    estimatedHours: 6,
+    targetCompletionDays: 6,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Client Activated",
     status: "Active",
     lastUpdated: "2025-07-08",
     activationReady: true,
     description: "Monthly reporting deliverable generation and delivery.",
     dependencies: ["Reporting Setup Template"],
-    workloadMonthly: 6,
-    workloadQuarterly: 18,
-    revenuePerHour: 65,
+    monthlyTaskCount: 6,
+    quarterlyTaskCount: 18,
     marginContribution: "Medium",
     tasks: [
-      { name: "Data Collection", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 1.5, priority: "High", dependency: "None", dueOffset: "Day 23", status: "Required" },
-      { name: "Report Draft", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 2, priority: "High", dependency: "Data Collection", dueOffset: "Day 25", status: "Required" },
-      { name: "AM Review", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Report Draft", dueOffset: "Day 26", status: "Required" },
-      { name: "Report Delivery", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "AM Review", dueOffset: "Day 28", status: "Required" },
+      { name: "Data Collection", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "High", dependency: "None", dueOffset: "Day 23", status: "Required" },
+      { name: "Report Draft", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "High", dependency: "Data Collection", dueOffset: "Day 25", status: "Required" },
+      { name: "AM Review", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Report Draft", dueOffset: "Day 26", status: "Required" },
+      { name: "Report Delivery", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "AM Review", dueOffset: "Day 28", status: "Required" },
     ],
   },
   {
@@ -361,27 +361,27 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Setup",
     mappedLineItem: "Landing Page Build",
     taskCount: 9,
-    estimatedHours: 40,
+    targetCompletionDays: 40,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Contract Signed",
     status: "Active",
     lastUpdated: "2025-07-14",
     activationReady: true,
     description: "Full website/landing page build from brief to launch.",
     dependencies: ["Design Brief", "Client Content"],
-    workloadMonthly: 40,
-    workloadQuarterly: 40,
-    revenuePerHour: 120,
+    monthlyTaskCount: 40,
+    quarterlyTaskCount: 40,
     marginContribution: "High",
     tasks: [
-      { name: "Discovery Brief", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Wireframe", department: "Web Development", ownerRole: "Web Designer", estimatedHours: 6, priority: "High", dependency: "Discovery Brief", dueOffset: "Day 4", status: "Required" },
-      { name: "Client Wireframe Approval", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Wireframe", dueOffset: "Day 6", status: "Required" },
-      { name: "Design Mockup", department: "Creative", ownerRole: "Designer", estimatedHours: 8, priority: "High", dependency: "Client Wireframe Approval", dueOffset: "Day 10", status: "Required" },
-      { name: "Client Design Approval", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Design Mockup", dueOffset: "Day 12", status: "Required" },
-      { name: "Development", department: "Web Development", ownerRole: "Developer", estimatedHours: 16, priority: "High", dependency: "Client Design Approval", dueOffset: "Day 20", status: "Required" },
-      { name: "QA & Testing", department: "Web Development", ownerRole: "QA", estimatedHours: 4, priority: "High", dependency: "Development", dueOffset: "Day 24", status: "Required" },
-      { name: "Client Review", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "QA & Testing", dueOffset: "Day 26", status: "Required" },
-      { name: "Launch", department: "Web Development", ownerRole: "Developer", estimatedHours: 1, priority: "High", dependency: "Client Review", dueOffset: "Day 28", status: "Required" },
+      { name: "Discovery Brief", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Wireframe", department: "Web Development", ownerRole: "Web Designer", targetCompletionDays: 6, priority: "High", dependency: "Discovery Brief", dueOffset: "Day 4", status: "Required" },
+      { name: "Client Wireframe Approval", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Wireframe", dueOffset: "Day 6", status: "Required" },
+      { name: "Design Mockup", department: "Creative", ownerRole: "Designer", targetCompletionDays: 8, priority: "High", dependency: "Client Wireframe Approval", dueOffset: "Day 10", status: "Required" },
+      { name: "Client Design Approval", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Design Mockup", dueOffset: "Day 12", status: "Required" },
+      { name: "Development", department: "Web Development", ownerRole: "Developer", targetCompletionDays: 16, priority: "High", dependency: "Client Design Approval", dueOffset: "Day 20", status: "Required" },
+      { name: "QA & Testing", department: "Web Development", ownerRole: "QA", targetCompletionDays: 4, priority: "High", dependency: "Development", dueOffset: "Day 24", status: "Required" },
+      { name: "Client Review", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "QA & Testing", dueOffset: "Day 26", status: "Required" },
+      { name: "Launch", department: "Web Development", ownerRole: "Developer", targetCompletionDays: 1, priority: "High", dependency: "Client Review", dueOffset: "Day 28", status: "Required" },
     ],
   },
   {
@@ -391,24 +391,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Setup",
     mappedLineItem: "Creative Package",
     taskCount: 6,
-    estimatedHours: 20,
+    targetCompletionDays: 20,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Contract Signed",
     status: "Active",
     lastUpdated: "2025-07-11",
     activationReady: true,
     description: "Creative asset production for ad campaigns and brand assets.",
     dependencies: ["Creative Brief", "Brand Assets"],
-    workloadMonthly: 20,
-    workloadQuarterly: 20,
-    revenuePerHour: 88,
+    monthlyTaskCount: 20,
+    quarterlyTaskCount: 20,
     marginContribution: "Medium",
     tasks: [
-      { name: "Creative Brief Review", department: "Creative", ownerRole: "Creative Lead", estimatedHours: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Concept Development", department: "Creative", ownerRole: "Creative Lead", estimatedHours: 4, priority: "High", dependency: "Creative Brief Review", dueOffset: "Day 3", status: "Required" },
-      { name: "Client Concept Approval", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Concept Development", dueOffset: "Day 5", status: "Required" },
-      { name: "Asset Production", department: "Creative", ownerRole: "Designer", estimatedHours: 10, priority: "High", dependency: "Client Concept Approval", dueOffset: "Day 12", status: "Required" },
-      { name: "QA", department: "Creative", ownerRole: "Creative Lead", estimatedHours: 2, priority: "Medium", dependency: "Asset Production", dueOffset: "Day 14", status: "Required" },
-      { name: "Asset Delivery", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "QA", dueOffset: "Day 15", status: "Required" },
+      { name: "Creative Brief Review", department: "Creative", ownerRole: "Creative Lead", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Concept Development", department: "Creative", ownerRole: "Creative Lead", targetCompletionDays: 4, priority: "High", dependency: "Creative Brief Review", dueOffset: "Day 3", status: "Required" },
+      { name: "Client Concept Approval", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Concept Development", dueOffset: "Day 5", status: "Required" },
+      { name: "Asset Production", department: "Creative", ownerRole: "Designer", targetCompletionDays: 10, priority: "High", dependency: "Client Concept Approval", dueOffset: "Day 12", status: "Required" },
+      { name: "QA", department: "Creative", ownerRole: "Creative Lead", targetCompletionDays: 2, priority: "Medium", dependency: "Asset Production", dueOffset: "Day 14", status: "Required" },
+      { name: "Asset Delivery", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "QA", dueOffset: "Day 15", status: "Required" },
     ],
   },
   {
@@ -418,26 +418,26 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Onboarding",
     mappedLineItem: "Client Onboarding",
     taskCount: 8,
-    estimatedHours: 6,
+    targetCompletionDays: 6,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Invoice Paid",
     status: "Active",
     lastUpdated: "2025-07-23",
     activationReady: true,
     description: "Complete client onboarding from payment to kickoff call.",
     dependencies: ["Signed Contract", "Invoice Paid"],
-    workloadMonthly: 6,
-    workloadQuarterly: 6,
-    revenuePerHour: 60,
+    monthlyTaskCount: 6,
+    quarterlyTaskCount: 6,
     marginContribution: "Medium",
     tasks: [
-      { name: "Assign Account Manager", department: "Account Management", ownerRole: "Director", estimatedHours: 0.25, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Welcome Email", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "High", dependency: "Assign Account Manager", dueOffset: "Day 1", status: "Required" },
-      { name: "Onboarding Questionnaire", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Welcome Email", dueOffset: "Day 2", status: "Required" },
-      { name: "Access Collection", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Onboarding Questionnaire", dueOffset: "Day 3", status: "Required" },
-      { name: "Schedule Kickoff Call", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "High", dependency: "Access Collection", dueOffset: "Day 3", status: "Required" },
-      { name: "Internal Kickoff Brief", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Schedule Kickoff Call", dueOffset: "Day 5", status: "Required" },
-      { name: "Kickoff Call", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Internal Kickoff Brief", dueOffset: "Day 7", status: "Required" },
-      { name: "Activate Department Templates", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Kickoff Call", dueOffset: "Day 7", status: "Required" },
+      { name: "Assign Account Manager", department: "Account Management", ownerRole: "Director", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Welcome Email", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Assign Account Manager", dueOffset: "Day 1", status: "Required" },
+      { name: "Onboarding Questionnaire", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Welcome Email", dueOffset: "Day 2", status: "Required" },
+      { name: "Access Collection", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Onboarding Questionnaire", dueOffset: "Day 3", status: "Required" },
+      { name: "Schedule Kickoff Call", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Access Collection", dueOffset: "Day 3", status: "Required" },
+      { name: "Internal Kickoff Brief", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Schedule Kickoff Call", dueOffset: "Day 5", status: "Required" },
+      { name: "Kickoff Call", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Internal Kickoff Brief", dueOffset: "Day 7", status: "Required" },
+      { name: "Activate Department Templates", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Kickoff Call", dueOffset: "Day 7", status: "Required" },
     ],
   },
   {
@@ -447,24 +447,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Renewal",
     mappedLineItem: "Contract Renewal",
     taskCount: 6,
-    estimatedHours: 4,
+    targetCompletionDays: 4,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Renewal Signed",
     status: "Active",
     lastUpdated: "2025-07-16",
     activationReady: true,
     description: "Client contract renewal tasks from review to signed agreement.",
     dependencies: ["Contract Expiry Date"],
-    workloadMonthly: 0,
-    workloadQuarterly: 4,
-    revenuePerHour: 55,
+    monthlyTaskCount: 0,
+    quarterlyTaskCount: 4,
     marginContribution: "Low",
     tasks: [
-      { name: "Renewal Notice — 60 Days", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "None", dueOffset: "Day -60", status: "Required" },
-      { name: "Performance Review Prep", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 1, priority: "High", dependency: "None", dueOffset: "Day -45", status: "Required" },
-      { name: "Renewal Proposal", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Performance Review Prep", dueOffset: "Day -30", status: "Required" },
-      { name: "Renewal Call", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Renewal Proposal", dueOffset: "Day -20", status: "Required" },
-      { name: "Contract Sent", department: "Billing", ownerRole: "Billing Specialist", estimatedHours: 0.5, priority: "High", dependency: "Renewal Call", dueOffset: "Day -14", status: "Required" },
-      { name: "Contract Signed — Confirm", department: "Billing", ownerRole: "Billing Specialist", estimatedHours: 0.25, priority: "High", dependency: "Contract Sent", dueOffset: "Day -7", status: "Required" },
+      { name: "Renewal Notice — 60 Days", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day -60", status: "Required" },
+      { name: "Performance Review Prep", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day -45", status: "Required" },
+      { name: "Renewal Proposal", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Performance Review Prep", dueOffset: "Day -30", status: "Required" },
+      { name: "Renewal Call", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Renewal Proposal", dueOffset: "Day -20", status: "Required" },
+      { name: "Contract Sent", department: "Billing", ownerRole: "Billing Specialist", targetCompletionDays: 1, priority: "High", dependency: "Renewal Call", dueOffset: "Day -14", status: "Required" },
+      { name: "Contract Signed — Confirm", department: "Billing", ownerRole: "Billing Specialist", targetCompletionDays: 1, priority: "High", dependency: "Contract Sent", dueOffset: "Day -7", status: "Required" },
     ],
   },
   {
@@ -474,23 +474,23 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Cancellation",
     mappedLineItem: "Cancellation Request",
     taskCount: 5,
-    estimatedHours: 3,
+    targetCompletionDays: 3,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Cancellation Requested",
     status: "Active",
     lastUpdated: "2025-07-09",
     activationReady: true,
     description: "Structured cancellation management and exit tasks.",
     dependencies: ["Cancellation Request Received"],
-    workloadMonthly: 0,
-    workloadQuarterly: 3,
-    revenuePerHour: 50,
+    monthlyTaskCount: 0,
+    quarterlyTaskCount: 3,
     marginContribution: "Low",
     tasks: [
-      { name: "Cancellation Acknowledgement", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Retention Call", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Cancellation Acknowledgement", dueOffset: "Day 2", status: "Required" },
-      { name: "Exit Survey", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "Medium", dependency: "Retention Call", dueOffset: "Day 3", status: "Optional" },
-      { name: "Billing Stop", department: "Billing", ownerRole: "Billing Specialist", estimatedHours: 0.5, priority: "High", dependency: "Retention Call", dueOffset: "Day 5", status: "Required" },
-      { name: "Trigger Offboarding Template", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "High", dependency: "Billing Stop", dueOffset: "Day 5", status: "Required" },
+      { name: "Cancellation Acknowledgement", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Retention Call", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Cancellation Acknowledgement", dueOffset: "Day 2", status: "Required" },
+      { name: "Exit Survey", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "Medium", dependency: "Retention Call", dueOffset: "Day 3", status: "Optional" },
+      { name: "Billing Stop", department: "Billing", ownerRole: "Billing Specialist", targetCompletionDays: 1, priority: "High", dependency: "Retention Call", dueOffset: "Day 5", status: "Required" },
+      { name: "Trigger Offboarding Template", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Billing Stop", dueOffset: "Day 5", status: "Required" },
     ],
   },
   {
@@ -500,25 +500,25 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Offboarding",
     mappedLineItem: "Offboarding Process",
     taskCount: 7,
-    estimatedHours: 5,
+    targetCompletionDays: 5,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Offboarding Approved",
     status: "Active",
     lastUpdated: "2025-07-07",
     activationReady: true,
     description: "Full client offboarding including access removal and final reporting.",
     dependencies: ["Cancellation Process Template"],
-    workloadMonthly: 0,
-    workloadQuarterly: 5,
-    revenuePerHour: 45,
+    monthlyTaskCount: 0,
+    quarterlyTaskCount: 5,
     marginContribution: "Low",
     tasks: [
-      { name: "Final Report Generation", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Access Transfer", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "None", dueOffset: "Day 2", status: "Required" },
-      { name: "Campaign Pause/Stop", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 0.5, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Domain/Asset Release", department: "Web Development", ownerRole: "Developer", estimatedHours: 0.5, priority: "Medium", dependency: "Access Transfer", dueOffset: "Day 3", status: "Required" },
-      { name: "Internal Debrief Note", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "Medium", dependency: "Final Report Generation", dueOffset: "Day 3", status: "Optional" },
-      { name: "Close Client Record", department: "Billing", ownerRole: "Billing Specialist", estimatedHours: 0.25, priority: "High", dependency: "Final Report Generation", dueOffset: "Day 5", status: "Required" },
-      { name: "NPS / Exit Survey Send", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "Low", dependency: "Close Client Record", dueOffset: "Day 5", status: "Optional" },
+      { name: "Final Report Generation", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Access Transfer", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 2", status: "Required" },
+      { name: "Campaign Pause/Stop", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Domain/Asset Release", department: "Web Development", ownerRole: "Developer", targetCompletionDays: 1, priority: "Medium", dependency: "Access Transfer", dueOffset: "Day 3", status: "Required" },
+      { name: "Internal Debrief Note", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "Medium", dependency: "Final Report Generation", dueOffset: "Day 3", status: "Optional" },
+      { name: "Close Client Record", department: "Billing", ownerRole: "Billing Specialist", targetCompletionDays: 1, priority: "High", dependency: "Final Report Generation", dueOffset: "Day 5", status: "Required" },
+      { name: "NPS / Exit Survey Send", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "Low", dependency: "Close Client Record", dueOffset: "Day 5", status: "Optional" },
     ],
   },
   {
@@ -528,23 +528,23 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Budget Reallocation",
     mappedLineItem: "Budget Change Request",
     taskCount: 5,
-    estimatedHours: 4,
+    targetCompletionDays: 4,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Upsell Approved",
     status: "Active",
     lastUpdated: "2025-07-06",
     activationReady: true,
     description: "Tasks triggered when a client reallocates budget between channels.",
     dependencies: ["Client Approval", "Current Budget Snapshot"],
-    workloadMonthly: 4,
-    workloadQuarterly: 4,
-    revenuePerHour: 78,
+    monthlyTaskCount: 4,
+    quarterlyTaskCount: 4,
     marginContribution: "Medium",
     tasks: [
-      { name: "Budget Change Documentation", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Reallocate Campaign Budgets", department: "Paid Advertising", ownerRole: "PPC Manager", estimatedHours: 1, priority: "High", dependency: "Budget Change Documentation", dueOffset: "Day 2", status: "Required" },
-      { name: "Confirm Meta Budget Change", department: "Meta Ads", ownerRole: "Meta Ads Manager", estimatedHours: 0.5, priority: "High", dependency: "Budget Change Documentation", dueOffset: "Day 2", status: "Required" },
-      { name: "Internal Notification", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "Medium", dependency: "Reallocate Campaign Budgets", dueOffset: "Day 2", status: "Optional" },
-      { name: "Client Budget Confirmation", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Internal Notification", dueOffset: "Day 3", status: "Required" },
+      { name: "Budget Change Documentation", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Reallocate Campaign Budgets", department: "Paid Advertising", ownerRole: "PPC Manager", targetCompletionDays: 1, priority: "High", dependency: "Budget Change Documentation", dueOffset: "Day 2", status: "Required" },
+      { name: "Confirm Meta Budget Change", department: "Meta Ads", ownerRole: "Meta Ads Manager", targetCompletionDays: 1, priority: "High", dependency: "Budget Change Documentation", dueOffset: "Day 2", status: "Required" },
+      { name: "Internal Notification", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "Medium", dependency: "Reallocate Campaign Budgets", dueOffset: "Day 2", status: "Optional" },
+      { name: "Client Budget Confirmation", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Internal Notification", dueOffset: "Day 3", status: "Required" },
     ],
   },
   {
@@ -554,24 +554,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Upsell",
     mappedLineItem: "Upsell Service",
     taskCount: 6,
-    estimatedHours: 5,
+    targetCompletionDays: 5,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Upsell Approved",
     status: "Active",
     lastUpdated: "2025-07-05",
     activationReady: true,
     description: "Tasks to activate a new service add-on for an existing client.",
     dependencies: ["Upsell Proposal Signed", "Invoice Paid"],
-    workloadMonthly: 5,
-    workloadQuarterly: 5,
-    revenuePerHour: 82,
+    monthlyTaskCount: 5,
+    quarterlyTaskCount: 5,
     marginContribution: "High",
     tasks: [
-      { name: "Upsell Confirmation Note", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "New Service Invoice", department: "Billing", ownerRole: "Billing Specialist", estimatedHours: 0.5, priority: "High", dependency: "Upsell Confirmation Note", dueOffset: "Day 1", status: "Required" },
-      { name: "Scope Alignment Call", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "New Service Invoice", dueOffset: "Day 2", status: "Required" },
-      { name: "Trigger Service Setup Template", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "High", dependency: "Scope Alignment Call", dueOffset: "Day 3", status: "Required" },
-      { name: "Department Capacity Update", department: "Account Management", ownerRole: "Director", estimatedHours: 0.5, priority: "Medium", dependency: "Trigger Service Setup Template", dueOffset: "Day 3", status: "Optional" },
-      { name: "Internal Team Notification", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.25, priority: "Low", dependency: "Department Capacity Update", dueOffset: "Day 3", status: "Optional" },
+      { name: "Upsell Confirmation Note", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "New Service Invoice", department: "Billing", ownerRole: "Billing Specialist", targetCompletionDays: 1, priority: "High", dependency: "Upsell Confirmation Note", dueOffset: "Day 1", status: "Required" },
+      { name: "Scope Alignment Call", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "New Service Invoice", dueOffset: "Day 2", status: "Required" },
+      { name: "Trigger Service Setup Template", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Scope Alignment Call", dueOffset: "Day 3", status: "Required" },
+      { name: "Department Capacity Update", department: "Account Management", ownerRole: "Director", targetCompletionDays: 1, priority: "Medium", dependency: "Trigger Service Setup Template", dueOffset: "Day 3", status: "Optional" },
+      { name: "Internal Team Notification", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "Low", dependency: "Department Capacity Update", dueOffset: "Day 3", status: "Optional" },
     ],
   },
   {
@@ -581,23 +581,23 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Quarterly Review",
     mappedLineItem: "Strategy Consulting",
     taskCount: 5,
-    estimatedHours: 6,
+    targetCompletionDays: 6,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Invoice Paid",
     status: "Active",
     lastUpdated: "2025-07-04",
     activationReady: false,
     description: "Quarterly strategy review and planning session for premium clients.",
     dependencies: ["All Monthly Reports", "Q Data Pull"],
-    workloadMonthly: 0,
-    workloadQuarterly: 6,
-    revenuePerHour: 175,
+    monthlyTaskCount: 0,
+    quarterlyTaskCount: 6,
     marginContribution: "High",
     tasks: [
-      { name: "Q Data Aggregation", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "Strategy Deck Prep", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 2, priority: "High", dependency: "Q Data Aggregation", dueOffset: "Day 3", status: "Required" },
-      { name: "Internal Strategy Review", department: "Account Management", ownerRole: "Director", estimatedHours: 0.5, priority: "High", dependency: "Strategy Deck Prep", dueOffset: "Day 4", status: "Required" },
-      { name: "Strategy Session Call", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Internal Strategy Review", dueOffset: "Day 7", status: "Required" },
-      { name: "Action Plan Delivery", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "Strategy Session Call", dueOffset: "Day 8", status: "Required" },
+      { name: "Q Data Aggregation", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "Strategy Deck Prep", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 2, priority: "High", dependency: "Q Data Aggregation", dueOffset: "Day 3", status: "Required" },
+      { name: "Internal Strategy Review", department: "Account Management", ownerRole: "Director", targetCompletionDays: 1, priority: "High", dependency: "Strategy Deck Prep", dueOffset: "Day 4", status: "Required" },
+      { name: "Strategy Session Call", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Internal Strategy Review", dueOffset: "Day 7", status: "Required" },
+      { name: "Action Plan Delivery", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Strategy Session Call", dueOffset: "Day 8", status: "Required" },
     ],
   },
   {
@@ -607,24 +607,24 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     type: "Quarterly Review",
     mappedLineItem: "QBR Session",
     taskCount: 6,
-    estimatedHours: 8,
+    targetCompletionDays: 8,
+    firstResponseSLA: "1 Business Day",
     activationTrigger: "Client Activated",
     status: "Draft",
     lastUpdated: "2025-07-02",
     activationReady: false,
     description: "Full quarterly business review with performance, roadmap, and retention focus.",
     dependencies: ["All Channel Data", "Q Revenue Report"],
-    workloadMonthly: 0,
-    workloadQuarterly: 8,
-    revenuePerHour: 150,
+    monthlyTaskCount: 0,
+    quarterlyTaskCount: 8,
     marginContribution: "High",
     tasks: [
-      { name: "QBR Data Pull", department: "Reporting", ownerRole: "Reporting Specialist", estimatedHours: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
-      { name: "QBR Deck", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 3, priority: "High", dependency: "QBR Data Pull", dueOffset: "Day 3", status: "Required" },
-      { name: "Director Review", department: "Account Management", ownerRole: "Director", estimatedHours: 1, priority: "High", dependency: "QBR Deck", dueOffset: "Day 5", status: "Required" },
-      { name: "QBR Meeting", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 1, priority: "High", dependency: "Director Review", dueOffset: "Day 7", status: "Required" },
-      { name: "Follow-Up Action Plan", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "High", dependency: "QBR Meeting", dueOffset: "Day 8", status: "Required" },
-      { name: "Roadmap Update", department: "Account Management", ownerRole: "Account Manager", estimatedHours: 0.5, priority: "Medium", dependency: "Follow-Up Action Plan", dueOffset: "Day 10", status: "Optional" },
+      { name: "QBR Data Pull", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required" },
+      { name: "QBR Deck", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 3, priority: "High", dependency: "QBR Data Pull", dueOffset: "Day 3", status: "Required" },
+      { name: "Director Review", department: "Account Management", ownerRole: "Director", targetCompletionDays: 1, priority: "High", dependency: "QBR Deck", dueOffset: "Day 5", status: "Required" },
+      { name: "QBR Meeting", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Director Review", dueOffset: "Day 7", status: "Required" },
+      { name: "Follow-Up Action Plan", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "QBR Meeting", dueOffset: "Day 8", status: "Required" },
+      { name: "Roadmap Update", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "Medium", dependency: "Follow-Up Action Plan", dueOffset: "Day 10", status: "Optional" },
     ],
   },
 ];
@@ -778,7 +778,7 @@ function TemplateDrawer({
     { id: "overview" as const, label: "Overview" },
     { id: "tasks" as const, label: `Tasks (${template.taskCount})` },
     { id: "dependencies" as const, label: "Dependencies" },
-    { id: "workload" as const, label: "Workload" },
+    { id: "workload" as const, label: "SLA & Throughput" },
     { id: "activation" as const, label: "Activation Rules" },
     { id: "notes" as const, label: "Notes" },
   ];
@@ -830,7 +830,7 @@ function TemplateDrawer({
         <div className="grid grid-cols-4 gap-0" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
           {[
             { label: "Tasks", value: template.taskCount },
-            { label: "Est. Hours", value: `${template.estimatedHours}h` },
+            { label: "Target Days", value: `${template.targetCompletionDays}d` },
             { label: "Department", value: template.department.split(" ")[0] },
             { label: "Trigger", value: template.activationTrigger.split(" ")[0] + "…" },
           ].map((s, i) => (
@@ -924,7 +924,7 @@ function TemplateDrawer({
           {activeTab === "tasks" && (
             <div className="space-y-3">
               <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>
-                Task Breakdown — {template.taskCount} tasks · {template.estimatedHours}h total
+                Task Breakdown — {template.taskCount} tasks · {template.targetCompletionDays}d total
               </div>
               <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--rtm-border)" }}>
                 <table className="w-full text-sm min-w-[600px]">
@@ -948,7 +948,7 @@ function TemplateDrawer({
                         </td>
                         <td className="px-3 py-2.5"><DeptBadge dept={task.department} /></td>
                         <td className="px-3 py-2.5 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{task.ownerRole}</td>
-                        <td className="px-3 py-2.5 text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{task.estimatedHours}h</td>
+                        <td className="px-3 py-2.5 text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{task.targetCompletionDays}d</td>
                         <td className="px-3 py-2.5"><PriorityBadge priority={task.priority} /></td>
                         <td className="px-3 py-2.5 text-xs" style={{ color: "var(--rtm-text-muted)" }}>{task.dependency === "None" ? "—" : task.dependency.slice(0, 16) + (task.dependency.length > 16 ? "…" : "")}</td>
                         <td className="px-3 py-2.5 text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{task.dueOffset}</td>
@@ -1005,10 +1005,10 @@ function TemplateDrawer({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "Estimated Hours (Setup)", value: `${template.estimatedHours}h`, icon: "⏱️" },
-                  { label: "Monthly Hours", value: `${template.workloadMonthly}h`, icon: "📅" },
-                  { label: "Quarterly Hours", value: `${template.workloadQuarterly}h`, icon: "📆" },
-                  { label: "Revenue / Hour", value: `$${template.revenuePerHour}`, icon: "💰" },
+                  { label: "Target Completion (Setup)", value: `${template.targetCompletionDays}d`, icon: "📅" },
+                  { label: "First Response SLA", value: template.firstResponseSLA, icon: "⚡" },
+                  { label: "Monthly Tasks", value: template.monthlyTaskCount, icon: "🔄" },
+                  { label: "Quarterly Tasks", value: template.quarterlyTaskCount, icon: "📆" },
                 ].map((stat) => (
                   <div
                     key={stat.label}
@@ -1025,11 +1025,11 @@ function TemplateDrawer({
               </div>
 
               <div className="rounded-xl p-4" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
-                <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>Department Capacity Impact</div>
+                <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>Department SLA Commitment</div>
                 <div className="flex items-center justify-between">
                   <DeptBadge dept={template.department} />
                   <div className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
-                    {template.estimatedHours}h one-time + {template.workloadMonthly}h/mo
+                    {template.targetCompletionDays}d setup · {template.monthlyTaskCount} tasks/mo
                   </div>
                 </div>
               </div>
@@ -1288,7 +1288,7 @@ export default function TaskTemplatesPage() {
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"
             style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}
           >
-            🏢 Dept. Workload View
+            🏢 Dept. Throughput View
           </Link>
         </div>
       </div>
@@ -1315,7 +1315,7 @@ export default function TaskTemplatesPage() {
               "→",
               "Activation Engine",
               "→",
-              "Department Workload",
+              "Department Throughput",
               "→",
               "Client Delivery",
             ].map((step, i) =>
@@ -1460,7 +1460,7 @@ export default function TaskTemplatesPage() {
                       "Type",
                       "Mapped Line Item",
                       "Tasks",
-                      "Est. Hours",
+                      "Target Days",
                       "Activation Trigger",
                       "Status",
                       "Last Updated",
@@ -1526,10 +1526,10 @@ export default function TaskTemplatesPage() {
                         </span>
                       </td>
 
-                      {/* Estimated Hours */}
+                      {/* Target Completion Days */}
                       <td className="px-4 py-3">
                         <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
-                          {template.estimatedHours}h
+                          {template.targetCompletionDays}d
                         </span>
                       </td>
 
@@ -1695,16 +1695,16 @@ export default function TaskTemplatesPage() {
               style={{ borderBottom: "1px solid var(--rtm-border)" }}
             >
               <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
-                🏢 Department Workload Summary
+                🏢 Department Throughput Summary
               </h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-                Hours generated per department from all active templates.
+                Tasks generated per department from all active templates.
               </p>
             </div>
             <div className="p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {DEPARTMENTS_LIST.map((dept) => {
                 const deptTemplates = TASK_TEMPLATES.filter((t) => t.department === dept && t.status === "Active");
-                const totalHours = deptTemplates.reduce((s, t) => s + t.workloadMonthly, 0);
+                const totalTasks = deptTemplates.reduce((s, t) => s + t.monthlyTaskCount, 0);
                 const c = DEPT_COLORS[dept];
                 return (
                   <div
@@ -1712,8 +1712,8 @@ export default function TaskTemplatesPage() {
                     className="rounded-xl p-3 text-center"
                     style={{ background: c.bg, border: `1px solid ${c.border}` }}
                   >
-                    <div className="text-xl font-black" style={{ color: c.color }}>{totalHours}h</div>
-                    <div className="text-[10px] font-bold mt-0.5" style={{ color: c.color }}>/ month</div>
+                    <div className="text-xl font-black" style={{ color: c.color }}>{totalTasks}</div>
+                    <div className="text-[10px] font-bold mt-0.5" style={{ color: c.color }}>tasks/mo</div>
                     <div className="text-[10px] mt-1 font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{dept}</div>
                     <div className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{deptTemplates.length} templates</div>
                   </div>
@@ -1811,7 +1811,7 @@ export default function TaskTemplatesPage() {
                     >
                       <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{task.name}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{task.estimatedHours}h</span>
+                        <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{task.targetCompletionDays}d</span>
                         <PriorityBadge priority={task.priority} />
                       </div>
                     </div>
@@ -1845,7 +1845,7 @@ export default function TaskTemplatesPage() {
                     {previewTemplate.department}
                   </div>
                   <div className="text-xs mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
-                    Est. {previewTemplate.estimatedHours}h · {previewTemplate.workloadMonthly}h/month
+                    Target: {previewTemplate.targetCompletionDays}d · {previewTemplate.monthlyTaskCount} tasks/mo
                   </div>
                 </div>
               </div>
@@ -1858,14 +1858,14 @@ export default function TaskTemplatesPage() {
             style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
           >
             <h2 className="text-sm font-extrabold mb-4" style={{ color: "var(--rtm-text-primary)" }}>
-              📊 Workload Planning — {previewTemplate.name}
+              📊 SLA Overview — {previewTemplate.name}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: "Setup Hours", value: `${previewTemplate.estimatedHours}h`, icon: "⚙️" },
-                { label: "Monthly Hours", value: `${previewTemplate.workloadMonthly}h`, icon: "📅" },
-                { label: "Quarterly Hours", value: `${previewTemplate.workloadQuarterly}h`, icon: "📆" },
-                { label: "Revenue / Hour", value: `$${previewTemplate.revenuePerHour}`, icon: "💰" },
+                { label: "Target Completion", value: `${previewTemplate.targetCompletionDays}d`, icon: "📅" },
+                { label: "First Response SLA", value: previewTemplate.firstResponseSLA, icon: "⚡" },
+                { label: "Monthly Tasks", value: previewTemplate.monthlyTaskCount, icon: "🔄" },
+                { label: "Quarterly Tasks", value: previewTemplate.quarterlyTaskCount, icon: "📆" },
               ].map((stat) => (
                 <div
                   key={stat.label}

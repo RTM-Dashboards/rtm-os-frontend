@@ -27,6 +27,159 @@ const teamMembers = [
   { name: "Chris D.", email: "chris@rtm.io", role: "Designer", status: "active", twoFa: false },
 ];
 
+// ─── Reporting & Intelligence ────────────────────────────────────────────────
+
+const dashboardTypes = [
+  { id: "department", label: "Department Dashboard", icon: "🏢", description: "Team performance & workload" },
+  { id: "client", label: "Client Dashboard", icon: "👤", description: "Per-client performance metrics" },
+  { id: "executive", label: "Executive Dashboard", icon: "📈", description: "High-level KPIs & revenue" },
+  { id: "project", label: "Project Dashboard", icon: "📋", description: "Project health & milestones" },
+  { id: "operations", label: "Operations Dashboard", icon: "⚙️", description: "Operational efficiency" },
+];
+
+const dashboardBuilderPermissions = [
+  { label: "Create Dashboard", enabled: true },
+  { label: "Edit Dashboard", enabled: true },
+  { label: "Clone Dashboard", enabled: true },
+  { label: "Archive Dashboard", enabled: false },
+  { label: "Assign Dashboard", enabled: true },
+  { label: "Configure Widgets", enabled: true },
+  { label: "Configure KPIs", enabled: true },
+  { label: "Configure Data Sources", enabled: false },
+  { label: "Configure Filters", enabled: true },
+  { label: "Configure AI Summaries", enabled: false },
+];
+
+const clientDashboardTemplates = [
+  { id: "seo", label: "SEO Dashboard", icon: "🔍", description: "Organic traffic, rankings, GSC" },
+  { id: "ppc", label: "PPC Dashboard", icon: "🎯", description: "Google Ads performance & ROAS" },
+  { id: "gbp", label: "GBP Dashboard", icon: "📍", description: "Google Business Profile activity" },
+  { id: "lsa", label: "LSA Dashboard", icon: "📣", description: "Local Services Ads performance" },
+  { id: "website", label: "Website Dashboard", icon: "🌐", description: "Web analytics & conversion" },
+  { id: "ai_auto", label: "AI Automation Dashboard", icon: "🤖", description: "AI campaign & automation KPIs" },
+  { id: "full", label: "Full-Service Dashboard", icon: "⭐", description: "All channels combined" },
+];
+
+const executiveDashboardTemplates = [
+  { id: "revenue", label: "Revenue", icon: "💰", description: "MRR, ARR, churn revenue" },
+  { id: "dept_perf", label: "Department Performance", icon: "🏢", description: "Team output & efficiency" },
+  { id: "project_health", label: "Project Health", icon: "✅", description: "Project status across org" },
+  { id: "client_health", label: "Client Health", icon: "💚", description: "Health scores & risk flags" },
+  { id: "renewal_risk", label: "Renewal Risk", icon: "⚠️", description: "Upcoming renewals at risk" },
+  { id: "revenue_risk", label: "Revenue Risk", icon: "📉", description: "Revenue at risk indicators" },
+  { id: "escalations", label: "Escalations", icon: "🚨", description: "Active escalations & blockers" },
+  { id: "ops_summary", label: "Operations Summary", icon: "⚙️", description: "Ops efficiency & capacity" },
+  { id: "exec_ai", label: "Executive AI Summary", icon: "🧠", description: "AI-generated exec briefing" },
+];
+
+const clientDashboardWidgets = [
+  { id: "organic_traffic", label: "Organic Traffic", source: "GA4" },
+  { id: "keyword_rankings", label: "Keyword Rankings", source: "GSC" },
+  { id: "leads", label: "Leads", source: "GoHighLevel" },
+  { id: "calls", label: "Calls", source: "CallRail" },
+  { id: "booked_calls", label: "Booked Calls", source: "GoHighLevel" },
+  { id: "conversions", label: "Conversions", source: "GA4" },
+  { id: "cost_per_lead", label: "Cost Per Lead", source: "Google Ads" },
+  { id: "roas", label: "ROAS", source: "Google Ads" },
+  { id: "gbp_activity", label: "GBP Activity", source: "GBP" },
+  { id: "lsa_perf", label: "LSA Performance", source: "LSA" },
+  { id: "project_status", label: "Project Status", source: "Internal" },
+  { id: "deliverables", label: "Deliverables", source: "Internal" },
+  { id: "completed_tasks", label: "Completed Tasks", source: "Internal" },
+  { id: "open_tasks", label: "Open Tasks", source: "Internal" },
+  { id: "client_health", label: "Client Health Score", source: "Internal" },
+  { id: "ai_summary", label: "AI Summary", source: "OpenAI" },
+  { id: "recommendations", label: "Recommendations", source: "OpenAI" },
+];
+
+const dataSources = [
+  { name: "GA4", icon: "📊", status: "connected", description: "Google Analytics 4" },
+  { name: "Google Ads", icon: "🎯", status: "connected", description: "PPC campaigns" },
+  { name: "Meta Ads", icon: "📘", status: "connected", description: "Facebook & Instagram ads" },
+  { name: "Google Search Console", icon: "🔍", status: "connected", description: "Organic search data" },
+  { name: "Google Business Profile", icon: "📍", status: "connected", description: "Local presence data" },
+  { name: "Google Local Services Ads", icon: "📣", status: "connected", description: "LSA performance" },
+  { name: "CallRail", icon: "📞", status: "connected", description: "Call tracking & recording" },
+  { name: "GoHighLevel", icon: "⚡", status: "connected", description: "CRM & pipeline" },
+  { name: "Power BI", icon: "📉", status: "disconnected", description: "Business intelligence" },
+  { name: "Google Sheets", icon: "📋", status: "connected", description: "Manual data inputs" },
+  { name: "Twilio", icon: "💬", status: "disconnected", description: "SMS & voice" },
+  { name: "OpenAI", icon: "🤖", status: "connected", description: "AI summaries & analysis" },
+  { name: "Custom API", icon: "🔌", status: "disconnected", description: "External data source" },
+];
+
+const reportAutomationTypes = [
+  { label: "Weekly Reports", icon: "📅", description: "Auto-generated every Monday", enabled: true },
+  { label: "Monthly Reports", icon: "📆", description: "Auto-generated on the 1st", enabled: true },
+  { label: "Quarterly Reports", icon: "🗓️", description: "Q1–Q4 performance summary", enabled: true },
+  { label: "QBR Reports", icon: "🤝", description: "Quarterly business review decks", enabled: false },
+  { label: "Renewal Reports", icon: "🔄", description: "Triggered 60 days before renewal", enabled: true },
+  { label: "Executive Reports", icon: "👔", description: "Leadership briefing packages", enabled: false },
+  { label: "Client Reports", icon: "👤", description: "Client-facing performance decks", enabled: true },
+];
+
+const generateReportTypes = [
+  { label: "Generate Client Report", icon: "👤", status: "available" as const },
+  { label: "Generate Executive Report", icon: "👔", status: "available" as const },
+  { label: "Generate QBR Report", icon: "🤝", status: "coming_soon" as const },
+  { label: "Generate Renewal Report", icon: "🔄", status: "available" as const },
+  { label: "Generate Call Analysis Report", icon: "📞", status: "available" as const },
+  { label: "Generate Department Report", icon: "🏢", status: "coming_soon" as const },
+];
+
+const callIntelligenceIntegrations = [
+  { name: "CallRail", icon: "📞", status: "connected", description: "Call tracking & analytics" },
+  { name: "GoHighLevel Calls", icon: "⚡", status: "connected", description: "CRM-linked call data" },
+  { name: "Twilio Calls", icon: "💬", status: "disconnected", description: "Voice & SMS calls" },
+];
+
+const callIntelligenceFeatures = [
+  { label: "Call Summary", description: "AI-generated recap of each call", enabled: true },
+  { label: "Call Sentiment", description: "Positive, neutral, or negative tone", enabled: true },
+  { label: "Lead Quality", description: "Score each inbound lead call", enabled: true },
+  { label: "Missed Opportunities", description: "Flag upsell / conversion moments", enabled: false },
+  { label: "Competitor Mentions", description: "Detect competitor names in calls", enabled: true },
+  { label: "Objections", description: "Surface common objections", enabled: true },
+  { label: "Action Items", description: "Extract follow-up tasks from calls", enabled: true },
+  { label: "Follow-Up Recommendations", description: "AI suggests next steps", enabled: false },
+];
+
+const aiSummaryRules = [
+  {
+    type: "Department Daily Summary",
+    icon: "🏢",
+    displays: ["Today's Priorities", "Urgent Tasks", "Overdue Items", "Blocked Work", "Projects At Risk", "Recommended Actions"],
+    enabled: true,
+  },
+  {
+    type: "Project Summary",
+    icon: "📋",
+    displays: ["Project Health", "Blocked Items", "Milestone Progress", "Delay Reasons", "Dependencies", "Recommended Actions"],
+    enabled: true,
+  },
+  {
+    type: "Client Summary",
+    icon: "👤",
+    displays: ["Performance Highlights", "Wins", "Concerns", "Recommendations", "Upcoming Deliverables", "Client Health"],
+    enabled: true,
+  },
+  {
+    type: "Executive Summary",
+    icon: "👔",
+    displays: ["Revenue Risks", "Renewal Risks", "Department Bottlenecks", "Escalations", "Projects At Risk", "Recommended Actions"],
+    enabled: false,
+  },
+];
+
+const clientHealthScores = [
+  { label: "Client Health Score", icon: "💚", description: "Composite score across performance, engagement & delivery", status: "architecture_ready" as const },
+  { label: "Renewal Risk Score", icon: "⚠️", description: "Likelihood of non-renewal based on signals", status: "architecture_ready" as const },
+  { label: "Expansion Opportunity Score", icon: "📈", description: "Upsell / cross-sell readiness score", status: "coming_soon" as const },
+  { label: "Churn Risk Score", icon: "🚨", description: "Early warning churn probability", status: "coming_soon" as const },
+];
+
+// ─── Notification Settings ─────────────────────────────────────────────────────
+
 const notificationSettings = [
   { label: "New lead assigned", channel: "Email + Slack", enabled: true },
   { label: "Client health drops below 70", channel: "Email + Slack", enabled: true },
@@ -137,6 +290,249 @@ export default function SettingsPage() {
               <div className={`w-10 h-6 rounded-full flex items-center transition-colors cursor-pointer flex-shrink-0 ${setting.enabled ? "bg-indigo-600 justify-end" : "bg-slate-200 dark:bg-slate-700 justify-start"}`}>
                 <div className="w-4 h-4 bg-white rounded-full mx-1 shadow-sm" />
               </div>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ══════════════════════════════════════════════════════════════
+           REPORTING & INTELLIGENCE — ORGANIZATION CONFIGURATION
+      ══════════════════════════════════════════════════════════════ */}
+
+      {/* Reporting & Intelligence header */}
+      <div className="pt-4">
+        <div className="flex items-center gap-3 mb-1">
+          <span className="text-2xl">📊</span>
+          <div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Configuration Module</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Reporting &amp; Intelligence</h2>
+          </div>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400 ml-11">
+          Hybrid department responsible for dashboards, report automation, data aggregation, client performance, executive reporting, AI summaries, call intelligence, client health, and renewal intelligence.
+        </p>
+      </div>
+
+      {/* ── Dashboard Builder ─────────────────────────────────────── */}
+      <SectionWrapper title="Dashboard Builder" description="Reporting team permissions for dashboard management">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {dashboardBuilderPermissions.map((perm) => (
+            <div key={perm.label} className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/40 transition-colors shadow-sm">
+              <span className="text-sm font-medium text-slate-700">{perm.label}</span>
+              <div className={`w-10 h-6 rounded-full flex items-center transition-colors cursor-pointer flex-shrink-0 ${perm.enabled ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"}`}>
+                <div className="w-4 h-4 bg-white rounded-full mx-1 shadow-sm" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Dashboard Types ───────────────────────────────────────── */}
+      <SectionWrapper title="Dashboard Types" description="Supported dashboard categories">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {dashboardTypes.map((dt) => (
+            <div key={dt.id} className="p-4 rounded-xl bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/50 hover:shadow-sm transition-all">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xl">{dt.icon}</span>
+                <p className="text-sm font-semibold text-slate-800">{dt.label}</p>
+              </div>
+              <p className="text-xs text-slate-500 ml-7">{dt.description}</p>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Client Dashboard Templates ───────────────────────────── */}
+      <SectionWrapper title="Client Dashboard Templates" description="Pre-built service-line dashboards for clients">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {clientDashboardTemplates.map((tpl) => (
+            <div key={tpl.id} className="p-4 rounded-xl bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/50 hover:shadow-sm transition-all">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xl">{tpl.icon}</span>
+                <p className="text-sm font-semibold text-slate-800">{tpl.label}</p>
+              </div>
+              <p className="text-xs text-slate-500 ml-7">{tpl.description}</p>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Client Dashboard Widgets ──────────────────────────────── */}
+      <SectionWrapper title="Client Dashboard Widgets" description="Available widgets for client dashboards">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {clientDashboardWidgets.map((w) => (
+            <div key={w.id} className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/40 transition-colors shadow-sm">
+              <span className="text-sm font-medium text-slate-700">{w.label}</span>
+              <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{w.source}</span>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Executive Dashboard Templates ─────────────────────────── */}
+      <SectionWrapper title="Executive Dashboard Templates" description="High-level dashboards for leadership">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {executiveDashboardTemplates.map((tpl) => (
+            <div key={tpl.id} className="p-4 rounded-xl bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/50 hover:shadow-sm transition-all">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xl">{tpl.icon}</span>
+                <p className="text-sm font-semibold text-slate-800">{tpl.label}</p>
+              </div>
+              <p className="text-xs text-slate-500 ml-7">{tpl.description}</p>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Data Sources ──────────────────────────────────────────── */}
+      <SectionWrapper title="Data Sources" description="Connected reporting data providers">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {dataSources.map((ds) => (
+            <div key={ds.name} className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[var(--rtm-blue)]/40 transition-colors bg-white shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{ds.icon}</span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{ds.name}</p>
+                  <p className="text-xs text-slate-500">{ds.description}</p>
+                </div>
+              </div>
+              {ds.status === "connected" ? (
+                <StatusBadge variant="success" label="Connected" size="sm" />
+              ) : (
+                <button className="text-xs font-medium text-[var(--rtm-blue)] hover:underline px-2 py-1 rounded border border-[var(--rtm-blue)]/30 hover:bg-[var(--rtm-blue-xlight)] transition-colors">
+                  Connect
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Report Automation ─────────────────────────────────────── */}
+      <SectionWrapper title="Report Automation" description="Scheduled report generation rules">
+        <div className="space-y-2">
+          {reportAutomationTypes.map((r) => (
+            <div key={r.label} className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/40 transition-colors shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">{r.icon}</span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{r.label}</p>
+                  <p className="text-xs text-slate-500">{r.description}</p>
+                </div>
+              </div>
+              <div className={`w-10 h-6 rounded-full flex items-center transition-colors cursor-pointer flex-shrink-0 ${r.enabled ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"}`}>
+                <div className="w-4 h-4 bg-white rounded-full mx-1 shadow-sm" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Generate Report ───────────────────────────────────────── */}
+      <SectionWrapper title="Generate Report" description="On-demand report generation (future functionality)">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {generateReportTypes.map((r) => (
+            <div key={r.label} className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/50 hover:shadow-sm transition-all">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{r.icon}</span>
+                <p className="text-sm font-semibold text-slate-800">{r.label}</p>
+              </div>
+              {r.status === "available" ? (
+                <StatusBadge variant="success" label="Available" size="sm" />
+              ) : (
+                <StatusBadge variant="warning" label="Coming Soon" size="sm" />
+              )}
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Call Intelligence ─────────────────────────────────────── */}
+      <SectionWrapper title="Call Intelligence" description="AI-powered analysis of inbound and outbound calls">
+        <div className="space-y-4">
+          {/* Integrations */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Integrations</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {callIntelligenceIntegrations.map((ci) => (
+                <div key={ci.name} className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/40 transition-colors shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{ci.icon}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{ci.name}</p>
+                      <p className="text-xs text-slate-500">{ci.description}</p>
+                    </div>
+                  </div>
+                  {ci.status === "connected" ? (
+                    <StatusBadge variant="success" label="On" size="sm" />
+                  ) : (
+                    <StatusBadge variant="neutral" label="Off" size="sm" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* AI Features */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">AI Analysis Features</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {callIntelligenceFeatures.map((feat) => (
+                <div key={feat.label} className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/40 transition-colors shadow-sm">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">{feat.label}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{feat.description}</p>
+                  </div>
+                  <div className={`w-10 h-6 rounded-full flex items-center transition-colors cursor-pointer flex-shrink-0 ml-3 ${feat.enabled ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"}`}>
+                    <div className="w-4 h-4 bg-white rounded-full mx-1 shadow-sm" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </SectionWrapper>
+
+      {/* ── AI Summary Rules ──────────────────────────────────────── */}
+      <SectionWrapper title="AI Summary Rules" description="Configure what each AI summary displays">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {aiSummaryRules.map((rule) => (
+            <div key={rule.type} className="p-4 rounded-xl bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/50 hover:shadow-sm transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">{rule.icon}</span>
+                  <p className="text-sm font-semibold text-slate-800">{rule.type}</p>
+                </div>
+                <div className={`w-10 h-6 rounded-full flex items-center transition-colors cursor-pointer flex-shrink-0 ${rule.enabled ? "bg-indigo-600 justify-end" : "bg-slate-200 justify-start"}`}>
+                  <div className="w-4 h-4 bg-white rounded-full mx-1 shadow-sm" />
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-1.5 ml-7">
+                {rule.displays.map((d) => (
+                  <span key={d} className="text-xs font-medium text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-full">{d}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionWrapper>
+
+      {/* ── Client Health Intelligence ────────────────────────────── */}
+      <SectionWrapper title="Client Health Intelligence" description="Scoring models architecture — ready for data integration">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {clientHealthScores.map((score) => (
+            <div key={score.label} className="flex items-center justify-between p-4 rounded-xl bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/50 hover:shadow-sm transition-all">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{score.icon}</span>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{score.label}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{score.description}</p>
+                </div>
+              </div>
+              {score.status === "architecture_ready" ? (
+                <StatusBadge variant="info" label="Arch Ready" size="sm" />
+              ) : (
+                <StatusBadge variant="warning" label="Coming Soon" size="sm" />
+              )}
             </div>
           ))}
         </div>

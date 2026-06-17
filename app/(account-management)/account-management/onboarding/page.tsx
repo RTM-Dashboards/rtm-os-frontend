@@ -83,7 +83,7 @@ function HeadView() {
           {[
             { label: "Assign Client", color: "bg-indigo-600 hover:bg-indigo-700" },
             { label: "Reassign Onboarding Owner", color: "bg-violet-600 hover:bg-violet-700" },
-            { label: "Balance Workload", color: "bg-blue-600 hover:bg-blue-700" },
+            { label: "Balance Assignments", color: "bg-blue-600 hover:bg-blue-700" },
             { label: "Approve Assignment", color: "bg-teal-600 hover:bg-teal-700" },
             { label: "Review Unassigned Clients", color: "bg-amber-500 hover:bg-amber-600" },
             { label: "Create Manager Note", color: "bg-slate-600 hover:bg-slate-700" },

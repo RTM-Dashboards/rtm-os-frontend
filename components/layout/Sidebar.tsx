@@ -56,16 +56,20 @@ const navItems: NavItem[] = [
   { label: "Admin Overview",      href: "/admin",              icon: IconDashboard,    section: "overview" },
   { label: "Clients",             href: "/clients",            icon: IconUsers,        section: "overview" },
   {
-    label: "Tasks",
+    label: "Projects & Tasks",
     href: "/tasks",
     icon: IconCheckSquare,
     section: "overview",
     badge: "124",
     children: [
-      { label: "Tasks",             href: "/tasks" },
-      { label: "Templates",        href: "/tasks/templates" },
-      { label: "Activation Rules", href: "/tasks/activation-rules" },
-      { label: "Workload Planning", href: "/tasks/workload" },
+      { label: "Project Management",    href: "/tasks" },
+      { label: "Task Blueprints",        href: "/tasks/templates" },
+      { label: "Activation Rules",      href: "/tasks/activation-rules" },
+      { label: "Activation Engine",     href: "/tasks/activation-engine" },
+      { label: "Department Activation", href: "/tasks/department-activation" },
+      { label: "Workload Planning",     href: "/tasks/workload-planning" },
+      { label: "Analytics",             href: "/tasks/analytics" },
+      { label: "Collaboration Hub",       href: "/tasks/collaboration" },
     ],
   },
   { label: "Notifications",       href: "/notifications",      icon: IconBellSidebar,  section: "overview" },
@@ -112,12 +116,37 @@ const navItems: NavItem[] = [
       { label: "Google Ads", href: "/paid-advertising/google-ads" },
     ],
   },
-  { label: "Reporting",         href: "/reporting",          icon: IconBarChart,  section: "departments" },
+  {
+    label: "Reporting & Intelligence",
+    href: "/reporting",
+    icon: IconBarChart,
+    section: "departments",
+    children: [
+      { label: "Reporting Dashboard",  href: "/reporting" },
+      { label: "Report Automation",    href: "/reporting/automation" },
+      { label: "Dashboard Builder",    href: "/reporting/dashboards" },
+      { label: "Report Templates",     href: "/reporting/templates" },
+      { label: "Generate Report",      href: "/reporting/generate" },
+      { label: "Call Intelligence",    href: "/reporting/call-intelligence" },
+    ],
+  },
   { label: "Local Service Ads", href: "/local-service-ads",  icon: IconStar,      section: "departments" },
   { label: "IT & Security",     href: "/it-security",        icon: IconShield,    section: "departments" },
 
   // ── Settings ──────────────────────────────────────────────────
-  { label: "Settings",          href: "/settings",           icon: IconSettings,  section: "settings" },
+  {
+    label: "Settings",
+    href: "/settings",
+    icon: IconSettings,
+    section: "settings",
+    children: [
+      { label: "General Settings",    href: "/settings" },
+      { label: "Departments & Roles", href: "/settings/departments" },
+      { label: "Workspaces",          href: "/settings/workspaces" },
+      { label: "Users",               href: "/settings/users" },
+      { label: "Permissions",         href: "/settings/permissions" },
+    ],
+  },
 ];
 
 const sectionLabels: Record<string, string> = {
@@ -146,6 +175,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     "/paid-advertising":         true,
     "/web-development-design":   true,
     "/tasks":                    true,
+    "/settings":                 true,
+    "/reporting":                true,
   }));
 
   const toggleExpand = (href: string) => {

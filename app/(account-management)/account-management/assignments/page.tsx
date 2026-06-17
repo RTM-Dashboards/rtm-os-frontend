@@ -37,7 +37,7 @@ function statusBadge(s: string) {
 
 const ASSIGNMENT_HISTORY = [
   { client: "Apex Roofing", from: "Unassigned", to: "Sarah Chen", date: "Jun 20, 2025", reason: "Best capacity match, home services background." },
-  { client: "Harbor Auto", from: "James Park", to: "Sarah Chen", date: "Jun 15, 2025", reason: "Reassigned due to workload rebalancing." },
+  { client: "Harbor Auto", from: "James Park", to: "Sarah Chen", date: "Jun 15, 2025", reason: "Reassigned due to load rebalancing." },
   { client: "NorthStar Dental", from: "Unassigned", to: "Tina Webb", date: "Jun 18, 2025", reason: "Healthcare industry expertise." },
   { client: "Radiance MedSpa", from: "Unassigned", to: "Maria Santos", date: "Jun 19, 2025", reason: "Premium client; beauty/health fit." },
   { client: "Summit Landscaping", from: "Unassigned", to: "James Park", date: "Jun 10, 2025", reason: "Home services, lowest load." },
@@ -87,7 +87,7 @@ function HeadView() {
           {[
             { label: "Assign Client", color: "bg-indigo-600 hover:bg-indigo-700" },
             { label: "Reassign Client", color: "bg-violet-600 hover:bg-violet-700" },
-            { label: "Balance Workload", color: "bg-blue-600 hover:bg-blue-700" },
+            { label: "Balance Assignments", color: "bg-blue-600 hover:bg-blue-700" },
             { label: "Review Overloaded AMs", color: "bg-red-600 hover:bg-red-700" },
             { label: "Review Unassigned Clients", color: "bg-amber-500 hover:bg-amber-600" },
             { label: "Approve Assignment", color: "bg-teal-600 hover:bg-teal-700" },
@@ -163,10 +163,10 @@ function HeadView() {
         </div>
       </section>
 
-      {/* AM Workload Balancing */}
+      {/* AM Load Balancing */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-6 py-4">
-          <h2 className="text-lg font-bold text-slate-900">AM Workload Balancing</h2>
+          <h2 className="text-lg font-bold text-slate-900">AM Load Balancing</h2>
           <p className="text-sm text-slate-500">Current client load per Account Manager — auto assignment recommendations.</p>
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -188,7 +188,7 @@ function HeadView() {
                   <div className="h-2 w-full rounded-full bg-slate-200">
                     <div className={`h-2 rounded-full ${overloaded ? "bg-red-500" : pct > 60 ? "bg-yellow-400" : "bg-emerald-500"}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                   </div>
-                  <p className={`font-semibold ${overloaded ? "text-red-600" : "text-emerald-600"}`}>Capacity: {pct}%</p>
+                  <p className={`font-semibold ${overloaded ? "text-red-600" : "text-emerald-600"}`}>Open Tasks: {pct}% relative load</p>
                 </div>
                 <button className="mt-3 w-full rounded-lg border border-indigo-200 bg-indigo-50 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100">
                   Auto Assign Client
@@ -276,7 +276,7 @@ function AMView() {
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="border-b border-slate-100 px-6 py-4">
           <h2 className="text-lg font-bold text-slate-900">My Assignment List</h2>
-          <p className="text-sm text-slate-500">Read-only view of clients assigned to {SARAH}. Reassignment and workload controls are not available in this view.</p>
+          <p className="text-sm text-slate-500">Read-only view of clients assigned to {SARAH}. Reassignment and assignment controls are not available in this view.</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -361,7 +361,7 @@ export default function AssignmentsPage() {
         <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Account Management</p>
         <h1 className="text-2xl font-bold text-slate-900">Account Assignments</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Manage client-to-AM assignments, workload balancing, and reassignment workflows.
+          Manage client-to-AM assignments, load distribution, and reassignment workflows.
         </p>
       </div>
 

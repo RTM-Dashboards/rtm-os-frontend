@@ -228,7 +228,7 @@ function HeadView() {
   const waitingDept = ALL_TASKS.filter((t) => t.status === "Review").length;
   const completedWeek = ALL_TASKS.filter((t) => t.status === "Completed").length;
 
-  // AM Workload Summary extended
+  // AM Portfolio Summary extended
   const workloadExtended = AM_NAMES.map((am) => {
     const clients = getClientsByAM(am);
     const onboarding = ALL_ONBOARDING.filter((o) => o.assignedAM === am).length;
@@ -237,7 +237,7 @@ function HeadView() {
     const checkins = clients.filter((c) => c.nextCheckin <= "Jun 15, 2025").length;
     const renewals = ALL_RENEWALS.filter((r) => r.assignedAM === am && r.daysRemaining <= 90).length;
     const pct = Math.round((clients.length / 4) * 100); // max ~4 per AM in demo
-    const capacity = pct >= 100 ? "Over Capacity" : pct >= 75 ? "Near Capacity" : "Available";
+    const capacity = pct >= 100 ? "High Load" : pct >= 75 ? "Active" : "Available";
     return { am, clients: clients.length, onboarding, openT, atRiskC, checkins, renewals, capacity };
   });
 
@@ -262,14 +262,14 @@ function HeadView() {
       {/* ── 0. Client Lifecycle Engine ─────────────────────────────────────────── */}
       <AMLifecycleEngine activeStages={["Assigned","Onboarding","Service Activation","Department Launch","Active","Renewal Triggered","QBR Scheduled","Renewal Negotiation","Renewed"]} />
 
-      {/* ── 2. AM Workload Summary ───────────────────────────────────────────── */}
+      {/* ── 2. AM Portfolio Summary ───────────────────────────────────────────── */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <SectionHeader title="AM Workload Summary" subtitle="Client load, task burden, risk, and capacity across all Account Managers." />
+        <SectionHeader title="AM Portfolio Summary" subtitle="Client load, task burden, risk, and SLA status across all Account Managers." />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
               <tr>
-                {["Account Manager", "Assigned Clients", "Onboarding Clients", "Open Tasks", "At-Risk Clients", "Check-ins Due", "Renewals Due", "Capacity Status"].map((h) => (
+                {["Account Manager", "Assigned Clients", "Onboarding Clients", "Open Tasks", "At-Risk Clients", "Check-ins Due", "Renewals Due", "Queue Status"].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -289,7 +289,7 @@ function HeadView() {
                   <td className="px-5 py-3 text-slate-700">{row.checkins}</td>
                   <td className="px-5 py-3 text-slate-700">{row.renewals}</td>
                   <td className="px-5 py-3">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.capacity === "Over Capacity" ? "bg-red-100 text-red-700" : row.capacity === "Near Capacity" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>{row.capacity}</span>
+                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${row.capacity === "High Load" ? "bg-red-100 text-red-700" : row.capacity === "Active" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}>{row.capacity}</span>
                   </td>
                 </tr>
               ))}
@@ -427,7 +427,7 @@ function HeadView() {
             },
             {
               icon: "⚖️",
-              title: "Workload Issues",
+              title: "Throughput Issues",
               text: "Sarah Chen carries the highest risk load (2 critical accounts). James Park has a delayed deliverable blocking LSA launch for Summit Landscaping. Consider redistributing 1 account from Sarah to Tina in Q3.",
               bg: "bg-white border-orange-100",
             },
@@ -757,7 +757,7 @@ export default function AccountManagementDashboard() {
         <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Account Management</p>
         <h1 className="text-2xl font-bold text-slate-900">Account Management Dashboard</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Executive command center — portfolio KPIs, AM workload, client health, renewals, tasks, and AI insights.
+          Executive command center — portfolio KPIs, AM load, client health, renewals, SLA status, and AI insights.
           <span className="ml-2 inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
             AM starts after Ready For Assignment
           </span>
