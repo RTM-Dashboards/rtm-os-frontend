@@ -73,7 +73,7 @@ export default function CrossDeptTaskTable({ tasks }: Props) {
                   </p>
                   {task.blockerNote && (
                     <p className="text-[11px] mt-0.5 italic" style={{ color: "#D97706" }}>
-                      ⚠ {task.blockerNote}
+                      {task.blockerNote}
                     </p>
                   )}
                 </td>

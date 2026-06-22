@@ -357,7 +357,7 @@ const postViewsTrend     = [820, 980, 1120, 1340, 1580, 1720, 1900, 2100, 2280, 
 const quickActions: QuickAction[] = [
   { label: "Optimize GBP Profile", description: "Fill missing fields",   icon: "📍", color: "bg-blue-100 text-blue-600" },
   { label: "Review Request",        description: "Send review links",     icon: "⭐", color: "bg-amber-100 text-amber-600" },
-  { label: "Q&A Sweep",             description: "Answer open questions", icon: "💬", color: "bg-purple-100 text-purple-600" },
+  { label: "Q&A Sweep",             description: "Answer open questions", color: "bg-purple-100 text-purple-600" },
   { label: "Photo Upload",          description: "Add fresh photos",      icon: "📸", color: "bg-emerald-100 text-emerald-600" },
   { label: "Post Content",          description: "GBP weekly post",       icon: "📝", color: "bg-slate-100 text-slate-600" },
   { label: "Visibility Report",     description: "Client-ready PDF",      icon: "📊", color: "bg-red-100 text-red-600" },

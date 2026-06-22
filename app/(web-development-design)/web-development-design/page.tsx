@@ -23,7 +23,7 @@ const variantMap: Record<string, "info"|"pending"|"warning"|"success"> = {
 const quickLinks = [
   { label: "Overview",          href: "/web-development-design",                       icon: "📊", description: "WD & Design overview",     accent: "#0891B2" },
   { label: "Web Dev Dashboard", href: "/web-development-design/web-development",       icon: "💻", description: "Web development projects",   accent: "#1B4FD8" },
-  { label: "WD Tasks",          href: "/web-development-design/web-development/tasks", icon: "✅", description: "Web dev task queue",         accent: "#1B4FD8" },
+  { label: "WD Tasks",          href: "/web-development-design/web-development/tasks", description: "Web dev task queue",         accent: "#1B4FD8" },
   { label: "Design Dashboard",  href: "/web-development-design/design",                icon: "🎨", description: "Design projects",            accent: "#7C3AED" },
   { label: "Design Tasks",      href: "/web-development-design/design/tasks",          icon: "✅", description: "Design task queue",          accent: "#7C3AED" },
   { label: "Clients",           href: "/web-development-design/clients",               icon: "👥", description: "WD & Design clients",        accent: "#059669" },

@@ -740,14 +740,14 @@ function Btn({
 
 function WorkflowLifecycle() {
   const steps = [
-    { label: "Cancellation\nApproved", icon: "✅", color: "#059669" },
-    { label: "Billing\nReview", icon: "🔍", color: "#3B82F6" },
-    { label: "Billing\nCleared", icon: "💳", color: "#059669" },
-    { label: "Offboarding\nTriggered", icon: "🚀", color: "#6366F1" },
+    { label: "Cancellation\nApproved", color: "#059669" },
+    { label: "Billing\nReview", color: "#3B82F6" },
+    { label: "Billing\nCleared", color: "#059669" },
+    { label: "Offboarding\nTriggered", color: "#6366F1" },
     { label: "Dept\nShutdown", icon: "🛑", color: "#F59E0B" },
-    { label: "Access\nRemoval", icon: "🔐", color: "#EF4444" },
+    { label: "Access\nRemoval", color: "#EF4444" },
     { label: "Final\nReport", icon: "📄", color: "#8B5CF6" },
-    { label: "Client\nClosure", icon: "🤝", color: "#0EA5E9" },
+    { label: "Client\nClosure", color: "#0EA5E9" },
     { label: "Offboarded", icon: "🏁", color: "#10B981" },
   ];
 
@@ -782,10 +782,10 @@ function WorkflowLifecycle() {
 
 function ChecklistSection({ client }: { client: OffboardingClient }) {
   const categories = [
-    { title: "1. Billing Closure", icon: "💳", items: client.checklist.billingClosure },
-    { title: "2. AM Closure", icon: "🤝", items: client.checklist.amClosure },
+    { title: "1. Billing Closure", items: client.checklist.billingClosure },
+    { title: "2. AM Closure", items: client.checklist.amClosure },
     { title: "3. Department Shutdown", icon: "🛑", items: client.checklist.departmentShutdown },
-    { title: "4. Access Removal", icon: "🔐", items: client.checklist.accessRemoval },
+    { title: "4. Access Removal", items: client.checklist.accessRemoval },
     { title: "5. Final Deliverables", icon: "📄", items: client.checklist.finalDeliverables },
   ];
 
@@ -1213,14 +1213,14 @@ export default function OffboardingPage() {
       {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
           {[
-            { title: "Active Offboarding", value: String(activeCount), icon: "📋", iconBg: "#EFF6FF", iconColor: "#3B82F6", subtitle: "in progress" },
-            { title: "Pending Billing Clearance", value: String(pendingBilling), icon: "💳", iconBg: "#FEF2F2", iconColor: "#DC2626", subtitle: "waiting" },
+            { title: "Active Offboarding", value: String(activeCount), iconBg: "#EFF6FF", iconColor: "#3B82F6", subtitle: "in progress" },
+            { title: "Pending Billing Clearance", value: String(pendingBilling), iconBg: "#FEF2F2", iconColor: "#DC2626", subtitle: "waiting" },
             { title: "Dept Shutdown Pending", value: String(pendingDeptShutdown), icon: "🛑", iconBg: "#FFFBEB", iconColor: "#B45309", subtitle: "active depts" },
-            { title: "Access Removal Pending", value: String(pendingAccess), icon: "🔐", iconBg: "#FEF2F2", iconColor: "#EF4444", subtitle: "need removal" },
+            { title: "Access Removal Pending", value: String(pendingAccess), iconBg: "#FEF2F2", iconColor: "#EF4444", subtitle: "need removal" },
             { title: "Final Report Pending", value: String(pendingFinalReport), icon: "📄", iconBg: "#F5F3FF", iconColor: "#7C3AED", subtitle: "not sent" },
-            { title: "Pending Client Handoff", value: String(pendingHandoff), icon: "🤝", iconBg: "#EFF6FF", iconColor: "#0EA5E9", subtitle: "need handoff" },
-            { title: "Completed This Month", value: String(completedThisMonth), icon: "✅", iconBg: "#ECFDF5", iconColor: "#059669", subtitle: "closed" },
-            { title: "Overdue Tasks", value: String(overdue), icon: "🚨", iconBg: "#FEF2F2", iconColor: "#DC2626", subtitle: "critical" },
+            { title: "Pending Client Handoff", value: String(pendingHandoff), iconBg: "#EFF6FF", iconColor: "#0EA5E9", subtitle: "need handoff" },
+            { title: "Completed This Month", value: String(completedThisMonth), iconBg: "#ECFDF5", iconColor: "#059669", subtitle: "closed" },
+            { title: "Overdue Tasks", value: String(overdue), iconBg: "#FEF2F2", iconColor: "#DC2626", subtitle: "critical" },
           ].map((k) => (
             <KpiCard key={k.title} title={k.title} value={k.value} subtitle={k.subtitle} icon={<span className="text-lg">{k.icon}</span>} iconBg={k.iconBg} iconColor={k.iconColor} />
           ))}
@@ -1557,19 +1557,19 @@ export default function OffboardingPage() {
         <SectionWrapper title="Related Workflows & Routes">
           <div className="flex flex-wrap gap-3">
             {[
-              { label: "Billing / Cancellations", href: "/billing/cancellations", icon: "💳" },
-              { label: "Account Management", href: "/account-management", icon: "🏢" },
-              { label: "Client Portfolio", href: "/clients", icon: "👥" },
-              { label: "Admin Workflows", href: "/admin/workflows", icon: "⚙️" },
-              { label: "Tasks", href: "/tasks", icon: "✅" },
-              { label: "Notifications", href: "/notifications", icon: "🔔" },
+              { label: "Billing / Cancellations", href: "/billing/cancellations" },
+              { label: "Account Management", href: "/account-management" },
+              { label: "Client Portfolio", href: "/clients" },
+              { label: "Admin Workflows", href: "/admin/workflows" },
+              { label: "Tasks", href: "/tasks" },
+              { label: "Notifications", href: "/notifications" },
             ].map((link) => (
               <Link key={link.href} href={link.href}>
                 <div
                   className="flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium hover:shadow-sm transition-shadow cursor-pointer"
                   style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)", background: "var(--rtm-surface)" }}
                 >
-                  <span>{link.icon}</span>
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
                   {link.label}
                 </div>
               </Link>

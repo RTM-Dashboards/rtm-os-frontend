@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function InternalNotesTab({ notes }: Props) {
-  if (!notes.length) return <EmptyTab icon="🔒" message="No internal notes. Add a note visible only to the team." />;
+  if (!notes.length) return <EmptyTab message="No internal notes. Add a note visible only to the team." />;
 
   return (
     <div className="space-y-4">
@@ -17,7 +17,7 @@ export default function InternalNotesTab({ notes }: Props) {
         className="flex items-center gap-2 p-3 rounded-lg text-xs font-medium"
         style={{ background: "#FEF9C3", border: "1px solid #FDE68A", color: "#92400E" }}
       >
-        <span>🔒</span>
+        
         <span>Internal notes are visible to team members only. Not shared with clients.</span>
       </div>
 

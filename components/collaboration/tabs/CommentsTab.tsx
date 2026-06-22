@@ -8,8 +8,9 @@ interface Props {
 }
 
 function CommentStatusBadge({ pinned, resolved }: { pinned: boolean; resolved: boolean }) {
-  if (pinned) return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "#FEF3C7", color: "#92400E" }}>📌 Pinned</span>;
-  if (resolved) return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "#D1FAE5", color: "#065F46" }}>✓ Resolved</span>;
+  // pinned
+  if (pinned) return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "#FEF3C7", color: "#92400E" }}> Pinned</span>;
+  if (resolved) return <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "#D1FAE5", color: "#065F46" }}> Resolved</span>;
   return null;
 }
 
@@ -28,7 +29,7 @@ function renderBody(body: string) {
 }
 
 export default function CommentsTab({ comments }: Props) {
-  if (!comments.length) return <EmptyTab icon="💬" message="No comments yet. Be the first to add one." />;
+  if (!comments.length) return <EmptyTab message="No comments yet. Be the first to add one." />;
 
   const pinned = comments.filter((c) => c.pinned);
   const rest = comments.filter((c) => !c.pinned);
@@ -153,7 +154,7 @@ export default function CommentsTab({ comments }: Props) {
           <div className="flex items-center justify-between mt-2">
             <div className="flex items-center gap-2">
               <button className="text-xs px-2 py-1 rounded" style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}>
-                📎 Attach
+                 Attach
               </button>
               <button className="text-xs px-2 py-1 rounded" style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}>
                 @ Mention

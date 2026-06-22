@@ -81,7 +81,7 @@ function BlockerFlag({ blocker }: { blocker: string | null }) {
       style={{ color: "#DC2626" }}
       title={blocker}
     >
-      🚫 <span className="max-w-[180px] truncate">{blocker}</span>
+      <span className="max-w-[180px] truncate">{blocker}</span>
     </span>
   );
 }
@@ -178,7 +178,7 @@ interface WorkspaceTasksPageProps {
 export default function WorkspaceTasksPage({
   workspace,
   department,
-  icon = "📋",
+  icon = "",
   accentColor = "var(--rtm-blue)",
   tasks,
 }: WorkspaceTasksPageProps) {
@@ -355,7 +355,7 @@ export default function WorkspaceTasksPage({
                           className="text-xs font-medium"
                           style={{ color: overduRow ? "#DC2626" : "var(--rtm-text-muted)" }}
                         >
-                          {overduRow && "⚠ "}{fmt(task.dueDate)}
+                          {overduRow && "! "}{fmt(task.dueDate)}
                         </span>
                       </td>
 

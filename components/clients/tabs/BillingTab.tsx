@@ -36,7 +36,7 @@ export default function BillingTab({ client }: { client: ClientProfile }) {
           {client.billingStatus === "overdue" && (
             <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800/40">
               <div className="flex items-start gap-3">
-                <span className="text-red-500 text-lg flex-shrink-0">⚠</span>
+                <span className="text-red-500 text-sm font-bold flex-shrink-0">!</span>
                 <div>
                   <p className="text-sm font-semibold text-red-700 dark:text-red-400">Invoice Overdue</p>
                   <p className="text-xs text-red-600 dark:text-red-300 mt-0.5">

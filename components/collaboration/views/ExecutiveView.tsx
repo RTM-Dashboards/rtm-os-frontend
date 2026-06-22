@@ -47,7 +47,7 @@ export default function ExecutiveView({ tasks }: Props) {
             className="text-3xl font-black mt-1"
             style={{ color: riskLevel === "High" ? "#DC2626" : riskLevel === "Medium" ? "#D97706" : "#059669" }}
           >
-            {riskLevel === "High" ? "🔴 HIGH" : riskLevel === "Medium" ? "🟡 MEDIUM" : "🟢 LOW"}
+            {riskLevel === "High" ? "HIGH" : riskLevel === "Medium" ? "MEDIUM" : "LOW"}
           </p>
           <p className="text-xs mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
             {allBlocked.length} blocked · {allEscalated.length} escalated · {allPendingAppr.length} pending approvals
@@ -62,10 +62,10 @@ export default function ExecutiveView({ tasks }: Props) {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: "🚫", label: "Blocked Tasks", value: allBlocked.length, danger: allBlocked.length > 0 },
-          { icon: "⚡", label: "Escalated", value: allEscalated.length, danger: allEscalated.length > 0 },
+          { icon: "BLK", label: "Blocked Tasks", value: allBlocked.length, danger: allBlocked.length > 0 },
+          { icon: "!", label: "Escalated", value: allEscalated.length, danger: allEscalated.length > 0 },
           { icon: "⏳", label: "Approval Bottlenecks", value: allPendingAppr.length, warn: allPendingAppr.length > 0 },
-          { icon: "🔔", label: "Unread Alerts", value: allNotifs.length, warn: allNotifs.length > 0 },
+          { icon: "", label: "Unread Alerts", value: allNotifs.length, warn: allNotifs.length > 0 },
         ].map((kpi) => (
           <div
             key={kpi.label}
@@ -86,7 +86,7 @@ export default function ExecutiveView({ tasks }: Props) {
       {/* Blocked Tasks */}
       {allBlocked.length > 0 && (
         <section>
-          <SectionHeader>🚫 Blocked Tasks</SectionHeader>
+          <SectionHeader>Blocked Tasks</SectionHeader>
           <div className="space-y-3">
             {allBlocked.map((t) => {
               const blockedDeps = t.dependencies.filter((d) => d.status === "Blocked" || d.status === "Escalated");
@@ -102,7 +102,7 @@ export default function ExecutiveView({ tasks }: Props) {
                       <p className="text-[10px]" style={{ color: "#DC2626" }}>{t.projectName}</p>
                     </div>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "#DC2626", color: "#fff" }}>
-                      🚫 Blocked
+                      Blocked
                     </span>
                   </div>
                   <div className="space-y-1">
@@ -118,7 +118,7 @@ export default function ExecutiveView({ tasks }: Props) {
                   </div>
                   {t.internalNotes.filter((n) => n.priority === "Urgent").map((n) => (
                     <div key={n.id} className="mt-2 p-2 rounded text-xs" style={{ background: "#FEE2E2", color: "#991B1B" }}>
-                      🔒 {n.body}
+                      {n.body}
                     </div>
                   ))}
                 </div>
@@ -153,7 +153,7 @@ export default function ExecutiveView({ tasks }: Props) {
 
       {/* Department Risk per task */}
       <section>
-        <SectionHeader>📊 Department & Project Status</SectionHeader>
+        <SectionHeader>Department & Project Status</SectionHeader>
         <div className="space-y-2">
           {tasks.map((t) => {
             const blocked = t.dependencies.some((d) => d.status === "Blocked");
@@ -161,10 +161,10 @@ export default function ExecutiveView({ tasks }: Props) {
             const pendAppr = t.approvals.filter((a) => a.status === "Pending Approval" || a.status === "Pending Review").length;
             const risk = escalated ? "Critical" : blocked ? "High" : pendAppr > 0 ? "Medium" : "Low";
             const riskColors: Record<string, { bg: string; color: string; label: string }> = {
-              Critical: { bg: "#7C2D12", color: "#fff", label: "⚡ Critical" },
-              High:     { bg: "#FEE2E2", color: "#991B1B", label: "🔴 High" },
-              Medium:   { bg: "#FEF3C7", color: "#92400E", label: "🟡 Medium" },
-              Low:      { bg: "#D1FAE5", color: "#065F46", label: "🟢 Low" },
+              Critical: { bg: "#7C2D12", color: "#fff", label: "Critical" },
+              High:     { bg: "#FEE2E2", color: "#991B1B", label: "High" },
+              Medium:   { bg: "#FEF3C7", color: "#92400E", label: "Medium" },
+              Low:      { bg: "#D1FAE5", color: "#065F46", label: "Low" },
             };
             const rc = riskColors[risk];
             return (
@@ -179,7 +179,7 @@ export default function ExecutiveView({ tasks }: Props) {
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
-                    💬 {t.comments.length} · 📎 {t.attachments.length} · ✅ {t.approvals.length}
+                    {t.comments.length} · {t.attachments.length} · {t.approvals.length}
                   </span>
                   <span
                     className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
@@ -197,7 +197,7 @@ export default function ExecutiveView({ tasks }: Props) {
       {/* Recent Escalation Alerts */}
       {allNotifs.filter((n) => n.type === "Project Escalated" || n.type === "Dependency Blocked").length > 0 && (
         <section>
-          <SectionHeader>⚡ Escalation Alerts</SectionHeader>
+          <SectionHeader>Escalation Alerts</SectionHeader>
           <div className="space-y-2">
             {allNotifs.filter((n) => n.type === "Project Escalated" || n.type === "Dependency Blocked").map((n) => (
               <div
@@ -205,7 +205,7 @@ export default function ExecutiveView({ tasks }: Props) {
                 className="flex items-start gap-3 p-3 rounded-xl"
                 style={{ background: "#FEF2F2", border: "1px solid #FECACA" }}
               >
-                <span>⚡</span>
+                
                 <div>
                   <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>{n.message}</p>
                   <p className="text-[10px]" style={{ color: "#991B1B" }}>{n.taskName} · {relativeTime(n.timestamp)}</p>

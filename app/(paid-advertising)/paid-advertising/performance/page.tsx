@@ -92,7 +92,7 @@ const combinedLeadsTrend = trendData.map((d) => d.metaLeads + d.googleLeads);
 const quickActions: QuickAction[] = [
   { label: "Budget Overview",     description: "Rebalance Meta vs Google", icon: "⚖️",  color: "bg-blue-100 text-blue-600" },
   { label: "Cross-Channel Report",description: "Combined performance PDF",  icon: "📊", color: "bg-purple-100 text-purple-600" },
-  { label: "Lead Quality Sweep",  description: "Review lead quality score", icon: "✅", color: "bg-emerald-100 text-emerald-600" },
+  { label: "Lead Quality Sweep",  description: "Review lead quality score", color: "bg-emerald-100 text-emerald-600" },
   { label: "Creative Audit",      description: "Check fatigue across ads",  icon: "🎨", color: "bg-amber-100 text-amber-600" },
   { label: "Audience Analysis",   description: "Overlap and reach check",   icon: "🎯", color: "bg-red-100 text-red-600" },
   { label: "Client Report Pack",  description: "All-channel report",        icon: "📑", color: "bg-slate-100 text-slate-600" },

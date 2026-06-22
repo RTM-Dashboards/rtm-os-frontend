@@ -3,7 +3,8 @@
 export interface QuickAction {
   label: string;
   description?: string;
-  icon: string;
+  /** Emoji string or short text; optional for backward compat */
+  icon?: string;
   color: string;
   onClick?: () => void;
 }

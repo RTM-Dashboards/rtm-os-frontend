@@ -21,7 +21,7 @@ export default function NotesTab({ client }: { client: ClientProfile }) {
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-amber-200 dark:border-amber-800/40">
           <div className="px-5 py-4 border-b border-amber-100 dark:border-amber-800/30">
             <div className="flex items-center gap-2">
-              <span className="text-amber-500">🔒</span>
+              <span className="text-amber-500 text-xs font-bold">INT</span>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Internal Notes</h3>
               <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium">
                 Internal Only

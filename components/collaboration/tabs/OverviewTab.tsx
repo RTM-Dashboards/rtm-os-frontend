@@ -22,7 +22,7 @@ export default function OverviewTab({ collab }: Props) {
           className="flex items-start gap-3 p-4 rounded-xl"
           style={{ background: "#FEF2F2", border: "1px solid #FECACA" }}
         >
-          <span className="text-xl">🚫</span>
+          
           <div>
             <p className="text-sm font-bold" style={{ color: "#DC2626" }}>
               {blocked.length} Blocking {blocked.length === 1 ? "Dependency" : "Dependencies"}
@@ -63,10 +63,10 @@ export default function OverviewTab({ collab }: Props) {
       {/* Stats row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: "💬", label: "Comments", value: comments.length, tab: "comments" },
-          { icon: "📎", label: "Attachments", value: attachments.length, tab: "attachments" },
-          { icon: "✅", label: "Approvals", value: approvals.length, tab: "approvals" },
-          { icon: "👁️", label: "Watchers", value: watchers.filter((w) => w.watching).length, tab: "watchers" },
+          { icon: "C", label: "Comments", value: comments.length, tab: "comments" },
+          { icon: "A", label: "Attachments", value: attachments.length, tab: "attachments" },
+          { icon: "", label: "Approvals", value: approvals.length, tab: "approvals" },
+          { icon: "W", label: "Watchers", value: watchers.filter((w) => w.watching).length, tab: "watchers" },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -81,7 +81,7 @@ export default function OverviewTab({ collab }: Props) {
 
       {/* Latest Comments */}
       {comments.length > 0 && (
-        <Section title="💬 Latest Comments">
+        <Section title="Latest Comments">
           {comments.slice(0, 2).map((c) => (
             <div key={c.id} className="flex items-start gap-2">
               <Avatar initials={c.authorInitials} color={c.authorColor} size="xs" />
@@ -99,7 +99,7 @@ export default function OverviewTab({ collab }: Props) {
 
       {/* Approvals status */}
       {approvals.length > 0 && (
-        <Section title="✅ Approvals">
+        <Section title="Approvals">
           <div className="space-y-2">
             {approvals.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-2">
@@ -113,7 +113,7 @@ export default function OverviewTab({ collab }: Props) {
 
       {/* Dependencies */}
       {dependencies.length > 0 && (
-        <Section title="🔗 Dependencies">
+        <Section title="Dependencies">
           <div className="space-y-2">
             {dependencies.map((d) => (
               <div key={d.id} className="flex items-center justify-between gap-2">
@@ -130,7 +130,7 @@ export default function OverviewTab({ collab }: Props) {
 
       {/* Watchers */}
       {watchers.filter((w) => w.watching).length > 0 && (
-        <Section title="👁️ Watchers">
+        <Section title="Watchers">
           <div className="flex flex-wrap gap-2">
             {watchers.filter((w) => w.watching).map((w) => (
               <div key={w.id} className="flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
@@ -145,7 +145,7 @@ export default function OverviewTab({ collab }: Props) {
 
       {/* Latest Activity */}
       {activity.length > 0 && (
-        <Section title="📋 Recent Activity">
+        <Section title="Recent Activity">
           <div className="space-y-2">
             {[...activity].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 4).map((ev) => (
               <div key={ev.id} className="flex items-center gap-2">
@@ -163,11 +163,11 @@ export default function OverviewTab({ collab }: Props) {
 
       {/* Unread notifications */}
       {unreadNotifs.length > 0 && (
-        <Section title="🔔 Notifications">
+        <Section title="Notifications">
           <div className="space-y-2">
             {unreadNotifs.map((n) => (
               <div key={n.id} className="flex items-start gap-2 p-2 rounded-lg" style={{ background: "#EBF0FD" }}>
-                <span className="text-base flex-shrink-0">🔔</span>
+                
                 <div>
                   <p className="text-xs font-medium" style={{ color: "#1B4FD8" }}>{n.message}</p>
                   <p className="text-[10px]" style={{ color: "#5A6A85" }}>{relativeTime(n.timestamp)}</p>
@@ -184,7 +184,7 @@ export default function OverviewTab({ collab }: Props) {
           className="flex items-center gap-2 p-3 rounded-xl text-xs"
           style={{ background: "#FEF9C3", border: "1px solid #FDE68A", color: "#92400E" }}
         >
-          <span>🔒</span>
+          
           <span>{internalNotes.length} internal note{internalNotes.length > 1 ? "s" : ""} · {clientNotes.length} client note{clientNotes.length > 1 ? "s" : ""}</span>
         </div>
       )}

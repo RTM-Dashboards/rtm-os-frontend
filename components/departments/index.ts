@@ -1,0 +1,10 @@
+export { default as DepartmentDashboard }         from "./DepartmentDashboard";
+export { default as DepartmentKpiRow }            from "./DepartmentKpiRow";
+export { default as DepartmentIntegrationsPanel } from "./DepartmentIntegrationsPanel";
+export { default as DepartmentProjectsPanel }     from "./DepartmentProjectsPanel";
+export { default as DepartmentTasksPanel }        from "./DepartmentTasksPanel";
+export { default as DepartmentEscalationsPanel }  from "./DepartmentEscalationsPanel";
+export { default as DepartmentWorkflowsPanel }    from "./DepartmentWorkflowsPanel";
+export { default as DepartmentReportsPanel }      from "./DepartmentReportsPanel";
+export { default as DepartmentNotificationsPanel }from "./DepartmentNotificationsPanel";
+export { default as DepartmentSettingsPanel }     from "./DepartmentSettingsPanel";

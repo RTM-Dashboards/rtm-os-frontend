@@ -1050,14 +1050,19 @@ export default function FinanceLineItemsPage() {
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
-          { label: "Total Line Items", value: totalItems, color: "#1D4ED8", bg: "#EFF6FF", icon: "📦" },
-          { label: "Finance Approved", value: approvedItems, color: "#15803D", bg: "#F0FDF4", icon: "✅" },
-          { label: "Active SLAs", value: activeSLAs, color: "#047857", bg: "#ECFDF5", icon: "⚡" },
-          { label: "Pending SLA Review", value: pendingReviewSLAs, color: "#C2410C", bg: "#FFF7ED", icon: "⏳" },
-          { label: "Rush Priority Items", value: rushItems, color: "#BE123C", bg: "#FFF1F2", icon: "🚀" },
+          { label: "Total Line Items", value: totalItems, color: "#1D4ED8", bg: "#EFF6FF" },
+          { label: "Finance Approved", value: approvedItems, color: "#15803D", bg: "#F0FDF4" },
+          { label: "Active SLAs", value: activeSLAs, color: "#047857", bg: "#ECFDF5" },
+          { label: "Pending SLA Review", value: pendingReviewSLAs, color: "#C2410C", bg: "#FFF7ED" },
+          { label: "Rush Priority Items", value: rushItems, color: "#BE123C", bg: "#FFF1F2" },
         ].map((c) => (
           <div key={c.label} className="rounded-xl border p-4 text-center" style={{ background: c.bg, borderColor: `${c.color}30` }}>
-            <div className="text-xl mb-1">{c.icon}</div>
+            <div
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mb-1"
+              style={{ background: `${c.color}20`, color: c.color }}
+            >
+              {String(c.label).slice(0, 2).toUpperCase()}
+            </div>
             <div className="text-xl font-black" style={{ color: c.color }}>{c.value}</div>
             <div className="text-[10px] font-semibold mt-0.5 leading-tight" style={{ color: c.color }}>{c.label}</div>
           </div>

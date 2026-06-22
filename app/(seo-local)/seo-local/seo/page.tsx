@@ -77,7 +77,7 @@ const quickActions: QuickAction[] = [
   { label: "Run Audit",        description: "Full SEO audit",         icon: "🔍", color: "bg-blue-100 text-blue-600" },
   { label: "Keyword Research", description: "Find opportunities",     icon: "🔑", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
   { label: "Content Brief",    description: "Generate page brief",    icon: "📝", color: "bg-purple-100 text-purple-600" },
-  { label: "Backlink Report",  description: "Domain authority check", icon: "🔗", color: "bg-emerald-100 text-emerald-600" },
+  { label: "Backlink Report",  description: "Domain authority check", color: "bg-emerald-100 text-emerald-600" },
 ];
 
 export default function SeoPage() {

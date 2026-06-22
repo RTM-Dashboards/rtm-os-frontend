@@ -64,7 +64,7 @@ export default function DeliverableCard({ deliverable, onTaskClick }: Props) {
               {hasBlockers && (
                 <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
                   style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
-                  🚫 Blocked
+                  Blocked
                 </span>
               )}
             </div>
@@ -131,7 +131,7 @@ export default function DeliverableCard({ deliverable, onTaskClick }: Props) {
         <div className="px-5 py-3" style={{ background: "#FEF2F2", borderBottom: "1px solid #FECACA" }}>
           {deliverable.blockers.map((b) => (
             <p key={b.id} className="text-xs font-medium" style={{ color: "#DC2626" }}>
-              🚫 {b.description}
+              {b.description}
             </p>
           ))}
         </div>
@@ -169,7 +169,7 @@ export default function DeliverableCard({ deliverable, onTaskClick }: Props) {
 
                 <span className="flex-1 min-w-0 text-sm font-medium leading-snug truncate"
                   style={{ color: "var(--rtm-text-primary)" }}>
-                  {task.blockers.length > 0 && <span className="mr-1">🚫</span>}
+                  
                   {task.title}
                 </span>
 
@@ -183,7 +183,7 @@ export default function DeliverableCard({ deliverable, onTaskClick }: Props) {
                       className="text-xs whitespace-nowrap"
                       style={{ color: overdue ? "#DC2626" : "var(--rtm-text-muted)" }}
                     >
-                      {overdue ? "⚠ " : ""}Due {formatDate(task.dueDate)}
+                      {overdue ? "! " : ""}Due {formatDate(task.dueDate)}
                     </span>
                   )}
                 </div>

@@ -2236,14 +2236,14 @@ export default function DepartmentsPage() {
   }
 
   const kpiCards = [
-    { title: "Active Departments", value: String(activeDepts.length), icon: "🏢", iconBg: "#ECFDF5", iconColor: "#059669" },
+    { title: "Active Departments", value: String(activeDepts.length), iconBg: "#ECFDF5", iconColor: "#059669" },
     { title: "Pending Setup", value: String(pendingDepts.length + inactiveDepts.length), icon: "⏸️", iconBg: "#FFFBEB", iconColor: "#B45309" },
-    { title: "Configured Roles", value: String(allRoles.length), icon: "👥", iconBg: "var(--rtm-blue-xlight)", iconColor: "var(--rtm-blue)" },
-    { title: "KPIs Configured", value: String(allKpis.length), icon: "📊", iconBg: "#F5F3FF", iconColor: "#7C3AED" },
-    { title: "Integrations", value: String(connectedIntegrations.length), icon: "🔗", iconBg: "#ECFDF5", iconColor: "#059669" },
-    { title: "Blueprints Mapped", value: String(allBlueprints.length), icon: "🗂️", iconBg: "#EFF6FF", iconColor: "#1D4ED8" },
-    { title: "Dashboard Ready", value: String(dashboardReady.length), icon: "⚡", iconBg: "var(--rtm-blue-xlight)", iconColor: "var(--rtm-blue)" },
-    { title: "Missing Manager", value: String(missingManager.length), icon: "⚠️", iconBg: "#FEF2F2", iconColor: "#DC2626" },
+    { title: "Configured Roles", value: String(allRoles.length), iconBg: "var(--rtm-blue-xlight)", iconColor: "var(--rtm-blue)" },
+    { title: "KPIs Configured", value: String(allKpis.length), iconBg: "#F5F3FF", iconColor: "#7C3AED" },
+    { title: "Integrations", value: String(connectedIntegrations.length), iconBg: "#ECFDF5", iconColor: "#059669" },
+    { title: "Blueprints Mapped", value: String(allBlueprints.length), iconBg: "#EFF6FF", iconColor: "#1D4ED8" },
+    { title: "Dashboard Ready", value: String(dashboardReady.length), iconBg: "var(--rtm-blue-xlight)", iconColor: "var(--rtm-blue)" },
+    { title: "Missing Manager", value: String(missingManager.length), iconBg: "#FEF2F2", iconColor: "#DC2626" },
   ];
 
   return (

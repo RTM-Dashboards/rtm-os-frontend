@@ -89,7 +89,7 @@ export default function DepartmentLaunchStatus({ rows }: Props) {
                       </p>
                       {row.notes && (
                         <p className="text-[11px] mt-1 italic" style={{ color: "#D97706" }}>
-                          ⚠ {row.notes}
+                          {row.notes}
                         </p>
                       )}
                     </div>

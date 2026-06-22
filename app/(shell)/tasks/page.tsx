@@ -955,9 +955,9 @@ const TASK_STATUS_CFG: Record<TaskStatus, { bg: string; color: string; border: s
 };
 
 const HEALTH_CFG = {
-  "Green": { bg: "#ECFDF5", color: "#059669", icon: "🟢" },
-  "Yellow": { bg: "#FFFBEB", color: "#D97706", icon: "🟡" },
-  "Red": { bg: "#FEF2F2", color: "#DC2626", icon: "🔴" },
+  "Green": { bg: "#ECFDF5", color: "#059669" },
+  "Yellow": { bg: "#FFFBEB", color: "#D97706" },
+  "Red": { bg: "#FEF2F2", color: "#DC2626" },
 };
 
 const RISK_CFG = {
@@ -966,11 +966,11 @@ const RISK_CFG = {
   "High": { bg: "#FEF2F2", color: "#DC2626" },
 };
 
-const PRIORITY_CFG: Record<TaskPriority, { bg: string; color: string; border: string; icon: string }> = {
+const PRIORITY_CFG: Record<TaskPriority, { bg: string; color: string; border: string; icon?: string }> = {
   "Low":    { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0", icon: "↓" },
   "Medium": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", icon: "→" },
   "High":   { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", icon: "↑" },
-  "Urgent": { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE", icon: "⚡" },
+  "Urgent": { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE" },
 };
 
 // ── BADGE COMPONENTS ──────────────────────────────────────────────────────────
@@ -1111,7 +1111,7 @@ function ProjectDetailDrawer({ project, onClose }: { project: Project; onClose: 
               <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-blue)" }}>{project.id}</span>
               <ProjectStatusBadge status={project.status} />
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background: health.bg, color: health.color }}>
-                {health.icon} {project.executiveSummary.projectHealth} Health
+{project.executiveSummary.projectHealth} Health
               </span>
             </div>
             <h2 className="text-lg font-extrabold leading-snug" style={{ color: "var(--rtm-text-primary)" }}>{project.name}</h2>
@@ -1435,7 +1435,7 @@ function ProjectDetailDrawer({ project, onClose }: { project: Project; onClose: 
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Project Health", value: <span className="inline-flex items-center gap-1 text-sm font-bold" style={{ color: health.color }}>{health.icon} {project.executiveSummary.projectHealth}</span> },
+                  { label: "Project Health", value: <span className="inline-flex items-center gap-1 text-sm font-bold" style={{ color: health.color }}>{project.executiveSummary.projectHealth}</span> },
                   { label: "Launch Risk", value: <span className="text-sm font-bold px-2 py-0.5 rounded-full" style={{ background: RISK_CFG[project.executiveSummary.launchRisk].bg, color: RISK_CFG[project.executiveSummary.launchRisk].color }}>{project.executiveSummary.launchRisk}</span> },
                   { label: "Departments Delayed", value: <span className="text-sm font-black" style={{ color: project.executiveSummary.departmentsDelayed > 0 ? "#DC2626" : "#059669" }}>{project.executiveSummary.departmentsDelayed}</span> },
                   { label: "Critical Blockers", value: <span className="text-sm font-black" style={{ color: project.executiveSummary.criticalBlockers > 0 ? "#DC2626" : "#059669" }}>{project.executiveSummary.criticalBlockers}</span> },
@@ -1474,9 +1474,9 @@ function ProjectRowActions({ project, onView }: { project: Project; onView: () =
   const actions = [
     { label: "View Project", icon: "👁", action: () => { onView(); setOpen(false); } },
     { label: "Edit Project", icon: "✏️", action: () => setOpen(false) },
-    { label: "Add Blocker", icon: "🚫", action: () => setOpen(false) },
-    { label: "Update Status", icon: "🔄", action: () => setOpen(false) },
-    { label: "View Client", icon: "🏢", action: () => setOpen(false) },
+    { label: "Add Blocker", action: () => setOpen(false) },
+    { label: "Update Status", action: () => setOpen(false) },
+    { label: "View Client", action: () => setOpen(false) },
     { label: "Export Project", icon: "⬇️", action: () => setOpen(false) },
   ];
   return (
@@ -1587,18 +1587,18 @@ export default function ProjectsDeliveryEngine() {
           {/* Module quick links */}
           <div className="flex flex-wrap gap-2 mb-5">
             {[
-              { label: "Task Blueprints", href: "/tasks/templates", icon: "📋", color: "#1D4ED8", bg: "#EFF6FF" },
-              { label: "Collaboration Hub", href: "/tasks/collaboration", icon: "🤝", color: "#059669", bg: "#ECFDF5" },
-              { label: "Activation Rules", href: "/tasks/activation-rules", icon: "⚡", color: "#D97706", bg: "#FFFBEB" },
-              { label: "Activation Engine", href: "/tasks/activation-engine", icon: "🚀", color: "#7C3AED", bg: "#FAF5FF" },
-              { label: "Department Activation", href: "/tasks/department-activation", icon: "🏢", color: "#6D28D9", bg: "#F5F3FF" },
-              { label: "Workload Planning", href: "/tasks/workload-planning", icon: "📊", color: "#0891B2", bg: "#ECFEFF" },
-              { label: "Analytics", href: "/tasks/analytics", icon: "📈", color: "#C2410C", bg: "#FFF7ED" },
+              { label: "Task Blueprints", href: "/tasks/templates", color: "#1D4ED8", bg: "#EFF6FF" },
+              { label: "Collaboration Hub", href: "/tasks/collaboration", color: "#059669", bg: "#ECFDF5" },
+              { label: "Activation Rules", href: "/tasks/activation-rules", color: "#D97706", bg: "#FFFBEB" },
+              { label: "Activation Engine", href: "/tasks/activation-engine", color: "#7C3AED", bg: "#FAF5FF" },
+              { label: "Department Activation", href: "/tasks/department-activation", color: "#6D28D9", bg: "#F5F3FF" },
+              { label: "Workload Planning", href: "/tasks/workload-planning", color: "#0891B2", bg: "#ECFEFF" },
+              { label: "Analytics", href: "/tasks/analytics", color: "#C2410C", bg: "#FFF7ED" },
             ].map(m => (
               <Link key={m.href} href={m.href}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border hover:opacity-80 transition-opacity"
                 style={{ background: m.bg, color: m.color, borderColor: "transparent" }}>
-                <span>{m.icon}</span>{m.label}
+{m.label}
               </Link>
             ))}
           </div>
@@ -1736,7 +1736,7 @@ export default function ProjectsDeliveryEngine() {
                             <ProjectStatusBadge status={project.status} />
                           </td>
                           <td className="px-3 py-3">
-                            <span className="text-sm">{health.icon}</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold" style={{ background: health.bg, color: health.color }}>{project.executiveSummary.projectHealth}</span>
                           </td>
                           <td className="px-3 py-3">
                             <ProjectRowActions project={project} onView={() => setSelectedProject(project)} />
@@ -1778,10 +1778,10 @@ export default function ProjectsDeliveryEngine() {
               <h3 className="text-sm font-black mb-4" style={{ color: "var(--rtm-text-primary)" }}>👁 Project Visibility Rules</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
                 {([
-                  { role: "Account Managers" as VisibilityRole, icon: "🏢", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE", items: ["Full project view", "All departments", "Milestones & dependencies", "Blockers & escalations", "Client communication", "Project health"] },
-                  { role: "Department Heads" as VisibilityRole, icon: "🔍", color: "#7C3AED", bg: "#FAF5FF", border: "#DDD6FE", items: ["Full project overview", "Delay reasons", "Cross-dept dependencies", "Blockers & escalations", "Executive summary", "Department work"] },
-                  { role: "Department Specialists" as VisibilityRole, icon: "👤", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", items: ["Assigned task lists", "Assigned tasks", "Own deliverables", "Blockers on own tasks"] },
-                  { role: "Executives" as VisibilityRole, icon: "📊", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", items: ["Portfolio status", "Risks & delays", "Dept bottlenecks", "Revenue impact", "Client impact"] },
+                  { role: "Account Managers" as VisibilityRole, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE", items: ["Full project view", "All departments", "Milestones & dependencies", "Blockers & escalations", "Client communication", "Project health"] },
+                  { role: "Department Heads" as VisibilityRole, color: "#7C3AED", bg: "#FAF5FF", border: "#DDD6FE", items: ["Full project overview", "Delay reasons", "Cross-dept dependencies", "Blockers & escalations", "Executive summary", "Department work"] },
+                  { role: "Department Specialists" as VisibilityRole, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", items: ["Assigned task lists", "Assigned tasks", "Own deliverables", "Blockers on own tasks"] },
+                  { role: "Executives" as VisibilityRole, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", items: ["Portfolio status", "Risks & delays", "Dept bottlenecks", "Revenue impact", "Client impact"] },
                 ] as Array<{ role: VisibilityRole; icon: string; color: string; bg: string; border: string; items: string[] }>).map(v => (
                   <div key={v.role} className="rounded-xl p-4" style={{ background: v.bg, border: `1px solid ${v.border}` }}>
                     <div className="flex items-center gap-2 mb-3">

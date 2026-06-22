@@ -2348,14 +2348,14 @@ export default function HandoffsPage() {
         {/* ── KPI Cards ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
           {[
-            { title: "Approved Proposals", value: String(kpis.approvedProposals), icon: "📋", iconBg: "#EFF6FF", accentColor: "var(--rtm-blue)" },
-            { title: "Pending Billing Requests", value: String(kpis.pendingBillingRequests), icon: "💳", iconBg: "#FFFBEB", accentColor: "#B45309" },
-            { title: "Invoice Draft Needed", value: String(kpis.invoiceDraftNeeded), icon: "⚠️", iconBg: "#FEF2F2", accentColor: "#DC2626" },
+            { title: "Approved Proposals", value: String(kpis.approvedProposals), iconBg: "#EFF6FF", accentColor: "var(--rtm-blue)" },
+            { title: "Pending Billing Requests", value: String(kpis.pendingBillingRequests), iconBg: "#FFFBEB", accentColor: "#B45309" },
+            { title: "Invoice Draft Needed", value: String(kpis.invoiceDraftNeeded), iconBg: "#FEF2F2", accentColor: "#DC2626" },
             { title: "Invoices Sent", value: String(kpis.invoicesSent), icon: "📤", iconBg: "#EFF6FF", accentColor: "#3B82F6" },
-            { title: "Invoices Paid", value: String(kpis.invoicesPaid), icon: "✅", iconBg: "#ECFDF5", accentColor: "#059669" },
-            { title: "Activation Ready", value: String(kpis.activationReady), icon: "🚀", iconBg: "#ECFDF5", accentColor: "#059669" },
-            { title: "Handoff Revenue", value: `$${kpis.handoffRevenue.toLocaleString()}/mo`, icon: "💰", iconBg: "#ECFDF5", accentColor: "#059669" },
-            { title: "Affiliate Commission", value: String(kpis.commissionEligible), icon: "🤝", iconBg: "#FFFBEB", accentColor: "#B45309" },
+            { title: "Invoices Paid", value: String(kpis.invoicesPaid), iconBg: "#ECFDF5", accentColor: "#059669" },
+            { title: "Activation Ready", value: String(kpis.activationReady), iconBg: "#ECFDF5", accentColor: "#059669" },
+            { title: "Handoff Revenue", value: `$${kpis.handoffRevenue.toLocaleString()}/mo`, iconBg: "#ECFDF5", accentColor: "#059669" },
+            { title: "Affiliate Commission", value: String(kpis.commissionEligible), iconBg: "#FFFBEB", accentColor: "#B45309" },
           ].map(kpi => (
             <KpiCard key={kpi.title} title={kpi.title} value={kpi.value} icon={<span>{kpi.icon}</span>} iconBg={kpi.iconBg} />
           ))}

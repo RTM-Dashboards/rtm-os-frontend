@@ -73,7 +73,7 @@ const alerts: AlertItem[] = [
 
 const quickActions: QuickAction[] = [
   { label: "Claim Listing",  description: "Verify Yelp page",    icon: "⭐", color: "bg-red-100 text-red-600" },
-  { label: "Reply Reviews",  description: "Respond to feedback", icon: "💬", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
+  { label: "Reply Reviews",  description: "Respond to feedback", color: "bg-[var(--rtm-blue-xlight)] text-[var(--rtm-blue)]" },
   { label: "Add Photos",     description: "Upload business images",icon: "📷", color: "bg-blue-100 text-blue-600" },
   { label: "Update Profile", description: "Edit hours & info",   icon: "✏️", color: "bg-emerald-100 text-emerald-600" },
 ];

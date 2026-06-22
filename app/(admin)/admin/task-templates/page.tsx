@@ -894,13 +894,13 @@ function TemplateDrawer({
                 <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>Activation Flow</div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {[
-                    { label: template.mappedLineItem, icon: "📦" },
+                    { label: template.mappedLineItem },
                     { label: "↓", arrow: true },
-                    { label: template.name, icon: "📋" },
+                    { label: template.name },
                     { label: "↓", arrow: true },
-                    { label: `${template.taskCount} Tasks Generated`, icon: "✅" },
+                    { label: `${template.taskCount} Tasks Generated` },
                     { label: "↓", arrow: true },
-                    { label: template.department, icon: "🏢" },
+                    { label: template.department },
                   ].map((step, i) =>
                     step.arrow ? (
                       <span key={i} className="text-lg font-black" style={{ color: "var(--rtm-text-muted)" }}>↓</span>
@@ -910,7 +910,6 @@ function TemplateDrawer({
                         className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold"
                         style={{ background: dc.bg, color: dc.color, border: `1px solid ${dc.border}` }}
                       >
-                        <span>{step.icon}</span>
                         {step.label}
                       </div>
                     )
@@ -1005,9 +1004,9 @@ function TemplateDrawer({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "Target Completion (Setup)", value: `${template.targetCompletionDays}d`, icon: "📅" },
-                  { label: "First Response SLA", value: template.firstResponseSLA, icon: "⚡" },
-                  { label: "Monthly Tasks", value: template.monthlyTaskCount, icon: "🔄" },
+                  { label: "Target Completion (Setup)", value: `${template.targetCompletionDays}d` },
+                  { label: "First Response SLA", value: template.firstResponseSLA },
+                  { label: "Monthly Tasks", value: template.monthlyTaskCount },
                   { label: "Quarterly Tasks", value: template.quarterlyTaskCount, icon: "📆" },
                 ].map((stat) => (
                   <div
@@ -1862,9 +1861,9 @@ export default function TaskTemplatesPage() {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: "Target Completion", value: `${previewTemplate.targetCompletionDays}d`, icon: "📅" },
-                { label: "First Response SLA", value: previewTemplate.firstResponseSLA, icon: "⚡" },
-                { label: "Monthly Tasks", value: previewTemplate.monthlyTaskCount, icon: "🔄" },
+                { label: "Target Completion", value: `${previewTemplate.targetCompletionDays}d` },
+                { label: "First Response SLA", value: previewTemplate.firstResponseSLA },
+                { label: "Monthly Tasks", value: previewTemplate.monthlyTaskCount },
                 { label: "Quarterly Tasks", value: previewTemplate.quarterlyTaskCount, icon: "📆" },
               ].map((stat) => (
                 <div

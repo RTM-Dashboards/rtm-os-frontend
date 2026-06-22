@@ -11,7 +11,7 @@ export default function WatchersTab({ watchers }: Props) {
   const active = watchers.filter((w) => w.watching);
   const inactive = watchers.filter((w) => !w.watching);
 
-  if (!watchers.length) return <EmptyTab icon="👁️" message="No watchers on this task yet." />;
+  if (!watchers.length) return <EmptyTab message="No watchers on this task yet." />;
 
   return (
     <div className="space-y-5">
@@ -83,7 +83,7 @@ function WatcherRow({ watcher }: { watcher: TaskWatcher }) {
           border: "1px solid var(--rtm-border)",
         }}
       >
-        {watcher.watching ? "👁️ Watching" : "+ Watch"}
+        {watcher.watching ? "Watching" : "+ Watch"}
       </button>
     </div>
   );

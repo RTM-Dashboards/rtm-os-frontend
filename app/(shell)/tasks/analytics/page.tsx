@@ -13,7 +13,7 @@ const MODULE_LINKS = [
   { label: "Task Templates",       href: "/tasks/templates",             icon: "🗂️" },
   { label: "Activation Rules",     href: "/tasks/activation-rules",      icon: "⚡" },
   { label: "Activation Engine",    href: "/tasks/activation-engine",     icon: "🚀" },
-  { label: "Department Activation",href: "/tasks/department-activation", icon: "🏢" },
+  { label: "Department Activation",href: "/tasks/department-activation" },
   { label: "Dept. Throughput",    href: "/tasks/workload-planning",     icon: "📊" },
 ];
 

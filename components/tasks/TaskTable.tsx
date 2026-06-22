@@ -71,7 +71,7 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
                   <td className="px-4 py-3 min-w-[200px] max-w-[320px]">
                     <div className="flex items-start gap-2">
                       {task.blockers.length > 0 && (
-                        <span className="flex-shrink-0 mt-0.5 text-sm" title="Has blockers">🚫</span>
+                        <span className="flex-shrink-0 mt-0.5 text-[10px] font-bold px-1 rounded" style={{background:"#FEE2E2",color:"#DC2626"}} title="Has blockers">BLK</span>
                       )}
                       <span className="font-medium leading-snug" style={{ color: "var(--rtm-text-primary)" }}>
                         {task.title}
@@ -121,7 +121,7 @@ export default function TaskTable({ tasks, onTaskClick }: Props) {
                   {/* Due date */}
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="text-xs font-medium" style={{ color: overdue ? "#DC2626" : "var(--rtm-text-muted)" }}>
-                      {overdue && "⚠ "}{formatDate(task.dueDate)}
+                      {overdue && "! "}{formatDate(task.dueDate)}
                     </span>
                   </td>
 

@@ -61,7 +61,7 @@ export default function CampaignsTab({ client }: { client: ClientProfile }) {
         </div>
       ) : (
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-10 text-center">
-          <div className="text-3xl mb-3">🎯</div>
+          
           <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No active campaigns</p>
           <p className="text-xs text-slate-400 mt-1">
             {client.campaignStatus === "paused"

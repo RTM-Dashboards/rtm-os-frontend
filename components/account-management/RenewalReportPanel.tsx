@@ -84,7 +84,7 @@ export default function RenewalReportPanel({ renewals }: Props) {
                 </div>
               </div>
               <p className="text-xs rounded-lg px-3 py-2" style={{ background: risk.bg + "80", color: risk.color }}>
-                🎯 {r.actionNeeded}
+                 {r.actionNeeded}
               </p>
             </div>
           );

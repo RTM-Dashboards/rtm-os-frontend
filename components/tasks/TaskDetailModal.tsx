@@ -142,7 +142,7 @@ export default function TaskDetailModal({ task, deliverable, onClose }: Props) {
           {task.blockers.length > 0 && (
             <div>
               <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: "#DC2626" }}>
-                <span>🚫</span> Blockers
+                <span></span> Blockers
               </h3>
               <div className="space-y-2">
                 {task.blockers.map((b) => (
@@ -166,7 +166,7 @@ export default function TaskDetailModal({ task, deliverable, onClose }: Props) {
           {task.notes.length > 0 && (
             <div>
               <h3 className="text-sm font-bold mb-2" style={{ color: "var(--rtm-text-primary)" }}>
-                📝 Internal Notes
+                 Internal Notes
               </h3>
               <div className="space-y-2">
                 {task.notes.map((note) => (

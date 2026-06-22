@@ -30,4 +30,10 @@ export interface WorkspaceConfig {
   navItems: WorkspaceNavItem[];
   /** Role or team responsible for this workspace */
   role: string;
+  /**
+   * Optional: department config id(s) that this workspace surfaces.
+   * Used to link workspace pages to their config-driven department dashboards.
+   * A workspace may map to one or more departments (e.g. seo-local → ["seo", "gbp"]).
+   */
+  departmentIds?: string[];
 }

@@ -73,6 +73,23 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Notifications",       href: "/notifications",      icon: IconBellSidebar,  section: "overview" },
+  { label: "Activation & Handoff", href: "/activation",         icon: IconCheckSquare,  section: "overview" },
+
+  // ── Operations ─────────────────────────────────────────────────
+  {
+    label: "Operations",
+    href: "/operations/workflows",
+    icon: IconCheckSquare,
+    section: "operations",
+    children: [
+      { label: "Workflow Engine",       href: "/operations/workflows" },
+      { label: "Projects",              href: "/tasks" },
+      { label: "Activation & Handoff",  href: "/activation" },
+      { label: "Escalations",           href: "/operations/workflows" },
+      { label: "Reporting & Intelligence", href: "/reporting" },
+      { label: "Notifications",         href: "/notifications" },
+    ],
+  },
 
   // ── Admin section ─────────────────────────────────────────────
   { label: "Users",               href: "/admin/users",        icon: IconUsers,        section: "admin" },
@@ -140,17 +157,22 @@ const navItems: NavItem[] = [
     icon: IconSettings,
     section: "settings",
     children: [
-      { label: "General Settings",    href: "/settings" },
-      { label: "Departments & Roles", href: "/settings/departments" },
-      { label: "Workspaces",          href: "/settings/workspaces" },
-      { label: "Users",               href: "/settings/users" },
-      { label: "Permissions",         href: "/settings/permissions" },
+      { label: "Organization",        href: "/settings" },
+      { label: "Departments",         href: "/settings/departments" },
+      { label: "Roles",               href: "/settings/roles" },
+      { label: "Service Catalog",     href: "/settings/service-catalog" },
+      { label: "Line Items",          href: "/settings/line-items" },
+      { label: "Task Blueprints",     href: "/settings/task-blueprints" },
+      { label: "Notifications",       href: "/settings/notifications" },
+      { label: "Escalations",         href: "/settings/escalations" },
+      { label: "Integrations",        href: "/settings/integrations" },
     ],
   },
 ];
 
 const sectionLabels: Record<string, string> = {
   overview:    "",
+  operations:  "Operations",
   admin:       "Admin",
   departments: "Departments",
   settings:    "",
@@ -177,6 +199,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     "/tasks":                    true,
     "/settings":                 true,
     "/reporting":                true,
+    "/operations/workflows":     true,
   }));
 
   const toggleExpand = (href: string) => {
@@ -190,7 +213,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     return acc;
   }, {});
 
-  const sectionOrder = ["overview", "admin", "departments", "settings"];
+  const sectionOrder = ["overview", "operations", "admin", "departments", "settings"];
 
   const linkStyle = (isActive: boolean): React.CSSProperties =>
     isActive

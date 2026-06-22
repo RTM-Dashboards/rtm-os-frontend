@@ -20,7 +20,7 @@ export function RoleToggle({ role, onRoleChange }: RoleToggleProps) {
               : "text-slate-500 hover:text-slate-700 bg-transparent"
           }`}
         >
-          👔 Account Management Head View
+           Account Management Head View
         </button>
         <button
           onClick={() => onRoleChange("am")}
@@ -30,14 +30,14 @@ export function RoleToggle({ role, onRoleChange }: RoleToggleProps) {
               : "text-slate-500 hover:text-slate-700 bg-transparent"
           }`}
         >
-          👤 Account Manager View
+           Account Manager View
         </button>
       </div>
 
       {/* Role label banner */}
       {role === "head" ? (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50">
-          <span className="text-indigo-600 text-lg">👔</span>
+          <span className="text-indigo-600 text-lg"></span>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">Current View</p>
             <p className="text-sm font-semibold text-indigo-800">Viewing as Account Management Head</p>
@@ -48,7 +48,7 @@ export function RoleToggle({ role, onRoleChange }: RoleToggleProps) {
         </div>
       ) : (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50">
-          <span className="text-blue-600 text-lg">👤</span>
+          <span className="text-blue-600 text-lg"></span>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-blue-500">Current View</p>
             <p className="text-sm font-semibold text-blue-800">Viewing as Account Manager: {SARAH}</p>

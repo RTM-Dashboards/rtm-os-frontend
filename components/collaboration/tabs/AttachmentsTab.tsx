@@ -21,7 +21,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; color: string }> = {
 };
 
 export default function AttachmentsTab({ attachments }: Props) {
-  if (!attachments.length) return <EmptyTab icon="📎" message="No attachments yet. Upload files to this task." />;
+  if (!attachments.length) return <EmptyTab message="No attachments yet. Upload files to this task." />;
 
   const active = attachments.filter((a) => a.status === "Active");
   const superseded = attachments.filter((a) => a.status !== "Active");
@@ -55,7 +55,7 @@ export default function AttachmentsTab({ attachments }: Props) {
         className="flex flex-col items-center gap-2 py-8 rounded-xl border-2 border-dashed cursor-pointer"
         style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-muted)" }}
       >
-        <span className="text-3xl">📎</span>
+        
         <p className="text-sm font-medium">Drop files here or click to upload</p>
         <p className="text-xs">PDF, DOCX, XLSX, PNG, JPG, MP4, ZIP</p>
       </div>

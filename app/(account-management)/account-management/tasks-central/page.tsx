@@ -1093,12 +1093,12 @@ function TaskDependencyBuilder() {
 
 function TaskManagementActionCenter() {
   const actions = [
-    { label: "Create Template", color: "bg-indigo-600 hover:bg-indigo-700", icon: "📋" },
+    { label: "Create Template", color: "bg-indigo-600 hover:bg-indigo-700" },
     { label: "Clone Template", color: "bg-teal-600 hover:bg-teal-700", icon: "📄" },
-    { label: "Generate Task Package", color: "bg-orange-600 hover:bg-orange-700", icon: "⚡" },
-    { label: "Launch Project", color: "bg-emerald-600 hover:bg-emerald-700", icon: "🚀" },
-    { label: "Assign Tasks", color: "bg-violet-600 hover:bg-violet-700", icon: "👤" },
-    { label: "Archive Template", color: "bg-slate-500 hover:bg-slate-600", icon: "🗂️" },
+    { label: "Generate Task Package", color: "bg-orange-600 hover:bg-orange-700" },
+    { label: "Launch Project", color: "bg-emerald-600 hover:bg-emerald-700" },
+    { label: "Assign Tasks", color: "bg-violet-600 hover:bg-violet-700" },
+    { label: "Archive Template", color: "bg-slate-500 hover:bg-slate-600" },
   ];
 
   return (
@@ -2233,16 +2233,16 @@ function TaskAutomationRulesSection() {
 
 function ProjectExecutionActionCenter() {
   const actions = [
-    { label: "Create Project", color: "bg-blue-600 hover:bg-blue-700", icon: "🗂️" },
+    { label: "Create Project", color: "bg-blue-600 hover:bg-blue-700" },
     { label: "Create Milestone", color: "bg-violet-600 hover:bg-violet-700", icon: "🏁" },
     { label: "Add Task", color: "bg-emerald-600 hover:bg-emerald-700", icon: "➕" },
-    { label: "Assign Task", color: "bg-indigo-600 hover:bg-indigo-700", icon: "👤" },
+    { label: "Assign Task", color: "bg-indigo-600 hover:bg-indigo-700" },
     { label: "Move Task", color: "bg-teal-600 hover:bg-teal-700", icon: "↔️" },
-    { label: "Add Comment", color: "bg-slate-600 hover:bg-slate-700", icon: "💬" },
-    { label: "Request Approval", color: "bg-amber-600 hover:bg-amber-700", icon: "✅" },
+    { label: "Add Comment", color: "bg-slate-600 hover:bg-slate-700" },
+    { label: "Request Approval", color: "bg-amber-600 hover:bg-amber-700" },
     { label: "Log Time", color: "bg-cyan-600 hover:bg-cyan-700", icon: "⏱️" },
-    { label: "Escalate Blocker", color: "bg-red-600 hover:bg-red-700", icon: "🚨" },
-    { label: "Complete Project", color: "bg-emerald-700 hover:bg-emerald-800", icon: "🎉" },
+    { label: "Escalate Blocker", color: "bg-red-600 hover:bg-red-700" },
+    { label: "Complete Project", color: "bg-emerald-700 hover:bg-emerald-800" },
   ];
 
   return (

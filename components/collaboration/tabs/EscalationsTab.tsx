@@ -7,12 +7,12 @@ interface Props {
   escalations: EscalationRecord[];
 }
 
-const LEVEL_CONFIG: Record<EscalationLevel, { bg: string; color: string; border: string; icon: string }> = {
-  "L1 - Team":            { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE", icon: "👥" },
-  "L2 - Department Head": { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", icon: "🏢" },
-  "L3 - Account Manager": { bg: "#F3E8FF", color: "#6B21A8", border: "#DDD6FE", icon: "🤝" },
-  "L4 - Executive":       { bg: "#FEE2E2", color: "#991B1B", border: "#FECACA", icon: "⚡" },
-  "L5 - VP / Director":   { bg: "#7C2D12", color: "#fff",    border: "#B91C1C", icon: "🔴" },
+const LEVEL_CONFIG: Record<EscalationLevel, { bg: string; color: string; border: string }> = {
+  "L1 - Team":            { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+  "L2 - Department Head": { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A" },
+  "L3 - Account Manager": { bg: "#F3E8FF", color: "#6B21A8", border: "#DDD6FE" },
+  "L4 - Executive":       { bg: "#FEE2E2", color: "#991B1B", border: "#FECACA" },
+  "L5 - VP / Director":   { bg: "#7C2D12", color: "#fff",    border: "#B91C1C" },
 };
 
 const STATUS_CONFIG: Record<EscalationStatus, { bg: string; color: string }> = {
@@ -23,27 +23,29 @@ const STATUS_CONFIG: Record<EscalationStatus, { bg: string; color: string }> = {
   "Closed":             { bg: "#F3F4F6", color: "#6B7280" },
 };
 
-const TRIGGER_ICONS: Record<EscalationTrigger, string> = {
-  "Task Overdue":            "⏰",
-  "Dependency Blocked":      "🚫",
-  "Client Access Missing":   "🔑",
-  "Payment Overdue":         "💰",
-  "Client At Risk":          "⚠️",
-  "Approval Bottleneck":     "⏳",
-  "Performance Issue":       "📉",
-  "Missed SLA":              "📋",
-  "Cross-Department Delay":  "🔗",
-  "Manual Escalation":       "🖐️",
+// Map trigger to a short label (no emoji)
+const TRIGGER_LABELS: Record<EscalationTrigger, string> = {
+  "Task Overdue":            "Overdue",
+  "Dependency Blocked":      "Blocked",
+  "Client Access Missing":   "No Access",
+  "Payment Overdue":         "Payment",
+  "Client At Risk":          "At Risk",
+  "Approval Bottleneck":     "Approval",
+  "Performance Issue":       "Performance",
+  "Missed SLA":              "Missed SLA",
+  "Cross-Department Delay":  "Delay",
+  "Manual Escalation":       "Manual",
 };
 
 function EscalationLevelBadge({ level }: { level: EscalationLevel }) {
   const cfg = LEVEL_CONFIG[level];
   return (
     <span
-      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border"
+      className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border"
       style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}
     >
-      {cfg.icon} {level}
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: cfg.color }} />
+      {level}
     </span>
   );
 }
@@ -62,7 +64,7 @@ function EscalationStatusBadge({ status }: { status: EscalationStatus }) {
 
 export default function EscalationsTab({ escalations }: Props) {
   if (!escalations.length) {
-    return <EmptyTab icon="⚡" message="No escalations recorded for this task." />;
+    return <EmptyTab message="No escalations recorded for this task." />;
   }
 
   const open = escalations.filter((e) => e.status === "Open" || e.status === "In Progress" || e.status === "Escalated Further");
@@ -76,7 +78,7 @@ export default function EscalationsTab({ escalations }: Props) {
           className="flex items-start gap-3 p-4 rounded-xl"
           style={{ background: "#FEF2F2", border: "1px solid #FECACA" }}
         >
-          <span className="text-xl flex-shrink-0">⚡</span>
+          
           <div>
             <p className="text-sm font-bold" style={{ color: "#DC2626" }}>
               {open.length} Active Escalation{open.length > 1 ? "s" : ""}
@@ -92,7 +94,7 @@ export default function EscalationsTab({ escalations }: Props) {
       {open.length > 0 && (
         <div>
           <p className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: "#DC2626" }}>
-            <span>⚡</span> Active Escalations ({open.length})
+            Active Escalations ({open.length})
           </p>
           <div className="space-y-3">
             {open.map((esc) => <EscalationCard key={esc.id} esc={esc} />)}
@@ -104,7 +106,7 @@ export default function EscalationsTab({ escalations }: Props) {
       {resolved.length > 0 && (
         <div>
           <p className="text-xs font-bold uppercase tracking-wider mb-3 flex items-center gap-2" style={{ color: "#059669" }}>
-            <span>✓</span> Resolved Escalations ({resolved.length})
+            Resolved Escalations ({resolved.length})
           </p>
           <div className="space-y-3 opacity-75">
             {resolved.map((esc) => <EscalationCard key={esc.id} esc={esc} />)}
@@ -117,7 +119,7 @@ export default function EscalationsTab({ escalations }: Props) {
         className="p-4 rounded-xl text-xs leading-relaxed"
         style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
       >
-        <p className="font-semibold mb-2" style={{ color: "var(--rtm-text-primary)" }}>📊 Escalation Levels</p>
+        <p className="font-semibold mb-2" style={{ color: "var(--rtm-text-primary)" }}> Escalation Levels</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {(Object.entries(LEVEL_CONFIG) as [EscalationLevel, typeof LEVEL_CONFIG[EscalationLevel]][]).map(([level, cfg]) => (
             <div key={level} className="flex items-center gap-2">
@@ -125,7 +127,7 @@ export default function EscalationsTab({ escalations }: Props) {
                 className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] flex-shrink-0"
                 style={{ background: cfg.bg, color: cfg.color }}
               >
-                {cfg.icon}
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: cfg.color }} />
               </span>
               <span style={{ color: "var(--rtm-text-secondary)" }}>{level}</span>
             </div>
@@ -162,7 +164,12 @@ function EscalationCard({ esc }: { esc: EscalationRecord }) {
 
       {/* Trigger */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-base">{TRIGGER_ICONS[esc.trigger]}</span>
+        <span
+          className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide"
+          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)" }}
+        >
+          {TRIGGER_LABELS[esc.trigger] ?? esc.trigger}
+        </span>
         <div>
           <p className="text-xs font-bold" style={{ color: "var(--rtm-text-muted)" }}>Trigger</p>
           <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{esc.trigger}</p>
@@ -191,7 +198,7 @@ function EscalationCard({ esc }: { esc: EscalationRecord }) {
       {/* Notes */}
       {esc.notes && (
         <p className="text-xs leading-relaxed mb-2" style={{ color: "var(--rtm-text-secondary)" }}>
-          📝 {esc.notes}
+          {esc.notes}
         </p>
       )}
 
@@ -201,7 +208,7 @@ function EscalationCard({ esc }: { esc: EscalationRecord }) {
           className="flex items-center gap-2 p-2 rounded-lg text-xs"
           style={{ background: "#ECFDF5", border: "1px solid #A7F3D0", color: "#065F46" }}
         >
-          <span>✓</span>
+          
           <span>
             Resolved by <strong>{esc.resolvedBy ?? "—"}</strong> on {formatDateTime(esc.resolvedAt)}
           </span>

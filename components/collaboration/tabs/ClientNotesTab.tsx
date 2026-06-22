@@ -7,13 +7,13 @@ interface Props {
   notes: ClientNote[];
 }
 
-const SOURCE_ICONS: Record<ClientCommSource, string> = {
-  Email: "📧",
-  "Phone Call": "📞",
-  Meeting: "🤝",
-  Slack: "💬",
-  "Text Message": "📱",
-  Portal: "🌐",
+const SOURCE_ABBREV: Record<ClientCommSource, string> = {
+  Email:          "EM",
+  "Phone Call":   "PH",
+  Meeting:        "MT",
+  Slack:          "SL",
+  "Text Message": "TM",
+  Portal:         "PT",
 };
 
 const SOURCE_COLORS: Record<ClientCommSource, { bg: string; color: string }> = {
@@ -26,7 +26,7 @@ const SOURCE_COLORS: Record<ClientCommSource, { bg: string; color: string }> = {
 };
 
 export default function ClientNotesTab({ notes }: Props) {
-  if (!notes.length) return <EmptyTab icon="🤝" message="No client notes. Record client communication here." />;
+  if (!notes.length) return <EmptyTab message="No client notes. Record client communication here." />;
 
   return (
     <div className="space-y-4">
@@ -35,7 +35,7 @@ export default function ClientNotesTab({ notes }: Props) {
         className="flex items-center gap-2 p-3 rounded-lg text-xs font-medium"
         style={{ background: "#DBEAFE", border: "1px solid #BFDBFE", color: "#1E40AF" }}
       >
-        <span>🤝</span>
+        
         <span>Client notes capture AM-facing communications. Track decisions, requests, and approvals here.</span>
       </div>
 
@@ -61,7 +61,7 @@ export default function ClientNotesTab({ notes }: Props) {
                   className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
                   style={{ background: iconStyle.bg, color: iconStyle.color }}
                 >
-                  {SOURCE_ICONS[note.source]} {note.source}
+                  <span className="font-bold opacity-60">{SOURCE_ABBREV[note.source]}</span> {note.source}
                 </span>
                 <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
                   {formatDateTime(note.createdAt)}

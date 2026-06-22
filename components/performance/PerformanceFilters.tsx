@@ -310,9 +310,9 @@ export default function PerformanceFilters({
 
         {showExports && (
           <>
-            <ExportBtn label="CSV" icon="📄" onClick={handleCSV} />
-            <ExportBtn label="Excel" icon="📊" onClick={handleExcel} />
-            <ExportBtn label="PDF" icon="📑" onClick={handlePDF} />
+            <ExportBtn label="CSV" icon="CSV" onClick={handleCSV} />
+            <ExportBtn label="Excel" icon="XLS" onClick={handleExcel} />
+            <ExportBtn label="PDF" icon="PDF" onClick={handlePDF} />
           </>
         )}
       </div>

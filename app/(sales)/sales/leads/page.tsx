@@ -671,11 +671,11 @@ const STAGE_CONFIG: Record<LeadStage, { color: string; bg: string; border: strin
   "Disqualified":        { color: "#94A3B8", bg: "#F1F5F9", border: "#CBD5E1", order: 6 },
 };
 
-const GHL_SYNC_CONFIG: Record<GHLSyncStatus, { color: string; bg: string; icon: string }> = {
+const GHL_SYNC_CONFIG: Record<GHLSyncStatus, { color: string; bg: string; icon?: string }> = {
   "Synced":          { color: "#059669", bg: "#ECFDF5", icon: "✓" },
-  "Pending Sync":    { color: "#D97706", bg: "#FFFBEB", icon: "⏳" },
+  "Pending Sync":    { color: "#D97706", bg: "#FFFBEB" },
   "Sync Failed":     { color: "#DC2626", bg: "#FEF2F2", icon: "✕" },
-  "Manual Override": { color: "#7C3AED", bg: "#F5F3FF", icon: "⚡" },
+  "Manual Override": { color: "#7C3AED", bg: "#F5F3FF" },
 };
 
 const READINESS_CONFIG: Record<OpportunityReadiness, { color: string; bg: string; order: number }> = {
@@ -774,13 +774,13 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   ];
 
   const timeline = [
-    { date: lead.ghlCreatedDate, event: "GHL Contact Created", icon: "🔗" },
-    { date: lead.createdDate,    event: "Lead Created in RTM", icon: "🎯" },
-    { date: lead.createdDate,    event: `Assigned to ${lead.assignedRep}`, icon: "👤" },
-    ...(lead.discoveryDate ? [{ date: lead.discoveryDate, event: "Discovery Completed", icon: "🔍" }] : []),
-    ...(isQualified ? [{ date: lead.lastActivity, event: "Lead Qualified", icon: "✅" }] : []),
-    ...(isReadyForOpportunity ? [{ date: lead.lastActivity, event: "Ready For Opportunity", icon: "🚀" }] : []),
-    { date: lead.lastActivity,   event: `Current Stage: ${lead.stage}`, icon: "📍" },
+    { date: lead.ghlCreatedDate, event: "GHL Contact Created" },
+    { date: lead.createdDate,    event: "Lead Created in RTM" },
+    { date: lead.createdDate,    event: `Assigned to ${lead.assignedRep}` },
+    ...(lead.discoveryDate ? [{ date: lead.discoveryDate, event: "Discovery Completed" }] : []),
+    ...(isQualified ? [{ date: lead.lastActivity, event: "Lead Qualified" }] : []),
+    ...(isReadyForOpportunity ? [{ date: lead.lastActivity, event: "Ready For Opportunity" }] : []),
+    { date: lead.lastActivity,   event: `Current Stage: ${lead.stage}` },
   ];
 
   return (
@@ -991,7 +991,7 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     { label: "Budget",    value: lead.budget,    icon: "💰", good: lead.budget === "High" || lead.budget === "Medium" },
-                    { label: "Authority", value: lead.authority, icon: "👤", good: lead.authority === "Decision Maker" },
+                    { label: "Authority", value: lead.authority, good: lead.authority === "Decision Maker" },
                     { label: "Need",      value: lead.need,      icon: "🎯", good: lead.need === "High" },
                     { label: "Timeline",  value: lead.timeline,  icon: "📅", good: lead.timeline === "Immediate" || lead.timeline === "1-3 months" },
                   ].map(item => (
@@ -1205,7 +1205,7 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                     <div key={i} className="relative flex items-start gap-3">
                       <div className="absolute -left-4 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px]"
                         style={{ background: "var(--rtm-surface)", borderColor: workspace.accentColor }}>
-                        {item.icon}
+                        {(item as { icon?: string; date: string; event: string }).icon ?? "·"}
                       </div>
                       <div className="flex-1 rounded-lg p-3 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
                         <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{item.event}</p>
@@ -1436,7 +1436,7 @@ export default function SalesLeadsPage() {
         {[
           { title: "New Leads",            value: String(newLeads),           icon: "🎯", iconBg: "#EEF2FF", iconColor: "#6366F1", trend: "up" as const,      trendValue: "+5"  },
           { title: "Contact Attempted",    value: String(contactAttempted),   icon: "📞", iconBg: "#F5F3FF", iconColor: "#8B5CF6", trend: "neutral" as const, trendValue: "±0"  },
-          { title: "Discovery Scheduled",  value: String(discoveryScheduled), icon: "📅", iconBg: "#F0F9FF", iconColor: "#0284C7", trend: "up" as const,      trendValue: "+2"  },
+          { title: "Discovery Scheduled",  value: String(discoveryScheduled), iconBg: "#F0F9FF", iconColor: "#0284C7", trend: "up" as const,      trendValue: "+2"  },
           { title: "Discovery Complete",   value: String(discoveryComplete),  icon: "🔍", iconBg: "#ECFEFF", iconColor: "#0891B2", trend: "up" as const,      trendValue: "+3"  },
           { title: "Qualified Leads",      value: String(qualifiedLeads),     icon: "✅", iconBg: "#FFFBEB", iconColor: "#D97706", trend: "up" as const,      trendValue: "+4"  },
           { title: "Disqualified",         value: String(disqualifiedLeads),  icon: "✕",  iconBg: "#F1F5F9", iconColor: "#94A3B8", trend: "neutral" as const, trendValue: "±0"  },
@@ -1718,7 +1718,7 @@ export default function SalesLeadsPage() {
           { label: "Sales Pipeline",  href: "/sales/pipeline",  icon: "📊", desc: "Opportunity management · deal stages · close tracking", color: "#6366F1" },
           { label: "Tasks Center",    href: "/tasks",            icon: "✅", desc: "Follow-ups · discovery reminders · lead tasks",          color: "#0284C7" },
           { label: "Workflows",       href: "/admin/workflows",  icon: "⚙️", desc: "Lead → discovery → qualification automation",          color: "#7C3AED" },
-          { label: "Affiliates",      href: "/sales/affiliates", icon: "🤝", desc: "Affiliate attribution · commission tracking",            color: "#D97706" },
+          { label: "Affiliates",      href: "/sales/affiliates", desc: "Affiliate attribution · commission tracking",            color: "#D97706" },
         ].map(item => (
           <Link key={item.label} href={item.href}
             className="rounded-xl border p-4 flex items-start gap-3 transition-all hover:shadow-md"

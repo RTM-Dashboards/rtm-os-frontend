@@ -304,8 +304,93 @@ export default function ReportingDashboard() {
     <div className="space-y-6">
       <WorkspaceHeader
         workspace={workspace}
-        subtitle="Central report production workflow — from data gathering through client delivery."
+        subtitle="Reporting Operations & Intelligence — automated data collection, call intelligence, AI classification, and end-to-end report delivery."
       />
+
+      {/* ── Operations Hub ── */}
+      <SectionWrapper title="Operations Hub" description="Navigate all reporting operations and intelligence centers">
+        <div className="grid grid-cols-2 xl:grid-cols-3 gap-3">
+          {[
+            {
+              label: "Data Sources",
+              description: "Manage connectors and automated data collection.",
+              href: "/reporting/data-sources",
+              color: "#1D4ED8",
+              bg: "#EFF6FF",
+            },
+            {
+              label: "Call Intelligence",
+              description: "AI call analysis, classification, and lead quality.",
+              href: "/reporting/call-intelligence",
+              color: "#065F46",
+              bg: "#D1FAE5",
+            },
+            {
+              label: "Report Generation",
+              description: "Generate and track AI-assisted report production.",
+              href: "/reporting/report-generation",
+              color: "#0F766E",
+              bg: "#CCFBF1",
+            },
+            {
+              label: "Department Review",
+              description: "Track department data verification and sign-off.",
+              href: "/reporting/department-review",
+              color: "#C2410C",
+              bg: "#FFF7ED",
+            },
+            {
+              label: "AM Review",
+              description: "Account manager approval and delivery scheduling.",
+              href: "/reporting/am-review",
+              color: "#6D28D9",
+              bg: "#F5F3FF",
+            },
+            {
+              label: "Business Intelligence",
+              description: "AI insights, trends, renewal signals, and upsell opportunities.",
+              href: "/reporting/business-intelligence",
+              color: "#0369A1",
+              bg: "#F0F9FF",
+            },
+          ].map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              className="flex flex-col gap-1.5 p-4 rounded-xl border transition-all hover:shadow-sm hover:opacity-90"
+              style={{ background: item.bg, borderColor: `${item.color}30`, textDecoration: "none" }}
+            >
+              <div className="text-sm font-bold" style={{ color: item.color }}>{item.label}</div>
+              <div className="text-xs leading-relaxed" style={{ color: item.color }}>{item.description}</div>
+            </a>
+          ))}
+        </div>
+
+        {/* Workflow Pipeline */}
+        <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--rtm-border-light)" }}>
+          <div className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: "var(--rtm-text-muted)" }}>Reporting Workflow</div>
+          <div className="flex flex-wrap items-center gap-1">
+            {[
+              { label: "Data Sources", color: "#1D4ED8" },
+              { label: "Auto Collection", color: "#7C3AED" },
+              { label: "Call Intelligence", color: "#065F46" },
+              { label: "AI Classification", color: "#0F766E" },
+              { label: "Draft Report", color: "#D97706" },
+              { label: "Reporting QA", color: "#EA580C" },
+              { label: "Dept Review", color: "#C2410C" },
+              { label: "AM Review", color: "#6D28D9" },
+              { label: "Client Delivery", color: "#059669" },
+            ].map((step, i, arr) => (
+              <div key={step.label} className="flex items-center gap-1">
+                <span className="text-xs font-semibold px-2 py-1 rounded" style={{ background: `${step.color}15`, color: step.color }}>{step.label}</span>
+                {i < arr.length - 1 && (
+                  <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "var(--rtm-text-muted)" }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </SectionWrapper>
 
       {/* ── KPI Row ── */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">

@@ -1149,10 +1149,10 @@ function KPICards({ audits }: { audits: Audit[] }) {
   const estimatedRevenue = audits.reduce((sum, a) => sum + a.revenueOpportunity, 0);
 
   const cards = [
-    { label: "Total Audits", value: total, icon: "🔍", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
-    { label: "Pending Audits", value: pending, icon: "⏳", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-    { label: "Completed Audits", value: completed, icon: "✅", color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0" },
-    { label: "High Priority Findings", value: highPriorityFindings, icon: "🚨", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
+    { label: "Total Audits", value: total, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
+    { label: "Pending Audits", value: pending, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
+    { label: "Completed Audits", value: completed, color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0" },
+    { label: "High Priority Findings", value: highPriorityFindings, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
     { label: "Proposal Opportunities", value: proposalOpportunities, icon: "📄", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
     { label: "Revenue Opportunity", value: `$${estimatedRevenue.toLocaleString()}`, icon: "💵", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
   ];
@@ -1187,13 +1187,13 @@ function KPICards({ audits }: { audits: Audit[] }) {
 
 function SalesFlowBanner() {
   const steps = [
-    { label: "Audit Results", icon: "🔍", active: true },
-    { label: "AI Recommendations", icon: "🤖" },
+    { label: "Audit Results", active: true },
+    { label: "AI Recommendations" },
     { label: "Proposal Builder", icon: "📄" },
-    { label: "Line Items", icon: "📋" },
-    { label: "Contracts", icon: "✍️" },
-    { label: "Billing", icon: "💳" },
-    { label: "Projects", icon: "🚀" },
+    { label: "Line Items" },
+    { label: "Contracts" },
+    { label: "Billing" },
+    { label: "Projects" },
   ];
   return (
     <div
@@ -2108,13 +2108,18 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
         </div>
         <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: "Last Communication", value: lastComm ? `${lastComm.type} — ${lastComm.date}` : "None", icon: "📅", color: "#1D4ED8", bg: "#EFF6FF" },
-            { label: "Open Concerns", value: openConcerns.length, icon: "⚠️", color: "#C2410C", bg: "#FFF7ED" },
-            { label: "Pending Follow-Ups", value: pendingFollowUps.length, icon: "📅", color: "#D97706", bg: "#FFFBEB" },
-            { label: "Pending Action Items", value: pendingActions.length, icon: "✅", color: "#059669", bg: "#ECFDF5" },
+            { label: "Last Communication", value: lastComm ? `${lastComm.type} — ${lastComm.date}` : "None", color: "#1D4ED8", bg: "#EFF6FF" },
+            { label: "Open Concerns", value: openConcerns.length, color: "#C2410C", bg: "#FFF7ED" },
+            { label: "Pending Follow-Ups", value: pendingFollowUps.length, color: "#D97706", bg: "#FFFBEB" },
+            { label: "Pending Action Items", value: pendingActions.length, color: "#059669", bg: "#ECFDF5" },
           ].map((card) => (
             <div key={card.label} className="rounded-lg border p-3" style={{ background: card.bg, borderColor: `${card.color}30` }}>
-              <div className="text-lg mb-0.5">{card.icon}</div>
+              <div
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mb-0.5"
+                style={{ background: `${card.color}20`, color: card.color }}
+              >
+                {String(card.label).slice(0, 2).toUpperCase()}
+              </div>
               <div className="text-sm font-black" style={{ color: card.color }}>{card.value}</div>
               <div className="text-[10px] font-semibold mt-0.5" style={{ color: card.color }}>{card.label}</div>
             </div>
@@ -2343,10 +2348,10 @@ function CompetitorAnalysisTab({ audit }: { audit: Audit }) {
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
               { label: "Strengths", items: comp.strengths, color: "#15803D", bg: "#F0FDF4", icon: "💪" },
-              { label: "Weaknesses", items: comp.weaknesses, color: "#DC2626", bg: "#FEF2F2", icon: "⚠️" },
-              { label: "Opportunities", items: comp.opportunities, color: "#D97706", bg: "#FFFBEB", icon: "💡" },
-              { label: "Threats", items: comp.threats, color: "#7C3AED", bg: "#F5F3FF", icon: "🎯" },
-              { label: "Recommended Actions", items: comp.recommendedActions, color: "#0369A1", bg: "#F0F9FF", icon: "✅" },
+              { label: "Weaknesses", items: comp.weaknesses, color: "#DC2626", bg: "#FEF2F2" },
+              { label: "Opportunities", items: comp.opportunities, color: "#D97706", bg: "#FFFBEB" },
+              { label: "Threats", items: comp.threats, color: "#7C3AED", bg: "#F5F3FF" },
+              { label: "Recommended Actions", items: comp.recommendedActions, color: "#0369A1", bg: "#F0F9FF" },
             ].map((section) => (
               <div key={section.label} className="rounded-lg border p-3" style={{ background: section.bg, borderColor: `${section.color}30` }}>
                 <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: section.color }}>
@@ -2532,16 +2537,16 @@ function AuditDetailDrawer({
 }) {
   const [activeTab, setActiveTab] = useState<DrawerTab>("overview");
 
-  const tabs: { key: DrawerTab; label: string; icon: string }[] = [
-    { key: "overview", label: "Overview", icon: "📊" },
-    { key: "findings", label: "Findings", icon: "🚨" },
-    { key: "ai-recommendations", label: "AI Recommendations", icon: "🤖" },
-    { key: "recommended-services", label: "Recommended Services", icon: "⭐" },
-    { key: "recommended-line-items", label: "Recommended Line Items", icon: "📋" },
-    { key: "client-communications", label: "Client Communications", icon: "💬" },
-    { key: "competitor-analysis", label: "Competitor Analysis", icon: "🏆" },
-    { key: "proposal-preview", label: "Proposal Preview", icon: "📄" },
-    { key: "activity-timeline", label: "Activity Timeline", icon: "📅" },
+  const tabs: { key: DrawerTab; label: string; icon?: string }[] = [
+    { key: "overview", label: "Overview" },
+    { key: "findings", label: "Findings" },
+    { key: "ai-recommendations", label: "AI Recommendations" },
+    { key: "recommended-services", label: "Recommended Services" },
+    { key: "recommended-line-items", label: "Recommended Line Items" },
+    { key: "client-communications", label: "Client Communications" },
+    { key: "competitor-analysis", label: "Competitor Analysis" },
+    { key: "proposal-preview", label: "Proposal Preview" },
+    { key: "activity-timeline", label: "Activity Timeline" },
   ];
 
   return (

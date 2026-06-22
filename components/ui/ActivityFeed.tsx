@@ -8,13 +8,13 @@ export interface ActivityItem {
   avatarColor?: string;
 }
 
-const typeIcons: Record<ActivityItem["type"], string> = {
-  task:     "✓",
-  alert:    "⚠",
-  report:   "📊",
-  campaign: "🎯",
-  client:   "👤",
-  system:   "⚙",
+const typeChar: Record<ActivityItem["type"], string> = {
+  task:     "T",
+  alert:    "!",
+  report:   "R",
+  campaign: "C",
+  client:   "U",
+  system:   "S",
 };
 
 const typeDotColor: Record<ActivityItem["type"], string> = {
@@ -71,7 +71,12 @@ export default function ActivityFeed({ items, maxItems = 8 }: ActivityFeedProps)
             </p>
           </div>
 
-          <span className="text-base flex-shrink-0">{typeIcons[item.type]}</span>
+          <span
+            className="text-[10px] font-bold flex-shrink-0 w-5 h-5 rounded flex items-center justify-center"
+            style={{ background: typeDotColor[item.type] + "22", color: typeDotColor[item.type] }}
+          >
+            {typeChar[item.type]}
+          </span>
         </li>
       ))}
     </ul>

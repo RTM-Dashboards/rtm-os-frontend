@@ -58,13 +58,13 @@ interface Props {
 }
 
 const QUICK_ACTIONS = [
-  { label: "Generate Report", icon: "⚡" },
-  { label: "Preview Report",  icon: "👁️" },
-  { label: "Submit for QA",   icon: "🔍" },
-  { label: "Mark Ready to Send", icon: "✅" },
-  { label: "Send Report",     icon: "📤" },
-  { label: "Export PDF",      icon: "📄" },
-  { label: "Export CSV",      icon: "📊" },
+  { label: "Generate Report" },
+  { label: "Preview Report" },
+  { label: "Submit for QA" },
+  { label: "Mark Ready to Send" },
+  { label: "Send Report" },
+  { label: "Export PDF" },
+  { label: "Export CSV",      icon: "" },
 ];
 
 export default function ReportingWorkspaceDeptPage({

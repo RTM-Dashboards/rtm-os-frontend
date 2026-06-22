@@ -1,13 +1,13 @@
 import type { ClientProfile, ActivityItem } from "@/lib/mock/clients";
 
 const typeConfig: Record<ActivityItem["type"], { icon: string; dot: string }> = {
-  note:       { icon: "📝", dot: "bg-slate-400" },
-  task:       { icon: "✓",  dot: "bg-emerald-500" },
-  billing:    { icon: "💳", dot: "bg-indigo-500" },
-  campaign:   { icon: "🎯", dot: "bg-purple-500" },
-  onboarding: { icon: "🚀", dot: "bg-blue-500" },
-  system:     { icon: "⚙",  dot: "bg-slate-400" },
-  alert:      { icon: "⚠",  dot: "bg-red-500" },
+  note:       { icon: "N", dot: "bg-slate-400" },
+  task:       { icon: "T", dot: "bg-emerald-500" },
+  billing:    { icon: "B", dot: "bg-indigo-500" },
+  campaign:   { icon: "C", dot: "bg-purple-500" },
+  onboarding: { icon: "O", dot: "bg-blue-500" },
+  system:     { icon: "S", dot: "bg-slate-400" },
+  alert:      { icon: "!", dot: "bg-red-500" },
 };
 
 export default function HistoryTab({ client }: { client: ClientProfile }) {

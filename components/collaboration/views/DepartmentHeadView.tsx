@@ -24,10 +24,10 @@ export default function DepartmentHeadView({ tasks }: Props) {
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: "🔴", label: "Blocked Tasks", value: tasks.filter((t) => t.dependencies.some((d) => d.status === "Blocked")).length, danger: true },
+          { icon: "BLK", label: "Blocked Tasks", value: tasks.filter((t) => t.dependencies.some((d) => d.status === "Blocked")).length, danger: true },
           { icon: "⏳", label: "Pending Approvals", value: tasks.reduce((s, t) => s + t.approvals.filter((a) => a.status === "Pending Approval" || a.status === "Pending Review").length, 0), warn: true },
-          { icon: "💬", label: "Open Comments", value: tasks.reduce((s, t) => s + t.comments.filter((c) => !c.resolved).length, 0), warn: false },
-          { icon: "📎", label: "Total Attachments", value: tasks.reduce((s, t) => s + t.attachments.filter((a) => a.status === "Active").length, 0), warn: false },
+          { icon: "C", label: "Open Comments", value: tasks.reduce((s, t) => s + t.comments.filter((c) => !c.resolved).length, 0), warn: false },
+          { icon: "ATT", label: "Total Attachments", value: tasks.reduce((s, t) => s + t.attachments.filter((a) => a.status === "Active").length, 0), warn: false },
         ].map((kpi) => (
           <div
             key={kpi.label}
@@ -81,7 +81,7 @@ export default function DepartmentHeadView({ tasks }: Props) {
                   color: isHealthy ? "#065F46" : blockedDeps.length > 0 ? "#991B1B" : "#92400E",
                 }}
               >
-                {isHealthy ? "✓ Healthy" : blockedDeps.length > 0 ? "🚫 Blocked" : "⏳ Attention"}
+                {isHealthy ? "Healthy" : blockedDeps.length > 0 ? "Blocked" : "Needs Attention"}
               </span>
             </div>
 
@@ -159,7 +159,7 @@ export default function DepartmentHeadView({ tasks }: Props) {
                 className="mt-4 pt-4 flex items-center gap-2 text-xs"
                 style={{ borderTop: "1px solid var(--rtm-border-light)", color: "#92400E" }}
               >
-                <span>🔒</span>
+                
                 <span>{internalCount} internal {internalCount === 1 ? "note" : "notes"} on this task</span>
               </div>
             )}

@@ -51,7 +51,7 @@ export default function TaskCard({ task, onClick }: Props) {
         {task.blockers.length > 0 && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border"
             style={{ background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" }}>
-            🚫 Blocked
+            Blocked
           </span>
         )}
       </div>
@@ -74,7 +74,7 @@ export default function TaskCard({ task, onClick }: Props) {
             className="text-[11px] font-medium"
             style={{ color: overdue ? "#DC2626" : "var(--rtm-text-muted)" }}
           >
-            {overdue ? "⚠ " : ""}Due {formatDate(task.dueDate)}
+            {overdue ? "! " : ""}Due {formatDate(task.dueDate)}
           </span>
         )}
       </div>

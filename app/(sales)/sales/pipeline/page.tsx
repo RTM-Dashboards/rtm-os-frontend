@@ -3287,23 +3287,28 @@ export default function SalesPipelinePage() {
         <p className="text-[11px] mb-4" style={{ color: "var(--rtm-text-secondary)" }}>All pipeline data originates from GoHighLevel. RTM OS integrations layer on top of GHL opportunities.</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "Audits", href: "/sales/audits", icon: "🔍", desc: "View all audits" },
-            { label: "Proposals", href: "/sales/proposals", icon: "📝", desc: "Manage proposals" },
-            { label: "Follow Ups", href: "/sales/followups", icon: "📞", desc: "Follow up queue" },
-            { label: "Handoffs", href: "/sales/handoffs", icon: "📦", desc: "Sales handoffs" },
-            { label: "Affiliates", href: "/sales/affiliates", icon: "🤝", desc: "Affiliate attribution" },
-            { label: "Tasks", href: "/tasks", icon: "✅", desc: "All tasks" },
-            { label: "Notifications", href: "/notifications", icon: "🔔", desc: "All notifications" },
-            { label: "Workflows", href: "/admin/workflows", icon: "⚙️", desc: "Workflow builder" },
-            { label: "GHL CRM", href: "#", icon: "🔗", desc: "Open GoHighLevel" },
-            { label: "GHL Pipeline", href: "#", icon: "📊", desc: "View GHL pipeline" },
-            { label: "GHL Contacts", href: "#", icon: "👤", desc: "Browse GHL contacts" },
-            { label: "GHL Automations", href: "#", icon: "⚡", desc: "GHL automation rules" },
+            { label: "Audits", href: "/sales/audits", desc: "View all audits" },
+            { label: "Proposals", href: "/sales/proposals", desc: "Manage proposals" },
+            { label: "Follow Ups", href: "/sales/followups", desc: "Follow up queue" },
+            { label: "Handoffs", href: "/sales/handoffs", desc: "Sales handoffs" },
+            { label: "Affiliates", href: "/sales/affiliates", desc: "Affiliate attribution" },
+            { label: "Tasks", href: "/tasks", desc: "All tasks" },
+            { label: "Notifications", href: "/notifications", desc: "All notifications" },
+            { label: "Workflows", href: "/admin/workflows", desc: "Workflow builder" },
+            { label: "GHL CRM", href: "#", desc: "Open GoHighLevel" },
+            { label: "GHL Pipeline", href: "#", desc: "View GHL pipeline" },
+            { label: "GHL Contacts", href: "#", desc: "Browse GHL contacts" },
+            { label: "GHL Automations", href: "#", desc: "GHL automation rules" },
           ].map((link) => (
             <a key={link.label} href={link.href}
               className="flex items-center gap-3 p-3 rounded-xl border hover:opacity-80 transition-opacity"
               style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
-              <span className="text-xl">{link.icon}</span>
+              <span
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold"
+                style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+              >
+                {link.label.slice(0, 2).toUpperCase()}
+              </span>
               <div>
                 <p className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{link.label}</p>
                 <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{link.desc}</p>

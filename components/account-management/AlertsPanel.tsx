@@ -35,7 +35,7 @@ export function AlertsPanel({ clients }: AlertsPanelProps) {
         <div className="divide-y divide-slate-100">
           {atRisk.length === 0 && (
             <div className="px-5 py-6 text-center text-sm text-slate-400">
-              🎉 No at-risk clients right now!
+              No at-risk clients right now.
             </div>
           )}
           {atRisk.map((c) => (
@@ -47,7 +47,7 @@ export function AlertsPanel({ clients }: AlertsPanelProps) {
                 </div>
                 {c.reportsOverdue > 0 && (
                   <div className="text-xs text-red-600 mt-0.5">
-                    ⚠ {c.reportsOverdue} report{c.reportsOverdue !== 1 ? "s" : ""} overdue
+                    {c.reportsOverdue} report{c.reportsOverdue !== 1 ? "s" : ""} overdue
                   </div>
                 )}
               </div>

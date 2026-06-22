@@ -9,13 +9,13 @@ const alerts: AlertItem[] = [
 
 const integrations = [
   { name: "Google Workspace", status: "connected", description: "Email, calendar & docs", icon: "🔵" },
-  { name: "Slack", status: "connected", description: "Team notifications", icon: "💬" },
-  { name: "Google Analytics", status: "connected", description: "Site analytics", icon: "📊" },
-  { name: "Stripe", status: "connected", description: "Billing & payments", icon: "💳" },
+  { name: "Slack", status: "connected", description: "Team notifications" },
+  { name: "Google Analytics", status: "connected", description: "Site analytics" },
+  { name: "Stripe", status: "connected", description: "Billing & payments" },
   { name: "Meta Business Suite", status: "connected", description: "Ads & pages", icon: "📘" },
-  { name: "Google Ads", status: "connected", description: "PPC campaigns", icon: "🎯" },
+  { name: "Google Ads", status: "connected", description: "PPC campaigns" },
   { name: "Salesforce", status: "disconnected", description: "CRM sync", icon: "☁️" },
-  { name: "Zapier", status: "disconnected", description: "Workflow automation", icon: "⚡" },
+  { name: "Zapier", status: "disconnected", description: "Workflow automation" },
 ];
 
 const teamMembers = [
@@ -30,11 +30,11 @@ const teamMembers = [
 // ─── Reporting & Intelligence ────────────────────────────────────────────────
 
 const dashboardTypes = [
-  { id: "department", label: "Department Dashboard", icon: "🏢", description: "Team performance & workload" },
-  { id: "client", label: "Client Dashboard", icon: "👤", description: "Per-client performance metrics" },
-  { id: "executive", label: "Executive Dashboard", icon: "📈", description: "High-level KPIs & revenue" },
-  { id: "project", label: "Project Dashboard", icon: "📋", description: "Project health & milestones" },
-  { id: "operations", label: "Operations Dashboard", icon: "⚙️", description: "Operational efficiency" },
+  { id: "department", label: "Department Dashboard", description: "Team performance & workload" },
+  { id: "client", label: "Client Dashboard", description: "Per-client performance metrics" },
+  { id: "executive", label: "Executive Dashboard", description: "High-level KPIs & revenue" },
+  { id: "project", label: "Project Dashboard", description: "Project health & milestones" },
+  { id: "operations", label: "Operations Dashboard", description: "Operational efficiency" },
 ];
 
 const dashboardBuilderPermissions = [
@@ -51,25 +51,25 @@ const dashboardBuilderPermissions = [
 ];
 
 const clientDashboardTemplates = [
-  { id: "seo", label: "SEO Dashboard", icon: "🔍", description: "Organic traffic, rankings, GSC" },
-  { id: "ppc", label: "PPC Dashboard", icon: "🎯", description: "Google Ads performance & ROAS" },
-  { id: "gbp", label: "GBP Dashboard", icon: "📍", description: "Google Business Profile activity" },
+  { id: "seo", label: "SEO Dashboard", description: "Organic traffic, rankings, GSC" },
+  { id: "ppc", label: "PPC Dashboard", description: "Google Ads performance & ROAS" },
+  { id: "gbp", label: "GBP Dashboard", description: "Google Business Profile activity" },
   { id: "lsa", label: "LSA Dashboard", icon: "📣", description: "Local Services Ads performance" },
-  { id: "website", label: "Website Dashboard", icon: "🌐", description: "Web analytics & conversion" },
-  { id: "ai_auto", label: "AI Automation Dashboard", icon: "🤖", description: "AI campaign & automation KPIs" },
-  { id: "full", label: "Full-Service Dashboard", icon: "⭐", description: "All channels combined" },
+  { id: "website", label: "Website Dashboard", description: "Web analytics & conversion" },
+  { id: "ai_auto", label: "AI Automation Dashboard", description: "AI campaign & automation KPIs" },
+  { id: "full", label: "Full-Service Dashboard", description: "All channels combined" },
 ];
 
 const executiveDashboardTemplates = [
-  { id: "revenue", label: "Revenue", icon: "💰", description: "MRR, ARR, churn revenue" },
-  { id: "dept_perf", label: "Department Performance", icon: "🏢", description: "Team output & efficiency" },
-  { id: "project_health", label: "Project Health", icon: "✅", description: "Project status across org" },
+  { id: "revenue", label: "Revenue", description: "MRR, ARR, churn revenue" },
+  { id: "dept_perf", label: "Department Performance", description: "Team output & efficiency" },
+  { id: "project_health", label: "Project Health", description: "Project status across org" },
   { id: "client_health", label: "Client Health", icon: "💚", description: "Health scores & risk flags" },
-  { id: "renewal_risk", label: "Renewal Risk", icon: "⚠️", description: "Upcoming renewals at risk" },
+  { id: "renewal_risk", label: "Renewal Risk", description: "Upcoming renewals at risk" },
   { id: "revenue_risk", label: "Revenue Risk", icon: "📉", description: "Revenue at risk indicators" },
-  { id: "escalations", label: "Escalations", icon: "🚨", description: "Active escalations & blockers" },
-  { id: "ops_summary", label: "Operations Summary", icon: "⚙️", description: "Ops efficiency & capacity" },
-  { id: "exec_ai", label: "Executive AI Summary", icon: "🧠", description: "AI-generated exec briefing" },
+  { id: "escalations", label: "Escalations", description: "Active escalations & blockers" },
+  { id: "ops_summary", label: "Operations Summary", description: "Ops efficiency & capacity" },
+  { id: "exec_ai", label: "Executive AI Summary", description: "AI-generated exec briefing" },
 ];
 
 const clientDashboardWidgets = [
@@ -93,44 +93,44 @@ const clientDashboardWidgets = [
 ];
 
 const dataSources = [
-  { name: "GA4", icon: "📊", status: "connected", description: "Google Analytics 4" },
-  { name: "Google Ads", icon: "🎯", status: "connected", description: "PPC campaigns" },
+  { name: "GA4", status: "connected", description: "Google Analytics 4" },
+  { name: "Google Ads", status: "connected", description: "PPC campaigns" },
   { name: "Meta Ads", icon: "📘", status: "connected", description: "Facebook & Instagram ads" },
-  { name: "Google Search Console", icon: "🔍", status: "connected", description: "Organic search data" },
-  { name: "Google Business Profile", icon: "📍", status: "connected", description: "Local presence data" },
+  { name: "Google Search Console", status: "connected", description: "Organic search data" },
+  { name: "Google Business Profile", status: "connected", description: "Local presence data" },
   { name: "Google Local Services Ads", icon: "📣", status: "connected", description: "LSA performance" },
-  { name: "CallRail", icon: "📞", status: "connected", description: "Call tracking & recording" },
-  { name: "GoHighLevel", icon: "⚡", status: "connected", description: "CRM & pipeline" },
+  { name: "CallRail", status: "connected", description: "Call tracking & recording" },
+  { name: "GoHighLevel", status: "connected", description: "CRM & pipeline" },
   { name: "Power BI", icon: "📉", status: "disconnected", description: "Business intelligence" },
-  { name: "Google Sheets", icon: "📋", status: "connected", description: "Manual data inputs" },
-  { name: "Twilio", icon: "💬", status: "disconnected", description: "SMS & voice" },
-  { name: "OpenAI", icon: "🤖", status: "connected", description: "AI summaries & analysis" },
-  { name: "Custom API", icon: "🔌", status: "disconnected", description: "External data source" },
+  { name: "Google Sheets", status: "connected", description: "Manual data inputs" },
+  { name: "Twilio", status: "disconnected", description: "SMS & voice" },
+  { name: "OpenAI", status: "connected", description: "AI summaries & analysis" },
+  { name: "Custom API", status: "disconnected", description: "External data source" },
 ];
 
 const reportAutomationTypes = [
-  { label: "Weekly Reports", icon: "📅", description: "Auto-generated every Monday", enabled: true },
+  { label: "Weekly Reports", description: "Auto-generated every Monday", enabled: true },
   { label: "Monthly Reports", icon: "📆", description: "Auto-generated on the 1st", enabled: true },
-  { label: "Quarterly Reports", icon: "🗓️", description: "Q1–Q4 performance summary", enabled: true },
-  { label: "QBR Reports", icon: "🤝", description: "Quarterly business review decks", enabled: false },
-  { label: "Renewal Reports", icon: "🔄", description: "Triggered 60 days before renewal", enabled: true },
+  { label: "Quarterly Reports", description: "Q1–Q4 performance summary", enabled: true },
+  { label: "QBR Reports", description: "Quarterly business review decks", enabled: false },
+  { label: "Renewal Reports", description: "Triggered 60 days before renewal", enabled: true },
   { label: "Executive Reports", icon: "👔", description: "Leadership briefing packages", enabled: false },
-  { label: "Client Reports", icon: "👤", description: "Client-facing performance decks", enabled: true },
+  { label: "Client Reports", description: "Client-facing performance decks", enabled: true },
 ];
 
 const generateReportTypes = [
-  { label: "Generate Client Report", icon: "👤", status: "available" as const },
+  { label: "Generate Client Report", status: "available" as const },
   { label: "Generate Executive Report", icon: "👔", status: "available" as const },
-  { label: "Generate QBR Report", icon: "🤝", status: "coming_soon" as const },
-  { label: "Generate Renewal Report", icon: "🔄", status: "available" as const },
-  { label: "Generate Call Analysis Report", icon: "📞", status: "available" as const },
-  { label: "Generate Department Report", icon: "🏢", status: "coming_soon" as const },
+  { label: "Generate QBR Report", status: "coming_soon" as const },
+  { label: "Generate Renewal Report", status: "available" as const },
+  { label: "Generate Call Analysis Report", status: "available" as const },
+  { label: "Generate Department Report", status: "coming_soon" as const },
 ];
 
 const callIntelligenceIntegrations = [
-  { name: "CallRail", icon: "📞", status: "connected", description: "Call tracking & analytics" },
-  { name: "GoHighLevel Calls", icon: "⚡", status: "connected", description: "CRM-linked call data" },
-  { name: "Twilio Calls", icon: "💬", status: "disconnected", description: "Voice & SMS calls" },
+  { name: "CallRail", status: "connected", description: "Call tracking & analytics" },
+  { name: "GoHighLevel Calls", status: "connected", description: "CRM-linked call data" },
+  { name: "Twilio Calls", status: "disconnected", description: "Voice & SMS calls" },
 ];
 
 const callIntelligenceFeatures = [
@@ -173,9 +173,9 @@ const aiSummaryRules = [
 
 const clientHealthScores = [
   { label: "Client Health Score", icon: "💚", description: "Composite score across performance, engagement & delivery", status: "architecture_ready" as const },
-  { label: "Renewal Risk Score", icon: "⚠️", description: "Likelihood of non-renewal based on signals", status: "architecture_ready" as const },
-  { label: "Expansion Opportunity Score", icon: "📈", description: "Upsell / cross-sell readiness score", status: "coming_soon" as const },
-  { label: "Churn Risk Score", icon: "🚨", description: "Early warning churn probability", status: "coming_soon" as const },
+  { label: "Renewal Risk Score", description: "Likelihood of non-renewal based on signals", status: "architecture_ready" as const },
+  { label: "Expansion Opportunity Score", description: "Upsell / cross-sell readiness score", status: "coming_soon" as const },
+  { label: "Churn Risk Score", description: "Early warning churn probability", status: "coming_soon" as const },
 ];
 
 // ─── Notification Settings ─────────────────────────────────────────────────────
@@ -333,7 +333,12 @@ export default function SettingsPage() {
           {dashboardTypes.map((dt) => (
             <div key={dt.id} className="p-4 rounded-xl bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/50 hover:shadow-sm transition-all">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">{dt.icon}</span>
+                <span
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                  style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+                >
+                  {String(dt.id).slice(0, 2).toUpperCase()}
+                </span>
                 <p className="text-sm font-semibold text-slate-800">{dt.label}</p>
               </div>
               <p className="text-xs text-slate-500 ml-7">{dt.description}</p>
@@ -457,7 +462,12 @@ export default function SettingsPage() {
               {callIntelligenceIntegrations.map((ci) => (
                 <div key={ci.name} className="flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 hover:border-[var(--rtm-blue)]/40 transition-colors shadow-sm">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{ci.icon}</span>
+                    <span
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold"
+                      style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+                    >
+                      {ci.name.slice(0, 2).toUpperCase()}
+                    </span>
                     <div>
                       <p className="text-sm font-semibold text-slate-800">{ci.name}</p>
                       <p className="text-xs text-slate-500">{ci.description}</p>

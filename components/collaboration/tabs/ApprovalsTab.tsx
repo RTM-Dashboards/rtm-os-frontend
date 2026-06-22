@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default function ApprovalsTab({ approvals }: Props) {
-  if (!approvals.length) return <EmptyTab icon="✅" message="No approvals on this task yet." />;
+  if (!approvals.length) return <EmptyTab message="No approvals on this task yet." />;
 
   const pending = approvals.filter((a) => a.status === "Pending Approval" || a.status === "Pending Review" || a.status === "Needs Revision");
   const completed = approvals.filter((a) => a.status === "Approved" || a.status === "Rejected");
@@ -143,7 +143,7 @@ function ApprovalCard({ approval }: { approval: ApprovalStep }) {
       {/* Notes */}
       {approval.notes && (
         <p className="text-xs leading-relaxed" style={{ color: "var(--rtm-text-secondary)" }}>
-          📝 {approval.notes}
+          {approval.notes}
         </p>
       )}
 
@@ -161,13 +161,13 @@ function ApprovalCard({ approval }: { approval: ApprovalStep }) {
             className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white"
             style={{ background: "#059669" }}
           >
-            ✓ Approve
+            Approve
           </button>
           <button
             className="text-xs px-3 py-1.5 rounded-lg font-semibold text-white"
             style={{ background: "#DC2626" }}
           >
-            ✕ Reject
+            Reject
           </button>
           <button
             className="text-xs px-3 py-1.5 rounded-lg font-semibold"

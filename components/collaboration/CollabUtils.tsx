@@ -141,17 +141,25 @@ export function AttachmentStatusBadge({ status }: { status: AttachmentStatus }) 
 // ── File type icon ────────────────────────────────────────────────────────────
 
 export function FileIcon({ type }: { type: string }) {
-  const icons: Record<string, string> = {
-    pdf: "📄",
-    docx: "📝",
-    xlsx: "📊",
-    csv: "📊",
-    png: "🖼️",
-    jpg: "🖼️",
-    mp4: "🎥",
-    zip: "📦",
+  const labels: Record<string, string> = {
+    pdf:  "PDF",
+    docx: "DOC",
+    xlsx: "XLS",
+    csv:  "CSV",
+    png:  "IMG",
+    jpg:  "IMG",
+    mp4:  "VID",
+    zip:  "ZIP",
   };
-  return <span>{icons[type] ?? "📁"}</span>;
+  const label = labels[type] ?? type.toUpperCase().slice(0, 3);
+  return (
+    <span
+      className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[9px] font-bold"
+      style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+    >
+      {label}
+    </span>
+  );
 }
 
 // ── File size ─────────────────────────────────────────────────────────────────
@@ -187,11 +195,18 @@ export function SectionHeader({ children }: { children: React.ReactNode }) {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-export function EmptyTab({ icon, message }: { icon: string; message: string }) {
+export function EmptyTab({ message, icon }: { message: string; icon?: string }) {
   return (
-    <div className="flex flex-col items-center gap-2 py-12 text-center">
-      <span className="text-4xl">{icon}</span>
-      <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>{message}</p>
+    <div className="flex flex-col items-center gap-3 py-12 text-center">
+      <div
+        className="w-10 h-10 rounded-xl flex items-center justify-center"
+        style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
+      >
+        <svg className="w-5 h-5" style={{ color: "var(--rtm-border)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+        </svg>
+      </div>
+      <p className="text-sm max-w-xs" style={{ color: "var(--rtm-text-muted)" }}>{message}</p>
     </div>
   );
 }

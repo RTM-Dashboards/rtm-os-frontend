@@ -36,10 +36,10 @@ export default function AccountManagerView({ tasks }: Props) {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: "🤝", label: "Client Notes", value: allClientNotes.length },
-          { icon: "✅", label: "Pending Approvals", value: allPendingApprovals.length, warn: true },
-          { icon: "🔔", label: "Unread Alerts", value: allUnread.length, danger: allUnread.length > 0 },
-          { icon: "🔒", label: "High Priority Internal", value: allInternalUrgent.length, warn: allInternalUrgent.length > 0 },
+          { icon: "C", label: "Client Notes", value: allClientNotes.length },
+          { icon: "", label: "Pending Approvals", value: allPendingApprovals.length, warn: true },
+          { icon: "", label: "Unread Alerts", value: allUnread.length, danger: allUnread.length > 0 },
+          { icon: "N", label: "High Priority Internal", value: allInternalUrgent.length, warn: allInternalUrgent.length > 0 },
         ].map((kpi) => (
           <div
             key={kpi.label}
@@ -60,7 +60,7 @@ export default function AccountManagerView({ tasks }: Props) {
       {/* Unread Notifications */}
       {allUnread.length > 0 && (
         <section>
-          <SectionHeader>🔔 Unread Notifications</SectionHeader>
+          <SectionHeader>Unread Notifications</SectionHeader>
           <div className="space-y-2">
             {allUnread.map((n) => (
               <div
@@ -68,7 +68,7 @@ export default function AccountManagerView({ tasks }: Props) {
                 className="flex items-start gap-3 p-3 rounded-xl"
                 style={{ background: "#EBF0FD", border: "1px solid #BFDBFE" }}
               >
-                <span className="text-base">🔔</span>
+                
                 <div className="flex-1">
                   <p className="text-xs font-semibold" style={{ color: "#1B4FD8" }}>{n.message}</p>
                   <p className="text-[10px] mt-0.5" style={{ color: "#5A6A85" }}>
@@ -128,7 +128,7 @@ export default function AccountManagerView({ tasks }: Props) {
       {/* Client Notes — all */}
       {allClientNotes.length > 0 && (
         <section>
-          <SectionHeader>🤝 Client Communication History</SectionHeader>
+          <SectionHeader>Client Communication History</SectionHeader>
           <div className="space-y-3">
             {[...allClientNotes].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((n) => (
               <div
@@ -164,7 +164,7 @@ export default function AccountManagerView({ tasks }: Props) {
       {/* Internal High Priority */}
       {allInternalUrgent.length > 0 && (
         <section>
-          <SectionHeader>🔒 High-Priority Internal Notes</SectionHeader>
+          <SectionHeader>High-Priority Internal Notes</SectionHeader>
           <div className="space-y-3">
             {allInternalUrgent.map((n) => (
               <div
@@ -194,7 +194,7 @@ export default function AccountManagerView({ tasks }: Props) {
 
       {/* Per-project health */}
       <section>
-        <SectionHeader>📊 Project Health Summary</SectionHeader>
+        <SectionHeader>Project Health Summary</SectionHeader>
         <div className="space-y-3">
           {tasks.map((t) => {
             const isBlocked = t.dependencies.some((d) => d.status === "Blocked");
@@ -215,12 +215,12 @@ export default function AccountManagerView({ tasks }: Props) {
                 <div className="flex items-center gap-2">
                   {t.comments.length > 0 && (
                     <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: "#EBF0FD", color: "#1B4FD8" }}>
-                      💬 {t.comments.length}
+                      {t.comments.length}
                     </span>
                   )}
                   {t.approvals.length > 0 && (
                     <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: "#FEF3C7", color: "#92400E" }}>
-                      ✅ {t.approvals.length}
+                      {t.approvals.length}
                     </span>
                   )}
                   <span
@@ -230,7 +230,7 @@ export default function AccountManagerView({ tasks }: Props) {
                       color: isBlocked ? "#991B1B" : hasPendingAppr ? "#92400E" : "#065F46",
                     }}
                   >
-                    {isBlocked ? "🚫 Blocked" : hasPendingAppr ? "⏳ Approval" : "✓ OK"}
+                    {isBlocked ? "Blocked" : hasPendingAppr ? "Approval" : "OK"}
                   </span>
                 </div>
               </div>

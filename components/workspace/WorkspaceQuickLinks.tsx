@@ -4,7 +4,7 @@ import type { WorkspaceNavItem } from "@/types/workspace";
 interface QuickLinkItem {
   label: string;
   href: string;
-  icon: string;
+  icon?: string;
   description?: string;
   accent?: string;
 }

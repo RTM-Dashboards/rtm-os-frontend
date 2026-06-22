@@ -25,7 +25,7 @@ const alerts: AlertItem[] = [
 ];
 
 const quickActions: QuickAction[] = [
-  { label: "New Report",   description: "Generate a client report", icon: "📊", color: "bg-blue-50 text-blue-700" },
+  { label: "New Report",   description: "Generate a client report", color: "bg-blue-50 text-blue-700" },
   { label: "Add Client",   description: "Onboard a new account",    icon: "➕", color: "bg-emerald-50 text-emerald-700" },
   { label: "New Campaign", description: "Launch paid media",         icon: "🎯", color: "bg-violet-50 text-violet-700" },
   { label: "View Tasks",   description: "Open task manager",         icon: "✓",  color: "bg-blue-50 text-blue-700" },

@@ -107,7 +107,7 @@ export default function OnboardingQueue({ items }: Props) {
                   className="flex items-start gap-2 rounded-lg px-3 py-2 text-xs"
                   style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}
                 >
-                  <span className="flex-shrink-0 mt-0.5">⚠</span>
+                  <span className="flex-shrink-0 mt-0.5 text-warning-600">!</span>
                   <span>{item.blockedReason}</span>
                 </div>
               )}

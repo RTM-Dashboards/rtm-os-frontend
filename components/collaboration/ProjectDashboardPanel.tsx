@@ -51,12 +51,12 @@ export default function ProjectDashboardPanel({ tasks }: Props) {
       {/* ── KPI Strip ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
-          { icon: "📋", label: "Activity Events", value: tasks.reduce((s, t) => s + t.activity.length, 0), color: "#1D4ED8", bg: "#EFF6FF" },
-          { icon: "💬", label: "Comments", value: tasks.reduce((s, t) => s + t.comments.length, 0), color: "#7C3AED", bg: "#F5F3FF" },
+          { icon: "", label: "Activity Events", value: tasks.reduce((s, t) => s + t.activity.length, 0), color: "#1D4ED8", bg: "#EFF6FF" },
+          { icon: "C", label: "Comments", value: tasks.reduce((s, t) => s + t.comments.length, 0), color: "#7C3AED", bg: "#F5F3FF" },
           { icon: "⏳", label: "Open Approvals", value: openApprovals.length, color: "#D97706", bg: "#FFFBEB" },
-          { icon: "🚫", label: "Blocked Tasks", value: blockedTasks.length, color: "#DC2626", bg: "#FEF2F2" },
-          { icon: "⚡", label: "Escalations", value: openEscalations.length, color: "#DC2626", bg: "#FEF2F2" },
-          { icon: "🔒", label: "High-Priority Notes", value: deptUpdates.length, color: "#92400E", bg: "#FFFBEB" },
+          { icon: "BLK", label: "Blocked Tasks", value: blockedTasks.length, color: "#DC2626", bg: "#FEF2F2" },
+          { icon: "!", label: "Escalations", value: openEscalations.length, color: "#DC2626", bg: "#FEF2F2" },
+          { icon: "N", label: "High-Priority Notes", value: deptUpdates.length, color: "#92400E", bg: "#FFFBEB" },
         ].map((kpi) => (
           <div
             key={kpi.label}
@@ -71,7 +71,7 @@ export default function ProjectDashboardPanel({ tasks }: Props) {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
         {/* ── Recent Activity Feed ── */}
-        <DashSection title="📋 Recent Activity Feed" count={allActivity.length}>
+        <DashSection title="Recent Activity Feed" count={allActivity.length}>
           <div className="space-y-0">
             {allActivity.map((ev, idx) => (
               <div
@@ -95,7 +95,7 @@ export default function ProjectDashboardPanel({ tasks }: Props) {
         </DashSection>
 
         {/* ── Recent Comments ── */}
-        <DashSection title="💬 Recent Comments" count={allComments.length}>
+        <DashSection title="Recent Comments" count={allComments.length}>
           <div className="space-y-3">
             {allComments.map((c) => (
               <div key={c.id} className="flex items-start gap-2">
@@ -103,8 +103,8 @@ export default function ProjectDashboardPanel({ tasks }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-0.5">
                     <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{c.authorName}</span>
-                    {c.pinned && <span className="text-[9px] px-1.5 py-0 rounded font-bold" style={{ background: "#FEF3C7", color: "#92400E" }}>📌</span>}
-                    {c.resolved && <span className="text-[9px] px-1.5 py-0 rounded font-bold" style={{ background: "#D1FAE5", color: "#065F46" }}>✓</span>}
+                    {c.pinned && <span className="text-[9px] px-1.5 py-0 rounded font-bold" style={{ background: "#FEF3C7", color: "#92400E" }}></span>}
+                    {c.resolved && <span className="text-[9px] px-1.5 py-0 rounded font-bold" style={{ background: "#D1FAE5", color: "#065F46" }}></span>}
                   </div>
                   <p className="text-xs line-clamp-2" style={{ color: "var(--rtm-text-secondary)" }}>{c.body}</p>
                   <p className="text-[10px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
@@ -120,7 +120,7 @@ export default function ProjectDashboardPanel({ tasks }: Props) {
         {/* ── Open Approvals ── */}
         <DashSection title="⏳ Open Approvals" count={openApprovals.length} alertColor={openApprovals.length > 0 ? "#D97706" : undefined}>
           {!openApprovals.length ? (
-            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No pending approvals. ✅</p>
+            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No pending approvals. </p>
           ) : (
             <div className="space-y-2">
               {openApprovals.map((a) => (
@@ -142,9 +142,9 @@ export default function ProjectDashboardPanel({ tasks }: Props) {
         </DashSection>
 
         {/* ── Blocked Tasks ── */}
-        <DashSection title="🚫 Blocked Tasks" count={blockedTasks.length} alertColor={blockedTasks.length > 0 ? "#DC2626" : undefined}>
+        <DashSection title="Blocked Tasks" count={blockedTasks.length} alertColor={blockedTasks.length > 0 ? "#DC2626" : undefined}>
           {!blockedTasks.length ? (
-            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No blocked tasks. ✅</p>
+            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No blocked tasks. </p>
           ) : (
             <div className="space-y-2">
               {blockedTasks.map((t) => {
@@ -173,9 +173,9 @@ export default function ProjectDashboardPanel({ tasks }: Props) {
         </DashSection>
 
         {/* ── Escalation Queue ── */}
-        <DashSection title="⚡ Escalation Queue" count={openEscalations.length} alertColor={openEscalations.length > 0 ? "#DC2626" : undefined}>
+        <DashSection title="Escalation Queue" count={openEscalations.length} alertColor={openEscalations.length > 0 ? "#DC2626" : undefined}>
           {!openEscalations.length ? (
-            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No active escalations. ✅</p>
+            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No active escalations. </p>
           ) : (
             <div className="space-y-2">
               {openEscalations.map((e) => (
@@ -204,7 +204,7 @@ export default function ProjectDashboardPanel({ tasks }: Props) {
         </DashSection>
 
         {/* ── Department Updates ── */}
-        <DashSection title="🔒 Department Updates" count={deptUpdates.length} alertColor={deptUpdates.some(n => n.priority === "Urgent") ? "#D97706" : undefined}>
+        <DashSection title="Department Updates" count={deptUpdates.length} alertColor={deptUpdates.some(n => n.priority === "Urgent") ? "#D97706" : undefined}>
           {!deptUpdates.length ? (
             <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No high-priority internal notes.</p>
           ) : (

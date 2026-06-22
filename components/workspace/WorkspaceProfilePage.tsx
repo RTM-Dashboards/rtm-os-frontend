@@ -178,8 +178,8 @@ export default function WorkspaceProfilePage({
             <div className="space-y-1">
               {[
                 { label: "← Dashboard", href: workspace.dashboardRoute },
-                ...(teamRoute ? [{ label: "👥 Team Members", href: teamRoute }] : []),
-                ...(rolesRoute ? [{ label: "🔑 Roles & Permissions", href: rolesRoute }] : []),
+                ...(teamRoute ? [{ label: "Team Members", href: teamRoute }] : []),
+                ...(rolesRoute ? [{ label: " Roles & Permissions", href: rolesRoute }] : []),
               ].map(({ label, href }) => (
                 <Link
                   key={href}

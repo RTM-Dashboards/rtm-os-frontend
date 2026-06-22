@@ -60,7 +60,7 @@ interface TemplateTask {
   status: DependencyStatus;
 }
 
-// Line Item SLA — primary source inherited by task templates
+// Line Item SLA - primary source inherited by task templates
 interface LineItemSLARef {
   firstResponseSLA: string;
   targetCompletionDays: number;
@@ -90,7 +90,7 @@ interface TaskTemplate {
   monthlyTaskCount: number;
   quarterlyTaskCount: number;
   marginContribution: string;
-  // SLA inherited from mapped line item — primary source
+  // SLA inherited from mapped line item - primary source
   lineItemSLA: LineItemSLARef;
 }
 
@@ -487,12 +487,12 @@ const TASK_TEMPLATES: TaskTemplate[] = [
     marginContribution: "Low",
     lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, clientUpdateFrequency: "As needed", slaPriority: "Standard", slaStatus: "Active" },
     tasks: [
-      { name: "Renewal Notice — 60 Days", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day -60", status: "Required" },
+      { name: "Renewal Notice - 60 Days", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day -60", status: "Required" },
       { name: "Performance Review Prep", department: "Reporting", ownerRole: "Reporting Specialist", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day -45", status: "Required" },
       { name: "Renewal Proposal", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Performance Review Prep", dueOffset: "Day -30", status: "Required" },
       { name: "Renewal Call", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "High", dependency: "Renewal Proposal", dueOffset: "Day -20", status: "Required" },
       { name: "Contract Sent", department: "Billing", ownerRole: "Billing Specialist", targetCompletionDays: 1, priority: "High", dependency: "Renewal Call", dueOffset: "Day -14", status: "Required" },
-      { name: "Contract Signed — Confirm", department: "Billing", ownerRole: "Billing Specialist", targetCompletionDays: 1, priority: "High", dependency: "Contract Sent", dueOffset: "Day -7", status: "Required" },
+      { name: "Contract Signed - Confirm", department: "Billing", ownerRole: "Billing Specialist", targetCompletionDays: 1, priority: "High", dependency: "Contract Sent", dueOffset: "Day -7", status: "Required" },
     ],
   },
   {
@@ -866,7 +866,7 @@ function TemplateDrawer({
             { label: "Tasks", value: template.taskCount },
             { label: "Target Completion", value: `${template.targetCompletionDays}d` },
             { label: "Department", value: template.department.split(" ")[0] },
-            { label: "Trigger", value: template.activationTrigger.split(" ")[0] + "…" },
+            { label: "Trigger", value: template.activationTrigger.split(" ")[0] + "..." },
           ].map((s, i) => (
             <div
               key={s.label}
@@ -928,13 +928,13 @@ function TemplateDrawer({
                 <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>Activation Flow</div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {[
-                    { label: template.mappedLineItem, icon: "📦" },
+                    { label: template.mappedLineItem },
                     { label: "↓", arrow: true },
-                    { label: template.name, icon: "📋" },
+                    { label: template.name },
                     { label: "↓", arrow: true },
-                    { label: `${template.taskCount} Tasks Generated`, icon: "✅" },
+                    { label: `${template.taskCount} Tasks Generated` },
                     { label: "↓", arrow: true },
-                    { label: template.department, icon: "🏢" },
+                    { label: template.department },
                   ].map((step, i) =>
                     step.arrow ? (
                       <span key={i} className="text-lg font-black" style={{ color: "var(--rtm-text-muted)" }}>↓</span>
@@ -944,7 +944,6 @@ function TemplateDrawer({
                         className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold"
                         style={{ background: dc.bg, color: dc.color, border: `1px solid ${dc.border}` }}
                       >
-                        <span>{step.icon}</span>
                         {step.label}
                       </div>
                     )
@@ -958,7 +957,7 @@ function TemplateDrawer({
           {activeTab === "tasks" && (
             <div className="space-y-3">
               <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>
-                Task Breakdown — {template.taskCount} tasks · {template.targetCompletionDays}d target
+                Task Breakdown - {template.taskCount} tasks · {template.targetCompletionDays}d target
               </div>
               <div className="overflow-x-auto rounded-xl" style={{ border: "1px solid var(--rtm-border)" }}>
                 <table className="w-full text-sm min-w-[600px]">
@@ -984,7 +983,7 @@ function TemplateDrawer({
                         <td className="px-3 py-2.5 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{task.ownerRole}</td>
                         <td className="px-3 py-2.5 text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{task.targetCompletionDays}d</td>
                         <td className="px-3 py-2.5"><PriorityBadge priority={task.priority} /></td>
-                        <td className="px-3 py-2.5 text-xs" style={{ color: "var(--rtm-text-muted)" }}>{task.dependency === "None" ? "—" : task.dependency.slice(0, 16) + (task.dependency.length > 16 ? "…" : "")}</td>
+                        <td className="px-3 py-2.5 text-xs" style={{ color: "var(--rtm-text-muted)" }}>{task.dependency === "None" ? "-" : task.dependency.slice(0, 16) + (task.dependency.length > 16 ? "..." : "")}</td>
                         <td className="px-3 py-2.5 text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{task.dueOffset}</td>
                         <td className="px-3 py-2.5"><DepStatusBadge status={task.status} /></td>
                       </tr>
@@ -1037,11 +1036,11 @@ function TemplateDrawer({
           {/* SLA & Throughput */}
           {activeTab === "workload" && (
             <div className="space-y-4">
-              {/* Line Item SLA — PRIMARY SOURCE */}
+              {/* Line Item SLA - PRIMARY SOURCE */}
               <div className="rounded-xl p-4" style={{ background: "#EFF6FF", border: "2px solid #BFDBFE" }}>
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-base">📦</span>
-                  <div className="text-xs font-black uppercase tracking-wide" style={{ color: "#1D4ED8" }}>Mapped Line Item SLA — Primary Delivery Source</div>
+                  <div className="text-xs font-black uppercase tracking-wide" style={{ color: "#1D4ED8" }}>Mapped Line Item SLA - Primary Delivery Source</div>
                   <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: template.lineItemSLA.slaPriority === "Rush" ? "#FFF1F2" : template.lineItemSLA.slaPriority === "Priority" ? "#EFF6FF" : "#F3F4F6", color: template.lineItemSLA.slaPriority === "Rush" ? "#BE123C" : template.lineItemSLA.slaPriority === "Priority" ? "#1D4ED8" : "#374151" }}>{template.lineItemSLA.slaPriority}</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -1060,14 +1059,14 @@ function TemplateDrawer({
                   ))}
                 </div>
                 <div className="mt-2 text-[10px]" style={{ color: "#1E40AF" }}>
-                  ℹ️ This SLA is inherited from the line item <strong>{template.mappedLineItem}</strong>. Department SLA is fallback only.
+                  i️ This SLA is inherited from the line item <strong>{template.mappedLineItem}</strong>. Department SLA is fallback only.
                 </div>
               </div>
 
               {/* Task-level offsets */}
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "Monthly Tasks", value: template.monthlyTaskCount, icon: "🔄" },
+                  { label: "Monthly Tasks", value: template.monthlyTaskCount },
                   { label: "Quarterly Tasks", value: template.quarterlyTaskCount, icon: "📆" },
                 ].map((stat) => (
                   <div
@@ -1554,7 +1553,7 @@ export default function TaskTemplatesPage() {
                           {template.name}
                         </button>
                         <div className="text-[10px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-                          {template.description.slice(0, 40)}…
+                          {template.description.slice(0, 40)}...
                         </div>
                       </td>
 
@@ -1585,7 +1584,7 @@ export default function TaskTemplatesPage() {
                         </span>
                       </td>
 
-                      {/* Line Item SLA columns — primary source */}
+                      {/* Line Item SLA columns - primary source */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-[11px] font-semibold" style={{ color: "#1D4ED8" }}>⚡ {template.lineItemSLA.firstResponseSLA}</span>
                       </td>
@@ -1918,7 +1917,7 @@ export default function TaskTemplatesPage() {
             </div>
           </div>
 
-          {/* Line Item SLA overview — primary source */}
+          {/* Line Item SLA overview - primary source */}
           <div
             className="rounded-xl p-5"
             style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
@@ -1926,25 +1925,30 @@ export default function TaskTemplatesPage() {
             <div className="flex items-center gap-2 mb-4">
               <span className="text-base">📦</span>
               <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
-                SLA from Mapped Line Item — {previewTemplate.mappedLineItem}
+                SLA from Mapped Line Item - {previewTemplate.mappedLineItem}
               </h2>
               <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>Primary Source</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
               {[
-                { label: "First Response SLA", value: previewTemplate.lineItemSLA.firstResponseSLA, icon: "⚡", color: "#1D4ED8", bg: "#EFF6FF" },
-                { label: "Target Completion", value: `${previewTemplate.lineItemSLA.targetCompletionDays} biz days`, icon: "📅", color: "#059669", bg: "#F0FDF4" },
-                { label: "Due Date Offset", value: previewTemplate.lineItemSLA.dueDateOffset > 0 ? `Day ${previewTemplate.lineItemSLA.dueDateOffset}` : "Immediate", icon: "🗓️", color: "#374151", bg: "#F3F4F6" },
-                { label: "Escalation After", value: `${previewTemplate.lineItemSLA.escalationAfterDays} days`, icon: "🔔", color: "#C2410C", bg: "#FFF7ED" },
-                { label: "Client Updates", value: previewTemplate.lineItemSLA.clientUpdateFrequency, icon: "💬", color: "#047857", bg: "#ECFDF5" },
-                { label: "SLA Priority", value: previewTemplate.lineItemSLA.slaPriority, icon: "⭐", color: "#6D28D9", bg: "#F5F3FF" },
+                { label: "First Response SLA", value: previewTemplate.lineItemSLA.firstResponseSLA, color: "#1D4ED8", bg: "#EFF6FF" },
+                { label: "Target Completion", value: `${previewTemplate.lineItemSLA.targetCompletionDays} biz days`, color: "#059669", bg: "#F0FDF4" },
+                { label: "Due Date Offset", value: previewTemplate.lineItemSLA.dueDateOffset > 0 ? `Day ${previewTemplate.lineItemSLA.dueDateOffset}` : "Immediate", color: "#374151", bg: "#F3F4F6" },
+                { label: "Escalation After", value: `${previewTemplate.lineItemSLA.escalationAfterDays} days`, color: "#C2410C", bg: "#FFF7ED" },
+                { label: "Client Updates", value: previewTemplate.lineItemSLA.clientUpdateFrequency, color: "#047857", bg: "#ECFDF5" },
+                { label: "SLA Priority", value: previewTemplate.lineItemSLA.slaPriority, color: "#6D28D9", bg: "#F5F3FF" },
               ].map((stat) => (
                 <div
                   key={stat.label}
                   className="rounded-xl p-3 flex items-center gap-2"
                   style={{ background: stat.bg, border: `1px solid ${stat.color}20` }}
                 >
-                  <span className="text-base">{stat.icon}</span>
+                  <span
+                    className="w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                    style={{ background: `${stat.color}20`, color: stat.color }}
+                  >
+                    {String(stat.label).slice(0, 2).toUpperCase()}
+                  </span>
                   <div>
                     <div className="text-xs font-black" style={{ color: stat.color }}>{stat.value}</div>
                     <div className="text-[9px] font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{stat.label}</div>
@@ -1954,7 +1958,7 @@ export default function TaskTemplatesPage() {
             </div>
             <div className="rounded-lg px-3 py-2" style={{ background: "#FFFBEB", border: "1px solid #FDE68A" }}>
               <p className="text-[10px]" style={{ color: "#92400E" }}>
-                ℹ️ Department SLA is a fallback default only. The line item SLA above governs this template’s delivery commitment.
+                Note: Department SLA is a fallback default only. The line item SLA above governs this template&apos;s delivery commitment.
               </p>
             </div>
           </div>

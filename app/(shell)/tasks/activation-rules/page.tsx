@@ -866,15 +866,15 @@ const ACTIVATION_RULES: ActivationRule[] = [
 
 // ── Design helpers ────────────────────────────────────────────────────────────
 
-const TRIGGER_CFG: Record<TriggerEvent, { bg: string; color: string; border: string; icon: string }> = {
-  "Proposal Approved":      { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE", icon: "📝" },
+const TRIGGER_CFG: Record<TriggerEvent, { bg: string; color: string; border: string; icon?: string }> = {
+  "Proposal Approved":      { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
   "Contract Signed":        { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", icon: "📄" },
-  "Invoice Paid":           { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA", icon: "💳" },
-  "Client Activated":       { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE", icon: "🚀" },
-  "Upsell Approved":        { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", icon: "📈" },
-  "Renewal Signed":         { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0", icon: "🔄" },
-  "Cancellation Requested": { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", icon: "⚠️" },
-  "Offboarding Approved":   { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3", icon: "📦" },
+  "Invoice Paid":           { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
+  "Client Activated":       { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE" },
+  "Upsell Approved":        { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
+  "Renewal Signed":         { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0" },
+  "Cancellation Requested": { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" },
+  "Offboarding Approved":   { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3" },
 };
 
 const STATUS_CFG: Record<RuleStatus, { bg: string; color: string; border: string; dot: string }> = {
@@ -1159,13 +1159,13 @@ function RuleDrawer({
                 <div className="text-xs font-bold mb-3" style={{ color: "#1D4ED8" }}>Activation Flow</div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   {[
-                    { label: rule.lineItem, icon: "📦" },
+                    { label: rule.lineItem },
                     "→",
                     { label: rule.triggerEvent, icon: trigCfg.icon },
                     "→",
-                    { label: rule.taskTemplate, icon: "📋" },
+                    { label: rule.taskTemplate },
                     "→",
-                    { label: rule.department, icon: "🏢" },
+                    { label: rule.department },
                   ].map((step, i) =>
                     step === "→" ? (
                       <span key={i} className="font-black" style={{ color: "#60A5FA" }}>→</span>
@@ -1761,17 +1761,17 @@ export default function ActivationRulesPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
           {[
-            { label: "Line Item Sold", icon: "📦" },
+            { label: "Line Item Sold" },
             "→",
             { label: "Contract Signed", icon: "📄" },
             "→",
-            { label: "Invoice Paid", icon: "💳" },
+            { label: "Invoice Paid" },
             "→",
-            { label: "Activation Rule Fires", icon: "⚡" },
+            { label: "Activation Rule Fires" },
             "→",
-            { label: "Task Template Generates Tasks", icon: "📋" },
+            { label: "Task Template Generates Tasks" },
             "→",
-            { label: "Department Queue Activated", icon: "🏢" },
+            { label: "Department Queue Activated" },
           ].map((step, i) =>
             step === "→" ? (
               <span key={i} className="font-black" style={{ color: "#93C5FD" }}>→</span>

@@ -35,7 +35,6 @@ type TabId =
 interface Tab {
   id: TabId;
   label: string;
-  icon: string;
   badge?: number;
 }
 
@@ -70,17 +69,17 @@ export default function TaskDetailDrawer({ collab, taskStatus, taskPriority, onC
   ).length;
 
   const TABS: Tab[] = [
-    { id: "overview",       label: "Overview",        icon: "🗂️",  badge: unread > 0 ? unread : undefined },
-    { id: "comments",       label: "Comments",        icon: "💬",  badge: collab.comments.length || undefined },
-    { id: "internal-notes", label: "Internal Notes",  icon: "🔒",  badge: collab.internalNotes.length || undefined },
-    { id: "client-notes",   label: "Client Notes",    icon: "🤝",  badge: collab.clientNotes.length || undefined },
-    { id: "attachments",    label: "Attachments",     icon: "📎",  badge: collab.attachments.length || undefined },
-    { id: "activity",       label: "Activity",        icon: "📋",  badge: collab.activity.length || undefined },
-    { id: "approvals",      label: "Approvals",       icon: "✅",  badge: pendingApprovals > 0 ? pendingApprovals : undefined },
-    { id: "dependencies",   label: "Dependencies",    icon: "🔗",  badge: blocked > 0 ? blocked : undefined },
-    { id: "watchers",       label: "Watchers",        icon: "👁️",  badge: collab.watchers.filter((w) => w.watching).length || undefined },
-    { id: "escalations",    label: "Escalations",     icon: "⚡",  badge: openEscalations > 0 ? openEscalations : collab.escalations.length || undefined },
-    { id: "ai-summary",     label: "AI Summary",      icon: "🤖" },
+    { id: "overview",       label: "Overview",       badge: unread > 0 ? unread : undefined },
+    { id: "comments",       label: "Comments",       badge: collab.comments.length || undefined },
+    { id: "internal-notes", label: "Internal Notes", badge: collab.internalNotes.length || undefined },
+    { id: "client-notes",   label: "Client Notes",   badge: collab.clientNotes.length || undefined },
+    { id: "attachments",    label: "Attachments",    badge: collab.attachments.length || undefined },
+    { id: "activity",       label: "Activity",       badge: collab.activity.length || undefined },
+    { id: "approvals",      label: "Approvals",      badge: pendingApprovals > 0 ? pendingApprovals : undefined },
+    { id: "dependencies",   label: "Dependencies",   badge: blocked > 0 ? blocked : undefined },
+    { id: "watchers",       label: "Watchers",       badge: collab.watchers.filter((w) => w.watching).length || undefined },
+    { id: "escalations",    label: "Escalations",    badge: openEscalations > 0 ? openEscalations : collab.escalations.length || undefined },
+    { id: "ai-summary",     label: "AI Summary" },
   ];
 
   const statusColors: Record<string, { bg: string; color: string }> = {
@@ -149,7 +148,7 @@ export default function TaskDetailDrawer({ collab, taskStatus, taskPriority, onC
                 )}
                 {collab.notifications.filter((n) => !n.read).length > 0 && (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold text-white" style={{ background: "#DC2626" }}>
-                    🔔 {collab.notifications.filter((n) => !n.read).length} Unread
+                    {collab.notifications.filter((n) => !n.read).length} Unread
                   </span>
                 )}
               </div>
@@ -191,7 +190,6 @@ export default function TaskDetailDrawer({ collab, taskStatus, taskPriority, onC
                     marginBottom: "-2px",
                   }}
                 >
-                  <span>{tab.icon}</span>
                   <span>{tab.label}</span>
                   {tab.badge !== undefined && (
                     <span
