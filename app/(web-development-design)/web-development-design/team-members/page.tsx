@@ -11,8 +11,6 @@ export default function TeamMembersPage() {
     <WorkspaceTeamMembersPage
       workspace={workspace}
       members={webDevDesignMembers}
-      rolesRoute="/web-development-design/roles"
-      profileRoute="/web-development-design/profile"
-    />
+      rolesRoute="/web-development-design/roles"profileRoute="/web-development-design/profile"/>
   );
 }

@@ -12,8 +12,6 @@ export default function BillingRolesPage() {
       workspace={workspace}
       roles={billingRoles}
       permissionAreas={billingPermissions}
-      teamRoute="/billing/team-members"
-      profileRoute="/billing/profile"
-    />
+      teamRoute="/billing/team-members"profileRoute="/billing/profile"/>
   );
 }

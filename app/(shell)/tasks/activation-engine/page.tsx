@@ -3,70 +3,49 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Activation Engine
 // Route: /tasks/activation-engine
 // Turns signed contracts and paid invoices into activated projects, task blueprints,
 // department workload, and onboarding handoffs.
 // Belongs to: Projects & Tasks → Activation Engine
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+//  Types 
 
 type ActivationStatus =
-  | "Not Ready"
-  | "Ready for Activation"
-  | "Rules Matched"
-  | "Generating Tasks"
-  | "Department Activation Pending"
-  | "Activated"
-  | "Blocked"
-  | "Failed";
+  | "Not Ready"| "Ready for Activation"| "Rules Matched"| "Generating Tasks"| "Department Activation Pending"| "Activated"| "Blocked"| "Failed";
 
-type ContractStatus = "Signed" | "Pending Signature" | "Expired" | "Draft";
-type InvoiceStatus = "Paid" | "Pending Payment" | "Overdue" | "Draft";
-type Priority = "High" | "Medium" | "Low";
+type ContractStatus = "Signed"| "Pending Signature"| "Expired"| "Draft";
+type InvoiceStatus = "Paid"| "Pending Payment"| "Overdue"| "Draft";
+type Priority = "High"| "Medium"| "Low";
 
 type Department =
-  | "SEO"
-  | "GBP"
-  | "Paid Advertising"
-  | "Meta Ads"
-  | "LSA"
-  | "Reporting"
-  | "Web Development"
-  | "Creative"
-  | "Account Management";
+  | "SEO"| "GBP"| "Paid Advertising"| "Meta Ads"| "LSA"| "Reporting"| "Web Development"| "Creative"| "Account Management";
 
 type BlockedReason =
-  | "Missing Contract Signature"
-  | "Invoice Not Paid"
-  | "Missing Client Access"
-  | "Missing Task Template"
-  | "Missing Department Owner"
-  | "Dependency Not Satisfied"
-  | null;
+  | "Missing Contract Signature"| "Invoice Not Paid"| "Missing Client Access"| "Missing Task Template"| "Missing Department Owner"| "Dependency Not Satisfied"| null;
 
 // Line Item SLA — primary source for all SLA dates
 interface LineItemSLA {
   firstResponseSLA: string;
   targetCompletionDays: number;
   escalationAfterDays: number;
-  slaPriority: "Standard" | "Priority" | "Rush" | "Custom";
-  slaStatus: "Active" | "Pending Review" | "Needs Approval" | "Inactive";
+  slaPriority: "Standard"| "Priority"| "Rush"| "Custom";
+  slaStatus: "Active"| "Pending Review"| "Needs Approval"| "Inactive";
 }
 
 // SLA dates generated from line item at activation time
 interface GeneratedSLADates {
-  firstResponseDue: string;    // e.g. "2025-07-26"
-  targetCompletionDate: string; // e.g. "2025-07-31"
-  escalationDate: string;       // e.g. "2025-08-02"
+  firstResponseDue: string;      // e.g. "2025-07-26"
+  targetCompletionDate: string;  // e.g. "2025-07-31"
+  escalationDate: string;        // e.g. "2025-08-02"
   slaStatus: string;
 }
 
 interface LineItem {
   name: string;
-  billingType: "Setup" | "Monthly" | "One-Time" | "Performance";
+  billingType: "Setup"| "Monthly"| "One-Time"| "Performance";
   quantity: number;
   setupFee: number;
   monthlyFee: number;
@@ -84,7 +63,7 @@ interface GeneratedTask {
   priority: Priority;
   dueOffset: string;
   targetCompletionDays: number;
-  status: "Pending" | "Active" | "Complete" | "Blocked";
+  status: "Pending"| "Active"| "Complete"| "Blocked";
 }
 
 interface DepartmentWorkload {
@@ -93,7 +72,7 @@ interface DepartmentWorkload {
   taskCount: number;
   targetCompletionDays: number;
   owner: string;
-  status: "Active" | "Pending" | "Not Activated";
+  status: "Active"| "Pending"| "Not Activated";
 }
 
 interface TimelineEvent {
@@ -129,7 +108,7 @@ interface ActivationCase {
   invoiceRef: string;
 }
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const ACTIVATION_CASES: ActivationCase[] = [
   // 1 — Ready for Activation
@@ -140,9 +119,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "SEO Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1200, department: "SEO", taskTemplate: "SEO Monthly Template", activationRule: "SEO Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active" } },
-      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active" } },
+      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "SEO Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1200, department: "SEO", taskTemplate: "SEO Monthly Template", activationRule: "SEO Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active"} },
+      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active"} },
     ],
     matchedRules: ["SEO Setup — Invoice Paid", "GBP Launch — Invoice Paid", "Client Onboarding — Invoice Paid"],
     taskTemplates: ["SEO Setup Template", "GBP Launch Template", "AM Onboarding Template"],
@@ -158,20 +137,20 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractRef: "CTR-2025-0041",
     invoiceRef: "INV-2025-0088",
     generatedTasks: [
-      { taskName: "Website Access", department: "SEO", ownerRole: "SEO Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending" },
-      { taskName: "Technical Audit", department: "SEO", ownerRole: "SEO Lead", priority: "High", dueOffset: "Day 3", targetCompletionDays: 5, status: "Pending" },
-      { taskName: "GBP Claim & Verify", department: "GBP", ownerRole: "GBP Specialist", priority: "High", dueOffset: "Day 2", targetCompletionDays: 2, status: "Pending" },
-      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending" },
+      { taskName: "Website Access", department: "SEO", ownerRole: "SEO Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending"},
+      { taskName: "Technical Audit", department: "SEO", ownerRole: "SEO Lead", priority: "High", dueOffset: "Day 3", targetCompletionDays: 5, status: "Pending"},
+      { taskName: "GBP Claim & Verify", department: "GBP", ownerRole: "GBP Specialist", priority: "High", dueOffset: "Day 2", targetCompletionDays: 2, status: "Pending"},
+      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending"},
     ],
     departmentWorkload: [
-      { department: "SEO", activatedLineItems: ["SEO Setup", "SEO Monthly"], taskCount: 6, targetCompletionDays: 14, owner: "Sarah K.", status: "Pending" },
-      { department: "GBP", activatedLineItems: ["GBP Optimization"], taskCount: 6, targetCompletionDays: 10, owner: "Marcus L.", status: "Pending" },
-      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Jenna P.", status: "Pending" },
+      { department: "SEO", activatedLineItems: ["SEO Setup", "SEO Monthly"], taskCount: 6, targetCompletionDays: 14, owner: "Sarah K.", status: "Pending"},
+      { department: "GBP", activatedLineItems: ["GBP Optimization"], taskCount: 6, targetCompletionDays: 10, owner: "Marcus L.", status: "Pending"},
+      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Jenna P.", status: "Pending"},
     ],
     timeline: [
-      { date: "2025-07-25", event: "Invoice Paid", actor: "Billing System", detail: "INV-2025-0088 — $1,250" },
-      { date: "2025-07-24", event: "Contract Signed", actor: "DocuSign", detail: "CTR-2025-0041" },
-      { date: "2025-07-23", event: "Proposal Approved", actor: "Sales", detail: "Horizon Dental Group" },
+      { date: "2025-07-25", event: "Invoice Paid", actor: "Billing System", detail: "INV-2025-0088 — $1,250"},
+      { date: "2025-07-24", event: "Contract Signed", actor: "DocuSign", detail: "CTR-2025-0041"},
+      { date: "2025-07-23", event: "Proposal Approved", actor: "Sales", detail: "Horizon Dental Group"},
     ],
     notes: "Client prefers onboarding call on Tuesdays. Referred by Dr. Martin.",
   },
@@ -183,9 +162,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Pending Signature",
     invoiceStatus: "Draft",
     lineItems: [
-      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "Meta Ads Setup", billingType: "Setup", quantity: 1, setupFee: 600, monthlyFee: 0, department: "Meta Ads", taskTemplate: "Meta Ads Launch Template", activationRule: "Meta Ads — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "Meta Ads Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 900, department: "Meta Ads", taskTemplate: "Meta Ads Monthly Template", activationRule: "Meta Ads Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active" } },
+      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "Meta Ads Setup", billingType: "Setup", quantity: 1, setupFee: 600, monthlyFee: 0, department: "Meta Ads", taskTemplate: "Meta Ads Launch Template", activationRule: "Meta Ads — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "Meta Ads Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 900, department: "Meta Ads", taskTemplate: "Meta Ads Monthly Template", activationRule: "Meta Ads Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active"} },
     ],
     matchedRules: [],
     taskTemplates: [],
@@ -203,8 +182,8 @@ const ACTIVATION_CASES: ActivationCase[] = [
     generatedTasks: [],
     departmentWorkload: [],
     timeline: [
-      { date: "2025-07-24", event: "Contract Sent", actor: "Sales", detail: "DocuSign link sent to owner" },
-      { date: "2025-07-23", event: "Proposal Approved", actor: "Sales" },
+      { date: "2025-07-24", event: "Contract Sent", actor: "Sales", detail: "DocuSign link sent to owner"},
+      { date: "2025-07-23", event: "Proposal Approved", actor: "Sales"},
     ],
     notes: "Contract sent 7/24 — follow up 7/28 if not signed.",
   },
@@ -216,9 +195,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Pending Payment",
     lineItems: [
-      { name: "Paid Advertising Setup", billingType: "Setup", quantity: 1, setupFee: 850, monthlyFee: 0, department: "Paid Advertising", taskTemplate: "PPC Setup Template", activationRule: "PPC Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, escalationAfterDays: 6, slaPriority: "Priority", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-30", escalationDate: "2025-08-01", slaStatus: "Active" } },
-      { name: "PPC Monthly Management", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1500, department: "Paid Advertising", taskTemplate: "PPC Monthly Template", activationRule: "PPC Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 12, escalationAfterDays: 15, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-07", escalationDate: "2025-08-10", slaStatus: "Active" } },
-      { name: "Reporting Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 250, department: "Reporting", taskTemplate: "Reporting Monthly Template", activationRule: "Reporting Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-27", targetCompletionDate: "2025-08-02", escalationDate: "2025-08-05", slaStatus: "Active" } },
+      { name: "Paid Advertising Setup", billingType: "Setup", quantity: 1, setupFee: 850, monthlyFee: 0, department: "Paid Advertising", taskTemplate: "PPC Setup Template", activationRule: "PPC Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, escalationAfterDays: 6, slaPriority: "Priority", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-30", escalationDate: "2025-08-01", slaStatus: "Active"} },
+      { name: "PPC Monthly Management", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1500, department: "Paid Advertising", taskTemplate: "PPC Monthly Template", activationRule: "PPC Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 12, escalationAfterDays: 15, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-07", escalationDate: "2025-08-10", slaStatus: "Active"} },
+      { name: "Reporting Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 250, department: "Reporting", taskTemplate: "Reporting Monthly Template", activationRule: "Reporting Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-27", targetCompletionDate: "2025-08-02", escalationDate: "2025-08-05", slaStatus: "Active"} },
     ],
     matchedRules: [],
     taskTemplates: [],
@@ -236,8 +215,8 @@ const ACTIVATION_CASES: ActivationCase[] = [
     generatedTasks: [],
     departmentWorkload: [],
     timeline: [
-      { date: "2025-07-25", event: "Invoice Sent", actor: "Billing System", detail: "INV-2025-0085 — $850 due" },
-      { date: "2025-07-22", event: "Contract Signed", actor: "DocuSign" },
+      { date: "2025-07-25", event: "Invoice Sent", actor: "Billing System", detail: "INV-2025-0085 — $850 due"},
+      { date: "2025-07-22", event: "Contract Signed", actor: "DocuSign"},
     ],
     notes: "Invoice sent via Stripe. Follow up if not paid by 7/29.",
   },
@@ -249,9 +228,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "LSA Setup", billingType: "Setup", quantity: 1, setupFee: 400, monthlyFee: 0, department: "LSA", taskTemplate: "LSA Setup Template", activationRule: "LSA Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 8, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-03", slaStatus: "Active" } },
-      { name: "LSA Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 600, department: "LSA", taskTemplate: "LSA Monthly Template", activationRule: "LSA Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 6, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-01", escalationDate: "2025-08-05", slaStatus: "Active" } },
-      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active" } },
+      { name: "LSA Setup", billingType: "Setup", quantity: 1, setupFee: 400, monthlyFee: 0, department: "LSA", taskTemplate: "LSA Setup Template", activationRule: "LSA Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 8, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-03", slaStatus: "Active"} },
+      { name: "LSA Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 600, department: "LSA", taskTemplate: "LSA Monthly Template", activationRule: "LSA Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 6, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-01", escalationDate: "2025-08-05", slaStatus: "Active"} },
+      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active"} },
     ],
     matchedRules: ["LSA Setup — Invoice Paid", "GBP Launch — Invoice Paid", "Client Onboarding — Invoice Paid"],
     taskTemplates: ["LSA Setup Template", "GBP Launch Template", "AM Onboarding Template"],
@@ -269,9 +248,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     generatedTasks: [],
     departmentWorkload: [],
     timeline: [
-      { date: "2025-07-25", event: "Rules Matched", actor: "Activation Engine", detail: "3 rules matched" },
-      { date: "2025-07-24", event: "Invoice Paid", actor: "Billing System" },
-      { date: "2025-07-23", event: "Contract Signed", actor: "DocuSign" },
+      { date: "2025-07-25", event: "Rules Matched", actor: "Activation Engine", detail: "3 rules matched"},
+      { date: "2025-07-24", event: "Invoice Paid", actor: "Billing System"},
+      { date: "2025-07-23", event: "Contract Signed", actor: "DocuSign"},
     ],
     notes: "LSA account already partially set up by client.",
   },
@@ -283,8 +262,8 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "Web Development", billingType: "Setup", quantity: 1, setupFee: 2500, monthlyFee: 0, department: "Web Development", taskTemplate: "Web Dev Project Template", activationRule: "Web Dev — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 14, escalationAfterDays: 18, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-09", escalationDate: "2025-08-13", slaStatus: "Active" } },
+      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "Web Development", billingType: "Setup", quantity: 1, setupFee: 2500, monthlyFee: 0, department: "Web Development", taskTemplate: "Web Dev Project Template", activationRule: "Web Dev — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 14, escalationAfterDays: 18, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-09", escalationDate: "2025-08-13", slaStatus: "Active"} },
     ],
     matchedRules: ["SEO Setup — Invoice Paid", "Web Dev — Invoice Paid", "Client Onboarding — Invoice Paid"],
     taskTemplates: ["SEO Setup Template", "Web Dev Project Template", "AM Onboarding Template"],
@@ -300,19 +279,19 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractRef: "CTR-2025-0042",
     invoiceRef: "INV-2025-0089",
     generatedTasks: [
-      { taskName: "Website Access", department: "SEO", ownerRole: "SEO Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Active" },
-      { taskName: "Design Kickoff", department: "Web Development", ownerRole: "Web Developer", priority: "High", dueOffset: "Day 1", targetCompletionDays: 2, status: "Active" },
-      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Active" },
+      { taskName: "Website Access", department: "SEO", ownerRole: "SEO Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Active"},
+      { taskName: "Design Kickoff", department: "Web Development", ownerRole: "Web Developer", priority: "High", dueOffset: "Day 1", targetCompletionDays: 2, status: "Active"},
+      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Active"},
     ],
     departmentWorkload: [
-      { department: "SEO", activatedLineItems: ["SEO Setup"], taskCount: 6, targetCompletionDays: 14, owner: "Unassigned", status: "Pending" },
-      { department: "Web Development", activatedLineItems: ["Web Development"], taskCount: 8, targetCompletionDays: 40, owner: "Unassigned", status: "Pending" },
-      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Unassigned", status: "Pending" },
+      { department: "SEO", activatedLineItems: ["SEO Setup"], taskCount: 6, targetCompletionDays: 14, owner: "Unassigned", status: "Pending"},
+      { department: "Web Development", activatedLineItems: ["Web Development"], taskCount: 8, targetCompletionDays: 40, owner: "Unassigned", status: "Pending"},
+      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Unassigned", status: "Pending"},
     ],
     timeline: [
-      { date: "2025-07-25", event: "Task Generation Started", actor: "Activation Engine" },
-      { date: "2025-07-25", event: "Rules Matched", actor: "Activation Engine", detail: "3 rules matched" },
-      { date: "2025-07-24", event: "Invoice Paid", actor: "Billing System" },
+      { date: "2025-07-25", event: "Task Generation Started", actor: "Activation Engine"},
+      { date: "2025-07-25", event: "Rules Matched", actor: "Activation Engine", detail: "3 rules matched"},
+      { date: "2025-07-24", event: "Invoice Paid", actor: "Billing System"},
     ],
     notes: "Web project includes full redesign. Timeline 6 weeks.",
   },
@@ -324,10 +303,10 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "Meta Ads Setup", billingType: "Setup", quantity: 1, setupFee: 600, monthlyFee: 0, department: "Meta Ads", taskTemplate: "Meta Ads Launch Template", activationRule: "Meta Ads — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "Meta Ads Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 900, department: "Meta Ads", taskTemplate: "Meta Ads Monthly Template", activationRule: "Meta Ads Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active" } },
-      { name: "Reporting Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 250, department: "Reporting", taskTemplate: "Reporting Monthly Template", activationRule: "Reporting Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-27", targetCompletionDate: "2025-08-02", escalationDate: "2025-08-05", slaStatus: "Active" } },
+      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "Meta Ads Setup", billingType: "Setup", quantity: 1, setupFee: 600, monthlyFee: 0, department: "Meta Ads", taskTemplate: "Meta Ads Launch Template", activationRule: "Meta Ads — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "Meta Ads Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 900, department: "Meta Ads", taskTemplate: "Meta Ads Monthly Template", activationRule: "Meta Ads Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active"} },
+      { name: "Reporting Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 250, department: "Reporting", taskTemplate: "Reporting Monthly Template", activationRule: "Reporting Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-27", targetCompletionDate: "2025-08-02", escalationDate: "2025-08-05", slaStatus: "Active"} },
     ],
     matchedRules: ["SEO Setup — Invoice Paid", "Meta Ads — Invoice Paid", "Reporting Monthly — Client Activated", "Client Onboarding — Invoice Paid"],
     taskTemplates: ["SEO Setup Template", "Meta Ads Launch Template", "Reporting Monthly Template", "AM Onboarding Template"],
@@ -343,21 +322,21 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractRef: "CTR-2025-0035",
     invoiceRef: "INV-2025-0079",
     generatedTasks: [
-      { taskName: "Website Access", department: "SEO", ownerRole: "SEO Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending" },
-      { taskName: "Ads Account Access", department: "Meta Ads", ownerRole: "Meta Ads Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending" },
-      { taskName: "Reporting Setup", department: "Reporting", ownerRole: "Reporting Specialist", priority: "Medium", dueOffset: "Day 5", targetCompletionDays: 2, status: "Pending" },
-      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending" },
+      { taskName: "Website Access", department: "SEO", ownerRole: "SEO Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending"},
+      { taskName: "Ads Account Access", department: "Meta Ads", ownerRole: "Meta Ads Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending"},
+      { taskName: "Reporting Setup", department: "Reporting", ownerRole: "Reporting Specialist", priority: "Medium", dueOffset: "Day 5", targetCompletionDays: 2, status: "Pending"},
+      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Pending"},
     ],
     departmentWorkload: [
-      { department: "SEO", activatedLineItems: ["SEO Setup"], taskCount: 6, targetCompletionDays: 14, owner: "Unassigned", status: "Pending" },
-      { department: "Meta Ads", activatedLineItems: ["Meta Ads Setup", "Meta Ads Monthly"], taskCount: 10, targetCompletionDays: 18, owner: "Unassigned", status: "Pending" },
-      { department: "Reporting", activatedLineItems: ["Reporting Monthly"], taskCount: 4, targetCompletionDays: 6, owner: "Unassigned", status: "Pending" },
-      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Unassigned", status: "Pending" },
+      { department: "SEO", activatedLineItems: ["SEO Setup"], taskCount: 6, targetCompletionDays: 14, owner: "Unassigned", status: "Pending"},
+      { department: "Meta Ads", activatedLineItems: ["Meta Ads Setup", "Meta Ads Monthly"], taskCount: 10, targetCompletionDays: 18, owner: "Unassigned", status: "Pending"},
+      { department: "Reporting", activatedLineItems: ["Reporting Monthly"], taskCount: 4, targetCompletionDays: 6, owner: "Unassigned", status: "Pending"},
+      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Unassigned", status: "Pending"},
     ],
     timeline: [
-      { date: "2025-07-25", event: "Tasks Generated", actor: "Activation Engine", detail: "24 tasks created" },
-      { date: "2025-07-25", event: "Rules Matched", actor: "Activation Engine" },
-      { date: "2025-07-23", event: "Invoice Paid", actor: "Billing System" },
+      { date: "2025-07-25", event: "Tasks Generated", actor: "Activation Engine", detail: "24 tasks created"},
+      { date: "2025-07-25", event: "Rules Matched", actor: "Activation Engine"},
+      { date: "2025-07-23", event: "Invoice Paid", actor: "Billing System"},
     ],
     notes: "Awaiting department owner assignments before activation can complete.",
   },
@@ -369,11 +348,11 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "SEO Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1200, department: "SEO", taskTemplate: "SEO Monthly Template", activationRule: "SEO Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active" } },
-      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active" } },
-      { name: "Paid Advertising Setup", billingType: "Setup", quantity: 1, setupFee: 850, monthlyFee: 0, department: "Paid Advertising", taskTemplate: "PPC Setup Template", activationRule: "PPC Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, escalationAfterDays: 6, slaPriority: "Priority", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-30", escalationDate: "2025-08-01", slaStatus: "Active" } },
-      { name: "PPC Monthly Management", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1500, department: "Paid Advertising", taskTemplate: "PPC Monthly Template", activationRule: "PPC Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 12, escalationAfterDays: 15, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-07", escalationDate: "2025-08-10", slaStatus: "Active" } },
+      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "SEO Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1200, department: "SEO", taskTemplate: "SEO Monthly Template", activationRule: "SEO Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active"} },
+      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active"} },
+      { name: "Paid Advertising Setup", billingType: "Setup", quantity: 1, setupFee: 850, monthlyFee: 0, department: "Paid Advertising", taskTemplate: "PPC Setup Template", activationRule: "PPC Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, escalationAfterDays: 6, slaPriority: "Priority", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-30", escalationDate: "2025-08-01", slaStatus: "Active"} },
+      { name: "PPC Monthly Management", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1500, department: "Paid Advertising", taskTemplate: "PPC Monthly Template", activationRule: "PPC Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 12, escalationAfterDays: 15, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-07", escalationDate: "2025-08-10", slaStatus: "Active"} },
     ],
     matchedRules: ["SEO Setup — Invoice Paid", "SEO Monthly — Client Activated", "GBP Launch — Invoice Paid", "PPC Setup — Invoice Paid", "Client Onboarding — Invoice Paid"],
     taskTemplates: ["SEO Setup Template", "SEO Monthly Template", "GBP Launch Template", "PPC Setup Template", "AM Onboarding Template"],
@@ -389,25 +368,25 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractRef: "CTR-2025-0031",
     invoiceRef: "INV-2025-0074",
     generatedTasks: [
-      { taskName: "Website Access", department: "SEO", ownerRole: "SEO Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Complete" },
-      { taskName: "Technical Audit", department: "SEO", ownerRole: "SEO Lead", priority: "High", dueOffset: "Day 3", targetCompletionDays: 5, status: "Complete" },
-      { taskName: "GBP Claim & Verify", department: "GBP", ownerRole: "GBP Specialist", priority: "High", dueOffset: "Day 2", targetCompletionDays: 2, status: "Active" },
-      { taskName: "Ad Account Setup", department: "Paid Advertising", ownerRole: "PPC Specialist", priority: "High", dueOffset: "Day 2", targetCompletionDays: 3, status: "Active" },
-      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Complete" },
+      { taskName: "Website Access", department: "SEO", ownerRole: "SEO Specialist", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Complete"},
+      { taskName: "Technical Audit", department: "SEO", ownerRole: "SEO Lead", priority: "High", dueOffset: "Day 3", targetCompletionDays: 5, status: "Complete"},
+      { taskName: "GBP Claim & Verify", department: "GBP", ownerRole: "GBP Specialist", priority: "High", dueOffset: "Day 2", targetCompletionDays: 2, status: "Active"},
+      { taskName: "Ad Account Setup", department: "Paid Advertising", ownerRole: "PPC Specialist", priority: "High", dueOffset: "Day 2", targetCompletionDays: 3, status: "Active"},
+      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Complete"},
     ],
     departmentWorkload: [
-      { department: "SEO", activatedLineItems: ["SEO Setup", "SEO Monthly"], taskCount: 14, targetCompletionDays: 34, owner: "Sarah K.", status: "Active" },
-      { department: "GBP", activatedLineItems: ["GBP Optimization"], taskCount: 6, targetCompletionDays: 10, owner: "Marcus L.", status: "Active" },
-      { department: "Paid Advertising", activatedLineItems: ["Paid Advertising Setup", "PPC Monthly Management"], taskCount: 12, targetCompletionDays: 28, owner: "Derek M.", status: "Active" },
-      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Jenna P.", status: "Active" },
+      { department: "SEO", activatedLineItems: ["SEO Setup", "SEO Monthly"], taskCount: 14, targetCompletionDays: 34, owner: "Sarah K.", status: "Active"},
+      { department: "GBP", activatedLineItems: ["GBP Optimization"], taskCount: 6, targetCompletionDays: 10, owner: "Marcus L.", status: "Active"},
+      { department: "Paid Advertising", activatedLineItems: ["Paid Advertising Setup", "PPC Monthly Management"], taskCount: 12, targetCompletionDays: 28, owner: "Derek M.", status: "Active"},
+      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Jenna P.", status: "Active"},
     ],
     timeline: [
-      { date: "2025-07-20", event: "Activation Complete", actor: "Activation Engine", detail: "All departments activated" },
-      { date: "2025-07-20", event: "Department Owners Assigned", actor: "Ops Manager" },
-      { date: "2025-07-19", event: "Tasks Generated", actor: "Activation Engine", detail: "36 tasks created" },
-      { date: "2025-07-18", event: "Rules Matched", actor: "Activation Engine", detail: "5 rules matched" },
-      { date: "2025-07-17", event: "Invoice Paid", actor: "Billing System", detail: "INV-2025-0074 — $2,100" },
-      { date: "2025-07-16", event: "Contract Signed", actor: "DocuSign" },
+      { date: "2025-07-20", event: "Activation Complete", actor: "Activation Engine", detail: "All departments activated"},
+      { date: "2025-07-20", event: "Department Owners Assigned", actor: "Ops Manager"},
+      { date: "2025-07-19", event: "Tasks Generated", actor: "Activation Engine", detail: "36 tasks created"},
+      { date: "2025-07-18", event: "Rules Matched", actor: "Activation Engine", detail: "5 rules matched"},
+      { date: "2025-07-17", event: "Invoice Paid", actor: "Billing System", detail: "INV-2025-0074 — $2,100"},
+      { date: "2025-07-16", event: "Contract Signed", actor: "DocuSign"},
     ],
     notes: "Full-service client. High priority. Monthly review scheduled.",
   },
@@ -419,9 +398,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active" } },
-      { name: "LSA Setup", billingType: "Setup", quantity: 1, setupFee: 400, monthlyFee: 0, department: "LSA", taskTemplate: "LSA Setup Template", activationRule: "LSA Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 8, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-03", slaStatus: "Active" } },
-      { name: "LSA Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 600, department: "LSA", taskTemplate: "LSA Monthly Template", activationRule: "LSA Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 6, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-01", escalationDate: "2025-08-05", slaStatus: "Active" } },
+      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active"} },
+      { name: "LSA Setup", billingType: "Setup", quantity: 1, setupFee: 400, monthlyFee: 0, department: "LSA", taskTemplate: "LSA Setup Template", activationRule: "LSA Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 8, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-03", slaStatus: "Active"} },
+      { name: "LSA Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 600, department: "LSA", taskTemplate: "LSA Monthly Template", activationRule: "LSA Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 6, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-01", escalationDate: "2025-08-05", slaStatus: "Active"} },
     ],
     matchedRules: ["GBP Launch — Invoice Paid", "LSA Setup — Invoice Paid", "Client Onboarding — Invoice Paid"],
     taskTemplates: ["GBP Launch Template", "LSA Setup Template", "AM Onboarding Template"],
@@ -437,20 +416,20 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractRef: "CTR-2025-0029",
     invoiceRef: "INV-2025-0069",
     generatedTasks: [
-      { taskName: "GBP Claim & Verify", department: "GBP", ownerRole: "GBP Specialist", priority: "High", dueOffset: "Day 2", targetCompletionDays: 2, status: "Complete" },
-      { taskName: "LSA Account Verification", department: "LSA", ownerRole: "LSA Specialist", priority: "High", dueOffset: "Day 3", targetCompletionDays: 3, status: "Complete" },
-      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Complete" },
+      { taskName: "GBP Claim & Verify", department: "GBP", ownerRole: "GBP Specialist", priority: "High", dueOffset: "Day 2", targetCompletionDays: 2, status: "Complete"},
+      { taskName: "LSA Account Verification", department: "LSA", ownerRole: "LSA Specialist", priority: "High", dueOffset: "Day 3", targetCompletionDays: 3, status: "Complete"},
+      { taskName: "Onboarding Call", department: "Account Management", ownerRole: "Account Manager", priority: "High", dueOffset: "Day 1", targetCompletionDays: 1, status: "Complete"},
     ],
     departmentWorkload: [
-      { department: "GBP", activatedLineItems: ["GBP Optimization"], taskCount: 6, targetCompletionDays: 10, owner: "Marcus L.", status: "Active" },
-      { department: "LSA", activatedLineItems: ["LSA Setup", "LSA Monthly"], taskCount: 8, targetCompletionDays: 14, owner: "Tyler R.", status: "Active" },
-      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Jenna P.", status: "Active" },
+      { department: "GBP", activatedLineItems: ["GBP Optimization"], taskCount: 6, targetCompletionDays: 10, owner: "Marcus L.", status: "Active"},
+      { department: "LSA", activatedLineItems: ["LSA Setup", "LSA Monthly"], taskCount: 8, targetCompletionDays: 14, owner: "Tyler R.", status: "Active"},
+      { department: "Account Management", activatedLineItems: ["Client Onboarding"], taskCount: 4, targetCompletionDays: 5, owner: "Jenna P.", status: "Active"},
     ],
     timeline: [
-      { date: "2025-07-15", event: "Activation Complete", actor: "Activation Engine" },
-      { date: "2025-07-15", event: "Tasks Generated", actor: "Activation Engine", detail: "18 tasks created" },
-      { date: "2025-07-14", event: "Invoice Paid", actor: "Billing System" },
-      { date: "2025-07-13", event: "Contract Signed", actor: "DocuSign" },
+      { date: "2025-07-15", event: "Activation Complete", actor: "Activation Engine"},
+      { date: "2025-07-15", event: "Tasks Generated", actor: "Activation Engine", detail: "18 tasks created"},
+      { date: "2025-07-14", event: "Invoice Paid", actor: "Billing System"},
+      { date: "2025-07-13", event: "Contract Signed", actor: "DocuSign"},
     ],
     notes: "Small package — GBP + LSA combo. Smooth activation.",
   },
@@ -462,8 +441,8 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "SEO Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1200, department: "SEO", taskTemplate: "SEO Monthly Template", activationRule: "SEO Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active" } },
+      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "SEO Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1200, department: "SEO", taskTemplate: "SEO Monthly Template", activationRule: "SEO Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active"} },
     ],
     matchedRules: ["SEO Setup — Invoice Paid", "Client Onboarding — Invoice Paid"],
     taskTemplates: ["SEO Setup Template", "AM Onboarding Template"],
@@ -481,9 +460,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     generatedTasks: [],
     departmentWorkload: [],
     timeline: [
-      { date: "2025-07-25", event: "Activation Blocked", actor: "Activation Engine", detail: "Missing GA4 and Website access" },
-      { date: "2025-07-24", event: "Rules Matched", actor: "Activation Engine" },
-      { date: "2025-07-23", event: "Invoice Paid", actor: "Billing System" },
+      { date: "2025-07-25", event: "Activation Blocked", actor: "Activation Engine", detail: "Missing GA4 and Website access"},
+      { date: "2025-07-24", event: "Rules Matched", actor: "Activation Engine"},
+      { date: "2025-07-23", event: "Invoice Paid", actor: "Billing System"},
     ],
     notes: "Access request sent 7/24. Follow up with client directly.",
   },
@@ -495,8 +474,8 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "Creative Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 700, department: "Creative", taskTemplate: "Creative Monthly Template", activationRule: "Creative Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 8, escalationAfterDays: 12, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-03", escalationDate: "2025-08-07", slaStatus: "Active" } },
-      { name: "Reporting Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 250, department: "Reporting", taskTemplate: "Reporting Monthly Template", activationRule: "Reporting Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-27", targetCompletionDate: "2025-08-02", escalationDate: "2025-08-05", slaStatus: "Active" } },
+      { name: "Creative Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 700, department: "Creative", taskTemplate: "Creative Monthly Template", activationRule: "Creative Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 8, escalationAfterDays: 12, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-03", escalationDate: "2025-08-07", slaStatus: "Active"} },
+      { name: "Reporting Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 250, department: "Reporting", taskTemplate: "Reporting Monthly Template", activationRule: "Reporting Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-27", targetCompletionDate: "2025-08-02", escalationDate: "2025-08-05", slaStatus: "Active"} },
     ],
     matchedRules: ["Reporting Monthly — Client Activated"],
     taskTemplates: ["Reporting Monthly Template"],
@@ -514,9 +493,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     generatedTasks: [],
     departmentWorkload: [],
     timeline: [
-      { date: "2025-07-24", event: "Activation Blocked", actor: "Activation Engine", detail: "Creative Monthly Template missing" },
-      { date: "2025-07-24", event: "Invoice Paid", actor: "Billing System" },
-      { date: "2025-07-22", event: "Contract Signed", actor: "DocuSign" },
+      { date: "2025-07-24", event: "Activation Blocked", actor: "Activation Engine", detail: "Creative Monthly Template missing"},
+      { date: "2025-07-24", event: "Invoice Paid", actor: "Billing System"},
+      { date: "2025-07-22", event: "Contract Signed", actor: "DocuSign"},
     ],
     notes: "Creative Monthly Template needs to be built before activation can complete.",
   },
@@ -528,10 +507,10 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Overdue",
     lineItems: [
-      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "Meta Ads Setup", billingType: "Setup", quantity: 1, setupFee: 600, monthlyFee: 0, department: "Meta Ads", taskTemplate: "Meta Ads Launch Template", activationRule: "Meta Ads — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "Meta Ads Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 900, department: "Meta Ads", taskTemplate: "Meta Ads Monthly Template", activationRule: "Meta Ads Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active" } },
-      { name: "Creative Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 700, department: "Creative", taskTemplate: "Creative Monthly Template", activationRule: "Creative Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 8, escalationAfterDays: 12, slaPriority: "Standard", slaStatus: "Active" } },
+      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "Meta Ads Setup", billingType: "Setup", quantity: 1, setupFee: 600, monthlyFee: 0, department: "Meta Ads", taskTemplate: "Meta Ads Launch Template", activationRule: "Meta Ads — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "Meta Ads Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 900, department: "Meta Ads", taskTemplate: "Meta Ads Monthly Template", activationRule: "Meta Ads Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active"} },
+      { name: "Creative Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 700, department: "Creative", taskTemplate: "Creative Monthly Template", activationRule: "Creative Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 8, escalationAfterDays: 12, slaPriority: "Standard", slaStatus: "Active"} },
     ],
     matchedRules: [],
     taskTemplates: [],
@@ -549,9 +528,9 @@ const ACTIVATION_CASES: ActivationCase[] = [
     generatedTasks: [],
     departmentWorkload: [],
     timeline: [
-      { date: "2025-07-18", event: "Invoice Overdue", actor: "Billing System", detail: "INV-2025-0076 — $1,350 overdue" },
-      { date: "2025-07-15", event: "Invoice Sent", actor: "Billing System" },
-      { date: "2025-07-14", event: "Contract Signed", actor: "DocuSign" },
+      { date: "2025-07-18", event: "Invoice Overdue", actor: "Billing System", detail: "INV-2025-0076 — $1,350 overdue"},
+      { date: "2025-07-15", event: "Invoice Sent", actor: "Billing System"},
+      { date: "2025-07-14", event: "Contract Signed", actor: "DocuSign"},
     ],
     notes: "Follow up escalated to account owner. Invoice 10 days overdue.",
   },
@@ -563,11 +542,11 @@ const ACTIVATION_CASES: ActivationCase[] = [
     contractStatus: "Signed",
     invoiceStatus: "Paid",
     lineItems: [
-      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active" } },
-      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active" } },
-      { name: "SEO Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1200, department: "SEO", taskTemplate: "SEO Monthly Template", activationRule: "SEO Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active" } },
-      { name: "LSA Setup", billingType: "Setup", quantity: 1, setupFee: 400, monthlyFee: 0, department: "LSA", taskTemplate: "LSA Setup Template", activationRule: "LSA Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 8, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-03", slaStatus: "Active" } },
-      { name: "LSA Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 600, department: "LSA", taskTemplate: "LSA Monthly Template", activationRule: "LSA Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 6, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active" }, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-01", escalationDate: "2025-08-05", slaStatus: "Active" } },
+      { name: "GBP Optimization", billingType: "Setup", quantity: 1, setupFee: 500, monthlyFee: 0, department: "GBP", taskTemplate: "GBP Launch Template", activationRule: "GBP Launch — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, escalationAfterDays: 5, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-29", escalationDate: "2025-07-31", slaStatus: "Active"} },
+      { name: "SEO Setup", billingType: "Setup", quantity: 1, setupFee: 750, monthlyFee: 0, department: "SEO", taskTemplate: "SEO Setup Template", activationRule: "SEO Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 7, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-02", slaStatus: "Active"} },
+      { name: "SEO Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 1200, department: "SEO", taskTemplate: "SEO Monthly Template", activationRule: "SEO Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, escalationAfterDays: 14, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-05", escalationDate: "2025-08-09", slaStatus: "Active"} },
+      { name: "LSA Setup", billingType: "Setup", quantity: 1, setupFee: 400, monthlyFee: 0, department: "LSA", taskTemplate: "LSA Setup Template", activationRule: "LSA Setup — Invoice Paid", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, escalationAfterDays: 8, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-07-31", escalationDate: "2025-08-03", slaStatus: "Active"} },
+      { name: "LSA Monthly", billingType: "Monthly", quantity: 1, setupFee: 0, monthlyFee: 600, department: "LSA", taskTemplate: "LSA Monthly Template", activationRule: "LSA Monthly — Client Activated", lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 6, escalationAfterDays: 10, slaPriority: "Standard", slaStatus: "Active"}, generatedSLADates: { firstResponseDue: "2025-07-26", targetCompletionDate: "2025-08-01", escalationDate: "2025-08-05", slaStatus: "Active"} },
     ],
     matchedRules: ["GBP Launch — Invoice Paid", "SEO Setup — Invoice Paid", "LSA Setup — Invoice Paid", "Client Onboarding — Invoice Paid"],
     taskTemplates: ["GBP Launch Template", "SEO Setup Template", "LSA Setup Template", "AM Onboarding Template"],
@@ -585,15 +564,15 @@ const ACTIVATION_CASES: ActivationCase[] = [
     generatedTasks: [],
     departmentWorkload: [],
     timeline: [
-      { date: "2025-07-25", event: "Invoice Paid", actor: "Billing System", detail: "INV-2025-0090 — $1,650" },
-      { date: "2025-07-24", event: "Contract Signed", actor: "DocuSign" },
-      { date: "2025-07-23", event: "Proposal Approved", actor: "Sales" },
+      { date: "2025-07-25", event: "Invoice Paid", actor: "Billing System", detail: "INV-2025-0090 — $1,650"},
+      { date: "2025-07-24", event: "Contract Signed", actor: "DocuSign"},
+      { date: "2025-07-23", event: "Proposal Approved", actor: "Sales"},
     ],
     notes: "Multi-service client. High-value. Expedite activation.",
   },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function statusColor(status: ActivationStatus): string {
   switch (status) {
@@ -653,7 +632,7 @@ function deptWorkloadStatusColor(s: DepartmentWorkload["status"]): string {
 }
 
 function fmt$(n: number): string {
-  return "$" + n.toLocaleString();
+  return "$"+ n.toLocaleString();
 }
 
 const DEPT_COLORS: Record<string, string> = {
@@ -677,55 +656,53 @@ function DeptBadge({ dept }: { dept: string }) {
   );
 }
 
-// ── KPI Card ──────────────────────────────────────────────────────────────────
+//  KPI Card 
 
 function KpiCard({ label, value, sub, color }: { label: string; value: number | string; sub?: string; color?: string }) {
   return (
-    <div className="rounded-xl p-4 flex flex-col gap-1" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
-      <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-secondary)" }}>{label}</span>
-      <span className={`text-2xl font-black ${color ?? ""}`} style={!color ? { color: "var(--rtm-text-primary)" } : undefined}>{value}</span>
-      {sub && <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{sub}</span>}
+    <div className="rounded-xl p-4 flex flex-col gap-1"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
+      <span className="text-[10px] font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-secondary)"}}>{label}</span>
+      <span className={`text-2xl font-black ${color ?? ""}`} style={!color ? { color: "var(--rtm-text-primary)"} : undefined}>{value}</span>
+      {sub && <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{sub}</span>}
     </div>
   );
 }
 
-// ── Row Action Button ─────────────────────────────────────────────────────────
+//  Row Action Button 
 
 function RowAction({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="text-[11px] font-semibold hover:underline whitespace-nowrap"
-      style={{ color: "var(--rtm-blue)" }}
+      className="text-[11px] font-semibold hover:underline whitespace-nowrap"style={{ color: "var(--rtm-blue)"}}
     >
       {label}
     </button>
   );
 }
 
-// ── Detail Drawer ─────────────────────────────────────────────────────────────
+//  Detail Drawer 
 
 function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => void }) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "contract" | "billing" | "lineitems" | "rules" | "tasks" | "departments" | "timeline" | "notes"
-  >("overview");
+    "overview"| "contract"| "billing"| "lineitems"| "rules"| "tasks"| "departments"| "timeline"| "notes">("overview");
 
   const tabs: { id: typeof activeTab; label: string }[] = [
-    { id: "overview", label: "Overview" },
-    { id: "contract", label: "Contract" },
-    { id: "billing", label: "Billing" },
-    { id: "lineitems", label: "Line Items" },
-    { id: "rules", label: "Matched Rules" },
-    { id: "tasks", label: "Generated Tasks" },
-    { id: "departments", label: "Departments" },
-    { id: "timeline", label: "Timeline" },
-    { id: "notes", label: "Notes" },
+    { id: "overview", label: "Overview"},
+    { id: "contract", label: "Contract"},
+    { id: "billing", label: "Billing"},
+    { id: "lineitems", label: "Line Items"},
+    { id: "rules", label: "Matched Rules"},
+    { id: "tasks", label: "Generated Tasks"},
+    { id: "departments", label: "Departments"},
+    { id: "timeline", label: "Timeline"},
+    { id: "notes", label: "Notes"},
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/30"onClick={onClose} />
       {/* Panel */}
       <div className="relative z-10 w-full max-w-2xl bg-white shadow-2xl flex flex-col h-full overflow-hidden">
         {/* Header */}
@@ -758,9 +735,7 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
               onClick={() => setActiveTab(t.id)}
               className={`px-4 py-3 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors ${
                 activeTab === t.id
-                  ? "border-blue-600 text-blue-700 bg-blue-50"
-                  : "border-transparent text-gray-500 hover:text-gray-700"
-              }`}
+                  ? "border-blue-600 text-blue-700 bg-blue-50": "border-transparent text-gray-500 hover:text-gray-700"}`}
             >
               {t.label}
             </button>
@@ -769,8 +744,8 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6">
-          {/* ── Overview ── */}
-          {activeTab === "overview" && (
+          {/*  Overview  */}
+          {activeTab === "overview"&& (
             <div className="flex flex-col gap-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -814,8 +789,8 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             </div>
           )}
 
-          {/* ── Contract ── */}
-          {activeTab === "contract" && (
+          {/*  Contract  */}
+          {activeTab === "contract"&& (
             <div className="flex flex-col gap-4">
               <h3 className="text-sm font-bold text-gray-800">Contract Summary</h3>
               <div className="bg-gray-50 rounded-lg border border-gray-200 divide-y divide-gray-200">
@@ -838,8 +813,8 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             </div>
           )}
 
-          {/* ── Billing ── */}
-          {activeTab === "billing" && (
+          {/*  Billing  */}
+          {activeTab === "billing"&& (
             <div className="flex flex-col gap-4">
               <h3 className="text-sm font-bold text-gray-800">Billing Summary</h3>
               <div className="bg-gray-50 rounded-lg border border-gray-200 divide-y divide-gray-200">
@@ -860,8 +835,8 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             </div>
           )}
 
-          {/* ── Line Items ── */}
-          {activeTab === "lineitems" && (
+          {/*  Line Items  */}
+          {activeTab === "lineitems"&& (
             <div className="flex flex-col gap-3">
               <div>
                 <h3 className="text-sm font-bold text-gray-800">Line Items &amp; SLA Dates — Generated from Line Item SLAs</h3>
@@ -870,7 +845,7 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
 
               {/* SLA table per activated service */}
               <div className="overflow-x-auto rounded-xl border border-gray-200">
-                <table className="min-w-full text-xs" style={{ minWidth: "900px" }}>
+                <table className="min-w-full text-xs"style={{ minWidth: "900px"}}>
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       {["Line Item", "Task Template", "Department", "First Response Due", "Target Completion Date", "Escalation Date", "SLA Status"].map((h) => (
@@ -886,26 +861,26 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
                           <div className="text-[10px] text-gray-400">{li.billingType} · {li.lineItemSLA.slaPriority} priority</div>
                         </td>
                         <td className="px-3 py-2.5 whitespace-nowrap">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "#F5F3FF", color: "#6D28D9" }}>{li.taskTemplate}</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded"style={{ background: "#F5F3FF", color: "#6D28D9"}}>{li.taskTemplate}</span>
                         </td>
                         <td className="px-3 py-2.5"><DeptBadge dept={li.department} /></td>
                         <td className="px-3 py-2.5 whitespace-nowrap">
                           {li.generatedSLADates ? (
-                            <span className="text-[11px] font-semibold" style={{ color: "#1D4ED8" }}>⚡ {li.generatedSLADates.firstResponseDue}</span>
+                            <span className="text-[11px] font-semibold"style={{ color: "#1D4ED8"}}> {li.generatedSLADates.firstResponseDue}</span>
                           ) : <span className="text-gray-400">—</span>}
                         </td>
                         <td className="px-3 py-2.5 whitespace-nowrap">
                           {li.generatedSLADates ? (
-                            <span className="text-[11px] font-bold" style={{ color: "#059669" }}>{li.generatedSLADates.targetCompletionDate}</span>
+                            <span className="text-[11px] font-bold"style={{ color: "#059669"}}>{li.generatedSLADates.targetCompletionDate}</span>
                           ) : <span className="text-gray-400">—</span>}
                         </td>
                         <td className="px-3 py-2.5 whitespace-nowrap">
                           {li.generatedSLADates ? (
-                            <span className="text-[11px]" style={{ color: "#C2410C" }}>{li.generatedSLADates.escalationDate}</span>
+                            <span className="text-[11px]"style={{ color: "#C2410C"}}>{li.generatedSLADates.escalationDate}</span>
                           ) : <span className="text-gray-400">—</span>}
                         </td>
                         <td className="px-3 py-2.5 whitespace-nowrap">
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: li.lineItemSLA.slaStatus === "Active" ? "#F0FDF4" : "#FFF7ED", color: li.lineItemSLA.slaStatus === "Active" ? "#15803D" : "#C2410C" }}>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: li.lineItemSLA.slaStatus === "Active"? "#F0FDF4": "#FFF7ED", color: li.lineItemSLA.slaStatus === "Active"? "#15803D": "#C2410C"}}>
                             {li.lineItemSLA.slaStatus}
                           </span>
                         </td>
@@ -917,8 +892,8 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             </div>
           )}
 
-          {/* ── Rules ── */}
-          {activeTab === "rules" && (
+          {/*  Rules  */}
+          {activeTab === "rules"&& (
             <div className="flex flex-col gap-3">
               <h3 className="text-sm font-bold text-gray-800">Matched Activation Rules</h3>
               {item.matchedRules.length === 0 ? (
@@ -926,7 +901,7 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
               ) : (
                 item.matchedRules.map((r, i) => (
                   <div key={i} className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3">
-                    <span className="text-indigo-500 text-sm">✓</span>
+                    
                     <span className="text-sm font-medium text-indigo-800">{r}</span>
                   </div>
                 ))
@@ -935,8 +910,8 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             </div>
           )}
 
-          {/* ── Tasks ── */}
-          {activeTab === "tasks" && (
+          {/*  Tasks  */}
+          {activeTab === "tasks"&& (
             <div className="flex flex-col gap-3">
               <h3 className="text-sm font-bold text-gray-800">Generated Tasks</h3>
               {item.generatedTasks.length === 0 ? (
@@ -971,8 +946,8 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             </div>
           )}
 
-          {/* ── Departments ── */}
-          {activeTab === "departments" && (
+          {/*  Departments  */}
+          {activeTab === "departments"&& (
             <div className="flex flex-col gap-3">
               <h3 className="text-sm font-bold text-gray-800">Department Queue Status</h3>
               {item.departmentWorkload.length === 0 ? (
@@ -1001,16 +976,16 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             </div>
           )}
 
-          {/* ── Timeline ── */}
-          {activeTab === "timeline" && (
+          {/*  Timeline  */}
+          {activeTab === "timeline"&& (
             <div className="flex flex-col gap-3">
               <h3 className="text-sm font-bold text-gray-800">Activation Timeline</h3>
               <div className="relative flex flex-col gap-0">
                 {item.timeline.map((ev, i) => (
                   <div key={i} className="flex gap-3 items-start">
                     <div className="flex flex-col items-center">
-                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-                      {i < item.timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1 min-h-[24px]" />}
+                      <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 shrink-0"/>
+                      {i < item.timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 mt-1 min-h-[24px]"/>}
                     </div>
                     <div className="pb-4">
                       <p className="text-sm font-semibold text-gray-800">{ev.event}</p>
@@ -1023,8 +998,8 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             </div>
           )}
 
-          {/* ── Notes ── */}
-          {activeTab === "notes" && (
+          {/*  Notes  */}
+          {activeTab === "notes"&& (
             <div className="flex flex-col gap-3">
               <h3 className="text-sm font-bold text-gray-800">Notes</h3>
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -1036,21 +1011,21 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
 
         {/* Footer Actions */}
         <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex gap-2 flex-wrap shrink-0">
-          {item.activationStatus === "Ready for Activation" && (
+          {item.activationStatus === "Ready for Activation"&& (
             <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700">Run Activation</button>
           )}
-          {(item.activationStatus === "Rules Matched" || item.activationStatus === "Generating Tasks") && (
+          {(item.activationStatus === "Rules Matched"|| item.activationStatus === "Generating Tasks") && (
             <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700">Generate Tasks</button>
           )}
-          {item.activationStatus === "Department Activation Pending" && (
+          {item.activationStatus === "Department Activation Pending"&& (
             <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700">Assign Department Owners</button>
           )}
-          {item.activationStatus === "Activated" && (
+          {item.activationStatus === "Activated"&& (
             <Link href="/account-management/onboarding" className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Push to Onboarding →</Link>
           )}
           <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Test Rules</button>
           <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Add Note</button>
-          {item.activationStatus !== "Blocked" && (
+          {item.activationStatus !== "Blocked"&& (
             <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-50 text-red-700 hover:bg-red-100">Mark Blocked</button>
           )}
         </div>
@@ -1059,7 +1034,7 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+//  Main Page 
 
 export default function ActivationEnginePage() {
   const [selectedCase, setSelectedCase] = useState<ActivationCase | null>(null);
@@ -1067,11 +1042,11 @@ export default function ActivationEnginePage() {
   const [filterPriority, setFilterPriority] = useState<Priority | "All">("All");
   const [search, setSearch] = useState("");
 
-  // ── KPIs ──
+  //  KPIs 
   const kpis = useMemo(() => {
     const ready = ACTIVATION_CASES.filter((c) => c.activationStatus === "Ready for Activation").length;
     const pendingSig = ACTIVATION_CASES.filter((c) => c.contractStatus === "Pending Signature").length;
-    const pendingPay = ACTIVATION_CASES.filter((c) => c.invoiceStatus === "Pending Payment" || c.invoiceStatus === "Overdue").length;
+    const pendingPay = ACTIVATION_CASES.filter((c) => c.invoiceStatus === "Pending Payment"|| c.invoiceStatus === "Overdue").length;
     const rulesMatched = ACTIVATION_CASES.filter((c) => c.activationStatus === "Rules Matched").length;
     const templatesGen = ACTIVATION_CASES.filter((c) => c.generatedTasks.length > 0).length;
     const deptsActivated = ACTIVATION_CASES.filter((c) => c.activationStatus === "Activated").length;
@@ -1080,12 +1055,12 @@ export default function ActivationEnginePage() {
     return { ready, pendingSig, pendingPay, rulesMatched, templatesGen, deptsActivated, blocked, activatedMonth };
   }, []);
 
-  // ── Filtered queue ──
+  //  Filtered queue 
   const filtered = useMemo(() => {
     return ACTIVATION_CASES.filter((c) => {
-      const matchStatus = filterStatus === "All" || c.activationStatus === filterStatus;
-      const matchPriority = filterPriority === "All" || c.priority === filterPriority;
-      const matchSearch = search === "" || c.client.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = filterStatus === "All"|| c.activationStatus === filterStatus;
+      const matchPriority = filterPriority === "All"|| c.priority === filterPriority;
+      const matchSearch = search === ""|| c.client.toLowerCase().includes(search.toLowerCase());
       return matchStatus && matchPriority && matchSearch;
     });
   }, [filterStatus, filterPriority, search]);
@@ -1097,89 +1072,84 @@ export default function ActivationEnginePage() {
 
   return (
     <div className="space-y-6">
-      {/* ── Page Header ── */}
+      {/*  Page Header  */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-blue)" }}>Projects &amp; Tasks</p>
-            <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>›</span>
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Activation Engine</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest"style={{ color: "var(--rtm-blue)"}}>Projects &amp; Tasks</p>
+            <span className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>›</span>
+            <p className="text-[11px] font-semibold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Activation Engine</p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Activation Engine</h1>
-          <p className="text-sm mt-1 max-w-xl" style={{ color: "var(--rtm-text-secondary)" }}>
+          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Activation Engine</h1>
+          <p className="text-sm mt-1 max-w-xl"style={{ color: "var(--rtm-text-secondary)"}}>
             Activate projects, task blueprints, department workload, and onboarding handoffs from signed contracts and paid invoices.
           </p>
         </div>
         <div className="flex gap-2 flex-wrap items-center">
-          <button className="px-4 py-2 text-sm font-bold rounded-lg text-white" style={{ background: "var(--rtm-blue)" }}>▶ Run Activation</button>
-          <button className="px-4 py-2 text-sm font-semibold rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}>⚙ Test Activation</button>
-          <button className="px-4 py-2 text-sm font-semibold rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}>↻ Sync Contracts</button>
-          <button className="px-4 py-2 text-sm font-semibold rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}>↻ Sync Billing</button>
-          <Link href="/tasks/activation-rules" className="px-4 py-2 text-sm font-semibold rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}>⚡ Rules</Link>
-          <Link href="/tasks/templates" className="px-4 py-2 text-sm font-semibold rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}>📋 Templates</Link>
+          <button className="px-4 py-2 text-sm font-bold rounded-lg text-white"style={{ background: "var(--rtm-blue)"}}> Run Activation</button>
+          <button className="px-4 py-2 text-sm font-semibold rounded-lg border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}> Test Activation</button>
+          <button className="px-4 py-2 text-sm font-semibold rounded-lg border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}>↻ Sync Contracts</button>
+          <button className="px-4 py-2 text-sm font-semibold rounded-lg border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}>↻ Sync Billing</button>
+          <Link href="/tasks/activation-rules" className="px-4 py-2 text-sm font-semibold rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}> Rules</Link>
+          <Link href="/tasks/templates" className="px-4 py-2 text-sm font-semibold rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}> Templates</Link>
         </div>
       </div>
 
-      {/* ── Flow indicator ── */}
-      <div className="rounded-xl p-4 flex flex-wrap items-center gap-2" style={{ background: "var(--rtm-blue-xlight)", border: "1px solid #BFDBFE" }}>
+      {/*  Flow indicator  */}
+      <div className="rounded-xl p-4 flex flex-wrap items-center gap-2"style={{ background: "var(--rtm-blue-xlight)", border: "1px solid #BFDBFE"}}>
         {["Contract Signed","Invoice Paid","Rule Matched","Tasks Generated","Dept Activated","AM Onboarding"].map((step, i, arr) => (
           <span key={step} className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white" style={{ color: "#1E40AF", border: "1px solid #BFDBFE" }}>{step}</span>
-            {i < arr.length - 1 && <span className="font-black" style={{ color: "#93C5FD" }}>→</span>}
+            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white"style={{ color: "#1E40AF", border: "1px solid #BFDBFE"}}>{step}</span>
+            {i < arr.length - 1 && <span className="font-black"style={{ color: "#93C5FD"}}>→</span>}
           </span>
         ))}
       </div>
 
-      {/* ── KPI Cards ── */}
+      {/*  KPI Cards  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-        <KpiCard label="Ready for Activation" value={kpis.ready} color="text-blue-700" sub="contracts + invoices OK" />
-        <KpiCard label="Pending Signature" value={kpis.pendingSig} color="text-amber-600" sub="awaiting DocuSign" />
-        <KpiCard label="Pending Payment" value={kpis.pendingPay} color="text-amber-600" sub="invoices outstanding" />
-        <KpiCard label="Rules Matched" value={kpis.rulesMatched} color="text-indigo-600" sub="awaiting task gen" />
-        <KpiCard label="Templates Generated" value={kpis.templatesGen} color="text-violet-600" sub="tasks created" />
-        <KpiCard label="Depts Activated" value={kpis.deptsActivated} color="text-emerald-600" sub="fully activated" />
-        <KpiCard label="Blocked" value={kpis.blocked} color="text-red-600" sub="needs attention" />
-        <KpiCard label="Activated This Month" value={kpis.activatedMonth} color="text-emerald-700" sub="July 2025" />
+        <KpiCard label="Ready for Activation"value={kpis.ready} color="text-blue-700"sub="contracts + invoices OK"/>
+        <KpiCard label="Pending Signature"value={kpis.pendingSig} color="text-amber-600"sub="awaiting DocuSign"/>
+        <KpiCard label="Pending Payment"value={kpis.pendingPay} color="text-amber-600"sub="invoices outstanding"/>
+        <KpiCard label="Rules Matched"value={kpis.rulesMatched} color="text-indigo-600"sub="awaiting task gen"/>
+        <KpiCard label="Templates Generated"value={kpis.templatesGen} color="text-violet-600"sub="tasks created"/>
+        <KpiCard label="Depts Activated"value={kpis.deptsActivated} color="text-emerald-600"sub="fully activated"/>
+        <KpiCard label="Blocked"value={kpis.blocked} color="text-red-600"sub="needs attention"/>
+        <KpiCard label="Activated This Month"value={kpis.activatedMonth} color="text-emerald-700"sub="July 2025"/>
       </div>
 
-        {/* ── Activation Queue ── */}
-        <div className="rounded-xl overflow-hidden" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+        {/*  Activation Queue  */}
+        <div className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
           {/* Queue header */}
-          <div className="flex items-center justify-between px-5 py-4 flex-wrap gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-            <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>Activation Queue</h2>
+          <div className="flex items-center justify-between px-5 py-4 flex-wrap gap-3"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
+            <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>Activation Queue</h2>
             <div className="flex items-center gap-2 flex-wrap">
               <input
-                type="text"
-                placeholder="Search clients…"
-                value={search}
+                type="text"placeholder="Search clients…"value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="px-3 py-1.5 text-xs rounded-lg outline-none"
-                style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)", width: "11rem" }}
+                className="px-3 py-1.5 text-xs rounded-lg outline-none"style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)", width: "11rem"}}
               />
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as ActivationStatus | "All")}
-                className="px-2 py-1.5 text-xs rounded-lg outline-none"
-                style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)" }}
+                className="px-2 py-1.5 text-xs rounded-lg outline-none"style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)"}}
               >
                 {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
               <select
                 value={filterPriority}
                 onChange={(e) => setFilterPriority(e.target.value as Priority | "All")}
-                className="px-2 py-1.5 text-xs rounded-lg outline-none"
-                style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)" }}
+                className="px-2 py-1.5 text-xs rounded-lg outline-none"style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)"}}
               >
                 {(["All", "High", "Medium", "Low"] as const).map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
-              <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{filtered.length} records</span>
+              <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-muted)"}}>{filtered.length} records</span>
             </div>
           </div>
 
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[1100px]">
-              <thead style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)" }}>
+              <thead style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)"}}>
                 <tr>
                   {[
                     "Client",
@@ -1195,7 +1165,7 @@ export default function ActivationEnginePage() {
                     "Priority",
                     "Actions",
                   ].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-wider whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                    <th key={h} className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-wider whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                       {h}
                     </th>
                   ))}
@@ -1203,13 +1173,12 @@ export default function ActivationEnginePage() {
               </thead>
               <tbody>
                 {filtered.map((c, rowIdx) => (
-                  <tr key={c.id} className="hover:bg-blue-50/20 transition-colors" style={{ borderBottom: rowIdx < filtered.length - 1 ? "1px solid var(--rtm-border-light)" : undefined }}>
+                  <tr key={c.id} className="hover:bg-blue-50/20 transition-colors"style={{ borderBottom: rowIdx < filtered.length - 1 ? "1px solid var(--rtm-border-light)": undefined }}>
                     {/* Client */}
                     <td className="px-4 py-3 font-semibold whitespace-nowrap">
                       <button
                         onClick={() => setSelectedCase(c)}
-                        className="font-semibold hover:underline text-left"
-                        style={{ color: "var(--rtm-blue)" }}
+                        className="font-semibold hover:underline text-left"style={{ color: "var(--rtm-blue)"}}
                       >
                         {c.client}
                       </button>
@@ -1230,17 +1199,17 @@ export default function ActivationEnginePage() {
                     </td>
 
                     {/* Line Items */}
-                    <td className="px-4 py-3 text-sm" style={{ color: "var(--rtm-text-primary)" }}>{c.lineItems.length}</td>
+                    <td className="px-4 py-3 text-sm"style={{ color: "var(--rtm-text-primary)"}}>{c.lineItems.length}</td>
                     {/* Matched Rules */}
-                    <td className="px-4 py-3 text-sm" style={{ color: "var(--rtm-text-primary)" }}>{c.matchedRules.length}</td>
+                    <td className="px-4 py-3 text-sm"style={{ color: "var(--rtm-text-primary)"}}>{c.matchedRules.length}</td>
                     {/* Task Templates */}
-                    <td className="px-4 py-3 text-sm" style={{ color: "var(--rtm-text-primary)" }}>{c.taskTemplates.length}</td>
+                    <td className="px-4 py-3 text-sm"style={{ color: "var(--rtm-text-primary)"}}>{c.taskTemplates.length}</td>
                     {/* Departments */}
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1 max-w-[180px]">
                         {c.departments.slice(0, 3).map((d) => <DeptBadge key={d} dept={d} />)}
                         {c.departments.length > 3 && (
-                          <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>+{c.departments.length - 3}</span>
+                          <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>+{c.departments.length - 3}</span>
                         )}
                       </div>
                     </td>
@@ -1251,14 +1220,14 @@ export default function ActivationEnginePage() {
                     {/* Blocked Reason */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       {c.blockedReason ? (
-                        <span className="text-xs font-semibold" style={{ color: "#DC2626" }}>{c.blockedReason}</span>
+                        <span className="text-xs font-semibold"style={{ color: "#DC2626"}}>{c.blockedReason}</span>
                       ) : (
-                        <span style={{ color: "var(--rtm-text-muted)" }}>—</span>
+                        <span style={{ color: "var(--rtm-text-muted)"}}>—</span>
                       )}
                     </td>
                     {/* Next Action */}
                     <td className="px-4 py-3 max-w-[180px]">
-                      <span className="text-xs line-clamp-2" style={{ color: "var(--rtm-text-secondary)" }}>{c.nextAction}</span>
+                      <span className="text-xs line-clamp-2"style={{ color: "var(--rtm-text-secondary)"}}>{c.nextAction}</span>
                     </td>
                     {/* Priority */}
                     <td className="px-4 py-3">
@@ -1267,19 +1236,19 @@ export default function ActivationEnginePage() {
                     {/* Actions */}
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-0.5">
-                        <RowAction label="View" onClick={() => setSelectedCase(c)} />
-                        {c.activationStatus === "Ready for Activation" && <RowAction label="Run Activation" onClick={() => {}} />}
-                        {(c.activationStatus === "Rules Matched" || c.activationStatus === "Generating Tasks") && <RowAction label="Generate Tasks" onClick={() => {}} />}
-                        {c.activationStatus === "Department Activation Pending" && <RowAction label="Assign Owners" onClick={() => {}} />}
-                        {c.activationStatus === "Activated" && <RowAction label="Push Onboarding" onClick={() => {}} />}
-                        <RowAction label="Test Rules" onClick={() => {}} />
+                        <RowAction label="View"onClick={() => setSelectedCase(c)} />
+                        {c.activationStatus === "Ready for Activation"&& <RowAction label="Run Activation"onClick={() => {}} />}
+                        {(c.activationStatus === "Rules Matched"|| c.activationStatus === "Generating Tasks") && <RowAction label="Generate Tasks"onClick={() => {}} />}
+                        {c.activationStatus === "Department Activation Pending"&& <RowAction label="Assign Owners"onClick={() => {}} />}
+                        {c.activationStatus === "Activated"&& <RowAction label="Push Onboarding"onClick={() => {}} />}
+                        <RowAction label="Test Rules"onClick={() => {}} />
                       </div>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={12} className="px-4 py-12 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+                    <td colSpan={12} className="px-4 py-12 text-center text-sm"style={{ color: "var(--rtm-text-muted)"}}>
                       No activation cases match the current filters.
                     </td>
                   </tr>
@@ -1289,35 +1258,35 @@ export default function ActivationEnginePage() {
           </div>
         </div>
 
-        {/* ── Blocked Activations Panel ── */}
-        <div className="rounded-xl overflow-hidden" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
-          <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-            <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>🚫 Blocked Activations</h2>
+        {/*  Blocked Activations Panel  */}
+        <div className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
+          <div className="px-5 py-4"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
+            <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}> Blocked Activations</h2>
           </div>
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {ACTIVATION_CASES.filter((c) => c.activationStatus === "Blocked" || c.blockedReason).map((c) => (
-              <div key={c.id} className="rounded-xl p-4 flex flex-col gap-2" style={{ background: "#FEF2F2", border: "1px solid #FECACA" }}>
+            {ACTIVATION_CASES.filter((c) => c.activationStatus === "Blocked"|| c.blockedReason).map((c) => (
+              <div key={c.id} className="rounded-xl p-4 flex flex-col gap-2"style={{ background: "#FEF2F2", border: "1px solid #FECACA"}}>
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{c.client}</span>
+                  <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{c.client}</span>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${priorityColor(c.priority)}`}>{c.priority}</span>
                 </div>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full self-start" style={{ background: "#FEE2E2", color: "#DC2626" }}>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full self-start"style={{ background: "#FEE2E2", color: "#DC2626"}}>
                   ⚠ {c.blockedReason}
                 </span>
-                <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{c.nextAction}</p>
-                <button onClick={() => setSelectedCase(c)} className="text-xs font-semibold hover:underline self-start mt-1" style={{ color: "#DC2626" }}>View Details →</button>
+                <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{c.nextAction}</p>
+                <button onClick={() => setSelectedCase(c)} className="text-xs font-semibold hover:underline self-start mt-1"style={{ color: "#DC2626"}}>View Details →</button>
               </div>
             ))}
-            {ACTIVATION_CASES.filter((c) => c.activationStatus === "Blocked" || c.blockedReason).length === 0 && (
-              <p className="text-sm col-span-3" style={{ color: "var(--rtm-text-muted)" }}>No blocked activations.</p>
+            {ACTIVATION_CASES.filter((c) => c.activationStatus === "Blocked"|| c.blockedReason).length === 0 && (
+              <p className="text-sm col-span-3"style={{ color: "var(--rtm-text-muted)"}}>No blocked activations.</p>
             )}
           </div>
         </div>
 
-        {/* ── Department Workload Summary ── */}
-        <div className="rounded-xl overflow-hidden" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
-          <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-            <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>🏢 Department Queue — Activated Clients</h2>
+        {/*  Department Workload Summary  */}
+        <div className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
+          <div className="px-5 py-4"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
+            <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}> Department Queue — Activated Clients</h2>
           </div>
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {(
@@ -1342,7 +1311,7 @@ export default function ActivationEnginePage() {
                     <span className="text-sm font-bold">{dept}</span>
                     <span className="text-xs font-semibold">
                       {activatedClients > 0 ? (
-                        <span className="bg-white/70 px-2 py-0.5 rounded-full">{activatedClients} active client{activatedClients !== 1 ? "s" : ""}</span>
+                        <span className="bg-white/70 px-2 py-0.5 rounded-full">{activatedClients} active client{activatedClients !== 1 ? "s": ""}</span>
                       ) : (
                         <span className="opacity-50">No active clients</span>
                       )}
@@ -1358,7 +1327,7 @@ export default function ActivationEnginePage() {
           </div>
         </div>
 
-      {/* ── Detail Drawer ── */}
+      {/*  Detail Drawer  */}
       {selectedCase && (
         <DetailDrawer item={selectedCase} onClose={() => setSelectedCase(null)} />
       )}

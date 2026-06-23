@@ -3,55 +3,21 @@
 // ── Status & Reason Types ──────────────────────────────────────────────────────
 
 export type CancellationStatus =
-  | "Request Received"
-  | "Under Review"
-  | "Retention Attempt"
-  | "Executive Review"
-  | "Cancellation Approved"
-  | "Cancellation Withdrawn"
-  | "Converted To Downgrade"
-  | "Converted To Renewal"
-  | "Converted To Change Request"
-  | "Moved To Offboarding";
+  | "Request Received"| "Under Review"| "Retention Attempt"| "Executive Review"| "Cancellation Approved"| "Cancellation Withdrawn"| "Converted To Downgrade"| "Converted To Renewal"| "Converted To Change Request"| "Moved To Offboarding";
 
 export type CancellationReason =
-  | "Budget"
-  | "Performance"
-  | "Service Quality"
-  | "Communication"
-  | "Internal Staffing"
-  | "Business Closure"
-  | "Competitor"
-  | "No Longer Needed"
-  | "Other";
+  | "Budget"| "Performance"| "Service Quality"| "Communication"| "Internal Staffing"| "Business Closure"| "Competitor"| "No Longer Needed"| "Other";
 
 export type RetentionStrategy =
-  | "Budget Adjustment"
-  | "Service Reduction"
-  | "Service Realignment"
-  | "Temporary Pause"
-  | "Additional Support"
-  | "Executive Escalation"
-  | "Custom Retention Plan";
+  | "Budget Adjustment"| "Service Reduction"| "Service Realignment"| "Temporary Pause"| "Additional Support"| "Executive Escalation"| "Custom Retention Plan";
 
 export type RetentionStatus =
-  | "Not Started"
-  | "In Progress"
-  | "Client Contacted"
-  | "Decision Pending"
-  | "Saved"
-  | "Lost";
+  | "Not Started"| "In Progress"| "Client Contacted"| "Decision Pending"| "Saved"| "Lost";
 
 export type SaveAttemptStep =
-  | "Cancellation Request"
-  | "AM Review"
-  | "Retention Plan"
-  | "Client Discussion"
-  | "Decision"
-  | "Saved"
-  | "Cancelled";
+  | "Cancellation Request"| "AM Review"| "Retention Plan"| "Client Discussion"| "Decision"| "Saved"| "Cancelled";
 
-export type RiskLevel = "Low" | "Medium" | "High" | "Critical";
+export type RiskLevel = "Low"| "Medium"| "High"| "Critical";
 
 // ── Core Interfaces ────────────────────────────────────────────────────────────
 
@@ -62,8 +28,8 @@ export interface ClientRiskProfile {
   communicationHealth: number;
   reportingHealth: number;
   openEscalations: number;
-  renewalRisk: "Low" | "Medium" | "High" | "Critical";
-  expansionPotential: "None" | "Low" | "Medium" | "High";
+  renewalRisk: "Low"| "Medium"| "High"| "Critical";
+  expansionPotential: "None"| "Low"| "Medium"| "High";
 }
 
 export interface RetentionPlan {
@@ -178,11 +144,11 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       ],
     },
     activityTimeline: [
-      { date: "2025-05-20", step: "Cancellation Request", description: "Client submitted cancellation notice via email citing budget constraints.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-05-21", step: "AM Review", description: "Maria Santos reviewed the request and flagged for immediate escalation.", actor: "Maria Santos", outcome: "Escalated to Director" },
-      { date: "2025-05-24", step: "Retention Plan", description: "Retention plan created: Executive Escalation strategy with service restructure proposal.", actor: "Maria Santos", outcome: "Plan approved" },
-      { date: "2025-06-02", step: "Client Discussion", description: "Initial call with client. Client reiterated budget concerns. Agreed to review proposal.", actor: "Maria Santos", outcome: "Follow-up scheduled" },
-      { date: "2025-06-10", step: "Client Discussion", description: "Director joined call. Presented restructured package. Client requested 5 business days to decide.", actor: "Director / Maria Santos", outcome: "Decision pending June 17" },
+      { date: "2025-05-20", step: "Cancellation Request", description: "Client submitted cancellation notice via email citing budget constraints.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-05-21", step: "AM Review", description: "Maria Santos reviewed the request and flagged for immediate escalation.", actor: "Maria Santos", outcome: "Escalated to Director"},
+      { date: "2025-05-24", step: "Retention Plan", description: "Retention plan created: Executive Escalation strategy with service restructure proposal.", actor: "Maria Santos", outcome: "Plan approved"},
+      { date: "2025-06-02", step: "Client Discussion", description: "Initial call with client. Client reiterated budget concerns. Agreed to review proposal.", actor: "Maria Santos", outcome: "Follow-up scheduled"},
+      { date: "2025-06-10", step: "Client Discussion", description: "Director joined call. Presented restructured package. Client requested 5 business days to decide.", actor: "Director / Maria Santos", outcome: "Decision pending June 17"},
     ],
   },
   {
@@ -240,10 +206,10 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       ],
     },
     activityTimeline: [
-      { date: "2025-06-01", step: "Cancellation Request", description: "Client emailed requesting cancellation at end of billing cycle.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-02", step: "AM Review", description: "Sarah Chen reviewed account. Identified seasonality as likely factor. Prepared budget adjustment proposal.", actor: "Sarah Chen", outcome: "Retention plan created" },
-      { date: "2025-06-03", step: "Retention Plan", description: "Budget adjustment plan documented: $2,600/mo for 6-month commitment.", actor: "Sarah Chen", outcome: "Plan ready" },
-      { date: "2025-06-09", step: "Client Discussion", description: "Call with client. Presented seasonal data and adjusted pricing. Client open to reconsideration.", actor: "Sarah Chen", outcome: "Awaiting decision" },
+      { date: "2025-06-01", step: "Cancellation Request", description: "Client emailed requesting cancellation at end of billing cycle.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-02", step: "AM Review", description: "Sarah Chen reviewed account. Identified seasonality as likely factor. Prepared budget adjustment proposal.", actor: "Sarah Chen", outcome: "Retention plan created"},
+      { date: "2025-06-03", step: "Retention Plan", description: "Budget adjustment plan documented: $2,600/mo for 6-month commitment.", actor: "Sarah Chen", outcome: "Plan ready"},
+      { date: "2025-06-09", step: "Client Discussion", description: "Call with client. Presented seasonal data and adjusted pricing. Client open to reconsideration.", actor: "Sarah Chen", outcome: "Awaiting decision"},
     ],
   },
   {
@@ -301,10 +267,10 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       ],
     },
     activityTimeline: [
-      { date: "2025-06-03", step: "Cancellation Request", description: "Client called requesting immediate cancellation. Cited practice financial challenges.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-04", step: "AM Review", description: "Sarah Chen reviewed account history. 3-year client with strong pre-2024 performance.", actor: "Sarah Chen", outcome: "Pause strategy identified" },
-      { date: "2025-06-05", step: "Retention Plan", description: "Temporary pause plan created at $500/mo maintenance retainer.", actor: "Sarah Chen", outcome: "Plan created" },
-      { date: "2025-06-11", step: "Client Discussion", description: "Call with Dr. Sharon Kim. Presented pause option. Client reacted positively. Awaiting admin approval.", actor: "Sarah Chen", outcome: "Decision pending" },
+      { date: "2025-06-03", step: "Cancellation Request", description: "Client called requesting immediate cancellation. Cited practice financial challenges.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-04", step: "AM Review", description: "Sarah Chen reviewed account history. 3-year client with strong pre-2024 performance.", actor: "Sarah Chen", outcome: "Pause strategy identified"},
+      { date: "2025-06-05", step: "Retention Plan", description: "Temporary pause plan created at $500/mo maintenance retainer.", actor: "Sarah Chen", outcome: "Plan created"},
+      { date: "2025-06-11", step: "Client Discussion", description: "Call with Dr. Sharon Kim. Presented pause option. Client reacted positively. Awaiting admin approval.", actor: "Sarah Chen", outcome: "Decision pending"},
     ],
   },
   {
@@ -361,8 +327,8 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       ],
     },
     activityTimeline: [
-      { date: "2025-06-07", step: "Cancellation Request", description: "Director submitted written cancellation request. Offered to consider reduced scope.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-08", step: "AM Review", description: "Sarah Chen identified SEO retention opportunity. Creating service reduction proposal.", actor: "Sarah Chen", outcome: "Under review" },
+      { date: "2025-06-07", step: "Cancellation Request", description: "Director submitted written cancellation request. Offered to consider reduced scope.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-08", step: "AM Review", description: "Sarah Chen identified SEO retention opportunity. Creating service reduction proposal.", actor: "Sarah Chen", outcome: "Under review"},
     ],
   },
 
@@ -417,7 +383,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       ],
     },
     activityTimeline: [
-      { date: "2025-06-05", step: "Cancellation Request", description: "Client sent formal cancellation email citing missed reports and lead decline. Copied operations director.", actor: "Client", outcome: "Request received — no response yet" },
+      { date: "2025-06-05", step: "Cancellation Request", description: "Client sent formal cancellation email citing missed reports and lead decline. Copied operations director.", actor: "Client", outcome: "Request received — no response yet"},
     ],
   },
   {
@@ -475,10 +441,10 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       ],
     },
     activityTimeline: [
-      { date: "2025-06-04", step: "Cancellation Request", description: "Client called AM directly and threatened to leave. Campaign still not live.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-05", step: "AM Review", description: "James Park escalated to operations. Identified onboarding bottleneck.", actor: "James Park", outcome: "Retention plan created" },
-      { date: "2025-06-05", step: "Retention Plan", description: "Dedicated onboarding support assigned. Launch committed for June 20.", actor: "James Park", outcome: "Plan active" },
-      { date: "2025-06-10", step: "Client Discussion", description: "Call with Carlos Reyes. Presented revised plan and support structure. Client cautiously positive.", actor: "James Park", outcome: "Awaiting written confirmation" },
+      { date: "2025-06-04", step: "Cancellation Request", description: "Client called AM directly and threatened to leave. Campaign still not live.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-05", step: "AM Review", description: "James Park escalated to operations. Identified onboarding bottleneck.", actor: "James Park", outcome: "Retention plan created"},
+      { date: "2025-06-05", step: "Retention Plan", description: "Dedicated onboarding support assigned. Launch committed for June 20.", actor: "James Park", outcome: "Plan active"},
+      { date: "2025-06-10", step: "Client Discussion", description: "Call with Carlos Reyes. Presented revised plan and support structure. Client cautiously positive.", actor: "James Park", outcome: "Awaiting written confirmation"},
     ],
   },
   {
@@ -535,9 +501,9 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       ],
     },
     activityTimeline: [
-      { date: "2025-06-06", step: "Cancellation Request", description: "Client submitted written notice citing slow SEO progress.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-07", step: "AM Review", description: "James Park reviewed 8-month SEO data. Performance is on track — client expectations misaligned.", actor: "James Park", outcome: "Service realignment plan created" },
-      { date: "2025-06-11", step: "Client Discussion", description: "Presentation call with Eric Walsh. Showed SEO milestone progress. Client agreed to 90-day extension.", actor: "James Park", outcome: "Retention period agreed" },
+      { date: "2025-06-06", step: "Cancellation Request", description: "Client submitted written notice citing slow SEO progress.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-07", step: "AM Review", description: "James Park reviewed 8-month SEO data. Performance is on track — client expectations misaligned.", actor: "James Park", outcome: "Service realignment plan created"},
+      { date: "2025-06-11", step: "Client Discussion", description: "Presentation call with Eric Walsh. Showed SEO milestone progress. Client agreed to 90-day extension.", actor: "James Park", outcome: "Retention period agreed"},
     ],
   },
 
@@ -588,11 +554,11 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Internal hire signal — monitor for reoccurrence"],
     },
     activityTimeline: [
-      { date: "2025-04-10", step: "Cancellation Request", description: "Client requested cancellation to hire internal marketing coordinator.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-04-12", step: "AM Review", description: "James Park reviewed account. High-health client — strong retention candidate.", actor: "James Park", outcome: "Budget adjustment plan created" },
-      { date: "2025-04-15", step: "Retention Plan", description: "Adjusted package at $3,800/mo for 3 months presented to client.", actor: "James Park", outcome: "Client reviewing" },
-      { date: "2025-04-22", step: "Client Discussion", description: "Retention call with Rachel Moore. Client responded positively to adjusted pricing.", actor: "James Park", outcome: "Client agreed" },
-      { date: "2025-04-28", step: "Saved", description: "Client formally withdrew cancellation. Signed 3-month adjusted service agreement.", actor: "Client", outcome: "Saved" },
+      { date: "2025-04-10", step: "Cancellation Request", description: "Client requested cancellation to hire internal marketing coordinator.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-04-12", step: "AM Review", description: "James Park reviewed account. High-health client — strong retention candidate.", actor: "James Park", outcome: "Budget adjustment plan created"},
+      { date: "2025-04-15", step: "Retention Plan", description: "Adjusted package at $3,800/mo for 3 months presented to client.", actor: "James Park", outcome: "Client reviewing"},
+      { date: "2025-04-22", step: "Client Discussion", description: "Retention call with Rachel Moore. Client responded positively to adjusted pricing.", actor: "James Park", outcome: "Client agreed"},
+      { date: "2025-04-28", step: "Saved", description: "Client formally withdrew cancellation. Signed 3-month adjusted service agreement.", actor: "Client", outcome: "Saved"},
     ],
   },
   {
@@ -641,10 +607,10 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Communication health gap — monitor closely"],
     },
     activityTimeline: [
-      { date: "2025-03-18", step: "Cancellation Request", description: "Dr. Amy Lee called to cancel. Cited lack of communication as primary reason.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-03-20", step: "AM Review", description: "Tina Webb identified communication gap. Account is performing well.", actor: "Tina Webb", outcome: "Communication plan created" },
-      { date: "2025-03-22", step: "Client Discussion", description: "Tina Webb called client. Apologized for communication gap. Committed to bi-weekly check-in.", actor: "Tina Webb", outcome: "Client open to staying" },
-      { date: "2025-04-02", step: "Saved", description: "Client confirmed she will remain. Cancellation request withdrawn.", actor: "Client", outcome: "Saved" },
+      { date: "2025-03-18", step: "Cancellation Request", description: "Dr. Amy Lee called to cancel. Cited lack of communication as primary reason.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-03-20", step: "AM Review", description: "Tina Webb identified communication gap. Account is performing well.", actor: "Tina Webb", outcome: "Communication plan created"},
+      { date: "2025-03-22", step: "Client Discussion", description: "Tina Webb called client. Apologized for communication gap. Committed to bi-weekly check-in.", actor: "Tina Webb", outcome: "Client open to staying"},
+      { date: "2025-04-02", step: "Saved", description: "Client confirmed she will remain. Cancellation request withdrawn.", actor: "Client", outcome: "Saved"},
     ],
   },
   {
@@ -693,10 +659,10 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Creative quality gap — design team coordination needed", "1 open escalation related to ad performance"],
     },
     activityTimeline: [
-      { date: "2025-05-05", step: "Cancellation Request", description: "Nicole Hart submitted cancellation citing poor Meta Ads creative.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-05-07", step: "AM Review", description: "Tina Webb reviewed creative quality. Identified legitimate creative gaps.", actor: "Tina Webb", outcome: "Realignment plan created" },
-      { date: "2025-05-10", step: "Client Discussion", description: "Call with Nicole Hart. Committed to full creative refresh and monthly review.", actor: "Tina Webb", outcome: "Client agreed to wait for new creative" },
-      { date: "2025-05-22", step: "Saved", description: "New creative launched. Client reviewed and approved. Cancellation converted to change request.", actor: "Tina Webb", outcome: "Saved — converted to CR" },
+      { date: "2025-05-05", step: "Cancellation Request", description: "Nicole Hart submitted cancellation citing poor Meta Ads creative.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-05-07", step: "AM Review", description: "Tina Webb reviewed creative quality. Identified legitimate creative gaps.", actor: "Tina Webb", outcome: "Realignment plan created"},
+      { date: "2025-05-10", step: "Client Discussion", description: "Call with Nicole Hart. Committed to full creative refresh and monthly review.", actor: "Tina Webb", outcome: "Client agreed to wait for new creative"},
+      { date: "2025-05-22", step: "Saved", description: "New creative launched. Client reviewed and approved. Cancellation converted to change request.", actor: "Tina Webb", outcome: "Saved — converted to CR"},
     ],
   },
 
@@ -747,10 +713,10 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Structural business decision — not retention-addressable"],
     },
     activityTimeline: [
-      { date: "2025-05-15", step: "Cancellation Request", description: "Partner notified firm hired internal marketing director.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-05-18", step: "Retention Plan", description: "Hybrid agency model proposed at $800/mo consulting retainer.", actor: "Tina Webb", outcome: "Proposal sent" },
-      { date: "2025-05-28", step: "Client Discussion", description: "Final call. Client confirmed full in-house transition.", actor: "Tina Webb", outcome: "Decision: cancelled" },
-      { date: "2025-06-01", step: "Cancelled", description: "Cancellation confirmed. Account moved to offboarding.", actor: "System", outcome: "Moved to offboarding" },
+      { date: "2025-05-15", step: "Cancellation Request", description: "Partner notified firm hired internal marketing director.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-05-18", step: "Retention Plan", description: "Hybrid agency model proposed at $800/mo consulting retainer.", actor: "Tina Webb", outcome: "Proposal sent"},
+      { date: "2025-05-28", step: "Client Discussion", description: "Final call. Client confirmed full in-house transition.", actor: "Tina Webb", outcome: "Decision: cancelled"},
+      { date: "2025-06-01", step: "Cancelled", description: "Cancellation confirmed. Account moved to offboarding.", actor: "System", outcome: "Moved to offboarding"},
     ],
   },
   {
@@ -791,8 +757,8 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Business closure — no mitigation possible"],
     },
     activityTimeline: [
-      { date: "2025-05-28", step: "Cancellation Request", description: "Owner contacted to inform of pharmacy closure and retirement.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-03", step: "Cancelled", description: "Cancellation approved. Moved to offboarding. Owner requested referral to successor.", actor: "Maria Santos", outcome: "Cancellation approved" },
+      { date: "2025-05-28", step: "Cancellation Request", description: "Owner contacted to inform of pharmacy closure and retirement.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-03", step: "Cancelled", description: "Cancellation approved. Moved to offboarding. Owner requested referral to successor.", actor: "Maria Santos", outcome: "Cancellation approved"},
     ],
   },
   {
@@ -841,10 +807,10 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Communication health declining trend", "Competitor outreach before retention action taken"],
     },
     activityTimeline: [
-      { date: "2025-05-10", step: "Cancellation Request", description: "Client informed competitor presented lower-priced proposal.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-05-13", step: "Retention Plan", description: "Counter-proposal: matched competitor pricing at $2,200/mo.", actor: "Maria Santos", outcome: "Proposal sent" },
-      { date: "2025-05-25", step: "Client Discussion", description: "Client declined retention offer. Committed to competitor.", actor: "Client", outcome: "Decision: cancelled" },
-      { date: "2025-05-30", step: "Cancelled", description: "Cancellation confirmed. Moved to offboarding.", actor: "System", outcome: "Moved to offboarding" },
+      { date: "2025-05-10", step: "Cancellation Request", description: "Client informed competitor presented lower-priced proposal.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-05-13", step: "Retention Plan", description: "Counter-proposal: matched competitor pricing at $2,200/mo.", actor: "Maria Santos", outcome: "Proposal sent"},
+      { date: "2025-05-25", step: "Client Discussion", description: "Client declined retention offer. Committed to competitor.", actor: "Client", outcome: "Decision: cancelled"},
+      { date: "2025-05-30", step: "Cancelled", description: "Cancellation confirmed. Moved to offboarding.", actor: "System", outcome: "Moved to offboarding"},
     ],
   },
   {
@@ -893,9 +859,9 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Seasonal business slowdown — timing-sensitive"],
     },
     activityTimeline: [
-      { date: "2025-06-08", step: "Cancellation Request", description: "Owner called to cancel. No service complaints — just reducing spend.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-09", step: "Retention Plan", description: "Pause plan at $300/mo created.", actor: "Sarah Chen", outcome: "Plan ready" },
-      { date: "2025-06-11", step: "Client Discussion", description: "Presented pause option. Client interested. Follow-up call June 14.", actor: "Sarah Chen", outcome: "Awaiting decision" },
+      { date: "2025-06-08", step: "Cancellation Request", description: "Owner called to cancel. No service complaints — just reducing spend.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-09", step: "Retention Plan", description: "Pause plan at $300/mo created.", actor: "Sarah Chen", outcome: "Plan ready"},
+      { date: "2025-06-11", step: "Client Discussion", description: "Presented pause option. Client interested. Follow-up call June 14.", actor: "Sarah Chen", outcome: "Awaiting decision"},
     ],
   },
   {
@@ -955,10 +921,10 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       ],
     },
     activityTimeline: [
-      { date: "2025-06-02", step: "Cancellation Request", description: "Client submitted formal complaint and cancellation notice citing GBP errors and reporting failures.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-04", step: "AM Review", description: "Tina Webb confirmed GBP errors and reporting gaps. Escalated to director.", actor: "Tina Webb", outcome: "Executive review initiated" },
-      { date: "2025-06-04", step: "Retention Plan", description: "Executive escalation plan with GBP audit, account supervisor, and monthly executive reporting.", actor: "Tina Webb", outcome: "Plan approved" },
-      { date: "2025-06-10", step: "Client Discussion", description: "GBP audit completed. Errors corrected. Presented remediation plan to client.", actor: "Tina Webb", outcome: "Client agreed to await director call" },
+      { date: "2025-06-02", step: "Cancellation Request", description: "Client submitted formal complaint and cancellation notice citing GBP errors and reporting failures.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-04", step: "AM Review", description: "Tina Webb confirmed GBP errors and reporting gaps. Escalated to director.", actor: "Tina Webb", outcome: "Executive review initiated"},
+      { date: "2025-06-04", step: "Retention Plan", description: "Executive escalation plan with GBP audit, account supervisor, and monthly executive reporting.", actor: "Tina Webb", outcome: "Plan approved"},
+      { date: "2025-06-10", step: "Client Discussion", description: "GBP audit completed. Errors corrected. Presented remediation plan to client.", actor: "Tina Webb", outcome: "Client agreed to await director call"},
     ],
   },
   {
@@ -1012,9 +978,9 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["AM responsiveness failure", "Communication health at 42", "1 open escalation pending"],
     },
     activityTimeline: [
-      { date: "2025-06-06", step: "Cancellation Request", description: "Senior partner sent letter of intent to cancel citing AM communication failures.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-08", step: "Retention Plan", description: "AM upgraded to senior account director. Weekly sessions and dedicated channel proposed.", actor: "Tina Webb", outcome: "Plan created" },
-      { date: "2025-06-12", step: "Client Discussion", description: "Call with senior partner. Presented new AM assignment and communication structure.", actor: "Tina Webb", outcome: "Partner open to staying — evaluation period agreed" },
+      { date: "2025-06-06", step: "Cancellation Request", description: "Senior partner sent letter of intent to cancel citing AM communication failures.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-08", step: "Retention Plan", description: "AM upgraded to senior account director. Weekly sessions and dedicated channel proposed.", actor: "Tina Webb", outcome: "Plan created"},
+      { date: "2025-06-12", step: "Client Discussion", description: "Call with senior partner. Presented new AM assignment and communication structure.", actor: "Tina Webb", outcome: "Partner open to staying — evaluation period agreed"},
     ],
   },
   {
@@ -1068,8 +1034,8 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["GBP stagnation — competitor activity increasing", "Reporting health at 60 — some delivery concerns"],
     },
     activityTimeline: [
-      { date: "2025-06-09", step: "Cancellation Request", description: "Dr. Brian Ngo emailed requesting cancellation citing GBP ranking issues.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-10", step: "AM Review", description: "Tina Webb reviewed GBP performance. Competitor gap identified. Realignment plan drafted.", actor: "Tina Webb", outcome: "Under review" },
+      { date: "2025-06-09", step: "Cancellation Request", description: "Dr. Brian Ngo emailed requesting cancellation citing GBP ranking issues.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-10", step: "AM Review", description: "Tina Webb reviewed GBP performance. Competitor gap identified. Realignment plan drafted.", actor: "Tina Webb", outcome: "Under review"},
     ],
   },
   {
@@ -1123,9 +1089,9 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Onboarding delay misaligned with sales promises", "Project health at 48 — critical for new client", "1 open escalation from client"],
     },
     activityTimeline: [
-      { date: "2025-06-08", step: "Cancellation Request", description: "James Brennan called AM to request cancellation. Campaign still not fully launched.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-09", step: "Retention Plan", description: "Accelerated launch plan: Meta Ads live June 18, SEO sprint started.", actor: "Maria Santos", outcome: "Plan created" },
-      { date: "2025-06-11", step: "Client Discussion", description: "Presented accelerated plan. Client agreed to 30-day evaluation period.", actor: "Maria Santos", outcome: "Retention period active" },
+      { date: "2025-06-08", step: "Cancellation Request", description: "James Brennan called AM to request cancellation. Campaign still not fully launched.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-09", step: "Retention Plan", description: "Accelerated launch plan: Meta Ads live June 18, SEO sprint started.", actor: "Maria Santos", outcome: "Plan created"},
+      { date: "2025-06-11", step: "Client Discussion", description: "Presented accelerated plan. Client agreed to 30-day evaluation period.", actor: "Maria Santos", outcome: "Retention period active"},
     ],
   },
   {
@@ -1170,8 +1136,8 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Corporate mandate — not addressable through retention"],
     },
     activityTimeline: [
-      { date: "2025-06-01", step: "Cancellation Request", description: "Mark Hardin notified of acquisition and preferred agency mandate.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-08", step: "Cancelled", description: "Cancellation approved. Client provided referral and authorized case study use.", actor: "Sarah Chen", outcome: "Cancellation approved — referral secured" },
+      { date: "2025-06-01", step: "Cancellation Request", description: "Mark Hardin notified of acquisition and preferred agency mandate.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-08", step: "Cancelled", description: "Cancellation approved. Client provided referral and authorized case study use.", actor: "Sarah Chen", outcome: "Cancellation approved — referral secured"},
     ],
   },
   {
@@ -1225,9 +1191,9 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
       riskFactors: ["Funding gap — external factor", "Billing health at 60 — invoice timing sensitive"],
     },
     activityTimeline: [
-      { date: "2025-06-07", step: "Cancellation Request", description: "CFO contacted requesting cancellation. Cited funding gap and spend freeze.", actor: "Client", outcome: "Request logged" },
-      { date: "2025-06-09", step: "Retention Plan", description: "Pause plan created: retain SEO at $1,200/mo, pause paid channels.", actor: "Maria Santos", outcome: "Plan created" },
-      { date: "2025-06-11", step: "Client Discussion", description: "Presented pause structure to CFO. Interested in the SEO-only maintenance option.", actor: "Maria Santos", outcome: "Awaiting CFO approval" },
+      { date: "2025-06-07", step: "Cancellation Request", description: "CFO contacted requesting cancellation. Cited funding gap and spend freeze.", actor: "Client", outcome: "Request logged"},
+      { date: "2025-06-09", step: "Retention Plan", description: "Pause plan created: retain SEO at $1,200/mo, pause paid channels.", actor: "Maria Santos", outcome: "Plan created"},
+      { date: "2025-06-11", step: "Client Discussion", description: "Presented pause structure to CFO. Interested in the SEO-only maintenance option.", actor: "Maria Santos", outcome: "Awaiting CFO approval"},
     ],
   },
 ];
@@ -1243,21 +1209,19 @@ export function getOpenRequests(): CancellationRequest[] {
 export function getSavedClients(): CancellationRequest[] {
   return CANCELLATION_REQUESTS.filter(
     (r) =>
-      r.retentionStatus === "Saved" ||
-      r.status === "Cancellation Withdrawn" ||
-      r.status === "Converted To Change Request" ||
-      r.status === "Converted To Renewal" ||
-      r.status === "Converted To Downgrade"
-  );
+      r.retentionStatus === "Saved"||
+      r.status === "Cancellation Withdrawn"||
+      r.status === "Converted To Change Request"||
+      r.status === "Converted To Renewal"||
+      r.status === "Converted To Downgrade");
 }
 
 export function getCancelledClients(): CancellationRequest[] {
   return CANCELLATION_REQUESTS.filter(
     (r) =>
-      r.retentionStatus === "Lost" ||
-      r.status === "Cancellation Approved" ||
-      r.status === "Moved To Offboarding"
-  );
+      r.retentionStatus === "Lost"||
+      r.status === "Cancellation Approved"||
+      r.status === "Moved To Offboarding");
 }
 
 export function getRevenueAtRisk(): number {

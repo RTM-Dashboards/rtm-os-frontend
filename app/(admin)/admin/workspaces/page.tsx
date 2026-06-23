@@ -12,8 +12,8 @@ interface WorkspaceDetail {
   adminColor: string;
   memberCount: number;
   clientCount: number;
-  accessLevel: "Full" | "Limited" | "Read Only";
-  health: "success" | "warning" | "info";
+  accessLevel: "Full"| "Limited"| "Read Only";
+  health: "success"| "warning"| "info";
   healthLabel: string;
   score: number;
 }
@@ -42,20 +42,20 @@ const accessMatrix = [
 export default function AdminWorkspacesPage() {
   const merged = workspaceDetails.map((wd) => {
     const ws = workspaces.find((w) => w.slug === wd.slug);
-    return { ...wd, name: ws?.name ?? wd.slug, icon: ws?.icon ?? "🏢", accentColor: ws?.accentColor ?? "#1B4FD8", dashboardRoute: ws?.dashboardRoute ?? `/${wd.slug}` };
+    return { ...wd, name: ws?.name ?? wd.slug, icon: ws?.icon ?? "", accentColor: ws?.accentColor ?? "#1B4FD8", dashboardRoute: ws?.dashboardRoute ?? `/${wd.slug}` };
   });
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-blue)" }}>
+        <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "var(--rtm-blue)"}}>
           Admin · Workspaces
         </p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
           Workspaces
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Department workspaces, admins, member counts, and access configuration.
         </p>
       </div>
@@ -63,48 +63,46 @@ export default function AdminWorkspacesPage() {
       {/* Summary KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Workspaces", value: workspaceDetails.length.toString(),                                                icon: "🏢" },
-          { label: "Total Members",    value: workspaceDetails.reduce((s, w) => s + w.memberCount, 0).toString(),               icon: "👥" },
-          { label: "Healthy Depts",    value: workspaceDetails.filter((w) => w.health === "success").length.toString(),         icon: "✅" },
-          { label: "Needs Attention",  value: workspaceDetails.filter((w) => w.health !== "success").length.toString(),         icon: "⚠️" },
+          { label: "Total Workspaces", value: workspaceDetails.length.toString(),                                                icon: ""},
+          { label: "Total Members",    value: workspaceDetails.reduce((s, w) => s + w.memberCount, 0).toString(),               icon: ""},
+          { label: "Healthy Depts",    value: workspaceDetails.filter((w) => w.health === "success").length.toString(),         icon: ""},
+          { label: "Needs Attention",  value: workspaceDetails.filter((w) => w.health !== "success").length.toString(),         icon: ""},
         ].map((k) => (
-          <div key={k.label} className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <div key={k.label} className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-lg">{k.icon}</span>
-              <span className="text-xs font-medium" style={{ color: "var(--rtm-text-muted)" }}>{k.label}</span>
+              <span className="text-xs font-medium"style={{ color: "var(--rtm-text-muted)"}}>{k.label}</span>
             </div>
-            <p className="text-2xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>{k.value}</p>
+            <p className="text-2xl font-bold"style={{ color: "var(--rtm-text-primary)"}}>{k.value}</p>
           </div>
         ))}
       </div>
 
       {/* Workspace cards */}
       <div>
-        <h2 className="text-sm font-bold mb-4" style={{ color: "var(--rtm-text-primary)" }}>Department Workspaces</h2>
+        <h2 className="text-sm font-bold mb-4"style={{ color: "var(--rtm-text-primary)"}}>Department Workspaces</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {merged.map((ws) => (
             <div
               key={ws.slug}
-              className="rounded-xl border p-5 flex flex-col gap-4"
-              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+              className="rounded-xl border p-5 flex flex-col gap-4"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
             >
               {/* Card header */}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                    style={{ background: `${ws.accentColor}18` }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"style={{ background: `${ws.accentColor}18` }}
                   >
                     {ws.icon}
                   </div>
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{ws.name}</p>
-                    <StatusBadge variant={ws.health} label={ws.healthLabel} size="sm" />
+                    <p className="font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{ws.name}</p>
+                    <StatusBadge variant={ws.health} label={ws.healthLabel} size="sm"/>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xl font-bold" style={{ color: ws.accentColor }}>{ws.score}</p>
-                  <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>health score</p>
+                  <p className="text-xl font-bold"style={{ color: ws.accentColor }}>{ws.score}</p>
+                  <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>health score</p>
                 </div>
               </div>
 
@@ -117,42 +115,37 @@ export default function AdminWorkspacesPage() {
                 ].map((s) => (
                   <div
                     key={s.label}
-                    className="rounded-lg p-2.5 text-center"
-                    style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)" }}
+                    className="rounded-lg p-2.5 text-center"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)"}}
                   >
                     <p
-                      className="text-sm font-bold"
-                      style={{ color: "var(--rtm-text-primary)" }}
+                      className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}
                     >
                       {s.value}
                     </p>
-                    <p className="text-[10px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{s.label}</p>
+                    <p className="text-[10px] mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{s.label}</p>
                   </div>
                 ))}
               </div>
 
               {/* Dept admin */}
               <div
-                className="flex items-center gap-3 p-3 rounded-lg"
-                style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)" }}
+                className="flex items-center gap-3 p-3 rounded-lg"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)"}}
               >
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                  style={{ background: ws.adminColor }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"style={{ background: ws.adminColor }}
                 >
                   {ws.adminInitials}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>{ws.deptAdmin}</p>
-                  <p className="text-[10px] truncate" style={{ color: "var(--rtm-text-muted)" }}>Dept Admin · {ws.adminEmail}</p>
+                  <p className="text-xs font-semibold truncate"style={{ color: "var(--rtm-text-primary)"}}>{ws.deptAdmin}</p>
+                  <p className="text-[10px] truncate"style={{ color: "var(--rtm-text-muted)"}}>Dept Admin · {ws.adminEmail}</p>
                 </div>
               </div>
 
               {/* CTA */}
               <Link
                 href={ws.dashboardRoute}
-                className="text-xs font-semibold text-center py-2 rounded-lg border transition-colors"
-                style={{
+                className="text-xs font-semibold text-center py-2 rounded-lg border transition-colors"style={{
                   borderColor: ws.accentColor,
                   color: ws.accentColor,
                   background: `${ws.accentColor}08`,
@@ -167,20 +160,19 @@ export default function AdminWorkspacesPage() {
 
       {/* Access Matrix */}
       <div
-        className="rounded-xl border overflow-hidden"
-        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        className="rounded-xl border overflow-hidden"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
       >
-        <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-          <h2 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Access Matrix</h2>
-          <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Role-based permissions across all workspaces.</p>
+        <div className="px-5 py-4"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
+          <h2 className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>Access Matrix</h2>
+          <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>Role-based permissions across all workspaces.</p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
-                <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Role</th>
+              <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)"}}>
+                <th className="px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider"style={{ color: "var(--rtm-text-muted)"}}>Role</th>
                 {["View All", "Edit All", "Delete", "Manage Users", "Billing", "System Config", "View Dept", "Edit Dept", "Assign Tasks", "Edit Assigned"].map((p) => (
-                  <th key={p} className="px-3 py-3 text-center text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>
+                  <th key={p} className="px-3 py-3 text-center text-[11px] font-bold uppercase tracking-wider"style={{ color: "var(--rtm-text-muted)"}}>
                     <span className="block max-w-[60px] mx-auto leading-tight">{p}</span>
                   </th>
                 ))}
@@ -188,14 +180,14 @@ export default function AdminWorkspacesPage() {
             </thead>
             <tbody>
               {accessMatrix.map((row, i) => (
-                <tr key={row.role} style={{ borderBottom: i < accessMatrix.length - 1 ? "1px solid var(--rtm-border-light)" : "none" }}>
-                  <td className="px-4 py-3 font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{row.role}</td>
+                <tr key={row.role} style={{ borderBottom: i < accessMatrix.length - 1 ? "1px solid var(--rtm-border-light)": "none"}}>
+                  <td className="px-4 py-3 font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{row.role}</td>
                   {["View All", "Edit All", "Delete", "Manage Users", "Billing", "System Config", "View Dept", "Edit Dept", "Assign Tasks", "Edit Assigned"].map((p) => (
                     <td key={p} className="px-3 py-3 text-center">
                       {row.permissions.includes(p) ? (
-                        <span className="inline-block w-5 h-5 rounded-full text-white text-xs font-bold leading-5" style={{ background: "#10B981" }}>✓</span>
+                        <span className="inline-block w-5 h-5 rounded-full text-white text-xs font-bold leading-5"style={{ background: "#10B981"}}></span>
                       ) : (
-                        <span className="inline-block w-5 h-5 rounded-full text-xs leading-5" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)", color: "var(--rtm-text-muted)" }}>—</span>
+                        <span className="inline-block w-5 h-5 rounded-full text-xs leading-5"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)", color: "var(--rtm-text-muted)"}}>—</span>
                       )}
                     </td>
                   ))}

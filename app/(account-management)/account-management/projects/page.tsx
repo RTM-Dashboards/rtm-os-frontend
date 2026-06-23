@@ -8,7 +8,7 @@ import {
   type ProjectStatus,
 } from "@/lib/account-management/am-client-success-data";
 
-// ── Badge helpers ─────────────────────────────────────────────────────────────
+//  Badge helpers 
 
 const STATUS_STYLES: Record<ProjectStatus, string> = {
   Active: "bg-green-100 text-green-800 border border-green-200",
@@ -43,7 +43,7 @@ function CountBadge({
   color,
 }: {
   count: number;
-  color: "red" | "amber" | "gray";
+  color: "red"| "amber"| "gray";
 }) {
   const styles = {
     red: "bg-red-100 text-red-700 border border-red-200",
@@ -59,7 +59,7 @@ function CountBadge({
   );
 }
 
-// ── KPI Card ──────────────────────────────────────────────────────────────────
+//  KPI Card 
 
 function KpiCard({
   label,
@@ -70,7 +70,7 @@ function KpiCard({
   label: string;
   value: string | number;
   sub?: string;
-  accent?: "green" | "red" | "amber" | "blue" | "default";
+  accent?: "green"| "red"| "amber"| "blue"| "default";
 }) {
   const accentClass = {
     green: "text-green-600",
@@ -91,17 +91,14 @@ function KpiCard({
   );
 }
 
-// ── Progress Bar ──────────────────────────────────────────────────────────────
+//  Progress Bar 
 
 function ProgressBar({ pct }: { pct: number }) {
   const color =
     pct >= 75
-      ? "bg-green-500"
-      : pct >= 50
-      ? "bg-blue-500"
-      : pct >= 25
-      ? "bg-amber-500"
-      : "bg-red-500";
+      ? "bg-green-500": pct >= 50
+      ? "bg-blue-500": pct >= 25
+      ? "bg-amber-500": "bg-red-500";
 
   return (
     <div className="flex items-center gap-2">
@@ -118,7 +115,7 @@ function ProgressBar({ pct }: { pct: number }) {
   );
 }
 
-// ── Project Card ─────────────────────────────────────────────────────────────
+//  Project Card 
 
 function ProjectCard({ project }: { project: ActiveProject }) {
   const hasDeps = project.dependencies.length > 0;
@@ -141,8 +138,7 @@ function ProjectCard({ project }: { project: ActiveProject }) {
         {project.departments.map((d) => (
           <span
             key={d}
-            className="bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs px-2 py-0.5 rounded-full font-medium"
-          >
+            className="bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs px-2 py-0.5 rounded-full font-medium">
             {d}
           </span>
         ))}
@@ -155,9 +151,7 @@ function ProjectCard({ project }: { project: ActiveProject }) {
             <span
               className={
                 i === 0
-                  ? "text-gray-700 font-medium"
-                  : "text-gray-400"
-              }
+                  ? "text-gray-700 font-medium": "text-gray-400"}
             >
               {m}
             </span>
@@ -177,21 +171,21 @@ function ProjectCard({ project }: { project: ActiveProject }) {
           <span className="text-gray-400">Blocked</span>
           <CountBadge
             count={project.blockedTasks}
-            color={project.blockedTasks > 0 ? "red" : "gray"}
+            color={project.blockedTasks > 0 ? "red": "gray"}
           />
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
           <span className="text-gray-400">Escalations</span>
           <CountBadge
             count={project.escalations}
-            color={project.escalations > 0 ? "red" : "gray"}
+            color={project.escalations > 0 ? "red": "gray"}
           />
         </span>
         <span className="flex items-center gap-1 text-xs text-gray-500">
           <span className="text-gray-400">Approvals</span>
           <CountBadge
             count={project.approvalsPending}
-            color={project.approvalsPending > 0 ? "amber" : "gray"}
+            color={project.approvalsPending > 0 ? "amber": "gray"}
           />
         </span>
       </div>
@@ -220,11 +214,11 @@ function ProjectCard({ project }: { project: ActiveProject }) {
       {/* Footer */}
       <div className="flex items-center justify-between pt-1 border-t border-gray-100">
         <span className="text-xs text-gray-400">
-          Due{" "}
+          Due{""}
           <span className="text-gray-600 font-medium">
             {new Date(project.dueDate + "T00:00:00").toLocaleDateString(
               "en-US",
-              { month: "short", day: "numeric", year: "numeric" }
+              { month: "short", day: "numeric", year: "numeric"}
             )}
           </span>
         </span>
@@ -236,22 +230,19 @@ function ProjectCard({ project }: { project: ActiveProject }) {
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+//  Main Page 
 
 export default function ProjectsPage() {
   const [activeFilter, setActiveFilter] = useState<ProjectStatus | "All">(
-    "All"
-  );
+    "All");
 
   // KPI calculations
   const kpis = useMemo(() => {
     const total = ACTIVE_PROJECTS.length;
     const active = ACTIVE_PROJECTS.filter(
-      (p) => p.launchStatus === "Active"
-    ).length;
+      (p) => p.launchStatus === "Active").length;
     const atRisk = ACTIVE_PROJECTS.filter(
-      (p) => p.launchStatus === "At Risk"
-    ).length;
+      (p) => p.launchStatus === "At Risk").length;
     const blockedTasks = ACTIVE_PROJECTS.reduce(
       (s, p) => s + p.blockedTasks,
       0
@@ -298,7 +289,7 @@ export default function ProjectsPage() {
     <div className="min-h-screen bg-white">
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
-        {/* ── Page Header ── */}
+        {/*  Page Header  */}
         <div>
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
             Project Launch Center
@@ -309,48 +300,35 @@ export default function ProjectsPage() {
           </p>
         </div>
 
-        {/* ── KPI Row ── */}
+        {/*  KPI Row  */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-          <KpiCard label="Total Projects" value={kpis.total} accent="default" />
+          <KpiCard label="Total Projects"value={kpis.total} accent="default"/>
           <KpiCard
-            label="Active"
-            value={kpis.active}
-            accent="green"
-            sub={`of ${kpis.total} projects`}
+            label="Active"value={kpis.active}
+            accent="green"sub={`of ${kpis.total} projects`}
           />
           <KpiCard
-            label="At Risk"
-            value={kpis.atRisk}
-            accent={kpis.atRisk > 0 ? "red" : "default"}
-            sub="need attention"
-          />
+            label="At Risk"value={kpis.atRisk}
+            accent={kpis.atRisk > 0 ? "red": "default"}
+            sub="need attention"/>
           <KpiCard
-            label="Blocked Tasks"
-            value={kpis.blockedTasks}
-            accent={kpis.blockedTasks > 0 ? "red" : "default"}
-            sub="across all projects"
-          />
+            label="Blocked Tasks"value={kpis.blockedTasks}
+            accent={kpis.blockedTasks > 0 ? "red": "default"}
+            sub="across all projects"/>
           <KpiCard
-            label="Open Escalations"
-            value={kpis.escalations}
-            accent={kpis.escalations > 0 ? "red" : "default"}
-            sub="require action"
-          />
+            label="Open Escalations"value={kpis.escalations}
+            accent={kpis.escalations > 0 ? "red": "default"}
+            sub="require action"/>
           <KpiCard
-            label="Pending Approvals"
-            value={kpis.approvals}
-            accent={kpis.approvals > 0 ? "amber" : "default"}
-            sub="awaiting sign-off"
-          />
+            label="Pending Approvals"value={kpis.approvals}
+            accent={kpis.approvals > 0 ? "amber": "default"}
+            sub="awaiting sign-off"/>
           <KpiCard
-            label="Avg Completion"
-            value={`${kpis.avgCompletion}%`}
-            accent="blue"
-            sub="across all projects"
-          />
+            label="Avg Completion"value={`${kpis.avgCompletion}%`}
+            accent="blue"sub="across all projects"/>
         </div>
 
-        {/* ── Status Filter Tabs ── */}
+        {/*  Status Filter Tabs  */}
         <div className="flex flex-wrap gap-2 border-b border-gray-200 pb-0">
           {(["All", ...ALL_STATUSES] as (ProjectStatus | "All")[]).map(
             (status) => {
@@ -362,17 +340,13 @@ export default function ProjectsPage() {
                   onClick={() => setActiveFilter(status)}
                   className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${
                     isActive
-                      ? "border-indigo-600 text-indigo-700 bg-indigo-50"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 bg-transparent"
-                  }`}
+                      ? "border-indigo-600 text-indigo-700 bg-indigo-50": "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 bg-transparent"}`}
                 >
                   {status}
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded-full font-semibold ${
                       isActive
-                        ? "bg-indigo-100 text-indigo-700"
-                        : "bg-gray-100 text-gray-500"
-                    }`}
+                        ? "bg-indigo-100 text-indigo-700": "bg-gray-100 text-gray-500"}`}
                   >
                     {count}
                   </span>
@@ -382,7 +356,7 @@ export default function ProjectsPage() {
           )}
         </div>
 
-        {/* ── Project Cards Grid ── */}
+        {/*  Project Cards Grid  */}
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400 text-sm">
             No projects match the selected filter.
@@ -395,7 +369,7 @@ export default function ProjectsPage() {
           </div>
         )}
 
-        {/* ── Department Coordination Summary ── */}
+        {/*  Department Coordination Summary  */}
         <div>
           <h2 className="text-lg font-bold text-gray-900 mb-4">
             Department Coordination
@@ -428,7 +402,7 @@ export default function ProjectsPage() {
                 {DEPARTMENT_STATUS.map((dept, idx) => (
                   <tr
                     key={dept.department}
-                    className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}
+                    className={idx % 2 === 0 ? "bg-white": "bg-gray-50/50"}
                   >
                     {/* Department name */}
                     <td className="px-5 py-4">
@@ -472,8 +446,7 @@ export default function ProjectsPage() {
                         {dept.upcomingDeliverables.map((d) => (
                           <li
                             key={d}
-                            className="flex items-start gap-1.5 text-xs text-gray-600"
-                          >
+                            className="flex items-start gap-1.5 text-xs text-gray-600">
                             <span className="text-indigo-400 mt-px">•</span>
                             {d}
                           </li>
@@ -488,8 +461,7 @@ export default function ProjectsPage() {
                           {dept.dependencies.map((dep) => (
                             <li
                               key={dep}
-                              className="flex items-start gap-1.5 text-xs text-amber-700"
-                            >
+                              className="flex items-start gap-1.5 text-xs text-amber-700">
                               <span className="text-amber-400 mt-px">⚠</span>
                               {dep}
                             </li>

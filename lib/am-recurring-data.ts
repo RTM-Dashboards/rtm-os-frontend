@@ -1,10 +1,10 @@
 // ── Mock data for Account Management recurring client dashboard ───────────────
 
-export type PaymentStatus = "Current" | "Overdue" | "Payment Failed" | "Cancelled / Offboarding" | "Renewal Upcoming";
-export type DeliverableStatus = "Not Started" | "In Progress" | "Blocked" | "Waiting for Client" | "Ready for Review" | "Completed" | "Delayed";
-export type PerformanceStatus = "Healthy" | "Needs Attention" | "At Risk" | "Critical" | "Improving" | "Declining";
-export type RiskStatus = "No Risk" | "Low" | "Medium" | "High" | "Critical";
-export type ClientHealth = "Excellent" | "Good" | "Fair" | "Poor" | "Critical";
+export type PaymentStatus = "Current"| "Overdue"| "Payment Failed"| "Cancelled / Offboarding"| "Renewal Upcoming";
+export type DeliverableStatus = "Not Started"| "In Progress"| "Blocked"| "Waiting for Client"| "Ready for Review"| "Completed"| "Delayed";
+export type PerformanceStatus = "Healthy"| "Needs Attention"| "At Risk"| "Critical"| "Improving"| "Declining";
+export type RiskStatus = "No Risk"| "Low"| "Medium"| "High"| "Critical";
+export type ClientHealth = "Excellent"| "Good"| "Fair"| "Poor"| "Critical";
 
 export type TaskStatus = DeliverableStatus;
 
@@ -67,14 +67,14 @@ export const recurringClients: RecurringClient[] = [
     paymentStatus: "Current",
     deliverableStatus: "Completed",
     deptTaskStatus: [
-      { dept: "SEO",           status: "Completed" },
-      { dept: "GBP",           status: "Completed" },
-      { dept: "Meta Ads",      status: "In Progress" },
-      { dept: "Google Ads",    status: "Not Started" },
-      { dept: "Content",       status: "Completed" },
-      { dept: "Web Dev",       status: "Not Started" },
-      { dept: "Reporting",     status: "Completed" },
-      { dept: "LSA",           status: "Completed" },
+      { dept: "SEO",           status: "Completed"},
+      { dept: "GBP",           status: "Completed"},
+      { dept: "Meta Ads",      status: "In Progress"},
+      { dept: "Google Ads",    status: "Not Started"},
+      { dept: "Content",       status: "Completed"},
+      { dept: "Web Dev",       status: "Not Started"},
+      { dept: "Reporting",     status: "Completed"},
+      { dept: "LSA",           status: "Completed"},
     ],
     reportStatus: "Sent",
     performanceStatus: "Healthy",
@@ -110,14 +110,14 @@ export const recurringClients: RecurringClient[] = [
     paymentStatus: "Current",
     deliverableStatus: "In Progress",
     deptTaskStatus: [
-      { dept: "SEO",        status: "In Progress" },
-      { dept: "GBP",        status: "Not Started" },
-      { dept: "Meta Ads",   status: "Waiting for Client" },
-      { dept: "Google Ads", status: "In Progress" },
-      { dept: "Content",    status: "Delayed" },
-      { dept: "Web Dev",    status: "Not Started" },
-      { dept: "Reporting",  status: "In Progress" },
-      { dept: "LSA",        status: "Not Started" },
+      { dept: "SEO",        status: "In Progress"},
+      { dept: "GBP",        status: "Not Started"},
+      { dept: "Meta Ads",   status: "Waiting for Client"},
+      { dept: "Google Ads", status: "In Progress"},
+      { dept: "Content",    status: "Delayed"},
+      { dept: "Web Dev",    status: "Not Started"},
+      { dept: "Reporting",  status: "In Progress"},
+      { dept: "LSA",        status: "Not Started"},
     ],
     reportStatus: "QA In Progress",
     performanceStatus: "Needs Attention",
@@ -153,14 +153,14 @@ export const recurringClients: RecurringClient[] = [
     paymentStatus: "Overdue",
     deliverableStatus: "Blocked",
     deptTaskStatus: [
-      { dept: "SEO",        status: "Blocked" },
-      { dept: "GBP",        status: "In Progress" },
-      { dept: "Meta Ads",   status: "Not Started" },
-      { dept: "Google Ads", status: "Not Started" },
-      { dept: "Content",    status: "Not Started" },
-      { dept: "Web Dev",    status: "Not Started" },
-      { dept: "Reporting",  status: "In Progress" },
-      { dept: "LSA",        status: "Not Started" },
+      { dept: "SEO",        status: "Blocked"},
+      { dept: "GBP",        status: "In Progress"},
+      { dept: "Meta Ads",   status: "Not Started"},
+      { dept: "Google Ads", status: "Not Started"},
+      { dept: "Content",    status: "Not Started"},
+      { dept: "Web Dev",    status: "Not Started"},
+      { dept: "Reporting",  status: "In Progress"},
+      { dept: "LSA",        status: "Not Started"},
     ],
     reportStatus: "In Progress",
     performanceStatus: "At Risk",
@@ -196,14 +196,14 @@ export const recurringClients: RecurringClient[] = [
     paymentStatus: "Current",
     deliverableStatus: "Ready for Review",
     deptTaskStatus: [
-      { dept: "SEO",        status: "Ready for Review" },
-      { dept: "GBP",        status: "Completed" },
-      { dept: "Meta Ads",   status: "Completed" },
-      { dept: "Google Ads", status: "Not Started" },
-      { dept: "Content",    status: "Ready for Review" },
-      { dept: "Web Dev",    status: "Not Started" },
-      { dept: "Reporting",  status: "Ready for Review" },
-      { dept: "LSA",        status: "Not Started" },
+      { dept: "SEO",        status: "Ready for Review"},
+      { dept: "GBP",        status: "Completed"},
+      { dept: "Meta Ads",   status: "Completed"},
+      { dept: "Google Ads", status: "Not Started"},
+      { dept: "Content",    status: "Ready for Review"},
+      { dept: "Web Dev",    status: "Not Started"},
+      { dept: "Reporting",  status: "Ready for Review"},
+      { dept: "LSA",        status: "Not Started"},
     ],
     reportStatus: "Ready for QA",
     performanceStatus: "Improving",
@@ -239,14 +239,14 @@ export const recurringClients: RecurringClient[] = [
     paymentStatus: "Renewal Upcoming",
     deliverableStatus: "Delayed",
     deptTaskStatus: [
-      { dept: "SEO",        status: "Delayed" },
-      { dept: "GBP",        status: "Delayed" },
-      { dept: "Meta Ads",   status: "Not Started" },
-      { dept: "Google Ads", status: "Not Started" },
-      { dept: "Content",    status: "Not Started" },
-      { dept: "Web Dev",    status: "Not Started" },
-      { dept: "Reporting",  status: "Delayed" },
-      { dept: "LSA",        status: "In Progress" },
+      { dept: "SEO",        status: "Delayed"},
+      { dept: "GBP",        status: "Delayed"},
+      { dept: "Meta Ads",   status: "Not Started"},
+      { dept: "Google Ads", status: "Not Started"},
+      { dept: "Content",    status: "Not Started"},
+      { dept: "Web Dev",    status: "Not Started"},
+      { dept: "Reporting",  status: "Delayed"},
+      { dept: "LSA",        status: "In Progress"},
     ],
     reportStatus: "Overdue",
     performanceStatus: "Declining",
@@ -277,13 +277,13 @@ export const recurringClients: RecurringClient[] = [
 export function getManagerKPIs() {
   return {
     activeRecurringClients: recurringClients.length,
-    clientsAtRisk:          recurringClients.filter((c) => c.riskStatus === "High" || c.riskStatus === "Critical").length,
-    clientsLatePayments:    recurringClients.filter((c) => c.paymentStatus === "Overdue" || c.paymentStatus === "Payment Failed").length,
-    deliverablesDelayed:    recurringClients.filter((c) => c.deliverableStatus === "Delayed" || c.deliverableStatus === "Blocked").length,
-    reportsDue:             recurringClients.filter((c) => c.reportStatus === "In Progress" || c.reportStatus === "Draft").length,
+    clientsAtRisk:          recurringClients.filter((c) => c.riskStatus === "High"|| c.riskStatus === "Critical").length,
+    clientsLatePayments:    recurringClients.filter((c) => c.paymentStatus === "Overdue"|| c.paymentStatus === "Payment Failed").length,
+    deliverablesDelayed:    recurringClients.filter((c) => c.deliverableStatus === "Delayed"|| c.deliverableStatus === "Blocked").length,
+    reportsDue:             recurringClients.filter((c) => c.reportStatus === "In Progress"|| c.reportStatus === "Draft").length,
     checkinsDue:            recurringClients.filter((c) => new Date(c.nextCheckin) <= new Date("2025-06-15")).length,
-    performanceIssues:      recurringClients.filter((c) => c.performanceStatus === "At Risk" || c.performanceStatus === "Critical" || c.performanceStatus === "Declining").length,
-    renewalOpportunities:   recurringClients.filter((c) => c.paymentStatus === "Renewal Upcoming" || c.renewalDate <= "Jul 31, 2025").length,
+    performanceIssues:      recurringClients.filter((c) => c.performanceStatus === "At Risk"|| c.performanceStatus === "Critical"|| c.performanceStatus === "Declining").length,
+    renewalOpportunities:   recurringClients.filter((c) => c.paymentStatus === "Renewal Upcoming"|| c.renewalDate <= "Jul 31, 2025").length,
   };
 }
 
@@ -291,12 +291,12 @@ export function getAMKPIs(am: string) {
   const myClients = recurringClients.filter((c) => c.assignedAM === am);
   return {
     myRecurringClients: myClients.length,
-    latePayments:       myClients.filter((c) => c.paymentStatus === "Overdue" || c.paymentStatus === "Payment Failed").length,
-    deliverablesThisWeek: myClients.filter((c) => c.deliverableStatus === "Ready for Review" || c.deliverableStatus === "In Progress").length,
-    deliverablesDelayed:  myClients.filter((c) => c.deliverableStatus === "Delayed" || c.deliverableStatus === "Blocked").length,
-    reportsDue:           myClients.filter((c) => c.reportStatus === "In Progress" || c.reportStatus === "Overdue").length,
+    latePayments:       myClients.filter((c) => c.paymentStatus === "Overdue"|| c.paymentStatus === "Payment Failed").length,
+    deliverablesThisWeek: myClients.filter((c) => c.deliverableStatus === "Ready for Review"|| c.deliverableStatus === "In Progress").length,
+    deliverablesDelayed:  myClients.filter((c) => c.deliverableStatus === "Delayed"|| c.deliverableStatus === "Blocked").length,
+    reportsDue:           myClients.filter((c) => c.reportStatus === "In Progress"|| c.reportStatus === "Overdue").length,
     checkinsScheduled:    myClients.filter((c) => !!c.nextCheckin).length,
-    clientsAtRisk:        myClients.filter((c) => c.riskStatus === "High" || c.riskStatus === "Critical").length,
+    clientsAtRisk:        myClients.filter((c) => c.riskStatus === "High"|| c.riskStatus === "Critical").length,
     renewalOpportunities: myClients.filter((c) => c.paymentStatus === "Renewal Upcoming").length,
   };
 }

@@ -12,8 +12,6 @@ export default function RolesPage() {
       workspace={workspace}
       roles={localServiceAdsRoles}
       permissionAreas={localServiceAdsPermissions}
-      teamRoute="/local-service-ads/team-members"
-      profileRoute="/local-service-ads/profile"
-    />
+      teamRoute="/local-service-ads/team-members"profileRoute="/local-service-ads/profile"/>
   );
 }

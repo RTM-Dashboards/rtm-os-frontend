@@ -446,14 +446,12 @@ export const mockOnboarding: OnboardingItem[] = [
 export function computeKPIs(clients: Client[], deliverables: Deliverable[]) {
   const totalActiveClients = clients.length;
   const atRiskClients = clients.filter(
-    (c) => c.healthScore === "At-Risk" || c.healthScore === "Critical"
-  ).length;
+    (c) => c.healthScore === "At-Risk"|| c.healthScore === "Critical").length;
   const reportsDue = deliverables.filter(
-    (d) => d.status === "Overdue" || d.title.toLowerCase().includes("report")
+    (d) => d.status === "Overdue"|| d.title.toLowerCase().includes("report")
   ).length;
   const openDeliverables = deliverables.filter(
-    (d) => d.status === "In Progress" || d.status === "Not Started" || d.status === "Blocked"
-  ).length;
+    (d) => d.status === "In Progress"|| d.status === "Not Started"|| d.status === "Blocked").length;
 
   const now = new Date();
   const thirtyDaysOut = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());

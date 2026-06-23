@@ -7,10 +7,10 @@ import ServiceTags from "./ServiceTags";
 import { BillingStatusBadge, CampaignStatusBadge } from "./BillingStatusBadge";
 
 const BILLING_FILTER_OPTIONS = [
-  { value: "current", label: "Current" },
-  { value: "past_due", label: "Past Due" },
-  { value: "overdue", label: "Overdue" },
-  { value: "pending", label: "Pending" },
+  { value: "current", label: "Current"},
+  { value: "past_due", label: "Past Due"},
+  { value: "overdue", label: "Overdue"},
+  { value: "pending", label: "Pending"},
 ];
 
 function formatDate(iso: string) {
@@ -56,9 +56,7 @@ export default function ActiveCampaignsTable({ data }: Props) {
         filterValue={billingFilter}
         onFilterChange={setBillingFilter}
         filterOptions={BILLING_FILTER_OPTIONS}
-        filterPlaceholder="All Billing Status"
-        searchPlaceholder="Search client or AM..."
-        resultCount={filtered.length}
+        filterPlaceholder="All Billing Status"searchPlaceholder="Search client or AM..."resultCount={filtered.length}
       />
       <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
         <table className="w-full text-sm">
@@ -85,8 +83,7 @@ export default function ActiveCampaignsTable({ data }: Props) {
               filtered.map((row) => (
                 <tr
                   key={row.id}
-                  className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                >
+                  className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
                     {row.client}
                   </td>

@@ -5,28 +5,19 @@
 // ─── Module Identifiers ───────────────────────────────────────────────────────
 
 export type DepartmentModuleId =
-  | "projects"
-  | "tasks"
-  | "reports"
-  | "audits"
-  | "escalations"
-  | "notifications"
-  | "workflows"
-  | "integrations"
-  | "knowledge-base"
-  | "custom";
+  | "projects"| "tasks"| "reports"| "audits"| "escalations"| "notifications"| "workflows"| "integrations"| "knowledge-base"| "custom";
 
 // ─── KPI Definition ───────────────────────────────────────────────────────────
 
-export type KpiMetricType = "number" | "percentage" | "currency" | "duration" | "count";
-export type KpiReportingFrequency = "daily" | "weekly" | "monthly" | "quarterly";
-export type KpiTrendDirection = "up-good" | "down-good" | "neutral";
+export type KpiMetricType = "number"| "percentage"| "currency"| "duration"| "count";
+export type KpiReportingFrequency = "daily"| "weekly"| "monthly"| "quarterly";
+export type KpiTrendDirection = "up-good"| "down-good"| "neutral";
 
 export interface DepartmentKpiDef {
   id: string;
   name: string;
   metricType: KpiMetricType;
-  /** Display unit appended to value, e.g. "%" or "x" */
+  /** Display unit appended to value, e.g. "%"or "x"*/
   unit?: string;
   target: string;
   warningThreshold: string;
@@ -41,7 +32,7 @@ export interface DepartmentKpiDef {
 
 // ─── Integration Reference ────────────────────────────────────────────────────
 
-export type IntegrationRole = "primary" | "required" | "optional" | "reporting-only";
+export type IntegrationRole = "primary"| "required"| "optional"| "reporting-only";
 
 export interface DepartmentIntegrationRef {
   /** Matches an entry in the Integration Hub */
@@ -71,11 +62,7 @@ export interface DepartmentReportRef {
 // ─── Role Definition ──────────────────────────────────────────────────────────
 
 export type DepartmentRoleType =
-  | "member"
-  | "lead"
-  | "manager"
-  | "operations-support"
-  | "executive";
+  | "member"| "lead"| "manager"| "operations-support"| "executive";
 
 export interface DepartmentRole {
   id: string;
@@ -90,14 +77,14 @@ export interface DepartmentModuleConfig {
   id: DepartmentModuleId;
   label: string;
   enabled: boolean;
-  /** Route within the department, e.g. "/tasks" */
+  /** Route within the department, e.g. "/tasks"*/
   route?: string;
 }
 
 // ─── Department Profile ───────────────────────────────────────────────────────
 
-export type DepartmentStatus = "active" | "inactive" | "pending-setup";
-export type DepartmentType = "core" | "service" | "support" | "executive";
+export type DepartmentStatus = "active"| "inactive"| "pending-setup";
+export type DepartmentType = "core"| "service"| "support"| "executive";
 
 export interface DepartmentConfig {
   // ── Identity ──────────────────────────────────────────────────────────────

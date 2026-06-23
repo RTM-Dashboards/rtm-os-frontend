@@ -45,17 +45,14 @@ export default function NotesTab({ client }: { client: ClientProfile }) {
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Onboarding Notes</h3>
               {client.onboardedDate && (
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Onboarded {new Date(client.onboardedDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                  Onboarded {new Date(client.onboardedDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric"})}
                 </p>
               )}
             </div>
             {client.onboardingNotesUrl && (
               <a
                 href={client.onboardingNotesUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex-shrink-0"
-              >
+                target="_blank"rel="noopener noreferrer"className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline flex-shrink-0">
                 Open full doc →
               </a>
             )}
@@ -64,21 +61,11 @@ export default function NotesTab({ client }: { client: ClientProfile }) {
         <div className="p-5">
           <div className="flex items-start gap-3">
             <div className={`mt-0.5 flex-shrink-0 w-2.5 h-2.5 rounded-full ${
-              client.onboardingStage === "completed"
-                ? "bg-emerald-500"
-                : client.onboardingStage === "in_progress"
-                ? "bg-blue-500"
-                : "bg-slate-300"
-            }`} />
+              client.onboardingStage === "completed"? "bg-emerald-500": client.onboardingStage === "in_progress"? "bg-blue-500": "bg-slate-300"}`} />
             <div>
               <span className={`inline-block text-xs font-semibold uppercase tracking-wide mb-2 ${
-                client.onboardingStage === "completed"
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : client.onboardingStage === "in_progress"
-                  ? "text-blue-600 dark:text-blue-400"
-                  : "text-slate-500"
-              }`}>
-                {client.onboardingStage === "completed" ? "Onboarding Complete" : client.onboardingStage === "in_progress" ? "Onboarding In Progress" : "Onboarding Pending"}
+                client.onboardingStage === "completed"? "text-emerald-600 dark:text-emerald-400": client.onboardingStage === "in_progress"? "text-blue-600 dark:text-blue-400": "text-slate-500"}`}>
+                {client.onboardingStage === "completed"? "Onboarding Complete": client.onboardingStage === "in_progress"? "Onboarding In Progress": "Onboarding Pending"}
               </span>
               <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
                 {client.onboardingNotes}
@@ -103,8 +90,8 @@ export default function NotesTab({ client }: { client: ClientProfile }) {
           <div className="p-5">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
               <div className="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg className="w-4 h-4 text-slate-500"fill="none"stroke="currentColor"viewBox="0 0 24 24">
+                  <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
@@ -115,10 +102,7 @@ export default function NotesTab({ client }: { client: ClientProfile }) {
               </div>
               <a
                 href={client.teamworkProjectUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex-shrink-0 hover:underline"
-              >
+                target="_blank"rel="noopener noreferrer"className="text-xs text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 flex-shrink-0 hover:underline">
                 Open →
               </a>
             </div>

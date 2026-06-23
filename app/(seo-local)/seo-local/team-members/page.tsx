@@ -11,8 +11,6 @@ export default function TeamMembersPage() {
     <WorkspaceTeamMembersPage
       workspace={workspace}
       members={seoLocalMembers}
-      rolesRoute="/seo-local/roles"
-      profileRoute="/seo-local/profile"
-    />
+      rolesRoute="/seo-local/roles"profileRoute="/seo-local/profile"/>
   );
 }

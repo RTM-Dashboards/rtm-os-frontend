@@ -10,31 +10,31 @@ export default function AccountPerformancePage() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>{workspace.name}</p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Performance</h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>Account health metrics and client satisfaction scores.</p>
+        <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>{workspace.name}</p>
+        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Performance</h1>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>Account health metrics and client satisfaction scores.</p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Avg. Health Score",  value: "8.7", bg: "#ECFDF5", color: "#059669" },
-          { label: "Retention Rate",     value: "96%", bg: "#EFF6FF", color: "#2563EB" },
-          { label: "At-Risk Clients",    value: "7",   bg: "#FEF2F2", color: "#DC2626" },
-          { label: "Check-in Rate",      value: "91%", bg: "#F5F3FF", color: "#7C3AED" },
+          { label: "Avg. Health Score",  value: "8.7", bg: "#ECFDF5", color: "#059669"},
+          { label: "Retention Rate",     value: "96%", bg: "#EFF6FF", color: "#2563EB"},
+          { label: "At-Risk Clients",    value: "7",   bg: "#FEF2F2", color: "#DC2626"},
+          { label: "Check-in Rate",      value: "91%", bg: "#F5F3FF", color: "#7C3AED"},
         ].map((s) => (
-          <div key={s.label} className="rounded-xl border p-4" style={{ background: s.bg, borderColor: `${s.color}20` }}>
-            <p className="text-3xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs font-semibold mt-1" style={{ color: s.color }}>{s.label}</p>
+          <div key={s.label} className="rounded-xl border p-4"style={{ background: s.bg, borderColor: `${s.color}20` }}>
+            <p className="text-3xl font-bold"style={{ color: s.color }}>{s.value}</p>
+            <p className="text-xs font-semibold mt-1"style={{ color: s.color }}>{s.label}</p>
           </div>
         ))}
       </div>
 
-      <SectionWrapper title="Health Trend" description="Chart coming soon">
-        <div className="rounded-xl border flex items-center justify-center h-48" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)", borderStyle: "dashed" }}>
+      <SectionWrapper title="Health Trend"description="Chart coming soon">
+        <div className="rounded-xl border flex items-center justify-center h-48"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)", borderStyle: "dashed"}}>
           <div className="text-center">
-            <span className="text-4xl">📈</span>
-            <p className="text-sm mt-2 font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>Performance Chart Placeholder</p>
-            <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>Connect client data to display trend charts.</p>
+            
+            <p className="text-sm mt-2 font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>Performance Chart Placeholder</p>
+            <p className="text-xs mt-1"style={{ color: "var(--rtm-text-muted)"}}>Connect client data to display trend charts.</p>
           </div>
         </div>
       </SectionWrapper>

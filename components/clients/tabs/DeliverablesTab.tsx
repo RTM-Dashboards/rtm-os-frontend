@@ -71,7 +71,7 @@ export default function DeliverablesTab({ client }: { client: ClientProfile }) {
                     </td>
                     <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400">{d.assignee}</td>
                     <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400">
-                      {new Date(d.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {new Date(d.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric"})}
                     </td>
                     <td className="px-5 py-3.5">
                       <DeliverableBadge status={d.status} />

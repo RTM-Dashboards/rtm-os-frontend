@@ -43,8 +43,7 @@ function FilterSelect({ value, onChange, options, label }: SelectProps) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="text-sm rounded-lg px-3 py-2 font-medium border focus:outline-none focus:ring-2"
-      style={{
+      className="text-sm rounded-lg px-3 py-2 font-medium border focus:outline-none focus:ring-2"style={{
         background: "var(--rtm-surface)",
         color: "var(--rtm-text-primary)",
         borderColor: "var(--rtm-border)",
@@ -67,21 +66,14 @@ export default function TaskFilters({ filters, onChange, hideDepartmentFilter }:
       {/* Search */}
       <div className="relative flex-1 min-w-[200px] max-w-sm">
         <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
-          style={{ color: "var(--rtm-text-muted)" }}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"style={{ color: "var(--rtm-text-muted)"}}
+          fill="none"stroke="currentColor"viewBox="0 0 24 24">
+          <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input
-          type="text"
-          placeholder="Search tasks…"
-          value={filters.search}
+          type="text"placeholder="Search tasks…"value={filters.search}
           onChange={(e) => onChange({ ...filters, search: e.target.value })}
-          className="w-full text-sm rounded-lg pl-9 pr-4 py-2 border focus:outline-none focus:ring-2"
-          style={{
+          className="w-full text-sm rounded-lg pl-9 pr-4 py-2 border focus:outline-none focus:ring-2"style={{
             background: "var(--rtm-surface)",
             color: "var(--rtm-text-primary)",
             borderColor: "var(--rtm-border)",
@@ -90,32 +82,28 @@ export default function TaskFilters({ filters, onChange, hideDepartmentFilter }:
       </div>
 
       <FilterSelect
-        label="Status"
-        value={filters.status}
-        onChange={(v) => onChange({ ...filters, status: v as TaskStatus | "All" })}
+        label="Status"value={filters.status}
+        onChange={(v) => onChange({ ...filters, status: v as TaskStatus | "All"})}
         options={STATUSES}
       />
       <FilterSelect
-        label="Priority"
-        value={filters.priority}
-        onChange={(v) => onChange({ ...filters, priority: v as TaskPriority | "All" })}
+        label="Priority"value={filters.priority}
+        onChange={(v) => onChange({ ...filters, priority: v as TaskPriority | "All"})}
         options={PRIORITIES}
       />
       {!hideDepartmentFilter && (
         <FilterSelect
-          label="Department"
-          value={filters.department}
-          onChange={(v) => onChange({ ...filters, department: v as Department | "All" })}
+          label="Department"value={filters.department}
+          onChange={(v) => onChange({ ...filters, department: v as Department | "All"})}
           options={DEPARTMENTS}
         />
       )}
 
       {/* Clear */}
-      {(filters.search || filters.status !== "All" || filters.priority !== "All" || (!hideDepartmentFilter && filters.department !== "All")) && (
+      {(filters.search || filters.status !== "All"|| filters.priority !== "All"|| (!hideDepartmentFilter && filters.department !== "All")) && (
         <button
-          onClick={() => onChange({ search: "", status: "All", priority: "All", department: "All" })}
-          className="text-xs font-semibold px-3 py-2 rounded-lg transition-colors"
-          style={{ color: "var(--rtm-blue)", background: "var(--rtm-blue-xlight)" }}
+          onClick={() => onChange({ search: "", status: "All", priority: "All", department: "All"})}
+          className="text-xs font-semibold px-3 py-2 rounded-lg transition-colors"style={{ color: "var(--rtm-blue)", background: "var(--rtm-blue-xlight)"}}
           onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--rtm-blue-light)")}
           onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.background = "var(--rtm-blue-xlight)")}
         >

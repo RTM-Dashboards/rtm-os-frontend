@@ -9,8 +9,7 @@ const workspace = getWorkspace("web-development-design")!;
 export default function DesignTasksPage() {
   return (
     <WorkspaceTaskPage
-      workspaceName="Design"
-      tasks={designTasks}
+      workspaceName="Design"tasks={designTasks}
       accentColor={workspace.accentColor}
     />
   );

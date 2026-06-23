@@ -49,7 +49,7 @@ function revenueColor(impact: number): string {
 
 function formatRevenue(impact: number): string {
   if (impact === 0) return "—";
-  const sign = impact > 0 ? "+" : "";
+  const sign = impact > 0 ? "+": "";
   return `${sign}$${Math.abs(impact).toLocaleString()}/mo`;
 }
 
@@ -62,17 +62,13 @@ function KPICards() {
     ["Submitted", "Under Review", "Pending Approval"].includes(r.status)
   ).length;
   const pendingReview = MOCK_CHANGE_REQUESTS.filter(
-    (r) => r.status === "Under Review"
-  ).length;
+    (r) => r.status === "Under Review").length;
   const pendingApproval = MOCK_CHANGE_REQUESTS.filter(
-    (r) => r.status === "Pending Approval"
-  ).length;
+    (r) => r.status === "Pending Approval").length;
   const approved = MOCK_CHANGE_REQUESTS.filter(
-    (r) => r.status === "Approved" || r.status === "Implemented"
-  ).length;
+    (r) => r.status === "Approved"|| r.status === "Implemented").length;
   const rejected = MOCK_CHANGE_REQUESTS.filter(
-    (r) => r.status === "Rejected"
-  ).length;
+    (r) => r.status === "Rejected").length;
 
   const revenueIncrease = MOCK_CHANGE_REQUESTS.filter(
     (r) => r.revenueImpact > 0
@@ -199,8 +195,8 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
   ];
 
   const filtered = MOCK_CHANGE_REQUESTS.filter((r) => {
-    if (statusFilter !== "All" && r.status !== statusFilter) return false;
-    if (typeFilter !== "All" && r.requestType !== typeFilter) return false;
+    if (statusFilter !== "All"&& r.status !== statusFilter) return false;
+    if (typeFilter !== "All"&& r.requestType !== typeFilter) return false;
     if (
       search &&
       !r.client.toLowerCase().includes(search.toLowerCase()) &&
@@ -225,14 +221,11 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search client or ID..."
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 w-48 focus:outline-none focus:ring-2 focus:ring-blue-200"
-          />
+            placeholder="Search client or ID..."className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 w-48 focus:outline-none focus:ring-2 focus:ring-blue-200"/>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5"
-          >
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
             <option value="All">All Statuses</option>
             {statuses.map((s) => (
               <option key={s}>{s}</option>
@@ -241,8 +234,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5"
-          >
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
             <option value="All">All Types</option>
             {types.map((t) => (
               <option key={t}>{t}</option>
@@ -269,8 +261,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap"
-                >
+                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
                   {h}
                 </th>
               ))}
@@ -282,9 +273,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
                 key={r.id}
                 className={`border-t border-slate-100 cursor-pointer transition-colors ${
                   selectedId === r.id
-                    ? "bg-blue-50"
-                    : "hover:bg-slate-50"
-                }`}
+                    ? "bg-blue-50": "hover:bg-slate-50"}`}
                 onClick={() => onSelect(r)}
               >
                 <td className="px-4 py-3 font-mono text-xs font-bold text-blue-700 whitespace-nowrap">
@@ -316,8 +305,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
                     {r.departmentsImpacted.slice(0, 2).map((d) => (
                       <span
                         key={d}
-                        className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600"
-                      >
+                        className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
                         {d}
                       </span>
                     ))}
@@ -344,8 +332,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
                       e.stopPropagation();
                       onSelect(r);
                     }}
-                    className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
-                  >
+                    className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors">
                     View
                   </button>
                 </td>
@@ -355,8 +342,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
               <tr>
                 <td
                   colSpan={10}
-                  className="px-4 py-8 text-center text-slate-400"
-                >
+                  className="px-4 py-8 text-center text-slate-400">
                   No change requests match the current filters.
                 </td>
               </tr>
@@ -460,7 +446,7 @@ function ClientContextPanel({ cr }: { cr: ChangeRequest }) {
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500">Open Escalations</span>
             <span
-              className={`text-xs font-bold ${cr.openEscalations > 0 ? "text-red-600" : "text-slate-500"}`}
+              className={`text-xs font-bold ${cr.openEscalations > 0 ? "text-red-600": "text-slate-500"}`}
             >
               {cr.openEscalations}
             </span>
@@ -501,7 +487,7 @@ function ImpactAnalysis({ cr }: { cr: ChangeRequest }) {
     {
       label: "Revenue Impact",
       value: formatRevenue(cr.revenueImpact),
-      color: cr.revenueImpact > 0 ? "text-emerald-700" : cr.revenueImpact < 0 ? "text-red-700" : "text-slate-500",
+      color: cr.revenueImpact > 0 ? "text-emerald-700": cr.revenueImpact < 0 ? "text-red-700": "text-slate-500",
     },
     {
       label: "Department Impact",
@@ -516,12 +502,12 @@ function ImpactAnalysis({ cr }: { cr: ChangeRequest }) {
     {
       label: "Tasks Added",
       value: cr.tasksAdded > 0 ? `+${cr.tasksAdded}` : "—",
-      color: cr.tasksAdded > 0 ? "text-emerald-700" : "text-slate-500",
+      color: cr.tasksAdded > 0 ? "text-emerald-700": "text-slate-500",
     },
     {
       label: "Tasks Removed",
       value: cr.tasksRemoved > 0 ? `-${cr.tasksRemoved}` : "—",
-      color: cr.tasksRemoved > 0 ? "text-red-700" : "text-slate-500",
+      color: cr.tasksRemoved > 0 ? "text-red-700": "text-slate-500",
     },
     {
       label: "Milestones Affected",
@@ -530,18 +516,14 @@ function ImpactAnalysis({ cr }: { cr: ChangeRequest }) {
     },
     {
       label: "Contract Amendment",
-      value: cr.contractAmendmentRequired ? "Required" : "Not Required",
-      color: cr.contractAmendmentRequired ? "text-amber-700" : "text-slate-500",
+      value: cr.contractAmendmentRequired ? "Required": "Not Required",
+      color: cr.contractAmendmentRequired ? "text-amber-700": "text-slate-500",
     },
     {
       label: "Billing Approval",
       value: cr.billingApprovalStatus,
       color:
-        cr.billingApprovalStatus === "Approved"
-          ? "text-emerald-700"
-          : cr.billingApprovalStatus === "Rejected"
-          ? "text-red-700"
-          : "text-amber-700",
+        cr.billingApprovalStatus === "Approved"? "text-emerald-700": cr.billingApprovalStatus === "Rejected"? "text-red-700": "text-amber-700",
     },
   ];
 
@@ -572,7 +554,7 @@ function ImpactAnalysis({ cr }: { cr: ChangeRequest }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
-  if (cr.requestType === "Budget Reallocation" && cr.budgetLines) {
+  if (cr.requestType === "Budget Reallocation"&& cr.budgetLines) {
     return (
       <div className="rounded-2xl border border-indigo-200 bg-indigo-50 shadow-sm">
         <div className="border-b border-indigo-100 px-5 py-3">
@@ -606,8 +588,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
                 {cr.budgetLines.map((line) => (
                   <tr
                     key={line.service}
-                    className="border-t border-indigo-100"
-                  >
+                    className="border-t border-indigo-100">
                     <td className="py-2 font-semibold text-slate-700">
                       {line.service}
                     </td>
@@ -618,9 +599,9 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
                       ${line.proposedBudget.toLocaleString()}
                     </td>
                     <td
-                      className={`py-2 text-right font-bold ${line.difference > 0 ? "text-emerald-700" : "text-red-700"}`}
+                      className={`py-2 text-right font-bold ${line.difference > 0 ? "text-emerald-700": "text-red-700"}`}
                     >
-                      {line.difference > 0 ? "+" : ""}$
+                      {line.difference > 0 ? "+": ""}$
                       {line.difference.toLocaleString()}
                     </td>
                   </tr>
@@ -634,19 +615,18 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
   }
 
   if (
-    cr.requestType === "Service Addition" ||
-    cr.requestType === "Service Removal"
-  ) {
+    cr.requestType === "Service Addition"||
+    cr.requestType === "Service Removal") {
     const isAddition = cr.requestType === "Service Addition";
     return (
       <div
-        className={`rounded-2xl border shadow-sm ${isAddition ? "border-cyan-200 bg-cyan-50" : "border-red-200 bg-red-50"}`}
+        className={`rounded-2xl border shadow-sm ${isAddition ? "border-cyan-200 bg-cyan-50": "border-red-200 bg-red-50"}`}
       >
         <div
-          className={`border-b px-5 py-3 ${isAddition ? "border-cyan-100" : "border-red-100"}`}
+          className={`border-b px-5 py-3 ${isAddition ? "border-cyan-100": "border-red-100"}`}
         >
           <p
-            className={`text-[10px] font-bold uppercase tracking-widest ${isAddition ? "text-cyan-600" : "text-red-600"}`}
+            className={`text-[10px] font-bold uppercase tracking-widest ${isAddition ? "text-cyan-600": "text-red-600"}`}
           >
             {cr.requestType}
           </p>
@@ -657,7 +637,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
         <div className="p-5 space-y-3">
           <div className="flex justify-between">
             <span className="text-xs text-slate-500">
-              {isAddition ? "Service Added" : "Service Removed"}
+              {isAddition ? "Service Added": "Service Removed"}
             </span>
             <span className="text-xs font-bold text-slate-800">
               {isAddition ? cr.serviceAdded : cr.serviceRemoved}
@@ -666,7 +646,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
           <div className="flex justify-between">
             <span className="text-xs text-slate-500">Revenue Impact</span>
             <span
-              className={`text-xs font-bold ${isAddition ? "text-emerald-700" : "text-red-700"}`}
+              className={`text-xs font-bold ${isAddition ? "text-emerald-700": "text-red-700"}`}
             >
               {formatRevenue(cr.revenueImpact)}
             </span>
@@ -674,14 +654,14 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
           {(cr.newDeliverables || cr.removedDeliverables) && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-                {isAddition ? "New Deliverables" : "Removed Deliverables"}
+                {isAddition ? "New Deliverables": "Removed Deliverables"}
               </p>
               <div className="flex flex-wrap gap-1">
                 {(isAddition ? cr.newDeliverables : cr.removedDeliverables)?.map(
                   (d) => (
                     <span
                       key={d}
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${isAddition ? "border-cyan-200 bg-white text-cyan-700" : "border-red-200 bg-white text-red-700"}`}
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${isAddition ? "border-cyan-200 bg-white text-cyan-700": "border-red-200 bg-white text-red-700"}`}
                     >
                       {d}
                     </span>
@@ -693,9 +673,9 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
           <div className="flex justify-between">
             <span className="text-xs text-slate-500">Contract Amendment</span>
             <span
-              className={`text-xs font-bold ${cr.contractAmendmentRequired ? "text-amber-700" : "text-slate-500"}`}
+              className={`text-xs font-bold ${cr.contractAmendmentRequired ? "text-amber-700": "text-slate-500"}`}
             >
-              {cr.contractAmendmentRequired ? "Required" : "Not Required"}
+              {cr.contractAmendmentRequired ? "Required": "Not Required"}
             </span>
           </div>
         </div>
@@ -704,19 +684,18 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
   }
 
   if (
-    cr.requestType === "Service Upgrade" ||
-    cr.requestType === "Service Downgrade"
-  ) {
+    cr.requestType === "Service Upgrade"||
+    cr.requestType === "Service Downgrade") {
     const isUpgrade = cr.requestType === "Service Upgrade";
     return (
       <div
-        className={`rounded-2xl border shadow-sm ${isUpgrade ? "border-emerald-200 bg-emerald-50" : "border-orange-200 bg-orange-50"}`}
+        className={`rounded-2xl border shadow-sm ${isUpgrade ? "border-emerald-200 bg-emerald-50": "border-orange-200 bg-orange-50"}`}
       >
         <div
-          className={`border-b px-5 py-3 ${isUpgrade ? "border-emerald-100" : "border-orange-100"}`}
+          className={`border-b px-5 py-3 ${isUpgrade ? "border-emerald-100": "border-orange-100"}`}
         >
           <p
-            className={`text-[10px] font-bold uppercase tracking-widest ${isUpgrade ? "text-emerald-600" : "text-orange-600"}`}
+            className={`text-[10px] font-bold uppercase tracking-widest ${isUpgrade ? "text-emerald-600": "text-orange-600"}`}
           >
             {cr.requestType}
           </p>
@@ -733,7 +712,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
               </p>
             </div>
             <div
-              className={`rounded-xl border p-3 ${isUpgrade ? "border-emerald-200 bg-emerald-100" : "border-orange-200 bg-orange-100"}`}
+              className={`rounded-xl border p-3 ${isUpgrade ? "border-emerald-200 bg-emerald-100": "border-orange-200 bg-orange-100"}`}
             >
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">
                 New Package
@@ -746,7 +725,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
           <div className="flex justify-between">
             <span className="text-xs text-slate-500">Revenue Impact</span>
             <span
-              className={`text-xs font-bold ${isUpgrade ? "text-emerald-700" : "text-red-700"}`}
+              className={`text-xs font-bold ${isUpgrade ? "text-emerald-700": "text-red-700"}`}
             >
               {formatRevenue(cr.revenueImpact)}
             </span>
@@ -754,14 +733,14 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
           {(cr.newDeliverables || cr.removedDeliverables) && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-                {isUpgrade ? "New Deliverables" : "Removed Deliverables"}
+                {isUpgrade ? "New Deliverables": "Removed Deliverables"}
               </p>
               <div className="flex flex-wrap gap-1">
                 {(isUpgrade ? cr.newDeliverables : cr.removedDeliverables)?.map(
                   (d) => (
                     <span
                       key={d}
-                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${isUpgrade ? "border-emerald-200 bg-white text-emerald-700" : "border-orange-200 bg-white text-orange-700"}`}
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-semibold ${isUpgrade ? "border-emerald-200 bg-white text-emerald-700": "border-orange-200 bg-white text-orange-700"}`}
                     >
                       {d}
                     </span>
@@ -779,8 +758,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
                 {cr.additionalDepartments.map((d) => (
                   <span
                     key={d}
-                    className="inline-flex rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-emerald-700"
-                  >
+                    className="inline-flex rounded-full border border-emerald-200 bg-white px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                     {d}
                   </span>
                 ))}
@@ -792,7 +770,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
     );
   }
 
-  if (cr.requestType === "Pause" || cr.requestType === "Reactivation") {
+  if (cr.requestType === "Pause"|| cr.requestType === "Reactivation") {
     const isPause = cr.requestType === "Pause";
     return (
       <div className="rounded-2xl border border-slate-200 bg-slate-50 shadow-sm">
@@ -801,7 +779,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
             {cr.requestType}
           </p>
           <h3 className="text-sm font-bold text-slate-900">
-            {isPause ? "Pause Details" : "Reactivation Details"}
+            {isPause ? "Pause Details": "Reactivation Details"}
           </h3>
         </div>
         <div className="p-5 space-y-2">
@@ -954,7 +932,7 @@ function BillingImpact({ cr }: { cr: ChangeRequest }) {
       label: "ARR Change",
       value:
         cr.arrChange !== 0
-          ? `${cr.arrChange > 0 ? "+" : ""}$${Math.abs(cr.arrChange).toLocaleString()}/yr`
+          ? `${cr.arrChange > 0 ? "+": ""}$${Math.abs(cr.arrChange).toLocaleString()}/yr`
           : "—",
       color: revenueColor(cr.arrChange),
     },
@@ -972,7 +950,7 @@ function BillingImpact({ cr }: { cr: ChangeRequest }) {
       label: "Adjustments",
       value:
         cr.adjustments !== 0
-          ? `${cr.adjustments > 0 ? "+" : ""}$${Math.abs(cr.adjustments).toLocaleString()}`
+          ? `${cr.adjustments > 0 ? "+": ""}$${Math.abs(cr.adjustments).toLocaleString()}`
           : "—",
       color: revenueColor(cr.adjustments),
     },
@@ -980,11 +958,7 @@ function BillingImpact({ cr }: { cr: ChangeRequest }) {
       label: "Billing Approval",
       value: cr.billingApprovalStatus,
       color:
-        cr.billingApprovalStatus === "Approved"
-          ? "text-emerald-700"
-          : cr.billingApprovalStatus === "Rejected"
-          ? "text-red-700"
-          : "text-amber-700",
+        cr.billingApprovalStatus === "Approved"? "text-emerald-700": cr.billingApprovalStatus === "Rejected"? "text-red-700": "text-amber-700",
     },
   ];
 
@@ -1030,8 +1004,7 @@ function ProjectImpact({ cr }: { cr: ChangeRequest }) {
             {cr.projectsImpacted.map((p) => (
               <span
                 key={p}
-                className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-semibold text-cyan-700"
-              >
+                className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-semibold text-cyan-700">
                 {p}
               </span>
             ))}
@@ -1044,7 +1017,7 @@ function ProjectImpact({ cr }: { cr: ChangeRequest }) {
               Tasks Added
             </p>
             <p
-              className={`text-lg font-bold mt-1 ${cr.tasksAdded > 0 ? "text-emerald-700" : "text-slate-400"}`}
+              className={`text-lg font-bold mt-1 ${cr.tasksAdded > 0 ? "text-emerald-700": "text-slate-400"}`}
             >
               {cr.tasksAdded > 0 ? `+${cr.tasksAdded}` : "—"}
             </p>
@@ -1054,7 +1027,7 @@ function ProjectImpact({ cr }: { cr: ChangeRequest }) {
               Tasks Removed
             </p>
             <p
-              className={`text-lg font-bold mt-1 ${cr.tasksRemoved > 0 ? "text-red-700" : "text-slate-400"}`}
+              className={`text-lg font-bold mt-1 ${cr.tasksRemoved > 0 ? "text-red-700": "text-slate-400"}`}
             >
               {cr.tasksRemoved > 0 ? `-${cr.tasksRemoved}` : "—"}
             </p>
@@ -1124,7 +1097,7 @@ function ApprovalWorkflow({ cr }: { cr: ChangeRequest }) {
                   className={`w-3 h-3 rounded-full mt-0.5 ${stepDot(step.status)}`}
                 />
                 {i < cr.approvalWorkflow.length - 1 && (
-                  <div className="w-px flex-1 bg-slate-200 mt-1" />
+                  <div className="w-px flex-1 bg-slate-200 mt-1"/>
                 )}
               </div>
               {/* Content */}
@@ -1212,8 +1185,7 @@ function ImplementationCenter({ cr }: { cr: ChangeRequest }) {
         {cr.implementationItems.map((item) => (
           <div
             key={item.area}
-            className="flex items-center justify-between gap-3"
-          >
+            className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div
                 className={`w-2.5 h-2.5 rounded-full ${implDot(item.status)}`}
@@ -1350,7 +1322,7 @@ function ActivityTimeline({ cr }: { cr: ChangeRequest }) {
                   className={`w-2.5 h-2.5 rounded-full mt-1 ${dotColor(evt.event)}`}
                 />
                 {i < cr.activityTimeline.length - 1 && (
-                  <div className="w-px flex-1 bg-slate-200 mt-1" />
+                  <div className="w-px flex-1 bg-slate-200 mt-1"/>
                 )}
               </div>
               <div className="pb-4 flex-1">
@@ -1379,24 +1351,17 @@ function ActivityTimeline({ cr }: { cr: ChangeRequest }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 type DetailTab =
-  | "overview"
-  | "impact"
-  | "billing"
-  | "projects"
-  | "approval"
-  | "implementation"
-  | "ai"
-  | "timeline";
+  | "overview"| "impact"| "billing"| "projects"| "approval"| "implementation"| "ai"| "timeline";
 
 const DETAIL_TABS: { id: DetailTab; label: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "impact", label: "Impact Analysis" },
-  { id: "billing", label: "Billing Impact" },
-  { id: "projects", label: "Project Impact" },
-  { id: "approval", label: "Approval Workflow" },
-  { id: "implementation", label: "Implementation" },
-  { id: "ai", label: "AI Analysis" },
-  { id: "timeline", label: "Timeline" },
+  { id: "overview", label: "Overview"},
+  { id: "impact", label: "Impact Analysis"},
+  { id: "billing", label: "Billing Impact"},
+  { id: "projects", label: "Project Impact"},
+  { id: "approval", label: "Approval Workflow"},
+  { id: "implementation", label: "Implementation"},
+  { id: "ai", label: "AI Analysis"},
+  { id: "timeline", label: "Timeline"},
 ];
 
 function DetailPanel({ cr }: { cr: ChangeRequest }) {
@@ -1431,7 +1396,7 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
             </span>
             {cr.revenueImpact !== 0 && (
               <span
-                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${cr.revenueImpact > 0 ? "bg-emerald-100 border-emerald-200 text-emerald-700" : "bg-red-100 border-red-200 text-red-700"}`}
+                className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${cr.revenueImpact > 0 ? "bg-emerald-100 border-emerald-200 text-emerald-700": "bg-red-100 border-red-200 text-red-700"}`}
               >
                 {formatRevenue(cr.revenueImpact)}
               </span>
@@ -1448,9 +1413,7 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
             onClick={() => setTab(t.id)}
             className={`rounded-t-lg border border-b-0 px-3 py-2 text-xs font-semibold transition-colors whitespace-nowrap ${
               tab === t.id
-                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10": "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             {t.label}
           </button>
@@ -1461,7 +1424,7 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
       <div className="grid lg:grid-cols-3 gap-4">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-4">
-          {tab === "overview" && (
+          {tab === "overview"&& (
             <>
               <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
@@ -1474,56 +1437,56 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
               <TypeSpecificCard cr={cr} />
             </>
           )}
-          {tab === "impact" && <ImpactAnalysis cr={cr} />}
-          {tab === "billing" && <BillingImpact cr={cr} />}
-          {tab === "projects" && <ProjectImpact cr={cr} />}
-          {tab === "approval" && <ApprovalWorkflow cr={cr} />}
-          {tab === "implementation" && <ImplementationCenter cr={cr} />}
-          {tab === "ai" && <AIChangeAnalysis cr={cr} />}
-          {tab === "timeline" && <ActivityTimeline cr={cr} />}
+          {tab === "impact"&& <ImpactAnalysis cr={cr} />}
+          {tab === "billing"&& <BillingImpact cr={cr} />}
+          {tab === "projects"&& <ProjectImpact cr={cr} />}
+          {tab === "approval"&& <ApprovalWorkflow cr={cr} />}
+          {tab === "implementation"&& <ImplementationCenter cr={cr} />}
+          {tab === "ai"&& <AIChangeAnalysis cr={cr} />}
+          {tab === "timeline"&& <ActivityTimeline cr={cr} />}
         </div>
 
         {/* Side panels */}
         <div className="space-y-4">
           <ClientContextPanel cr={cr} />
-          {tab === "overview" && (
+          {tab === "overview"&& (
             <>
               <ImpactAnalysis cr={cr} />
               <BillingImpact cr={cr} />
             </>
           )}
-          {tab === "impact" && (
+          {tab === "impact"&& (
             <>
               <TypeSpecificCard cr={cr} />
               <BillingImpact cr={cr} />
             </>
           )}
-          {tab === "billing" && (
+          {tab === "billing"&& (
             <>
               <TypeSpecificCard cr={cr} />
             </>
           )}
-          {tab === "projects" && (
+          {tab === "projects"&& (
             <>
               <ImpactAnalysis cr={cr} />
             </>
           )}
-          {tab === "approval" && (
+          {tab === "approval"&& (
             <>
               <ImplementationCenter cr={cr} />
             </>
           )}
-          {tab === "implementation" && (
+          {tab === "implementation"&& (
             <>
               <ApprovalWorkflow cr={cr} />
             </>
           )}
-          {tab === "ai" && (
+          {tab === "ai"&& (
             <>
               <ImpactAnalysis cr={cr} />
             </>
           )}
-          {tab === "timeline" && (
+          {tab === "timeline"&& (
             <>
               <ImplementationCenter cr={cr} />
             </>
@@ -1538,7 +1501,7 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
 // Page
 // ─────────────────────────────────────────────────────────────────────────────
 
-type PageTab = "dashboard" | "detail";
+type PageTab = "dashboard"| "detail";
 
 export default function ChangeRequestsPage() {
   const [selectedCR, setSelectedCR] = useState<ChangeRequest | null>(null);
@@ -1571,17 +1534,16 @@ export default function ChangeRequestsPage() {
             changes.
           </p>
         </div>
-        {pageTab === "detail" && (
+        {pageTab === "detail"&& (
           <button
             onClick={handleBack}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors whitespace-nowrap shadow-sm"
-          >
+            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors whitespace-nowrap shadow-sm">
             Back to Dashboard
           </button>
         )}
       </div>
 
-      {pageTab === "dashboard" && (
+      {pageTab === "dashboard"&& (
         <>
           <KPICards />
           <ChangeRequestTable
@@ -1591,7 +1553,7 @@ export default function ChangeRequestsPage() {
         </>
       )}
 
-      {pageTab === "detail" && selectedCR && (
+      {pageTab === "detail"&& selectedCR && (
         <DetailPanel cr={selectedCR} />
       )}
     </div>

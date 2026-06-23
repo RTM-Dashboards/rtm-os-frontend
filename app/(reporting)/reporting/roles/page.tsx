@@ -12,8 +12,6 @@ export default function RolesPage() {
       workspace={workspace}
       roles={reportingRoles}
       permissionAreas={reportingPermissions}
-      teamRoute="/reporting/team-members"
-      profileRoute="/reporting/profile"
-    />
+      teamRoute="/reporting/team-members"profileRoute="/reporting/profile"/>
   );
 }

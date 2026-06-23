@@ -1,12 +1,12 @@
 // ─── Account Management Types ────────────────────────────────────────────────
 
-export type HealthScore = "Healthy" | "Needs Attention" | "At-Risk" | "Critical";
-export type CampaignStatus = "Active" | "Paused" | "Pending Launch" | "Completed" | "Cancelled";
-export type DeliverableStatus = "Completed" | "In Progress" | "Overdue" | "Not Started" | "Blocked";
-export type EscalationStatus = "Open" | "In Progress" | "Resolved" | "Escalated";
-export type BlockerStatus = "Open" | "In Review" | "Resolved" | "Awaiting Client";
-export type OnboardingStatus = "Not Started" | "In Progress" | "Awaiting Assets" | "Completed" | "Stalled";
-export type Priority = "Low" | "Medium" | "High" | "Critical";
+export type HealthScore = "Healthy"| "Needs Attention"| "At-Risk"| "Critical";
+export type CampaignStatus = "Active"| "Paused"| "Pending Launch"| "Completed"| "Cancelled";
+export type DeliverableStatus = "Completed"| "In Progress"| "Overdue"| "Not Started"| "Blocked";
+export type EscalationStatus = "Open"| "In Progress"| "Resolved"| "Escalated";
+export type BlockerStatus = "Open"| "In Review"| "Resolved"| "Awaiting Client";
+export type OnboardingStatus = "Not Started"| "In Progress"| "Awaiting Assets"| "Completed"| "Stalled";
+export type Priority = "Low"| "Medium"| "High"| "Critical";
 
 export interface Client {
   id: string;

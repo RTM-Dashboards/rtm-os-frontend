@@ -28,18 +28,16 @@ export default function WorkspaceRolesPage({
       {/* ── Header ── */}
       <div>
         <p
-          className="text-[11px] font-bold uppercase tracking-widest mb-1"
-          style={{ color: workspace.accentColor }}
+          className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}
         >
           {workspace.name}
         </p>
         <h1
-          className="text-2xl font-bold tracking-tight"
-          style={{ color: "var(--rtm-text-primary)" }}
+          className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}
         >
           Roles &amp; Permissions
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           {roles.length} role levels · {totalMembers} total members · permission matrix for all workspace actions.
         </p>
       </div>
@@ -49,8 +47,7 @@ export default function WorkspaceRolesPage({
         {roles.map((r) => (
           <div
             key={r.name}
-            className="rounded-xl border p-4 flex flex-col gap-3"
-            style={{
+            className="rounded-xl border p-4 flex flex-col gap-3"style={{
               background: "var(--rtm-surface)",
               borderColor: "var(--rtm-border)",
               boxShadow: "0 1px 3px rgba(15,28,56,0.04)",
@@ -58,8 +55,7 @@ export default function WorkspaceRolesPage({
           >
             {/* Role badge */}
             <span
-              className="self-start px-2 py-0.5 rounded-full text-[11px] font-bold border"
-              style={{
+              className="self-start px-2 py-0.5 rounded-full text-[11px] font-bold border"style={{
                 background: r.badge.bg,
                 color: r.badge.color,
                 borderColor: r.badge.border,
@@ -70,22 +66,20 @@ export default function WorkspaceRolesPage({
 
             {/* Description */}
             <p
-              className="text-[11px] leading-relaxed flex-1"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-[11px] leading-relaxed flex-1"style={{ color: "var(--rtm-text-muted)"}}
             >
               {r.description}
             </p>
 
             {/* Member count */}
-            <div className="flex items-center gap-1.5 pt-1" style={{ borderTop: "1px solid var(--rtm-border-light)" }}>
+            <div className="flex items-center gap-1.5 pt-1"style={{ borderTop: "1px solid var(--rtm-border-light)"}}>
               <span
-                className="text-lg font-bold leading-none"
-                style={{ color: r.badge.color }}
+                className="text-lg font-bold leading-none"style={{ color: r.badge.color }}
               >
                 {r.memberCount}
               </span>
-              <span className="text-[10px] font-medium" style={{ color: "var(--rtm-text-muted)" }}>
-                {r.memberCount === 1 ? "member" : "members"}
+              <span className="text-[10px] font-medium"style={{ color: "var(--rtm-text-muted)"}}>
+                {r.memberCount === 1 ? "member": "members"}
               </span>
             </div>
           </div>
@@ -93,7 +87,7 @@ export default function WorkspaceRolesPage({
       </div>
 
       {/* ── Coverage stats ── */}
-      <SectionWrapper title="Access Coverage" description="How permissions break down across the team">
+      <SectionWrapper title="Access Coverage"description="How permissions break down across the team">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             {
@@ -131,13 +125,12 @@ export default function WorkspaceRolesPage({
           ].map(({ label, value, color, bg }) => (
             <div
               key={label}
-              className="flex flex-col gap-1 p-4 rounded-xl border"
-              style={{ background: bg, borderColor: "transparent" }}
+              className="flex flex-col gap-1 p-4 rounded-xl border"style={{ background: bg, borderColor: "transparent"}}
             >
-              <span className="text-2xl font-bold" style={{ color }}>
+              <span className="text-2xl font-bold"style={{ color }}>
                 {value}
               </span>
-              <span className="text-[11px] font-medium" style={{ color }}>
+              <span className="text-[11px] font-medium"style={{ color }}>
                 {label}
               </span>
             </div>
@@ -152,8 +145,7 @@ export default function WorkspaceRolesPage({
       <div className="flex flex-wrap gap-2">
         <Link
           href={workspace.dashboardRoute}
-          className="inline-flex items-center gap-1 rounded-lg border px-4 py-2 text-sm font-medium"
-          style={{
+          className="inline-flex items-center gap-1 rounded-lg border px-4 py-2 text-sm font-medium"style={{
             background: "var(--rtm-surface)",
             borderColor: "var(--rtm-border)",
             color: "var(--rtm-text-secondary)",
@@ -164,8 +156,7 @@ export default function WorkspaceRolesPage({
         {profileRoute && (
           <Link
             href={profileRoute}
-            className="inline-flex items-center gap-1 rounded-lg border px-4 py-2 text-sm font-medium"
-            style={{
+            className="inline-flex items-center gap-1 rounded-lg border px-4 py-2 text-sm font-medium"style={{
               background: "var(--rtm-surface)",
               borderColor: "var(--rtm-border)",
               color: "var(--rtm-text-secondary)",
@@ -177,8 +168,7 @@ export default function WorkspaceRolesPage({
         {teamRoute && (
           <Link
             href={teamRoute}
-            className="inline-flex items-center gap-1 rounded-lg border px-4 py-2 text-sm font-medium"
-            style={{
+            className="inline-flex items-center gap-1 rounded-lg border px-4 py-2 text-sm font-medium"style={{
               background: "var(--rtm-surface)",
               borderColor: "var(--rtm-border)",
               color: "var(--rtm-text-secondary)",

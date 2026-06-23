@@ -13,10 +13,10 @@ export default function ServicesTab({ client }: { client: ClientProfile }) {
       {/* MRR summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total MRR", value: `$${totalMRR.toLocaleString()}`, sub: "active services" },
-          { label: "Active", value: String(active.length), sub: "services" },
-          { label: "Paused", value: String(paused.length), sub: "services" },
-          { label: "Cancelled", value: String(cancelled.length), sub: "services" },
+          { label: "Total MRR", value: `$${totalMRR.toLocaleString()}`, sub: "active services"},
+          { label: "Active", value: String(active.length), sub: "services"},
+          { label: "Paused", value: String(paused.length), sub: "services"},
+          { label: "Cancelled", value: String(cancelled.length), sub: "services"},
         ].map((stat) => (
           <div key={stat.label} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
             <p className="text-xs text-slate-500 mb-1">{stat.label}</p>
@@ -57,11 +57,10 @@ export default function ServicesTab({ client }: { client: ClientProfile }) {
                     <ServiceBadge status={service.status} />
                   </td>
                   <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400">
-                    {new Date(service.startDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                    {new Date(service.startDate).toLocaleDateString("en-US", { month: "short", year: "numeric"})}
                   </td>
                   <td className="px-5 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-200">
-                    {service.status === "active"
-                      ? `$${service.monthlyValue.toLocaleString()}`
+                    {service.status === "active"? `$${service.monthlyValue.toLocaleString()}`
                       : <span className="text-slate-400 font-normal">—</span>}
                   </td>
                 </tr>

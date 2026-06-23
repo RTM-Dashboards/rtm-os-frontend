@@ -17,7 +17,7 @@ const STATUS_OPTIONS: ActivationStatus[] = [
 ];
 
 function formatCurrency(n: number) {
-  return "$" + n.toLocaleString("en-US");
+  return "$"+ n.toLocaleString("en-US");
 }
 
 function formatDate(d: string) {
@@ -38,9 +38,8 @@ function QueueRow({ record, onSelect, selected }: RowProps) {
   return (
     <tr
       onClick={() => onSelect(record.id)}
-      className="cursor-pointer transition-colors"
-      style={{
-        background: selected ? "var(--rtm-blue-xlight)" : undefined,
+      className="cursor-pointer transition-colors"style={{
+        background: selected ? "var(--rtm-blue-xlight)": undefined,
         borderBottom: "1px solid var(--rtm-border-light)",
       }}
       onMouseEnter={(e) => {
@@ -51,27 +50,27 @@ function QueueRow({ record, onSelect, selected }: RowProps) {
       }}
     >
       <td className="px-4 py-3">
-        <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+        <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
           {record.client}
         </p>
-        <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+        <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
           {record.id}
         </p>
       </td>
       <td className="px-4 py-3">
-        <p className="text-xs font-medium" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-xs font-medium"style={{ color: "var(--rtm-text-secondary)"}}>
           {record.contractNumber}
         </p>
       </td>
       <td className="px-4 py-3">
-        <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+        <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
           {record.proposalId}
         </p>
       </td>
       <td className="px-4 py-3">
-        <p className="text-sm font-bold" style={{ color: "var(--rtm-blue)" }}>
+        <p className="text-sm font-bold"style={{ color: "var(--rtm-blue)"}}>
           {formatCurrency(record.revenue)}
-          <span className="text-xs font-normal ml-1" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-xs font-normal ml-1"style={{ color: "var(--rtm-text-muted)"}}>
             /mo
           </span>
         </p>
@@ -81,8 +80,7 @@ function QueueRow({ record, onSelect, selected }: RowProps) {
           {record.servicesSold.map((s) => (
             <span
               key={s}
-              className="text-[11px] font-semibold px-1.5 py-0.5 rounded border"
-              style={{
+              className="text-[11px] font-semibold px-1.5 py-0.5 rounded border"style={{
                 background: "var(--rtm-blue-xlight)",
                 color: "var(--rtm-blue)",
                 borderColor: "var(--rtm-blue-light)",
@@ -98,8 +96,7 @@ function QueueRow({ record, onSelect, selected }: RowProps) {
           {record.departmentsInvolved.map((d) => (
             <span
               key={d}
-              className="text-[11px] font-medium px-1.5 py-0.5 rounded border"
-              style={{
+              className="text-[11px] font-medium px-1.5 py-0.5 rounded border"style={{
                 background: "#F5F3FF",
                 color: "#5B21B6",
                 borderColor: "#DDD6FE",
@@ -111,7 +108,7 @@ function QueueRow({ record, onSelect, selected }: RowProps) {
         </div>
       </td>
       <td className="px-4 py-3">
-        <p className="text-xs font-medium" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-xs font-medium"style={{ color: "var(--rtm-text-secondary)"}}>
           {record.assignedAM}
         </p>
       </td>
@@ -119,14 +116,13 @@ function QueueRow({ record, onSelect, selected }: RowProps) {
         <ActivationStatusBadge status={record.activationStatus} />
       </td>
       <td className="px-4 py-3">
-        <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
           {formatDate(record.launchDate)}
         </p>
       </td>
       <td className="px-4 py-3">
         <button
-          className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
-          style={{
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"style={{
             background: "var(--rtm-blue)",
             color: "#fff",
           }}
@@ -147,8 +143,7 @@ export default function ActivationQueue() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const filtered =
-    statusFilter === "All"
-      ? ACTIVATION_RECORDS
+    statusFilter === "All"? ACTIVATION_RECORDS
       : ACTIVATION_RECORDS.filter((r) => r.activationStatus === statusFilter);
 
   const selected = ACTIVATION_RECORDS.find((r) => r.id === selectedId) ?? null;
@@ -165,8 +160,7 @@ export default function ActivationQueue() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className="text-xs font-semibold px-3 py-1.5 rounded-full border transition-all"
-            style={
+            className="text-xs font-semibold px-3 py-1.5 rounded-full border transition-all"style={
               statusFilter === s
                 ? {
                     background: "var(--rtm-blue)",
@@ -181,7 +175,7 @@ export default function ActivationQueue() {
             }
           >
             {s}
-            {s !== "All" && (
+            {s !== "All"&& (
               <span className="ml-1.5 opacity-70">
                 ({ACTIVATION_RECORDS.filter((r) => r.activationStatus === s).length})
               </span>
@@ -192,8 +186,7 @@ export default function ActivationQueue() {
 
       {/* Table */}
       <div
-        className="rounded-xl border overflow-hidden"
-        style={{
+        className="rounded-xl border overflow-hidden"style={{
           background: "var(--rtm-surface)",
           borderColor: "var(--rtm-border)",
           boxShadow: "0 1px 3px rgba(15,28,56,0.05)",
@@ -202,7 +195,7 @@ export default function ActivationQueue() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[1100px]">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+              <tr style={{ borderBottom: "1px solid var(--rtm-border)"}}>
                 {[
                   "Client",
                   "Contract",
@@ -217,8 +210,7 @@ export default function ActivationQueue() {
                 ].map((h) => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-[11px] font-bold uppercase tracking-wide"
-                    style={{ color: "var(--rtm-text-muted)", background: "#FAFBFD" }}
+                    className="px-4 py-3 text-[11px] font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)", background: "#FAFBFD"}}
                   >
                     {h}
                   </th>
@@ -238,8 +230,7 @@ export default function ActivationQueue() {
                 <tr>
                   <td
                     colSpan={10}
-                    className="px-4 py-8 text-center text-sm"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="px-4 py-8 text-center text-sm"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     No records match the selected filter.
                   </td>
@@ -251,10 +242,9 @@ export default function ActivationQueue() {
 
         {/* Footer count */}
         <div
-          className="px-4 py-3 flex items-center justify-between"
-          style={{ borderTop: "1px solid var(--rtm-border-light)" }}
+          className="px-4 py-3 flex items-center justify-between"style={{ borderTop: "1px solid var(--rtm-border-light)"}}
         >
-          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             Showing {filtered.length} of {ACTIVATION_RECORDS.length} records
           </p>
         </div>

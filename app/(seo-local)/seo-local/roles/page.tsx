@@ -12,8 +12,6 @@ export default function RolesPage() {
       workspace={workspace}
       roles={seoLocalRoles}
       permissionAreas={seoLocalPermissions}
-      teamRoute="/seo-local/team-members"
-      profileRoute="/seo-local/profile"
-    />
+      teamRoute="/seo-local/team-members"profileRoute="/seo-local/profile"/>
   );
 }

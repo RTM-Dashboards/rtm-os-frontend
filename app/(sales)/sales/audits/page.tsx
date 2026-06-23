@@ -2,32 +2,22 @@
 
 import React, { useState } from "react";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Types
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
-type FindingSeverity = "Critical" | "High" | "Medium" | "Low";
-type AuditPriority = "Critical" | "High" | "Medium" | "Low";
-type AuditStatus = "Not Started" | "In Progress" | "Completed" | "Needs Review" | "Pending";
-type ProposalStatus = "Not Started" | "Draft" | "Sent" | "Accepted" | "In Proposal";
+type FindingSeverity = "Critical"| "High"| "Medium"| "Low";
+type AuditPriority = "Critical"| "High"| "Medium"| "Low";
+type AuditStatus = "Not Started"| "In Progress"| "Completed"| "Needs Review"| "Pending";
+type ProposalStatus = "Not Started"| "Draft"| "Sent"| "Accepted"| "In Proposal";
 
 type AuditType =
-  | "SEO Technical"
-  | "SEO Content"
-  | "GBP"
-  | "PPC"
-  | "Meta Ads"
-  | "Website"
-  | "Tracking"
-  | "Call Handling"
-  | "Competitor"
-  | "AI Automation"
-  | "Hosting & Infrastructure";
+  | "SEO Technical"| "SEO Content"| "GBP"| "PPC"| "Meta Ads"| "Website"| "Tracking"| "Call Handling"| "Competitor"| "AI Automation"| "Hosting & Infrastructure";
 
-type CommType = "Call Summary" | "Meeting Notes" | "Client Notes" | "Email" | "SMS" | "Follow-Up" | "Action Item";
-type Sentiment = "Positive" | "Neutral" | "Negative" | "Mixed";
+type CommType = "Call Summary"| "Meeting Notes"| "Client Notes"| "Email"| "SMS"| "Follow-Up"| "Action Item";
+type Sentiment = "Positive"| "Neutral"| "Negative"| "Mixed";
 
-// ─── Finding ─────────────────────────────────────────────────────────────────
+//  Finding 
 interface AuditFinding {
   id: string;
   title: string;
@@ -39,7 +29,7 @@ interface AuditFinding {
   priority: AuditPriority;
 }
 
-// ─── Recommended Service ──────────────────────────────────────────────────────
+//  Recommended Service 
 interface RecommendedService {
   id: string;
   service: string;
@@ -48,10 +38,10 @@ interface RecommendedService {
   priority: AuditPriority;
   department: string;
   estimatedRevenue: number;
-  proposalStatus: "Not Added" | "Added";
+  proposalStatus: "Not Added"| "Added";
 }
 
-// ─── Recommended Line Item ────────────────────────────────────────────────────
+//  Recommended Line Item 
 interface RecommendedLineItem {
   id: string;
   lineItem: string;
@@ -60,10 +50,10 @@ interface RecommendedLineItem {
   setupFee: number;
   recurringFee: number;
   deliveryStandard: string;
-  proposalStatus: "Not Added" | "Added";
+  proposalStatus: "Not Added"| "Added";
 }
 
-// ─── Communication ───────────────────────────────────────────────────────────
+//  Communication 
 interface CallSummary {
   id: string;
   callDate: string;
@@ -95,7 +85,7 @@ interface Communication {
   callSummary?: CallSummary;
 }
 
-// ─── Competitor ───────────────────────────────────────────────────────────────
+//  Competitor 
 interface CompetitorEntry {
   name: string;
   strengths: string[];
@@ -105,25 +95,18 @@ interface CompetitorEntry {
   recommendedActions: string[];
 }
 
-// ─── Timeline Event ───────────────────────────────────────────────────────────
+//  Timeline Event 
 interface TimelineEvent {
   id: string;
   date: string;
   event: string;
   type:
-    | "audit_created"
-    | "audit_updated"
-    | "finding_added"
-    | "recommendation_added"
-    | "proposal_generated"
-    | "communication_added"
-    | "followup_added"
-    | "status_changed";
+    | "audit_created"| "audit_updated"| "finding_added"| "recommendation_added"| "proposal_generated"| "communication_added"| "followup_added"| "status_changed";
   user: string;
   detail?: string;
 }
 
-// ─── Main Audit Record ────────────────────────────────────────────────────────
+//  Main Audit Record 
 interface Audit {
   id: string;
   auditName: string;
@@ -148,9 +131,9 @@ interface Audit {
   timeline: TimelineEvent[];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Mock Data — 15 Audits
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 const MOCK_AUDITS: Audit[] = [
   // 1 — SEO Technical
@@ -171,21 +154,21 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Strong technical foundation with critical issues in duplicate pages and orphan content suppressing rankings.",
     overallScore: 82,
     findings: [
-      { id: "f001-1", title: "Duplicate Location Pages", severity: "Critical", category: "Technical SEO", description: "3 location pages share identical content causing keyword cannibalization.", recommendation: "Consolidate or canonicalize duplicate location pages.", revenueImpact: 1200, priority: "High" },
-      { id: "f001-2", title: "Orphan Pages", severity: "High", category: "Internal Linking", description: "5 service pages have zero internal links.", recommendation: "Add internal links to orphan service pages from sitemap and hub pages.", revenueImpact: 800, priority: "High" },
-      { id: "f001-3", title: "Missing Meta Descriptions", severity: "Medium", category: "On-Page SEO", description: "9 pages missing meta descriptions reducing CTR.", recommendation: "Write unique, compelling meta descriptions for all pages.", revenueImpact: 400, priority: "Medium" },
-      { id: "f001-4", title: "Broken Internal Links", severity: "Medium", category: "Technical SEO", description: "4 broken internal links degrading crawl budget.", recommendation: "Fix or redirect all broken links.", revenueImpact: 300, priority: "Medium" },
-      { id: "f001-5", title: "Missing Meta Pixel", severity: "High", category: "Tracking", description: "No Meta Pixel installed — no remarketing capability.", recommendation: "Install Meta Pixel with standard events.", revenueImpact: 1200, priority: "High" },
-      { id: "f001-6", title: "Thin Content on Service Pages", severity: "High", category: "Content", description: "Service pages averaging 180 words — below threshold.", recommendation: "Expand service pages to 800+ words.", revenueImpact: 900, priority: "High" },
+      { id: "f001-1", title: "Duplicate Location Pages", severity: "Critical", category: "Technical SEO", description: "3 location pages share identical content causing keyword cannibalization.", recommendation: "Consolidate or canonicalize duplicate location pages.", revenueImpact: 1200, priority: "High"},
+      { id: "f001-2", title: "Orphan Pages", severity: "High", category: "Internal Linking", description: "5 service pages have zero internal links.", recommendation: "Add internal links to orphan service pages from sitemap and hub pages.", revenueImpact: 800, priority: "High"},
+      { id: "f001-3", title: "Missing Meta Descriptions", severity: "Medium", category: "On-Page SEO", description: "9 pages missing meta descriptions reducing CTR.", recommendation: "Write unique, compelling meta descriptions for all pages.", revenueImpact: 400, priority: "Medium"},
+      { id: "f001-4", title: "Broken Internal Links", severity: "Medium", category: "Technical SEO", description: "4 broken internal links degrading crawl budget.", recommendation: "Fix or redirect all broken links.", revenueImpact: 300, priority: "Medium"},
+      { id: "f001-5", title: "Missing Meta Pixel", severity: "High", category: "Tracking", description: "No Meta Pixel installed — no remarketing capability.", recommendation: "Install Meta Pixel with standard events.", revenueImpact: 1200, priority: "High"},
+      { id: "f001-6", title: "Thin Content on Service Pages", severity: "High", category: "Content", description: "Service pages averaging 180 words — below threshold.", recommendation: "Expand service pages to 800+ words.", revenueImpact: 900, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs001-1", service: "SEO Monthly Management", reason: "Ongoing content and technical optimization required.", impactScore: 92, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-      { id: "rs001-2", service: "Tracking & Analytics Setup", reason: "Missing Meta Pixel and form tracking.", impactScore: 88, priority: "High", department: "Reporting", estimatedRevenue: 700, proposalStatus: "Not Added" },
+      { id: "rs001-1", service: "SEO Monthly Management", reason: "Ongoing content and technical optimization required.", impactScore: 92, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added"},
+      { id: "rs001-2", service: "Tracking & Analytics Setup", reason: "Missing Meta Pixel and form tracking.", impactScore: 88, priority: "High", department: "Reporting", estimatedRevenue: 700, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li001-1", lineItem: "SEO Setup & Onboarding", category: "SEO", department: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days", proposalStatus: "Not Added" },
-      { id: "li001-2", lineItem: "SEO Monthly Management", category: "SEO", department: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-      { id: "li001-3", lineItem: "Tracking & Analytics Setup", category: "Reporting", department: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days", proposalStatus: "Not Added" },
+      { id: "li001-1", lineItem: "SEO Setup & Onboarding", category: "SEO", department: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days", proposalStatus: "Not Added"},
+      { id: "li001-2", lineItem: "SEO Monthly Management", category: "SEO", department: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
+      { id: "li001-3", lineItem: "Tracking & Analytics Setup", category: "Reporting", department: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days", proposalStatus: "Not Added"},
     ],
     communications: [
       {
@@ -245,13 +228,13 @@ const MOCK_AUDITS: Audit[] = [
       },
     ],
     timeline: [
-      { id: "tl-001-1", date: "Jun 3, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M.", detail: "SEO Technical Audit created from discovery call." },
-      { id: "tl-001-2", date: "Jun 3, 2025", event: "Communication Added", type: "communication_added", user: "Jordan M.", detail: "Pre-Audit Discovery Call summary logged." },
-      { id: "tl-001-3", date: "Jun 5, 2025", event: "Audit Updated", type: "audit_updated", user: "Jordan M.", detail: "6 findings added during site crawl." },
-      { id: "tl-001-4", date: "Jun 5, 2025", event: "Finding Added", type: "finding_added", user: "Jordan M.", detail: "Critical: Duplicate Location Pages" },
-      { id: "tl-001-5", date: "Jun 5, 2025", event: "Recommendation Added", type: "recommendation_added", user: "AI Engine", detail: "SEO Monthly Management + Tracking Setup recommended." },
-      { id: "tl-001-6", date: "Jun 6, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Status updated to Completed." },
-      { id: "tl-001-7", date: "Jun 6, 2025", event: "Communication Added", type: "communication_added", user: "Jordan M.", detail: "Email sent: Audit Complete — Findings Summary." },
+      { id: "tl-001-1", date: "Jun 3, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M.", detail: "SEO Technical Audit created from discovery call."},
+      { id: "tl-001-2", date: "Jun 3, 2025", event: "Communication Added", type: "communication_added", user: "Jordan M.", detail: "Pre-Audit Discovery Call summary logged."},
+      { id: "tl-001-3", date: "Jun 5, 2025", event: "Audit Updated", type: "audit_updated", user: "Jordan M.", detail: "6 findings added during site crawl."},
+      { id: "tl-001-4", date: "Jun 5, 2025", event: "Finding Added", type: "finding_added", user: "Jordan M.", detail: "Critical: Duplicate Location Pages"},
+      { id: "tl-001-5", date: "Jun 5, 2025", event: "Recommendation Added", type: "recommendation_added", user: "AI Engine", detail: "SEO Monthly Management + Tracking Setup recommended."},
+      { id: "tl-001-6", date: "Jun 6, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Status updated to Completed."},
+      { id: "tl-001-7", date: "Jun 6, 2025", event: "Communication Added", type: "communication_added", user: "Jordan M.", detail: "Email sent: Audit Complete — Findings Summary."},
     ],
   },
 
@@ -273,20 +256,20 @@ const MOCK_AUDITS: Audit[] = [
     summary: "GBP profile severely underperforming. Only 31 reviews, 3.8 avg rating, and 6 months without posts. Competitors dominating local pack.",
     overallScore: 28,
     findings: [
-      { id: "f002-1", title: "Critically Low Review Volume", severity: "Critical", category: "GBP Reviews", description: "Only 31 reviews vs competitor average of 340. Missing local pack for primary dealer terms.", recommendation: "Launch aggressive review generation campaign targeting 100+ reviews in 90 days.", revenueImpact: 3200, priority: "Critical" },
-      { id: "f002-2", title: "No GBP Posts in 6 Months", severity: "High", category: "GBP Posts", description: "GBP profile shows zero engagement activity — algorithmic ranking signal lost.", recommendation: "Post weekly inventory highlights and promotional offers.", revenueImpact: 1800, priority: "High" },
-      { id: "f002-3", title: "Only 6 Photos Uploaded", severity: "Critical", category: "GBP Photos", description: "Competitors average 120+ photos. Google deprioritizes low-photo profiles.", recommendation: "Upload 50+ high-quality dealership photos immediately.", revenueImpact: 1200, priority: "Critical" },
-      { id: "f002-4", title: "Missing Secondary Categories", severity: "High", category: "GBP Categories", description: "Only primary category set. Missing 8 relevant service categories.", recommendation: "Add all relevant secondary categories for services, parts, and financing.", revenueImpact: 900, priority: "High" },
-      { id: "f002-5", title: "No Q&A Section", severity: "Medium", category: "GBP Q&A", description: "Zero Q&A answers. Competitors have 15–30 answered questions.", recommendation: "Seed and answer 15 high-value dealership questions.", revenueImpact: 400, priority: "Medium" },
+      { id: "f002-1", title: "Critically Low Review Volume", severity: "Critical", category: "GBP Reviews", description: "Only 31 reviews vs competitor average of 340. Missing local pack for primary dealer terms.", recommendation: "Launch aggressive review generation campaign targeting 100+ reviews in 90 days.", revenueImpact: 3200, priority: "Critical"},
+      { id: "f002-2", title: "No GBP Posts in 6 Months", severity: "High", category: "GBP Posts", description: "GBP profile shows zero engagement activity — algorithmic ranking signal lost.", recommendation: "Post weekly inventory highlights and promotional offers.", revenueImpact: 1800, priority: "High"},
+      { id: "f002-3", title: "Only 6 Photos Uploaded", severity: "Critical", category: "GBP Photos", description: "Competitors average 120+ photos. Google deprioritizes low-photo profiles.", recommendation: "Upload 50+ high-quality dealership photos immediately.", revenueImpact: 1200, priority: "Critical"},
+      { id: "f002-4", title: "Missing Secondary Categories", severity: "High", category: "GBP Categories", description: "Only primary category set. Missing 8 relevant service categories.", recommendation: "Add all relevant secondary categories for services, parts, and financing.", revenueImpact: 900, priority: "High"},
+      { id: "f002-5", title: "No Q&A Section", severity: "Medium", category: "GBP Q&A", description: "Zero Q&A answers. Competitors have 15–30 answered questions.", recommendation: "Seed and answer 15 high-value dealership questions.", revenueImpact: 400, priority: "Medium"},
     ],
     recommendedServices: [
-      { id: "rs002-1", service: "GBP Optimization", reason: "Profile critically underperforming — immediate intervention required.", impactScore: 97, priority: "Critical", department: "GBP", estimatedRevenue: 500, proposalStatus: "Added" },
-      { id: "rs002-2", service: "Review Generation Campaign", reason: "31 reviews vs 340 competitor avg — urgent gap.", impactScore: 95, priority: "Critical", department: "GBP", estimatedRevenue: 800, proposalStatus: "Added" },
+      { id: "rs002-1", service: "GBP Optimization", reason: "Profile critically underperforming — immediate intervention required.", impactScore: 97, priority: "Critical", department: "GBP", estimatedRevenue: 500, proposalStatus: "Added"},
+      { id: "rs002-2", service: "Review Generation Campaign", reason: "31 reviews vs 340 competitor avg — urgent gap.", impactScore: 95, priority: "Critical", department: "GBP", estimatedRevenue: 800, proposalStatus: "Added"},
     ],
     recommendedLineItems: [
-      { id: "li002-1", lineItem: "GBP Setup & Optimization", category: "GBP", department: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days", proposalStatus: "Added" },
-      { id: "li002-2", lineItem: "GBP Monthly Management", category: "GBP", department: "GBP", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing", proposalStatus: "Added" },
-      { id: "li002-3", lineItem: "Review Generation Setup", category: "GBP", department: "GBP", setupFee: 450, recurringFee: 300, deliveryStandard: "5 days", proposalStatus: "Added" },
+      { id: "li002-1", lineItem: "GBP Setup & Optimization", category: "GBP", department: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days", proposalStatus: "Added"},
+      { id: "li002-2", lineItem: "GBP Monthly Management", category: "GBP", department: "GBP", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing", proposalStatus: "Added"},
+      { id: "li002-3", lineItem: "Review Generation Setup", category: "GBP", department: "GBP", setupFee: 450, recurringFee: 300, deliveryStandard: "5 days", proposalStatus: "Added"},
     ],
     communications: [
       {
@@ -336,10 +319,10 @@ const MOCK_AUDITS: Audit[] = [
       },
     ],
     timeline: [
-      { id: "tl-002-1", date: "Jun 4, 2025", event: "Audit Created", type: "audit_created", user: "Mike T.", detail: "GBP Audit created from discovery call." },
-      { id: "tl-002-2", date: "Jun 6, 2025", event: "Audit Updated", type: "audit_updated", user: "Mike T.", detail: "5 critical GBP findings documented." },
-      { id: "tl-002-3", date: "Jun 6, 2025", event: "Status Changed", type: "status_changed", user: "Mike T.", detail: "Status updated to Completed." },
-      { id: "tl-002-4", date: "Jun 6, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Mike T.", detail: "Proposal sent to client." },
+      { id: "tl-002-1", date: "Jun 4, 2025", event: "Audit Created", type: "audit_created", user: "Mike T.", detail: "GBP Audit created from discovery call."},
+      { id: "tl-002-2", date: "Jun 6, 2025", event: "Audit Updated", type: "audit_updated", user: "Mike T.", detail: "5 critical GBP findings documented."},
+      { id: "tl-002-3", date: "Jun 6, 2025", event: "Status Changed", type: "status_changed", user: "Mike T.", detail: "Status updated to Completed."},
+      { id: "tl-002-4", date: "Jun 6, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Mike T.", detail: "Proposal sent to client."},
     ],
   },
 
@@ -361,19 +344,19 @@ const MOCK_AUDITS: Audit[] = [
     summary: "PPC tracking completely broken. Google Ads conversions firing 0 despite active campaigns. Budget being wasted with no measurable ROI.",
     overallScore: 34,
     findings: [
-      { id: "f003-1", title: "Broken Conversion Tracking", severity: "Critical", category: "PPC Tracking", description: "Conversion tags present but firing zero events. Cannot measure any campaign performance.", recommendation: "Rebuild conversion tracking from scratch via GTM.", revenueImpact: 2400, priority: "Critical" },
-      { id: "f003-2", title: "No Negative Keyword List", severity: "Critical", category: "PPC Structure", description: "Zero negative keywords. Budget wasting on irrelevant queries like 'solar system planets' and 'solar charger'.", recommendation: "Build 300+ solar-specific negative keywords immediately.", revenueImpact: 1800, priority: "Critical" },
-      { id: "f003-3", title: "Single Broad Match Campaign", severity: "High", category: "PPC Structure", description: "All keywords in one broad match campaign. No intent segmentation.", recommendation: "Restructure into residential, commercial, and brand campaigns.", revenueImpact: 1200, priority: "High" },
-      { id: "f003-4", title: "Homepage as Landing Page", severity: "High", category: "Landing Pages", description: "All paid traffic directed to homepage. No dedicated solar estimate landing page.", recommendation: "Build dedicated solar estimate funnel landing page.", revenueImpact: 800, priority: "High" },
+      { id: "f003-1", title: "Broken Conversion Tracking", severity: "Critical", category: "PPC Tracking", description: "Conversion tags present but firing zero events. Cannot measure any campaign performance.", recommendation: "Rebuild conversion tracking from scratch via GTM.", revenueImpact: 2400, priority: "Critical"},
+      { id: "f003-2", title: "No Negative Keyword List", severity: "Critical", category: "PPC Structure", description: "Zero negative keywords. Budget wasting on irrelevant queries like 'solar system planets' and 'solar charger'.", recommendation: "Build 300+ solar-specific negative keywords immediately.", revenueImpact: 1800, priority: "Critical"},
+      { id: "f003-3", title: "Single Broad Match Campaign", severity: "High", category: "PPC Structure", description: "All keywords in one broad match campaign. No intent segmentation.", recommendation: "Restructure into residential, commercial, and brand campaigns.", revenueImpact: 1200, priority: "High"},
+      { id: "f003-4", title: "Homepage as Landing Page", severity: "High", category: "Landing Pages", description: "All paid traffic directed to homepage. No dedicated solar estimate landing page.", recommendation: "Build dedicated solar estimate funnel landing page.", revenueImpact: 800, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs003-1", service: "PPC Campaign Rebuild", reason: "Existing account structure is costing 60-70% wasted spend.", impactScore: 98, priority: "Critical", department: "Paid Advertising", estimatedRevenue: 1500, proposalStatus: "Added" },
-      { id: "rs003-2", service: "Tracking & Analytics Setup", reason: "No measurable attribution on any spend.", impactScore: 97, priority: "Critical", department: "Reporting", estimatedRevenue: 700, proposalStatus: "Added" },
+      { id: "rs003-1", service: "PPC Campaign Rebuild", reason: "Existing account structure is costing 60-70% wasted spend.", impactScore: 98, priority: "Critical", department: "Paid Advertising", estimatedRevenue: 1500, proposalStatus: "Added"},
+      { id: "rs003-2", service: "Tracking & Analytics Setup", reason: "No measurable attribution on any spend.", impactScore: 97, priority: "Critical", department: "Reporting", estimatedRevenue: 700, proposalStatus: "Added"},
     ],
     recommendedLineItems: [
-      { id: "li003-1", lineItem: "PPC Campaign Setup", category: "PPC", department: "Paid Advertising", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days", proposalStatus: "Added" },
-      { id: "li003-2", lineItem: "PPC Monthly Management", category: "PPC", department: "Paid Advertising", setupFee: 0, recurringFee: 1500, deliveryStandard: "Ongoing", proposalStatus: "Added" },
-      { id: "li003-3", lineItem: "Tracking & Analytics Setup", category: "Reporting", department: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days", proposalStatus: "Added" },
+      { id: "li003-1", lineItem: "PPC Campaign Setup", category: "PPC", department: "Paid Advertising", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days", proposalStatus: "Added"},
+      { id: "li003-2", lineItem: "PPC Monthly Management", category: "PPC", department: "Paid Advertising", setupFee: 0, recurringFee: 1500, deliveryStandard: "Ongoing", proposalStatus: "Added"},
+      { id: "li003-3", lineItem: "Tracking & Analytics Setup", category: "Reporting", department: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days", proposalStatus: "Added"},
     ],
     communications: [
       {
@@ -389,10 +372,10 @@ const MOCK_AUDITS: Audit[] = [
     ],
     competitors: [],
     timeline: [
-      { id: "tl-003-1", date: "May 30, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K.", detail: "PPC Audit created after performance review meeting." },
-      { id: "tl-003-2", date: "May 31, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: Broken Conversion Tracking identified." },
-      { id: "tl-003-3", date: "Jun 1, 2025", event: "Status Changed", type: "status_changed", user: "Sarah K.", detail: "Status updated to Completed." },
-      { id: "tl-003-4", date: "Jun 2, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Sarah K.", detail: "Proposal sent and accepted." },
+      { id: "tl-003-1", date: "May 30, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K.", detail: "PPC Audit created after performance review meeting."},
+      { id: "tl-003-2", date: "May 31, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: Broken Conversion Tracking identified."},
+      { id: "tl-003-3", date: "Jun 1, 2025", event: "Status Changed", type: "status_changed", user: "Sarah K.", detail: "Status updated to Completed."},
+      { id: "tl-003-4", date: "Jun 2, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Sarah K.", detail: "Proposal sent and accepted."},
     ],
   },
 
@@ -414,19 +397,19 @@ const MOCK_AUDITS: Audit[] = [
     summary: "No Meta Ads presence while 4 competitors run active visual campaigns. Pixel installed but no events configured. High-value audience untapped.",
     overallScore: 45,
     findings: [
-      { id: "f004-1", title: "No Active Meta Campaigns", severity: "Critical", category: "Meta Ads", description: "Zero Meta Ads campaigns while 4 competitors run active campaigns targeting same audience.", recommendation: "Launch retargeting and prospecting campaigns immediately.", revenueImpact: 1800, priority: "Critical" },
-      { id: "f004-2", title: "Pixel Installed — No Events", severity: "High", category: "Meta Tracking", description: "Meta Pixel present but firing zero custom events.", recommendation: "Configure ViewContent, Lead, Contact, and Purchase events.", revenueImpact: 900, priority: "High" },
-      { id: "f004-3", title: "No Custom Audiences Built", severity: "High", category: "Meta Audiences", description: "No website visitor, customer, or lookalike audiences created.", recommendation: "Build 5 core audiences: website visitors, bookers, high-value, lookalikes.", revenueImpact: 700, priority: "High" },
-      { id: "f004-4", title: "No Retargeting Strategy", severity: "High", category: "Meta Strategy", description: "Spa booking intent visitors not being retargeted.", recommendation: "Build 7-day, 14-day, and 30-day retargeting funnels.", revenueImpact: 500, priority: "High" },
+      { id: "f004-1", title: "No Active Meta Campaigns", severity: "Critical", category: "Meta Ads", description: "Zero Meta Ads campaigns while 4 competitors run active campaigns targeting same audience.", recommendation: "Launch retargeting and prospecting campaigns immediately.", revenueImpact: 1800, priority: "Critical"},
+      { id: "f004-2", title: "Pixel Installed — No Events", severity: "High", category: "Meta Tracking", description: "Meta Pixel present but firing zero custom events.", recommendation: "Configure ViewContent, Lead, Contact, and Purchase events.", revenueImpact: 900, priority: "High"},
+      { id: "f004-3", title: "No Custom Audiences Built", severity: "High", category: "Meta Audiences", description: "No website visitor, customer, or lookalike audiences created.", recommendation: "Build 5 core audiences: website visitors, bookers, high-value, lookalikes.", revenueImpact: 700, priority: "High"},
+      { id: "f004-4", title: "No Retargeting Strategy", severity: "High", category: "Meta Strategy", description: "Spa booking intent visitors not being retargeted.", recommendation: "Build 7-day, 14-day, and 30-day retargeting funnels.", revenueImpact: 500, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs004-1", service: "Meta Ads Setup & Launch", reason: "Competitors running visual campaigns — immediate gap.", impactScore: 94, priority: "High", department: "Paid Advertising", estimatedRevenue: 900, proposalStatus: "Not Added" },
-      { id: "rs004-2", service: "Meta Ads Monthly Management", reason: "Ongoing creative rotation and audience optimization.", impactScore: 88, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added" },
+      { id: "rs004-1", service: "Meta Ads Setup & Launch", reason: "Competitors running visual campaigns — immediate gap.", impactScore: 94, priority: "High", department: "Paid Advertising", estimatedRevenue: 900, proposalStatus: "Not Added"},
+      { id: "rs004-2", service: "Meta Ads Monthly Management", reason: "Ongoing creative rotation and audience optimization.", impactScore: 88, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li004-1", lineItem: "Meta Ads Account Setup", category: "Meta Ads", department: "Paid Advertising", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days", proposalStatus: "Not Added" },
-      { id: "li004-2", lineItem: "Meta Ads Monthly Management", category: "Meta Ads", department: "Paid Advertising", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-      { id: "li004-3", lineItem: "Meta Pixel & Events Setup", category: "Tracking", department: "Reporting", setupFee: 400, recurringFee: 0, deliveryStandard: "5 days", proposalStatus: "Not Added" },
+      { id: "li004-1", lineItem: "Meta Ads Account Setup", category: "Meta Ads", department: "Paid Advertising", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days", proposalStatus: "Not Added"},
+      { id: "li004-2", lineItem: "Meta Ads Monthly Management", category: "Meta Ads", department: "Paid Advertising", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
+      { id: "li004-3", lineItem: "Meta Pixel & Events Setup", category: "Tracking", department: "Reporting", setupFee: 400, recurringFee: 0, deliveryStandard: "5 days", proposalStatus: "Not Added"},
     ],
     communications: [
       {
@@ -450,9 +433,9 @@ const MOCK_AUDITS: Audit[] = [
       },
     ],
     timeline: [
-      { id: "tl-004-1", date: "Jun 1, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K." },
-      { id: "tl-004-2", date: "Jun 1, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: No Active Meta Campaigns" },
-      { id: "tl-004-3", date: "Jun 2, 2025", event: "Status Changed", type: "status_changed", user: "Sarah K.", detail: "Completed." },
+      { id: "tl-004-1", date: "Jun 1, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K."},
+      { id: "tl-004-2", date: "Jun 1, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: No Active Meta Campaigns"},
+      { id: "tl-004-3", date: "Jun 2, 2025", event: "Status Changed", type: "status_changed", user: "Sarah K.", detail: "Completed."},
     ],
   },
 
@@ -474,18 +457,18 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Severe website performance failures. PageSpeed 21 desktop / 11 mobile. Autoplay video causing LCP failure. 22 broken links. Site requires major overhaul.",
     overallScore: 24,
     findings: [
-      { id: "f005-1", title: "PageSpeed 21/100 Desktop", severity: "Critical", category: "Performance", description: "Autoplay video on homepage causing LCP of 6.4s. Major conversion killer.", recommendation: "Remove autoplay video. Defer non-critical JS. Compress all images.", revenueImpact: 2800, priority: "Critical" },
-      { id: "f005-2", title: "22 Broken Internal Links", severity: "Critical", category: "Technical", description: "22 broken links across class schedule and membership pages from site migration.", recommendation: "Implement 301 redirects for all broken URLs.", revenueImpact: 1400, priority: "Critical" },
-      { id: "f005-3", title: "14 Pages Blocked by Robots.txt", severity: "Critical", category: "Crawlability", description: "Class and membership pages accidentally blocked from indexing.", recommendation: "Review and update robots.txt directives.", revenueImpact: 1200, priority: "Critical" },
-      { id: "f005-4", title: "Not Mobile Responsive", severity: "Critical", category: "Mobile UX", description: "Tap targets too small. Content overflows on mobile. 70% of traffic is mobile.", recommendation: "Full mobile responsive redesign required.", revenueImpact: 2100, priority: "Critical" },
+      { id: "f005-1", title: "PageSpeed 21/100 Desktop", severity: "Critical", category: "Performance", description: "Autoplay video on homepage causing LCP of 6.4s. Major conversion killer.", recommendation: "Remove autoplay video. Defer non-critical JS. Compress all images.", revenueImpact: 2800, priority: "Critical"},
+      { id: "f005-2", title: "22 Broken Internal Links", severity: "Critical", category: "Technical", description: "22 broken links across class schedule and membership pages from site migration.", recommendation: "Implement 301 redirects for all broken URLs.", revenueImpact: 1400, priority: "Critical"},
+      { id: "f005-3", title: "14 Pages Blocked by Robots.txt", severity: "Critical", category: "Crawlability", description: "Class and membership pages accidentally blocked from indexing.", recommendation: "Review and update robots.txt directives.", revenueImpact: 1200, priority: "Critical"},
+      { id: "f005-4", title: "Not Mobile Responsive", severity: "Critical", category: "Mobile UX", description: "Tap targets too small. Content overflows on mobile. 70% of traffic is mobile.", recommendation: "Full mobile responsive redesign required.", revenueImpact: 2100, priority: "Critical"},
     ],
     recommendedServices: [
-      { id: "rs005-1", service: "Website Redesign", reason: "Site requires complete rebuild — beyond repair.", impactScore: 99, priority: "Critical", department: "Web", estimatedRevenue: 5000, proposalStatus: "Added" },
-      { id: "rs005-2", service: "SEO Setup & Onboarding", reason: "Post-redesign SEO foundation required.", impactScore: 90, priority: "High", department: "SEO", estimatedRevenue: 1500, proposalStatus: "Added" },
+      { id: "rs005-1", service: "Website Redesign", reason: "Site requires complete rebuild — beyond repair.", impactScore: 99, priority: "Critical", department: "Web", estimatedRevenue: 5000, proposalStatus: "Added"},
+      { id: "rs005-2", service: "SEO Setup & Onboarding", reason: "Post-redesign SEO foundation required.", impactScore: 90, priority: "High", department: "SEO", estimatedRevenue: 1500, proposalStatus: "Added"},
     ],
     recommendedLineItems: [
-      { id: "li005-1", lineItem: "Website Redesign", category: "Web", department: "Web", setupFee: 5000, recurringFee: 0, deliveryStandard: "60 days", proposalStatus: "Added" },
-      { id: "li005-2", lineItem: "Website Maintenance (Monthly)", category: "Web", department: "Web", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing", proposalStatus: "Added" },
+      { id: "li005-1", lineItem: "Website Redesign", category: "Web", department: "Web", setupFee: 5000, recurringFee: 0, deliveryStandard: "60 days", proposalStatus: "Added"},
+      { id: "li005-2", lineItem: "Website Maintenance (Monthly)", category: "Web", department: "Web", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing", proposalStatus: "Added"},
     ],
     communications: [],
     competitors: [
@@ -499,10 +482,10 @@ const MOCK_AUDITS: Audit[] = [
       },
     ],
     timeline: [
-      { id: "tl-005-1", date: "May 18, 2025", event: "Audit Created", type: "audit_created", user: "Mike T." },
-      { id: "tl-005-2", date: "May 19, 2025", event: "Finding Added", type: "finding_added", user: "Mike T.", detail: "Critical: PageSpeed 21/100" },
-      { id: "tl-005-3", date: "May 20, 2025", event: "Status Changed", type: "status_changed", user: "Mike T.", detail: "Completed." },
-      { id: "tl-005-4", date: "May 22, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Mike T.", detail: "Proposal accepted." },
+      { id: "tl-005-1", date: "May 18, 2025", event: "Audit Created", type: "audit_created", user: "Mike T."},
+      { id: "tl-005-2", date: "May 19, 2025", event: "Finding Added", type: "finding_added", user: "Mike T.", detail: "Critical: PageSpeed 21/100"},
+      { id: "tl-005-3", date: "May 20, 2025", event: "Status Changed", type: "status_changed", user: "Mike T.", detail: "Completed."},
+      { id: "tl-005-4", date: "May 22, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Mike T.", detail: "Proposal accepted."},
     ],
   },
 
@@ -524,17 +507,17 @@ const MOCK_AUDITS: Audit[] = [
     summary: "No call tracking, missing GTM, no Meta Pixel, and form submissions not tracked. Cannot attribute any lead source.",
     overallScore: 22,
     findings: [
-      { id: "f006-1", title: "No Call Tracking", severity: "Critical", category: "Call Tracking", description: "Zero call tracking despite phone being the primary lead channel for plumbing.", recommendation: "Install dynamic number insertion across all pages.", revenueImpact: 1200, priority: "Critical" },
-      { id: "f006-2", title: "No GTM Container", severity: "High", category: "Tag Management", description: "No Google Tag Manager. Managing tracking tags inline — fragile and incomplete.", recommendation: "Install GTM and migrate all tracking tags.", revenueImpact: 700, priority: "High" },
-      { id: "f006-3", title: "Form Submissions Not Tracked", severity: "High", category: "Conversion Tracking", description: "Contact form on Contact page has no tracking event configured.", recommendation: "Add form submission event trigger in GTM.", revenueImpact: 600, priority: "High" },
-      { id: "f006-4", title: "No Meta Pixel", severity: "High", category: "Meta Tracking", description: "No Meta Pixel — cannot run any Meta remarketing.", recommendation: "Install Meta Pixel with Lead and Contact events.", revenueImpact: 600, priority: "High" },
+      { id: "f006-1", title: "No Call Tracking", severity: "Critical", category: "Call Tracking", description: "Zero call tracking despite phone being the primary lead channel for plumbing.", recommendation: "Install dynamic number insertion across all pages.", revenueImpact: 1200, priority: "Critical"},
+      { id: "f006-2", title: "No GTM Container", severity: "High", category: "Tag Management", description: "No Google Tag Manager. Managing tracking tags inline — fragile and incomplete.", recommendation: "Install GTM and migrate all tracking tags.", revenueImpact: 700, priority: "High"},
+      { id: "f006-3", title: "Form Submissions Not Tracked", severity: "High", category: "Conversion Tracking", description: "Contact form on Contact page has no tracking event configured.", recommendation: "Add form submission event trigger in GTM.", revenueImpact: 600, priority: "High"},
+      { id: "f006-4", title: "No Meta Pixel", severity: "High", category: "Meta Tracking", description: "No Meta Pixel — cannot run any Meta remarketing.", recommendation: "Install Meta Pixel with Lead and Contact events.", revenueImpact: 600, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs006-1", service: "Tracking & Analytics Setup", reason: "Zero attribution currently — critical for lead-based business.", impactScore: 98, priority: "Critical", department: "Reporting", estimatedRevenue: 700, proposalStatus: "Not Added" },
+      { id: "rs006-1", service: "Tracking & Analytics Setup", reason: "Zero attribution currently — critical for lead-based business.", impactScore: 98, priority: "Critical", department: "Reporting", estimatedRevenue: 700, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li006-1", lineItem: "Tracking & Analytics Setup", category: "Reporting", department: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days", proposalStatus: "Not Added" },
-      { id: "li006-2", lineItem: "Call Tracking Setup", category: "Reporting", department: "Reporting", setupFee: 300, recurringFee: 150, deliveryStandard: "3 days", proposalStatus: "Not Added" },
+      { id: "li006-1", lineItem: "Tracking & Analytics Setup", category: "Reporting", department: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days", proposalStatus: "Not Added"},
+      { id: "li006-2", lineItem: "Call Tracking Setup", category: "Reporting", department: "Reporting", setupFee: 300, recurringFee: 150, deliveryStandard: "3 days", proposalStatus: "Not Added"},
     ],
     communications: [
       {
@@ -548,8 +531,8 @@ const MOCK_AUDITS: Audit[] = [
     ],
     competitors: [],
     timeline: [
-      { id: "tl-006-1", date: "Jun 7, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K." },
-      { id: "tl-006-2", date: "Jun 7, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: No Call Tracking" },
+      { id: "tl-006-1", date: "Jun 7, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K."},
+      { id: "tl-006-2", date: "Jun 7, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: No Call Tracking"},
     ],
   },
 
@@ -571,18 +554,18 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Call handling audit reveals front desk missing 34% of inbound calls during peak hours. No call script, no call tracking, no missed call follow-up automation.",
     overallScore: 41,
     findings: [
-      { id: "f007-1", title: "34% Missed Call Rate", severity: "Critical", category: "Call Handling", description: "34% of inbound calls go unanswered during peak hours (11am-2pm). Each missed call estimated $280 lifetime value.", recommendation: "Implement after-hours voicemail automation and overflow routing.", revenueImpact: 2100, priority: "Critical" },
-      { id: "f007-2", title: "No Call Script in Use", severity: "High", category: "Call Quality", description: "Front desk staff have no standardized intake script. Inconsistent patient experience.", recommendation: "Develop and train call intake script with key qualification questions.", revenueImpact: 900, priority: "High" },
-      { id: "f007-3", title: "No Missed Call Follow-Up", severity: "High", category: "Lead Recovery", description: "Missed calls receive no automatic follow-up. Lost leads never recovered.", recommendation: "Implement missed call SMS automation within 5 minutes.", revenueImpact: 800, priority: "High" },
-      { id: "f007-4", title: "No Call Recording or Scoring", severity: "Medium", category: "Call Intelligence", description: "Cannot review call quality or train staff without recordings.", recommendation: "Enable call recording and monthly call scoring reviews.", revenueImpact: 400, priority: "Medium" },
+      { id: "f007-1", title: "34% Missed Call Rate", severity: "Critical", category: "Call Handling", description: "34% of inbound calls go unanswered during peak hours (11am-2pm). Each missed call estimated $280 lifetime value.", recommendation: "Implement after-hours voicemail automation and overflow routing.", revenueImpact: 2100, priority: "Critical"},
+      { id: "f007-2", title: "No Call Script in Use", severity: "High", category: "Call Quality", description: "Front desk staff have no standardized intake script. Inconsistent patient experience.", recommendation: "Develop and train call intake script with key qualification questions.", revenueImpact: 900, priority: "High"},
+      { id: "f007-3", title: "No Missed Call Follow-Up", severity: "High", category: "Lead Recovery", description: "Missed calls receive no automatic follow-up. Lost leads never recovered.", recommendation: "Implement missed call SMS automation within 5 minutes.", revenueImpact: 800, priority: "High"},
+      { id: "f007-4", title: "No Call Recording or Scoring", severity: "Medium", category: "Call Intelligence", description: "Cannot review call quality or train staff without recordings.", recommendation: "Enable call recording and monthly call scoring reviews.", revenueImpact: 400, priority: "Medium"},
     ],
     recommendedServices: [
-      { id: "rs007-1", service: "Call Intelligence Setup", reason: "34% missed call rate = direct revenue loss.", impactScore: 96, priority: "Critical", department: "Reporting", estimatedRevenue: 800, proposalStatus: "Not Added" },
-      { id: "rs007-2", service: "GBP Optimization", reason: "Multi-location PT with low review volume.", impactScore: 88, priority: "High", department: "GBP", estimatedRevenue: 500, proposalStatus: "Not Added" },
+      { id: "rs007-1", service: "Call Intelligence Setup", reason: "34% missed call rate = direct revenue loss.", impactScore: 96, priority: "Critical", department: "Reporting", estimatedRevenue: 800, proposalStatus: "Not Added"},
+      { id: "rs007-2", service: "GBP Optimization", reason: "Multi-location PT with low review volume.", impactScore: 88, priority: "High", department: "GBP", estimatedRevenue: 500, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li007-1", lineItem: "Call Tracking & Intelligence Setup", category: "Reporting", department: "Reporting", setupFee: 600, recurringFee: 200, deliveryStandard: "5 days", proposalStatus: "Not Added" },
-      { id: "li007-2", lineItem: "Missed Call SMS Automation", category: "Automation", department: "AI Automation", setupFee: 800, recurringFee: 150, deliveryStandard: "7 days", proposalStatus: "Not Added" },
+      { id: "li007-1", lineItem: "Call Tracking & Intelligence Setup", category: "Reporting", department: "Reporting", setupFee: 600, recurringFee: 200, deliveryStandard: "5 days", proposalStatus: "Not Added"},
+      { id: "li007-2", lineItem: "Missed Call SMS Automation", category: "Automation", department: "AI Automation", setupFee: 800, recurringFee: 150, deliveryStandard: "7 days", proposalStatus: "Not Added"},
     ],
     communications: [
       {
@@ -614,10 +597,10 @@ const MOCK_AUDITS: Audit[] = [
     ],
     competitors: [],
     timeline: [
-      { id: "tl-007-1", date: "Jun 3, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M." },
-      { id: "tl-007-2", date: "Jun 3, 2025", event: "Communication Added", type: "communication_added", user: "Jordan M.", detail: "Discovery call summary logged." },
-      { id: "tl-007-3", date: "Jun 4, 2025", event: "Finding Added", type: "finding_added", user: "Jordan M.", detail: "Critical: 34% Missed Call Rate" },
-      { id: "tl-007-4", date: "Jun 5, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed." },
+      { id: "tl-007-1", date: "Jun 3, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M."},
+      { id: "tl-007-2", date: "Jun 3, 2025", event: "Communication Added", type: "communication_added", user: "Jordan M.", detail: "Discovery call summary logged."},
+      { id: "tl-007-3", date: "Jun 4, 2025", event: "Finding Added", type: "finding_added", user: "Jordan M.", detail: "Critical: 34% Missed Call Rate"},
+      { id: "tl-007-4", date: "Jun 5, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed."},
     ],
   },
 
@@ -639,17 +622,17 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Competitors ranking for 220+ keywords this client doesn't target. Three competitors running aggressive seasonal PPC. Client has content advantages unexploited.",
     overallScore: 58,
     findings: [
-      { id: "f008-1", title: "220+ Competitor Keyword Gaps", severity: "High", category: "Keyword Strategy", description: "Competitors collectively rank for 220 keywords where client has zero presence.", recommendation: "Build targeted keyword strategy to capture top 50 gap opportunities.", revenueImpact: 1200, priority: "High" },
-      { id: "f008-2", title: "No Seasonal PPC Presence", severity: "High", category: "Competitive PPC", description: "3 competitors running spring/summer PPC campaigns. Client missing peak season revenue.", recommendation: "Launch seasonal PPC for spring/summer landscape installation.", revenueImpact: 900, priority: "High" },
-      { id: "f008-3", title: "Weak Review Volume vs Competitors", severity: "Medium", category: "GBP", description: "Client: 47 reviews. Competitor avg: 120 reviews. Losing local search to review-rich competitors.", recommendation: "Launch review generation campaign targeting 150 reviews in 6 months.", revenueImpact: 700, priority: "Medium" },
+      { id: "f008-1", title: "220+ Competitor Keyword Gaps", severity: "High", category: "Keyword Strategy", description: "Competitors collectively rank for 220 keywords where client has zero presence.", recommendation: "Build targeted keyword strategy to capture top 50 gap opportunities.", revenueImpact: 1200, priority: "High"},
+      { id: "f008-2", title: "No Seasonal PPC Presence", severity: "High", category: "Competitive PPC", description: "3 competitors running spring/summer PPC campaigns. Client missing peak season revenue.", recommendation: "Launch seasonal PPC for spring/summer landscape installation.", revenueImpact: 900, priority: "High"},
+      { id: "f008-3", title: "Weak Review Volume vs Competitors", severity: "Medium", category: "GBP", description: "Client: 47 reviews. Competitor avg: 120 reviews. Losing local search to review-rich competitors.", recommendation: "Launch review generation campaign targeting 150 reviews in 6 months.", revenueImpact: 700, priority: "Medium"},
     ],
     recommendedServices: [
-      { id: "rs008-1", service: "SEO Monthly Management", reason: "220+ keyword gaps require structured content strategy.", impactScore: 91, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-      { id: "rs008-2", service: "PPC Campaign Setup", reason: "Missing peak season paid presence vs 3 competitors.", impactScore: 86, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added" },
+      { id: "rs008-1", service: "SEO Monthly Management", reason: "220+ keyword gaps require structured content strategy.", impactScore: 91, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added"},
+      { id: "rs008-2", service: "PPC Campaign Setup", reason: "Missing peak season paid presence vs 3 competitors.", impactScore: 86, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li008-1", lineItem: "SEO Monthly Management", category: "SEO", department: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-      { id: "li008-2", lineItem: "Keyword Strategy & Research", category: "SEO", department: "SEO", setupFee: 500, recurringFee: 0, deliveryStandard: "6 days", proposalStatus: "Not Added" },
+      { id: "li008-1", lineItem: "SEO Monthly Management", category: "SEO", department: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
+      { id: "li008-2", lineItem: "Keyword Strategy & Research", category: "SEO", department: "SEO", setupFee: 500, recurringFee: 0, deliveryStandard: "6 days", proposalStatus: "Not Added"},
     ],
     communications: [],
     competitors: [
@@ -671,8 +654,8 @@ const MOCK_AUDITS: Audit[] = [
       },
     ],
     timeline: [
-      { id: "tl-008-1", date: "May 24, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M." },
-      { id: "tl-008-2", date: "May 26, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed." },
+      { id: "tl-008-1", date: "May 24, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M."},
+      { id: "tl-008-2", date: "May 26, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed."},
     ],
   },
 
@@ -694,19 +677,19 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Law firm relying entirely on manual intake processes. Missing automated lead nurturing, chatbot, appointment booking automation, and CRM integration.",
     overallScore: 19,
     findings: [
-      { id: "f009-1", title: "No Lead Nurturing Automation", severity: "Critical", category: "Automation", description: "New leads receive manual email outreach 2–3 days after inquiry. Competitors follow up within minutes.", recommendation: "Build automated 5-step lead nurturing sequence triggered at inquiry.", revenueImpact: 2200, priority: "Critical" },
-      { id: "f009-2", title: "No Chatbot or AI Assistant", severity: "High", category: "AI Automation", description: "Website has no live chat or AI assistant. Visitors with urgent legal questions leave immediately.", recommendation: "Deploy AI chat widget with legal intake qualification flow.", revenueImpact: 1400, priority: "High" },
-      { id: "f009-3", title: "No Appointment Booking Automation", severity: "High", category: "Automation", description: "Consultations scheduled manually by phone only. Friction causing lost leads.", recommendation: "Integrate online booking with automated calendar sync.", revenueImpact: 1100, priority: "High" },
-      { id: "f009-4", title: "No CRM Integration", severity: "High", category: "CRM", description: "No CRM in use. Leads tracked in spreadsheets. Cannot measure conversion rates.", recommendation: "Implement CRM with lead tracking and automated pipeline stages.", revenueImpact: 900, priority: "High" },
+      { id: "f009-1", title: "No Lead Nurturing Automation", severity: "Critical", category: "Automation", description: "New leads receive manual email outreach 2–3 days after inquiry. Competitors follow up within minutes.", recommendation: "Build automated 5-step lead nurturing sequence triggered at inquiry.", revenueImpact: 2200, priority: "Critical"},
+      { id: "f009-2", title: "No Chatbot or AI Assistant", severity: "High", category: "AI Automation", description: "Website has no live chat or AI assistant. Visitors with urgent legal questions leave immediately.", recommendation: "Deploy AI chat widget with legal intake qualification flow.", revenueImpact: 1400, priority: "High"},
+      { id: "f009-3", title: "No Appointment Booking Automation", severity: "High", category: "Automation", description: "Consultations scheduled manually by phone only. Friction causing lost leads.", recommendation: "Integrate online booking with automated calendar sync.", revenueImpact: 1100, priority: "High"},
+      { id: "f009-4", title: "No CRM Integration", severity: "High", category: "CRM", description: "No CRM in use. Leads tracked in spreadsheets. Cannot measure conversion rates.", recommendation: "Implement CRM with lead tracking and automated pipeline stages.", revenueImpact: 900, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs009-1", service: "AI Automation Setup", reason: "Manual intake losing leads to automated competitors.", impactScore: 97, priority: "Critical", department: "AI Automation", estimatedRevenue: 2500, proposalStatus: "Not Added" },
-      { id: "rs009-2", service: "CRM Setup & Integration", reason: "No lead tracking or pipeline visibility.", impactScore: 90, priority: "High", department: "AI Automation", estimatedRevenue: 1200, proposalStatus: "Not Added" },
+      { id: "rs009-1", service: "AI Automation Setup", reason: "Manual intake losing leads to automated competitors.", impactScore: 97, priority: "Critical", department: "AI Automation", estimatedRevenue: 2500, proposalStatus: "Not Added"},
+      { id: "rs009-2", service: "CRM Setup & Integration", reason: "No lead tracking or pipeline visibility.", impactScore: 90, priority: "High", department: "AI Automation", estimatedRevenue: 1200, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li009-1", lineItem: "AI Automation Setup", category: "Automation", department: "AI Automation", setupFee: 2500, recurringFee: 500, deliveryStandard: "21 days", proposalStatus: "Not Added" },
-      { id: "li009-2", lineItem: "CRM Setup & Configuration", category: "CRM", department: "AI Automation", setupFee: 1200, recurringFee: 200, deliveryStandard: "14 days", proposalStatus: "Not Added" },
-      { id: "li009-3", lineItem: "AI Chatbot Implementation", category: "Automation", department: "AI Automation", setupFee: 1500, recurringFee: 300, deliveryStandard: "10 days", proposalStatus: "Not Added" },
+      { id: "li009-1", lineItem: "AI Automation Setup", category: "Automation", department: "AI Automation", setupFee: 2500, recurringFee: 500, deliveryStandard: "21 days", proposalStatus: "Not Added"},
+      { id: "li009-2", lineItem: "CRM Setup & Configuration", category: "CRM", department: "AI Automation", setupFee: 1200, recurringFee: 200, deliveryStandard: "14 days", proposalStatus: "Not Added"},
+      { id: "li009-3", lineItem: "AI Chatbot Implementation", category: "Automation", department: "AI Automation", setupFee: 1500, recurringFee: 300, deliveryStandard: "10 days", proposalStatus: "Not Added"},
     ],
     communications: [
       {
@@ -722,8 +705,8 @@ const MOCK_AUDITS: Audit[] = [
     ],
     competitors: [],
     timeline: [
-      { id: "tl-009-1", date: "Jun 4, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K." },
-      { id: "tl-009-2", date: "Jun 5, 2025", event: "Status Changed", type: "status_changed", user: "Sarah K.", detail: "Completed." },
+      { id: "tl-009-1", date: "Jun 4, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K."},
+      { id: "tl-009-2", date: "Jun 5, 2025", event: "Status Changed", type: "status_changed", user: "Sarah K.", detail: "Completed."},
     ],
   },
 
@@ -745,21 +728,21 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Website hosted on 7-year-old shared hosting plan. No CDN, expired SSL certificate, no automated backups, and multiple security vulnerabilities identified.",
     overallScore: 18,
     findings: [
-      { id: "f010-1", title: "Expired SSL Certificate", severity: "Critical", category: "SSL", description: "SSL certificate expired 14 days ago. Browsers displaying 'Not Secure' warning. 68% of visitors leaving immediately.", recommendation: "Renew SSL certificate immediately. Enable auto-renewal.", revenueImpact: 2100, priority: "Critical" },
-      { id: "f010-2", title: "No Automated Backups", severity: "Critical", category: "Backups", description: "Last manual backup performed 11 months ago. Site rebuild cost estimated $8,000+ if lost.", recommendation: "Enable daily automated backups to off-site location.", revenueImpact: 800, priority: "Critical" },
-      { id: "f010-3", title: "No CDN Configured", severity: "High", category: "Performance", description: "All assets served from origin server. 8x slower for users outside 50-mile radius.", recommendation: "Configure Cloudflare CDN with edge caching.", revenueImpact: 500, priority: "High" },
-      { id: "f010-4", title: "Outdated WordPress Core", severity: "Critical", category: "Security", description: "WordPress 5.2.8 — 3 major versions behind. 14 known vulnerabilities unpatched.", recommendation: "Update WordPress core, all plugins, and theme immediately.", revenueImpact: 400, priority: "Critical" },
-      { id: "f010-5", title: "Shared Hosting Plan", severity: "High", category: "Hosting", description: "Shared hosting causing slow server response time of 1.8s. 'Noisy neighbor' risk.", recommendation: "Migrate to managed WordPress hosting or VPS.", revenueImpact: 0, priority: "High" },
+      { id: "f010-1", title: "Expired SSL Certificate", severity: "Critical", category: "SSL", description: "SSL certificate expired 14 days ago. Browsers displaying 'Not Secure' warning. 68% of visitors leaving immediately.", recommendation: "Renew SSL certificate immediately. Enable auto-renewal.", revenueImpact: 2100, priority: "Critical"},
+      { id: "f010-2", title: "No Automated Backups", severity: "Critical", category: "Backups", description: "Last manual backup performed 11 months ago. Site rebuild cost estimated $8,000+ if lost.", recommendation: "Enable daily automated backups to off-site location.", revenueImpact: 800, priority: "Critical"},
+      { id: "f010-3", title: "No CDN Configured", severity: "High", category: "Performance", description: "All assets served from origin server. 8x slower for users outside 50-mile radius.", recommendation: "Configure Cloudflare CDN with edge caching.", revenueImpact: 500, priority: "High"},
+      { id: "f010-4", title: "Outdated WordPress Core", severity: "Critical", category: "Security", description: "WordPress 5.2.8 — 3 major versions behind. 14 known vulnerabilities unpatched.", recommendation: "Update WordPress core, all plugins, and theme immediately.", revenueImpact: 400, priority: "Critical"},
+      { id: "f010-5", title: "Shared Hosting Plan", severity: "High", category: "Hosting", description: "Shared hosting causing slow server response time of 1.8s. 'Noisy neighbor' risk.", recommendation: "Migrate to managed WordPress hosting or VPS.", revenueImpact: 0, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs010-1", service: "Hosting Migration & Setup", reason: "Expired SSL and shared hosting causing critical performance issues.", impactScore: 99, priority: "Critical", department: "Web", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-      { id: "rs010-2", service: "Website Security & Maintenance", reason: "14 known vulnerabilities need immediate patching.", impactScore: 97, priority: "Critical", department: "Web", estimatedRevenue: 350, proposalStatus: "Not Added" },
+      { id: "rs010-1", service: "Hosting Migration & Setup", reason: "Expired SSL and shared hosting causing critical performance issues.", impactScore: 99, priority: "Critical", department: "Web", estimatedRevenue: 1200, proposalStatus: "Not Added"},
+      { id: "rs010-2", service: "Website Security & Maintenance", reason: "14 known vulnerabilities need immediate patching.", impactScore: 97, priority: "Critical", department: "Web", estimatedRevenue: 350, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li010-1", lineItem: "Hosting Migration", category: "Hosting", department: "Web", setupFee: 800, recurringFee: 0, deliveryStandard: "5 days", proposalStatus: "Not Added" },
-      { id: "li010-2", lineItem: "Managed Hosting (Monthly)", category: "Hosting", department: "Web", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-      { id: "li010-3", lineItem: "SSL Certificate & Cloudflare Setup", category: "Security", department: "Web", setupFee: 400, recurringFee: 0, deliveryStandard: "2 days", proposalStatus: "Not Added" },
-      { id: "li010-4", lineItem: "Website Security & Maintenance (Monthly)", category: "Security", department: "Web", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
+      { id: "li010-1", lineItem: "Hosting Migration", category: "Hosting", department: "Web", setupFee: 800, recurringFee: 0, deliveryStandard: "5 days", proposalStatus: "Not Added"},
+      { id: "li010-2", lineItem: "Managed Hosting (Monthly)", category: "Hosting", department: "Web", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
+      { id: "li010-3", lineItem: "SSL Certificate & Cloudflare Setup", category: "Security", department: "Web", setupFee: 400, recurringFee: 0, deliveryStandard: "2 days", proposalStatus: "Not Added"},
+      { id: "li010-4", lineItem: "Website Security & Maintenance (Monthly)", category: "Security", department: "Web", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
     ],
     communications: [
       {
@@ -773,8 +756,8 @@ const MOCK_AUDITS: Audit[] = [
     ],
     competitors: [],
     timeline: [
-      { id: "tl-010-1", date: "Jun 8, 2025", event: "Audit Created", type: "audit_created", user: "Mike T." },
-      { id: "tl-010-2", date: "Jun 8, 2025", event: "Finding Added", type: "finding_added", user: "Mike T.", detail: "Critical: Expired SSL Certificate" },
+      { id: "tl-010-1", date: "Jun 8, 2025", event: "Audit Created", type: "audit_created", user: "Mike T."},
+      { id: "tl-010-2", date: "Jun 8, 2025", event: "Finding Added", type: "finding_added", user: "Mike T.", detail: "Critical: Expired SSL Certificate"},
     ],
   },
 
@@ -796,23 +779,23 @@ const MOCK_AUDITS: Audit[] = [
     summary: "No blog, thin service pages averaging 150 words, and zero location-specific content. Competitors publishing 12,000+ searchable seasonal content monthly.",
     overallScore: 31,
     findings: [
-      { id: "f011-1", title: "No Blog or Content Hub", severity: "Critical", category: "Content Strategy", description: "Zero blog posts. Competitors capturing 8,000+ seasonal searches monthly with content strategy.", recommendation: "Launch content hub with monthly seasonal articles.", revenueImpact: 1400, priority: "Critical" },
-      { id: "f011-2", title: "Thin Service Pages", severity: "High", category: "Content Quality", description: "All service pages under 150 words — insufficient for ranking.", recommendation: "Rewrite all service pages to 700+ words with FAQ schema.", revenueImpact: 900, priority: "High" },
-      { id: "f011-3", title: "Missing Location Pages", severity: "High", category: "Local Content", description: "No service area pages for Round Rock, Cedar Park, or Georgetown.", recommendation: "Create dedicated service area landing pages for 3 expansion markets.", revenueImpact: 900, priority: "High" },
+      { id: "f011-1", title: "No Blog or Content Hub", severity: "Critical", category: "Content Strategy", description: "Zero blog posts. Competitors capturing 8,000+ seasonal searches monthly with content strategy.", recommendation: "Launch content hub with monthly seasonal articles.", revenueImpact: 1400, priority: "Critical"},
+      { id: "f011-2", title: "Thin Service Pages", severity: "High", category: "Content Quality", description: "All service pages under 150 words — insufficient for ranking.", recommendation: "Rewrite all service pages to 700+ words with FAQ schema.", revenueImpact: 900, priority: "High"},
+      { id: "f011-3", title: "Missing Location Pages", severity: "High", category: "Local Content", description: "No service area pages for Round Rock, Cedar Park, or Georgetown.", recommendation: "Create dedicated service area landing pages for 3 expansion markets.", revenueImpact: 900, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs011-1", service: "SEO Monthly Management", reason: "Content gaps require ongoing strategy.", impactScore: 92, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-      { id: "rs011-2", service: "Content Writing (Monthly)", reason: "Blog content needed to capture seasonal traffic.", impactScore: 85, priority: "High", department: "SEO", estimatedRevenue: 700, proposalStatus: "Not Added" },
+      { id: "rs011-1", service: "SEO Monthly Management", reason: "Content gaps require ongoing strategy.", impactScore: 92, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added"},
+      { id: "rs011-2", service: "Content Writing (Monthly)", reason: "Blog content needed to capture seasonal traffic.", impactScore: 85, priority: "High", department: "SEO", estimatedRevenue: 700, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li011-1", lineItem: "SEO Setup & Onboarding", category: "SEO", department: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days", proposalStatus: "Not Added" },
-      { id: "li011-2", lineItem: "Content Writing (4 Articles/mo)", category: "Content", department: "SEO", setupFee: 0, recurringFee: 700, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
+      { id: "li011-1", lineItem: "SEO Setup & Onboarding", category: "SEO", department: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days", proposalStatus: "Not Added"},
+      { id: "li011-2", lineItem: "Content Writing (4 Articles/mo)", category: "Content", department: "SEO", setupFee: 0, recurringFee: 700, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
     ],
     communications: [],
     competitors: [],
     timeline: [
-      { id: "tl-011-1", date: "Jun 2, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M." },
-      { id: "tl-011-2", date: "Jun 3, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed." },
+      { id: "tl-011-1", date: "Jun 2, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M."},
+      { id: "tl-011-2", date: "Jun 3, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed."},
     ],
   },
 
@@ -834,22 +817,22 @@ const MOCK_AUDITS: Audit[] = [
     summary: "4 locations averaging only 22 reviews each. 2 locations not appearing in local pack at all. No GBP posts from any location.",
     overallScore: 38,
     findings: [
-      { id: "f012-1", title: "2 Locations Not in Local Pack", severity: "Critical", category: "GBP Rankings", description: "Westside and Downtown locations not appearing in top 7 for physical therapy searches.", recommendation: "GBP optimization + citation building + review velocity strategy per location.", revenueImpact: 2000, priority: "Critical" },
-      { id: "f012-2", title: "22 Avg Reviews Per Location", severity: "High", category: "GBP Reviews", description: "Below benchmark of 75+ reviews for PT practice to rank in local pack.", recommendation: "Implement post-visit review automation for all 4 locations.", revenueImpact: 1400, priority: "High" },
-      { id: "f012-3", title: "Zero GBP Posts Across All Locations", severity: "High", category: "GBP Posts", description: "No GBP posts from any of the 4 locations — losing engagement ranking signal.", recommendation: "Weekly location-specific posts: staff spotlights, treatment tips, insurance info.", revenueImpact: 700, priority: "High" },
+      { id: "f012-1", title: "2 Locations Not in Local Pack", severity: "Critical", category: "GBP Rankings", description: "Westside and Downtown locations not appearing in top 7 for physical therapy searches.", recommendation: "GBP optimization + citation building + review velocity strategy per location.", revenueImpact: 2000, priority: "Critical"},
+      { id: "f012-2", title: "22 Avg Reviews Per Location", severity: "High", category: "GBP Reviews", description: "Below benchmark of 75+ reviews for PT practice to rank in local pack.", recommendation: "Implement post-visit review automation for all 4 locations.", revenueImpact: 1400, priority: "High"},
+      { id: "f012-3", title: "Zero GBP Posts Across All Locations", severity: "High", category: "GBP Posts", description: "No GBP posts from any of the 4 locations — losing engagement ranking signal.", recommendation: "Weekly location-specific posts: staff spotlights, treatment tips, insurance info.", revenueImpact: 700, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs012-1", service: "GBP Optimization", reason: "4 locations, 2 not ranking — urgent GBP intervention.", impactScore: 96, priority: "Critical", department: "GBP", estimatedRevenue: 500, proposalStatus: "Not Added" },
+      { id: "rs012-1", service: "GBP Optimization", reason: "4 locations, 2 not ranking — urgent GBP intervention.", impactScore: 96, priority: "Critical", department: "GBP", estimatedRevenue: 500, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li012-1", lineItem: "GBP Monthly Management (4 Locations)", category: "GBP", department: "GBP", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-      { id: "li012-2", lineItem: "GBP Setup & Optimization", category: "GBP", department: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days", proposalStatus: "Not Added" },
+      { id: "li012-1", lineItem: "GBP Monthly Management (4 Locations)", category: "GBP", department: "GBP", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
+      { id: "li012-2", lineItem: "GBP Setup & Optimization", category: "GBP", department: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days", proposalStatus: "Not Added"},
     ],
     communications: [],
     competitors: [],
     timeline: [
-      { id: "tl-012-1", date: "Jun 3, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M." },
-      { id: "tl-012-2", date: "Jun 4, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed." },
+      { id: "tl-012-1", date: "Jun 3, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M."},
+      { id: "tl-012-2", date: "Jun 4, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed."},
     ],
   },
 
@@ -871,22 +854,22 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Single broad match PPC campaign with no landing pages and missing call tracking. All traffic sent to homepage. Campaign restructure required.",
     overallScore: 44,
     findings: [
-      { id: "f013-1", title: "No Dedicated Landing Pages", severity: "Critical", category: "Landing Pages", description: "All paid traffic directed to homepage. No service-specific conversion path.", recommendation: "Build dedicated landing pages for cosmetic, emergency, and implant services.", revenueImpact: 1600, priority: "Critical" },
-      { id: "f013-2", title: "No Negative Keywords", severity: "High", category: "PPC Structure", description: "Zero negative keyword list. Wasting budget on DIY dental and dental school searches.", recommendation: "Build 200+ dental-specific negative keyword list.", revenueImpact: 1000, priority: "High" },
-      { id: "f013-3", title: "Phone Calls Only Tracked", severity: "High", category: "PPC Tracking", description: "Form submissions and appointment bookings not tracked in Google Ads.", recommendation: "Add conversion actions for forms and appointment booking in GTM.", revenueImpact: 800, priority: "High" },
+      { id: "f013-1", title: "No Dedicated Landing Pages", severity: "Critical", category: "Landing Pages", description: "All paid traffic directed to homepage. No service-specific conversion path.", recommendation: "Build dedicated landing pages for cosmetic, emergency, and implant services.", revenueImpact: 1600, priority: "Critical"},
+      { id: "f013-2", title: "No Negative Keywords", severity: "High", category: "PPC Structure", description: "Zero negative keyword list. Wasting budget on DIY dental and dental school searches.", recommendation: "Build 200+ dental-specific negative keyword list.", revenueImpact: 1000, priority: "High"},
+      { id: "f013-3", title: "Phone Calls Only Tracked", severity: "High", category: "PPC Tracking", description: "Form submissions and appointment bookings not tracked in Google Ads.", recommendation: "Add conversion actions for forms and appointment booking in GTM.", revenueImpact: 800, priority: "High"},
     ],
     recommendedServices: [
-      { id: "rs013-1", service: "PPC Campaign Restructure", reason: "Current structure wasting 40%+ of budget.", impactScore: 93, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added" },
+      { id: "rs013-1", service: "PPC Campaign Restructure", reason: "Current structure wasting 40%+ of budget.", impactScore: 93, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li013-1", lineItem: "PPC Campaign Setup", category: "PPC", department: "Paid Advertising", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days", proposalStatus: "Not Added" },
-      { id: "li013-2", lineItem: "PPC Monthly Management", category: "PPC", department: "Paid Advertising", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
+      { id: "li013-1", lineItem: "PPC Campaign Setup", category: "PPC", department: "Paid Advertising", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days", proposalStatus: "Not Added"},
+      { id: "li013-2", lineItem: "PPC Monthly Management", category: "PPC", department: "Paid Advertising", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
     ],
     communications: [],
     competitors: [],
     timeline: [
-      { id: "tl-013-1", date: "Jun 5, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M." },
-      { id: "tl-013-2", date: "Jun 7, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Needs Review — awaiting campaign data." },
+      { id: "tl-013-1", date: "Jun 5, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M."},
+      { id: "tl-013-2", date: "Jun 7, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Needs Review — awaiting campaign data."},
     ],
   },
 
@@ -908,22 +891,22 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Meta Pixel installed with ViewContent only. No campaigns running. Competitor has zero paid presence — window of opportunity to dominate.",
     overallScore: 51,
     findings: [
-      { id: "f014-1", title: "Pixel Has Only ViewContent Event", severity: "High", category: "Meta Tracking", description: "Pixel installed but missing Lead, Contact, and trial signup events.", recommendation: "Configure Lead and Purchase events for proper campaign optimization.", revenueImpact: 800, priority: "High" },
-      { id: "f014-2", title: "No Meta Campaigns Active", severity: "High", category: "Meta Ads", description: "Zero Meta campaigns while gym memberships have high visual ad affinity.", recommendation: "Launch free trial offer campaign targeting fitness interest audience.", revenueImpact: 1200, priority: "High" },
-      { id: "f014-3", title: "No Lookalike Audiences", severity: "Medium", category: "Meta Audiences", description: "No customer email list uploaded for lookalike expansion.", recommendation: "Upload customer list and build 1% lookalike for prospecting.", revenueImpact: 600, priority: "Medium" },
+      { id: "f014-1", title: "Pixel Has Only ViewContent Event", severity: "High", category: "Meta Tracking", description: "Pixel installed but missing Lead, Contact, and trial signup events.", recommendation: "Configure Lead and Purchase events for proper campaign optimization.", revenueImpact: 800, priority: "High"},
+      { id: "f014-2", title: "No Meta Campaigns Active", severity: "High", category: "Meta Ads", description: "Zero Meta campaigns while gym memberships have high visual ad affinity.", recommendation: "Launch free trial offer campaign targeting fitness interest audience.", revenueImpact: 1200, priority: "High"},
+      { id: "f014-3", title: "No Lookalike Audiences", severity: "Medium", category: "Meta Audiences", description: "No customer email list uploaded for lookalike expansion.", recommendation: "Upload customer list and build 1% lookalike for prospecting.", revenueImpact: 600, priority: "Medium"},
     ],
     recommendedServices: [
-      { id: "rs014-1", service: "Meta Ads Monthly Management", reason: "Competitor has no paid presence — first-mover advantage.", impactScore: 88, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added" },
+      { id: "rs014-1", service: "Meta Ads Monthly Management", reason: "Competitor has no paid presence — first-mover advantage.", impactScore: 88, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li014-1", lineItem: "Meta Ads Setup", category: "Meta Ads", department: "Paid Advertising", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days", proposalStatus: "Not Added" },
-      { id: "li014-2", lineItem: "Meta Ads Monthly Management", category: "Meta Ads", department: "Paid Advertising", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
+      { id: "li014-1", lineItem: "Meta Ads Setup", category: "Meta Ads", department: "Paid Advertising", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days", proposalStatus: "Not Added"},
+      { id: "li014-2", lineItem: "Meta Ads Monthly Management", category: "Meta Ads", department: "Paid Advertising", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
     ],
     communications: [],
     competitors: [],
     timeline: [
-      { id: "tl-014-1", date: "May 20, 2025", event: "Audit Created", type: "audit_created", user: "Mike T." },
-      { id: "tl-014-2", date: "May 21, 2025", event: "Status Changed", type: "status_changed", user: "Mike T.", detail: "Completed." },
+      { id: "tl-014-1", date: "May 20, 2025", event: "Audit Created", type: "audit_created", user: "Mike T."},
+      { id: "tl-014-2", date: "May 21, 2025", event: "Status Changed", type: "status_changed", user: "Mike T.", detail: "Completed."},
     ],
   },
 
@@ -945,100 +928,100 @@ const MOCK_AUDITS: Audit[] = [
     summary: "Law firm website on entry-level hosting with no security monitoring, no backup strategy, and performance degrading under traffic spikes.",
     overallScore: 44,
     findings: [
-      { id: "f015-1", title: "No Security Monitoring", severity: "High", category: "Security", description: "No malware scanning, security alerts, or firewall configured.", recommendation: "Enable security monitoring with daily malware scans and firewall.", revenueImpact: 600, priority: "High" },
-      { id: "f015-2", title: "No Backup Strategy", severity: "High", category: "Backups", description: "Last backup 4 months ago. No automated backup schedule.", recommendation: "Configure daily automated backups to off-site storage.", revenueImpact: 700, priority: "High" },
-      { id: "f015-3", title: "Performance Degrades Under Load", severity: "Medium", category: "Performance", description: "Server response time spikes to 3.2s during business hours. Shared hosting limitation.", recommendation: "Migrate to managed hosting or dedicated VPS.", revenueImpact: 500, priority: "Medium" },
+      { id: "f015-1", title: "No Security Monitoring", severity: "High", category: "Security", description: "No malware scanning, security alerts, or firewall configured.", recommendation: "Enable security monitoring with daily malware scans and firewall.", revenueImpact: 600, priority: "High"},
+      { id: "f015-2", title: "No Backup Strategy", severity: "High", category: "Backups", description: "Last backup 4 months ago. No automated backup schedule.", recommendation: "Configure daily automated backups to off-site storage.", revenueImpact: 700, priority: "High"},
+      { id: "f015-3", title: "Performance Degrades Under Load", severity: "Medium", category: "Performance", description: "Server response time spikes to 3.2s during business hours. Shared hosting limitation.", recommendation: "Migrate to managed hosting or dedicated VPS.", revenueImpact: 500, priority: "Medium"},
     ],
     recommendedServices: [
-      { id: "rs015-1", service: "Hosting Migration & Managed Hosting", reason: "Current hosting is a liability for a law firm handling sensitive client data.", impactScore: 91, priority: "High", department: "Web", estimatedRevenue: 150, proposalStatus: "Not Added" },
+      { id: "rs015-1", service: "Hosting Migration & Managed Hosting", reason: "Current hosting is a liability for a law firm handling sensitive client data.", impactScore: 91, priority: "High", department: "Web", estimatedRevenue: 150, proposalStatus: "Not Added"},
     ],
     recommendedLineItems: [
-      { id: "li015-1", lineItem: "Hosting Migration", category: "Hosting", department: "Web", setupFee: 800, recurringFee: 0, deliveryStandard: "5 days", proposalStatus: "Not Added" },
-      { id: "li015-2", lineItem: "Managed Hosting (Monthly)", category: "Hosting", department: "Web", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-      { id: "li015-3", lineItem: "Security Monitoring (Monthly)", category: "Security", department: "Web", setupFee: 200, recurringFee: 100, deliveryStandard: "3 days", proposalStatus: "Not Added" },
+      { id: "li015-1", lineItem: "Hosting Migration", category: "Hosting", department: "Web", setupFee: 800, recurringFee: 0, deliveryStandard: "5 days", proposalStatus: "Not Added"},
+      { id: "li015-2", lineItem: "Managed Hosting (Monthly)", category: "Hosting", department: "Web", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing", proposalStatus: "Not Added"},
+      { id: "li015-3", lineItem: "Security Monitoring (Monthly)", category: "Security", department: "Web", setupFee: 200, recurringFee: 100, deliveryStandard: "3 days", proposalStatus: "Not Added"},
     ],
     communications: [],
     competitors: [],
     timeline: [
-      { id: "tl-015-1", date: "Jun 5, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K." },
+      { id: "tl-015-1", date: "Jun 5, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K."},
     ],
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Color Helpers
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 const SEVERITY_COLORS: Record<FindingSeverity, { bg: string; text: string; border: string }> = {
-  Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA" },
-  High:     { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
-  Medium:   { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
-  Low:      { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
+  Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA"},
+  High:     { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
+  Medium:   { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
+  Low:      { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
 };
 
 const PRIORITY_COLORS: Record<AuditPriority, { bg: string; text: string; border: string }> = {
-  Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA" },
-  High:     { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
-  Medium:   { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
-  Low:      { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
+  Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA"},
+  High:     { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
+  Medium:   { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
+  Low:      { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
 };
 
 const AUDIT_STATUS_COLORS: Record<AuditStatus, { bg: string; text: string; border: string }> = {
-  "Not Started":  { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB" },
-  "Pending":      { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  "In Progress":  { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },
-  "Completed":    { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  "Needs Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
+  "Not Started":  { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
+  "Pending":      { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
+  "In Progress":  { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD"},
+  "Completed":    { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
+  "Needs Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
 };
 
 const PROPOSAL_STATUS_COLORS: Record<ProposalStatus, { bg: string; text: string; border: string }> = {
-  "Not Started": { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB" },
-  "Draft":       { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
-  "Sent":        { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  "Accepted":    { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  "In Proposal": { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE" },
+  "Not Started": { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
+  "Draft":       { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
+  "Sent":        { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
+  "Accepted":    { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
+  "In Proposal": { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE"},
 };
 
 const AUDIT_TYPE_META: Record<AuditType, { icon: string; color: string; bg: string; border: string }> = {
-  "SEO Technical":          { icon: "⚙️",  color: "#1D4ED8", bg: "#EFF6FF",  border: "#BFDBFE" },
-  "SEO Content":            { icon: "📝",  color: "#059669", bg: "#F0FDF4",  border: "#BBF7D0" },
-  "GBP":                    { icon: "📍",  color: "#D97706", bg: "#FFFBEB",  border: "#FDE68A" },
-  "PPC":                    { icon: "💰",  color: "#C2410C", bg: "#FFF7ED",  border: "#FED7AA" },
-  "Meta Ads":               { icon: "📘",  color: "#1877F2", bg: "#EFF6FF",  border: "#BFDBFE" },
-  "Website":                { icon: "🌐",  color: "#7C3AED", bg: "#F5F3FF",  border: "#DDD6FE" },
-  "Tracking":               { icon: "📡",  color: "#0369A1", bg: "#F0F9FF",  border: "#BAE6FD" },
-  "Call Handling":          { icon: "📞",  color: "#BE123C", bg: "#FFF1F2",  border: "#FECDD3" },
-  "Competitor":             { icon: "🏆",  color: "#6D28D9", bg: "#F5F3FF",  border: "#DDD6FE" },
-  "AI Automation":          { icon: "🤖",  color: "#0F766E", bg: "#F0FDFA",  border: "#99F6E4" },
-  "Hosting & Infrastructure": { icon: "🖥️", color: "#92400E", bg: "#FFFBEB", border: "#FDE68A" },
+  "SEO Technical":          { icon: "",  color: "#1D4ED8", bg: "#EFF6FF",  border: "#BFDBFE"},
+  "SEO Content":            { icon: "",  color: "#059669", bg: "#F0FDF4",  border: "#BBF7D0"},
+  "GBP":                    { icon: "",  color: "#D97706", bg: "#FFFBEB",  border: "#FDE68A"},
+  "PPC":                    { icon: "",  color: "#C2410C", bg: "#FFF7ED",  border: "#FED7AA"},
+  "Meta Ads":               { icon: "",  color: "#1877F2", bg: "#EFF6FF",  border: "#BFDBFE"},
+  "Website":                { icon: "",  color: "#7C3AED", bg: "#F5F3FF",  border: "#DDD6FE"},
+  "Tracking":               { icon: "",  color: "#0369A1", bg: "#F0F9FF",  border: "#BAE6FD"},
+  "Call Handling":          { icon: "",  color: "#BE123C", bg: "#FFF1F2",  border: "#FECDD3"},
+  "Competitor":             { icon: "",  color: "#6D28D9", bg: "#F5F3FF",  border: "#DDD6FE"},
+  "AI Automation":          { icon: "",  color: "#0F766E", bg: "#F0FDFA",  border: "#99F6E4"},
+  "Hosting & Infrastructure": { icon: "", color: "#92400E", bg: "#FFFBEB", border: "#FDE68A"},
 };
 
 const COMM_TYPE_META: Record<CommType, { icon: string; color: string; bg: string }> = {
-  "Call Summary":  { icon: "📞", color: "#0369A1", bg: "#F0F9FF" },
-  "Meeting Notes": { icon: "📋", color: "#7C3AED", bg: "#F5F3FF" },
-  "Client Notes":  { icon: "📝", color: "#D97706", bg: "#FFFBEB" },
-  "Email":         { icon: "📧", color: "#059669", bg: "#F0FDF4" },
-  "SMS":           { icon: "💬", color: "#1D4ED8", bg: "#EFF6FF" },
-  "Follow-Up":     { icon: "📅", color: "#C2410C", bg: "#FFF7ED" },
-  "Action Item":   { icon: "✅", color: "#15803D", bg: "#F0FDF4" },
+  "Call Summary":  { icon: "", color: "#0369A1", bg: "#F0F9FF"},
+  "Meeting Notes": { icon: "", color: "#7C3AED", bg: "#F5F3FF"},
+  "Client Notes":  { icon: "", color: "#D97706", bg: "#FFFBEB"},
+  "Email":         { icon: "", color: "#059669", bg: "#F0FDF4"},
+  "SMS":           { icon: "", color: "#1D4ED8", bg: "#EFF6FF"},
+  "Follow-Up":     { icon: "", color: "#C2410C", bg: "#FFF7ED"},
+  "Action Item":   { icon: "", color: "#15803D", bg: "#F0FDF4"},
 };
 
 const TIMELINE_META: Record<TimelineEvent["type"], { icon: string; color: string }> = {
-  audit_created:        { icon: "🔍", color: "#1D4ED8" },
-  audit_updated:        { icon: "✏️", color: "#D97706" },
-  finding_added:        { icon: "🚨", color: "#DC2626" },
-  recommendation_added: { icon: "🤖", color: "#7C3AED" },
-  proposal_generated:   { icon: "📄", color: "#059669" },
-  communication_added:  { icon: "💬", color: "#0369A1" },
-  followup_added:       { icon: "📅", color: "#C2410C" },
-  status_changed:       { icon: "🔄", color: "#6B7280" },
+  audit_created:        { icon: "", color: "#1D4ED8"},
+  audit_updated:        { icon: "", color: "#D97706"},
+  finding_added:        { icon: "", color: "#DC2626"},
+  recommendation_added: { icon: "", color: "#7C3AED"},
+  proposal_generated:   { icon: "", color: "#059669"},
+  communication_added:  { icon: "", color: "#0369A1"},
+  followup_added:       { icon: "", color: "#C2410C"},
+  status_changed:       { icon: "", color: "#6B7280"},
 };
 
 const SENTIMENT_COLORS: Record<Sentiment, { bg: string; text: string }> = {
-  Positive: { bg: "#F0FDF4", text: "#15803D" },
-  Neutral:  { bg: "#F3F4F6", text: "#6B7280" },
-  Negative: { bg: "#FEF2F2", text: "#DC2626" },
-  Mixed:    { bg: "#FFFBEB", text: "#D97706" },
+  Positive: { bg: "#F0FDF4", text: "#15803D"},
+  Neutral:  { bg: "#F3F4F6", text: "#6B7280"},
+  Negative: { bg: "#FEF2F2", text: "#DC2626"},
+  Mixed:    { bg: "#FFFBEB", text: "#D97706"},
 };
 
 function scoreColor(score: number): string {
@@ -1054,9 +1037,9 @@ function scoreBg(score: number): string {
   return "#FEF2F2";
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Shared UI Components
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function Badge({
   label,
@@ -1071,8 +1054,7 @@ function Badge({
 }) {
   return (
     <span
-      className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"
-      style={{ background: bg, color: text, borderColor: border ?? "transparent" }}
+      className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: bg, color: text, borderColor: border ?? "transparent"}}
     >
       {label}
     </span>
@@ -1103,8 +1085,7 @@ function AuditTypeBadge({ type }: { type: AuditType }) {
   const m = AUDIT_TYPE_META[type];
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"
-      style={{ background: m.bg, color: m.color, borderColor: m.border }}
+      className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: m.bg, color: m.color, borderColor: m.border }}
     >
       <span>{m.icon}</span>
       <span>{type}</span>
@@ -1115,8 +1096,7 @@ function AuditTypeBadge({ type }: { type: AuditType }) {
 function ScoreRing({ score, size = 48 }: { score: number; size?: number }) {
   return (
     <div
-      className="rounded-full flex items-center justify-center font-black border-4 flex-shrink-0"
-      style={{
+      className="rounded-full flex items-center justify-center font-black border-4 flex-shrink-0"style={{
         width: size,
         height: size,
         fontSize: size < 44 ? 11 : 14,
@@ -1131,30 +1111,29 @@ function ScoreRing({ score, size = 48 }: { score: number; size?: number }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // KPI Cards
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function KPICards({ audits }: { audits: Audit[] }) {
   const total = audits.length;
-  const pending = audits.filter((a) => a.status === "Pending" || a.status === "Not Started").length;
+  const pending = audits.filter((a) => a.status === "Pending"|| a.status === "Not Started").length;
   const completed = audits.filter((a) => a.status === "Completed").length;
   const highPriorityFindings = audits.reduce(
-    (sum, a) => sum + a.findings.filter((f) => f.severity === "Critical" || f.severity === "High").length,
+    (sum, a) => sum + a.findings.filter((f) => f.severity === "Critical"|| f.severity === "High").length,
     0
   );
   const proposalOpportunities = audits.filter(
-    (a) => a.proposalStatus === "Draft" || a.proposalStatus === "Not Started"
-  ).length;
+    (a) => a.proposalStatus === "Draft"|| a.proposalStatus === "Not Started").length;
   const estimatedRevenue = audits.reduce((sum, a) => sum + a.revenueOpportunity, 0);
 
   const cards = [
-    { label: "Total Audits", value: total, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
-    { label: "Pending Audits", value: pending, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-    { label: "Completed Audits", value: completed, color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0" },
-    { label: "High Priority Findings", value: highPriorityFindings, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-    { label: "Proposal Opportunities", value: proposalOpportunities, icon: "📄", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
-    { label: "Revenue Opportunity", value: `$${estimatedRevenue.toLocaleString()}`, icon: "💵", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
+    { label: "Total Audits", value: total, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE"},
+    { label: "Pending Audits", value: pending, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+    { label: "Completed Audits", value: completed, color: "#15803D", bg: "#F0FDF4", border: "#BBF7D0"},
+    { label: "High Priority Findings", value: highPriorityFindings, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
+    { label: "Proposal Opportunities", value: proposalOpportunities, icon: "", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
+    { label: "Revenue Opportunity", value: `$${estimatedRevenue.toLocaleString()}`, icon: "", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
   ];
 
   return (
@@ -1162,16 +1141,14 @@ function KPICards({ audits }: { audits: Audit[] }) {
       {cards.map((c) => (
         <div
           key={c.label}
-          className="rounded-xl border p-5 text-center"
-          style={{ background: c.bg, borderColor: c.border }}
+          className="rounded-xl border p-5 text-center"style={{ background: c.bg, borderColor: c.border }}
         >
           <div className="text-2xl mb-1">{c.icon}</div>
-          <div className="text-2xl font-black" style={{ color: c.color }}>
+          <div className="text-2xl font-black"style={{ color: c.color }}>
             {c.value}
           </div>
           <div
-            className="text-[10px] font-semibold mt-1 leading-tight"
-            style={{ color: c.color }}
+            className="text-[10px] font-semibold mt-1 leading-tight"style={{ color: c.color }}
           >
             {c.label}
           </div>
@@ -1181,28 +1158,26 @@ function KPICards({ audits }: { audits: Audit[] }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Sales Flow Banner
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function SalesFlowBanner() {
   const steps = [
     { label: "Audit Results", active: true },
-    { label: "AI Recommendations" },
-    { label: "Proposal Builder", icon: "📄" },
-    { label: "Line Items" },
-    { label: "Contracts" },
-    { label: "Billing" },
-    { label: "Projects" },
+    { label: "AI Recommendations"},
+    { label: "Proposal Builder", icon: ""},
+    { label: "Line Items"},
+    { label: "Contracts"},
+    { label: "Billing"},
+    { label: "Projects"},
   ];
   return (
     <div
-      className="rounded-xl border p-4 overflow-x-auto"
-      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+      className="rounded-xl border p-4 overflow-x-auto"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
     >
       <p
-        className="text-[10px] font-bold uppercase tracking-widest mb-3"
-        style={{ color: "var(--rtm-text-muted)" }}
+        className="text-[10px] font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}
       >
         RTM OS Sales Flow
       </p>
@@ -1211,19 +1186,17 @@ function SalesFlowBanner() {
           <React.Fragment key={s.label}>
             <div className="flex flex-col items-center gap-1">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-base border-2"
-                style={{
-                  background: s.active ? "#EFF6FF" : "var(--rtm-bg)",
-                  borderColor: s.active ? "#1D4ED8" : "var(--rtm-border)",
-                  boxShadow: s.active ? "0 0 0 3px #BFDBFE" : undefined,
+                className="w-10 h-10 rounded-full flex items-center justify-center text-base border-2"style={{
+                  background: s.active ? "#EFF6FF": "var(--rtm-bg)",
+                  borderColor: s.active ? "#1D4ED8": "var(--rtm-border)",
+                  boxShadow: s.active ? "0 0 0 3px #BFDBFE": undefined,
                 }}
               >
                 {s.icon}
               </div>
               <span
-                className="text-[9px] font-bold text-center leading-tight"
-                style={{
-                  color: s.active ? "#1D4ED8" : "var(--rtm-text-muted)",
+                className="text-[9px] font-bold text-center leading-tight"style={{
+                  color: s.active ? "#1D4ED8": "var(--rtm-text-muted)",
                   maxWidth: 70,
                 }}
               >
@@ -1232,8 +1205,7 @@ function SalesFlowBanner() {
             </div>
             {i < steps.length - 1 && (
               <div
-                className="w-8 h-0.5 mb-4 flex-shrink-0"
-                style={{ background: "var(--rtm-border)" }}
+                className="w-8 h-0.5 mb-4 flex-shrink-0"style={{ background: "var(--rtm-border)"}}
               />
             )}
           </React.Fragment>
@@ -1243,9 +1215,9 @@ function SalesFlowBanner() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Audit Table
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function AuditTable({
   audits,
@@ -1256,13 +1228,11 @@ function AuditTable({
 }) {
   return (
     <div
-      className="rounded-xl border overflow-hidden"
-      style={{ borderColor: "var(--rtm-border)" }}
+      className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}
     >
       <div className="overflow-x-auto">
         <table
-          className="w-full text-sm"
-          style={{ borderCollapse: "collapse", minWidth: 1300 }}
+          className="w-full text-sm"style={{ borderCollapse: "collapse", minWidth: 1300 }}
         >
           <thead>
             <tr
@@ -1286,8 +1256,7 @@ function AuditTable({
               ].map((h) => (
                 <th
                   key={h}
-                  className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
-                  style={{ color: "var(--rtm-text-muted)" }}
+                  className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                 >
                   {h}
                 </th>
@@ -1298,32 +1267,28 @@ function AuditTable({
             {audits.map((a, i) => (
               <tr
                 key={a.id}
-                className="cursor-pointer transition-colors"
-                style={{
+                className="cursor-pointer transition-colors"style={{
                   borderBottom: "1px solid var(--rtm-border-light)",
                   background:
-                    i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)",
+                    i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)",
                 }}
                 onClick={() => onSelect(a)}
               >
                 <td className="px-4 py-3">
                   <p
-                    className="font-semibold text-xs"
-                    style={{ color: "var(--rtm-text-primary)" }}
+                    className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}
                   >
                     {a.auditName}
                   </p>
                 </td>
                 <td className="px-4 py-3">
                   <p
-                    className="font-semibold text-xs"
-                    style={{ color: "var(--rtm-text-primary)" }}
+                    className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}
                   >
                     {a.client}
                   </p>
                   <p
-                    className="text-[10px]"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {a.industry}
                   </p>
@@ -1332,14 +1297,12 @@ function AuditTable({
                   <AuditTypeBadge type={a.auditType} />
                 </td>
                 <td
-                  className="px-4 py-3 text-xs"
-                  style={{ color: "var(--rtm-text-secondary)" }}
+                  className="px-4 py-3 text-xs"style={{ color: "var(--rtm-text-secondary)"}}
                 >
                   {a.createdBy}
                 </td>
                 <td
-                  className="px-4 py-3 text-xs"
-                  style={{ color: "var(--rtm-text-secondary)" }}
+                  className="px-4 py-3 text-xs"style={{ color: "var(--rtm-text-secondary)"}}
                 >
                   {a.createdDate}
                 </td>
@@ -1352,24 +1315,21 @@ function AuditTable({
                 <td className="px-4 py-3">
                   {a.issuesFound > 0 ? (
                     <span
-                      className="text-xs font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: "#FEF2F2", color: "#DC2626" }}
+                      className="text-xs font-bold px-2 py-0.5 rounded-full"style={{ background: "#FEF2F2", color: "#DC2626"}}
                     >
-                      🚨 {a.issuesFound}
+                       {a.issuesFound}
                     </span>
                   ) : (
                     <span
-                      className="text-xs"
-                      style={{ color: "#15803D" }}
+                      className="text-xs"style={{ color: "#15803D"}}
                     >
-                      ✓ None
+                       None
                     </span>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   <span
-                    className="text-xs font-bold"
-                    style={{ color: "#059669" }}
+                    className="text-xs font-bold"style={{ color: "#059669"}}
                   >
                     ${a.revenueOpportunity.toLocaleString()}
                   </span>
@@ -1378,13 +1338,11 @@ function AuditTable({
                   <ProposalStatusBadge status={a.proposalStatus} />
                 </td>
                 <td
-                  className="px-4 py-3"
-                  onClick={(e) => e.stopPropagation()}
+                  className="px-4 py-3"onClick={(e) => e.stopPropagation()}
                 >
                   <button
                     onClick={() => onSelect(a)}
-                    className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
-                    style={{
+                    className="text-xs px-3 py-1.5 rounded-lg font-semibold border"style={{
                       background: "#EFF6FF",
                       color: "#1D4ED8",
                       borderColor: "#BFDBFE",
@@ -1402,22 +1360,14 @@ function AuditTable({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Drawer Tabs
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 type DrawerTab =
-  | "overview"
-  | "findings"
-  | "ai-recommendations"
-  | "recommended-services"
-  | "recommended-line-items"
-  | "client-communications"
-  | "competitor-analysis"
-  | "proposal-preview"
-  | "activity-timeline";
+  | "overview"| "findings"| "ai-recommendations"| "recommended-services"| "recommended-line-items"| "client-communications"| "competitor-analysis"| "proposal-preview"| "activity-timeline";
 
-// ── Overview Tab ──────────────────────────────────────────────────────────────
+//  Overview Tab 
 function OverviewTab({ audit }: { audit: Audit }) {
   const typeMeta = AUDIT_TYPE_META[audit.auditType];
   const criticalFindings = audit.findings.filter((f) => f.severity === "Critical").length;
@@ -1441,12 +1391,11 @@ function OverviewTab({ audit }: { audit: Audit }) {
             <ProposalStatusBadge status={audit.proposalStatus} />
           </div>
           <p
-            className="text-sm font-bold mb-1"
-            style={{ color: "var(--rtm-text-primary)" }}
+            className="text-sm font-bold mb-1"style={{ color: "var(--rtm-text-primary)"}}
           >
             {audit.auditName}
           </p>
-          <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+          <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
             {audit.summary}
           </p>
         </div>
@@ -1455,25 +1404,22 @@ function OverviewTab({ audit }: { audit: Audit }) {
       {/* Stat grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Issues Found", value: audit.issuesFound, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-          { label: "Critical Findings", value: criticalFindings, color: "#BE123C", bg: "#FFF1F2", border: "#FECDD3" },
-          { label: "High Findings", value: highFindings, color: "#C2410C", bg: "#FFF7ED", border: "#FED7AA" },
-          { label: "Revenue Opportunity", value: `$${audit.revenueOpportunity.toLocaleString()}`, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
+          { label: "Issues Found", value: audit.issuesFound, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
+          { label: "Critical Findings", value: criticalFindings, color: "#BE123C", bg: "#FFF1F2", border: "#FECDD3"},
+          { label: "High Findings", value: highFindings, color: "#C2410C", bg: "#FFF7ED", border: "#FED7AA"},
+          { label: "Revenue Opportunity", value: `$${audit.revenueOpportunity.toLocaleString()}`, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
         ].map((c) => (
           <div
             key={c.label}
-            className="rounded-xl border p-4 text-center"
-            style={{ background: c.bg, borderColor: c.border }}
+            className="rounded-xl border p-4 text-center"style={{ background: c.bg, borderColor: c.border }}
           >
             <div
-              className="text-xl font-black"
-              style={{ color: c.color }}
+              className="text-xl font-black"style={{ color: c.color }}
             >
               {c.value}
             </div>
             <div
-              className="text-[10px] font-semibold mt-0.5"
-              style={{ color: c.color }}
+              className="text-[10px] font-semibold mt-0.5"style={{ color: c.color }}
             >
               {c.label}
             </div>
@@ -1495,21 +1441,18 @@ function OverviewTab({ audit }: { audit: Audit }) {
         ].map((row) => (
           <div
             key={row.label}
-            className="rounded-lg border p-3"
-            style={{
+            className="rounded-lg border p-3"style={{
               background: "var(--rtm-surface)",
               borderColor: "var(--rtm-border)",
             }}
           >
             <p
-              className="text-[10px] font-bold uppercase tracking-wide mb-0.5"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-[10px] font-bold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}
             >
               {row.label}
             </p>
             <p
-              className="text-xs font-semibold"
-              style={{ color: "var(--rtm-text-primary)" }}
+              className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}
             >
               {row.value}
             </p>
@@ -1519,29 +1462,26 @@ function OverviewTab({ audit }: { audit: Audit }) {
 
       {/* Communication Intelligence */}
       {(renewalSignals.length > 0 || upsellSignals.length > 0) && (
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#DDD6FE" }}>
+        <div className="rounded-xl border overflow-hidden"style={{ borderColor: "#DDD6FE"}}>
           <div
-            className="px-4 py-3 border-b"
-            style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}
+            className="px-4 py-3 border-b"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}
           >
-            <p className="text-sm font-bold" style={{ color: "#6D28D9" }}>
-              🧠 Communication Intelligence
+            <p className="text-sm font-bold"style={{ color: "#6D28D9"}}>
+               Communication Intelligence
             </p>
           </div>
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {renewalSignals.length > 0 && (
               <div>
                 <p
-                  className="text-[10px] font-bold uppercase tracking-wide mb-2"
-                  style={{ color: "#059669" }}
+                  className="text-[10px] font-bold uppercase tracking-wide mb-2"style={{ color: "#059669"}}
                 >
-                  🔄 Renewal Signals
+                   Renewal Signals
                 </p>
                 {renewalSignals.map((s, i) => (
                   <p
                     key={i}
-                    className="text-xs mb-1"
-                    style={{ color: "#047857" }}
+                    className="text-xs mb-1"style={{ color: "#047857"}}
                   >
                     • {s}
                   </p>
@@ -1551,16 +1491,14 @@ function OverviewTab({ audit }: { audit: Audit }) {
             {upsellSignals.length > 0 && (
               <div>
                 <p
-                  className="text-[10px] font-bold uppercase tracking-wide mb-2"
-                  style={{ color: "#D97706" }}
+                  className="text-[10px] font-bold uppercase tracking-wide mb-2"style={{ color: "#D97706"}}
                 >
-                  ⬆️ Upsell Signals
+                   Upsell Signals
                 </p>
                 {upsellSignals.map((s, i) => (
                   <p
                     key={i}
-                    className="text-xs mb-1"
-                    style={{ color: "#92400E" }}
+                    className="text-xs mb-1"style={{ color: "#92400E"}}
                   >
                     • {s}
                   </p>
@@ -1573,16 +1511,15 @@ function OverviewTab({ audit }: { audit: Audit }) {
 
       {/* AI Executive Summary */}
       <div
-        className="rounded-xl border p-5"
-        style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}
+        className="rounded-xl border p-5"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}
       >
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xl">🤖</span>
-          <p className="text-sm font-bold" style={{ color: "#6D28D9" }}>
+          
+          <p className="text-sm font-bold"style={{ color: "#6D28D9"}}>
             AI Executive Summary
           </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs" style={{ color: "#4C1D95" }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs"style={{ color: "#4C1D95"}}>
           <div>
             <p className="font-bold mb-1 text-[10px] uppercase tracking-wide">Top Findings</p>
             {audit.findings.slice(0, 3).map((f) => (
@@ -1606,7 +1543,7 @@ function OverviewTab({ audit }: { audit: Audit }) {
           </div>
           <div>
             <p className="font-bold mb-1 text-[10px] uppercase tracking-wide">Estimated Revenue Opportunity</p>
-            <p className="text-lg font-black" style={{ color: "#6D28D9" }}>
+            <p className="text-lg font-black"style={{ color: "#6D28D9"}}>
               ${audit.revenueOpportunity.toLocaleString()}
             </p>
           </div>
@@ -1616,7 +1553,7 @@ function OverviewTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ── Findings Tab ──────────────────────────────────────────────────────────────
+//  Findings Tab 
 function FindingsTab({ audit }: { audit: Audit }) {
   const critical = audit.findings.filter((f) => f.severity === "Critical");
   const high = audit.findings.filter((f) => f.severity === "High");
@@ -1634,18 +1571,15 @@ function FindingsTab({ audit }: { audit: Audit }) {
         ].map((card) => (
           <div
             key={card.label}
-            className="rounded-xl border p-4 text-center"
-            style={{ background: card.c.bg, borderColor: card.c.border }}
+            className="rounded-xl border p-4 text-center"style={{ background: card.c.bg, borderColor: card.c.border }}
           >
             <div
-              className="text-2xl font-black"
-              style={{ color: card.c.text }}
+              className="text-2xl font-black"style={{ color: card.c.text }}
             >
               {card.value}
             </div>
             <div
-              className="text-[10px] font-semibold mt-0.5"
-              style={{ color: card.c.text }}
+              className="text-[10px] font-semibold mt-0.5"style={{ color: card.c.text }}
             >
               {card.label} Findings
             </div>
@@ -1655,11 +1589,10 @@ function FindingsTab({ audit }: { audit: Audit }) {
 
       {audit.findings.length === 0 ? (
         <div
-          className="rounded-xl border p-10 text-center"
-          style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
+          className="rounded-xl border p-10 text-center"style={{ background: "#F0FDF4", borderColor: "#BBF7D0"}}
         >
-          <p className="text-3xl mb-2">✅</p>
-          <p className="text-sm font-semibold" style={{ color: "#15803D" }}>
+          <p className="text-3xl mb-2"></p>
+          <p className="text-sm font-semibold"style={{ color: "#15803D"}}>
             No findings recorded for this audit.
           </p>
         </div>
@@ -1670,12 +1603,10 @@ function FindingsTab({ audit }: { audit: Audit }) {
             return (
               <div
                 key={f.id}
-                className="rounded-xl border overflow-hidden"
-                style={{ borderColor: c.border }}
+                className="rounded-xl border overflow-hidden"style={{ borderColor: c.border }}
               >
                 <div
-                  className="px-4 py-3 flex items-center gap-3"
-                  style={{
+                  className="px-4 py-3 flex items-center gap-3"style={{
                     background: c.bg,
                     borderBottom: `1px solid ${c.border}`,
                   }}
@@ -1683,8 +1614,7 @@ function FindingsTab({ audit }: { audit: Audit }) {
                   <SeverityBadge severity={f.severity} />
                   <PriorityBadge priority={f.priority} />
                   <span
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded-full"style={{
                       background: "#EFF6FF",
                       color: "#1D4ED8",
                       border: "1px solid #BFDBFE",
@@ -1693,15 +1623,13 @@ function FindingsTab({ audit }: { audit: Audit }) {
                     {f.category}
                   </span>
                   <p
-                    className="font-bold text-sm flex-1"
-                    style={{ color: "var(--rtm-text-primary)" }}
+                    className="font-bold text-sm flex-1"style={{ color: "var(--rtm-text-primary)"}}
                   >
                     {f.title}
                   </p>
                   {f.revenueImpact > 0 && (
                     <span
-                      className="text-xs font-bold px-2 py-0.5 rounded-full"
-                      style={{
+                      className="text-xs font-bold px-2 py-0.5 rounded-full"style={{
                         background: "#ECFDF5",
                         color: "#059669",
                         border: "1px solid #A7F3D0",
@@ -1712,33 +1640,28 @@ function FindingsTab({ audit }: { audit: Audit }) {
                   )}
                 </div>
                 <div
-                  className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4"
-                  style={{ background: "var(--rtm-bg)" }}
+                  className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4"style={{ background: "var(--rtm-bg)"}}
                 >
                   <div>
                     <p
-                      className="text-[10px] font-bold uppercase tracking-wide mb-1"
-                      style={{ color: "var(--rtm-text-muted)" }}
+                      className="text-[10px] font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}
                     >
                       Issue
                     </p>
                     <p
-                      className="text-xs"
-                      style={{ color: "var(--rtm-text-secondary)" }}
+                      className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}
                     >
                       {f.description}
                     </p>
                   </div>
                   <div>
                     <p
-                      className="text-[10px] font-bold uppercase tracking-wide mb-1"
-                      style={{ color: "var(--rtm-text-muted)" }}
+                      className="text-[10px] font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}
                     >
-                      💡 Recommendation
+                       Recommendation
                     </p>
                     <p
-                      className="text-xs"
-                      style={{ color: "var(--rtm-text-secondary)" }}
+                      className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}
                     >
                       {f.recommendation}
                     </p>
@@ -1753,21 +1676,20 @@ function FindingsTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ── AI Recommendations Tab ────────────────────────────────────────────────────
+//  AI Recommendations Tab 
 function AIRecommendationsTab({ audit }: { audit: Audit }) {
   return (
     <div className="space-y-5">
       <div
-        className="rounded-xl border p-5"
-        style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}
+        className="rounded-xl border p-5"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}
       >
         <div className="flex items-start gap-3">
-          <span className="text-3xl">🤖</span>
+          
           <div>
-            <p className="text-base font-bold" style={{ color: "#6D28D9" }}>
+            <p className="text-base font-bold"style={{ color: "#6D28D9"}}>
               AI Recommendation Engine
             </p>
-            <p className="text-xs mt-0.5" style={{ color: "#7C3AED" }}>
+            <p className="text-xs mt-0.5"style={{ color: "#7C3AED"}}>
               Based on {audit.findings.length} audit findings across {audit.auditType} — generating service recommendations with priority ranking, estimated impact, and revenue opportunity.
             </p>
           </div>
@@ -1776,11 +1698,10 @@ function AIRecommendationsTab({ audit }: { audit: Audit }) {
 
       {audit.recommendedServices.length === 0 ? (
         <div
-          className="rounded-xl border p-10 text-center"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          className="rounded-xl border p-10 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
         >
-          <p className="text-3xl mb-2">🤖</p>
-          <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-3xl mb-2"></p>
+          <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}>
             AI recommendations not yet generated for this audit.
           </p>
         </div>
@@ -1791,56 +1712,45 @@ function AIRecommendationsTab({ audit }: { audit: Audit }) {
             return (
               <div
                 key={s.id}
-                className="rounded-xl border overflow-hidden"
-                style={{ borderColor: "var(--rtm-border)" }}
+                className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}
               >
                 <div
-                  className="px-4 py-3 flex items-center justify-between flex-wrap gap-2"
-                  style={{ background: pc.bg, borderBottom: `1px solid ${pc.border}` }}
+                  className="px-4 py-3 flex items-center justify-between flex-wrap gap-2"style={{ background: pc.bg, borderBottom: `1px solid ${pc.border}` }}
                 >
                   <div className="flex items-center gap-3 flex-wrap">
                     <PriorityBadge priority={s.priority} />
                     <p
-                      className="font-bold text-sm"
-                      style={{ color: "var(--rtm-text-primary)" }}
+                      className="font-bold text-sm"style={{ color: "var(--rtm-text-primary)"}}
                     >
                       {s.service}
                     </p>
                     <Badge
                       label={s.department}
-                      bg="#EFF6FF"
-                      text="#1D4ED8"
-                      border="#BFDBFE"
-                    />
+                      bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
                   </div>
                   <div className="flex items-center gap-2">
                     <span
-                      className="text-xs font-black px-2 py-0.5 rounded-full"
-                      style={{ background: "#F5F3FF", color: "#6D28D9", border: "1px solid #DDD6FE" }}
+                      className="text-xs font-black px-2 py-0.5 rounded-full"style={{ background: "#F5F3FF", color: "#6D28D9", border: "1px solid #DDD6FE"}}
                     >
                       Impact: {s.impactScore}/100
                     </span>
                     <span
-                      className="text-xs font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}
+                      className="text-xs font-bold px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0"}}
                     >
                       ${s.estimatedRevenue.toLocaleString()}/mo
                     </span>
                   </div>
                 </div>
                 <div
-                  className="p-4"
-                  style={{ background: "var(--rtm-bg)" }}
+                  className="p-4"style={{ background: "var(--rtm-bg)"}}
                 >
                   <p
-                    className="text-[10px] font-bold uppercase tracking-wide mb-1"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-[10px] font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     Why Recommended
                   </p>
                   <p
-                    className="text-xs"
-                    style={{ color: "var(--rtm-text-secondary)" }}
+                    className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}
                   >
                     {s.reason}
                   </p>
@@ -1854,30 +1764,27 @@ function AIRecommendationsTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ── Recommended Services Tab ──────────────────────────────────────────────────
+//  Recommended Services Tab 
 function RecommendedServicesTab({ audit }: { audit: Audit }) {
   const [added, setAdded] = useState<Set<string>>(new Set());
   return (
     <div className="space-y-4">
       <div
-        className="rounded-xl border overflow-hidden"
-        style={{ borderColor: "var(--rtm-border)" }}
+        className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}
       >
         <div
-          className="px-4 py-3 border-b"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          className="px-4 py-3 border-b"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
         >
-          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
-            ⭐ Service Recommendation Panel
+          <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>
+             Service Recommendation Panel
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
             {audit.recommendedServices.length} services recommended based on audit findings
           </p>
         </div>
         <div className="overflow-x-auto">
           <table
-            className="w-full text-xs"
-            style={{ borderCollapse: "collapse", minWidth: 800 }}
+            className="w-full text-xs"style={{ borderCollapse: "collapse", minWidth: 800 }}
           >
             <thead>
               <tr
@@ -1889,8 +1796,7 @@ function RecommendedServicesTab({ audit }: { audit: Audit }) {
                 {["Recommended Service", "Reason", "Impact Score", "Priority", "Department", "Est. Revenue", "Add To Proposal"].map((h) => (
                   <th
                     key={h}
-                    className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {h}
                   </th>
@@ -1903,25 +1809,22 @@ function RecommendedServicesTab({ audit }: { audit: Audit }) {
                   key={s.id}
                   style={{
                     borderBottom: "1px solid var(--rtm-border-light)",
-                    background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)",
+                    background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)",
                   }}
                 >
                   <td
-                    className="px-3 py-2 font-semibold"
-                    style={{ color: "var(--rtm-text-primary)" }}
+                    className="px-3 py-2 font-semibold"style={{ color: "var(--rtm-text-primary)"}}
                   >
                     {s.service}
                   </td>
                   <td
-                    className="px-3 py-2"
-                    style={{ color: "var(--rtm-text-secondary)", maxWidth: 220 }}
+                    className="px-3 py-2"style={{ color: "var(--rtm-text-secondary)", maxWidth: 220 }}
                   >
                     {s.reason}
                   </td>
                   <td className="px-3 py-2">
                     <span
-                      className="font-black text-xs"
-                      style={{ color: "#6D28D9" }}
+                      className="font-black text-xs"style={{ color: "#6D28D9"}}
                     >
                       {s.impactScore}/100
                     </span>
@@ -1930,11 +1833,10 @@ function RecommendedServicesTab({ audit }: { audit: Audit }) {
                     <PriorityBadge priority={s.priority} />
                   </td>
                   <td className="px-3 py-2">
-                    <Badge label={s.department} bg="#EFF6FF" text="#1D4ED8" border="#BFDBFE" />
+                    <Badge label={s.department} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
                   </td>
                   <td
-                    className="px-3 py-2 font-bold"
-                    style={{ color: "#059669" }}
+                    className="px-3 py-2 font-bold"style={{ color: "#059669"}}
                   >
                     ${s.estimatedRevenue.toLocaleString()}/mo
                   </td>
@@ -1948,14 +1850,13 @@ function RecommendedServicesTab({ audit }: { audit: Audit }) {
                           return n;
                         })
                       }
-                      className="text-[10px] font-bold px-2 py-1 rounded border"
-                      style={{
-                        background: added.has(s.id) ? "#ECFDF5" : "#EFF6FF",
-                        color: added.has(s.id) ? "#059669" : "#1D4ED8",
-                        borderColor: added.has(s.id) ? "#A7F3D0" : "#BFDBFE",
+                      className="text-[10px] font-bold px-2 py-1 rounded border"style={{
+                        background: added.has(s.id) ? "#ECFDF5": "#EFF6FF",
+                        color: added.has(s.id) ? "#059669": "#1D4ED8",
+                        borderColor: added.has(s.id) ? "#A7F3D0": "#BFDBFE",
                       }}
                     >
-                      {added.has(s.id) ? "✅ Added" : "＋ Add"}
+                      {added.has(s.id) ? "Added": "Add"}
                     </button>
                   </td>
                 </tr>
@@ -1968,7 +1869,7 @@ function RecommendedServicesTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ── Recommended Line Items Tab ────────────────────────────────────────────────
+//  Recommended Line Items Tab 
 function RecommendedLineItemsTab({ audit }: { audit: Audit }) {
   const [added, setAdded] = useState<Set<string>>(new Set());
   const setupTotal = audit.recommendedLineItems
@@ -1981,24 +1882,21 @@ function RecommendedLineItemsTab({ audit }: { audit: Audit }) {
   return (
     <div className="space-y-4">
       <div
-        className="rounded-xl border overflow-hidden"
-        style={{ borderColor: "var(--rtm-border)" }}
+        className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}
       >
         <div
-          className="px-4 py-3 border-b"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          className="px-4 py-3 border-b"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
         >
-          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
-            📋 Line Item Recommendation Panel
+          <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>
+             Line Item Recommendation Panel
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
             {audit.recommendedLineItems.length} line items recommended · {added.size} selected
           </p>
         </div>
         <div className="overflow-x-auto">
           <table
-            className="w-full text-xs"
-            style={{ borderCollapse: "collapse", minWidth: 900 }}
+            className="w-full text-xs"style={{ borderCollapse: "collapse", minWidth: 900 }}
           >
             <thead>
               <tr
@@ -2010,8 +1908,7 @@ function RecommendedLineItemsTab({ audit }: { audit: Audit }) {
                 {["Line Item", "Category", "Department", "Setup Fee", "Recurring Fee", "Delivery Standard", "Add To Proposal"].map((h) => (
                   <th
                     key={h}
-                    className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {h}
                   </th>
@@ -2024,26 +1921,25 @@ function RecommendedLineItemsTab({ audit }: { audit: Audit }) {
                   key={li.id}
                   style={{
                     borderBottom: "1px solid var(--rtm-border-light)",
-                    background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)",
+                    background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)",
                   }}
                 >
                   <td
-                    className="px-3 py-2 font-semibold"
-                    style={{ color: "var(--rtm-text-primary)" }}
+                    className="px-3 py-2 font-semibold"style={{ color: "var(--rtm-text-primary)"}}
                   >
                     {li.lineItem}
                   </td>
                   <td className="px-3 py-2">
-                    <Badge label={li.category} bg="#EFF6FF" text="#1D4ED8" border="#BFDBFE" />
+                    <Badge label={li.category} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
                   </td>
-                  <td className="px-3 py-2" style={{ color: "var(--rtm-text-secondary)" }}>{li.department}</td>
-                  <td className="px-3 py-2 font-bold" style={{ color: li.setupFee > 0 ? "#C2410C" : "#9CA3AF" }}>
+                  <td className="px-3 py-2"style={{ color: "var(--rtm-text-secondary)"}}>{li.department}</td>
+                  <td className="px-3 py-2 font-bold"style={{ color: li.setupFee > 0 ? "#C2410C": "#9CA3AF"}}>
                     {li.setupFee > 0 ? `$${li.setupFee.toLocaleString()}` : "—"}
                   </td>
-                  <td className="px-3 py-2 font-bold" style={{ color: li.recurringFee > 0 ? "#1D4ED8" : "#9CA3AF" }}>
+                  <td className="px-3 py-2 font-bold"style={{ color: li.recurringFee > 0 ? "#1D4ED8": "#9CA3AF"}}>
                     {li.recurringFee > 0 ? `$${li.recurringFee.toLocaleString()}/mo` : "—"}
                   </td>
-                  <td className="px-3 py-2" style={{ color: "#1D4ED8" }}>{li.deliveryStandard}</td>
+                  <td className="px-3 py-2"style={{ color: "#1D4ED8"}}>{li.deliveryStandard}</td>
                   <td className="px-3 py-2">
                     <button
                       onClick={() =>
@@ -2054,14 +1950,13 @@ function RecommendedLineItemsTab({ audit }: { audit: Audit }) {
                           return n;
                         })
                       }
-                      className="text-[10px] font-bold px-2 py-1 rounded border"
-                      style={{
-                        background: added.has(li.id) ? "#ECFDF5" : "#EFF6FF",
-                        color: added.has(li.id) ? "#059669" : "#1D4ED8",
-                        borderColor: added.has(li.id) ? "#A7F3D0" : "#BFDBFE",
+                      className="text-[10px] font-bold px-2 py-1 rounded border"style={{
+                        background: added.has(li.id) ? "#ECFDF5": "#EFF6FF",
+                        color: added.has(li.id) ? "#059669": "#1D4ED8",
+                        borderColor: added.has(li.id) ? "#A7F3D0": "#BFDBFE",
                       }}
                     >
-                      {added.has(li.id) ? "✅ Added" : "＋ Add"}
+                      {added.has(li.id) ? "Added": "Add"}
                     </button>
                   </td>
                 </tr>
@@ -2069,12 +1964,12 @@ function RecommendedLineItemsTab({ audit }: { audit: Audit }) {
             </tbody>
             {added.size > 0 && (
               <tfoot>
-                <tr style={{ background: "#ECFDF5", borderTop: "2px solid #A7F3D0" }}>
-                  <td colSpan={3} className="px-3 py-2.5 text-xs font-bold" style={{ color: "#059669" }}>Selected Totals</td>
-                  <td className="px-3 py-2.5 text-sm font-black" style={{ color: "#C2410C" }}>
+                <tr style={{ background: "#ECFDF5", borderTop: "2px solid #A7F3D0"}}>
+                  <td colSpan={3} className="px-3 py-2.5 text-xs font-bold"style={{ color: "#059669"}}>Selected Totals</td>
+                  <td className="px-3 py-2.5 text-sm font-black"style={{ color: "#C2410C"}}>
                     {setupTotal > 0 ? `$${setupTotal.toLocaleString()}` : "—"}
                   </td>
-                  <td className="px-3 py-2.5 text-sm font-black" style={{ color: "#1D4ED8" }}>
+                  <td className="px-3 py-2.5 text-sm font-black"style={{ color: "#1D4ED8"}}>
                     {recurringTotal > 0 ? `$${recurringTotal.toLocaleString()}/mo` : "—"}
                   </td>
                   <td colSpan={2} />
@@ -2088,7 +1983,7 @@ function RecommendedLineItemsTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ── Client Communications Tab ─────────────────────────────────────────────────
+//  Client Communications Tab 
 function ClientCommunicationsTab({ audit }: { audit: Audit }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -2102,44 +1997,43 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
   return (
     <div className="space-y-5">
       {/* Communication Intelligence Panel */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#DDD6FE" }}>
-        <div className="px-4 py-3 border-b" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
-          <p className="text-sm font-bold" style={{ color: "#6D28D9" }}>🧠 Communication Intelligence Panel</p>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "#DDD6FE"}}>
+        <div className="px-4 py-3 border-b"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
+          <p className="text-sm font-bold"style={{ color: "#6D28D9"}}> Communication Intelligence Panel</p>
         </div>
         <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: "Last Communication", value: lastComm ? `${lastComm.type} — ${lastComm.date}` : "None", color: "#1D4ED8", bg: "#EFF6FF" },
-            { label: "Open Concerns", value: openConcerns.length, color: "#C2410C", bg: "#FFF7ED" },
-            { label: "Pending Follow-Ups", value: pendingFollowUps.length, color: "#D97706", bg: "#FFFBEB" },
-            { label: "Pending Action Items", value: pendingActions.length, color: "#059669", bg: "#ECFDF5" },
+            { label: "Last Communication", value: lastComm ? `${lastComm.type} — ${lastComm.date}` : "None", color: "#1D4ED8", bg: "#EFF6FF"},
+            { label: "Open Concerns", value: openConcerns.length, color: "#C2410C", bg: "#FFF7ED"},
+            { label: "Pending Follow-Ups", value: pendingFollowUps.length, color: "#D97706", bg: "#FFFBEB"},
+            { label: "Pending Action Items", value: pendingActions.length, color: "#059669", bg: "#ECFDF5"},
           ].map((card) => (
-            <div key={card.label} className="rounded-lg border p-3" style={{ background: card.bg, borderColor: `${card.color}30` }}>
+            <div key={card.label} className="rounded-lg border p-3"style={{ background: card.bg, borderColor: `${card.color}30` }}>
               <div
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mb-0.5"
-                style={{ background: `${card.color}20`, color: card.color }}
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mb-0.5"style={{ background: `${card.color}20`, color: card.color }}
               >
                 {String(card.label).slice(0, 2).toUpperCase()}
               </div>
-              <div className="text-sm font-black" style={{ color: card.color }}>{card.value}</div>
-              <div className="text-[10px] font-semibold mt-0.5" style={{ color: card.color }}>{card.label}</div>
+              <div className="text-sm font-black"style={{ color: card.color }}>{card.value}</div>
+              <div className="text-[10px] font-semibold mt-0.5"style={{ color: card.color }}>{card.label}</div>
             </div>
           ))}
         </div>
         {(renewalSignals.length > 0 || upsellSignals.length > 0) && (
           <div className="px-4 pb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {renewalSignals.length > 0 && (
-              <div className="rounded-lg border p-3" style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}>
-                <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "#15803D" }}>🔄 Renewal Signals</p>
+              <div className="rounded-lg border p-3"style={{ background: "#F0FDF4", borderColor: "#BBF7D0"}}>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-2"style={{ color: "#15803D"}}> Renewal Signals</p>
                 {renewalSignals.map((s, i) => (
-                  <p key={i} className="text-xs mb-0.5" style={{ color: "#047857" }}>• {s}</p>
+                  <p key={i} className="text-xs mb-0.5"style={{ color: "#047857"}}>• {s}</p>
                 ))}
               </div>
             )}
             {upsellSignals.length > 0 && (
-              <div className="rounded-lg border p-3" style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}>
-                <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "#D97706" }}>⬆️ Upsell Signals</p>
+              <div className="rounded-lg border p-3"style={{ background: "#FFFBEB", borderColor: "#FDE68A"}}>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-2"style={{ color: "#D97706"}}> Upsell Signals</p>
                 {upsellSignals.map((s, i) => (
-                  <p key={i} className="text-xs mb-0.5" style={{ color: "#92400E" }}>• {s}</p>
+                  <p key={i} className="text-xs mb-0.5"style={{ color: "#92400E"}}>• {s}</p>
                 ))}
               </div>
             )}
@@ -2148,14 +2042,14 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
       </div>
 
       {/* Growth Opportunities */}
-      <div className="rounded-xl border p-4" style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}>
-        <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "#059669" }}>🚀 Growth Opportunities</p>
+      <div className="rounded-xl border p-4"style={{ background: "#ECFDF5", borderColor: "#A7F3D0"}}>
+        <p className="text-[10px] font-bold uppercase tracking-wide mb-2"style={{ color: "#059669"}}> Growth Opportunities</p>
         <div className="flex flex-wrap gap-2">
           {audit.communications.flatMap((c) => c.callSummary?.upsellOpportunities ?? []).length === 0 ? (
-            <p className="text-xs" style={{ color: "#047857" }}>No growth opportunities identified yet from communications.</p>
+            <p className="text-xs"style={{ color: "#047857"}}>No growth opportunities identified yet from communications.</p>
           ) : (
             audit.communications.flatMap((c) => c.callSummary?.upsellOpportunities ?? []).map((opp, i) => (
-              <span key={i} className="text-xs px-2 py-1 rounded-lg font-semibold" style={{ background: "#D1FAE5", color: "#059669" }}>
+              <span key={i} className="text-xs px-2 py-1 rounded-lg font-semibold"style={{ background: "#D1FAE5", color: "#059669"}}>
                 {opp}
               </span>
             ))
@@ -2164,30 +2058,30 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
       </div>
 
       {/* Upcoming Meetings placeholder */}
-      <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-        <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--rtm-text-muted)" }}>📆 Upcoming Meetings</p>
+      <div className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <p className="text-[10px] font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}> Upcoming Meetings</p>
         {pendingFollowUps.length === 0 ? (
-          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No upcoming meetings scheduled.</p>
+          <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No upcoming meetings scheduled.</p>
         ) : (
           pendingFollowUps.map((fu) => (
             <div key={fu.id} className="flex items-center gap-3 py-1">
-              <span className="text-sm">📅</span>
-              <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fu.subject}</p>
-              <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{fu.followUpDate}</span>
+              
+              <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fu.subject}</p>
+              <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{fu.followUpDate}</span>
             </div>
           ))
         )}
       </div>
 
       {/* AI Call Intelligence */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#BAE6FD" }}>
-        <div className="px-4 py-3 border-b" style={{ background: "#F0F9FF", borderColor: "#BAE6FD" }}>
-          <p className="text-sm font-bold" style={{ color: "#0369A1" }}>📞 AI Call Intelligence</p>
-          <p className="text-xs mt-0.5" style={{ color: "#0284C7" }}>Future integrations: CallRail · GoHighLevel · Twilio · Zoom · Google Meet · Microsoft Teams</p>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "#BAE6FD"}}>
+        <div className="px-4 py-3 border-b"style={{ background: "#F0F9FF", borderColor: "#BAE6FD"}}>
+          <p className="text-sm font-bold"style={{ color: "#0369A1"}}> AI Call Intelligence</p>
+          <p className="text-xs mt-0.5"style={{ color: "#0284C7"}}>Future integrations: CallRail · GoHighLevel · Twilio · Zoom · Google Meet · Microsoft Teams</p>
         </div>
         <div className="p-4">
           {audit.communications.filter((c) => c.callSummary).length === 0 ? (
-            <p className="text-xs text-center py-4" style={{ color: "var(--rtm-text-muted)" }}>No call summaries recorded for this audit.</p>
+            <p className="text-xs text-center py-4"style={{ color: "var(--rtm-text-muted)"}}>No call summaries recorded for this audit.</p>
           ) : (
             <div className="space-y-4">
               {audit.communications
@@ -2196,65 +2090,64 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
                   const cs = c.callSummary!;
                   const sc = SENTIMENT_COLORS[cs.sentiment];
                   return (
-                    <div key={c.id} className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+                    <div key={c.id} className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
                       <div
-                        className="px-4 py-3 flex items-center justify-between cursor-pointer"
-                        style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}
+                        className="px-4 py-3 flex items-center justify-between cursor-pointer"style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}
                         onClick={() => setExpanded(expanded === c.id ? null : c.id)}
                       >
                         <div className="flex items-center gap-3 flex-wrap">
-                          <span className="text-lg">📞</span>
-                          <p className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{c.subject}</p>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: sc.bg, color: sc.text }}>
+                          
+                          <p className="font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{c.subject}</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"style={{ background: sc.bg, color: sc.text }}>
                             Sentiment: {cs.sentiment}
                           </span>
-                          <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{cs.callDate} · {cs.duration}</span>
+                          <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{cs.callDate} · {cs.duration}</span>
                         </div>
-                        <span style={{ color: "var(--rtm-text-muted)" }}>{expanded === c.id ? "▲" : "▼"}</span>
+                        <span style={{ color: "var(--rtm-text-muted)"}}>{expanded === c.id ? "": ""}</span>
                       </div>
                       {expanded === c.id && (
-                        <div className="p-4 space-y-4" style={{ background: "var(--rtm-bg)" }}>
+                        <div className="p-4 space-y-4"style={{ background: "var(--rtm-bg)"}}>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             {[
                               { label: "Call Date", value: cs.callDate },
                               { label: "Duration", value: cs.duration },
-                              { label: "Follow-Up Required", value: cs.followUpRequired ? `Yes — ${cs.followUpDate}` : "No" },
+                              { label: "Follow-Up Required", value: cs.followUpRequired ? `Yes — ${cs.followUpDate}` : "No"},
                               { label: "Project Impact", value: cs.projectImpact },
                             ].map((row) => (
-                              <div key={row.label} className="rounded-lg border p-2" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                                <p className="text-[10px] font-bold uppercase" style={{ color: "var(--rtm-text-muted)" }}>{row.label}</p>
-                                <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--rtm-text-primary)" }}>{row.value}</p>
+                              <div key={row.label} className="rounded-lg border p-2"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                                <p className="text-[10px] font-bold uppercase"style={{ color: "var(--rtm-text-muted)"}}>{row.label}</p>
+                                <p className="text-xs font-semibold mt-0.5"style={{ color: "var(--rtm-text-primary)"}}>{row.value}</p>
                               </div>
                             ))}
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold uppercase mb-1" style={{ color: "var(--rtm-text-muted)" }}>Participants</p>
+                            <p className="text-[10px] font-bold uppercase mb-1"style={{ color: "var(--rtm-text-muted)"}}>Participants</p>
                             <div className="flex flex-wrap gap-1">
                               {cs.participants.map((p) => (
-                                <Badge key={p} label={p} bg="#EFF6FF" text="#1D4ED8" border="#BFDBFE" />
+                                <Badge key={p} label={p} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
                               ))}
                             </div>
                           </div>
                           <div>
-                            <p className="text-[10px] font-bold uppercase mb-1" style={{ color: "var(--rtm-text-muted)" }}>Summary</p>
-                            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{cs.summary}</p>
+                            <p className="text-[10px] font-bold uppercase mb-1"style={{ color: "var(--rtm-text-muted)"}}>Summary</p>
+                            <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{cs.summary}</p>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             {[
-                              { label: "Key Topics", items: cs.keyTopics, color: "#1D4ED8", bg: "#EFF6FF" },
-                              { label: "Concerns", items: cs.concerns, color: "#DC2626", bg: "#FEF2F2" },
-                              { label: "Action Items", items: cs.actionItems, color: "#059669", bg: "#F0FDF4" },
-                              { label: "Decisions", items: cs.decisions, color: "#7C3AED", bg: "#F5F3FF" },
-                              { label: "Renewal Signals", items: cs.renewalSignals, color: "#15803D", bg: "#ECFDF5" },
-                              { label: "Upsell Opportunities", items: cs.upsellOpportunities, color: "#D97706", bg: "#FFFBEB" },
+                              { label: "Key Topics", items: cs.keyTopics, color: "#1D4ED8", bg: "#EFF6FF"},
+                              { label: "Concerns", items: cs.concerns, color: "#DC2626", bg: "#FEF2F2"},
+                              { label: "Action Items", items: cs.actionItems, color: "#059669", bg: "#F0FDF4"},
+                              { label: "Decisions", items: cs.decisions, color: "#7C3AED", bg: "#F5F3FF"},
+                              { label: "Renewal Signals", items: cs.renewalSignals, color: "#15803D", bg: "#ECFDF5"},
+                              { label: "Upsell Opportunities", items: cs.upsellOpportunities, color: "#D97706", bg: "#FFFBEB"},
                             ].map((section) => (
-                              <div key={section.label} className="rounded-lg border p-3" style={{ background: section.bg, borderColor: `${section.color}30` }}>
-                                <p className="text-[10px] font-bold uppercase mb-1" style={{ color: section.color }}>{section.label}</p>
+                              <div key={section.label} className="rounded-lg border p-3"style={{ background: section.bg, borderColor: `${section.color}30` }}>
+                                <p className="text-[10px] font-bold uppercase mb-1"style={{ color: section.color }}>{section.label}</p>
                                 {section.items.length === 0 ? (
-                                  <p className="text-[10px]" style={{ color: section.color }}>—</p>
+                                  <p className="text-[10px]"style={{ color: section.color }}>—</p>
                                 ) : (
                                   section.items.map((item, idx) => (
-                                    <p key={idx} className="text-xs mb-0.5" style={{ color: section.color }}>• {item}</p>
+                                    <p key={idx} className="text-xs mb-0.5"style={{ color: section.color }}>• {item}</p>
                                   ))
                                 )}
                               </div>
@@ -2271,46 +2164,46 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
       </div>
 
       {/* All Communications */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-        <div className="px-4 py-3 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>💬 All Communications</p>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+        <div className="px-4 py-3 border-b"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+          <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}> All Communications</p>
         </div>
         {audit.communications.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-2xl mb-2">💬</p>
-            <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>No communications recorded for this audit.</p>
+            <p className="text-2xl mb-2"></p>
+            <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>No communications recorded for this audit.</p>
           </div>
         ) : (
-          <div className="divide-y" style={{ borderColor: "var(--rtm-border-light)" }}>
+          <div className="divide-y"style={{ borderColor: "var(--rtm-border-light)"}}>
             {audit.communications.map((comm) => {
               const meta = COMM_TYPE_META[comm.type];
               return (
-                <div key={comm.id} className="p-4" style={{ background: "var(--rtm-bg)" }}>
+                <div key={comm.id} className="p-4"style={{ background: "var(--rtm-bg)"}}>
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0" style={{ background: meta.bg }}>
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-base flex-shrink-0"style={{ background: meta.bg }}>
                       {meta.icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <Badge label={comm.type} bg={meta.bg} text={meta.color} />
-                        <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{comm.date}</span>
-                        <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>· {comm.from}</span>
+                        <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{comm.date}</span>
+                        <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>· {comm.from}</span>
                         {comm.sentiment && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: SENTIMENT_COLORS[comm.sentiment].bg, color: SENTIMENT_COLORS[comm.sentiment].text }}>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"style={{ background: SENTIMENT_COLORS[comm.sentiment].bg, color: SENTIMENT_COLORS[comm.sentiment].text }}>
                             {comm.sentiment}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs font-semibold mb-1" style={{ color: "var(--rtm-text-primary)" }}>{comm.subject}</p>
-                      <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{comm.body}</p>
+                      <p className="text-xs font-semibold mb-1"style={{ color: "var(--rtm-text-primary)"}}>{comm.subject}</p>
+                      <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{comm.body}</p>
                       {comm.followUpDate && (
-                        <p className="text-[10px] mt-1 font-semibold" style={{ color: "#C2410C" }}>📅 Follow-up: {comm.followUpDate}</p>
+                        <p className="text-[10px] mt-1 font-semibold"style={{ color: "#C2410C"}}> Follow-up: {comm.followUpDate}</p>
                       )}
                       {comm.actionItems && comm.actionItems.length > 0 && (
                         <div className="mt-2">
-                          <p className="text-[10px] font-bold uppercase mb-1" style={{ color: "var(--rtm-text-muted)" }}>Action Items</p>
+                          <p className="text-[10px] font-bold uppercase mb-1"style={{ color: "var(--rtm-text-muted)"}}>Action Items</p>
                           {comm.actionItems.map((item, idx) => (
-                            <p key={idx} className="text-[10px]" style={{ color: "#059669" }}>✓ {item}</p>
+                            <p key={idx} className="text-[10px]"style={{ color: "#059669"}}> {item}</p>
                           ))}
                         </div>
                       )}
@@ -2326,39 +2219,39 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ── Competitor Analysis Tab ───────────────────────────────────────────────────
+//  Competitor Analysis Tab 
 function CompetitorAnalysisTab({ audit }: { audit: Audit }) {
   if (audit.competitors.length === 0) {
     return (
-      <div className="rounded-xl border p-10 text-center" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-        <p className="text-3xl mb-2">🏆</p>
-        <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No competitor data for this audit.</p>
-        <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>Run a Competitor Audit to populate this section.</p>
+      <div className="rounded-xl border p-10 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <p className="text-3xl mb-2"></p>
+        <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}>No competitor data for this audit.</p>
+        <p className="text-xs mt-1"style={{ color: "var(--rtm-text-muted)"}}>Run a Competitor Audit to populate this section.</p>
       </div>
     );
   }
   return (
     <div className="space-y-5">
       {audit.competitors.map((comp) => (
-        <div key={comp.name} className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-          <div className="px-4 py-3 border-b flex items-center gap-3" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
-            <span className="text-lg">🏆</span>
-            <p className="text-sm font-bold" style={{ color: "#6D28D9" }}>{comp.name}</p>
+        <div key={comp.name} className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+          <div className="px-4 py-3 border-b flex items-center gap-3"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
+            
+            <p className="text-sm font-bold"style={{ color: "#6D28D9"}}>{comp.name}</p>
           </div>
           <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { label: "Strengths", items: comp.strengths, color: "#15803D", bg: "#F0FDF4", icon: "💪" },
-              { label: "Weaknesses", items: comp.weaknesses, color: "#DC2626", bg: "#FEF2F2" },
-              { label: "Opportunities", items: comp.opportunities, color: "#D97706", bg: "#FFFBEB" },
-              { label: "Threats", items: comp.threats, color: "#7C3AED", bg: "#F5F3FF" },
-              { label: "Recommended Actions", items: comp.recommendedActions, color: "#0369A1", bg: "#F0F9FF" },
+              { label: "Strengths", items: comp.strengths, color: "#15803D", bg: "#F0FDF4", icon: ""},
+              { label: "Weaknesses", items: comp.weaknesses, color: "#DC2626", bg: "#FEF2F2"},
+              { label: "Opportunities", items: comp.opportunities, color: "#D97706", bg: "#FFFBEB"},
+              { label: "Threats", items: comp.threats, color: "#7C3AED", bg: "#F5F3FF"},
+              { label: "Recommended Actions", items: comp.recommendedActions, color: "#0369A1", bg: "#F0F9FF"},
             ].map((section) => (
-              <div key={section.label} className="rounded-lg border p-3" style={{ background: section.bg, borderColor: `${section.color}30` }}>
-                <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: section.color }}>
+              <div key={section.label} className="rounded-lg border p-3"style={{ background: section.bg, borderColor: `${section.color}30` }}>
+                <p className="text-[10px] font-bold uppercase tracking-wide mb-2"style={{ color: section.color }}>
                   {section.icon} {section.label}
                 </p>
                 {section.items.map((item) => (
-                  <p key={item} className="text-xs mb-0.5" style={{ color: section.color }}>• {item}</p>
+                  <p key={item} className="text-xs mb-0.5"style={{ color: section.color }}>• {item}</p>
                 ))}
               </div>
             ))}
@@ -2369,7 +2262,7 @@ function CompetitorAnalysisTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ── Proposal Preview Tab ──────────────────────────────────────────────────────
+//  Proposal Preview Tab 
 function ProposalPreviewTab({ audit }: { audit: Audit }) {
   const setupTotal = audit.recommendedLineItems.reduce((s, li) => s + li.setupFee, 0);
   const recurringTotal = audit.recommendedLineItems.reduce((s, li) => s + li.recurringFee, 0);
@@ -2377,23 +2270,21 @@ function ProposalPreviewTab({ audit }: { audit: Audit }) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border p-5" style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}>
+      <div className="rounded-xl border p-5"style={{ background: "#ECFDF5", borderColor: "#A7F3D0"}}>
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <p className="text-base font-bold" style={{ color: "#059669" }}>📄 Proposal Preview</p>
-            <p className="text-xs mt-0.5" style={{ color: "#047857" }}>Mock preview — based on all recommended services and line items from this audit.</p>
+            <p className="text-base font-bold"style={{ color: "#059669"}}> Proposal Preview</p>
+            <p className="text-xs mt-0.5"style={{ color: "#047857"}}>Mock preview — based on all recommended services and line items from this audit.</p>
           </div>
           <div className="flex gap-2">
             <button
-              className="text-sm px-4 py-2 rounded-lg font-bold"
-              style={{ background: "#059669", color: "#fff" }}
+              className="text-sm px-4 py-2 rounded-lg font-bold"style={{ background: "#059669", color: "#fff"}}
               onClick={() => alert("[Mock] Generating full proposal...")}
             >
               Generate Proposal →
             </button>
             <button
-              className="text-sm px-3 py-2 rounded-lg font-semibold border"
-              style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0" }}
+              className="text-sm px-3 py-2 rounded-lg font-semibold border"style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0"}}
               onClick={() => alert("[Mock] Exporting proposal PDF...")}
             >
               Export PDF
@@ -2404,69 +2295,69 @@ function ProposalPreviewTab({ audit }: { audit: Audit }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Recommended Services", value: audit.recommendedServices.length, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
-          { label: "Setup Fees", value: `$${setupTotal.toLocaleString()}`, color: "#C2410C", bg: "#FFF7ED", border: "#FED7AA" },
-          { label: "Estimated Monthly", value: `$${recurringTotal.toLocaleString()}/mo`, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
-          { label: "Projected Package Value", value: `$${annualValue.toLocaleString()}/yr`, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
+          { label: "Recommended Services", value: audit.recommendedServices.length, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE"},
+          { label: "Setup Fees", value: `$${setupTotal.toLocaleString()}`, color: "#C2410C", bg: "#FFF7ED", border: "#FED7AA"},
+          { label: "Estimated Monthly", value: `$${recurringTotal.toLocaleString()}/mo`, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE"},
+          { label: "Projected Package Value", value: `$${annualValue.toLocaleString()}/yr`, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
         ].map((card) => (
-          <div key={card.label} className="rounded-xl border p-4 text-center" style={{ background: card.bg, borderColor: card.border }}>
-            <div className="text-xl font-black" style={{ color: card.color }}>{card.value}</div>
-            <div className="text-[10px] font-semibold mt-0.5" style={{ color: card.color }}>{card.label}</div>
+          <div key={card.label} className="rounded-xl border p-4 text-center"style={{ background: card.bg, borderColor: card.border }}>
+            <div className="text-xl font-black"style={{ color: card.color }}>{card.value}</div>
+            <div className="text-[10px] font-semibold mt-0.5"style={{ color: card.color }}>{card.label}</div>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-        <div className="px-4 py-3 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>⭐ Recommended Services</p>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+        <div className="px-4 py-3 border-b"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+          <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}> Recommended Services</p>
         </div>
-        <div className="divide-y" style={{ borderColor: "var(--rtm-border-light)" }}>
+        <div className="divide-y"style={{ borderColor: "var(--rtm-border-light)"}}>
           {audit.recommendedServices.map((s, i) => (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-3" style={{ background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}>
+            <div key={s.id} className="flex items-center gap-3 px-4 py-3"style={{ background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)"}}>
               <PriorityBadge priority={s.priority} />
-              <p className="flex-1 text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{s.service}</p>
-              <Badge label={s.department} bg="#EFF6FF" text="#1D4ED8" border="#BFDBFE" />
-              <span className="text-xs font-bold" style={{ color: "#059669" }}>${s.estimatedRevenue.toLocaleString()}/mo</span>
+              <p className="flex-1 text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{s.service}</p>
+              <Badge label={s.department} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
+              <span className="text-xs font-bold"style={{ color: "#059669"}}>${s.estimatedRevenue.toLocaleString()}/mo</span>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-        <div className="px-4 py-3 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>📋 Recommended Line Items</p>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+        <div className="px-4 py-3 border-b"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+          <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}> Recommended Line Items</p>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: 700 }}>
+          <table className="w-full text-xs"style={{ borderCollapse: "collapse", minWidth: 700 }}>
             <thead>
-              <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)" }}>
+              <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)"}}>
                 {["Line Item", "Category", "Setup Fee", "Recurring Fee", "Delivery"].map((h) => (
-                  <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                  <th key={h} className="text-left px-3 py-2 text-[10px] font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {audit.recommendedLineItems.map((li, i) => (
-                <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}>
-                  <td className="px-3 py-2 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.lineItem}</td>
-                  <td className="px-3 py-2"><Badge label={li.category} bg="#EFF6FF" text="#1D4ED8" border="#BFDBFE" /></td>
-                  <td className="px-3 py-2 font-bold" style={{ color: li.setupFee > 0 ? "#C2410C" : "#9CA3AF" }}>
+                <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)"}}>
+                  <td className="px-3 py-2 font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{li.lineItem}</td>
+                  <td className="px-3 py-2"><Badge label={li.category} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/></td>
+                  <td className="px-3 py-2 font-bold"style={{ color: li.setupFee > 0 ? "#C2410C": "#9CA3AF"}}>
                     {li.setupFee > 0 ? `$${li.setupFee.toLocaleString()}` : "—"}
                   </td>
-                  <td className="px-3 py-2 font-bold" style={{ color: li.recurringFee > 0 ? "#1D4ED8" : "#9CA3AF" }}>
+                  <td className="px-3 py-2 font-bold"style={{ color: li.recurringFee > 0 ? "#1D4ED8": "#9CA3AF"}}>
                     {li.recurringFee > 0 ? `$${li.recurringFee.toLocaleString()}/mo` : "—"}
                   </td>
-                  <td className="px-3 py-2" style={{ color: "#1D4ED8" }}>{li.deliveryStandard}</td>
+                  <td className="px-3 py-2"style={{ color: "#1D4ED8"}}>{li.deliveryStandard}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr style={{ background: "#ECFDF5", borderTop: "2px solid #A7F3D0" }}>
-                <td colSpan={2} className="px-3 py-2.5 text-xs font-bold" style={{ color: "#059669" }}>Package Totals</td>
-                <td className="px-3 py-2.5 text-sm font-black" style={{ color: "#C2410C" }}>
+              <tr style={{ background: "#ECFDF5", borderTop: "2px solid #A7F3D0"}}>
+                <td colSpan={2} className="px-3 py-2.5 text-xs font-bold"style={{ color: "#059669"}}>Package Totals</td>
+                <td className="px-3 py-2.5 text-sm font-black"style={{ color: "#C2410C"}}>
                   {setupTotal > 0 ? `$${setupTotal.toLocaleString()}` : "—"}
                 </td>
-                <td className="px-3 py-2.5 text-sm font-black" style={{ color: "#1D4ED8" }}>
+                <td className="px-3 py-2.5 text-sm font-black"style={{ color: "#1D4ED8"}}>
                   {recurringTotal > 0 ? `$${recurringTotal.toLocaleString()}/mo` : "—"}
                 </td>
                 <td />
@@ -2479,39 +2370,37 @@ function ProposalPreviewTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ── Activity Timeline Tab ─────────────────────────────────────────────────────
+//  Activity Timeline Tab 
 function ActivityTimelineTab({ audit }: { audit: Audit }) {
   return (
     <div className="space-y-3">
       {audit.timeline.length === 0 ? (
-        <div className="rounded-xl border p-10 text-center" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-          <p className="text-3xl mb-2">📅</p>
-          <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No timeline events yet.</p>
+        <div className="rounded-xl border p-10 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+          <p className="text-3xl mb-2"></p>
+          <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}>No timeline events yet.</p>
         </div>
       ) : (
         <div className="relative">
-          <div className="absolute left-5 top-0 bottom-0 w-0.5" style={{ background: "var(--rtm-border)" }} />
+          <div className="absolute left-5 top-0 bottom-0 w-0.5"style={{ background: "var(--rtm-border)"}} />
           <div className="space-y-3">
             {audit.timeline.map((event) => {
               const meta = TIMELINE_META[event.type];
               return (
                 <div key={event.id} className="flex items-start gap-4 relative pl-12">
                   <div
-                    className="absolute left-3 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white"
-                    style={{ background: meta.color, top: 2, fontSize: 10 }}
+                    className="absolute left-3 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white"style={{ background: meta.color, top: 2, fontSize: 10 }}
                   >
                     {meta.icon}
                   </div>
                   <div
-                    className="flex-1 rounded-xl border p-3"
-                    style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+                    className="flex-1 rounded-xl border p-3"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
                   >
                     <div className="flex items-center justify-between flex-wrap gap-2">
-                      <p className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{event.event}</p>
-                      <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{event.date} · {event.user}</span>
+                      <p className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{event.event}</p>
+                      <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{event.date} · {event.user}</span>
                     </div>
                     {event.detail && (
-                      <p className="text-xs mt-1" style={{ color: "var(--rtm-text-secondary)" }}>{event.detail}</p>
+                      <p className="text-xs mt-1"style={{ color: "var(--rtm-text-secondary)"}}>{event.detail}</p>
                     )}
                   </div>
                 </div>
@@ -2524,9 +2413,9 @@ function ActivityTimelineTab({ audit }: { audit: Audit }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Audit Detail Drawer
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function AuditDetailDrawer({
   audit,
@@ -2538,28 +2427,26 @@ function AuditDetailDrawer({
   const [activeTab, setActiveTab] = useState<DrawerTab>("overview");
 
   const tabs: { key: DrawerTab; label: string; icon?: string }[] = [
-    { key: "overview", label: "Overview" },
-    { key: "findings", label: "Findings" },
-    { key: "ai-recommendations", label: "AI Recommendations" },
-    { key: "recommended-services", label: "Recommended Services" },
-    { key: "recommended-line-items", label: "Recommended Line Items" },
-    { key: "client-communications", label: "Client Communications" },
-    { key: "competitor-analysis", label: "Competitor Analysis" },
-    { key: "proposal-preview", label: "Proposal Preview" },
-    { key: "activity-timeline", label: "Activity Timeline" },
+    { key: "overview", label: "Overview"},
+    { key: "findings", label: "Findings"},
+    { key: "ai-recommendations", label: "AI Recommendations"},
+    { key: "recommended-services", label: "Recommended Services"},
+    { key: "recommended-line-items", label: "Recommended Line Items"},
+    { key: "client-communications", label: "Client Communications"},
+    { key: "competitor-analysis", label: "Competitor Analysis"},
+    { key: "proposal-preview", label: "Proposal Preview"},
+    { key: "activity-timeline", label: "Activity Timeline"},
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="flex-1 bg-black/40 backdrop-blur-sm"onClick={onClose} />
       <div
-        className="w-full max-w-5xl h-full flex flex-col shadow-2xl overflow-hidden"
-        style={{ background: "var(--rtm-bg)", borderLeft: "1px solid var(--rtm-border)" }}
+        className="w-full max-w-5xl h-full flex flex-col shadow-2xl overflow-hidden"style={{ background: "var(--rtm-bg)", borderLeft: "1px solid var(--rtm-border)"}}
       >
         {/* Header */}
         <div
-          className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0"
-          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+          className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
         >
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -2568,13 +2455,13 @@ function AuditDetailDrawer({
               <PriorityBadge priority={audit.priority} />
               <ProposalStatusBadge status={audit.proposalStatus} />
             </div>
-            <h2 className="text-xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+            <h2 className="text-xl font-bold"style={{ color: "var(--rtm-text-primary)"}}>
               {audit.auditName}
             </h2>
-            <p className="text-sm mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
+            <p className="text-sm mt-0.5"style={{ color: "var(--rtm-text-secondary)"}}>
               {audit.client} · {audit.industry} · {audit.website} · {audit.createdBy} · {audit.createdDate}
             </p>
-            <p className="text-xs mt-1 italic" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs mt-1 italic"style={{ color: "var(--rtm-text-muted)"}}>
               {audit.summary}
             </p>
           </div>
@@ -2582,52 +2469,47 @@ function AuditDetailDrawer({
             <ScoreRing score={audit.overallScore} size={56} />
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-lg"
-              style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-lg"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)"}}
             >
-              ✕
+              
             </button>
           </div>
         </div>
 
         {/* Quick stats bar */}
         <div
-          className="flex gap-0 border-b flex-shrink-0 overflow-x-auto"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          className="flex gap-0 border-b flex-shrink-0 overflow-x-auto"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
         >
           {[
-            { label: "Issues", value: `🚨 ${audit.issuesFound}`, color: "#DC2626" },
-            { label: "Revenue Opp.", value: `💵 $${audit.revenueOpportunity.toLocaleString()}`, color: "#059669" },
-            { label: "Services Rec.", value: `⭐ ${audit.recommendedServices.length}`, color: "#7C3AED" },
-            { label: "Line Items", value: `📋 ${audit.recommendedLineItems.length}`, color: "#1D4ED8" },
-            { label: "Communications", value: `💬 ${audit.communications.length}`, color: "#0369A1" },
-            { label: "Competitors", value: `🏆 ${audit.competitors.length}`, color: "#6D28D9" },
-            { label: "Timeline Events", value: `📅 ${audit.timeline.length}`, color: "#6B7280" },
+            { label: "Issues", value: ` ${audit.issuesFound}`, color: "#DC2626"},
+            { label: "Revenue Opp.", value: ` $${audit.revenueOpportunity.toLocaleString()}`, color: "#059669"},
+            { label: "Services Rec.", value: ` ${audit.recommendedServices.length}`, color: "#7C3AED"},
+            { label: "Line Items", value: ` ${audit.recommendedLineItems.length}`, color: "#1D4ED8"},
+            { label: "Communications", value: ` ${audit.communications.length}`, color: "#0369A1"},
+            { label: "Competitors", value: ` ${audit.competitors.length}`, color: "#6D28D9"},
+            { label: "Timeline Events", value: ` ${audit.timeline.length}`, color: "#6B7280"},
           ].map((s) => (
             <div
               key={s.label}
-              className="flex-shrink-0 px-4 py-2 text-center border-r"
-              style={{ borderColor: "var(--rtm-border)" }}
+              className="flex-shrink-0 px-4 py-2 text-center border-r"style={{ borderColor: "var(--rtm-border)"}}
             >
-              <div className="text-xs font-black" style={{ color: s.color }}>{s.value}</div>
-              <div className="text-[9px] font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{s.label}</div>
+              <div className="text-xs font-black"style={{ color: s.color }}>{s.value}</div>
+              <div className="text-[9px] font-semibold"style={{ color: "var(--rtm-text-muted)"}}>{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Tab bar */}
         <div
-          className="flex gap-0 border-b flex-shrink-0 overflow-x-auto"
-          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+          className="flex gap-0 border-b flex-shrink-0 overflow-x-auto"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
         >
           {tabs.map((t) => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className="px-3 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 flex items-center gap-1"
-              style={{
-                borderBottomColor: activeTab === t.key ? "#1D4ED8" : "transparent",
-                color: activeTab === t.key ? "#1D4ED8" : "var(--rtm-text-muted)",
+              className="px-3 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2 flex items-center gap-1"style={{
+                borderBottomColor: activeTab === t.key ? "#1D4ED8": "transparent",
+                color: activeTab === t.key ? "#1D4ED8": "var(--rtm-text-muted)",
               }}
             >
               <span>{t.icon}</span>
@@ -2638,36 +2520,33 @@ function AuditDetailDrawer({
 
         {/* Tab content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === "overview" && <OverviewTab audit={audit} />}
-          {activeTab === "findings" && <FindingsTab audit={audit} />}
-          {activeTab === "ai-recommendations" && <AIRecommendationsTab audit={audit} />}
-          {activeTab === "recommended-services" && <RecommendedServicesTab audit={audit} />}
-          {activeTab === "recommended-line-items" && <RecommendedLineItemsTab audit={audit} />}
-          {activeTab === "client-communications" && <ClientCommunicationsTab audit={audit} />}
-          {activeTab === "competitor-analysis" && <CompetitorAnalysisTab audit={audit} />}
-          {activeTab === "proposal-preview" && <ProposalPreviewTab audit={audit} />}
-          {activeTab === "activity-timeline" && <ActivityTimelineTab audit={audit} />}
+          {activeTab === "overview"&& <OverviewTab audit={audit} />}
+          {activeTab === "findings"&& <FindingsTab audit={audit} />}
+          {activeTab === "ai-recommendations"&& <AIRecommendationsTab audit={audit} />}
+          {activeTab === "recommended-services"&& <RecommendedServicesTab audit={audit} />}
+          {activeTab === "recommended-line-items"&& <RecommendedLineItemsTab audit={audit} />}
+          {activeTab === "client-communications"&& <ClientCommunicationsTab audit={audit} />}
+          {activeTab === "competitor-analysis"&& <CompetitorAnalysisTab audit={audit} />}
+          {activeTab === "proposal-preview"&& <ProposalPreviewTab audit={audit} />}
+          {activeTab === "activity-timeline"&& <ActivityTimelineTab audit={audit} />}
         </div>
 
         {/* Footer */}
         <div
-          className="flex items-center justify-between px-6 py-4 border-t flex-shrink-0"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          className="flex items-center justify-between px-6 py-4 border-t flex-shrink-0"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
         >
-          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {audit.auditName} · Score: {audit.overallScore}/100 · {audit.issuesFound} issues · ${audit.revenueOpportunity.toLocaleString()} revenue opportunity
           </p>
           <div className="flex gap-2">
             <button
-              className="text-sm px-3 py-1.5 rounded-lg font-semibold border"
-              style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+              className="text-sm px-3 py-1.5 rounded-lg font-semibold border"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)"}}
               onClick={onClose}
             >
               Close
             </button>
             <button
-              className="text-sm px-4 py-1.5 rounded-lg font-bold"
-              style={{ background: "#059669", color: "#fff" }}
+              className="text-sm px-4 py-1.5 rounded-lg font-bold"style={{ background: "#059669", color: "#fff"}}
               onClick={() => setActiveTab("proposal-preview")}
             >
               Generate Proposal →
@@ -2679,9 +2558,9 @@ function AuditDetailDrawer({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Main Page
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 export default function AuditIntelligenceCenterPage() {
   const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
@@ -2690,8 +2569,8 @@ export default function AuditIntelligenceCenterPage() {
   const [typeFilter, setTypeFilter] = useState<AuditType | "All">("All");
 
   const filtered = MOCK_AUDITS.filter((a) => {
-    if (statusFilter !== "All" && a.status !== statusFilter) return false;
-    if (typeFilter !== "All" && a.auditType !== typeFilter) return false;
+    if (statusFilter !== "All"&& a.status !== statusFilter) return false;
+    if (typeFilter !== "All"&& a.auditType !== typeFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -2718,41 +2597,37 @@ export default function AuditIntelligenceCenterPage() {
       {/* Page Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "#1D4ED8" }}>
+          <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "#1D4ED8"}}>
             Sales
           </p>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
             Audit Intelligence Center
           </h1>
-          <p className="text-sm mt-1 max-w-2xl" style={{ color: "var(--rtm-text-secondary)" }}>
+          <p className="text-sm mt-1 max-w-2xl"style={{ color: "var(--rtm-text-secondary)"}}>
             Analyze client opportunities, identify gaps, generate recommendations, identify risks, and prepare proposal-ready service packages.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
-            className="text-sm px-3 py-2 rounded-lg font-bold border"
-            style={{ background: "#1D4ED8", color: "#fff", borderColor: "#1D4ED8" }}
+            className="text-sm px-3 py-2 rounded-lg font-bold border"style={{ background: "#1D4ED8", color: "#fff", borderColor: "#1D4ED8"}}
             onClick={() => alert("[Mock] New Audit — select client and audit type.")}
           >
-            ＋ New Audit
+             New Audit
           </button>
           <button
-            className="text-sm px-3 py-2 rounded-lg font-semibold border"
-            style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}
+            className="text-sm px-3 py-2 rounded-lg font-semibold border"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)"}}
             onClick={() => alert("[Mock] Generating AI Recommendations...")}
           >
-            🤖 Generate Recommendations
+             Generate Recommendations
           </button>
           <button
-            className="text-sm px-3 py-2 rounded-lg font-semibold border"
-            style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}
+            className="text-sm px-3 py-2 rounded-lg font-semibold border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}
             onClick={() => alert("[Mock] Generating Proposal Package...")}
           >
-            📦 Generate Proposal
+             Generate Proposal
           </button>
           <button
-            className="text-sm px-3 py-2 rounded-lg font-semibold border"
-            style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}
+            className="text-sm px-3 py-2 rounded-lg font-semibold border"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)"}}
             onClick={() => alert("[Mock] Exporting Audits...")}
           >
             ↓ Export
@@ -2768,19 +2643,17 @@ export default function AuditIntelligenceCenterPage() {
 
       {/* Revenue Opportunity Banner */}
       <div
-        className="rounded-xl border p-4 flex items-center justify-between flex-wrap gap-4"
-        style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}
+        className="rounded-xl border p-4 flex items-center justify-between flex-wrap gap-4"style={{ background: "#ECFDF5", borderColor: "#A7F3D0"}}
       >
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#059669" }}>Estimated Revenue Opportunity</p>
-          <p className="text-3xl font-black mt-0.5" style={{ color: "#059669" }}>${totalRevOpp.toLocaleString()}</p>
-          <p className="text-xs mt-0.5" style={{ color: "#047857" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest"style={{ color: "#059669"}}>Estimated Revenue Opportunity</p>
+          <p className="text-3xl font-black mt-0.5"style={{ color: "#059669"}}>${totalRevOpp.toLocaleString()}</p>
+          <p className="text-xs mt-0.5"style={{ color: "#047857"}}>
             Across all {MOCK_AUDITS.length} audits · Based on AI-recommended services and findings
           </p>
         </div>
         <button
-          className="text-sm px-4 py-2 rounded-lg font-bold"
-          style={{ background: "#059669", color: "#fff" }}
+          className="text-sm px-4 py-2 rounded-lg font-bold"style={{ background: "#059669", color: "#fff"}}
           onClick={() => alert("[Mock] Generating all proposals...")}
         >
           Generate All Proposals →
@@ -2788,18 +2661,17 @@ export default function AuditIntelligenceCenterPage() {
       </div>
 
       {/* Audit Types Filter */}
-      <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-        <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+      <div className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <p className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>
           Audit Types
         </p>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setTypeFilter("All")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold"
-            style={{
-              background: typeFilter === "All" ? "#EFF6FF" : "var(--rtm-bg)",
-              color: typeFilter === "All" ? "#1D4ED8" : "var(--rtm-text-muted)",
-              borderColor: typeFilter === "All" ? "#BFDBFE" : "var(--rtm-border)",
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold"style={{
+              background: typeFilter === "All"? "#EFF6FF": "var(--rtm-bg)",
+              color: typeFilter === "All"? "#1D4ED8": "var(--rtm-text-muted)",
+              borderColor: typeFilter === "All"? "#BFDBFE": "var(--rtm-border)",
             }}
           >
             All Types
@@ -2809,9 +2681,8 @@ export default function AuditIntelligenceCenterPage() {
             return (
               <button
                 key={type}
-                onClick={() => setTypeFilter(typeFilter === type ? "All" : type)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold"
-                style={{
+                onClick={() => setTypeFilter(typeFilter === type ? "All": type)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold"style={{
                   background: typeFilter === type ? m.bg : "var(--rtm-bg)",
                   color: typeFilter === type ? m.color : "var(--rtm-text-muted)",
                   borderColor: typeFilter === type ? m.border : "var(--rtm-border)",
@@ -2827,14 +2698,12 @@ export default function AuditIntelligenceCenterPage() {
 
       {/* Search & Status Filter */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex-1 relative" style={{ minWidth: 240 }}>
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>🔍</span>
+        <div className="flex-1 relative"style={{ minWidth: 240 }}>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"style={{ color: "var(--rtm-text-muted)"}}></span>
           <input
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-            placeholder="Search audits by name, client, industry, or sales rep..."
-            className="w-full pl-8 pr-4 py-2 rounded-lg border text-sm outline-none"
-            style={{
+            placeholder="Search audits by name, client, industry, or sales rep..."className="w-full pl-8 pr-4 py-2 rounded-lg border text-sm outline-none"style={{
               background: "var(--rtm-surface)",
               borderColor: "var(--rtm-border)",
               color: "var(--rtm-text-primary)",
@@ -2846,25 +2715,18 @@ export default function AuditIntelligenceCenterPage() {
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold border whitespace-nowrap"
-              style={{
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold border whitespace-nowrap"style={{
                 background:
                   statusFilter === s
-                    ? s === "All"
-                      ? "#EFF6FF"
-                      : AUDIT_STATUS_COLORS[s as AuditStatus].bg
+                    ? s === "All"? "#EFF6FF": AUDIT_STATUS_COLORS[s as AuditStatus].bg
                     : "var(--rtm-surface)",
                 color:
                   statusFilter === s
-                    ? s === "All"
-                      ? "#1D4ED8"
-                      : AUDIT_STATUS_COLORS[s as AuditStatus].text
+                    ? s === "All"? "#1D4ED8": AUDIT_STATUS_COLORS[s as AuditStatus].text
                     : "var(--rtm-text-muted)",
                 borderColor:
                   statusFilter === s
-                    ? s === "All"
-                      ? "#BFDBFE"
-                      : AUDIT_STATUS_COLORS[s as AuditStatus].border
+                    ? s === "All"? "#BFDBFE": AUDIT_STATUS_COLORS[s as AuditStatus].border
                     : "var(--rtm-border)",
               }}
             >
@@ -2872,8 +2734,8 @@ export default function AuditIntelligenceCenterPage() {
             </button>
           ))}
         </div>
-        <div className="text-xs flex-shrink-0" style={{ color: "var(--rtm-text-muted)" }}>
-          {filtered.length} audit{filtered.length !== 1 ? "s" : ""}
+        <div className="text-xs flex-shrink-0"style={{ color: "var(--rtm-text-muted)"}}>
+          {filtered.length} audit{filtered.length !== 1 ? "s": ""}
         </div>
       </div>
 
@@ -2882,26 +2744,24 @@ export default function AuditIntelligenceCenterPage() {
 
       {/* Score Legend */}
       <div
-        className="rounded-xl border p-4 flex items-center gap-6 flex-wrap"
-        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        className="rounded-xl border p-4 flex items-center gap-6 flex-wrap"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
       >
-        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
+        <p className="text-[10px] font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>
           Score Legend
         </p>
         {[
-          { range: "80–100", label: "Strong", color: "#15803D", bg: "#F0FDF4" },
-          { range: "60–79", label: "Good", color: "#D97706", bg: "#FFFBEB" },
-          { range: "40–59", label: "Needs Work", color: "#EA580C", bg: "#FFF7ED" },
-          { range: "0–39", label: "Critical", color: "#DC2626", bg: "#FEF2F2" },
+          { range: "80–100", label: "Strong", color: "#15803D", bg: "#F0FDF4"},
+          { range: "60–79", label: "Good", color: "#D97706", bg: "#FFFBEB"},
+          { range: "40–59", label: "Needs Work", color: "#EA580C", bg: "#FFF7ED"},
+          { range: "0–39", label: "Critical", color: "#DC2626", bg: "#FEF2F2"},
         ].map((item) => (
           <div key={item.range} className="flex items-center gap-2">
             <div
-              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black"
-              style={{ background: item.bg, color: item.color }}
+              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black"style={{ background: item.bg, color: item.color }}
             >
               {item.range.split("–")[0]}
             </div>
-            <span className="text-xs font-semibold" style={{ color: item.color }}>
+            <span className="text-xs font-semibold"style={{ color: item.color }}>
               {item.range} — {item.label}
             </span>
           </div>

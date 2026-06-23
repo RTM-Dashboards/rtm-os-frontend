@@ -9,9 +9,9 @@ import {
   type AMRole,
 } from "@/lib/am-role-mock-data";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
-type TaskStatusType = "Not Started" | "In Progress" | "Completed" | "Blocked" | "Waiting For Client" | "Review";
+type TaskStatusType = "Not Started"| "In Progress"| "Completed"| "Blocked"| "Waiting For Client"| "Review";
 
 function statusBadge(s: string) {
   switch (s) {
@@ -46,7 +46,7 @@ function templateStatusBadge(s: string) {
 const ALL_STATUSES: TaskStatusType[] = ["Not Started", "In Progress", "Completed", "Blocked", "Waiting For Client", "Review"];
 const ALL_DEPTS = [...new Set(ALL_TASKS.map((t) => t.department))];
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const DEPARTMENTS = [
   "Account Management",
@@ -66,19 +66,19 @@ interface TaskTemplate {
   service: string;
   taskCount: number;
   activeClients: number;
-  status: "Active" | "Draft" | "Archived";
+  status: "Active"| "Draft"| "Archived";
   lastModified: string;
 }
 
 const TASK_TEMPLATES: TaskTemplate[] = [
-  { id: "tt1", name: "SEO Client Onboarding", department: "SEO & Local", service: "SEO", taskCount: 12, activeClients: 8, status: "Active", lastModified: "2025-07-10" },
-  { id: "tt2", name: "Meta Ads Launch Checklist", department: "Paid Advertising", service: "Meta Ads", taskCount: 9, activeClients: 5, status: "Active", lastModified: "2025-07-08" },
-  { id: "tt3", name: "Google Ads Setup", department: "Paid Advertising", service: "Google Ads", taskCount: 11, activeClients: 6, status: "Active", lastModified: "2025-07-05" },
-  { id: "tt4", name: "GBP Optimization Flow", department: "SEO & Local", service: "GBP", taskCount: 7, activeClients: 4, status: "Active", lastModified: "2025-06-28" },
-  { id: "tt5", name: "Monthly Reporting Setup", department: "Reporting", service: "Reporting", taskCount: 5, activeClients: 14, status: "Active", lastModified: "2025-06-20" },
-  { id: "tt6", name: "Content Calendar Build", department: "Content", service: "Content", taskCount: 8, activeClients: 3, status: "Draft", lastModified: "2025-07-01" },
-  { id: "tt7", name: "Website Dev Handoff", department: "Web Development", service: "Web Dev", taskCount: 15, activeClients: 2, status: "Active", lastModified: "2025-06-15" },
-  { id: "tt8", name: "Billing Onboarding", department: "Billing", service: "Billing", taskCount: 4, activeClients: 11, status: "Active", lastModified: "2025-05-30" },
+  { id: "tt1", name: "SEO Client Onboarding", department: "SEO & Local", service: "SEO", taskCount: 12, activeClients: 8, status: "Active", lastModified: "2025-07-10"},
+  { id: "tt2", name: "Meta Ads Launch Checklist", department: "Paid Advertising", service: "Meta Ads", taskCount: 9, activeClients: 5, status: "Active", lastModified: "2025-07-08"},
+  { id: "tt3", name: "Google Ads Setup", department: "Paid Advertising", service: "Google Ads", taskCount: 11, activeClients: 6, status: "Active", lastModified: "2025-07-05"},
+  { id: "tt4", name: "GBP Optimization Flow", department: "SEO & Local", service: "GBP", taskCount: 7, activeClients: 4, status: "Active", lastModified: "2025-06-28"},
+  { id: "tt5", name: "Monthly Reporting Setup", department: "Reporting", service: "Reporting", taskCount: 5, activeClients: 14, status: "Active", lastModified: "2025-06-20"},
+  { id: "tt6", name: "Content Calendar Build", department: "Content", service: "Content", taskCount: 8, activeClients: 3, status: "Draft", lastModified: "2025-07-01"},
+  { id: "tt7", name: "Website Dev Handoff", department: "Web Development", service: "Web Dev", taskCount: 15, activeClients: 2, status: "Active", lastModified: "2025-06-15"},
+  { id: "tt8", name: "Billing Onboarding", department: "Billing", service: "Billing", taskCount: 4, activeClients: 11, status: "Active", lastModified: "2025-05-30"},
 ];
 
 interface ProjectTemplate {
@@ -88,16 +88,16 @@ interface ProjectTemplate {
   servicesIncluded: string[];
   taskCount: number;
   duration: string;
-  status: "Active" | "Draft" | "Archived";
+  status: "Active"| "Draft"| "Archived";
 }
 
 const PROJECT_TEMPLATES: ProjectTemplate[] = [
-  { id: "pt1", name: "SEO Client Onboarding", department: "SEO & Local", servicesIncluded: ["SEO", "GBP", "Content"], taskCount: 22, duration: "30 days", status: "Active" },
-  { id: "pt2", name: "Meta Ads Launch", department: "Paid Advertising", servicesIncluded: ["Meta Ads", "Reporting"], taskCount: 14, duration: "14 days", status: "Active" },
-  { id: "pt3", name: "Google Ads Launch", department: "Paid Advertising", servicesIncluded: ["Google Ads", "Reporting"], taskCount: 16, duration: "14 days", status: "Active" },
-  { id: "pt4", name: "GBP Optimization", department: "SEO & Local", servicesIncluded: ["GBP"], taskCount: 9, duration: "7 days", status: "Active" },
-  { id: "pt5", name: "Website Development", department: "Web Development", servicesIncluded: ["Web Dev", "Content", "SEO"], taskCount: 30, duration: "60 days", status: "Active" },
-  { id: "pt6", name: "Reporting Setup", department: "Reporting", servicesIncluded: ["Reporting", "Account Management"], taskCount: 8, duration: "5 days", status: "Draft" },
+  { id: "pt1", name: "SEO Client Onboarding", department: "SEO & Local", servicesIncluded: ["SEO", "GBP", "Content"], taskCount: 22, duration: "30 days", status: "Active"},
+  { id: "pt2", name: "Meta Ads Launch", department: "Paid Advertising", servicesIncluded: ["Meta Ads", "Reporting"], taskCount: 14, duration: "14 days", status: "Active"},
+  { id: "pt3", name: "Google Ads Launch", department: "Paid Advertising", servicesIncluded: ["Google Ads", "Reporting"], taskCount: 16, duration: "14 days", status: "Active"},
+  { id: "pt4", name: "GBP Optimization", department: "SEO & Local", servicesIncluded: ["GBP"], taskCount: 9, duration: "7 days", status: "Active"},
+  { id: "pt5", name: "Website Development", department: "Web Development", servicesIncluded: ["Web Dev", "Content", "SEO"], taskCount: 30, duration: "60 days", status: "Active"},
+  { id: "pt6", name: "Reporting Setup", department: "Reporting", servicesIncluded: ["Reporting", "Account Management"], taskCount: 8, duration: "5 days", status: "Draft"},
 ];
 
 interface DeptTemplateRow {
@@ -108,14 +108,14 @@ interface DeptTemplateRow {
 }
 
 const DEPT_TEMPLATE_ROWS: DeptTemplateRow[] = [
-  { department: "Account Management", templateCount: 3, activeProjects: 12, owner: "Jordan Mills" },
-  { department: "SEO & Local", templateCount: 6, activeProjects: 18, owner: "Maya Torres" },
-  { department: "Paid Advertising", templateCount: 5, activeProjects: 11, owner: "Chris Blake" },
-  { department: "Content", templateCount: 4, activeProjects: 7, owner: "Ava Kim" },
-  { department: "Web Development", templateCount: 3, activeProjects: 4, owner: "Devon Park" },
-  { department: "Reporting", templateCount: 2, activeProjects: 22, owner: "Riley Chen" },
-  { department: "Billing", templateCount: 2, activeProjects: 15, owner: "Sam Nguyen" },
-  { department: "Sales", templateCount: 2, activeProjects: 6, owner: "Taylor Ross" },
+  { department: "Account Management", templateCount: 3, activeProjects: 12, owner: "Jordan Mills"},
+  { department: "SEO & Local", templateCount: 6, activeProjects: 18, owner: "Maya Torres"},
+  { department: "Paid Advertising", templateCount: 5, activeProjects: 11, owner: "Chris Blake"},
+  { department: "Content", templateCount: 4, activeProjects: 7, owner: "Ava Kim"},
+  { department: "Web Development", templateCount: 3, activeProjects: 4, owner: "Devon Park"},
+  { department: "Reporting", templateCount: 2, activeProjects: 22, owner: "Riley Chen"},
+  { department: "Billing", templateCount: 2, activeProjects: 15, owner: "Sam Nguyen"},
+  { department: "Sales", templateCount: 2, activeProjects: 6, owner: "Taylor Ross"},
 ];
 
 interface ClientTemplate {
@@ -128,12 +128,12 @@ interface ClientTemplate {
 }
 
 const CLIENT_TEMPLATES: ClientTemplate[] = [
-  { id: "ct1", client: "Apex Roofing", template: "SEO Package", service: "SEO", taskCount: 14, lastUpdated: "2025-07-11" },
-  { id: "ct2", client: "Pacific Dental", template: "Growth Package", service: "SEO + Meta Ads", taskCount: 19, lastUpdated: "2025-07-09" },
-  { id: "ct3", client: "Harbor Auto", template: "Lead Generation Package", service: "Google Ads + Meta Ads", taskCount: 16, lastUpdated: "2025-07-07" },
-  { id: "ct4", client: "Summit Fitness", template: "Social Media Package", service: "Content + Meta Ads", taskCount: 11, lastUpdated: "2025-07-03" },
-  { id: "ct5", client: "Lakeside Dental", template: "Local SEO Package", service: "SEO + GBP", taskCount: 10, lastUpdated: "2025-06-29" },
-  { id: "ct6", client: "Metro HVAC", template: "Full Service Package", service: "SEO + Google Ads + Reporting", taskCount: 24, lastUpdated: "2025-06-25" },
+  { id: "ct1", client: "Apex Roofing", template: "SEO Package", service: "SEO", taskCount: 14, lastUpdated: "2025-07-11"},
+  { id: "ct2", client: "Pacific Dental", template: "Growth Package", service: "SEO + Meta Ads", taskCount: 19, lastUpdated: "2025-07-09"},
+  { id: "ct3", client: "Harbor Auto", template: "Lead Generation Package", service: "Google Ads + Meta Ads", taskCount: 16, lastUpdated: "2025-07-07"},
+  { id: "ct4", client: "Summit Fitness", template: "Social Media Package", service: "Content + Meta Ads", taskCount: 11, lastUpdated: "2025-07-03"},
+  { id: "ct5", client: "Lakeside Dental", template: "Local SEO Package", service: "SEO + GBP", taskCount: 10, lastUpdated: "2025-06-29"},
+  { id: "ct6", client: "Metro HVAC", template: "Full Service Package", service: "SEO + Google Ads + Reporting", taskCount: 24, lastUpdated: "2025-06-25"},
 ];
 
 interface BuilderTask {
@@ -176,7 +176,7 @@ const MOCK_GENERATED_TASKS: GeneratedTask[] = [
   { id: "g5", name: "Monthly Reporting Setup", department: "Reporting", priority: "Low", dueDays: 21 },
 ];
 
-// ── Head View ─────────────────────────────────────────────────────────────────
+//  Head View 
 
 function HeadView() {
   const [filterAM, setFilterAM] = useState("All");
@@ -185,9 +185,9 @@ function HeadView() {
   const [tasks, setTasks] = useState(ALL_TASKS);
 
   const filtered = tasks.filter((t) => {
-    if (filterAM !== "All" && t.assignedAM !== filterAM) return false;
-    if (filterDept !== "All" && t.department !== filterDept) return false;
-    if (filterStatus !== "All" && t.status !== filterStatus) return false;
+    if (filterAM !== "All"&& t.assignedAM !== filterAM) return false;
+    if (filterDept !== "All"&& t.department !== filterDept) return false;
+    if (filterStatus !== "All"&& t.status !== filterStatus) return false;
     return true;
   });
 
@@ -200,14 +200,14 @@ function HeadView() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Tasks", value: ALL_TASKS.length, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200" },
-          { label: "In Progress", value: ALL_TASKS.filter((t) => t.status === "In Progress").length, color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200" },
-          { label: "Blocked", value: ALL_TASKS.filter((t) => t.status === "Blocked").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
-          { label: "Completed", value: ALL_TASKS.filter((t) => t.status === "Completed").length, color: "text-green-700", bg: "bg-green-50", border: "border-green-200" },
-          { label: "Waiting For Client", value: ALL_TASKS.filter((t) => t.status === "Waiting For Client").length, color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
-          { label: "Ready for Review", value: ALL_TASKS.filter((t) => t.status === "Review").length, color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" },
-          { label: "High Priority", value: ALL_TASKS.filter((t) => t.priority === "High").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
-          { label: "Not Started", value: ALL_TASKS.filter((t) => t.status === "Not Started").length, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200" },
+          { label: "Total Tasks", value: ALL_TASKS.length, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200"},
+          { label: "In Progress", value: ALL_TASKS.filter((t) => t.status === "In Progress").length, color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200"},
+          { label: "Blocked", value: ALL_TASKS.filter((t) => t.status === "Blocked").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200"},
+          { label: "Completed", value: ALL_TASKS.filter((t) => t.status === "Completed").length, color: "text-green-700", bg: "bg-green-50", border: "border-green-200"},
+          { label: "Waiting For Client", value: ALL_TASKS.filter((t) => t.status === "Waiting For Client").length, color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200"},
+          { label: "Ready for Review", value: ALL_TASKS.filter((t) => t.status === "Review").length, color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200"},
+          { label: "High Priority", value: ALL_TASKS.filter((t) => t.priority === "High").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200"},
+          { label: "Not Started", value: ALL_TASKS.filter((t) => t.status === "Not Started").length, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200"},
         ].map(({ label, value, color, bg, border }) => (
           <div key={label} className={`rounded-2xl border ${border} ${bg} p-4 shadow-sm`}>
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{label}</p>
@@ -221,10 +221,10 @@ function HeadView() {
         <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Head Management Actions</p>
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "Escalate Blocked Tasks", color: "bg-red-600 hover:bg-red-700" },
-            { label: "Rebalance Ownership", color: "bg-indigo-600 hover:bg-indigo-700" },
-            { label: "Create Manager Note", color: "bg-slate-600 hover:bg-slate-700" },
-            { label: "Export Task Report", color: "bg-slate-700 hover:bg-slate-800" },
+            { label: "Escalate Blocked Tasks", color: "bg-red-600 hover:bg-red-700"},
+            { label: "Rebalance Ownership", color: "bg-indigo-600 hover:bg-indigo-700"},
+            { label: "Create Manager Note", color: "bg-slate-600 hover:bg-slate-700"},
+            { label: "Export Task Report", color: "bg-slate-700 hover:bg-slate-800"},
           ].map(({ label, color }) => (
             <button key={label} className={`${color} rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors`}>
               {label}
@@ -266,7 +266,7 @@ function HeadView() {
             </thead>
             <tbody>
               {filtered.map((t) => (
-                <tr key={t.id} className={`border-t border-slate-100 hover:bg-slate-50 ${t.status === "Completed" ? "bg-emerald-50/30" : ""}`}>
+                <tr key={t.id} className={`border-t border-slate-100 hover:bg-slate-50 ${t.status === "Completed"? "bg-emerald-50/30": ""}`}>
                   <td className="px-4 py-3 font-medium text-slate-800 min-w-[180px]">{t.task}</td>
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{t.client}</td>
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{t.assignedAM}</td>
@@ -314,7 +314,7 @@ function HeadView() {
                 <div className="space-y-1.5 text-xs">
                   <div className="flex justify-between"><span className="text-slate-500">Total Tasks</span><span className="font-bold">{amTasks.length}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">In Progress</span><span className="text-blue-600 font-semibold">{amTasks.filter((t) => t.status === "In Progress").length}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Blocked</span><span className={`font-semibold ${blocked > 0 ? "text-red-600" : "text-green-600"}`}>{blocked}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Blocked</span><span className={`font-semibold ${blocked > 0 ? "text-red-600": "text-green-600"}`}>{blocked}</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">Completed</span><span className="text-green-600 font-semibold">{amTasks.filter((t) => t.status === "Completed").length}</span></div>
                 </div>
               </div>
@@ -326,14 +326,14 @@ function HeadView() {
   );
 }
 
-// ── AM View ───────────────────────────────────────────────────────────────────
+//  AM View 
 
 function AMView() {
   const [myTasks, setMyTasks] = useState(ALL_TASKS.filter((t) => t.assignedAM === SARAH));
   const [filterStatus, setFilterStatus] = useState("All");
   const [newNote, setNewNote] = useState<Record<string, string>>({});
 
-  const filtered = myTasks.filter((t) => filterStatus === "All" || t.status === filterStatus);
+  const filtered = myTasks.filter((t) => filterStatus === "All"|| t.status === filterStatus);
 
   function updateStatus(id: string, status: TaskStatusType) {
     setMyTasks((prev) => prev.map((t) => t.id === id ? { ...t, status } : t));
@@ -348,10 +348,10 @@ function AMView() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "My Total Tasks", value: myTasks.length, color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200" },
-          { label: "In Progress", value: myTasks.filter((t) => t.status === "In Progress").length, color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200" },
-          { label: "Blocked", value: myTasks.filter((t) => t.status === "Blocked").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200" },
-          { label: "Completed", value: myTasks.filter((t) => t.status === "Completed").length, color: "text-green-700", bg: "bg-green-50", border: "border-green-200" },
+          { label: "My Total Tasks", value: myTasks.length, color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200"},
+          { label: "In Progress", value: myTasks.filter((t) => t.status === "In Progress").length, color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200"},
+          { label: "Blocked", value: myTasks.filter((t) => t.status === "Blocked").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200"},
+          { label: "Completed", value: myTasks.filter((t) => t.status === "Completed").length, color: "text-green-700", bg: "bg-green-50", border: "border-green-200"},
         ].map(({ label, value, color, bg, border }) => (
           <div key={label} className={`rounded-2xl border ${border} ${bg} p-4 shadow-sm`}>
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{label}</p>
@@ -365,10 +365,10 @@ function AMView() {
         <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">My Task Actions</p>
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "Complete Task", color: "bg-teal-600 hover:bg-teal-700" },
-            { label: "Add Comment", color: "bg-violet-600 hover:bg-violet-700" },
-            { label: "Add Client Note", color: "bg-slate-600 hover:bg-slate-700" },
-            { label: "Request Manager Escalation", color: "bg-red-600 hover:bg-red-700" },
+            { label: "Complete Task", color: "bg-teal-600 hover:bg-teal-700"},
+            { label: "Add Comment", color: "bg-violet-600 hover:bg-violet-700"},
+            { label: "Add Client Note", color: "bg-slate-600 hover:bg-slate-700"},
+            { label: "Request Manager Escalation", color: "bg-red-600 hover:bg-red-700"},
           ].map(({ label, color }) => (
             <button key={label} className={`${color} rounded-lg px-4 py-2 text-sm font-semibold text-white transition-colors`}>
               {label}
@@ -391,7 +391,7 @@ function AMView() {
         </div>
         <div className="space-y-3 p-5">
           {filtered.map((t) => (
-            <div key={t.id} className={`rounded-xl border p-4 ${t.status === "Blocked" ? "border-red-200 bg-red-50" : t.status === "Completed" ? "border-green-200 bg-green-50" : "border-slate-100 bg-white"}`}>
+            <div key={t.id} className={`rounded-xl border p-4 ${t.status === "Blocked"? "border-red-200 bg-red-50": t.status === "Completed"? "border-green-200 bg-green-50": "border-slate-100 bg-white"}`}>
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div>
                   <p className="text-sm font-bold text-slate-800">{t.task}</p>
@@ -406,14 +406,11 @@ function AMView() {
               </div>
               <div className="flex gap-2">
                 <input
-                  type="text"
-                  defaultValue={t.notes}
+                  type="text"defaultValue={t.notes}
                   onChange={(e) => setNewNote((prev) => ({ ...prev, [t.id]: e.target.value }))}
-                  placeholder="Add note…"
-                  className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-blue-400"
-                />
+                  placeholder="Add note…"className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-blue-400"/>
                 <button onClick={() => saveNote(t.id)} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700">Save</button>
-                {t.status === "Blocked" && (
+                {t.status === "Blocked"&& (
                   <button className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">Escalate</button>
                 )}
               </div>
@@ -456,7 +453,7 @@ function AMView() {
   );
 }
 
-// ── Task Template Library ─────────────────────────────────────────────────────
+//  Task Template Library 
 
 function TaskTemplateLibrary() {
   const [templates, setTemplates] = useState<TaskTemplate[]>(TASK_TEMPLATES);
@@ -464,13 +461,13 @@ function TaskTemplateLibrary() {
   const [filterStatus, setFilterStatus] = useState("All");
 
   const filtered = templates.filter((t) => {
-    if (filterDept !== "All" && t.department !== filterDept) return false;
-    if (filterStatus !== "All" && t.status !== filterStatus) return false;
+    if (filterDept !== "All"&& t.department !== filterDept) return false;
+    if (filterStatus !== "All"&& t.status !== filterStatus) return false;
     return true;
   });
 
   function archiveTemplate(id: string) {
-    setTemplates((prev) => prev.map((t) => t.id === id ? { ...t, status: "Archived" as const } : t));
+    setTemplates((prev) => prev.map((t) => t.id === id ? { ...t, status: "Archived"as const } : t));
   }
 
   function cloneTemplate(id: string) {
@@ -488,7 +485,7 @@ function TaskTemplateLibrary() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="task-template-library">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="task-template-library">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-0.5">Teamwork Foundation</p>
@@ -550,20 +547,20 @@ function TaskTemplateLibrary() {
   );
 }
 
-// ── Project Template Library ──────────────────────────────────────────────────
+//  Project Template Library 
 
 function ProjectTemplateLibrary() {
   const [filterDept, setFilterDept] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
 
   const filtered = PROJECT_TEMPLATES.filter((p) => {
-    if (filterDept !== "All" && p.department !== filterDept) return false;
-    if (filterStatus !== "All" && p.status !== filterStatus) return false;
+    if (filterDept !== "All"&& p.department !== filterDept) return false;
+    if (filterStatus !== "All"&& p.status !== filterStatus) return false;
     return true;
   });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="project-template-library">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="project-template-library">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-teal-600 mb-0.5">Teamwork Foundation</p>
@@ -630,7 +627,7 @@ function ProjectTemplateLibrary() {
   );
 }
 
-// ── Department Template Library ───────────────────────────────────────────────
+//  Department Template Library 
 
 function DepartmentTemplateLibrary() {
   return (
@@ -654,7 +651,7 @@ function DepartmentTemplateLibrary() {
               <tr key={row.department} className="border-t border-slate-100 hover:bg-slate-50">
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center gap-2 font-semibold text-slate-800">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block" />
+                    <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block"/>
                     {row.department}
                   </span>
                 </td>
@@ -676,12 +673,12 @@ function DepartmentTemplateLibrary() {
   );
 }
 
-// ── Client Template Library ───────────────────────────────────────────────────
+//  Client Template Library 
 
 function ClientTemplateLibrary() {
   const [filterService, setFilterService] = useState("All");
   const services = [...new Set(CLIENT_TEMPLATES.map((c) => c.service))];
-  const filtered = filterService === "All" ? CLIENT_TEMPLATES : CLIENT_TEMPLATES.filter((c) => c.service === filterService);
+  const filtered = filterService === "All"? CLIENT_TEMPLATES : CLIENT_TEMPLATES.filter((c) => c.service === filterService);
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -738,7 +735,7 @@ function ClientTemplateLibrary() {
   );
 }
 
-// ── Template Builder ──────────────────────────────────────────────────────────
+//  Template Builder 
 
 function TemplateBuilder() {
   const [templateName, setTemplateName] = useState("");
@@ -746,9 +743,9 @@ function TemplateBuilder() {
   const [service, setService] = useState("");
   const [description, setDescription] = useState("");
   const [builderTasks, setBuilderTasks] = useState<BuilderTask[]>([
-    { id: "bt1", name: "Initial Audit", description: "Conduct baseline audit", ownerType: "SEO Specialist", priority: "High", dueDays: 3, dependency: "" },
-    { id: "bt2", name: "Keyword Research", description: "Research target keywords", ownerType: "SEO Specialist", priority: "High", dueDays: 7, dependency: "Initial Audit" },
-    { id: "bt3", name: "Strategy Document", description: "Create strategy doc", ownerType: "Account Manager", priority: "Medium", dueDays: 10, dependency: "Keyword Research" },
+    { id: "bt1", name: "Initial Audit", description: "Conduct baseline audit", ownerType: "SEO Specialist", priority: "High", dueDays: 3, dependency: ""},
+    { id: "bt2", name: "Keyword Research", description: "Research target keywords", ownerType: "SEO Specialist", priority: "High", dueDays: 7, dependency: "Initial Audit"},
+    { id: "bt3", name: "Strategy Document", description: "Create strategy doc", ownerType: "Account Manager", priority: "Medium", dueDays: 10, dependency: "Keyword Research"},
   ]);
   const [saved, setSaved] = useState(false);
 
@@ -779,7 +776,7 @@ function TemplateBuilder() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="template-builder">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="template-builder">
       <div className="border-b border-slate-100 px-6 py-4">
         <p className="text-xs font-bold uppercase tracking-widest text-rose-600 mb-0.5">Teamwork Foundation</p>
         <h2 className="text-lg font-bold text-slate-900">Template Builder</h2>
@@ -791,20 +788,16 @@ function TemplateBuilder() {
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wide">Template Name</label>
             <input
-              type="text"
-              value={templateName}
+              type="text"value={templateName}
               onChange={(e) => setTemplateName(e.target.value)}
-              placeholder="e.g. SEO Client Onboarding"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"
-            />
+              placeholder="e.g. SEO Client Onboarding"className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"/>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wide">Department</label>
             <select
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"
-            >
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400">
               <option value="">Select department</option>
               {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
             </select>
@@ -812,22 +805,16 @@ function TemplateBuilder() {
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wide">Service</label>
             <input
-              type="text"
-              value={service}
+              type="text"value={service}
               onChange={(e) => setService(e.target.value)}
-              placeholder="e.g. SEO, Meta Ads"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"
-            />
+              placeholder="e.g. SEO, Meta Ads"className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"/>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-600 mb-1 uppercase tracking-wide">Description</label>
             <input
-              type="text"
-              value={description}
+              type="text"value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Brief description"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"
-            />
+              placeholder="Brief description"className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"/>
           </div>
         </div>
 
@@ -843,53 +830,38 @@ function TemplateBuilder() {
                 <div className="flex items-center gap-2 mb-3">
                   <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center flex-shrink-0">{idx + 1}</span>
                   <input
-                    type="text"
-                    value={t.name}
+                    type="text"value={t.name}
                     onChange={(e) => updateTask(t.id, "name", e.target.value)}
-                    placeholder="Task Name"
-                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-400"
-                  />
+                    placeholder="Task Name"className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 outline-none focus:border-indigo-400"/>
                   <button onClick={() => removeTask(t.id)} className="text-xs text-red-500 hover:text-red-700 font-semibold px-2">Remove</button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
                   <input
-                    type="text"
-                    value={t.description}
+                    type="text"value={t.description}
                     onChange={(e) => updateTask(t.id, "description", e.target.value)}
-                    placeholder="Task Description"
-                    className="col-span-2 sm:col-span-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"
-                  />
+                    placeholder="Task Description"className="col-span-2 sm:col-span-1 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"/>
                   <input
-                    type="text"
-                    value={t.ownerType}
+                    type="text"value={t.ownerType}
                     onChange={(e) => updateTask(t.id, "ownerType", e.target.value)}
-                    placeholder="Owner Type"
-                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"
-                  />
+                    placeholder="Owner Type"className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"/>
                   <select
                     value={t.priority}
                     onChange={(e) => updateTask(t.id, "priority", e.target.value)}
-                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"
-                  >
+                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400">
                     {["High", "Medium", "Low"].map((p) => <option key={p}>{p}</option>)}
                   </select>
                   <div className="flex items-center gap-1">
                     <input
-                      type="number"
-                      value={t.dueDays}
+                      type="number"value={t.dueDays}
                       onChange={(e) => updateTask(t.id, "dueDays", parseInt(e.target.value) || 0)}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"
-                      min={0}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"min={0}
                     />
                     <span className="text-xs text-slate-400 whitespace-nowrap">days</span>
                   </div>
                   <input
-                    type="text"
-                    value={t.dependency}
+                    type="text"value={t.dependency}
                     onChange={(e) => updateTask(t.id, "dependency", e.target.value)}
-                    placeholder="Dependency"
-                    className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"
-                  />
+                    placeholder="Dependency"className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-400"/>
                 </div>
               </div>
             ))}
@@ -904,8 +876,8 @@ function TemplateBuilder() {
         {/* Builder Actions */}
         <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100">
           <button onClick={addTask} className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-sm font-semibold px-4 py-2 rounded-lg transition-colors">+ Add Task</button>
-          <button onClick={saveTemplate} className={`text-sm font-semibold px-6 py-2 rounded-lg transition-colors text-white ${saved ? "bg-emerald-600" : "bg-emerald-600 hover:bg-emerald-700"}`}>
-            {saved ? "✓ Saved!" : "Save Template"}
+          <button onClick={saveTemplate} className={`text-sm font-semibold px-6 py-2 rounded-lg transition-colors text-white ${saved ? "bg-emerald-600": "bg-emerald-600 hover:bg-emerald-700"}`}>
+            {saved ? "Saved!": "Save Template"}
           </button>
         </div>
       </div>
@@ -913,7 +885,7 @@ function TemplateBuilder() {
   );
 }
 
-// ── Task Package Generator ────────────────────────────────────────────────────
+//  Task Package Generator 
 
 function TaskPackageGenerator() {
   const [pkg, setPkg] = useState<PackageState>({ client: "", service: "", template: "", department: "", generated: false });
@@ -935,7 +907,7 @@ function TaskPackageGenerator() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="task-package-generator">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="task-package-generator">
       <div className="border-b border-slate-100 px-6 py-4">
         <p className="text-xs font-bold uppercase tracking-widest text-orange-600 mb-0.5">Teamwork Foundation</p>
         <h2 className="text-lg font-bold text-slate-900">Task Package Generator</h2>
@@ -946,7 +918,7 @@ function TaskPackageGenerator() {
         <div className="flex flex-wrap items-center gap-2 text-sm">
           {["Client", "Service Activated", "Select Template", "Generate Tasks", "Push To Centralized Tasks"].map((step, i, arr) => (
             <div key={step} className="flex items-center gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${i <= (pkg.generated ? (pushed ? 4 : 3) : pkg.client ? (pkg.service ? (pkg.template ? 2 : 1) : 1) : 0) ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500"}`}>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${i <= (pkg.generated ? (pushed ? 4 : 3) : pkg.client ? (pkg.service ? (pkg.template ? 2 : 1) : 1) : 0) ? "bg-indigo-600 text-white": "bg-slate-100 text-slate-500"}`}>
                 {step}
               </span>
               {i < arr.length - 1 && <span className="text-slate-300">→</span>}
@@ -961,8 +933,7 @@ function TaskPackageGenerator() {
             <select
               value={pkg.client}
               onChange={(e) => setPkg((prev) => ({ ...prev, client: e.target.value, generated: false }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"
-            >
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400">
               <option value="">Select client</option>
               {clients.map((c) => <option key={c}>{c}</option>)}
             </select>
@@ -972,8 +943,7 @@ function TaskPackageGenerator() {
             <select
               value={pkg.service}
               onChange={(e) => setPkg((prev) => ({ ...prev, service: e.target.value, generated: false }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"
-            >
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400">
               <option value="">Select service</option>
               {services.map((s) => <option key={s}>{s}</option>)}
             </select>
@@ -983,8 +953,7 @@ function TaskPackageGenerator() {
             <select
               value={pkg.template}
               onChange={(e) => setPkg((prev) => ({ ...prev, template: e.target.value, generated: false }))}
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400"
-            >
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none focus:border-indigo-400">
               <option value="">Select template</option>
               {templateNames.map((t) => <option key={t}>{t}</option>)}
             </select>
@@ -993,8 +962,7 @@ function TaskPackageGenerator() {
             <button
               onClick={generate}
               disabled={!pkg.client || !pkg.service || !pkg.template}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-            >
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
               Generate Tasks
             </button>
           </div>
@@ -1013,7 +981,7 @@ function TaskPackageGenerator() {
                   Push To Centralized Tasks
                 </button>
               ) : (
-                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-4 py-2 rounded-lg">✓ Pushed to Central Board</span>
+                <span className="bg-emerald-100 text-emerald-700 text-xs font-bold px-4 py-2 rounded-lg"> Pushed to Central Board</span>
               )}
             </div>
             <div className="space-y-2">
@@ -1033,7 +1001,7 @@ function TaskPackageGenerator() {
   );
 }
 
-// ── Task Dependency Builder ───────────────────────────────────────────────────
+//  Task Dependency Builder 
 
 function TaskDependencyBuilder() {
   const [selected, setSelected] = useState(DEPENDENCY_CHAINS[0].id);
@@ -1050,8 +1018,7 @@ function TaskDependencyBuilder() {
         <select
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
-          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5"
-        >
+          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
           {DEPENDENCY_CHAINS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
         </select>
       </div>
@@ -1072,7 +1039,7 @@ function TaskDependencyBuilder() {
               </div>
               {idx < chain.steps.length - 1 && (
                 <div className="ml-4 flex items-center">
-                  <div className="w-0 h-6 border-l-2 border-dashed border-indigo-300" />
+                  <div className="w-0 h-6 border-l-2 border-dashed border-indigo-300"/>
                   <span className="text-indigo-300 ml-[-1px] text-xs">↓</span>
                 </div>
               )}
@@ -1089,16 +1056,16 @@ function TaskDependencyBuilder() {
   );
 }
 
-// ── Task Management Action Center ─────────────────────────────────────────────
+//  Task Management Action Center 
 
 function TaskManagementActionCenter() {
   const actions = [
-    { label: "Create Template", color: "bg-indigo-600 hover:bg-indigo-700" },
-    { label: "Clone Template", color: "bg-teal-600 hover:bg-teal-700", icon: "📄" },
-    { label: "Generate Task Package", color: "bg-orange-600 hover:bg-orange-700" },
-    { label: "Launch Project", color: "bg-emerald-600 hover:bg-emerald-700" },
-    { label: "Assign Tasks", color: "bg-violet-600 hover:bg-violet-700" },
-    { label: "Archive Template", color: "bg-slate-500 hover:bg-slate-600" },
+    { label: "Create Template", color: "bg-indigo-600 hover:bg-indigo-700"},
+    { label: "Clone Template", color: "bg-teal-600 hover:bg-teal-700", icon: ""},
+    { label: "Generate Task Package", color: "bg-orange-600 hover:bg-orange-700"},
+    { label: "Launch Project", color: "bg-emerald-600 hover:bg-emerald-700"},
+    { label: "Assign Tasks", color: "bg-violet-600 hover:bg-violet-700"},
+    { label: "Archive Template", color: "bg-slate-500 hover:bg-slate-600"},
   ];
 
   return (
@@ -1117,7 +1084,7 @@ function TaskManagementActionCenter() {
   );
 }
 
-// ── Project Workspace Mock Data ─────────────────────────────────────────────
+//  Project Workspace Mock Data 
 
 interface Project {
   id: string;
@@ -1128,19 +1095,19 @@ interface Project {
   startDate: string;
   dueDate: string;
   progress: number;
-  status: "Planning" | "Active" | "Waiting For Client" | "Blocked" | "Completed" | "Delayed";
+  status: "Planning"| "Active"| "Waiting For Client"| "Blocked"| "Completed"| "Delayed";
 }
 
 const PROJECT_WORKSPACE_DATA: Project[] = [
-  { id: "pw1", project: "SEO Onboarding", client: "Apex Roofing", services: ["SEO", "GBP"], owner: "Jordan Mills", startDate: "2025-07-01", dueDate: "2025-07-31", progress: 65, status: "Active" },
-  { id: "pw2", project: "Meta Ads Launch", client: "Pacific Dental", services: ["Meta Ads", "Reporting"], owner: "Maya Torres", startDate: "2025-07-05", dueDate: "2025-07-20", progress: 30, status: "Waiting For Client" },
-  { id: "pw3", project: "Google Ads Setup", client: "Harbor Auto", services: ["Google Ads"], owner: "Chris Blake", startDate: "2025-06-15", dueDate: "2025-07-10", progress: 80, status: "Active" },
-  { id: "pw4", project: "Website Rebuild", client: "Summit Fitness", services: ["Web Dev", "SEO", "Content"], owner: "Devon Park", startDate: "2025-06-01", dueDate: "2025-08-31", progress: 45, status: "Active" },
-  { id: "pw5", project: "GBP Optimization", client: "Lakeside Dental", services: ["GBP"], owner: "Ava Kim", startDate: "2025-07-08", dueDate: "2025-07-15", progress: 10, status: "Planning" },
-  { id: "pw6", project: "Full Service Launch", client: "Metro HVAC", services: ["SEO", "Google Ads", "Reporting"], owner: "Riley Chen", startDate: "2025-06-20", dueDate: "2025-07-25", progress: 0, status: "Blocked" },
-  { id: "pw7", project: "Content Calendar Q3", client: "Apex Roofing", services: ["Content"], owner: "Ava Kim", startDate: "2025-07-01", dueDate: "2025-09-30", progress: 15, status: "Active" },
-  { id: "pw8", project: "Reporting Automation", client: "Pacific Dental", services: ["Reporting"], owner: "Riley Chen", startDate: "2025-05-01", dueDate: "2025-06-30", progress: 100, status: "Completed" },
-  { id: "pw9", project: "Meta Ads Refresh", client: "Harbor Auto", services: ["Meta Ads"], owner: "Maya Torres", startDate: "2025-07-10", dueDate: "2025-07-22", progress: 5, status: "Delayed" },
+  { id: "pw1", project: "SEO Onboarding", client: "Apex Roofing", services: ["SEO", "GBP"], owner: "Jordan Mills", startDate: "2025-07-01", dueDate: "2025-07-31", progress: 65, status: "Active"},
+  { id: "pw2", project: "Meta Ads Launch", client: "Pacific Dental", services: ["Meta Ads", "Reporting"], owner: "Maya Torres", startDate: "2025-07-05", dueDate: "2025-07-20", progress: 30, status: "Waiting For Client"},
+  { id: "pw3", project: "Google Ads Setup", client: "Harbor Auto", services: ["Google Ads"], owner: "Chris Blake", startDate: "2025-06-15", dueDate: "2025-07-10", progress: 80, status: "Active"},
+  { id: "pw4", project: "Website Rebuild", client: "Summit Fitness", services: ["Web Dev", "SEO", "Content"], owner: "Devon Park", startDate: "2025-06-01", dueDate: "2025-08-31", progress: 45, status: "Active"},
+  { id: "pw5", project: "GBP Optimization", client: "Lakeside Dental", services: ["GBP"], owner: "Ava Kim", startDate: "2025-07-08", dueDate: "2025-07-15", progress: 10, status: "Planning"},
+  { id: "pw6", project: "Full Service Launch", client: "Metro HVAC", services: ["SEO", "Google Ads", "Reporting"], owner: "Riley Chen", startDate: "2025-06-20", dueDate: "2025-07-25", progress: 0, status: "Blocked"},
+  { id: "pw7", project: "Content Calendar Q3", client: "Apex Roofing", services: ["Content"], owner: "Ava Kim", startDate: "2025-07-01", dueDate: "2025-09-30", progress: 15, status: "Active"},
+  { id: "pw8", project: "Reporting Automation", client: "Pacific Dental", services: ["Reporting"], owner: "Riley Chen", startDate: "2025-05-01", dueDate: "2025-06-30", progress: 100, status: "Completed"},
+  { id: "pw9", project: "Meta Ads Refresh", client: "Harbor Auto", services: ["Meta Ads"], owner: "Maya Torres", startDate: "2025-07-10", dueDate: "2025-07-22", progress: 5, status: "Delayed"},
 ];
 
 const PROJECT_STATUSES = ["Planning", "Active", "Waiting For Client", "Blocked", "Completed", "Delayed"] as const;
@@ -1157,7 +1124,7 @@ function projectStatusBadge(s: string) {
   }
 }
 
-// ── Milestone Mock Data ────────────────────────────────────────────────────────
+//  Milestone Mock Data 
 
 interface Milestone {
   id: string;
@@ -1165,21 +1132,21 @@ interface Milestone {
   client: string;
   owner: string;
   dueDate: string;
-  status: "Not Started" | "In Progress" | "Complete" | "Overdue" | "Blocked";
+  status: "Not Started"| "In Progress"| "Complete"| "Overdue"| "Blocked";
   dependency: string;
 }
 
 const MILESTONE_DATA: Milestone[] = [
-  { id: "ms1", milestone: "Project Kickoff", client: "Apex Roofing", owner: "Jordan Mills", dueDate: "2025-07-02", status: "Complete", dependency: "—" },
-  { id: "ms2", milestone: "Intake Complete", client: "Apex Roofing", owner: "Jordan Mills", dueDate: "2025-07-05", status: "Complete", dependency: "Project Kickoff" },
-  { id: "ms3", milestone: "Asset Collection Complete", client: "Apex Roofing", owner: "Ava Kim", dueDate: "2025-07-10", status: "In Progress", dependency: "Intake Complete" },
-  { id: "ms4", milestone: "Service Setup", client: "Pacific Dental", owner: "Maya Torres", dueDate: "2025-07-12", status: "Not Started", dependency: "Asset Collection Complete" },
-  { id: "ms5", milestone: "Department Launch", client: "Harbor Auto", owner: "Chris Blake", dueDate: "2025-07-15", status: "In Progress", dependency: "Service Setup" },
-  { id: "ms6", milestone: "First Report Sent", client: "Harbor Auto", owner: "Riley Chen", dueDate: "2025-07-20", status: "Not Started", dependency: "Department Launch" },
-  { id: "ms7", milestone: "Optimization Phase", client: "Summit Fitness", owner: "Devon Park", dueDate: "2025-08-01", status: "Not Started", dependency: "First Report Sent" },
-  { id: "ms8", milestone: "Renewal Review", client: "Metro HVAC", owner: "Jordan Mills", dueDate: "2025-09-01", status: "Blocked", dependency: "Optimization Phase" },
-  { id: "ms9", milestone: "Project Kickoff", client: "Lakeside Dental", owner: "Ava Kim", dueDate: "2025-07-09", status: "Overdue", dependency: "—" },
-  { id: "ms10", milestone: "Intake Complete", client: "Metro HVAC", owner: "Jordan Mills", dueDate: "2025-06-28", status: "Complete", dependency: "Project Kickoff" },
+  { id: "ms1", milestone: "Project Kickoff", client: "Apex Roofing", owner: "Jordan Mills", dueDate: "2025-07-02", status: "Complete", dependency: "—"},
+  { id: "ms2", milestone: "Intake Complete", client: "Apex Roofing", owner: "Jordan Mills", dueDate: "2025-07-05", status: "Complete", dependency: "Project Kickoff"},
+  { id: "ms3", milestone: "Asset Collection Complete", client: "Apex Roofing", owner: "Ava Kim", dueDate: "2025-07-10", status: "In Progress", dependency: "Intake Complete"},
+  { id: "ms4", milestone: "Service Setup", client: "Pacific Dental", owner: "Maya Torres", dueDate: "2025-07-12", status: "Not Started", dependency: "Asset Collection Complete"},
+  { id: "ms5", milestone: "Department Launch", client: "Harbor Auto", owner: "Chris Blake", dueDate: "2025-07-15", status: "In Progress", dependency: "Service Setup"},
+  { id: "ms6", milestone: "First Report Sent", client: "Harbor Auto", owner: "Riley Chen", dueDate: "2025-07-20", status: "Not Started", dependency: "Department Launch"},
+  { id: "ms7", milestone: "Optimization Phase", client: "Summit Fitness", owner: "Devon Park", dueDate: "2025-08-01", status: "Not Started", dependency: "First Report Sent"},
+  { id: "ms8", milestone: "Renewal Review", client: "Metro HVAC", owner: "Jordan Mills", dueDate: "2025-09-01", status: "Blocked", dependency: "Optimization Phase"},
+  { id: "ms9", milestone: "Project Kickoff", client: "Lakeside Dental", owner: "Ava Kim", dueDate: "2025-07-09", status: "Overdue", dependency: "—"},
+  { id: "ms10", milestone: "Intake Complete", client: "Metro HVAC", owner: "Jordan Mills", dueDate: "2025-06-28", status: "Complete", dependency: "Project Kickoff"},
 ];
 
 function milestoneStatusBadge(s: string) {
@@ -1193,7 +1160,7 @@ function milestoneStatusBadge(s: string) {
   }
 }
 
-// ── Kanban Board Mock Data ─────────────────────────────────────────────────────
+//  Kanban Board Mock Data 
 
 interface KanbanTask {
   id: string;
@@ -1202,35 +1169,35 @@ interface KanbanTask {
   department: string;
   owner: string;
   dueDate: string;
-  priority: "High" | "Medium" | "Low";
-  column: "Not Started" | "In Progress" | "Waiting For Client" | "Waiting For Department" | "Ready For Review" | "Completed" | "Blocked";
+  priority: "High"| "Medium"| "Low";
+  column: "Not Started"| "In Progress"| "Waiting For Client"| "Waiting For Department"| "Ready For Review"| "Completed"| "Blocked";
 }
 
 const KANBAN_TASKS: KanbanTask[] = [
-  { id: "k1", name: "Keyword Research Report", client: "Apex Roofing", department: "SEO & Local", owner: "Maya Torres", dueDate: "2025-07-14", priority: "High", column: "In Progress" },
-  { id: "k2", name: "Meta Ads Creative Pack", client: "Pacific Dental", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-12", priority: "High", column: "Waiting For Client" },
-  { id: "k3", name: "GBP Profile Audit", client: "Lakeside Dental", department: "SEO & Local", owner: "Ava Kim", dueDate: "2025-07-16", priority: "Medium", column: "Not Started" },
-  { id: "k4", name: "Monthly Report — June", client: "Harbor Auto", department: "Reporting", owner: "Riley Chen", dueDate: "2025-07-10", priority: "High", column: "Ready For Review" },
-  { id: "k5", name: "Blog Post Drafts x3", client: "Summit Fitness", department: "Content", owner: "Ava Kim", dueDate: "2025-07-18", priority: "Medium", column: "In Progress" },
-  { id: "k6", name: "Google Ads Negative Keywords", client: "Harbor Auto", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-11", priority: "Medium", column: "Blocked" },
-  { id: "k7", name: "Website Homepage Copy", client: "Summit Fitness", department: "Web Development", owner: "Devon Park", dueDate: "2025-07-20", priority: "High", column: "Waiting For Department" },
-  { id: "k8", name: "Billing Reconciliation", client: "Metro HVAC", department: "Billing", owner: "Sam Nguyen", dueDate: "2025-07-09", priority: "Low", column: "Completed" },
-  { id: "k9", name: "SEO Technical Audit", client: "Metro HVAC", department: "SEO & Local", owner: "Maya Torres", dueDate: "2025-07-22", priority: "High", column: "Not Started" },
-  { id: "k10", name: "Client Intro Call Notes", client: "Apex Roofing", department: "Account Management", owner: "Jordan Mills", dueDate: "2025-07-08", priority: "Medium", column: "Completed" },
-  { id: "k11", name: "Ad Copy Revisions", client: "Pacific Dental", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-15", priority: "High", column: "Ready For Review" },
-  { id: "k12", name: "Landing Page Design", client: "Apex Roofing", department: "Web Development", owner: "Devon Park", dueDate: "2025-07-25", priority: "Medium", column: "Waiting For Department" },
+  { id: "k1", name: "Keyword Research Report", client: "Apex Roofing", department: "SEO & Local", owner: "Maya Torres", dueDate: "2025-07-14", priority: "High", column: "In Progress"},
+  { id: "k2", name: "Meta Ads Creative Pack", client: "Pacific Dental", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-12", priority: "High", column: "Waiting For Client"},
+  { id: "k3", name: "GBP Profile Audit", client: "Lakeside Dental", department: "SEO & Local", owner: "Ava Kim", dueDate: "2025-07-16", priority: "Medium", column: "Not Started"},
+  { id: "k4", name: "Monthly Report — June", client: "Harbor Auto", department: "Reporting", owner: "Riley Chen", dueDate: "2025-07-10", priority: "High", column: "Ready For Review"},
+  { id: "k5", name: "Blog Post Drafts x3", client: "Summit Fitness", department: "Content", owner: "Ava Kim", dueDate: "2025-07-18", priority: "Medium", column: "In Progress"},
+  { id: "k6", name: "Google Ads Negative Keywords", client: "Harbor Auto", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-11", priority: "Medium", column: "Blocked"},
+  { id: "k7", name: "Website Homepage Copy", client: "Summit Fitness", department: "Web Development", owner: "Devon Park", dueDate: "2025-07-20", priority: "High", column: "Waiting For Department"},
+  { id: "k8", name: "Billing Reconciliation", client: "Metro HVAC", department: "Billing", owner: "Sam Nguyen", dueDate: "2025-07-09", priority: "Low", column: "Completed"},
+  { id: "k9", name: "SEO Technical Audit", client: "Metro HVAC", department: "SEO & Local", owner: "Maya Torres", dueDate: "2025-07-22", priority: "High", column: "Not Started"},
+  { id: "k10", name: "Client Intro Call Notes", client: "Apex Roofing", department: "Account Management", owner: "Jordan Mills", dueDate: "2025-07-08", priority: "Medium", column: "Completed"},
+  { id: "k11", name: "Ad Copy Revisions", client: "Pacific Dental", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-15", priority: "High", column: "Ready For Review"},
+  { id: "k12", name: "Landing Page Design", client: "Apex Roofing", department: "Web Development", owner: "Devon Park", dueDate: "2025-07-25", priority: "Medium", column: "Waiting For Department"},
 ];
 
 const KANBAN_COLUMNS = ["Not Started", "In Progress", "Waiting For Client", "Waiting For Department", "Ready For Review", "Completed", "Blocked"] as const;
 
-// ── Task Detail Mock Data ──────────────────────────────────────────────────────
+//  Task Detail Mock Data 
 
 interface TaskDetailComment {
   id: string;
   author: string;
   date: string;
   text: string;
-  type: "internal" | "handoff" | "am_note" | "activity" | "status_change";
+  type: "internal"| "handoff"| "am_note"| "activity"| "status_change";
 }
 
 interface TaskDetailData {
@@ -1241,7 +1208,7 @@ interface TaskDetailData {
   department: string;
   assignedUser: string;
   dueDate: string;
-  priority: "High" | "Medium" | "Low";
+  priority: "High"| "Medium"| "Low";
   status: string;
   description: string;
   deliverables: string[];
@@ -1270,11 +1237,11 @@ const TASK_DETAIL_MOCK: TaskDetailData = {
   dependencies: ["Intake Form Received", "GBP Audit Complete"],
   blockers: [],
   comments: [
-    { id: "c1", author: "Jordan Mills", date: "2025-07-10 09:12", text: "Client confirmed they want to focus on emergency roofing services and storm damage.", type: "internal" },
-    { id: "c2", author: "Maya Torres", date: "2025-07-10 10:45", text: "Handing off competitor list to SEO team for gap analysis. See attached doc.", type: "handoff" },
-    { id: "c3", author: "Jordan Mills", date: "2025-07-11 14:00", text: "AM Note: Client prefers to review the keyword list before we proceed with implementation.", type: "am_note" },
-    { id: "c4", author: "System", date: "2025-07-09 08:00", text: "Task created from SEO Onboarding template.", type: "activity" },
-    { id: "c5", author: "System", date: "2025-07-10 09:00", text: "Status changed from Not Started → In Progress by Maya Torres.", type: "status_change" },
+    { id: "c1", author: "Jordan Mills", date: "2025-07-10 09:12", text: "Client confirmed they want to focus on emergency roofing services and storm damage.", type: "internal"},
+    { id: "c2", author: "Maya Torres", date: "2025-07-10 10:45", text: "Handing off competitor list to SEO team for gap analysis. See attached doc.", type: "handoff"},
+    { id: "c3", author: "Jordan Mills", date: "2025-07-11 14:00", text: "AM Note: Client prefers to review the keyword list before we proceed with implementation.", type: "am_note"},
+    { id: "c4", author: "System", date: "2025-07-09 08:00", text: "Task created from SEO Onboarding template.", type: "activity"},
+    { id: "c5", author: "System", date: "2025-07-10 09:00", text: "Status changed from Not Started → In Progress by Maya Torres.", type: "status_change"},
   ],
 };
 
@@ -1300,28 +1267,28 @@ function commentTypeLabel(type: string) {
   }
 }
 
-// ── Approval Workflow Mock Data ────────────────────────────────────────────────
+//  Approval Workflow Mock Data 
 
 interface ApprovalItem {
   id: string;
-  type: "AM Review" | "Department Head Review" | "Client Approval" | "QA Approval" | "Reporting Approval";
+  type: "AM Review"| "Department Head Review"| "Client Approval"| "QA Approval"| "Reporting Approval";
   task: string;
   client: string;
   assignedTo: string;
   requestedDate: string;
-  status: "Not Required" | "Pending" | "Approved" | "Rejected" | "Revision Requested";
+  status: "Not Required"| "Pending"| "Approved"| "Rejected"| "Revision Requested";
   notes: string;
 }
 
 const APPROVAL_DATA: ApprovalItem[] = [
-  { id: "ap1", type: "AM Review", task: "Keyword Research Report", client: "Apex Roofing", assignedTo: "Jordan Mills", requestedDate: "2025-07-11", status: "Pending", notes: "Awaiting AM sign-off before sending to client." },
-  { id: "ap2", type: "Client Approval", task: "Meta Ads Creative Pack", client: "Pacific Dental", assignedTo: "Sarah Adams", requestedDate: "2025-07-10", status: "Revision Requested", notes: "Client requested changes to headline copy." },
-  { id: "ap3", type: "QA Approval", task: "Monthly Report — June", client: "Harbor Auto", assignedTo: "Riley Chen", requestedDate: "2025-07-09", status: "Approved", notes: "QA passed. Report ready to send." },
-  { id: "ap4", type: "Department Head Review", task: "Google Ads Negative Keywords", client: "Harbor Auto", assignedTo: "Chris Blake", requestedDate: "2025-07-08", status: "Pending", notes: "Blocked pending PPC head review." },
-  { id: "ap5", type: "Reporting Approval", task: "Q2 SEO Summary", client: "Metro HVAC", assignedTo: "Jordan Mills", requestedDate: "2025-07-07", status: "Not Required", notes: "Client opted out of formal approval flow." },
-  { id: "ap6", type: "AM Review", task: "Blog Post Drafts x3", client: "Summit Fitness", assignedTo: "Jordan Mills", requestedDate: "2025-07-12", status: "Rejected", notes: "Does not match client brand voice. Returned to content team." },
-  { id: "ap7", type: "Client Approval", task: "Website Homepage Copy", client: "Summit Fitness", assignedTo: "Sarah Adams", requestedDate: "2025-07-13", status: "Pending", notes: "Sent via email, awaiting response." },
-  { id: "ap8", type: "QA Approval", task: "Landing Page Design", client: "Apex Roofing", assignedTo: "Devon Park", requestedDate: "2025-07-14", status: "Pending", notes: "Design QA in progress." },
+  { id: "ap1", type: "AM Review", task: "Keyword Research Report", client: "Apex Roofing", assignedTo: "Jordan Mills", requestedDate: "2025-07-11", status: "Pending", notes: "Awaiting AM sign-off before sending to client."},
+  { id: "ap2", type: "Client Approval", task: "Meta Ads Creative Pack", client: "Pacific Dental", assignedTo: "Sarah Adams", requestedDate: "2025-07-10", status: "Revision Requested", notes: "Client requested changes to headline copy."},
+  { id: "ap3", type: "QA Approval", task: "Monthly Report — June", client: "Harbor Auto", assignedTo: "Riley Chen", requestedDate: "2025-07-09", status: "Approved", notes: "QA passed. Report ready to send."},
+  { id: "ap4", type: "Department Head Review", task: "Google Ads Negative Keywords", client: "Harbor Auto", assignedTo: "Chris Blake", requestedDate: "2025-07-08", status: "Pending", notes: "Blocked pending PPC head review."},
+  { id: "ap5", type: "Reporting Approval", task: "Q2 SEO Summary", client: "Metro HVAC", assignedTo: "Jordan Mills", requestedDate: "2025-07-07", status: "Not Required", notes: "Client opted out of formal approval flow."},
+  { id: "ap6", type: "AM Review", task: "Blog Post Drafts x3", client: "Summit Fitness", assignedTo: "Jordan Mills", requestedDate: "2025-07-12", status: "Rejected", notes: "Does not match client brand voice. Returned to content team."},
+  { id: "ap7", type: "Client Approval", task: "Website Homepage Copy", client: "Summit Fitness", assignedTo: "Sarah Adams", requestedDate: "2025-07-13", status: "Pending", notes: "Sent via email, awaiting response."},
+  { id: "ap8", type: "QA Approval", task: "Landing Page Design", client: "Apex Roofing", assignedTo: "Devon Park", requestedDate: "2025-07-14", status: "Pending", notes: "Design QA in progress."},
 ];
 
 function approvalStatusBadge(s: string) {
@@ -1335,7 +1302,7 @@ function approvalStatusBadge(s: string) {
   }
 }
 
-// ── Team Throughput Mock Data ──────────────────────────────────────────────────
+//  Team Throughput Mock Data 
 
 interface ThroughputUser {
   id: string;
@@ -1345,19 +1312,19 @@ interface ThroughputUser {
   overdueTasks: number;
   blockedTasks: number;
   slaCompliance: number;
-  queueStatus: "Available" | "On Track" | "At Risk" | "Overdue";
+  queueStatus: "Available"| "On Track"| "At Risk"| "Overdue";
 }
 
 const WORKLOAD_DATA: ThroughputUser[] = [
-  { id: "wl1", user: "Jordan Mills", department: "Account Management", openTasks: 8, overdueTasks: 1, blockedTasks: 0, slaCompliance: 88, queueStatus: "On Track" },
-  { id: "wl2", user: "Maya Torres", department: "SEO & Local", openTasks: 14, overdueTasks: 3, blockedTasks: 1, slaCompliance: 72, queueStatus: "Overdue" },
-  { id: "wl3", user: "Chris Blake", department: "Paid Advertising", openTasks: 10, overdueTasks: 0, blockedTasks: 2, slaCompliance: 83, queueStatus: "At Risk" },
-  { id: "wl4", user: "Ava Kim", department: "Content", openTasks: 6, overdueTasks: 0, blockedTasks: 0, slaCompliance: 95, queueStatus: "On Track" },
-  { id: "wl5", user: "Devon Park", department: "Web Development", openTasks: 4, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available" },
-  { id: "wl6", user: "Riley Chen", department: "Reporting", openTasks: 11, overdueTasks: 2, blockedTasks: 0, slaCompliance: 82, queueStatus: "At Risk" },
-  { id: "wl7", user: "Sam Nguyen", department: "Billing", openTasks: 5, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available" },
-  { id: "wl8", user: "Sarah Adams", department: "Account Management", openTasks: 9, overdueTasks: 2, blockedTasks: 1, slaCompliance: 76, queueStatus: "Overdue" },
-  { id: "wl9", user: "Taylor Ross", department: "Sales", openTasks: 3, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available" },
+  { id: "wl1", user: "Jordan Mills", department: "Account Management", openTasks: 8, overdueTasks: 1, blockedTasks: 0, slaCompliance: 88, queueStatus: "On Track"},
+  { id: "wl2", user: "Maya Torres", department: "SEO & Local", openTasks: 14, overdueTasks: 3, blockedTasks: 1, slaCompliance: 72, queueStatus: "Overdue"},
+  { id: "wl3", user: "Chris Blake", department: "Paid Advertising", openTasks: 10, overdueTasks: 0, blockedTasks: 2, slaCompliance: 83, queueStatus: "At Risk"},
+  { id: "wl4", user: "Ava Kim", department: "Content", openTasks: 6, overdueTasks: 0, blockedTasks: 0, slaCompliance: 95, queueStatus: "On Track"},
+  { id: "wl5", user: "Devon Park", department: "Web Development", openTasks: 4, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available"},
+  { id: "wl6", user: "Riley Chen", department: "Reporting", openTasks: 11, overdueTasks: 2, blockedTasks: 0, slaCompliance: 82, queueStatus: "At Risk"},
+  { id: "wl7", user: "Sam Nguyen", department: "Billing", openTasks: 5, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available"},
+  { id: "wl8", user: "Sarah Adams", department: "Account Management", openTasks: 9, overdueTasks: 2, blockedTasks: 1, slaCompliance: 76, queueStatus: "Overdue"},
+  { id: "wl9", user: "Taylor Ross", department: "Sales", openTasks: 3, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available"},
 ];
 
 function workloadStatusBadge(s: string) {
@@ -1370,7 +1337,7 @@ function workloadStatusBadge(s: string) {
   }
 }
 
-// ── Time Tracking Mock Data ────────────────────────────────────────────────────
+//  Time Tracking Mock Data 
 
 interface TimeEntry {
   id: string;
@@ -1385,35 +1352,35 @@ interface TimeEntry {
 }
 
 const TIME_TRACKING_DATA: TimeEntry[] = [
-  { id: "tt1", task: "Keyword Research Report", client: "Apex Roofing", user: "Maya Torres", estimated: 4, logged: 2.5, billable: 2.5, nonBillable: 0, notes: "Ongoing — competitor gap still in progress" },
-  { id: "tt2", task: "Meta Ads Creative Pack", client: "Pacific Dental", user: "Chris Blake", estimated: 3, logged: 3, billable: 2, nonBillable: 1, notes: "1h non-billable revision requested by client" },
-  { id: "tt3", task: "Monthly Report — June", client: "Harbor Auto", user: "Riley Chen", estimated: 2, logged: 2, billable: 2, nonBillable: 0, notes: "Report completed and QA approved" },
-  { id: "tt4", task: "Blog Post Drafts x3", client: "Summit Fitness", user: "Ava Kim", estimated: 5, logged: 4, billable: 3, nonBillable: 1, notes: "Revision round counted as non-billable" },
-  { id: "tt5", task: "Website Homepage Copy", client: "Summit Fitness", user: "Devon Park", estimated: 6, logged: 1, billable: 1, nonBillable: 0, notes: "Waiting on client content before continuing" },
+  { id: "tt1", task: "Keyword Research Report", client: "Apex Roofing", user: "Maya Torres", estimated: 4, logged: 2.5, billable: 2.5, nonBillable: 0, notes: "Ongoing — competitor gap still in progress"},
+  { id: "tt2", task: "Meta Ads Creative Pack", client: "Pacific Dental", user: "Chris Blake", estimated: 3, logged: 3, billable: 2, nonBillable: 1, notes: "1h non-billable revision requested by client"},
+  { id: "tt3", task: "Monthly Report — June", client: "Harbor Auto", user: "Riley Chen", estimated: 2, logged: 2, billable: 2, nonBillable: 0, notes: "Report completed and QA approved"},
+  { id: "tt4", task: "Blog Post Drafts x3", client: "Summit Fitness", user: "Ava Kim", estimated: 5, logged: 4, billable: 3, nonBillable: 1, notes: "Revision round counted as non-billable"},
+  { id: "tt5", task: "Website Homepage Copy", client: "Summit Fitness", user: "Devon Park", estimated: 6, logged: 1, billable: 1, nonBillable: 0, notes: "Waiting on client content before continuing"},
 ];
 
-// ── Automation Rules Mock Data ─────────────────────────────────────────────────
+//  Automation Rules Mock Data 
 
 interface AutomationRule {
   id: string;
   trigger: string;
   action: string;
   target: string;
-  status: "Active" | "Paused" | "Draft";
+  status: "Active"| "Paused"| "Draft";
   lastTriggered: string;
 }
 
 const AUTOMATION_RULES: AutomationRule[] = [
-  { id: "ar1", trigger: "Payment confirmed", action: "Create onboarding project", target: "Account Management", status: "Active", lastTriggered: "2025-07-10" },
-  { id: "ar2", trigger: "Service activated", action: "Generate department task package", target: "All Departments", status: "Active", lastTriggered: "2025-07-09" },
-  { id: "ar3", trigger: "Task blocked", action: "Notify assigned AM", target: "Account Management", status: "Active", lastTriggered: "2025-07-11" },
-  { id: "ar4", trigger: "Report approved by QA", action: "Mark report ready to send", target: "Reporting", status: "Active", lastTriggered: "2025-07-08" },
-  { id: "ar5", trigger: "Client approval needed", action: "Create follow-up task", target: "Account Management", status: "Active", lastTriggered: "2025-07-07" },
-  { id: "ar6", trigger: "Milestone overdue", action: "Escalate to department head", target: "All Departments", status: "Active", lastTriggered: "2025-07-06" },
-  { id: "ar7", trigger: "Project completed", action: "Trigger renewal review task", target: "Account Management", status: "Active", lastTriggered: "2025-07-05" },
-  { id: "ar8", trigger: "Intake form submitted", action: "Begin asset collection checklist", target: "Account Management", status: "Draft", lastTriggered: "—" },
-  { id: "ar9", trigger: "Task overdue 3+ days", action: "Send overdue alert to owner", target: "All Departments", status: "Paused", lastTriggered: "2025-07-01" },
-  { id: "ar10", trigger: "Department handoff note added", action: "Notify receiving department", target: "All Departments", status: "Active", lastTriggered: "2025-07-11" },
+  { id: "ar1", trigger: "Payment confirmed", action: "Create onboarding project", target: "Account Management", status: "Active", lastTriggered: "2025-07-10"},
+  { id: "ar2", trigger: "Service activated", action: "Generate department task package", target: "All Departments", status: "Active", lastTriggered: "2025-07-09"},
+  { id: "ar3", trigger: "Task blocked", action: "Notify assigned AM", target: "Account Management", status: "Active", lastTriggered: "2025-07-11"},
+  { id: "ar4", trigger: "Report approved by QA", action: "Mark report ready to send", target: "Reporting", status: "Active", lastTriggered: "2025-07-08"},
+  { id: "ar5", trigger: "Client approval needed", action: "Create follow-up task", target: "Account Management", status: "Active", lastTriggered: "2025-07-07"},
+  { id: "ar6", trigger: "Milestone overdue", action: "Escalate to department head", target: "All Departments", status: "Active", lastTriggered: "2025-07-06"},
+  { id: "ar7", trigger: "Project completed", action: "Trigger renewal review task", target: "Account Management", status: "Active", lastTriggered: "2025-07-05"},
+  { id: "ar8", trigger: "Intake form submitted", action: "Begin asset collection checklist", target: "Account Management", status: "Draft", lastTriggered: "—"},
+  { id: "ar9", trigger: "Task overdue 3+ days", action: "Send overdue alert to owner", target: "All Departments", status: "Paused", lastTriggered: "2025-07-01"},
+  { id: "ar10", trigger: "Department handoff note added", action: "Notify receiving department", target: "All Departments", status: "Active", lastTriggered: "2025-07-11"},
 ];
 
 function automationStatusBadge(s: string) {
@@ -1425,7 +1392,7 @@ function automationStatusBadge(s: string) {
   }
 }
 
-// ── Project Workspace Section ──────────────────────────────────────────────────
+//  Project Workspace Section 
 
 function ProjectWorkspaceSection() {
   const [projects, setProjects] = useState<Project[]>(PROJECT_WORKSPACE_DATA);
@@ -1434,8 +1401,8 @@ function ProjectWorkspaceSection() {
 
   const owners = [...new Set(PROJECT_WORKSPACE_DATA.map((p) => p.owner))];
   const filtered = projects.filter((p) => {
-    if (filterStatus !== "All" && p.status !== filterStatus) return false;
-    if (filterOwner !== "All" && p.owner !== filterOwner) return false;
+    if (filterStatus !== "All"&& p.status !== filterStatus) return false;
+    if (filterOwner !== "All"&& p.owner !== filterOwner) return false;
     return true;
   });
 
@@ -1444,7 +1411,7 @@ function ProjectWorkspaceSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="project-workspace">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="project-workspace">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-0.5">Project Workspace</p>
@@ -1470,7 +1437,7 @@ function ProjectWorkspaceSection() {
           return (
             <div key={s} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
               <p className="text-xs font-semibold text-slate-500 truncate">{s}</p>
-              <p className={`text-xl font-bold mt-1 ${projectStatusBadge(s).split(" ")[1]}`}>{count}</p>
+              <p className={`text-xl font-bold mt-1 ${projectStatusBadge(s).split("")[1]}`}>{count}</p>
             </div>
           );
         })}
@@ -1503,7 +1470,7 @@ function ProjectWorkspaceSection() {
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-2 rounded-full ${p.progress === 100 ? "bg-emerald-500" : p.progress >= 70 ? "bg-blue-500" : p.progress >= 30 ? "bg-amber-500" : "bg-slate-300"}`}
+                        className={`h-2 rounded-full ${p.progress === 100 ? "bg-emerald-500": p.progress >= 70 ? "bg-blue-500": p.progress >= 30 ? "bg-amber-500": "bg-slate-300"}`}
                         style={{ width: `${p.progress}%` }}
                       />
                     </div>
@@ -1534,7 +1501,7 @@ function ProjectWorkspaceSection() {
   );
 }
 
-// ── Milestone Tracking Section ─────────────────────────────────────────────────
+//  Milestone Tracking Section 
 
 function MilestoneTrackingSection() {
   const [milestones, setMilestones] = useState<Milestone[]>(MILESTONE_DATA);
@@ -1543,8 +1510,8 @@ function MilestoneTrackingSection() {
 
   const clients = [...new Set(MILESTONE_DATA.map((m) => m.client))];
   const filtered = milestones.filter((m) => {
-    if (filterStatus !== "All" && m.status !== filterStatus) return false;
-    if (filterClient !== "All" && m.client !== filterClient) return false;
+    if (filterStatus !== "All"&& m.status !== filterStatus) return false;
+    if (filterClient !== "All"&& m.client !== filterClient) return false;
     return true;
   });
 
@@ -1553,7 +1520,7 @@ function MilestoneTrackingSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="milestone-tracking">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="milestone-tracking">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-violet-600 mb-0.5">Milestone Tracking</p>
@@ -1583,7 +1550,7 @@ function MilestoneTrackingSection() {
           </thead>
           <tbody>
             {filtered.map((m) => (
-              <tr key={m.id} className={`border-t border-slate-100 hover:bg-slate-50 ${m.status === "Overdue" ? "bg-red-50/40" : m.status === "Complete" ? "bg-emerald-50/30" : ""}`}>
+              <tr key={m.id} className={`border-t border-slate-100 hover:bg-slate-50 ${m.status === "Overdue"? "bg-red-50/40": m.status === "Complete"? "bg-emerald-50/30": ""}`}>
                 <td className="px-4 py-3 font-semibold text-slate-800">{m.milestone}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{m.client}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{m.owner}</td>
@@ -1616,7 +1583,7 @@ function MilestoneTrackingSection() {
   );
 }
 
-// ── Task Board (Kanban) ────────────────────────────────────────────────────────
+//  Task Board (Kanban) 
 
 function TaskBoardSection() {
   const [tasks, setTasks] = useState<KanbanTask[]>(KANBAN_TASKS);
@@ -1626,8 +1593,8 @@ function TaskBoardSection() {
 
   const depts = [...new Set(KANBAN_TASKS.map((t) => t.department))];
   const filtered = tasks.filter((t) => {
-    if (filterPriority !== "All" && t.priority !== filterPriority) return false;
-    if (filterDept !== "All" && t.department !== filterDept) return false;
+    if (filterPriority !== "All"&& t.priority !== filterPriority) return false;
+    if (filterDept !== "All"&& t.department !== filterDept) return false;
     return true;
   });
 
@@ -1657,7 +1624,7 @@ function TaskBoardSection() {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="task-board">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="task-board">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Task Board</p>
@@ -1690,16 +1657,16 @@ function TaskBoardSection() {
                   <div
                     key={task.id}
                     onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
-                    className={`rounded-xl border bg-white p-3 cursor-pointer shadow-sm hover:shadow-md transition-shadow ${selectedTask?.id === task.id ? "ring-2 ring-indigo-400" : ""}`}
+                    className={`rounded-xl border bg-white p-3 cursor-pointer shadow-sm hover:shadow-md transition-shadow ${selectedTask?.id === task.id ? "ring-2 ring-indigo-400": ""}`}
                   >
                     <p className="text-xs font-bold text-slate-800 mb-1 leading-snug">{task.name}</p>
                     <p className="text-xs text-slate-500 mb-2">{task.client}</p>
                     <div className="flex flex-wrap gap-1 mb-2">
                       <span className={`inline-flex rounded-full px-1.5 py-0.5 text-xs font-semibold ${priorityBadge(task.priority)}`}>{task.priority}</span>
-                      <span className="inline-flex rounded-full px-1.5 py-0.5 text-xs bg-slate-100 text-slate-600">{task.department.split(" ")[0]}</span>
+                      <span className="inline-flex rounded-full px-1.5 py-0.5 text-xs bg-slate-100 text-slate-600">{task.department.split("")[0]}</span>
                     </div>
-                    <p className="text-xs text-slate-400">👤 {task.owner}</p>
-                    <p className="text-xs text-slate-400">📅 {task.dueDate}</p>
+                    <p className="text-xs text-slate-400"> {task.owner}</p>
+                    <p className="text-xs text-slate-400"> {task.dueDate}</p>
                   </div>
                 ))}
                 {colTasks.length === 0 && (
@@ -1719,8 +1686,7 @@ function TaskBoardSection() {
               <button
                 key={col}
                 onClick={() => moveTask(selectedTask.id, col)}
-                className="text-xs font-semibold rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors"
-              >
+                className="text-xs font-semibold rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors">
                 → {col}
               </button>
             ))}
@@ -1732,7 +1698,7 @@ function TaskBoardSection() {
   );
 }
 
-// ── Task Detail Panel ──────────────────────────────────────────────────────────
+//  Task Detail Panel 
 
 function TaskDetailSection() {
   const [task] = useState<TaskDetailData>(TASK_DETAIL_MOCK);
@@ -1742,14 +1708,14 @@ function TaskDetailSection() {
   const [comments, setComments] = useState<TaskDetailComment[]>(TASK_DETAIL_MOCK.comments);
 
   const commentTypes: TaskDetailComment["type"][] = ["internal", "handoff", "am_note", "activity", "status_change"];
-  const filteredComments = commentFilter === "All" ? comments : comments.filter((c) => c.type === commentFilter);
+  const filteredComments = commentFilter === "All"? comments : comments.filter((c) => c.type === commentFilter);
 
   function addComment() {
     if (!newComment.trim()) return;
     const comment: TaskDetailComment = {
       id: `c-${Date.now()}`,
       author: "Jordan Mills",
-      date: new Date().toISOString().slice(0, 16).replace("T", " "),
+      date: new Date().toISOString().slice(0, 16).replace("T", ""),
       text: newComment.trim(),
       type: newCommentType,
     };
@@ -1758,7 +1724,7 @@ function TaskDetailSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="task-detail">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="task-detail">
       <div className="border-b border-slate-100 px-6 py-4">
         <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-0.5">Task Detail</p>
         <h2 className="text-lg font-bold text-slate-900">Task Detail &amp; Comments</h2>
@@ -1795,7 +1761,7 @@ function TaskDetailSection() {
             <ul className="space-y-1">
               {task.deliverables.map((d) => (
                 <li key={d} className="flex items-start gap-2 text-sm text-slate-700">
-                  <span className="mt-0.5 text-emerald-500">✓</span>{d}
+                  <span className="mt-0.5 text-emerald-500"></span>{d}
                 </li>
               ))}
             </ul>
@@ -1816,7 +1782,7 @@ function TaskDetailSection() {
               {task.blockers.length > 0 ? (
                 <ul className="space-y-1">
                   {task.blockers.map((b) => (
-                    <li key={b} className="text-xs text-red-700 flex items-center gap-1"><span>⛔</span>{b}</li>
+                    <li key={b} className="text-xs text-red-700 flex items-center gap-1"><span></span>{b}</li>
                   ))}
                 </ul>
               ) : <p className="text-xs text-emerald-600 font-semibold">No blockers</p>}
@@ -1834,7 +1800,7 @@ function TaskDetailSection() {
           </div>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {filteredComments.map((c) => (
-              <div key={c.id} className={`rounded-xl border px-4 py-3 ${c.type === "activity" || c.type === "status_change" ? "border-slate-100 bg-slate-50" : "border-slate-100 bg-white"}`}>
+              <div key={c.id} className={`rounded-xl border px-4 py-3 ${c.type === "activity"|| c.type === "status_change"? "border-slate-100 bg-slate-50": "border-slate-100 bg-white"}`}>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${commentTypeBadge(c.type)}`}>{commentTypeLabel(c.type)}</span>
                   <span className="text-xs font-semibold text-slate-600">{c.author}</span>
@@ -1851,7 +1817,7 @@ function TaskDetailSection() {
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Add Comment</p>
             <select value={newCommentType} onChange={(e) => setNewCommentType(e.target.value as TaskDetailComment["type"])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
-              {commentTypes.filter((t) => t !== "activity" && t !== "status_change").map((t) => (
+              {commentTypes.filter((t) => t !== "activity"&& t !== "status_change").map((t) => (
                 <option key={t} value={t}>{commentTypeLabel(t)}</option>
               ))}
             </select>
@@ -1859,9 +1825,7 @@ function TaskDetailSection() {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               rows={3}
-              placeholder="Add a comment, note, or handoff detail…"
-              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 resize-none"
-            />
+              placeholder="Add a comment, note, or handoff detail…"className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 resize-none"/>
             <button onClick={addComment} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">Post Comment</button>
           </div>
         </div>
@@ -1870,7 +1834,7 @@ function TaskDetailSection() {
   );
 }
 
-// ── Approval Workflow Section ──────────────────────────────────────────────────
+//  Approval Workflow Section 
 
 function ApprovalWorkflowSection() {
   const [approvals, setApprovals] = useState<ApprovalItem[]>(APPROVAL_DATA);
@@ -1880,8 +1844,8 @@ function ApprovalWorkflowSection() {
   const approvalTypes = [...new Set(APPROVAL_DATA.map((a) => a.type))];
   const approvalStatuses = ["Not Required", "Pending", "Approved", "Rejected", "Revision Requested"];
   const filtered = approvals.filter((a) => {
-    if (filterType !== "All" && a.type !== filterType) return false;
-    if (filterStatus !== "All" && a.status !== filterStatus) return false;
+    if (filterType !== "All"&& a.type !== filterType) return false;
+    if (filterStatus !== "All"&& a.status !== filterStatus) return false;
     return true;
   });
 
@@ -1890,7 +1854,7 @@ function ApprovalWorkflowSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="approval-workflow">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="approval-workflow">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-amber-600 mb-0.5">Approval Workflow</p>
@@ -1916,7 +1880,7 @@ function ApprovalWorkflowSection() {
           return (
             <div key={s} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
               <p className="text-xs font-semibold text-slate-500 truncate">{s}</p>
-              <p className={`text-xl font-bold mt-1 ${approvalStatusBadge(s).split(" ")[1]}`}>{count}</p>
+              <p className={`text-xl font-bold mt-1 ${approvalStatusBadge(s).split("")[1]}`}>{count}</p>
             </div>
           );
         })}
@@ -1971,7 +1935,7 @@ function ApprovalWorkflowSection() {
   );
 }
 
-// ── Team Throughput Section ────────────────────────────────────────────────────
+//  Team Throughput Section 
 
 function WorkloadManagementSection() {
   const [filterDept, setFilterDept] = useState("All");
@@ -1979,13 +1943,13 @@ function WorkloadManagementSection() {
 
   const depts = [...new Set(WORKLOAD_DATA.map((w) => w.department))];
   const filtered = WORKLOAD_DATA.filter((w) => {
-    if (filterDept !== "All" && w.department !== filterDept) return false;
-    if (filterStatus !== "All" && w.queueStatus !== filterStatus) return false;
+    if (filterDept !== "All"&& w.department !== filterDept) return false;
+    if (filterStatus !== "All"&& w.queueStatus !== filterStatus) return false;
     return true;
   });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="workload-management">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="workload-management">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-rose-600 mb-0.5">Team Throughput</p>
@@ -2010,7 +1974,7 @@ function WorkloadManagementSection() {
           return (
             <div key={s} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
               <p className="text-xs font-semibold text-slate-500 truncate">{s}</p>
-              <p className={`text-xl font-bold mt-1 ${workloadStatusBadge(s).split(" ")[1]}`}>{count}</p>
+              <p className={`text-xl font-bold mt-1 ${workloadStatusBadge(s).split("")[1]}`}>{count}</p>
             </div>
           );
         })}
@@ -2026,21 +1990,21 @@ function WorkloadManagementSection() {
           </thead>
           <tbody>
             {filtered.map((w) => (
-              <tr key={w.id} className={`border-t border-slate-100 hover:bg-slate-50 ${w.queueStatus === "Overdue" ? "bg-red-50/30" : ""}`}>
+              <tr key={w.id} className={`border-t border-slate-100 hover:bg-slate-50 ${w.queueStatus === "Overdue"? "bg-red-50/30": ""}`}>
                 <td className="px-4 py-3 font-semibold text-slate-800">{w.user}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{w.department}</td>
                 <td className="px-4 py-3 text-center font-bold text-slate-700">{w.openTasks}</td>
                 <td className="px-4 py-3 text-center font-bold">
-                  <span className={w.overdueTasks > 0 ? "text-red-600" : "text-slate-400"}>{w.overdueTasks}</span>
+                  <span className={w.overdueTasks > 0 ? "text-red-600": "text-slate-400"}>{w.overdueTasks}</span>
                 </td>
                 <td className="px-4 py-3 text-center font-bold">
-                  <span className={w.blockedTasks > 0 ? "text-orange-600" : "text-slate-400"}>{w.blockedTasks}</span>
+                  <span className={w.blockedTasks > 0 ? "text-orange-600": "text-slate-400"}>{w.blockedTasks}</span>
                 </td>
                 <td className="px-4 py-3 min-w-[140px]">
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className={`h-2 rounded-full ${w.slaCompliance < 75 ? "bg-red-500" : w.slaCompliance < 85 ? "bg-amber-500" : w.slaCompliance < 95 ? "bg-blue-500" : "bg-emerald-500"}`}
+                        className={`h-2 rounded-full ${w.slaCompliance < 75 ? "bg-red-500": w.slaCompliance < 85 ? "bg-amber-500": w.slaCompliance < 95 ? "bg-blue-500": "bg-emerald-500"}`}
                         style={{ width: `${w.slaCompliance}%` }}
                       />
                     </div>
@@ -2065,7 +2029,7 @@ function WorkloadManagementSection() {
   );
 }
 
-// ── Time Tracking Section ──────────────────────────────────────────────────────
+//  Time Tracking Section 
 
 function TimeTrackingSection() {
   const total = {
@@ -2076,7 +2040,7 @@ function TimeTrackingSection() {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="time-tracking">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="time-tracking">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-cyan-600 mb-0.5">SLA Dashboard</p>
@@ -2088,10 +2052,10 @@ function TimeTrackingSection() {
       {/* Summary strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pt-4 pb-2">
         {[
-          { label: "Total Tasks", value: TIME_TRACKING_DATA.length, color: "text-slate-700" },
-          { label: "Completed", value: TIME_TRACKING_DATA.filter((t) => t.logged >= t.estimated).length, color: "text-blue-700" },
-          { label: "On Time", value: TIME_TRACKING_DATA.filter((t) => t.billable > 0).length, color: "text-emerald-700" },
-          { label: "Overdue", value: TIME_TRACKING_DATA.filter((t) => t.nonBillable > 0).length, color: "text-amber-700" },
+          { label: "Total Tasks", value: TIME_TRACKING_DATA.length, color: "text-slate-700"},
+          { label: "Completed", value: TIME_TRACKING_DATA.filter((t) => t.logged >= t.estimated).length, color: "text-blue-700"},
+          { label: "On Time", value: TIME_TRACKING_DATA.filter((t) => t.billable > 0).length, color: "text-emerald-700"},
+          { label: "Overdue", value: TIME_TRACKING_DATA.filter((t) => t.nonBillable > 0).length, color: "text-amber-700"},
         ].map(({ label, value, color }) => (
           <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
             <p className="text-xs font-semibold text-slate-500">{label}</p>
@@ -2119,7 +2083,7 @@ function TimeTrackingSection() {
                   <td className="px-4 py-3 text-center text-slate-700 font-semibold">{t.estimated}h</td>
                   <td className="px-4 py-3 text-center text-blue-700 font-semibold">{t.logged}h</td>
                   <td className="px-4 py-3 text-center font-semibold">
-                    <span className={remaining > 0 ? "text-amber-700" : "text-emerald-700"}>{remaining}h</span>
+                    <span className={remaining > 0 ? "text-amber-700": "text-emerald-700"}>{remaining}h</span>
                   </td>
                   <td className="px-4 py-3 text-center text-emerald-700 font-semibold">{t.billable}h</td>
                   <td className="px-4 py-3 text-center text-amber-700 font-semibold">{t.nonBillable}h</td>
@@ -2136,7 +2100,7 @@ function TimeTrackingSection() {
               <td className="px-4 py-3 text-center font-bold text-amber-700">{(total.estimated - total.logged).toFixed(1)}h</td>
               <td className="px-4 py-3 text-center font-bold text-emerald-700">{total.billable}h</td>
               <td className="px-4 py-3 text-center font-bold text-amber-700">{total.nonBillable}h</td>
-              <td className="px-4 py-3" />
+              <td className="px-4 py-3"/>
             </tr>
           </tfoot>
         </table>
@@ -2145,22 +2109,22 @@ function TimeTrackingSection() {
   );
 }
 
-// ── Task Automation Rules Section ──────────────────────────────────────────────
+//  Task Automation Rules Section 
 
 function TaskAutomationRulesSection() {
   const [rules, setRules] = useState<AutomationRule[]>(AUTOMATION_RULES);
   const [filterStatus, setFilterStatus] = useState("All");
 
-  const filtered = rules.filter((r) => filterStatus === "All" || r.status === filterStatus);
+  const filtered = rules.filter((r) => filterStatus === "All"|| r.status === filterStatus);
 
   function toggleRule(id: string) {
     setRules((prev) => prev.map((r) =>
-      r.id === id ? { ...r, status: r.status === "Active" ? "Paused" : "Active" } : r
+      r.id === id ? { ...r, status: r.status === "Active"? "Paused": "Active"} : r
     ));
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm" id="automation-rules">
+    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="automation-rules">
       <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-orange-600 mb-0.5">Automation</p>
@@ -2186,10 +2150,10 @@ function TaskAutomationRulesSection() {
           </thead>
           <tbody>
             {filtered.map((r) => (
-              <tr key={r.id} className={`border-t border-slate-100 hover:bg-slate-50 ${r.status === "Paused" ? "opacity-60" : ""}`}>
+              <tr key={r.id} className={`border-t border-slate-100 hover:bg-slate-50 ${r.status === "Paused"? "opacity-60": ""}`}>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
-                    <span className="text-orange-400">⚡</span>
+                    
                     <span className="font-semibold text-slate-800">{r.trigger}</span>
                   </div>
                 </td>
@@ -2209,9 +2173,9 @@ function TaskAutomationRulesSection() {
                 <td className="px-4 py-3 whitespace-nowrap">
                   <button
                     onClick={() => toggleRule(r.id)}
-                    className={`text-xs font-semibold rounded-lg px-3 py-1 transition-colors ${r.status === "Active" ? "bg-red-100 text-red-700 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
+                    className={`text-xs font-semibold rounded-lg px-3 py-1 transition-colors ${r.status === "Active"? "bg-red-100 text-red-700 hover:bg-red-200": "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"}`}
                   >
-                    {r.status === "Active" ? "Pause" : "Activate"}
+                    {r.status === "Active"? "Pause": "Activate"}
                   </button>
                 </td>
               </tr>
@@ -2229,20 +2193,20 @@ function TaskAutomationRulesSection() {
   );
 }
 
-// ── Project Execution Action Center ────────────────────────────────────────────
+//  Project Execution Action Center 
 
 function ProjectExecutionActionCenter() {
   const actions = [
-    { label: "Create Project", color: "bg-blue-600 hover:bg-blue-700" },
-    { label: "Create Milestone", color: "bg-violet-600 hover:bg-violet-700", icon: "🏁" },
-    { label: "Add Task", color: "bg-emerald-600 hover:bg-emerald-700", icon: "➕" },
-    { label: "Assign Task", color: "bg-indigo-600 hover:bg-indigo-700" },
-    { label: "Move Task", color: "bg-teal-600 hover:bg-teal-700", icon: "↔️" },
-    { label: "Add Comment", color: "bg-slate-600 hover:bg-slate-700" },
-    { label: "Request Approval", color: "bg-amber-600 hover:bg-amber-700" },
-    { label: "Log Time", color: "bg-cyan-600 hover:bg-cyan-700", icon: "⏱️" },
-    { label: "Escalate Blocker", color: "bg-red-600 hover:bg-red-700" },
-    { label: "Complete Project", color: "bg-emerald-700 hover:bg-emerald-800" },
+    { label: "Create Project", color: "bg-blue-600 hover:bg-blue-700"},
+    { label: "Create Milestone", color: "bg-violet-600 hover:bg-violet-700", icon: ""},
+    { label: "Add Task", color: "bg-emerald-600 hover:bg-emerald-700", icon: ""},
+    { label: "Assign Task", color: "bg-indigo-600 hover:bg-indigo-700"},
+    { label: "Move Task", color: "bg-teal-600 hover:bg-teal-700", icon: "↔"},
+    { label: "Add Comment", color: "bg-slate-600 hover:bg-slate-700"},
+    { label: "Request Approval", color: "bg-amber-600 hover:bg-amber-700"},
+    { label: "Log Time", color: "bg-cyan-600 hover:bg-cyan-700", icon: "⏱"},
+    { label: "Escalate Blocker", color: "bg-red-600 hover:bg-red-700"},
+    { label: "Complete Project", color: "bg-emerald-700 hover:bg-emerald-800"},
   ];
 
   return (
@@ -2261,24 +2225,24 @@ function ProjectExecutionActionCenter() {
   );
 }
 
-// ── Project Execution View ─────────────────────────────────────────────────────
+//  Project Execution View 
 
 function ProjectExecutionView() {
   const [activeSection, setActiveSection] = useState("all");
 
   const sections = [
-    { id: "all", label: "All" },
-    { id: "projects", label: "Project Workspace" },
-    { id: "milestones", label: "Milestone Tracking" },
-    { id: "board", label: "Task Board" },
-    { id: "detail", label: "Task Detail" },
-    { id: "approvals", label: "Approval Workflow" },
-    { id: "workload", label: "Team Throughput" },
-    { id: "time", label: "SLA Dashboard" },
-    { id: "automation", label: "Automation Rules" },
+    { id: "all", label: "All"},
+    { id: "projects", label: "Project Workspace"},
+    { id: "milestones", label: "Milestone Tracking"},
+    { id: "board", label: "Task Board"},
+    { id: "detail", label: "Task Detail"},
+    { id: "approvals", label: "Approval Workflow"},
+    { id: "workload", label: "Team Throughput"},
+    { id: "time", label: "SLA Dashboard"},
+    { id: "automation", label: "Automation Rules"},
   ];
 
-  const show = (id: string) => activeSection === "all" || activeSection === id;
+  const show = (id: string) => activeSection === "all"|| activeSection === id;
 
   return (
     <div className="space-y-8">
@@ -2288,7 +2252,7 @@ function ProjectExecutionView() {
           <button
             key={s.id}
             onClick={() => setActiveSection(s.id)}
-            className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors ${activeSection === s.id ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+            className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition-colors ${activeSection === s.id ? "bg-indigo-600 text-white": "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
           >
             {s.label}
           </button>
@@ -2310,7 +2274,7 @@ function ProjectExecutionView() {
   );
 }
 
-// ── Teamwork Foundation View ──────────────────────────────────────────────────
+//  Teamwork Foundation View 
 
 function TeamworkFoundationView() {
   return (
@@ -2342,9 +2306,9 @@ function TeamworkFoundationView() {
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+//  Page 
 
-type PageTab = "tasks" | "execution" | "teamwork";
+type PageTab = "tasks"| "execution"| "teamwork";
 
 export default function TasksCentralPage() {
   const [role, setRole] = useState<AMRole>("head");
@@ -2365,32 +2329,32 @@ export default function TasksCentralPage() {
       <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 w-fit flex-wrap">
         <button
           onClick={() => setTab("tasks")}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${tab === "tasks" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${tab === "tasks"? "bg-white shadow-sm text-slate-900": "text-slate-500 hover:text-slate-700"}`}
         >
           Task Board
         </button>
         <button
           onClick={() => setTab("execution")}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${tab === "execution" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${tab === "execution"? "bg-white shadow-sm text-slate-900": "text-slate-500 hover:text-slate-700"}`}
         >
           Project Execution
         </button>
         <button
           onClick={() => setTab("teamwork")}
-          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${tab === "teamwork" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
+          className={`rounded-lg px-5 py-2 text-sm font-semibold transition-colors ${tab === "teamwork"? "bg-white shadow-sm text-slate-900": "text-slate-500 hover:text-slate-700"}`}
         >
           Teamwork Foundation
         </button>
       </div>
 
-      {tab === "tasks" ? (
+      {tab === "tasks"? (
         <>
           {/* Role Toggle — Account Management Head View / Account Manager View */}
           <RoleToggle role={role} onRoleChange={setRole} />
           {/* Role content */}
-          {role === "head" ? <HeadView /> : <AMView />}
+          {role === "head"? <HeadView /> : <AMView />}
         </>
-      ) : tab === "execution" ? (
+      ) : tab === "execution"? (
         <ProjectExecutionView />
       ) : (
         <TeamworkFoundationView />

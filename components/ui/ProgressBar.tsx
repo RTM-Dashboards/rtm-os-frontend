@@ -23,24 +23,22 @@ export default function ProgressBar({
       {(showLabel || label) && (
         <div className="flex justify-between mb-1">
           {label && (
-            <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+            <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
               {label}
             </span>
           )}
           {showLabel && (
-            <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+            <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
               {Math.round(pct)}%
             </span>
           )}
         </div>
       )}
       <div
-        className="w-full rounded-full overflow-hidden"
-        style={{ height, background: "var(--rtm-border-light)" }}
+        className="w-full rounded-full overflow-hidden"style={{ height, background: "var(--rtm-border-light)"}}
       >
         <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, background: fillColor }}
+          className="h-full rounded-full transition-all duration-500"style={{ width: `${pct}%`, background: fillColor }}
         />
       </div>
     </div>

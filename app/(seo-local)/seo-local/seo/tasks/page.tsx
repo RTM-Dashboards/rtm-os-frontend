@@ -9,8 +9,7 @@ const workspace = getWorkspace("seo-local")!;
 export default function SeoTasksPage() {
   return (
     <WorkspaceTaskPage
-      workspaceName="SEO"
-      tasks={seoTasks}
+      workspaceName="SEO"tasks={seoTasks}
       accentColor={workspace.accentColor}
     />
   );

@@ -9,15 +9,15 @@ import type { DepartmentConfig } from "@/types/department";
 
 function defaultModules(overrides: Partial<Record<string, boolean>> = {}): DepartmentConfig["modules"] {
   const defaults: { id: DepartmentConfig["modules"][number]["id"]; label: string; route: string }[] = [
-    { id: "projects",        label: "Projects",       route: "/projects"       },
-    { id: "tasks",           label: "Tasks",          route: "/tasks"          },
-    { id: "reports",         label: "Reports",        route: "/reports"        },
-    { id: "audits",          label: "Audits",         route: "/audits"         },
-    { id: "escalations",     label: "Escalations",    route: "/escalations"    },
-    { id: "notifications",   label: "Notifications",  route: "/notifications"  },
-    { id: "workflows",       label: "Workflows",      route: "/workflows"      },
-    { id: "integrations",    label: "Integrations",   route: "/integrations"   },
-    { id: "knowledge-base",  label: "Knowledge Base", route: "/knowledge-base" },
+    { id: "projects",        label: "Projects",       route: "/projects"},
+    { id: "tasks",           label: "Tasks",          route: "/tasks"},
+    { id: "reports",         label: "Reports",        route: "/reports"},
+    { id: "audits",          label: "Audits",         route: "/audits"},
+    { id: "escalations",     label: "Escalations",    route: "/escalations"},
+    { id: "notifications",   label: "Notifications",  route: "/notifications"},
+    { id: "workflows",       label: "Workflows",      route: "/workflows"},
+    { id: "integrations",    label: "Integrations",   route: "/integrations"},
+    { id: "knowledge-base",  label: "Knowledge Base", route: "/knowledge-base"},
   ];
 
   const disabledMap = overrides as Record<string, boolean>;
@@ -104,27 +104,27 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "google-search-console", displayName: "Google Search Console", category: "Analytics", role: "primary"           },
-      { integrationId: "ga4",                   displayName: "Google Analytics 4",    category: "Analytics", role: "required"          },
-      { integrationId: "semrush",               displayName: "SEMrush",               category: "SEO",       role: "required"          },
-      { integrationId: "ahrefs",                displayName: "Ahrefs",                category: "SEO",       role: "optional"          },
+      { integrationId: "google-search-console", displayName: "Google Search Console", category: "Analytics", role: "primary"},
+      { integrationId: "ga4",                   displayName: "Google Analytics 4",    category: "Analytics", role: "required"},
+      { integrationId: "semrush",               displayName: "SEMrush",               category: "SEO",       role: "required"},
+      { integrationId: "ahrefs",                displayName: "Ahrefs",                category: "SEO",       role: "optional"},
     ],
 
     reports: [
-      { reportId: "seo-monthly",    displayName: "Monthly SEO Report",    frequency: "monthly",   source: "RTM OS Reporting" },
-      { reportId: "seo-performance",displayName: "SEO Performance Report",frequency: "monthly",   source: "GA4 + GSC"        },
-      { reportId: "seo-executive",  displayName: "Executive SEO Summary", frequency: "quarterly", source: "RTM OS Reporting" },
+      { reportId: "seo-monthly",    displayName: "Monthly SEO Report",    frequency: "monthly",   source: "RTM OS Reporting"},
+      { reportId: "seo-performance",displayName: "SEO Performance Report",frequency: "monthly",   source: "GA4 + GSC"},
+      { reportId: "seo-executive",  displayName: "Executive SEO Summary", frequency: "quarterly", source: "RTM OS Reporting"},
     ],
 
     workflows: [
-      { workflowId: "seo-monthly-delivery", displayName: "Monthly SEO Delivery", description: "Recurring monthly task blueprint for SEO deliverables."       },
-      { workflowId: "seo-qa-review",        displayName: "SEO QA Review",        description: "Quality assurance workflow before client report submission."  },
+      { workflowId: "seo-monthly-delivery", displayName: "Monthly SEO Delivery", description: "Recurring monthly task blueprint for SEO deliverables."},
+      { workflowId: "seo-qa-review",        displayName: "SEO QA Review",        description: "Quality assurance workflow before client report submission."},
     ],
 
     roles: [
-      { id: "seo-head",       name: "Department Head",  type: "manager",  description: "Owns SEO strategy and team delivery."          },
-      { id: "seo-strategist", name: "Strategist",       type: "lead",     description: "Designs SEO roadmaps and audits."              },
-      { id: "seo-specialist", name: "Specialist",       type: "member",   description: "Executes on-page and off-page SEO tasks."      },
+      { id: "seo-head",       name: "Department Head",  type: "manager",  description: "Owns SEO strategy and team delivery."},
+      { id: "seo-strategist", name: "Strategist",       type: "lead",     description: "Designs SEO roadmaps and audits."},
+      { id: "seo-specialist", name: "Specialist",       type: "member",   description: "Executes on-page and off-page SEO tasks."},
       { id: "seo-reviewer",   name: "Reviewer",         type: "lead",     description: "QA reviews deliverables before client delivery."},
     ],
   },
@@ -195,22 +195,22 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "gbp-api",  displayName: "Google Business Profile API", category: "Local SEO", role: "primary"  },
-      { integrationId: "ga4",      displayName: "Google Analytics 4",          category: "Analytics", role: "optional" },
+      { integrationId: "gbp-api",  displayName: "Google Business Profile API", category: "Local SEO", role: "primary"},
+      { integrationId: "ga4",      displayName: "Google Analytics 4",          category: "Analytics", role: "optional"},
     ],
 
     reports: [
-      { reportId: "gbp-monthly",    displayName: "Monthly GBP Report",    frequency: "monthly",   source: "RTM OS Reporting" },
-      { reportId: "gbp-performance",displayName: "GBP Performance Report",frequency: "monthly",   source: "GBP API"          },
+      { reportId: "gbp-monthly",    displayName: "Monthly GBP Report",    frequency: "monthly",   source: "RTM OS Reporting"},
+      { reportId: "gbp-performance",displayName: "GBP Performance Report",frequency: "monthly",   source: "GBP API"},
     ],
 
     workflows: [
-      { workflowId: "gbp-monthly-delivery",    displayName: "Monthly GBP Delivery",    description: "Monthly GBP deliverable workflow."              },
-      { workflowId: "gbp-suspension-recovery", displayName: "Suspension Recovery",     description: "Escalation workflow for suspended listings."     },
+      { workflowId: "gbp-monthly-delivery",    displayName: "Monthly GBP Delivery",    description: "Monthly GBP deliverable workflow."},
+      { workflowId: "gbp-suspension-recovery", displayName: "Suspension Recovery",     description: "Escalation workflow for suspended listings."},
     ],
 
     roles: [
-      { id: "gbp-head",      name: "Department Head", type: "manager", description: "Leads GBP strategy and oversees listings."    },
+      { id: "gbp-head",      name: "Department Head", type: "manager", description: "Leads GBP strategy and oversees listings."},
       { id: "gbp-specialist",name: "Specialist",      type: "member",  description: "Manages and optimizes Google Business Profiles."},
     ],
   },
@@ -285,27 +285,27 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "google-ads-mcc",     displayName: "Google Ads MCC",     category: "Paid Advertising", role: "primary"   },
-      { integrationId: "ga4",                displayName: "Google Analytics 4", category: "Analytics",        role: "required"  },
-      { integrationId: "google-search-console",displayName: "Search Console",   category: "SEO",              role: "optional"  },
+      { integrationId: "google-ads-mcc",     displayName: "Google Ads MCC",     category: "Paid Advertising", role: "primary"},
+      { integrationId: "ga4",                displayName: "Google Analytics 4", category: "Analytics",        role: "required"},
+      { integrationId: "google-search-console",displayName: "Search Console",   category: "SEO",              role: "optional"},
     ],
 
     reports: [
-      { reportId: "ppc-monthly",    displayName: "Monthly PPC Report",    frequency: "monthly", source: "RTM OS Reporting" },
-      { reportId: "ppc-performance",displayName: "PPC Performance Report",frequency: "weekly",  source: "Google Ads"       },
-      { reportId: "ppc-executive",  displayName: "Executive PPC Summary", frequency: "monthly", source: "RTM OS Reporting" },
+      { reportId: "ppc-monthly",    displayName: "Monthly PPC Report",    frequency: "monthly", source: "RTM OS Reporting"},
+      { reportId: "ppc-performance",displayName: "PPC Performance Report",frequency: "weekly",  source: "Google Ads"},
+      { reportId: "ppc-executive",  displayName: "Executive PPC Summary", frequency: "monthly", source: "RTM OS Reporting"},
     ],
 
     workflows: [
-      { workflowId: "ppc-launch",        displayName: "PPC Campaign Launch",       description: "Onboarding workflow for new PPC campaigns."              },
-      { workflowId: "ppc-optimization",  displayName: "Monthly PPC Optimization",  description: "Recurring monthly optimization and reporting workflow."   },
-      { workflowId: "ppc-review",        displayName: "PPC Performance Review",    description: "Quarterly strategic review workflow."                     },
+      { workflowId: "ppc-launch",        displayName: "PPC Campaign Launch",       description: "Onboarding workflow for new PPC campaigns."},
+      { workflowId: "ppc-optimization",  displayName: "Monthly PPC Optimization",  description: "Recurring monthly optimization and reporting workflow."},
+      { workflowId: "ppc-review",        displayName: "PPC Performance Review",    description: "Quarterly strategic review workflow."},
     ],
 
     roles: [
-      { id: "ppc-head",      name: "Department Head", type: "manager", description: "Owns PPC strategy and campaign oversight."      },
-      { id: "ppc-strategist",name: "Strategist",      type: "lead",    description: "Plans and audits ad strategy."                  },
-      { id: "ppc-specialist",name: "Specialist",      type: "member",  description: "Executes and optimizes campaigns daily."        },
+      { id: "ppc-head",      name: "Department Head", type: "manager", description: "Owns PPC strategy and campaign oversight."},
+      { id: "ppc-strategist",name: "Strategist",      type: "lead",    description: "Plans and audits ad strategy."},
+      { id: "ppc-specialist",name: "Specialist",      type: "member",  description: "Executes and optimizes campaigns daily."},
     ],
   },
 
@@ -379,24 +379,24 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "meta-business-manager", displayName: "Meta Business Manager", category: "Paid Advertising", role: "primary"  },
-      { integrationId: "ga4",                   displayName: "Google Analytics 4",    category: "Analytics",        role: "optional" },
+      { integrationId: "meta-business-manager", displayName: "Meta Business Manager", category: "Paid Advertising", role: "primary"},
+      { integrationId: "ga4",                   displayName: "Google Analytics 4",    category: "Analytics",        role: "optional"},
     ],
 
     reports: [
-      { reportId: "meta-monthly",    displayName: "Monthly Meta Ads Report",    frequency: "monthly", source: "RTM OS Reporting" },
-      { reportId: "meta-performance",displayName: "Meta Performance Report",    frequency: "weekly",  source: "Meta Ads Manager" },
-      { reportId: "meta-executive",  displayName: "Executive Meta Summary",     frequency: "monthly", source: "RTM OS Reporting" },
+      { reportId: "meta-monthly",    displayName: "Monthly Meta Ads Report",    frequency: "monthly", source: "RTM OS Reporting"},
+      { reportId: "meta-performance",displayName: "Meta Performance Report",    frequency: "weekly",  source: "Meta Ads Manager"},
+      { reportId: "meta-executive",  displayName: "Executive Meta Summary",     frequency: "monthly", source: "RTM OS Reporting"},
     ],
 
     workflows: [
-      { workflowId: "meta-launch",       displayName: "Meta Campaign Launch",      description: "Onboarding workflow for new Meta ad campaigns."           },
-      { workflowId: "meta-optimization", displayName: "Monthly Meta Optimization", description: "Recurring monthly creative and bid optimization workflow." },
+      { workflowId: "meta-launch",       displayName: "Meta Campaign Launch",      description: "Onboarding workflow for new Meta ad campaigns."},
+      { workflowId: "meta-optimization", displayName: "Monthly Meta Optimization", description: "Recurring monthly creative and bid optimization workflow."},
     ],
 
     roles: [
-      { id: "meta-head",      name: "Department Head", type: "manager", description: "Leads Meta Ads strategy."       },
-      { id: "meta-specialist",name: "Specialist",      type: "member",  description: "Manages Meta ad campaigns."     },
+      { id: "meta-head",      name: "Department Head", type: "manager", description: "Leads Meta Ads strategy."},
+      { id: "meta-specialist",name: "Specialist",      type: "member",  description: "Manages Meta ad campaigns."},
     ],
   },
 
@@ -467,25 +467,25 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "ga4",            displayName: "Google Analytics 4", category: "Analytics",    role: "optional"          },
-      { integrationId: "google-drive",   displayName: "Google Drive",       category: "Storage",      role: "required"          },
-      { integrationId: "semrush",        displayName: "SEMrush",            category: "SEO",          role: "optional"          },
+      { integrationId: "ga4",            displayName: "Google Analytics 4", category: "Analytics",    role: "optional"},
+      { integrationId: "google-drive",   displayName: "Google Drive",       category: "Storage",      role: "required"},
+      { integrationId: "semrush",        displayName: "SEMrush",            category: "SEO",          role: "optional"},
     ],
 
     reports: [
-      { reportId: "content-monthly",     displayName: "Monthly Content Report",     frequency: "monthly", source: "RTM OS Reporting" },
-      { reportId: "content-performance", displayName: "Content Performance Report", frequency: "monthly", source: "GA4"              },
+      { reportId: "content-monthly",     displayName: "Monthly Content Report",     frequency: "monthly", source: "RTM OS Reporting"},
+      { reportId: "content-performance", displayName: "Content Performance Report", frequency: "monthly", source: "GA4"},
     ],
 
     workflows: [
-      { workflowId: "content-brief",    displayName: "Content Brief Workflow",    description: "Brief creation and approval process for new content."         },
-      { workflowId: "content-delivery", displayName: "Content Delivery Workflow", description: "Monthly content delivery and client sign-off workflow."       },
+      { workflowId: "content-brief",    displayName: "Content Brief Workflow",    description: "Brief creation and approval process for new content."},
+      { workflowId: "content-delivery", displayName: "Content Delivery Workflow", description: "Monthly content delivery and client sign-off workflow."},
     ],
 
     roles: [
-      { id: "content-head",     name: "Department Head",   type: "manager", description: "Leads content strategy and quality standards." },
-      { id: "content-writer",   name: "Content Writer",    type: "member",  description: "Creates blog posts, copy, and social content." },
-      { id: "content-editor",   name: "Editor",            type: "lead",    description: "Reviews and approves content before delivery." },
+      { id: "content-head",     name: "Department Head",   type: "manager", description: "Leads content strategy and quality standards."},
+      { id: "content-writer",   name: "Content Writer",    type: "member",  description: "Creates blog posts, copy, and social content."},
+      { id: "content-editor",   name: "Editor",            type: "lead",    description: "Reviews and approves content before delivery."},
     ],
   },
 
@@ -557,24 +557,24 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "figma",                 displayName: "Figma",                category: "Design",    role: "primary"  },
-      { integrationId: "adobe-creative-cloud",  displayName: "Adobe Creative Cloud", category: "Design",    role: "required" },
-      { integrationId: "frame-io",              displayName: "Frame.io",             category: "Review",    role: "optional" },
+      { integrationId: "figma",                 displayName: "Figma",                category: "Design",    role: "primary"},
+      { integrationId: "adobe-creative-cloud",  displayName: "Adobe Creative Cloud", category: "Design",    role: "required"},
+      { integrationId: "frame-io",              displayName: "Frame.io",             category: "Review",    role: "optional"},
     ],
 
     reports: [
-      { reportId: "design-performance", displayName: "Design Performance Report", frequency: "monthly", source: "RTM OS Reporting" },
+      { reportId: "design-performance", displayName: "Design Performance Report", frequency: "monthly", source: "RTM OS Reporting"},
     ],
 
     workflows: [
-      { workflowId: "design-request",  displayName: "Creative Request Workflow",  description: "Intake and delivery workflow for new creative requests."   },
-      { workflowId: "design-approval", displayName: "Creative Review & Approval", description: "Client-facing approval workflow for design deliverables."  },
+      { workflowId: "design-request",  displayName: "Creative Request Workflow",  description: "Intake and delivery workflow for new creative requests."},
+      { workflowId: "design-approval", displayName: "Creative Review & Approval", description: "Client-facing approval workflow for design deliverables."},
     ],
 
     roles: [
-      { id: "design-head",       name: "Department Head", type: "manager", description: "Leads creative vision and quality standards."  },
-      { id: "design-designer",   name: "Designer",        type: "member",  description: "Creates visual assets and ad creatives."       },
-      { id: "design-contractor", name: "Contractor",      type: "member",  description: "Freelance creative delivery."                  },
+      { id: "design-head",       name: "Department Head", type: "manager", description: "Leads creative vision and quality standards."},
+      { id: "design-designer",   name: "Designer",        type: "member",  description: "Creates visual assets and ad creatives."},
+      { id: "design-contractor", name: "Contractor",      type: "member",  description: "Freelance creative delivery."},
     ],
   },
 
@@ -646,27 +646,27 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "power-bi",       displayName: "Power BI",        category: "Reporting",  role: "primary"  },
-      { integrationId: "ga4",            displayName: "GA4",             category: "Analytics",  role: "required" },
-      { integrationId: "google-sheets",  displayName: "Google Sheets",   category: "Reporting",  role: "required" },
-      { integrationId: "looker-studio",  displayName: "Looker Studio",   category: "Reporting",  role: "optional" },
+      { integrationId: "power-bi",       displayName: "Power BI",        category: "Reporting",  role: "primary"},
+      { integrationId: "ga4",            displayName: "GA4",             category: "Analytics",  role: "required"},
+      { integrationId: "google-sheets",  displayName: "Google Sheets",   category: "Reporting",  role: "required"},
+      { integrationId: "looker-studio",  displayName: "Looker Studio",   category: "Reporting",  role: "optional"},
     ],
 
     reports: [
-      { reportId: "reporting-dept",      displayName: "Department Reporting Report",  frequency: "monthly",   source: "RTM OS"       },
-      { reportId: "reporting-executive", displayName: "Executive Reports",            frequency: "monthly",   source: "RTM OS"       },
-      { reportId: "reporting-client",    displayName: "Client Reports",               frequency: "monthly",   source: "RTM OS"       },
-      { reportId: "reporting-performance",displayName: "Performance Reports",         frequency: "monthly",   source: "RTM OS"       },
+      { reportId: "reporting-dept",      displayName: "Department Reporting Report",  frequency: "monthly",   source: "RTM OS"},
+      { reportId: "reporting-executive", displayName: "Executive Reports",            frequency: "monthly",   source: "RTM OS"},
+      { reportId: "reporting-client",    displayName: "Client Reports",               frequency: "monthly",   source: "RTM OS"},
+      { reportId: "reporting-performance",displayName: "Performance Reports",         frequency: "monthly",   source: "RTM OS"},
     ],
 
     workflows: [
-      { workflowId: "report-production", displayName: "Report Production Pipeline", description: "End-to-end report production, QA, and delivery workflow." },
-      { workflowId: "report-qbr",        displayName: "QBR Report Workflow",        description: "Quarterly business review report generation."              },
+      { workflowId: "report-production", displayName: "Report Production Pipeline", description: "End-to-end report production, QA, and delivery workflow."},
+      { workflowId: "report-qbr",        displayName: "QBR Report Workflow",        description: "Quarterly business review report generation."},
     ],
 
     roles: [
-      { id: "reporting-head",     name: "Department Head",  type: "manager", description: "Owns reporting strategy and delivery standards." },
-      { id: "reporting-analyst",  name: "Analyst",          type: "member",  description: "Builds and delivers performance reports."        },
+      { id: "reporting-head",     name: "Department Head",  type: "manager", description: "Owns reporting strategy and delivery standards."},
+      { id: "reporting-analyst",  name: "Analyst",          type: "member",  description: "Builds and delivers performance reports."},
     ],
   },
 
@@ -737,24 +737,24 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "1password",          displayName: "1Password",          category: "Security",          role: "required" },
-      { integrationId: "google-workspace",   displayName: "Google Workspace",   category: "Productivity",      role: "primary"  },
+      { integrationId: "1password",          displayName: "1Password",          category: "Security",          role: "required"},
+      { integrationId: "google-workspace",   displayName: "Google Workspace",   category: "Productivity",      role: "primary"},
     ],
 
     reports: [
-      { reportId: "it-security-report",  displayName: "IT Security Report",   frequency: "monthly", source: "Internal Monitoring" },
-      { reportId: "it-system-health",    displayName: "System Health Report",  frequency: "weekly",  source: "Internal Monitoring" },
+      { reportId: "it-security-report",  displayName: "IT Security Report",   frequency: "monthly", source: "Internal Monitoring"},
+      { reportId: "it-system-health",    displayName: "System Health Report",  frequency: "weekly",  source: "Internal Monitoring"},
     ],
 
     workflows: [
-      { workflowId: "it-user-onboarding",  displayName: "New User Onboarding",  description: "Access provisioning workflow for new hires."       },
-      { workflowId: "it-user-offboarding", displayName: "User Offboarding",     description: "Access revocation and cleanup workflow."           },
-      { workflowId: "it-security-audit",   displayName: "Security Audit",       description: "Recurring security audit and compliance check."    },
+      { workflowId: "it-user-onboarding",  displayName: "New User Onboarding",  description: "Access provisioning workflow for new hires."},
+      { workflowId: "it-user-offboarding", displayName: "User Offboarding",     description: "Access revocation and cleanup workflow."},
+      { workflowId: "it-security-audit",   displayName: "Security Audit",       description: "Recurring security audit and compliance check."},
     ],
 
     roles: [
-      { id: "it-admin",    name: "IT Administrator", type: "manager", description: "Manages all tools, access, and security policies." },
-      { id: "it-analyst",  name: "IT Analyst",       type: "member",  description: "Monitors systems and resolves tickets."            },
+      { id: "it-admin",    name: "IT Administrator", type: "manager", description: "Manages all tools, access, and security policies."},
+      { id: "it-analyst",  name: "IT Analyst",       type: "member",  description: "Monitors systems and resolves tickets."},
     ],
   },
 
@@ -825,29 +825,29 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     ],
 
     integrations: [
-      { integrationId: "openai",         displayName: "OpenAI",         category: "AI / Automation", role: "primary"  },
-      { integrationId: "vapi",           displayName: "VAPI",           category: "AI / Automation", role: "required" },
-      { integrationId: "twilio",         displayName: "Twilio",         category: "Communication",   role: "required" },
-      { integrationId: "gohighlevel",    displayName: "GoHighLevel",    category: "CRM",             role: "required" },
-      { integrationId: "make",           displayName: "Make.com",       category: "AI / Automation", role: "optional" },
-      { integrationId: "n8n",            displayName: "n8n",            category: "AI / Automation", role: "optional" },
+      { integrationId: "openai",         displayName: "OpenAI",         category: "AI / Automation", role: "primary"},
+      { integrationId: "vapi",           displayName: "VAPI",           category: "AI / Automation", role: "required"},
+      { integrationId: "twilio",         displayName: "Twilio",         category: "Communication",   role: "required"},
+      { integrationId: "gohighlevel",    displayName: "GoHighLevel",    category: "CRM",             role: "required"},
+      { integrationId: "make",           displayName: "Make.com",       category: "AI / Automation", role: "optional"},
+      { integrationId: "n8n",            displayName: "n8n",            category: "AI / Automation", role: "optional"},
     ],
 
     reports: [
-      { reportId: "ai-automation-report",  displayName: "AI Automation Report",    frequency: "monthly", source: "Make.com + VAPI" },
-      { reportId: "ai-performance",        displayName: "Automation Performance",  frequency: "monthly", source: "RTM OS"          },
+      { reportId: "ai-automation-report",  displayName: "AI Automation Report",    frequency: "monthly", source: "Make.com + VAPI"},
+      { reportId: "ai-performance",        displayName: "Automation Performance",  frequency: "monthly", source: "RTM OS"},
     ],
 
     workflows: [
-      { workflowId: "ai-setup",    displayName: "AI Automation Setup",    description: "Onboarding workflow for new automation builds."         },
-      { workflowId: "ai-chatbot",  displayName: "Chatbot Build & Launch", description: "End-to-end chatbot development and launch workflow."     },
-      { workflowId: "ai-review",   displayName: "Automation QA Review",   description: "Quality assurance workflow for live automations."       },
+      { workflowId: "ai-setup",    displayName: "AI Automation Setup",    description: "Onboarding workflow for new automation builds."},
+      { workflowId: "ai-chatbot",  displayName: "Chatbot Build & Launch", description: "End-to-end chatbot development and launch workflow."},
+      { workflowId: "ai-review",   displayName: "Automation QA Review",   description: "Quality assurance workflow for live automations."},
     ],
 
     roles: [
-      { id: "ai-head",       name: "Department Head",       type: "manager", description: "Leads AI product strategy and delivery."         },
-      { id: "ai-specialist", name: "Automation Specialist", type: "member",  description: "Builds and manages AI workflows and automations." },
-      { id: "ai-strategist", name: "Strategist",            type: "lead",    description: "Designs automation architecture and roadmaps."    },
+      { id: "ai-head",       name: "Department Head",       type: "manager", description: "Leads AI product strategy and delivery."},
+      { id: "ai-specialist", name: "Automation Specialist", type: "member",  description: "Builds and manages AI workflows and automations."},
+      { id: "ai-strategist", name: "Strategist",            type: "lead",    description: "Designs automation architecture and roadmaps."},
     ],
   },
 ];

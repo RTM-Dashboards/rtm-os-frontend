@@ -37,7 +37,7 @@ export const NOTIFICATIONS: RTMNotification[] = [
     client: "Apex Roofing", clientSlug: "apex-roofing",
     module: "Renewals", createdDate: "2025-07-13",
     status: "Escalated", relatedRoute: "/renewals",
-    escalation: { level: 2, daysOpen: 5, trigger: "Renewal < 30 Days" },
+    escalation: { level: 2, daysOpen: 5, trigger: "Renewal < 30 Days"},
   },
   {
     id: "n-005", priority: "High", type: "Cancellation",
@@ -96,7 +96,7 @@ export const NOTIFICATIONS: RTMNotification[] = [
     client: "Ridgeline Roofing", clientSlug: "ridgeline-roofing",
     module: "Task Engine", createdDate: "2025-07-14",
     status: "Escalated", relatedRoute: "/tasks",
-    escalation: { level: 1, daysOpen: 9, trigger: "Task Overdue > 7 Days" },
+    escalation: { level: 1, daysOpen: 9, trigger: "Task Overdue > 7 Days"},
   },
   {
     id: "n-012", priority: "High", type: "Task",
@@ -129,7 +129,7 @@ export const NOTIFICATIONS: RTMNotification[] = [
     client: "Summit Law Group", clientSlug: "summit-law-group",
     module: "Task Engine", createdDate: "2025-07-13",
     status: "Escalated", relatedRoute: "/tasks",
-    escalation: { level: 3, daysOpen: 3, trigger: "Activation Blocked" },
+    escalation: { level: 3, daysOpen: 3, trigger: "Activation Blocked"},
   },
   {
     id: "n-016", priority: "Medium", type: "Task",
@@ -154,7 +154,7 @@ export const NOTIFICATIONS: RTMNotification[] = [
     client: "Metro Glass Co", clientSlug: "metro-glass-co",
     module: "Task Engine", createdDate: "2025-07-11",
     status: "Escalated", relatedRoute: "/tasks",
-    escalation: { level: 2, daysOpen: 12, trigger: "Task Overdue > 7 Days" },
+    escalation: { level: 2, daysOpen: 12, trigger: "Task Overdue > 7 Days"},
   },
   {
     id: "n-019", priority: "Medium", type: "Task",
@@ -181,7 +181,7 @@ export const NOTIFICATIONS: RTMNotification[] = [
     client: "Valley HVAC", clientSlug: "valley-hvac",
     module: "Billing", createdDate: "2025-07-14",
     status: "Escalated", relatedRoute: "/billing/invoices",
-    escalation: { level: 2, daysOpen: 30, trigger: "Outstanding Balance > Threshold" },
+    escalation: { level: 2, daysOpen: 30, trigger: "Outstanding Balance > Threshold"},
   },
   {
     id: "n-022", priority: "High", type: "Billing",
@@ -240,7 +240,7 @@ export const NOTIFICATIONS: RTMNotification[] = [
     client: "Coastal Insurance", clientSlug: "coastal-insurance",
     module: "Renewals", createdDate: "2025-07-14",
     status: "Escalated", relatedRoute: "/renewals",
-    escalation: { level: 3, daysOpen: 16, trigger: "Renewal < 14 Days" },
+    escalation: { level: 3, daysOpen: 16, trigger: "Renewal < 14 Days"},
   },
   {
     id: "n-029", priority: "High", type: "Renewal",
@@ -477,7 +477,7 @@ export const NOTIFICATIONS: RTMNotification[] = [
     client: "Apex Roofing", clientSlug: "apex-roofing",
     module: "Task Engine", createdDate: "2025-07-08",
     status: "Escalated", relatedRoute: "/tasks",
-    escalation: { level: 1, daysOpen: 11, trigger: "Task Overdue > 7 Days" },
+    escalation: { level: 1, daysOpen: 11, trigger: "Task Overdue > 7 Days"},
   },
   {
     id: "n-057", priority: "Medium", type: "Affiliate",
@@ -514,5 +514,5 @@ export const NOTIFICATIONS: RTMNotification[] = [
 ];
 
 export const UNREAD_COUNT = NOTIFICATIONS.filter(
-  (n) => n.status === "Unread" || n.status === "Escalated"
+  (n) => n.status === "Unread"|| n.status === "Escalated"
 ).length;

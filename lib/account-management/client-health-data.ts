@@ -6,9 +6,9 @@
 // TYPES
 // ══════════════════════════════════════════════════════════════════════════════
 
-export type HealthStatus = "Healthy" | "Monitor" | "At Risk" | "Critical";
-export type RiskLevel    = "Low" | "Medium" | "High" | "Critical";
-export type SentimentType = "Positive" | "Neutral" | "Negative" | "Mixed";
+export type HealthStatus = "Healthy"| "Monitor"| "At Risk"| "Critical";
+export type RiskLevel    = "Low"| "Medium"| "High"| "Critical";
+export type SentimentType = "Positive"| "Neutral"| "Negative"| "Mixed";
 
 // ── Health Score Components ──────────────────────────────────────────────────
 
@@ -33,7 +33,7 @@ export interface ProjectHealthSignals {
   openDependencies:      number;
   projectRiskScore:      number; // 0-100 (100 = highest risk)
   departmentDelays:      string[];
-  projectStatus:         "On Track" | "Monitor" | "Delayed" | "Blocked";
+  projectStatus:         "On Track"| "Monitor"| "Delayed"| "Blocked";
 }
 
 // ── Communication Health ─────────────────────────────────────────────────────
@@ -44,9 +44,9 @@ export interface CommunicationHealthSignals {
   avgResponseTimeHours:  number;
   pendingFollowUps:      number;
   openConcerns:          number;
-  meetingFrequency:      "Weekly" | "Bi-Weekly" | "Monthly" | "Infrequent" | "None";
+  meetingFrequency:      "Weekly"| "Bi-Weekly"| "Monthly"| "Infrequent"| "None";
   communicationScore:    number;   // 0-100
-  communicationStatus:   "Strong" | "Good" | "Weak" | "Poor";
+  communicationStatus:   "Strong"| "Good"| "Weak"| "Poor";
 }
 
 // ── Call Intelligence Signals ─────────────────────────────────────────────────
@@ -61,7 +61,7 @@ export interface CallIntelligenceSignals {
   renewalSignals:        number;
   upsellSignals:         number;
   callSentiment:         SentimentType;
-  leadQualityTrend:      "Improving" | "Stable" | "Declining";
+  leadQualityTrend:      "Improving"| "Stable"| "Declining";
   callQualityScore:      number; // 0-100
 }
 
@@ -70,8 +70,8 @@ export interface CallIntelligenceSignals {
 export interface ReportingHealthSignals {
   reportsDelivered:      number;
   reportsMissed:         number;
-  reviewStatus:          "Reviewed" | "Pending Review" | "Not Reviewed" | "Overdue";
-  clientFeedback:        "Positive" | "Neutral" | "Negative" | "None";
+  reviewStatus:          "Reviewed"| "Pending Review"| "Not Reviewed"| "Overdue";
+  clientFeedback:        "Positive"| "Neutral"| "Negative"| "None";
   reportingScore:        number; // 0-100
   lastReportDate:        string;
 }
@@ -84,7 +84,7 @@ export interface BillingHealthSignals {
   billingHolds:          boolean;
   collectionActivity:    boolean;
   billingScore:          number; // 0-100
-  billingStatus:         "Current" | "Overdue" | "At Risk" | "Failed" | "Hold";
+  billingStatus:         "Current"| "Overdue"| "At Risk"| "Failed"| "Hold";
   mrr:                   number;
   arr:                   number;
 }
@@ -93,7 +93,7 @@ export interface BillingHealthSignals {
 
 export interface EscalationHealthSignals {
   openEscalations:       number;
-  escalationSeverity:    "None" | "Low" | "Medium" | "High" | "Critical";
+  escalationSeverity:    "None"| "Low"| "Medium"| "High"| "Critical";
   avgResolutionDays:     number;
   departmentsInvolved:   string[];
   escalationScore:       number; // 0-100 (100 = healthiest / no escalations)
@@ -103,12 +103,12 @@ export interface EscalationHealthSignals {
 
 export interface ClientEngagementSignals {
   meetingAttendance:     number; // % (0-100)
-  communicationFrequency:"High" | "Medium" | "Low" | "None";
+  communicationFrequency:"High"| "Medium"| "Low"| "None";
   responseRate:          number; // % (0-100)
-  projectParticipation:  "Active" | "Moderate" | "Passive" | "Unresponsive";
-  reviewParticipation:   "Active" | "Moderate" | "Passive" | "None";
+  projectParticipation:  "Active"| "Moderate"| "Passive"| "Unresponsive";
+  reviewParticipation:   "Active"| "Moderate"| "Passive"| "None";
   engagementScore:       number; // 0-100
-  engagementStatus:      "High" | "Medium" | "Low" | "Unresponsive";
+  engagementStatus:      "High"| "Medium"| "Low"| "Unresponsive";
 }
 
 // ── Renewal Risk ──────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ export interface InterventionItem {
   assignedOwner:  string;
   recommendedAction: string;
   dueDate:        string;
-  status:         "Open" | "In Progress" | "Resolved" | "Escalated";
+  status:         "Open"| "In Progress"| "Resolved"| "Escalated";
 }
 
 // ── AI Summary ────────────────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ export interface AISummary {
 
 export interface CommHistoryEntry {
   date:    string;
-  type:    "Call" | "Email" | "Meeting" | "Note" | "Follow-Up";
+  type:    "Call"| "Email"| "Meeting"| "Note"| "Follow-Up";
   summary: string;
   by:      string;
   sentiment: SentimentType;
@@ -283,9 +283,9 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Start renewal conversation by June 20", "Present LSA expansion proposal", "Schedule quarterly business review"],
     },
     commHistory: [
-      { date: "2025-06-06", type: "Call", summary: "Monthly performance review. Client expressed satisfaction with lead volume increase.", by: "Sarah Chen", sentiment: "Positive" },
-      { date: "2025-05-22", type: "Email", summary: "Sent Q2 results report. Client replied with positive feedback.", by: "Sarah Chen", sentiment: "Positive" },
-      { date: "2025-05-07", type: "Meeting", summary: "Strategy session for storm season campaign planning.", by: "Sarah Chen", sentiment: "Positive" },
+      { date: "2025-06-06", type: "Call", summary: "Monthly performance review. Client expressed satisfaction with lead volume increase.", by: "Sarah Chen", sentiment: "Positive"},
+      { date: "2025-05-22", type: "Email", summary: "Sent Q2 results report. Client replied with positive feedback.", by: "Sarah Chen", sentiment: "Positive"},
+      { date: "2025-05-07", type: "Meeting", summary: "Strategy session for storm season campaign planning.", by: "Sarah Chen", sentiment: "Positive"},
     ],
   },
 
@@ -361,9 +361,9 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Immediate executive retention call", "Resolve outstanding invoices", "Conduct lead quality audit", "Prepare formal save plan"],
     },
     commHistory: [
-      { date: "2025-05-28", type: "Follow-Up", summary: "Second follow-up email sent. No response received.", by: "Sarah Chen", sentiment: "Neutral" },
-      { date: "2025-05-19", type: "Call", summary: "Client raised lead quality concerns. Promised to investigate.", by: "Sarah Chen", sentiment: "Negative" },
-      { date: "2025-05-05", type: "Email", summary: "Sent May performance report. Client did not respond.", by: "Sarah Chen", sentiment: "Neutral" },
+      { date: "2025-05-28", type: "Follow-Up", summary: "Second follow-up email sent. No response received.", by: "Sarah Chen", sentiment: "Neutral"},
+      { date: "2025-05-19", type: "Call", summary: "Client raised lead quality concerns. Promised to investigate.", by: "Sarah Chen", sentiment: "Negative"},
+      { date: "2025-05-05", type: "Email", summary: "Sent May performance report. Client did not respond.", by: "Sarah Chen", sentiment: "Neutral"},
     ],
   },
 
@@ -440,9 +440,9 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Director retention call this week", "Billing hold resolution required", "Formal recovery plan with milestones", "Weekly check-in until renewal decision"],
     },
     commHistory: [
-      { date: "2025-05-28", type: "Follow-Up", summary: "Fourth unanswered follow-up. Escalated to director.", by: "Sarah Chen", sentiment: "Neutral" },
-      { date: "2025-05-20", type: "Follow-Up", summary: "Third follow-up. No response.", by: "Sarah Chen", sentiment: "Neutral" },
-      { date: "2025-05-14", type: "Call", summary: "Brief call. Client mentioned financial challenges. Cut call short.", by: "Sarah Chen", sentiment: "Negative" },
+      { date: "2025-05-28", type: "Follow-Up", summary: "Fourth unanswered follow-up. Escalated to director.", by: "Sarah Chen", sentiment: "Neutral"},
+      { date: "2025-05-20", type: "Follow-Up", summary: "Third follow-up. No response.", by: "Sarah Chen", sentiment: "Neutral"},
+      { date: "2025-05-14", type: "Call", summary: "Brief call. Client mentioned financial challenges. Cut call short.", by: "Sarah Chen", sentiment: "Negative"},
     ],
   },
 
@@ -518,8 +518,8 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Resolve brand kit delay", "Schedule reporting review call", "Prepare Q3 expansion proposal"],
     },
     commHistory: [
-      { date: "2025-06-04", type: "Meeting", summary: "Monthly onboarding check-in. Discussed brand kit delay. Client understanding.", by: "Maria Santos", sentiment: "Positive" },
-      { date: "2025-05-20", type: "Email", summary: "Sent progress update on SEO and Meta Ads setup.", by: "Maria Santos", sentiment: "Positive" },
+      { date: "2025-06-04", type: "Meeting", summary: "Monthly onboarding check-in. Discussed brand kit delay. Client understanding.", by: "Maria Santos", sentiment: "Positive"},
+      { date: "2025-05-20", type: "Email", summary: "Sent progress update on SEO and Meta Ads setup.", by: "Maria Santos", sentiment: "Positive"},
     ],
   },
 
@@ -595,8 +595,8 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Follow up on LSA docs with deadline", "Clear escalation", "Book status call this week"],
     },
     commHistory: [
-      { date: "2025-05-31", type: "Email", summary: "Third reminder about LSA documentation. Client acknowledged, no timeline given.", by: "James Park", sentiment: "Neutral" },
-      { date: "2025-05-15", type: "Call", summary: "Project update. Client frustrated with delays. Escalation opened.", by: "James Park", sentiment: "Negative" },
+      { date: "2025-05-31", type: "Email", summary: "Third reminder about LSA documentation. Client acknowledged, no timeline given.", by: "James Park", sentiment: "Neutral"},
+      { date: "2025-05-15", type: "Call", summary: "Project update. Client frustrated with delays. Escalation opened.", by: "James Park", sentiment: "Negative"},
     ],
   },
 
@@ -672,8 +672,8 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Close renewal by June 20", "Deliver expansion proposal", "Schedule QBR for Q3"],
     },
     commHistory: [
-      { date: "2025-06-05", type: "Meeting", summary: "Renewal discussion. Client confirmed intent. Awaiting formal proposal.", by: "James Park", sentiment: "Positive" },
-      { date: "2025-05-20", type: "Call", summary: "Performance review. Record lead volume in May.", by: "James Park", sentiment: "Positive" },
+      { date: "2025-06-05", type: "Meeting", summary: "Renewal discussion. Client confirmed intent. Awaiting formal proposal.", by: "James Park", sentiment: "Positive"},
+      { date: "2025-05-20", type: "Call", summary: "Performance review. Record lead volume in May.", by: "James Park", sentiment: "Positive"},
     ],
   },
 
@@ -749,7 +749,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Clear content delay", "Deliver overdue report", "Propose summer Google Ads"],
     },
     commHistory: [
-      { date: "2025-05-30", type: "Email", summary: "Monthly check-in. Discussed content calendar update.", by: "James Park", sentiment: "Neutral" },
+      { date: "2025-05-30", type: "Email", summary: "Monthly check-in. Discussed content calendar update.", by: "James Park", sentiment: "Neutral"},
     ],
   },
 
@@ -825,8 +825,8 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Present multi-location expansion proposal", "Schedule Q3 strategy session", "Initiate early renewal conversation"],
     },
     commHistory: [
-      { date: "2025-06-05", type: "Meeting", summary: "Q3 planning. Client confirmed two new location openings. Expansion discussion initiated.", by: "Tina Webb", sentiment: "Positive" },
-      { date: "2025-05-22", type: "Call", summary: "Performance review. Record patient bookings from PPC.", by: "Tina Webb", sentiment: "Positive" },
+      { date: "2025-06-05", type: "Meeting", summary: "Q3 planning. Client confirmed two new location openings. Expansion discussion initiated.", by: "Tina Webb", sentiment: "Positive"},
+      { date: "2025-05-22", type: "Call", summary: "Performance review. Record patient bookings from PPC.", by: "Tina Webb", sentiment: "Positive"},
     ],
   },
 
@@ -902,7 +902,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Deliver missed report", "Book July renewal meeting", "Present PPC proposal"],
     },
     commHistory: [
-      { date: "2025-06-01", type: "Email", summary: "Monthly update sent. One pending follow-up on reporting review.", by: "Tina Webb", sentiment: "Neutral" },
+      { date: "2025-06-01", type: "Email", summary: "Monthly update sent. One pending follow-up on reporting review.", by: "Tina Webb", sentiment: "Neutral"},
     ],
   },
 
@@ -978,7 +978,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Present summer campaign proposal", "Close SMS Marketing add-on", "Book September renewal conversation"],
     },
     commHistory: [
-      { date: "2025-06-04", type: "Meeting", summary: "Summer strategy session. Client excited about promotions campaign.", by: "Tina Webb", sentiment: "Positive" },
+      { date: "2025-06-04", type: "Meeting", summary: "Summer strategy session. Client excited about promotions campaign.", by: "Tina Webb", sentiment: "Positive"},
     ],
   },
 
@@ -1054,7 +1054,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Propose content add-on", "Initiate renewal in September"],
     },
     commHistory: [
-      { date: "2025-06-03", type: "Call", summary: "Monthly check-in. Positive results discussion.", by: "Sarah Chen", sentiment: "Positive" },
+      { date: "2025-06-03", type: "Call", summary: "Monthly check-in. Positive results discussion.", by: "Sarah Chen", sentiment: "Positive"},
     ],
   },
 
@@ -1130,7 +1130,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Close renewal by July 1", "Execute content expansion", "Start email marketing program"],
     },
     commHistory: [
-      { date: "2025-06-05", type: "Meeting", summary: "Renewal and expansion discussion. Client confirmed email marketing budget.", by: "Maria Santos", sentiment: "Positive" },
+      { date: "2025-06-05", type: "Meeting", summary: "Renewal and expansion discussion. Client confirmed email marketing budget.", by: "Maria Santos", sentiment: "Positive"},
     ],
   },
 
@@ -1206,8 +1206,8 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Launch LinkedIn Ads July 1", "Scope Marketing Automation", "Present Q3 expansion roadmap"],
     },
     commHistory: [
-      { date: "2025-06-07", type: "Meeting", summary: "Weekly sync. LinkedIn Ads launch confirmed for July 1. Q3 roadmap discussed.", by: "Maria Santos", sentiment: "Positive" },
-      { date: "2025-05-30", type: "Meeting", summary: "Q2 results review. Record MRR quarter. Budget increase approved.", by: "Maria Santos", sentiment: "Positive" },
+      { date: "2025-06-07", type: "Meeting", summary: "Weekly sync. LinkedIn Ads launch confirmed for July 1. Q3 roadmap discussed.", by: "Maria Santos", sentiment: "Positive"},
+      { date: "2025-05-30", type: "Meeting", summary: "Q2 results review. Record MRR quarter. Budget increase approved.", by: "Maria Santos", sentiment: "Positive"},
     ],
   },
 
@@ -1283,7 +1283,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Deliver missed reports immediately", "Book re-engagement call", "Set clear renewal timeline"],
     },
     commHistory: [
-      { date: "2025-05-28", type: "Email", summary: "Follow-up sent. No response to reporting review request.", by: "James Park", sentiment: "Neutral" },
+      { date: "2025-05-28", type: "Email", summary: "Follow-up sent. No response to reporting review request.", by: "James Park", sentiment: "Neutral"},
     ],
   },
 
@@ -1359,7 +1359,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Deliver missed report", "Propose GBP add-on", "Begin renewal prep in August"],
     },
     commHistory: [
-      { date: "2025-05-30", type: "Email", summary: "Monthly check-in sent. Awaiting report review.", by: "Tina Webb", sentiment: "Neutral" },
+      { date: "2025-05-30", type: "Email", summary: "Monthly check-in sent. Awaiting report review.", by: "Tina Webb", sentiment: "Neutral"},
     ],
   },
 
@@ -1435,7 +1435,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Present emergency services proposal", "Scale LSA budget"],
     },
     commHistory: [
-      { date: "2025-06-06", type: "Call", summary: "Monthly review. Record lead volume. Emergency ads discussed.", by: "Sarah Chen", sentiment: "Positive" },
+      { date: "2025-06-06", type: "Call", summary: "Monthly review. Record lead volume. Emergency ads discussed.", by: "Sarah Chen", sentiment: "Positive"},
     ],
   },
 
@@ -1512,8 +1512,8 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Executive call this week — no delay", "Deliver all overdue reports", "Create formal recovery plan", "Weekly check-in until resolved"],
     },
     commHistory: [
-      { date: "2025-05-28", type: "Follow-Up", summary: "Fourth unanswered follow-up. Escalated to director.", by: "James Park", sentiment: "Neutral" },
-      { date: "2025-05-13", type: "Call", summary: "Brief call. Client complained about missed reports. Cut call short.", by: "James Park", sentiment: "Negative" },
+      { date: "2025-05-28", type: "Follow-Up", summary: "Fourth unanswered follow-up. Escalated to director.", by: "James Park", sentiment: "Neutral"},
+      { date: "2025-05-13", type: "Call", summary: "Brief call. Client complained about missed reports. Cut call short.", by: "James Park", sentiment: "Negative"},
     ],
   },
 
@@ -1589,7 +1589,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Propose Google Ads trial", "Maintain GBP optimization"],
     },
     commHistory: [
-      { date: "2025-06-01", type: "Email", summary: "Monthly update. Client happy with GBP results.", by: "Maria Santos", sentiment: "Positive" },
+      { date: "2025-06-01", type: "Email", summary: "Monthly update. Client happy with GBP results.", by: "Maria Santos", sentiment: "Positive"},
     ],
   },
 
@@ -1666,8 +1666,8 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Director leads save attempt", "Resolve billing immediately", "Formal remediation plan", "Weekly executive check-in"],
     },
     commHistory: [
-      { date: "2025-06-02", type: "Call", summary: "Director call. Client threatened to cancel immediately. Save attempt initiated.", by: "Maria Santos", sentiment: "Negative" },
-      { date: "2025-05-20", type: "Meeting", summary: "Emergency meeting. Client raised lead volume complaints and budget disputes.", by: "Maria Santos", sentiment: "Negative" },
+      { date: "2025-06-02", type: "Call", summary: "Director call. Client threatened to cancel immediately. Save attempt initiated.", by: "Maria Santos", sentiment: "Negative"},
+      { date: "2025-05-20", type: "Meeting", summary: "Emergency meeting. Client raised lead volume complaints and budget disputes.", by: "Maria Santos", sentiment: "Negative"},
     ],
   },
 
@@ -1743,7 +1743,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Present PPC expansion package", "Add reputation management"],
     },
     commHistory: [
-      { date: "2025-06-04", type: "Meeting", summary: "Performance review. Record patient bookings. PPC discussed.", by: "Sarah Chen", sentiment: "Positive" },
+      { date: "2025-06-04", type: "Meeting", summary: "Performance review. Record patient bookings. PPC discussed.", by: "Sarah Chen", sentiment: "Positive"},
     ],
   },
 
@@ -1819,7 +1819,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Deliver missed report", "Present LSA proposal", "Begin renewal prep in October"],
     },
     commHistory: [
-      { date: "2025-05-29", type: "Email", summary: "Monthly update sent. Pending report review follow-up.", by: "James Park", sentiment: "Neutral" },
+      { date: "2025-05-29", type: "Email", summary: "Monthly update sent. Pending report review follow-up.", by: "James Park", sentiment: "Neutral"},
     ],
   },
 
@@ -1895,7 +1895,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Present SEO expansion", "Maintain Meta Ads performance"],
     },
     commHistory: [
-      { date: "2025-06-01", type: "Email", summary: "Monthly check-in. Client happy with class bookings from Meta Ads.", by: "Tina Webb", sentiment: "Positive" },
+      { date: "2025-06-01", type: "Email", summary: "Monthly check-in. Client happy with class bookings from Meta Ads.", by: "Tina Webb", sentiment: "Positive"},
     ],
   },
 
@@ -1971,7 +1971,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Start renewal conversation immediately", "Resolve content delay", "Deliver missed report"],
     },
     commHistory: [
-      { date: "2025-05-28", type: "Email", summary: "Follow-up sent on content delay and report review. No response.", by: "Sarah Chen", sentiment: "Neutral" },
+      { date: "2025-05-28", type: "Email", summary: "Follow-up sent on content delay and report review. No response.", by: "Sarah Chen", sentiment: "Neutral"},
     ],
   },
 
@@ -2048,8 +2048,8 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Immediate executive call", "Resolve CRM blocker", "Create recovery plan", "Close renewal with concession"],
     },
     commHistory: [
-      { date: "2025-05-30", type: "Call", summary: "VP escalation call. Client frustrated with CRM delay and lead tracking.", by: "James Park", sentiment: "Negative" },
-      { date: "2025-05-15", type: "Meeting", summary: "Emergency meeting. CRM integration failure discussed. Escalation opened.", by: "James Park", sentiment: "Negative" },
+      { date: "2025-05-30", type: "Call", summary: "VP escalation call. Client frustrated with CRM delay and lead tracking.", by: "James Park", sentiment: "Negative"},
+      { date: "2025-05-15", type: "Meeting", summary: "Emergency meeting. CRM integration failure discussed. Escalation opened.", by: "James Park", sentiment: "Negative"},
     ],
   },
 
@@ -2125,7 +2125,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Present Google Ads proposal", "Maintain GBP and SEO excellence"],
     },
     commHistory: [
-      { date: "2025-06-03", type: "Call", summary: "Monthly check-in. Record GBP views and calls this month.", by: "Maria Santos", sentiment: "Positive" },
+      { date: "2025-06-03", type: "Call", summary: "Monthly check-in. Record GBP views and calls this month.", by: "Maria Santos", sentiment: "Positive"},
     ],
   },
 
@@ -2201,7 +2201,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Close renewal by July 1", "Present reputation management add-on"],
     },
     commHistory: [
-      { date: "2025-06-04", type: "Meeting", summary: "Renewal discussion. Client confirmed intent to renew. Reputation management discussed.", by: "Tina Webb", sentiment: "Positive" },
+      { date: "2025-06-04", type: "Meeting", summary: "Renewal discussion. Client confirmed intent to renew. Reputation management discussed.", by: "Tina Webb", sentiment: "Positive"},
     ],
   },
 
@@ -2277,7 +2277,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Present PPC proposal", "Maintain GBP optimization"],
     },
     commHistory: [
-      { date: "2025-06-01", type: "Email", summary: "Monthly update. Client happy with new patient referrals from GBP.", by: "Maria Santos", sentiment: "Positive" },
+      { date: "2025-06-01", type: "Email", summary: "Monthly update. Client happy with new patient referrals from GBP.", by: "Maria Santos", sentiment: "Positive"},
     ],
   },
 
@@ -2353,7 +2353,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Deliver missed report", "Present Google Ads proposal", "Begin renewal prep in October"],
     },
     commHistory: [
-      { date: "2025-05-30", type: "Email", summary: "Monthly check-in. GBP update discussed.", by: "James Park", sentiment: "Neutral" },
+      { date: "2025-05-30", type: "Email", summary: "Monthly check-in. GBP update discussed.", by: "James Park", sentiment: "Neutral"},
     ],
   },
 
@@ -2429,7 +2429,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Present telehealth proposal", "Schedule Q3 strategy session", "Begin renewal prep in September"],
     },
     commHistory: [
-      { date: "2025-06-05", type: "Meeting", summary: "Q3 strategy session. Telehealth marketing discussed. Budget appetite confirmed.", by: "Tina Webb", sentiment: "Positive" },
+      { date: "2025-06-05", type: "Meeting", summary: "Q3 strategy session. Telehealth marketing discussed. Budget appetite confirmed.", by: "Tina Webb", sentiment: "Positive"},
     ],
   },
 
@@ -2505,7 +2505,7 @@ export const CLIENT_HEALTH_RECORDS: ClientHealthRecord[] = [
       recommendedActions: ["Deliver reporting review", "Present Google Ads proposal", "Begin renewal prep in August"],
     },
     commHistory: [
-      { date: "2025-06-03", type: "Email", summary: "Monthly check-in. Awaiting report review from client.", by: "Sarah Chen", sentiment: "Neutral" },
+      { date: "2025-06-03", type: "Email", summary: "Monthly check-in. Awaiting report review from client.", by: "Sarah Chen", sentiment: "Neutral"},
     ],
   },
 ];
@@ -2613,7 +2613,7 @@ export function computePortfolioSummary(records: ClientHealthRecord[]) {
   const totalARR = records.reduce((s, r) => s + r.billingSignals.arr, 0);
 
   const revenueAtRisk = records
-    .filter(r => r.renewalRisk.riskLevel === "High" || r.renewalRisk.riskLevel === "Critical")
+    .filter(r => r.renewalRisk.riskLevel === "High"|| r.renewalRisk.riskLevel === "Critical")
     .reduce((s, r) => s + r.billingSignals.mrr, 0);
 
   const interventionCount = INTERVENTION_QUEUE.filter(i => i.status !== "Resolved").length;

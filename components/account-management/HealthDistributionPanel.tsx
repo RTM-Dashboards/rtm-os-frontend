@@ -24,16 +24,13 @@ export default function HealthDistributionPanel({ segments }: Props) {
 
   return (
     <SectionWrapper
-      title="Client Health Distribution"
-      description="Portfolio composition by health score"
-    >
+      title="Client Health Distribution"description="Portfolio composition by health score">
       <DonutChart
         segments={donutSegments}
         size={160}
         thickness={24}
         centerLabel={String(total)}
-        centerSub="clients"
-      />
+        centerSub="clients"/>
 
       {/* Bar breakdown */}
       <div className="mt-4 space-y-2">
@@ -42,18 +39,16 @@ export default function HealthDistributionPanel({ segments }: Props) {
           return (
             <div key={s.label}>
               <div className="flex justify-between text-xs mb-1">
-                <span style={{ color: "var(--rtm-text-secondary)" }}>{s.label}</span>
-                <span className="font-semibold" style={{ color: s.color }}>
+                <span style={{ color: "var(--rtm-text-secondary)"}}>{s.label}</span>
+                <span className="font-semibold"style={{ color: s.color }}>
                   {s.count} ({pct}%)
                 </span>
               </div>
               <div
-                className="w-full rounded-full overflow-hidden"
-                style={{ height: 5, background: "var(--rtm-border-light)" }}
+                className="w-full rounded-full overflow-hidden"style={{ height: 5, background: "var(--rtm-border-light)"}}
               >
                 <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${pct}%`, background: s.color }}
+                  className="h-full rounded-full transition-all duration-500"style={{ width: `${pct}%`, background: s.color }}
                 />
               </div>
             </div>

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-type TemplateCategory = "SEO" | "PPC" | "Meta Ads" | "LSA" | "GBP" | "Yelp" | "Full Service" | "Executive" | "Project" | "QBR";
-type TemplateStatus = "Active" | "Deprecated" | "Draft";
+type TemplateCategory = "SEO"| "PPC"| "Meta Ads"| "LSA"| "GBP"| "Yelp"| "Full Service"| "Executive"| "Project"| "QBR";
+type TemplateStatus = "Active"| "Deprecated"| "Draft";
 
 interface ReportTemplate {
   id: string;
@@ -20,22 +20,22 @@ interface ReportTemplate {
 }
 
 const CAT_CFG: Record<TemplateCategory, { bg: string; color: string }> = {
-  SEO:          { bg: "#EFF6FF", color: "#1D4ED8" },
-  PPC:          { bg: "#FEF3C7", color: "#D97706" },
-  "Meta Ads":   { bg: "#FEF2F2", color: "#DC2626" },
-  LSA:          { bg: "#FAF5FF", color: "#7C3AED" },
-  GBP:          { bg: "#ECFDF5", color: "#059669" },
-  Yelp:         { bg: "#FFF7ED", color: "#C2410C" },
-  "Full Service": { bg: "#ECFEFF", color: "#0E7490" },
-  Executive:    { bg: "#F0FDF4", color: "#166534" },
-  Project:      { bg: "#F8FAFC", color: "#475569" },
-  QBR:          { bg: "#FDF4FF", color: "#7E22CE" },
+  SEO:          { bg: "#EFF6FF", color: "#1D4ED8"},
+  PPC:          { bg: "#FEF3C7", color: "#D97706"},
+  "Meta Ads":   { bg: "#FEF2F2", color: "#DC2626"},
+  LSA:          { bg: "#FAF5FF", color: "#7C3AED"},
+  GBP:          { bg: "#ECFDF5", color: "#059669"},
+  Yelp:         { bg: "#FFF7ED", color: "#C2410C"},
+  "Full Service": { bg: "#ECFEFF", color: "#0E7490"},
+  Executive:    { bg: "#F0FDF4", color: "#166534"},
+  Project:      { bg: "#F8FAFC", color: "#475569"},
+  QBR:          { bg: "#FDF4FF", color: "#7E22CE"},
 };
 
 const STATUS_CFG: Record<TemplateStatus, { bg: string; color: string; border: string }> = {
-  Active:     { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
-  Deprecated: { bg: "#FEF2F2", color: "#9CA3AF", border: "#FECACA" },
-  Draft:      { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" },
+  Active:     { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
+  Deprecated: { bg: "#FEF2F2", color: "#9CA3AF", border: "#FECACA"},
+  Draft:      { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"},
 };
 
 const TEMPLATES: ReportTemplate[] = [
@@ -158,14 +158,14 @@ const TEMPLATES: ReportTemplate[] = [
   },
 ];
 
-function KpiCard({ label, value, icon, color }: { label: string; value: number | string; icon: string; color: string }) {
+function KpiCard({ label, value, icon, color }: { label: string; value: number | string; icon?: string; color: string }) {
   return (
-    <div className="rounded-xl p-4 flex flex-col gap-2" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+    <div className="rounded-xl p-4 flex flex-col gap-2"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-secondary)" }}>{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-secondary)"}}>{label}</span>
         <span className="text-lg">{icon}</span>
       </div>
-      <div className="text-3xl font-black" style={{ color }}>{value}</div>
+      <div className="text-3xl font-black"style={{ color }}>{value}</div>
     </div>
   );
 }
@@ -176,8 +176,8 @@ export default function ReportTemplatesPage() {
   const [statusFilter, setStatusFilter] = useState<TemplateStatus | "All">("All");
 
   const filtered = TEMPLATES.filter(t => {
-    if (catFilter !== "All" && t.category !== catFilter) return false;
-    if (statusFilter !== "All" && t.status !== statusFilter) return false;
+    if (catFilter !== "All"&& t.category !== catFilter) return false;
+    if (statusFilter !== "All"&& t.status !== statusFilter) return false;
     if (search && !t.name.toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
@@ -192,21 +192,21 @@ export default function ReportTemplatesPage() {
   const CATEGORIES: (TemplateCategory | "All")[] = ["All", "SEO", "PPC", "Meta Ads", "LSA", "GBP", "Yelp", "Full Service", "Executive", "Project", "QBR"];
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: "var(--rtm-bg)" }}>
-      <div className="px-6 pt-6 pb-4" style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
+    <div className="flex flex-col min-h-screen"style={{ background: "var(--rtm-bg)"}}>
+      <div className="px-6 pt-6 pb-4"style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
         <div className="max-w-[1400px] mx-auto">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <span className="text-2xl">📋</span>
-                <h1 className="text-2xl font-black" style={{ color: "var(--rtm-text-primary)" }}>Report Templates</h1>
+                
+                <h1 className="text-2xl font-black"style={{ color: "var(--rtm-text-primary)"}}>Report Templates</h1>
               </div>
-              <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+              <p className="text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
                 Manage and version all report templates used across clients, departments, and services.
               </p>
             </div>
             <div className="flex gap-2">
-              <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white shadow-sm" style={{ background: "var(--rtm-blue)" }}>
+              <button className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white shadow-sm"style={{ background: "var(--rtm-blue)"}}>
                 + New Template
               </button>
             </div>
@@ -216,24 +216,24 @@ export default function ReportTemplatesPage() {
 
       <div className="flex-1 px-6 py-5 max-w-[1400px] mx-auto w-full">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <KpiCard label="Templates" value={kpis.total} icon="📋" color="var(--rtm-blue)" />
-          <KpiCard label="Active" value={kpis.active} icon="✅" color="#059669" />
-          <KpiCard label="Draft" value={kpis.draft} icon="📝" color="#D97706" />
-          <KpiCard label="Total Uses" value={kpis.totalUses} icon="🔢" color="#7C3AED" />
+          <KpiCard label="Templates"value={kpis.total} color="var(--rtm-blue)"/>
+          <KpiCard label="Active"value={kpis.active} color="#059669"/>
+          <KpiCard label="Draft"value={kpis.draft} color="#D97706"/>
+          <KpiCard label="Total Uses"value={kpis.totalUses} color="#7C3AED"/>
         </div>
 
-        <div className="flex flex-wrap gap-3 items-center p-4 rounded-xl mb-4" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+        <div className="flex flex-wrap gap-3 items-center p-4 rounded-xl mb-4"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
           <div className="flex-1 min-w-[200px] relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--rtm-text-muted)" }}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search templates..." className="w-full pl-9 pr-3 py-2 rounded-lg text-sm border outline-none" style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)" }} />
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2"width="14"height="14"viewBox="0 0 24 24"fill="none"stroke="currentColor"strokeWidth="2"style={{ color: "var(--rtm-text-muted)"}}><circle cx="11"cy="11"r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search templates..."className="w-full pl-9 pr-3 py-2 rounded-lg text-sm border outline-none"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)"}} />
           </div>
-          <select value={catFilter} onChange={e => setCatFilter(e.target.value as TemplateCategory | "All")} className="rounded-lg px-2 py-1.5 text-xs border outline-none" style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)" }}>
+          <select value={catFilter} onChange={e => setCatFilter(e.target.value as TemplateCategory | "All")} className="rounded-lg px-2 py-1.5 text-xs border outline-none"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)"}}>
             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
           </select>
-          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as TemplateStatus | "All")} className="rounded-lg px-2 py-1.5 text-xs border outline-none" style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)" }}>
+          <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as TemplateStatus | "All")} className="rounded-lg px-2 py-1.5 text-xs border outline-none"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)"}}>
             {(["All", "Active", "Draft", "Deprecated"] as (TemplateStatus | "All")[]).map(s => <option key={s}>{s}</option>)}
           </select>
-          <span className="text-xs font-semibold ml-auto" style={{ color: "var(--rtm-text-muted)" }}>{filtered.length} templates</span>
+          <span className="text-xs font-semibold ml-auto"style={{ color: "var(--rtm-text-muted)"}}>{filtered.length} templates</span>
         </div>
 
         <div className="flex flex-col gap-3">
@@ -241,42 +241,42 @@ export default function ReportTemplatesPage() {
             const catCfg = CAT_CFG[tmpl.category];
             const statusCfg = STATUS_CFG[tmpl.status];
             return (
-              <div key={tmpl.id} className="rounded-xl p-5" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+              <div key={tmpl.id} className="rounded-xl p-5"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-[11px] px-2 py-0.5 rounded-full font-bold" style={{ background: catCfg.bg, color: catCfg.color }}>{tmpl.category}</span>
-                      <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold border" style={{ background: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>{tmpl.status}</span>
-                      <span className="text-[11px] px-1.5 py-0.5 rounded font-mono font-semibold" style={{ background: "#F8FAFC", color: "#64748B" }}>{tmpl.version}</span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-bold"style={{ background: catCfg.bg, color: catCfg.color }}>{tmpl.category}</span>
+                      <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold border"style={{ background: statusCfg.bg, color: statusCfg.color, borderColor: statusCfg.border }}>{tmpl.status}</span>
+                      <span className="text-[11px] px-1.5 py-0.5 rounded font-mono font-semibold"style={{ background: "#F8FAFC", color: "#64748B"}}>{tmpl.version}</span>
                     </div>
-                    <h3 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{tmpl.name}</h3>
-                    <p className="text-xs mt-1" style={{ color: "var(--rtm-text-secondary)" }}>{tmpl.description}</p>
+                    <h3 className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>{tmpl.name}</h3>
+                    <p className="text-xs mt-1"style={{ color: "var(--rtm-text-secondary)"}}>{tmpl.description}</p>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <button className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: "var(--rtm-blue)" }}>Edit</button>
-                    <button className="px-3 py-1.5 rounded-lg text-xs font-semibold border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>Preview</button>
-                    <button className="px-3 py-1.5 rounded-lg text-xs font-semibold border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>Duplicate</button>
+                    <button className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"style={{ background: "var(--rtm-blue)"}}>Edit</button>
+                    <button className="px-3 py-1.5 rounded-lg text-xs font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}>Preview</button>
+                    <button className="px-3 py-1.5 rounded-lg text-xs font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}>Duplicate</button>
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-4">
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--rtm-text-muted)" }}>Sections ({tmpl.sections.length})</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider mb-1"style={{ color: "var(--rtm-text-muted)"}}>Sections ({tmpl.sections.length})</div>
                     <div className="flex flex-wrap gap-1">
                       {tmpl.sections.map(s => (
-                        <span key={s} className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: "#F8FAFC", color: "#475569", border: "1px solid #E2E8F0" }}>{s}</span>
+                        <span key={s} className="text-[10px] px-1.5 py-0.5 rounded font-semibold"style={{ background: "#F8FAFC", color: "#475569", border: "1px solid #E2E8F0"}}>{s}</span>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--rtm-text-muted)" }}>Data Connections</div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider mb-1"style={{ color: "var(--rtm-text-muted)"}}>Data Connections</div>
                     <div className="flex flex-wrap gap-1">
                       {tmpl.dataConnections.map(c => (
-                        <span key={c} className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: "#ECFEFF", color: "#0E7490" }}>{c}</span>
+                        <span key={c} className="text-[10px] px-1.5 py-0.5 rounded font-semibold"style={{ background: "#ECFEFF", color: "#0E7490"}}>{c}</span>
                       ))}
                     </div>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center gap-4 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                <div className="mt-3 flex items-center gap-4 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                   <span>Owner: <b>{tmpl.owner}</b></span>
                   <span>Last updated: <b>{tmpl.lastUpdated}</b></span>
                   <span>Used <b>{tmpl.usageCount}</b> times</span>
@@ -285,8 +285,8 @@ export default function ReportTemplatesPage() {
             );
           })}
           {filtered.length === 0 && (
-            <div className="text-center py-16" style={{ color: "var(--rtm-text-muted)" }}>
-              <div className="text-4xl mb-3">🔍</div>
+            <div className="text-center py-16"style={{ color: "var(--rtm-text-muted)"}}>
+              
               <p className="text-sm font-medium">No templates match your filters.</p>
             </div>
           )}

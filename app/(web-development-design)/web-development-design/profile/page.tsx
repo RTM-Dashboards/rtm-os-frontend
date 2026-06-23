@@ -11,8 +11,6 @@ export default function ProfilePage() {
     <WorkspaceProfilePage
       workspace={workspace}
       profile={webDevDesignProfile}
-      teamRoute="/web-development-design/team-members"
-      rolesRoute="/web-development-design/roles"
-    />
+      teamRoute="/web-development-design/team-members"rolesRoute="/web-development-design/roles"/>
   );
 }

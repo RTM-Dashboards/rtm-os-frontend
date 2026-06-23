@@ -2,26 +2,25 @@
 
 import React, { useState, useMemo } from "react";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Finance — Line Item Catalog
 // Route: /finance/line-items
 // Primary source of SLA configuration per line item.
 // Department SLAs are fallback defaults only.
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
-// ── Types ────────────────────────────────────────────────────────────────────
+//  Types 
 
 type Category =
-  | "SEO" | "GBP" | "PPC" | "Meta Ads" | "LSA" | "Reporting"
-  | "Web" | "Creative" | "Strategy" | "Consulting" | "Setup" | "Maintenance";
+  | "SEO"| "GBP"| "PPC"| "Meta Ads"| "LSA"| "Reporting"| "Web"| "Creative"| "Strategy"| "Consulting"| "Setup"| "Maintenance";
 
-type BillingType = "One-Time" | "Monthly Recurring" | "Quarterly" | "Annual";
+type BillingType = "One-Time"| "Monthly Recurring"| "Quarterly"| "Annual";
 
-type FinanceStatus = "Approved" | "Pending Review" | "Needs Pricing" | "Inactive";
+type FinanceStatus = "Approved"| "Pending Review"| "Needs Pricing"| "Inactive";
 
-type SLAPriority = "Standard" | "Priority" | "Rush" | "Custom";
+type SLAPriority = "Standard"| "Priority"| "Rush"| "Custom";
 
-type SLAStatus = "Active" | "Pending Review" | "Needs Approval" | "Inactive";
+type SLAStatus = "Active"| "Pending Review"| "Needs Approval"| "Inactive";
 
 interface LineItemSLA {
   firstResponseSLA: string;
@@ -49,7 +48,7 @@ interface LineItemCatalog {
   sla: LineItemSLA;
 }
 
-// ── Mock Data — 30 Line Items with SLA ────────────────────────────────────────
+//  Mock Data — 30 Line Items with SLA 
 
 const LINE_ITEMS: LineItemCatalog[] = [
   {
@@ -744,42 +743,42 @@ const LINE_ITEMS: LineItemCatalog[] = [
   },
 ];
 
-// ── Design Helpers ────────────────────────────────────────────────────────────
+//  Design Helpers 
 
 const CATEGORY_COLORS: Record<Category, { bg: string; text: string; border: string }> = {
-  SEO:         { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  GBP:         { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  PPC:         { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
-  "Meta Ads":  { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE" },
-  LSA:         { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0" },
-  Reporting:   { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD" },
-  Web:         { bg: "#FEFCE8", text: "#A16207", border: "#FDE68A" },
-  Creative:    { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
-  Strategy:    { bg: "#F3F4F6", text: "#374151", border: "#D1D5DB" },
-  Consulting:  { bg: "#FFFBEB", text: "#92400E", border: "#FDE68A" },
-  Setup:       { bg: "#F0FDF4", text: "#166534", border: "#BBF7D0" },
-  Maintenance: { bg: "#F8FAFC", text: "#475569", border: "#CBD5E1" },
+  SEO:         { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
+  GBP:         { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
+  PPC:         { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
+  "Meta Ads":  { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
+  LSA:         { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0"},
+  Reporting:   { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD"},
+  Web:         { bg: "#FEFCE8", text: "#A16207", border: "#FDE68A"},
+  Creative:    { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
+  Strategy:    { bg: "#F3F4F6", text: "#374151", border: "#D1D5DB"},
+  Consulting:  { bg: "#FFFBEB", text: "#92400E", border: "#FDE68A"},
+  Setup:       { bg: "#F0FDF4", text: "#166534", border: "#BBF7D0"},
+  Maintenance: { bg: "#F8FAFC", text: "#475569", border: "#CBD5E1"},
 };
 
 const SLA_PRIORITY_COLORS: Record<SLAPriority, { bg: string; text: string; border: string }> = {
-  Standard: { bg: "#F3F4F6", text: "#374151", border: "#D1D5DB" },
-  Priority: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  Rush:     { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
-  Custom:   { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE" },
+  Standard: { bg: "#F3F4F6", text: "#374151", border: "#D1D5DB"},
+  Priority: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
+  Rush:     { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
+  Custom:   { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
 };
 
 const SLA_STATUS_COLORS: Record<SLAStatus, { bg: string; text: string; border: string }> = {
-  Active:           { bg: "#F0FDF4", text: "#15803D", border: "#A7F3D0" },
-  "Pending Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
-  "Needs Approval": { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
-  Inactive:         { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB" },
+  Active:           { bg: "#F0FDF4", text: "#15803D", border: "#A7F3D0"},
+  "Pending Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
+  "Needs Approval": { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
+  Inactive:         { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
 };
 
 const FINANCE_STATUS_COLORS: Record<FinanceStatus, { bg: string; text: string; border: string }> = {
-  Approved:         { bg: "#F0FDF4", text: "#15803D", border: "#A7F3D0" },
-  "Pending Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
-  "Needs Pricing":  { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
-  Inactive:         { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB" },
+  Approved:         { bg: "#F0FDF4", text: "#15803D", border: "#A7F3D0"},
+  "Pending Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
+  "Needs Pricing":  { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
+  Inactive:         { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
 };
 
 const SLA_PRIORITIES: SLAPriority[] = ["Standard", "Priority", "Rush", "Custom"];
@@ -792,15 +791,14 @@ const CATEGORIES: Category[] = [
 function Badge({ label, bg, text, border }: { label: string; bg: string; text: string; border?: string }) {
   return (
     <span
-      className="text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"
-      style={{ background: bg, color: text, borderColor: border ?? "transparent" }}
+      className="text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: bg, color: text, borderColor: border ?? "transparent"}}
     >
       {label}
     </span>
   );
 }
 
-// ── Edit SLA Modal ─────────────────────────────────────────────────────────────
+//  Edit SLA Modal 
 
 function EditSLAModal({
   item,
@@ -813,31 +811,27 @@ function EditSLAModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: "rgba(0,0,0,0.45)" }}
+      className="fixed inset-0 z-50 flex items-center justify-center"style={{ background: "rgba(0,0,0,0.45)"}}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden"
-        style={{ background: "var(--rtm-surface)" }}
+        className="w-full max-w-lg rounded-2xl shadow-2xl flex flex-col overflow-hidden"style={{ background: "var(--rtm-surface)"}}
       >
         {/* Header */}
         <div
-          className="px-6 py-4 flex items-start justify-between"
-          style={{ borderBottom: "1px solid var(--rtm-border)", background: "#EFF6FF" }}
+          className="px-6 py-4 flex items-start justify-between"style={{ borderBottom: "1px solid var(--rtm-border)", background: "#EFF6FF"}}
         >
           <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "#1D4ED8" }}>
+            <div className="text-[10px] font-bold uppercase tracking-widest mb-1"style={{ color: "#1D4ED8"}}>
               Edit Line Item SLA
             </div>
-            <h2 className="text-base font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
+            <h2 className="text-base font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>
               {item.name}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-lg hover:opacity-70"
-            style={{ background: "rgba(0,0,0,0.08)", color: "var(--rtm-text-primary)" }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-lg hover:opacity-70"style={{ background: "rgba(0,0,0,0.08)", color: "var(--rtm-text-primary)"}}
           >
             ×
           </button>
@@ -847,108 +841,93 @@ function EditSLAModal({
         <div className="p-6 overflow-y-auto max-h-[70vh] space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                 First Response SLA
               </label>
               <input
-                type="text"
-                value={form.firstResponseSLA}
+                type="text"value={form.firstResponseSLA}
                 onChange={(e) => setForm({ ...form, firstResponseSLA: e.target.value })}
-                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"
-                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                 Target Completion Days
               </label>
               <input
-                type="number"
-                value={form.targetCompletionDays}
+                type="number"value={form.targetCompletionDays}
                 onChange={(e) => setForm({ ...form, targetCompletionDays: parseInt(e.target.value) || 0 })}
-                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"
-                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                 Due Date Offset (Days)
               </label>
               <input
-                type="number"
-                value={form.dueDateOffset}
+                type="number"value={form.dueDateOffset}
                 onChange={(e) => setForm({ ...form, dueDateOffset: parseInt(e.target.value) || 0 })}
-                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"
-                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                 Escalation After Days
               </label>
               <input
-                type="number"
-                value={form.escalationAfterDays}
+                type="number"value={form.escalationAfterDays}
                 onChange={(e) => setForm({ ...form, escalationAfterDays: parseInt(e.target.value) || 0 })}
-                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"
-                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                 Client Update Frequency
               </label>
               <input
-                type="text"
-                value={form.clientUpdateFrequency}
+                type="text"value={form.clientUpdateFrequency}
                 onChange={(e) => setForm({ ...form, clientUpdateFrequency: e.target.value })}
-                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"
-                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                 SLA Priority
               </label>
               <select
                 value={form.slaPriority}
                 onChange={(e) => setForm({ ...form, slaPriority: e.target.value as SLAPriority })}
-                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"
-                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                className="w-full text-sm px-3 py-2 rounded-lg border outline-none"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
               >
                 {SLA_PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
           </div>
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"style={{ color: "var(--rtm-text-muted)"}}>
               Notes
             </label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={3}
-              className="w-full text-sm px-3 py-2 rounded-lg border outline-none resize-none"
-              style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+              className="w-full text-sm px-3 py-2 rounded-lg border outline-none resize-none"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
             />
           </div>
         </div>
 
         {/* Footer */}
         <div
-          className="px-6 py-4 flex items-center gap-2"
-          style={{ borderTop: "1px solid var(--rtm-border)" }}
+          className="px-6 py-4 flex items-center gap-2"style={{ borderTop: "1px solid var(--rtm-border)"}}
         >
           <button
-            className="px-4 py-2 rounded-lg text-sm font-bold text-white"
-            style={{ background: "#1D4ED8" }}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-white"style={{ background: "#1D4ED8"}}
             onClick={() => { alert("[Mock] SLA saved."); onClose(); }}
           >
             Save SLA
           </button>
           <button
-            className="px-4 py-2 rounded-lg text-sm font-semibold border"
-            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
             onClick={onClose}
           >
             Cancel
@@ -959,7 +938,7 @@ function EditSLAModal({
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+//  Main Page 
 
 export default function FinanceLineItemsPage() {
   const [search, setSearch] = useState("");
@@ -973,9 +952,9 @@ export default function FinanceLineItemsPage() {
     return LINE_ITEMS.filter((li) => {
       const q = search.toLowerCase();
       const matchSearch = !q || li.name.toLowerCase().includes(q) || li.category.toLowerCase().includes(q) || li.department.toLowerCase().includes(q);
-      const matchCat = filterCategory === "All" || li.category === filterCategory;
-      const matchSLAStatus = filterSLAStatus === "All" || li.sla.slaStatus === filterSLAStatus;
-      const matchFinanceStatus = filterFinanceStatus === "All" || li.financeStatus === filterFinanceStatus;
+      const matchCat = filterCategory === "All"|| li.category === filterCategory;
+      const matchSLAStatus = filterSLAStatus === "All"|| li.sla.slaStatus === filterSLAStatus;
+      const matchFinanceStatus = filterFinanceStatus === "All"|| li.financeStatus === filterFinanceStatus;
       return matchSearch && matchCat && matchSLAStatus && matchFinanceStatus;
     });
   }, [search, filterCategory, filterSLAStatus, filterFinanceStatus]);
@@ -984,114 +963,108 @@ export default function FinanceLineItemsPage() {
   const totalItems = LINE_ITEMS.length;
   const approvedItems = LINE_ITEMS.filter((li) => li.financeStatus === "Approved").length;
   const activeSLAs = LINE_ITEMS.filter((li) => li.sla.slaStatus === "Active").length;
-  const pendingReviewSLAs = LINE_ITEMS.filter((li) => li.sla.slaStatus === "Pending Review" || li.sla.slaStatus === "Needs Approval").length;
+  const pendingReviewSLAs = LINE_ITEMS.filter((li) => li.sla.slaStatus === "Pending Review"|| li.sla.slaStatus === "Needs Approval").length;
   const rushItems = LINE_ITEMS.filter((li) => li.sla.slaPriority === "Rush").length;
 
   return (
     <div className="space-y-6">
 
-      {/* ── Page Header ── */}
+      {/*  Page Header  */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#1D4ED8" }}>
+            <p className="text-[11px] font-bold uppercase tracking-widest"style={{ color: "#1D4ED8"}}>
               Finance
             </p>
-            <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>›</span>
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
+            <span className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>›</span>
+            <p className="text-[11px] font-semibold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>
               Line Item Catalog
             </p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
             Line Item Catalog & SLA Management
           </h1>
-          <p className="text-sm mt-1 max-w-2xl" style={{ color: "var(--rtm-text-secondary)" }}>
+          <p className="text-sm mt-1 max-w-2xl"style={{ color: "var(--rtm-text-secondary)"}}>
             SLAs are configured per line item and serve as the primary delivery commitment. Department SLAs are fallback defaults only. Each line item defines its own First Response SLA, Target Completion Days, Escalation Rules, and SLA Priority.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button className="px-4 py-2 rounded-lg text-sm font-bold text-white" style={{ background: "#1D4ED8" }}>
+          <button className="px-4 py-2 rounded-lg text-sm font-bold text-white"style={{ background: "#1D4ED8"}}>
             + Add Line Item
           </button>
-          <button className="px-4 py-2 rounded-lg text-sm font-semibold border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+          <button className="px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}>
             ↑ Import
           </button>
-          <button className="px-4 py-2 rounded-lg text-sm font-semibold border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+          <button className="px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}>
             ↓ Export
           </button>
         </div>
       </div>
 
-      {/* ── SLA Architecture Banner ── */}
-      <div className="rounded-xl p-4 flex flex-wrap items-start gap-4" style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}>
+      {/*  SLA Architecture Banner  */}
+      <div className="rounded-xl p-4 flex flex-wrap items-start gap-4"style={{ background: "#EFF6FF", border: "1px solid #BFDBFE"}}>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: "#1D4ED8" }}>
+          <div className="text-[10px] font-black uppercase tracking-widest mb-1"style={{ color: "#1D4ED8"}}>
             SLA Architecture — Primary Source
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className="px-3 py-1.5 rounded-full font-black" style={{ background: "#1D4ED8", color: "#fff" }}>
-              📦 Line Item SLA
+            <span className="px-3 py-1.5 rounded-full font-black"style={{ background: "#1D4ED8", color: "#fff"}}>
+               Line Item SLA
             </span>
-            <span className="font-bold" style={{ color: "#93C5FD" }}>→ Primary Delivery Commitment</span>
-            <span className="px-2 py-1 rounded-full border font-semibold" style={{ background: "rgba(255,255,255,0.8)", color: "#1D4ED8", borderColor: "#BFDBFE" }}>
+            <span className="font-bold"style={{ color: "#93C5FD"}}>→ Primary Delivery Commitment</span>
+            <span className="px-2 py-1 rounded-full border font-semibold"style={{ background: "rgba(255,255,255,0.8)", color: "#1D4ED8", borderColor: "#BFDBFE"}}>
               Overrides Department Fallback
             </span>
           </div>
-          <p className="text-xs mt-2" style={{ color: "#1E40AF" }}>
+          <p className="text-xs mt-2"style={{ color: "#1E40AF"}}>
             When a proposal or contract includes line items, the SLAs attached to those line items govern delivery. Department SLAs apply only when no line item SLA exists.
           </p>
         </div>
-        <div className="flex flex-col gap-1 text-xs font-semibold" style={{ color: "#1E40AF" }}>
-          <span>🔵 Line Item SLA = Primary</span>
-          <span>⚪ Department SLA = Fallback Default</span>
+        <div className="flex flex-col gap-1 text-xs font-semibold"style={{ color: "#1E40AF"}}>
+          <span> Line Item SLA = Primary</span>
+          <span> Department SLA = Fallback Default</span>
         </div>
       </div>
 
-      {/* ── KPI Cards ── */}
+      {/*  KPI Cards  */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
-          { label: "Total Line Items", value: totalItems, color: "#1D4ED8", bg: "#EFF6FF" },
-          { label: "Finance Approved", value: approvedItems, color: "#15803D", bg: "#F0FDF4" },
-          { label: "Active SLAs", value: activeSLAs, color: "#047857", bg: "#ECFDF5" },
-          { label: "Pending SLA Review", value: pendingReviewSLAs, color: "#C2410C", bg: "#FFF7ED" },
-          { label: "Rush Priority Items", value: rushItems, color: "#BE123C", bg: "#FFF1F2" },
+          { label: "Total Line Items", value: totalItems, color: "#1D4ED8", bg: "#EFF6FF"},
+          { label: "Finance Approved", value: approvedItems, color: "#15803D", bg: "#F0FDF4"},
+          { label: "Active SLAs", value: activeSLAs, color: "#047857", bg: "#ECFDF5"},
+          { label: "Pending SLA Review", value: pendingReviewSLAs, color: "#C2410C", bg: "#FFF7ED"},
+          { label: "Rush Priority Items", value: rushItems, color: "#BE123C", bg: "#FFF1F2"},
         ].map((c) => (
-          <div key={c.label} className="rounded-xl border p-4 text-center" style={{ background: c.bg, borderColor: `${c.color}30` }}>
+          <div key={c.label} className="rounded-xl border p-4 text-center"style={{ background: c.bg, borderColor: `${c.color}30` }}>
             <div
-              className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mb-1"
-              style={{ background: `${c.color}20`, color: c.color }}
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mb-1"style={{ background: `${c.color}20`, color: c.color }}
             >
               {String(c.label).slice(0, 2).toUpperCase()}
             </div>
-            <div className="text-xl font-black" style={{ color: c.color }}>{c.value}</div>
-            <div className="text-[10px] font-semibold mt-0.5 leading-tight" style={{ color: c.color }}>{c.label}</div>
+            <div className="text-xl font-black"style={{ color: c.color }}>{c.value}</div>
+            <div className="text-[10px] font-semibold mt-0.5 leading-tight"style={{ color: c.color }}>{c.label}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Filters ── */}
+      {/*  Filters  */}
       <div
-        className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3"
-        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+        className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
       >
         <div className="relative flex-1 min-w-[200px]">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--rtm-text-muted)" }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"style={{ color: "var(--rtm-text-muted)"}} fill="none"stroke="currentColor"viewBox="0 0 24 24">
+            <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
           <input
-            type="text"
-            placeholder="Search line items..."
-            value={search}
+            type="text"placeholder="Search line items..."value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg outline-none"
-            style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg outline-none"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)"}}
           />
         </div>
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value as Category | "All")}
-          className="text-sm px-3 py-2 rounded-lg outline-none"
-          style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+          className="text-sm px-3 py-2 rounded-lg outline-none"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)"}}
         >
           <option value="All">All Categories</option>
           {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -1099,8 +1072,7 @@ export default function FinanceLineItemsPage() {
         <select
           value={filterSLAStatus}
           onChange={(e) => setFilterSLAStatus(e.target.value as SLAStatus | "All")}
-          className="text-sm px-3 py-2 rounded-lg outline-none"
-          style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+          className="text-sm px-3 py-2 rounded-lg outline-none"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)"}}
         >
           <option value="All">All SLA Statuses</option>
           {SLA_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -1108,32 +1080,31 @@ export default function FinanceLineItemsPage() {
         <select
           value={filterFinanceStatus}
           onChange={(e) => setFilterFinanceStatus(e.target.value as FinanceStatus | "All")}
-          className="text-sm px-3 py-2 rounded-lg outline-none"
-          style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+          className="text-sm px-3 py-2 rounded-lg outline-none"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)"}}
         >
           <option value="All">All Finance Statuses</option>
           {(["Approved", "Pending Review", "Needs Pricing", "Inactive"] as FinanceStatus[]).map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <span className="text-xs font-semibold ml-auto" style={{ color: "var(--rtm-text-muted)" }}>
+        <span className="text-xs font-semibold ml-auto"style={{ color: "var(--rtm-text-muted)"}}>
           {filtered.length} of {totalItems} items
         </span>
       </div>
 
-      {/* ── Line Item SLA Table ── */}
-      <div className="rounded-xl overflow-hidden" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
-        <div className="px-5 py-4 flex items-center gap-3" style={{ borderBottom: "1px solid var(--rtm-border)", background: "#F8FAFC" }}>
-          <span className="text-lg">📋</span>
+      {/*  Line Item SLA Table  */}
+      <div className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
+        <div className="px-5 py-4 flex items-center gap-3"style={{ borderBottom: "1px solid var(--rtm-border)", background: "#F8FAFC"}}>
+          
           <div>
-            <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>Line Item SLA Catalog</h2>
-            <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+            <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>Line Item SLA Catalog</h2>
+            <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>
               Each line item carries its own SLA. These are the primary delivery commitments used in proposals, contracts, task templates, and activation.
             </p>
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "1200px" }}>
+          <table className="w-full text-xs"style={{ borderCollapse: "collapse", minWidth: "1200px"}}>
             <thead>
-              <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)" }}>
+              <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)"}}>
                 {[
                   "Line Item",
                   "Category",
@@ -1151,8 +1122,7 @@ export default function FinanceLineItemsPage() {
                 ].map((h) => (
                   <th
                     key={h}
-                    className="text-left px-3 py-2.5 text-[10px] font-black uppercase tracking-wide whitespace-nowrap"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-left px-3 py-2.5 text-[10px] font-black uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {h}
                   </th>
@@ -1171,51 +1141,51 @@ export default function FinanceLineItemsPage() {
                   <React.Fragment key={li.id}>
                     <tr
                       style={{
-                        borderBottom: isExpanded ? "none" : "1px solid var(--rtm-border-light)",
-                        background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)",
+                        borderBottom: isExpanded ? "none": "1px solid var(--rtm-border-light)",
+                        background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)",
                       }}
                     >
                       {/* Line Item */}
                       <td className="px-3 py-2.5">
-                        <div className="font-bold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</div>
-                        <div className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{li.id} · {li.department}</div>
+                        <div className="font-bold"style={{ color: "var(--rtm-text-primary)"}}>{li.name}</div>
+                        <div className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{li.id} · {li.department}</div>
                       </td>
                       {/* Category */}
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         <Badge label={li.category} bg={catC.bg} text={catC.text} border={catC.border} />
                       </td>
                       {/* Billing Type */}
-                      <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                      <td className="px-3 py-2.5 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                         {li.billingType}
                       </td>
                       {/* Unit Price */}
-                      <td className="px-3 py-2.5 font-bold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>
+                      <td className="px-3 py-2.5 font-bold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>
                         ${li.unitPrice.toLocaleString()}
                       </td>
                       {/* First Response SLA */}
                       <td className="px-3 py-2.5 whitespace-nowrap">
-                        <span className="font-semibold text-[11px]" style={{ color: "#1D4ED8" }}>
-                          ⚡ {li.sla.firstResponseSLA}
+                        <span className="font-semibold text-[11px]"style={{ color: "#1D4ED8"}}>
+                           {li.sla.firstResponseSLA}
                         </span>
                       </td>
                       {/* Target Completion */}
                       <td className="px-3 py-2.5 whitespace-nowrap">
-                        <span className="font-bold text-[11px]" style={{ color: "#059669" }}>
+                        <span className="font-bold text-[11px]"style={{ color: "#059669"}}>
                           {li.sla.targetCompletionDays} business days
                         </span>
                       </td>
                       {/* Due Date Offset */}
-                      <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                      <td className="px-3 py-2.5 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                         {li.sla.dueDateOffset > 0 ? `Day ${li.sla.dueDateOffset}` : "Start"}
                       </td>
                       {/* Escalation After */}
                       <td className="px-3 py-2.5 whitespace-nowrap">
-                        <span className="text-[11px]" style={{ color: "#C2410C" }}>
+                        <span className="text-[11px]"style={{ color: "#C2410C"}}>
                           {li.sla.escalationAfterDays}d
                         </span>
                       </td>
                       {/* Client Updates */}
-                      <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                      <td className="px-3 py-2.5 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                         {li.sla.clientUpdateFrequency}
                       </td>
                       {/* SLA Priority */}
@@ -1228,50 +1198,44 @@ export default function FinanceLineItemsPage() {
                       </td>
                       {/* Finance Status */}
                       <td className="px-3 py-2.5 whitespace-nowrap">
-                        <Badge label={`🔒 ${li.financeStatus}`} bg={finC.bg} text={finC.text} border={finC.border} />
+                        <Badge label={` ${li.financeStatus}`} bg={finC.bg} text={finC.text} border={finC.border} />
                       </td>
                       {/* Actions */}
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1 flex-wrap">
                           <button
                             onClick={() => setEditingItem(li)}
-                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"
-                            style={{ background: "#EFF6FF", color: "#1D4ED8" }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"style={{ background: "#EFF6FF", color: "#1D4ED8"}}
                           >
                             Edit SLA
                           </button>
                           <button
                             onClick={() => alert("[Mock] SLA Approved.")}
-                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"
-                            style={{ background: "#F0FDF4", color: "#15803D" }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"style={{ background: "#F0FDF4", color: "#15803D"}}
                           >
                             Approve SLA
                           </button>
                           <button
                             onClick={() => setExpandedItem(isExpanded ? null : li.id)}
-                            className="text-[10px] font-semibold px-2 py-1 rounded border hover:opacity-80"
-                            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded border hover:opacity-80"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}
                           >
-                            {isExpanded ? "Collapse" : "Details"}
+                            {isExpanded ? "Collapse": "Details"}
                           </button>
                           <button
                             onClick={() => alert("[Mock] Custom SLA dialog.")}
-                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"
-                            style={{ background: "#F5F3FF", color: "#6D28D9" }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"style={{ background: "#F5F3FF", color: "#6D28D9"}}
                           >
                             Custom SLA
                           </button>
                           <button
                             onClick={() => alert("[Mock] SLA duplicated.")}
-                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"
-                            style={{ background: "#FEFCE8", color: "#A16207" }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"style={{ background: "#FEFCE8", color: "#A16207"}}
                           >
                             Duplicate
                           </button>
                           <button
                             onClick={() => alert("[Mock] SLA deactivated.")}
-                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"
-                            style={{ background: "#FFF1F2", color: "#BE123C" }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded hover:opacity-80"style={{ background: "#FFF1F2", color: "#BE123C"}}
                           >
                             Deactivate
                           </button>
@@ -1279,33 +1243,33 @@ export default function FinanceLineItemsPage() {
                       </td>
                     </tr>
 
-                    {/* ── Expanded SLA Detail ── */}
+                    {/*  Expanded SLA Detail  */}
                     {isExpanded && (
-                      <tr style={{ background: "#F0F9FF", borderBottom: "2px solid #BFDBFE" }}>
+                      <tr style={{ background: "#F0F9FF", borderBottom: "2px solid #BFDBFE"}}>
                         <td colSpan={13} className="px-5 py-4">
-                          <div className="rounded-xl border p-4" style={{ background: "#fff", borderColor: "#BFDBFE" }}>
-                            <div className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: "#1D4ED8" }}>
-                              📋 Line Item SLA Detail — {li.name}
+                          <div className="rounded-xl border p-4"style={{ background: "#fff", borderColor: "#BFDBFE"}}>
+                            <div className="text-[10px] font-black uppercase tracking-widest mb-3"style={{ color: "#1D4ED8"}}>
+                               Line Item SLA Detail — {li.name}
                             </div>
                             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-3">
                               {[
-                                { label: "First Response", value: li.sla.firstResponseSLA, color: "#1D4ED8", bg: "#EFF6FF" },
-                                { label: "Target Completion", value: `${li.sla.targetCompletionDays} biz days`, color: "#15803D", bg: "#F0FDF4" },
-                                { label: "Due Date Offset", value: li.sla.dueDateOffset > 0 ? `Day ${li.sla.dueDateOffset}` : "Immediate", color: "#374151", bg: "#F3F4F6" },
-                                { label: "Escalation After", value: `${li.sla.escalationAfterDays} days`, color: "#C2410C", bg: "#FFF7ED" },
-                                { label: "Client Updates", value: li.sla.clientUpdateFrequency, color: "#047857", bg: "#ECFDF5" },
+                                { label: "First Response", value: li.sla.firstResponseSLA, color: "#1D4ED8", bg: "#EFF6FF"},
+                                { label: "Target Completion", value: `${li.sla.targetCompletionDays} biz days`, color: "#15803D", bg: "#F0FDF4"},
+                                { label: "Due Date Offset", value: li.sla.dueDateOffset > 0 ? `Day ${li.sla.dueDateOffset}` : "Immediate", color: "#374151", bg: "#F3F4F6"},
+                                { label: "Escalation After", value: `${li.sla.escalationAfterDays} days`, color: "#C2410C", bg: "#FFF7ED"},
+                                { label: "Client Updates", value: li.sla.clientUpdateFrequency, color: "#047857", bg: "#ECFDF5"},
                                 { label: "SLA Priority", value: li.sla.slaPriority, color: SLA_PRIORITY_COLORS[li.sla.slaPriority].text, bg: SLA_PRIORITY_COLORS[li.sla.slaPriority].bg },
-                                { label: "Task Template", value: li.taskTemplate, color: "#6D28D9", bg: "#F5F3FF" },
+                                { label: "Task Template", value: li.taskTemplate, color: "#6D28D9", bg: "#F5F3FF"},
                               ].map((r) => (
-                                <div key={r.label} className="rounded-lg p-3 text-center" style={{ background: r.bg, border: `1px solid ${r.color}20` }}>
-                                  <div className="text-[9px] font-bold uppercase tracking-wide mb-1" style={{ color: r.color }}>{r.label}</div>
-                                  <div className="text-xs font-black leading-tight" style={{ color: r.color }}>{r.value}</div>
+                                <div key={r.label} className="rounded-lg p-3 text-center"style={{ background: r.bg, border: `1px solid ${r.color}20` }}>
+                                  <div className="text-[9px] font-bold uppercase tracking-wide mb-1"style={{ color: r.color }}>{r.label}</div>
+                                  <div className="text-xs font-black leading-tight"style={{ color: r.color }}>{r.value}</div>
                                 </div>
                               ))}
                             </div>
                             {li.sla.notes && (
-                              <div className="text-xs rounded-lg px-3 py-2" style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A" }}>
-                                📝 {li.sla.notes}
+                              <div className="text-xs rounded-lg px-3 py-2"style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A"}}>
+                                 {li.sla.notes}
                               </div>
                             )}
                           </div>
@@ -1320,30 +1284,29 @@ export default function FinanceLineItemsPage() {
         </div>
 
         {filtered.length === 0 && (
-          <div className="py-12 text-center" style={{ color: "var(--rtm-text-muted)" }}>
-            <div className="text-3xl mb-2">📦</div>
+          <div className="py-12 text-center"style={{ color: "var(--rtm-text-muted)"}}>
+            
             <div className="text-sm font-semibold">No line items match your filters.</div>
           </div>
         )}
 
         <div
-          className="px-5 py-3 flex items-center justify-between"
-          style={{ borderTop: "1px solid var(--rtm-border-light)" }}
+          className="px-5 py-3 flex items-center justify-between"style={{ borderTop: "1px solid var(--rtm-border-light)"}}
         >
-          <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             Showing {filtered.length} of {totalItems} line items
           </span>
-          <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-muted)"}}>
             {activeSLAs} active SLAs · {pendingReviewSLAs} pending review
           </span>
         </div>
       </div>
 
-      {/* ── SLA Priority Breakdown ── */}
-      <div className="rounded-xl overflow-hidden" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
-        <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-          <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>⚡ SLA Priority Breakdown</h2>
-          <p className="text-[10px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+      {/*  SLA Priority Breakdown  */}
+      <div className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
+        <div className="px-5 py-4"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
+          <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}> SLA Priority Breakdown</h2>
+          <p className="text-[10px] mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
             Line items grouped by SLA Priority. Rush items require same-day or next-day response.
           </p>
         </div>
@@ -1352,22 +1315,22 @@ export default function FinanceLineItemsPage() {
             const items = LINE_ITEMS.filter((li) => li.sla.slaPriority === priority);
             const c = SLA_PRIORITY_COLORS[priority];
             return (
-              <div key={priority} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${c.border}` }}>
-                <div className="px-4 py-3 flex items-center justify-between" style={{ background: c.bg }}>
-                  <span className="text-xs font-black" style={{ color: c.text }}>{priority}</span>
-                  <span className="text-xl font-black" style={{ color: c.text }}>{items.length}</span>
+              <div key={priority} className="rounded-xl overflow-hidden"style={{ border: `1px solid ${c.border}` }}>
+                <div className="px-4 py-3 flex items-center justify-between"style={{ background: c.bg }}>
+                  <span className="text-xs font-black"style={{ color: c.text }}>{priority}</span>
+                  <span className="text-xl font-black"style={{ color: c.text }}>{items.length}</span>
                 </div>
                 <div className="px-4 py-3 space-y-1 bg-white">
                   {items.slice(0, 4).map((li) => (
-                    <div key={li.id} className="text-[11px]" style={{ color: "var(--rtm-text-secondary)" }}>
+                    <div key={li.id} className="text-[11px]"style={{ color: "var(--rtm-text-secondary)"}}>
                       · {li.name}
                     </div>
                   ))}
                   {items.length > 4 && (
-                    <div className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>+{items.length - 4} more</div>
+                    <div className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>+{items.length - 4} more</div>
                   )}
                   {items.length === 0 && (
-                    <div className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>None configured</div>
+                    <div className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>None configured</div>
                   )}
                 </div>
               </div>
@@ -1376,7 +1339,7 @@ export default function FinanceLineItemsPage() {
         </div>
       </div>
 
-      {/* ── Edit SLA Modal ── */}
+      {/*  Edit SLA Modal  */}
       {editingItem && (
         <EditSLAModal item={editingItem} onClose={() => setEditingItem(null)} />
       )}

@@ -1,17 +1,8 @@
 // ── Report Status Values ───────────────────────────────────────────────────────
 export type ReportStatus =
-  | "Draft"
-  | "In Progress"
-  | "Waiting for Department Input"
-  | "Ready for QA"
-  | "QA In Progress"
-  | "Approved"
-  | "Ready to Send"
-  | "Sent"
-  | "Needs Revision"
-  | "Overdue";
+  | "Draft"| "In Progress"| "Waiting for Department Input"| "Ready for QA"| "QA In Progress"| "Approved"| "Ready to Send"| "Sent"| "Needs Revision"| "Overdue";
 
-export type ReportDept = "SEO" | "GBP" | "Yelp" | "Paid Advertising" | "LSA";
+export type ReportDept = "SEO"| "GBP"| "Yelp"| "Paid Advertising"| "LSA";
 
 // ── Client Report Record ───────────────────────────────────────────────────────
 export interface ClientReport {
@@ -21,8 +12,8 @@ export interface ClientReport {
   reportType: string;
   reportingPeriod: string;
   owner: string;
-  qaStatus: "Not Started" | "In Queue" | "In Review" | "Approved" | "Failed";
-  sendStatus: "Pending" | "Scheduled" | "Sent" | "Bounced";
+  qaStatus: "Not Started"| "In Queue"| "In Review"| "Approved"| "Failed";
+  sendStatus: "Pending"| "Scheduled"| "Sent"| "Bounced";
   dueDate: string;
   lastUpdated: string;
   nextAction: string;
@@ -36,8 +27,8 @@ export interface DeptReport {
   reportingPeriod: string;
   owner: string;
   status: ReportStatus;
-  qaStatus: "Not Started" | "In Queue" | "In Review" | "Approved" | "Failed";
-  sendStatus: "Pending" | "Scheduled" | "Sent" | "Bounced";
+  qaStatus: "Not Started"| "In Queue"| "In Review"| "Approved"| "Failed";
+  sendStatus: "Pending"| "Scheduled"| "Sent"| "Bounced";
   dueDate: string;
   lastUpdated: string;
   nextAction: string;

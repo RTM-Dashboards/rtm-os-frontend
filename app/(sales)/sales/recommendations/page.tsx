@@ -2,51 +2,23 @@
 
 import React, { useState, useMemo } from "react";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Types
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 type RecommendationType =
-  | "Service Recommendation"
-  | "Line Item Recommendation"
-  | "Package Recommendation"
-  | "Renewal Recommendation"
-  | "Upsell Recommendation"
-  | "Retention Recommendation"
-  | "Risk Recommendation";
+  | "Service Recommendation"| "Line Item Recommendation"| "Package Recommendation"| "Renewal Recommendation"| "Upsell Recommendation"| "Retention Recommendation"| "Risk Recommendation";
 
-type Priority = "Critical" | "High" | "Medium" | "Low";
-type RecStatus = "New" | "In Review" | "Accepted" | "Rejected" | "Proposal Sent" | "Won";
+type Priority = "Critical"| "High"| "Medium"| "Low";
+type RecStatus = "New"| "In Review"| "Accepted"| "Rejected"| "Proposal Sent"| "Won";
 type InputSource =
-  | "Audit Findings"
-  | "Call Summary"
-  | "Client Notes"
-  | "Meeting Notes"
-  | "Renewal Signal"
-  | "Upsell Signal"
-  | "Project Health"
-  | "Client Health";
+  | "Audit Findings"| "Call Summary"| "Client Notes"| "Meeting Notes"| "Renewal Signal"| "Upsell Signal"| "Project Health"| "Client Health";
 
 type ServiceType =
-  | "SEO"
-  | "GBP"
-  | "PPC"
-  | "Meta Ads"
-  | "LSA"
-  | "Website"
-  | "Hosting"
-  | "AI Automation"
-  | "Reporting";
+  | "SEO"| "GBP"| "PPC"| "Meta Ads"| "LSA"| "Website"| "Hosting"| "AI Automation"| "Reporting";
 
 type PackageType =
-  | "SEO Starter"
-  | "SEO Growth"
-  | "SEO + GBP"
-  | "PPC + Landing Page"
-  | "Full Service"
-  | "Hosting + Maintenance"
-  | "AI Voice Agent"
-  | "Custom Package";
+  | "SEO Starter"| "SEO Growth"| "SEO + GBP"| "PPC + Landing Page"| "Full Service"| "Hosting + Maintenance"| "AI Voice Agent"| "Custom Package";
 
 interface CommunicationSignal {
   clientConcerns: string[];
@@ -108,9 +80,9 @@ interface Recommendation {
   notes: string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Mock Data — 20 Recommendations
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 const MOCK_RECOMMENDATIONS: Recommendation[] = [
   {
@@ -148,9 +120,9 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-001-2", service: "Reporting", reason: "Missing tracking infrastructure — cannot measure SEO results without it.", estimatedMonthlyRevenue: 0, setupFee: 700 },
     ],
     recommendedLineItems: [
-      { id: "li-001-1", name: "SEO Setup & Onboarding", category: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days" },
-      { id: "li-001-2", name: "SEO Monthly Management", category: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing" },
-      { id: "li-001-3", name: "Tracking & Analytics Setup", category: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days" },
+      { id: "li-001-1", name: "SEO Setup & Onboarding", category: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days"},
+      { id: "li-001-2", name: "SEO Monthly Management", category: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing"},
+      { id: "li-001-3", name: "Tracking & Analytics Setup", category: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days"},
     ],
     recommendedPackage: "SEO Starter",
     packageServices: ["SEO Setup & Onboarding", "SEO Monthly Management", "Tracking & Analytics Setup"],
@@ -193,9 +165,9 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-002-2", service: "Reporting", reason: "Need tracking to measure GBP ranking improvements.", estimatedMonthlyRevenue: 0, setupFee: 400 },
     ],
     recommendedLineItems: [
-      { id: "li-002-1", name: "GBP Setup & Optimization", category: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days" },
-      { id: "li-002-2", name: "GBP Monthly Management", category: "GBP", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing" },
-      { id: "li-002-3", name: "Review Generation Setup", category: "GBP", setupFee: 450, recurringFee: 300, deliveryStandard: "5 days" },
+      { id: "li-002-1", name: "GBP Setup & Optimization", category: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days"},
+      { id: "li-002-2", name: "GBP Monthly Management", category: "GBP", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing"},
+      { id: "li-002-3", name: "Review Generation Setup", category: "GBP", setupFee: 450, recurringFee: 300, deliveryStandard: "5 days"},
     ],
     recommendedPackage: "SEO + GBP",
     packageServices: ["GBP Setup & Optimization", "GBP Monthly Management", "Review Generation Setup"],
@@ -237,9 +209,9 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-003-2", service: "Reporting", reason: "Broken tracking is root cause — must fix attribution first.", estimatedMonthlyRevenue: 0, setupFee: 700 },
     ],
     recommendedLineItems: [
-      { id: "li-003-1", name: "PPC Campaign Setup", category: "PPC", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days" },
-      { id: "li-003-2", name: "PPC Monthly Management", category: "PPC", setupFee: 0, recurringFee: 1500, deliveryStandard: "Ongoing" },
-      { id: "li-003-3", name: "Tracking & Analytics Setup", category: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days" },
+      { id: "li-003-1", name: "PPC Campaign Setup", category: "PPC", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days"},
+      { id: "li-003-2", name: "PPC Monthly Management", category: "PPC", setupFee: 0, recurringFee: 1500, deliveryStandard: "Ongoing"},
+      { id: "li-003-3", name: "Tracking & Analytics Setup", category: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days"},
     ],
     recommendedPackage: "PPC + Landing Page",
     packageServices: ["PPC Campaign Setup", "PPC Monthly Management", "Tracking & Analytics Setup"],
@@ -280,9 +252,9 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-004-1", service: "Meta Ads", reason: "Competitors running visual campaigns — immediate gap to fill.", estimatedMonthlyRevenue: 1200, setupFee: 900 },
     ],
     recommendedLineItems: [
-      { id: "li-004-1", name: "Meta Ads Account Setup", category: "Meta Ads", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days" },
-      { id: "li-004-2", name: "Meta Ads Monthly Management", category: "Meta Ads", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing" },
-      { id: "li-004-3", name: "Meta Pixel & Events Setup", category: "Tracking", setupFee: 400, recurringFee: 0, deliveryStandard: "5 days" },
+      { id: "li-004-1", name: "Meta Ads Account Setup", category: "Meta Ads", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days"},
+      { id: "li-004-2", name: "Meta Ads Monthly Management", category: "Meta Ads", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing"},
+      { id: "li-004-3", name: "Meta Pixel & Events Setup", category: "Tracking", setupFee: 400, recurringFee: 0, deliveryStandard: "5 days"},
     ],
     recommendedPackage: "Custom Package",
     packageServices: ["Meta Ads Account Setup", "Meta Ads Monthly Management", "Meta Pixel & Events Setup"],
@@ -324,8 +296,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-005-2", service: "SEO", reason: "Post-redesign SEO foundation required to retain any ranking equity.", estimatedMonthlyRevenue: 1200, setupFee: 1500 },
     ],
     recommendedLineItems: [
-      { id: "li-005-1", name: "Website Redesign", category: "Web", setupFee: 5000, recurringFee: 0, deliveryStandard: "60 days" },
-      { id: "li-005-2", name: "Website Maintenance (Monthly)", category: "Web", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing" },
+      { id: "li-005-1", name: "Website Redesign", category: "Web", setupFee: 5000, recurringFee: 0, deliveryStandard: "60 days"},
+      { id: "li-005-2", name: "Website Maintenance (Monthly)", category: "Web", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "Full Service",
     packageServices: ["Website Redesign", "Website Maintenance", "SEO Setup & Onboarding", "SEO Monthly Management"],
@@ -366,8 +338,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-006-1", service: "Reporting", reason: "Zero attribution on any channel — foundational fix before anything else.", estimatedMonthlyRevenue: 150, setupFee: 700 },
     ],
     recommendedLineItems: [
-      { id: "li-006-1", name: "Tracking & Analytics Setup", category: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days" },
-      { id: "li-006-2", name: "Call Tracking Setup", category: "Reporting", setupFee: 300, recurringFee: 150, deliveryStandard: "3 days" },
+      { id: "li-006-1", name: "Tracking & Analytics Setup", category: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days"},
+      { id: "li-006-2", name: "Call Tracking Setup", category: "Reporting", setupFee: 300, recurringFee: 150, deliveryStandard: "3 days"},
     ],
     recommendedPackage: "Custom Package",
     packageServices: ["Tracking & Analytics Setup", "Call Tracking Setup"],
@@ -409,8 +381,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-007-2", service: "GBP", reason: "4 locations, 2 not ranking in local pack — GBP optimization needed.", estimatedMonthlyRevenue: 500, setupFee: 350 },
     ],
     recommendedLineItems: [
-      { id: "li-007-1", name: "Call Tracking & Intelligence Setup", category: "Reporting", setupFee: 600, recurringFee: 200, deliveryStandard: "5 days" },
-      { id: "li-007-2", name: "Missed Call SMS Automation", category: "Automation", setupFee: 800, recurringFee: 150, deliveryStandard: "7 days" },
+      { id: "li-007-1", name: "Call Tracking & Intelligence Setup", category: "Reporting", setupFee: 600, recurringFee: 200, deliveryStandard: "5 days"},
+      { id: "li-007-2", name: "Missed Call SMS Automation", category: "Automation", setupFee: 800, recurringFee: 150, deliveryStandard: "7 days"},
     ],
     recommendedPackage: "AI Voice Agent",
     packageServices: ["Call Tracking & Intelligence Setup", "Missed Call SMS Automation", "GBP Optimization"],
@@ -453,10 +425,10 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-008-2", service: "PPC", reason: "Missing peak season paid presence vs 3 active competitors.", estimatedMonthlyRevenue: 1200, setupFee: 1200 },
     ],
     recommendedLineItems: [
-      { id: "li-008-1", name: "SEO Setup & Onboarding", category: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days" },
-      { id: "li-008-2", name: "SEO Monthly Management", category: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing" },
-      { id: "li-008-3", name: "PPC Campaign Setup", category: "PPC", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days" },
-      { id: "li-008-4", name: "PPC Monthly Management", category: "PPC", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing" },
+      { id: "li-008-1", name: "SEO Setup & Onboarding", category: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days"},
+      { id: "li-008-2", name: "SEO Monthly Management", category: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing"},
+      { id: "li-008-3", name: "PPC Campaign Setup", category: "PPC", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days"},
+      { id: "li-008-4", name: "PPC Monthly Management", category: "PPC", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "SEO Growth",
     packageServices: ["SEO Setup & Onboarding", "SEO Monthly Management", "PPC Campaign Setup", "PPC Monthly Management"],
@@ -498,9 +470,9 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-009-2", service: "Hosting", reason: "Law firm on shared hosting with no security monitoring — liability risk.", estimatedMonthlyRevenue: 250, setupFee: 1000 },
     ],
     recommendedLineItems: [
-      { id: "li-009-1", name: "AI Automation Setup", category: "Automation", setupFee: 2500, recurringFee: 500, deliveryStandard: "21 days" },
-      { id: "li-009-2", name: "CRM Setup & Configuration", category: "CRM", setupFee: 1200, recurringFee: 200, deliveryStandard: "14 days" },
-      { id: "li-009-3", name: "AI Chatbot Implementation", category: "Automation", setupFee: 1500, recurringFee: 300, deliveryStandard: "10 days" },
+      { id: "li-009-1", name: "AI Automation Setup", category: "Automation", setupFee: 2500, recurringFee: 500, deliveryStandard: "21 days"},
+      { id: "li-009-2", name: "CRM Setup & Configuration", category: "CRM", setupFee: 1200, recurringFee: 200, deliveryStandard: "14 days"},
+      { id: "li-009-3", name: "AI Chatbot Implementation", category: "Automation", setupFee: 1500, recurringFee: 300, deliveryStandard: "10 days"},
     ],
     recommendedPackage: "AI Voice Agent",
     packageServices: ["AI Automation Setup", "CRM Setup", "AI Chatbot Implementation"],
@@ -542,10 +514,10 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-010-1", service: "Hosting", reason: "Expired SSL + shared hosting causing immediate revenue loss and security risk.", estimatedMonthlyRevenue: 400, setupFee: 1200 },
     ],
     recommendedLineItems: [
-      { id: "li-010-1", name: "SSL Certificate & Cloudflare Setup", category: "Security", setupFee: 400, recurringFee: 0, deliveryStandard: "2 days" },
-      { id: "li-010-2", name: "Hosting Migration", category: "Hosting", setupFee: 800, recurringFee: 0, deliveryStandard: "5 days" },
-      { id: "li-010-3", name: "Managed Hosting (Monthly)", category: "Hosting", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing" },
-      { id: "li-010-4", name: "Website Security & Maintenance", category: "Security", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing" },
+      { id: "li-010-1", name: "SSL Certificate & Cloudflare Setup", category: "Security", setupFee: 400, recurringFee: 0, deliveryStandard: "2 days"},
+      { id: "li-010-2", name: "Hosting Migration", category: "Hosting", setupFee: 800, recurringFee: 0, deliveryStandard: "5 days"},
+      { id: "li-010-3", name: "Managed Hosting (Monthly)", category: "Hosting", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing"},
+      { id: "li-010-4", name: "Website Security & Maintenance", category: "Security", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "Hosting + Maintenance",
     packageServices: ["SSL Fix", "Hosting Migration", "Managed Hosting", "Security Maintenance"],
@@ -585,8 +557,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-011-1", service: "PPC", reason: "Current account structure wasting 40%+ of budget. Restructure will dramatically improve ROI.", estimatedMonthlyRevenue: 1200, setupFee: 1200 },
     ],
     recommendedLineItems: [
-      { id: "li-011-1", name: "PPC Campaign Setup", category: "PPC", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days" },
-      { id: "li-011-2", name: "PPC Monthly Management", category: "PPC", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing" },
+      { id: "li-011-1", name: "PPC Campaign Setup", category: "PPC", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days"},
+      { id: "li-011-2", name: "PPC Monthly Management", category: "PPC", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "PPC + Landing Page",
     packageServices: ["PPC Campaign Setup", "PPC Monthly Management"],
@@ -626,8 +598,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-012-1", service: "GBP", reason: "4 locations, 2 not ranking — urgent per-location intervention.", estimatedMonthlyRevenue: 1200, setupFee: 350 },
     ],
     recommendedLineItems: [
-      { id: "li-012-1", name: "GBP Monthly Management (4 Locations)", category: "GBP", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing" },
-      { id: "li-012-2", name: "GBP Setup & Optimization", category: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days" },
+      { id: "li-012-1", name: "GBP Monthly Management (4 Locations)", category: "GBP", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing"},
+      { id: "li-012-2", name: "GBP Setup & Optimization", category: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days"},
     ],
     recommendedPackage: "SEO + GBP",
     packageServices: ["GBP Setup & Optimization", "GBP Monthly Management (4 Locations)"],
@@ -667,8 +639,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-013-1", service: "SEO", reason: "Content gaps require structured monthly content and on-page strategy.", estimatedMonthlyRevenue: 1200, setupFee: 1500 },
     ],
     recommendedLineItems: [
-      { id: "li-013-1", name: "SEO Setup & Onboarding", category: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days" },
-      { id: "li-013-2", name: "Content Writing (4 Articles/mo)", category: "Content", setupFee: 0, recurringFee: 700, deliveryStandard: "Ongoing" },
+      { id: "li-013-1", name: "SEO Setup & Onboarding", category: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days"},
+      { id: "li-013-2", name: "Content Writing (4 Articles/mo)", category: "Content", setupFee: 0, recurringFee: 700, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "SEO Starter",
     packageServices: ["SEO Setup & Onboarding", "SEO Monthly Management", "Content Writing (4 Articles/mo)"],
@@ -708,8 +680,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-014-1", service: "Meta Ads", reason: "Competitor has no paid social presence — first-mover advantage available.", estimatedMonthlyRevenue: 1200, setupFee: 900 },
     ],
     recommendedLineItems: [
-      { id: "li-014-1", name: "Meta Ads Setup", category: "Meta Ads", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days" },
-      { id: "li-014-2", name: "Meta Ads Monthly Management", category: "Meta Ads", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing" },
+      { id: "li-014-1", name: "Meta Ads Setup", category: "Meta Ads", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days"},
+      { id: "li-014-2", name: "Meta Ads Monthly Management", category: "Meta Ads", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "Custom Package",
     packageServices: ["Meta Ads Setup", "Meta Ads Monthly Management"],
@@ -745,9 +717,9 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-015-1", service: "GBP", reason: "Contract renewal — expand to include review management and reporting.", estimatedMonthlyRevenue: 1300, setupFee: 0 },
     ],
     recommendedLineItems: [
-      { id: "li-015-1", name: "GBP Monthly Management", category: "GBP", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing" },
-      { id: "li-015-2", name: "Review Generation (Monthly)", category: "GBP", setupFee: 0, recurringFee: 300, deliveryStandard: "Ongoing" },
-      { id: "li-015-3", name: "GBP Reporting", category: "Reporting", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing" },
+      { id: "li-015-1", name: "GBP Monthly Management", category: "GBP", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing"},
+      { id: "li-015-2", name: "Review Generation (Monthly)", category: "GBP", setupFee: 0, recurringFee: 300, deliveryStandard: "Ongoing"},
+      { id: "li-015-3", name: "GBP Reporting", category: "Reporting", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "SEO + GBP",
     packageServices: ["GBP Monthly Management", "Review Generation", "GBP Reporting"],
@@ -787,8 +759,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-016-2", service: "PPC", reason: "Rebuild campaign while tracking is fixed to maximize demonstrable results.", estimatedMonthlyRevenue: 1500, setupFee: 0 },
     ],
     recommendedLineItems: [
-      { id: "li-016-1", name: "Tracking & Analytics Setup", category: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days" },
-      { id: "li-016-2", name: "Monthly Performance Dashboard", category: "Reporting", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing" },
+      { id: "li-016-1", name: "Tracking & Analytics Setup", category: "Reporting", setupFee: 700, recurringFee: 0, deliveryStandard: "8 days"},
+      { id: "li-016-2", name: "Monthly Performance Dashboard", category: "Reporting", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "Custom Package",
     packageServices: ["Tracking & Analytics Setup", "Monthly Performance Dashboard"],
@@ -828,9 +800,9 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-017-1", service: "Hosting", reason: "Law firm on shared hosting with sensitive client data — security liability.", estimatedMonthlyRevenue: 250, setupFee: 1000 },
     ],
     recommendedLineItems: [
-      { id: "li-017-1", name: "Hosting Migration", category: "Hosting", setupFee: 800, recurringFee: 0, deliveryStandard: "5 days" },
-      { id: "li-017-2", name: "Managed Hosting (Monthly)", category: "Hosting", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing" },
-      { id: "li-017-3", name: "Security Monitoring (Monthly)", category: "Security", setupFee: 200, recurringFee: 100, deliveryStandard: "3 days" },
+      { id: "li-017-1", name: "Hosting Migration", category: "Hosting", setupFee: 800, recurringFee: 0, deliveryStandard: "5 days"},
+      { id: "li-017-2", name: "Managed Hosting (Monthly)", category: "Hosting", setupFee: 0, recurringFee: 150, deliveryStandard: "Ongoing"},
+      { id: "li-017-3", name: "Security Monitoring (Monthly)", category: "Security", setupFee: 200, recurringFee: 100, deliveryStandard: "3 days"},
     ],
     recommendedPackage: "Hosting + Maintenance",
     packageServices: ["Hosting Migration", "Managed Hosting", "Security Monitoring"],
@@ -870,8 +842,8 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-018-1", service: "GBP", reason: "3 locations with no GBP management — natural cross-sell for SEO client.", estimatedMonthlyRevenue: 500, setupFee: 1050 },
     ],
     recommendedLineItems: [
-      { id: "li-018-1", name: "GBP Setup (3 Locations)", category: "GBP", setupFee: 1050, recurringFee: 0, deliveryStandard: "3 days" },
-      { id: "li-018-2", name: "GBP Monthly Management (3 Locations)", category: "GBP", setupFee: 0, recurringFee: 750, deliveryStandard: "Ongoing" },
+      { id: "li-018-1", name: "GBP Setup (3 Locations)", category: "GBP", setupFee: 1050, recurringFee: 0, deliveryStandard: "3 days"},
+      { id: "li-018-2", name: "GBP Monthly Management (3 Locations)", category: "GBP", setupFee: 0, recurringFee: 750, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "SEO + GBP",
     packageServices: ["GBP Setup (3 Locations)", "GBP Monthly Management (3 Locations)"],
@@ -907,7 +879,7 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-019-1", service: "PPC", reason: "Contract renewal — expand with commercial solar campaign for upsell.", estimatedMonthlyRevenue: 1500, setupFee: 0 },
     ],
     recommendedLineItems: [
-      { id: "li-019-1", name: "PPC Monthly Management", category: "PPC", setupFee: 0, recurringFee: 1500, deliveryStandard: "Ongoing" },
+      { id: "li-019-1", name: "PPC Monthly Management", category: "PPC", setupFee: 0, recurringFee: 1500, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "PPC + Landing Page",
     packageServices: ["PPC Monthly Management", "Commercial Solar Campaign"],
@@ -947,7 +919,7 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
       { id: "rs-020-1", service: "SEO", reason: "Content writing add-on to capture specialty PT searches competitors are missing.", estimatedMonthlyRevenue: 700, setupFee: 500 },
     ],
     recommendedLineItems: [
-      { id: "li-020-1", name: "SEO Content Writing (4 Articles/mo)", category: "Content", setupFee: 500, recurringFee: 700, deliveryStandard: "Ongoing" },
+      { id: "li-020-1", name: "SEO Content Writing (4 Articles/mo)", category: "Content", setupFee: 500, recurringFee: 700, deliveryStandard: "Ongoing"},
     ],
     recommendedPackage: "Custom Package",
     packageServices: ["SEO Content Writing (4 Articles/mo)"],
@@ -957,57 +929,57 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Color + Meta Helpers
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 const PRIORITY_COLORS: Record<Priority, { bg: string; text: string; border: string }> = {
-  Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA" },
-  High: { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
-  Medium: { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
-  Low: { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
+  Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA"},
+  High: { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
+  Medium: { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
+  Low: { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
 };
 
 const STATUS_COLORS: Record<RecStatus, { bg: string; text: string; border: string }> = {
-  New: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  "In Review": { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A" },
-  Accepted: { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  Rejected: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA" },
-  "Proposal Sent": { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE" },
-  Won: { bg: "#ECFDF5", text: "#059669", border: "#A7F3D0" },
+  New: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
+  "In Review": { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
+  Accepted: { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
+  Rejected: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA"},
+  "Proposal Sent": { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE"},
+  Won: { bg: "#ECFDF5", text: "#059669", border: "#A7F3D0"},
 };
 
 const REC_TYPE_META: Record<RecommendationType, { icon: string; color: string; bg: string; border: string }> = {
-  "Service Recommendation": { icon: "⚙️", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
-  "Line Item Recommendation": { icon: "📋", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
-  "Package Recommendation": { icon: "📦", color: "#059669", bg: "#F0FDF4", border: "#BBF7D0" },
-  "Renewal Recommendation": { icon: "🔄", color: "#0369A1", bg: "#F0F9FF", border: "#BAE6FD" },
-  "Upsell Recommendation": { icon: "⬆️", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-  "Retention Recommendation": { icon: "🛡️", color: "#BE123C", bg: "#FFF1F2", border: "#FECDD3" },
-  "Risk Recommendation": { icon: "🚨", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
+  "Service Recommendation": { icon: "", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE"},
+  "Line Item Recommendation": { icon: "", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
+  "Package Recommendation": { icon: "", color: "#059669", bg: "#F0FDF4", border: "#BBF7D0"},
+  "Renewal Recommendation": { icon: "", color: "#0369A1", bg: "#F0F9FF", border: "#BAE6FD"},
+  "Upsell Recommendation": { icon: "", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+  "Retention Recommendation": { icon: "", color: "#BE123C", bg: "#FFF1F2", border: "#FECDD3"},
+  "Risk Recommendation": { icon: "", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
 };
 
 const SOURCE_META: Record<InputSource, { icon: string; color: string }> = {
-  "Audit Findings": { icon: "🔍", color: "#1D4ED8" },
-  "Call Summary": { icon: "📞", color: "#0369A1" },
-  "Client Notes": { icon: "📝", color: "#D97706" },
-  "Meeting Notes": { icon: "📋", color: "#7C3AED" },
-  "Renewal Signal": { icon: "🔄", color: "#059669" },
-  "Upsell Signal": { icon: "⬆️", color: "#C2410C" },
-  "Project Health": { icon: "💚", color: "#15803D" },
-  "Client Health": { icon: "❤️", color: "#DC2626" },
+  "Audit Findings": { icon: "", color: "#1D4ED8"},
+  "Call Summary": { icon: "", color: "#0369A1"},
+  "Client Notes": { icon: "", color: "#D97706"},
+  "Meeting Notes": { icon: "", color: "#7C3AED"},
+  "Renewal Signal": { icon: "", color: "#059669"},
+  "Upsell Signal": { icon: "", color: "#C2410C"},
+  "Project Health": { icon: "", color: "#15803D"},
+  "Client Health": { icon: "", color: "#DC2626"},
 };
 
 const SERVICE_ICONS: Record<ServiceType, string> = {
-  SEO: "🔍",
-  GBP: "📍",
-  PPC: "💰",
-  "Meta Ads": "📘",
-  LSA: "⭐",
-  Website: "🌐",
-  Hosting: "🖥️",
-  "AI Automation": "🤖",
-  Reporting: "📊",
+  SEO: "",
+  GBP: "",
+  PPC: "",
+  "Meta Ads": "",
+  LSA: "",
+  Website: "",
+  Hosting: "",
+  "AI Automation": "",
+  Reporting: "",
 };
 
 function scoreBarColor(score: number): string {
@@ -1017,15 +989,14 @@ function scoreBarColor(score: number): string {
   return "#DC2626";
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Shared UI
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function Badge({ label, bg, text, border }: { label: string; bg: string; text: string; border?: string }) {
   return (
     <span
-      className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"
-      style={{ background: bg, color: text, borderColor: border ?? "transparent" }}
+      className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: bg, color: text, borderColor: border ?? "transparent"}}
     >
       {label}
     </span>
@@ -1046,8 +1017,7 @@ function RecTypeBadge({ type }: { type: RecommendationType }) {
   const m = REC_TYPE_META[type];
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"
-      style={{ background: m.bg, color: m.color, borderColor: m.border }}
+      className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: m.bg, color: m.color, borderColor: m.border }}
     >
       <span>{m.icon}</span>
       <span>{type}</span>
@@ -1060,77 +1030,75 @@ function ScoreBar({ label, score, max = 100 }: { label: string; score: number; m
   return (
     <div>
       <div className="flex justify-between items-center mb-0.5">
-        <span className="text-[10px] font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+        <span className="text-[10px] font-semibold"style={{ color: "var(--rtm-text-muted)"}}>
           {label}
         </span>
-        <span className="text-[10px] font-black" style={{ color: scoreBarColor(score) }}>
+        <span className="text-[10px] font-black"style={{ color: scoreBarColor(score) }}>
           {score}
         </span>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
+      <div className="h-1.5 rounded-full overflow-hidden"style={{ background: "#E5E7EB"}}>
         <div
-          className="h-full rounded-full transition-all"
-          style={{ width: `${pct}%`, background: scoreBarColor(score) }}
+          className="h-full rounded-full transition-all"style={{ width: `${pct}%`, background: scoreBarColor(score) }}
         />
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // KPI Cards
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function KPICards({ recs }: { recs: Recommendation[] }) {
   const totalRecs = recs.length;
-  const proposalOpps = recs.filter((r) => r.status === "New" || r.status === "In Review").length;
+  const proposalOpps = recs.filter((r) => r.status === "New"|| r.status === "In Review").length;
   const upsellOpps = recs.filter((r) => r.recommendationType === "Upsell Recommendation").length;
   const renewalOpps = recs.filter((r) => r.recommendationType === "Renewal Recommendation").length;
   const estRevenue = recs.reduce((s, r) => s + r.estimatedRevenue, 0);
-  const highPriority = recs.filter((r) => r.priority === "Critical" || r.priority === "High").length;
+  const highPriority = recs.filter((r) => r.priority === "Critical"|| r.priority === "High").length;
 
   const cards = [
-    { label: "Recommendations Generated", value: totalRecs, color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
-    { label: "Proposal Opportunities", value: proposalOpps, icon: "📄", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
-    { label: "Upsell Opportunities", value: upsellOpps, icon: "⬆️", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-    { label: "Renewal Opportunities", value: renewalOpps, color: "#0369A1", bg: "#F0F9FF", border: "#BAE6FD" },
-    { label: "Est. Revenue Opportunity", value: `$${(estRevenue * 12).toLocaleString()}`, icon: "💵", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
-    { label: "High Priority Recommendations", value: highPriority, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
+    { label: "Recommendations Generated", value: totalRecs, color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
+    { label: "Proposal Opportunities", value: proposalOpps, icon: "", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE"},
+    { label: "Upsell Opportunities", value: upsellOpps, icon: "", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+    { label: "Renewal Opportunities", value: renewalOpps, color: "#0369A1", bg: "#F0F9FF", border: "#BAE6FD"},
+    { label: "Est. Revenue Opportunity", value: `$${(estRevenue * 12).toLocaleString()}`, icon: "", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
+    { label: "High Priority Recommendations", value: highPriority, color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
   ];
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
       {cards.map((c) => (
-        <div key={c.label} className="rounded-xl border p-5 text-center" style={{ background: c.bg, borderColor: c.border }}>
+        <div key={c.label} className="rounded-xl border p-5 text-center"style={{ background: c.bg, borderColor: c.border }}>
           <div className="text-2xl mb-1">{c.icon}</div>
-          <div className="text-2xl font-black" style={{ color: c.color }}>{c.value}</div>
-          <div className="text-[10px] font-semibold mt-1 leading-tight" style={{ color: c.color }}>{c.label}</div>
+          <div className="text-2xl font-black"style={{ color: c.color }}>{c.value}</div>
+          <div className="text-[10px] font-semibold mt-1 leading-tight"style={{ color: c.color }}>{c.label}</div>
         </div>
       ))}
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // AI Executive Summary
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function AIExecutiveSummary({ recs }: { recs: Recommendation[] }) {
   const topOpps = recs.filter((r) => r.priority === "Critical").slice(0, 5);
   const largestRevenue = [...recs].sort((a, b) => b.estimatedRevenue - a.estimatedRevenue).slice(0, 5);
   const highRisk = recs.filter((r) =>
-    r.recommendationType === "Retention Recommendation" || r.recommendationType === "Risk Recommendation"
-  ).slice(0, 5);
+    r.recommendationType === "Retention Recommendation"|| r.recommendationType === "Risk Recommendation").slice(0, 5);
   const highConfidence = [...recs].sort((a, b) => b.aiScoring.confidenceScore - a.aiScoring.confidenceScore).slice(0, 5);
 
   return (
-    <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#DDD6FE" }}>
-      <div className="px-5 py-4 border-b" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
+    <div className="rounded-xl border overflow-hidden"style={{ borderColor: "#DDD6FE"}}>
+      <div className="px-5 py-4 border-b"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
         <div className="flex items-center gap-2">
-          <span className="text-xl">🤖</span>
+          
           <div>
-            <p className="text-sm font-black" style={{ color: "#6D28D9" }}>AI Executive Summary</p>
-            <p className="text-xs" style={{ color: "#7C3AED" }}>
+            <p className="text-sm font-black"style={{ color: "#6D28D9"}}>AI Executive Summary</p>
+            <p className="text-xs"style={{ color: "#7C3AED"}}>
               Engine analysis of {recs.length} recommendations across {new Set(recs.map((r) => r.client)).size} clients
             </p>
           </div>
@@ -1139,53 +1107,53 @@ function AIExecutiveSummary({ recs }: { recs: Recommendation[] }) {
       <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Top Opportunities */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#DC2626" }}>
-            🚨 Top Opportunities
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-3"style={{ color: "#DC2626"}}>
+             Top Opportunities
           </p>
           {topOpps.map((r) => (
-            <div key={r.id} className="mb-2 pb-2 border-b last:border-0" style={{ borderColor: "#F3F4F6" }}>
-              <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{r.client}</p>
-              <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{r.recommendationType}</p>
+            <div key={r.id} className="mb-2 pb-2 border-b last:border-0"style={{ borderColor: "#F3F4F6"}}>
+              <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{r.client}</p>
+              <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{r.recommendationType}</p>
             </div>
           ))}
         </div>
         {/* Largest Revenue */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#059669" }}>
-            💵 Largest Revenue Opps
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-3"style={{ color: "#059669"}}>
+             Largest Revenue Opps
           </p>
           {largestRevenue.map((r) => (
-            <div key={r.id} className="mb-2 pb-2 border-b last:border-0" style={{ borderColor: "#F3F4F6" }}>
-              <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{r.client}</p>
-              <p className="text-[10px] font-bold" style={{ color: "#059669" }}>${r.estimatedRevenue.toLocaleString()}/mo</p>
+            <div key={r.id} className="mb-2 pb-2 border-b last:border-0"style={{ borderColor: "#F3F4F6"}}>
+              <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{r.client}</p>
+              <p className="text-[10px] font-bold"style={{ color: "#059669"}}>${r.estimatedRevenue.toLocaleString()}/mo</p>
             </div>
           ))}
         </div>
         {/* High Risk */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#BE123C" }}>
-            🛡️ Highest Risk Accounts
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-3"style={{ color: "#BE123C"}}>
+             Highest Risk Accounts
           </p>
           {highRisk.length === 0 ? (
-            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No retention risks detected</p>
+            <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No retention risks detected</p>
           ) : (
             highRisk.map((r) => (
-              <div key={r.id} className="mb-2 pb-2 border-b last:border-0" style={{ borderColor: "#F3F4F6" }}>
-                <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{r.client}</p>
-                <p className="text-[10px]" style={{ color: "#BE123C" }}>{r.recommendationType}</p>
+              <div key={r.id} className="mb-2 pb-2 border-b last:border-0"style={{ borderColor: "#F3F4F6"}}>
+                <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{r.client}</p>
+                <p className="text-[10px]"style={{ color: "#BE123C"}}>{r.recommendationType}</p>
               </div>
             ))
           )}
         </div>
         {/* High Confidence */}
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-3" style={{ color: "#7C3AED" }}>
-            🎯 Highest Confidence
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-3"style={{ color: "#7C3AED"}}>
+             Highest Confidence
           </p>
           {highConfidence.map((r) => (
-            <div key={r.id} className="mb-2 pb-2 border-b last:border-0" style={{ borderColor: "#F3F4F6" }}>
-              <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{r.client}</p>
-              <p className="text-[10px] font-bold" style={{ color: "#7C3AED" }}>
+            <div key={r.id} className="mb-2 pb-2 border-b last:border-0"style={{ borderColor: "#F3F4F6"}}>
+              <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{r.client}</p>
+              <p className="text-[10px] font-bold"style={{ color: "#7C3AED"}}>
                 {r.aiScoring.confidenceScore}% confidence
               </p>
             </div>
@@ -1196,9 +1164,9 @@ function AIExecutiveSummary({ recs }: { recs: Recommendation[] }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Renewal Intelligence
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function RenewalIntelligence({ recs }: { recs: Recommendation[] }) {
   const renewals = recs.filter((r) => r.recommendationType === "Renewal Recommendation");
@@ -1210,7 +1178,7 @@ function RenewalIntelligence({ recs }: { recs: Recommendation[] }) {
 
   const panels = [
     { label: "Renewal Opportunities", color: "#0369A1", bg: "#F0F9FF", border: "#BAE6FD", items: renewals },
-    { label: "Expansion Opportunities", icon: "⬆️", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", items: expansion },
+    { label: "Expansion Opportunities", icon: "", color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", items: expansion },
     { label: "Retention Opportunities", color: "#BE123C", bg: "#FFF1F2", border: "#FECDD3", items: retention },
     { label: "At-Risk Accounts", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA", items: atRisk },
   ];
@@ -1218,31 +1186,31 @@ function RenewalIntelligence({ recs }: { recs: Recommendation[] }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-xl">🔄</span>
+        
         <div>
-          <h2 className="text-base font-black" style={{ color: "var(--rtm-text-primary)" }}>Renewal Intelligence</h2>
-          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+          <h2 className="text-base font-black"style={{ color: "var(--rtm-text-primary)"}}>Renewal Intelligence</h2>
+          <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             Renewal, expansion, retention, and at-risk account signals
           </p>
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {panels.map((p) => (
-          <div key={p.label} className="rounded-xl border overflow-hidden" style={{ borderColor: p.border }}>
-            <div className="px-4 py-3 border-b" style={{ background: p.bg, borderColor: p.border }}>
-              <p className="text-xs font-bold" style={{ color: p.color }}>
+          <div key={p.label} className="rounded-xl border overflow-hidden"style={{ borderColor: p.border }}>
+            <div className="px-4 py-3 border-b"style={{ background: p.bg, borderColor: p.border }}>
+              <p className="text-xs font-bold"style={{ color: p.color }}>
                 {p.icon} {p.label}
               </p>
-              <p className="text-xl font-black mt-0.5" style={{ color: p.color }}>{p.items.length}</p>
+              <p className="text-xl font-black mt-0.5"style={{ color: p.color }}>{p.items.length}</p>
             </div>
-            <div className="p-3 space-y-2" style={{ background: "var(--rtm-bg)" }}>
+            <div className="p-3 space-y-2"style={{ background: "var(--rtm-bg)"}}>
               {p.items.length === 0 ? (
-                <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>None detected</p>
+                <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>None detected</p>
               ) : (
                 p.items.slice(0, 4).map((r) => (
-                  <div key={r.id} className="rounded-lg p-2 border" style={{ background: p.bg, borderColor: p.border }}>
-                    <p className="text-[10px] font-bold" style={{ color: p.color }}>{r.client}</p>
-                    <p className="text-[9px]" style={{ color: "var(--rtm-text-muted)" }}>
+                  <div key={r.id} className="rounded-lg p-2 border"style={{ background: p.bg, borderColor: p.border }}>
+                    <p className="text-[10px] font-bold"style={{ color: p.color }}>{r.client}</p>
+                    <p className="text-[9px]"style={{ color: "var(--rtm-text-muted)"}}>
                       ${r.estimatedRevenue.toLocaleString()}/mo
                     </p>
                   </div>
@@ -1256,22 +1224,21 @@ function RenewalIntelligence({ recs }: { recs: Recommendation[] }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Recommendation Table
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function RecommendationTable({ recs, onSelect }: { recs: Recommendation[]; onSelect: (r: Recommendation) => void }) {
   return (
-    <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+    <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 1200 }}>
+        <table className="w-full text-sm"style={{ borderCollapse: "collapse", minWidth: 1200 }}>
           <thead>
-            <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
+            <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
               {["Client", "Recommendation Type", "Source", "Priority", "Department", "Est. Revenue", "Confidence Score", "Status", "Actions"].map((h) => (
                 <th
                   key={h}
-                  className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
-                  style={{ color: "var(--rtm-text-muted)" }}
+                  className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                 >
                   {h}
                 </th>
@@ -1284,19 +1251,18 @@ function RecommendationTable({ recs, onSelect }: { recs: Recommendation[]; onSel
               return (
                 <tr
                   key={r.id}
-                  className="cursor-pointer transition-colors hover:bg-blue-50"
-                  style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}
+                  className="cursor-pointer transition-colors hover:bg-blue-50"style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)"}}
                   onClick={() => onSelect(r)}
                 >
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{r.client}</p>
-                    <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{r.industry}</p>
+                    <p className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{r.client}</p>
+                    <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{r.industry}</p>
                   </td>
                   <td className="px-4 py-3">
                     <RecTypeBadge type={r.recommendationType} />
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs" style={{ color: sm.color }}>
+                    <span className="text-xs"style={{ color: sm.color }}>
                       {sm.icon} {r.source}
                     </span>
                   </td>
@@ -1304,24 +1270,23 @@ function RecommendationTable({ recs, onSelect }: { recs: Recommendation[]; onSel
                     <PriorityBadge priority={r.priority} />
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                    <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>
                       {r.department}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-xs font-black" style={{ color: "#059669" }}>
+                    <span className="text-xs font-black"style={{ color: "#059669"}}>
                       ${r.estimatedRevenue.toLocaleString()}/mo
                     </span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ background: "#E5E7EB" }}>
+                      <div className="w-16 h-1.5 rounded-full overflow-hidden"style={{ background: "#E5E7EB"}}>
                         <div
-                          className="h-full rounded-full"
-                          style={{ width: `${r.aiScoring.confidenceScore}%`, background: scoreBarColor(r.aiScoring.confidenceScore) }}
+                          className="h-full rounded-full"style={{ width: `${r.aiScoring.confidenceScore}%`, background: scoreBarColor(r.aiScoring.confidenceScore) }}
                         />
                       </div>
-                      <span className="text-[10px] font-black" style={{ color: scoreBarColor(r.aiScoring.confidenceScore) }}>
+                      <span className="text-[10px] font-black"style={{ color: scoreBarColor(r.aiScoring.confidenceScore) }}>
                         {r.aiScoring.confidenceScore}%
                       </span>
                     </div>
@@ -1329,11 +1294,10 @@ function RecommendationTable({ recs, onSelect }: { recs: Recommendation[]; onSel
                   <td className="px-4 py-3">
                     <StatusBadge status={r.status} />
                   </td>
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <td className="px-4 py-3"onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => onSelect(r)}
-                      className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
-                      style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}
+                      className="text-xs px-3 py-1.5 rounded-lg font-semibold border"style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE"}}
                     >
                       View Detail
                     </button>
@@ -1348,31 +1312,23 @@ function RecommendationTable({ recs, onSelect }: { recs: Recommendation[]; onSel
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Drawer
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 type DrawerTab =
-  | "overview"
-  | "source-data"
-  | "audit-findings"
-  | "comm-signals"
-  | "recommended-services"
-  | "recommended-line-items"
-  | "package-builder"
-  | "proposal-preview"
-  | "activity-timeline";
+  | "overview"| "source-data"| "audit-findings"| "comm-signals"| "recommended-services"| "recommended-line-items"| "package-builder"| "proposal-preview"| "activity-timeline";
 
 const DRAWER_TABS: { id: DrawerTab; label: string; icon?: string }[] = [
-  { id: "overview", label: "Overview" },
-  { id: "source-data", label: "Source Data" },
-  { id: "audit-findings", label: "Audit Findings" },
-  { id: "comm-signals", label: "Communication Signals" },
-  { id: "recommended-services", label: "Recommended Services" },
-  { id: "recommended-line-items", label: "Recommended Line Items" },
-  { id: "package-builder", label: "Package Builder" },
-  { id: "proposal-preview", label: "Proposal Preview", icon: "📄" },
-  { id: "activity-timeline", label: "Activity Timeline" },
+  { id: "overview", label: "Overview"},
+  { id: "source-data", label: "Source Data"},
+  { id: "audit-findings", label: "Audit Findings"},
+  { id: "comm-signals", label: "Communication Signals"},
+  { id: "recommended-services", label: "Recommended Services"},
+  { id: "recommended-line-items", label: "Recommended Line Items"},
+  { id: "package-builder", label: "Package Builder"},
+  { id: "proposal-preview", label: "Proposal Preview", icon: ""},
+  { id: "activity-timeline", label: "Activity Timeline"},
 ];
 
 // -- Overview Tab
@@ -1380,12 +1336,12 @@ function DrawerOverview({ rec }: { rec: Recommendation }) {
   return (
     <div className="space-y-5">
       {/* Summary */}
-      <div className="rounded-xl border p-4" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
+      <div className="rounded-xl border p-4"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
         <div className="flex items-start gap-3">
-          <span className="text-2xl">🤖</span>
+          
           <div>
-            <p className="text-sm font-bold mb-1" style={{ color: "#6D28D9" }}>AI Summary</p>
-            <p className="text-xs" style={{ color: "#4C1D95" }}>{rec.summary}</p>
+            <p className="text-sm font-bold mb-1"style={{ color: "#6D28D9"}}>AI Summary</p>
+            <p className="text-xs"style={{ color: "#4C1D95"}}>{rec.summary}</p>
           </div>
         </div>
       </div>
@@ -1402,33 +1358,33 @@ function DrawerOverview({ rec }: { rec: Recommendation }) {
           { label: "Est. Revenue", value: `$${rec.estimatedRevenue.toLocaleString()}/mo` },
           { label: "Annual Value", value: `$${(rec.estimatedRevenue * 12).toLocaleString()}` },
         ].map((row) => (
-          <div key={row.label} className="rounded-lg border p-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{row.label}</p>
-            <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{row.value}</p>
+          <div key={row.label} className="rounded-lg border p-3"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+            <p className="text-[10px] font-bold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{row.label}</p>
+            <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{row.value}</p>
           </div>
         ))}
       </div>
       {/* AI Scoring */}
-      <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-        <p className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>🎯 AI Scoring</p>
+      <div className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <p className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}> AI Scoring</p>
         <div className="space-y-2">
-          <ScoreBar label="Confidence Score" score={rec.aiScoring.confidenceScore} />
-          <ScoreBar label="Impact Score" score={rec.aiScoring.impactScore} />
-          <ScoreBar label="Urgency Score" score={rec.aiScoring.urgencyScore} />
-          <ScoreBar label="Complexity Score" score={rec.aiScoring.complexityScore} />
+          <ScoreBar label="Confidence Score"score={rec.aiScoring.confidenceScore} />
+          <ScoreBar label="Impact Score"score={rec.aiScoring.impactScore} />
+          <ScoreBar label="Urgency Score"score={rec.aiScoring.urgencyScore} />
+          <ScoreBar label="Complexity Score"score={rec.aiScoring.complexityScore} />
         </div>
-        <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--rtm-border)" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Revenue Opportunity</p>
-          <p className="text-xl font-black" style={{ color: "#059669" }}>
+        <div className="mt-3 pt-3 border-t"style={{ borderColor: "var(--rtm-border)"}}>
+          <p className="text-[10px] font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}>Revenue Opportunity</p>
+          <p className="text-xl font-black"style={{ color: "#059669"}}>
             ${rec.aiScoring.revenueOpportunity.toLocaleString()} annually
           </p>
         </div>
       </div>
       {/* Notes */}
       {rec.notes && (
-        <div className="rounded-xl border p-4" style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "#D97706" }}>📝 Notes</p>
-          <p className="text-xs" style={{ color: "#92400E" }}>{rec.notes}</p>
+        <div className="rounded-xl border p-4"style={{ background: "#FFFBEB", borderColor: "#FDE68A"}}>
+          <p className="text-[10px] font-bold uppercase tracking-wide mb-1"style={{ color: "#D97706"}}> Notes</p>
+          <p className="text-xs"style={{ color: "#92400E"}}>{rec.notes}</p>
         </div>
       )}
     </div>
@@ -1440,13 +1396,13 @@ function DrawerSourceData({ rec }: { rec: Recommendation }) {
   const sm = SOURCE_META[rec.source];
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-        <p className="text-xs font-bold mb-2" style={{ color: "var(--rtm-text-primary)" }}>Primary Input Source</p>
+      <div className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <p className="text-xs font-bold mb-2"style={{ color: "var(--rtm-text-primary)"}}>Primary Input Source</p>
         <div className="flex items-center gap-2">
           <span style={{ color: sm.color, fontSize: 20 }}>{sm.icon}</span>
           <div>
-            <p className="text-sm font-black" style={{ color: sm.color }}>{rec.source}</p>
-            <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-sm font-black"style={{ color: sm.color }}>{rec.source}</p>
+            <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>
               All recommendations from this record were generated based on {rec.source.toLowerCase()} data.
             </p>
           </div>
@@ -1459,9 +1415,9 @@ function DrawerSourceData({ rec }: { rec: Recommendation }) {
           { label: "Confidence Score", value: `${rec.aiScoring.confidenceScore}%` },
           { label: "Created By", value: rec.createdBy },
         ].map((item) => (
-          <div key={item.label} className="rounded-lg border p-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>{item.label}</p>
-            <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{item.icon} {item.value}</p>
+          <div key={item.label} className="rounded-lg border p-3"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+            <p className="text-[10px] font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}>{item.label}</p>
+            <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>{item.icon} {item.value}</p>
           </div>
         ))}
       </div>
@@ -1473,9 +1429,9 @@ function DrawerSourceData({ rec }: { rec: Recommendation }) {
 function DrawerAuditFindings({ rec }: { rec: Recommendation }) {
   if (rec.auditFindings.length === 0) {
     return (
-      <div className="rounded-xl border p-10 text-center" style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}>
-        <p className="text-3xl mb-2">✅</p>
-        <p className="text-sm font-semibold" style={{ color: "#15803D" }}>
+      <div className="rounded-xl border p-10 text-center"style={{ background: "#F0FDF4", borderColor: "#BBF7D0"}}>
+        <p className="text-3xl mb-2"></p>
+        <p className="text-sm font-semibold"style={{ color: "#15803D"}}>
           No audit findings linked to this recommendation.
         </p>
       </div>
@@ -1483,17 +1439,16 @@ function DrawerAuditFindings({ rec }: { rec: Recommendation }) {
   }
   return (
     <div className="space-y-3">
-      <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+      <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
         {rec.auditFindings.length} audit finding(s) drove this recommendation
       </p>
       {rec.auditFindings.map((f, i) => (
         <div
           key={i}
-          className="rounded-xl border p-4 flex items-start gap-3"
-          style={{ background: "#FEF2F2", borderColor: "#FECACA" }}
+          className="rounded-xl border p-4 flex items-start gap-3"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}
         >
-          <span className="text-base mt-0.5">🚨</span>
-          <p className="text-xs" style={{ color: "#991B1B" }}>{f}</p>
+          
+          <p className="text-xs"style={{ color: "#991B1B"}}>{f}</p>
         </div>
       ))}
     </div>
@@ -1515,23 +1470,23 @@ function DrawerCommSignals({ rec }: { rec: Recommendation }) {
   return (
     <div className="space-y-4">
       {cs.callInsights && (
-        <div className="rounded-xl border p-4" style={{ background: "#F0F9FF", borderColor: "#BAE6FD" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "#0369A1" }}>📞 Call Insights</p>
-          <p className="text-xs" style={{ color: "#075985" }}>{cs.callInsights}</p>
+        <div className="rounded-xl border p-4"style={{ background: "#F0F9FF", borderColor: "#BAE6FD"}}>
+          <p className="text-[10px] font-bold uppercase tracking-wide mb-2"style={{ color: "#0369A1"}}> Call Insights</p>
+          <p className="text-xs"style={{ color: "#075985"}}>{cs.callInsights}</p>
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {sections.map((s) => (
-          <div key={s.label} className="rounded-xl border overflow-hidden" style={{ borderColor: s.border }}>
-            <div className="px-3 py-2 border-b" style={{ background: s.bg, borderColor: s.border }}>
-              <p className="text-[10px] font-bold" style={{ color: s.color }}>{s.label}</p>
+          <div key={s.label} className="rounded-xl border overflow-hidden"style={{ borderColor: s.border }}>
+            <div className="px-3 py-2 border-b"style={{ background: s.bg, borderColor: s.border }}>
+              <p className="text-[10px] font-bold"style={{ color: s.color }}>{s.label}</p>
             </div>
-            <div className="p-3" style={{ background: "var(--rtm-bg)" }}>
+            <div className="p-3"style={{ background: "var(--rtm-bg)"}}>
               {s.items.length === 0 ? (
-                <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>None detected</p>
+                <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>None detected</p>
               ) : (
                 s.items.map((item, i) => (
-                  <p key={i} className="text-xs mb-1 last:mb-0" style={{ color: "var(--rtm-text-secondary)" }}>• {item}</p>
+                  <p key={i} className="text-xs mb-1 last:mb-0"style={{ color: "var(--rtm-text-secondary)"}}>• {item}</p>
                 ))
               )}
             </div>
@@ -1547,43 +1502,42 @@ function DrawerRecommendedServices({ rec }: { rec: Recommendation }) {
   const [added, setAdded] = useState<Set<string>>(new Set());
   return (
     <div className="space-y-4">
-      <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+      <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
         {rec.recommendedServices.length} service(s) recommended by AI Engine
       </p>
       {rec.recommendedServices.map((s) => {
         const icon = SERVICE_ICONS[s.service];
         const isAdded = added.has(s.id);
         return (
-          <div key={s.id} className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-            <div className="px-4 py-3 flex items-center justify-between" style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
+          <div key={s.id} className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+            <div className="px-4 py-3 flex items-center justify-between"style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
               <div className="flex items-center gap-2">
                 <span className="text-lg">{icon}</span>
-                <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{s.service}</p>
+                <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>{s.service}</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
+                <span className="text-xs font-black px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0"}}>
                   ${s.estimatedMonthlyRevenue.toLocaleString()}/mo
                 </span>
                 {s.setupFee > 0 && (
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full"style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE"}}>
                     ${s.setupFee.toLocaleString()} setup
                   </span>
                 )}
                 <button
                   onClick={() => setAdded((prev) => { const n = new Set(prev); isAdded ? n.delete(s.id) : n.add(s.id); return n; })}
-                  className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
-                  style={isAdded
-                    ? { background: "#F0FDF4", color: "#15803D", borderColor: "#BBF7D0" }
-                    : { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }
+                  className="text-xs px-3 py-1.5 rounded-lg font-semibold border"style={isAdded
+                    ? { background: "#F0FDF4", color: "#15803D", borderColor: "#BBF7D0"}
+                    : { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE"}
                   }
                 >
-                  {isAdded ? "✓ Added" : "+ Add"}
+                  {isAdded ? "Added": "+ Add"}
                 </button>
               </div>
             </div>
-            <div className="p-4" style={{ background: "var(--rtm-bg)" }}>
-              <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Why Recommended</p>
-              <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{s.reason}</p>
+            <div className="p-4"style={{ background: "var(--rtm-bg)"}}>
+              <p className="text-[10px] font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}>Why Recommended</p>
+              <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{s.reason}</p>
             </div>
           </div>
         );
@@ -1597,15 +1551,15 @@ function DrawerRecommendedLineItems({ rec }: { rec: Recommendation }) {
   const [added, setAdded] = useState<Set<string>>(new Set());
   return (
     <div className="space-y-4">
-      <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+      <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
         {rec.recommendedLineItems.length} line item(s) recommended
       </p>
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-        <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+        <table className="w-full text-xs"style={{ borderCollapse: "collapse"}}>
           <thead>
-            <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
+            <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
               {["Line Item", "Category", "Setup Fee", "Monthly Fee", "Delivery", "Action"].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -1613,26 +1567,25 @@ function DrawerRecommendedLineItems({ rec }: { rec: Recommendation }) {
             {rec.recommendedLineItems.map((li, i) => {
               const isAdded = added.has(li.id);
               return (
-                <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}>
-                  <td className="px-4 py-3 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</td>
-                  <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{li.category}</td>
-                  <td className="px-4 py-3 font-bold" style={{ color: li.setupFee > 0 ? "#1D4ED8" : "#9CA3AF" }}>
+                <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)"}}>
+                  <td className="px-4 py-3 font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{li.name}</td>
+                  <td className="px-4 py-3"style={{ color: "var(--rtm-text-secondary)"}}>{li.category}</td>
+                  <td className="px-4 py-3 font-bold"style={{ color: li.setupFee > 0 ? "#1D4ED8": "#9CA3AF"}}>
                     {li.setupFee > 0 ? `$${li.setupFee.toLocaleString()}` : "—"}
                   </td>
-                  <td className="px-4 py-3 font-bold" style={{ color: li.recurringFee > 0 ? "#059669" : "#9CA3AF" }}>
+                  <td className="px-4 py-3 font-bold"style={{ color: li.recurringFee > 0 ? "#059669": "#9CA3AF"}}>
                     {li.recurringFee > 0 ? `$${li.recurringFee.toLocaleString()}/mo` : "—"}
                   </td>
-                  <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{li.deliveryStandard}</td>
+                  <td className="px-4 py-3"style={{ color: "var(--rtm-text-secondary)"}}>{li.deliveryStandard}</td>
                   <td className="px-4 py-3">
                     <button
                       onClick={() => setAdded((prev) => { const n = new Set(prev); isAdded ? n.delete(li.id) : n.add(li.id); return n; })}
-                      className="text-[10px] px-2 py-1 rounded font-semibold border"
-                      style={isAdded
-                        ? { background: "#F0FDF4", color: "#15803D", borderColor: "#BBF7D0" }
-                        : { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }
+                      className="text-[10px] px-2 py-1 rounded font-semibold border"style={isAdded
+                        ? { background: "#F0FDF4", color: "#15803D", borderColor: "#BBF7D0"}
+                        : { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE"}
                       }
                     >
-                      {isAdded ? "✓ Added" : "+ Add"}
+                      {isAdded ? "Added": "+ Add"}
                     </button>
                   </td>
                 </tr>
@@ -1655,25 +1608,24 @@ function DrawerPackageBuilder({ rec }: { rec: Recommendation }) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border p-4" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
+      <div className="rounded-xl border p-4"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
         <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-sm font-bold" style={{ color: "#6D28D9" }}>📦 {rec.recommendedPackage}</p>
-            <p className="text-[10px]" style={{ color: "#7C3AED" }}>AI-recommended package for {rec.client}</p>
+            <p className="text-sm font-bold"style={{ color: "#6D28D9"}}> {rec.recommendedPackage}</p>
+            <p className="text-[10px]"style={{ color: "#7C3AED"}}>AI-recommended package for {rec.client}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px]" style={{ color: "#7C3AED" }}>Setup Total</p>
-            <p className="text-lg font-black" style={{ color: "#6D28D9" }}>${setupTotal.toLocaleString()}</p>
+            <p className="text-[10px]"style={{ color: "#7C3AED"}}>Setup Total</p>
+            <p className="text-lg font-black"style={{ color: "#6D28D9"}}>${setupTotal.toLocaleString()}</p>
           </div>
         </div>
         <div className="space-y-2">
           {services.map((svc, i) => (
-            <div key={i} className="flex items-center justify-between rounded-lg border p-2" style={{ background: "white", borderColor: "#DDD6FE" }}>
-              <span className="text-xs font-semibold" style={{ color: "#4C1D95" }}>{svc}</span>
+            <div key={i} className="flex items-center justify-between rounded-lg border p-2"style={{ background: "white", borderColor: "#DDD6FE"}}>
+              <span className="text-xs font-semibold"style={{ color: "#4C1D95"}}>{svc}</span>
               <button
                 onClick={() => setServices((prev) => prev.filter((_, j) => j !== i))}
-                className="text-[10px] px-2 py-0.5 rounded font-semibold"
-                style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}
+                className="text-[10px] px-2 py-0.5 rounded font-semibold"style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA"}}
               >
                 Remove
               </button>
@@ -1685,8 +1637,7 @@ function DrawerPackageBuilder({ rec }: { rec: Recommendation }) {
             const newService = "Custom Add-On Service";
             setServices((prev) => [...prev, newService]);
           }}
-          className="mt-3 w-full text-xs py-2 rounded-lg font-semibold border"
-          style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}
+          className="mt-3 w-full text-xs py-2 rounded-lg font-semibold border"style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE"}}
         >
           + Add Recommended Service
         </button>
@@ -1694,30 +1645,29 @@ function DrawerPackageBuilder({ rec }: { rec: Recommendation }) {
 
       {/* Package Totals */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border p-4 text-center" style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#1D4ED8" }}>Setup Fees</p>
-          <p className="text-xl font-black" style={{ color: "#1D4ED8" }}>${setupTotal.toLocaleString()}</p>
+        <div className="rounded-xl border p-4 text-center"style={{ background: "#EFF6FF", borderColor: "#BFDBFE"}}>
+          <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: "#1D4ED8"}}>Setup Fees</p>
+          <p className="text-xl font-black"style={{ color: "#1D4ED8"}}>${setupTotal.toLocaleString()}</p>
         </div>
-        <div className="rounded-xl border p-4 text-center" style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#059669" }}>Monthly Recurring</p>
-          <p className="text-xl font-black" style={{ color: "#059669" }}>${monthlyTotal.toLocaleString()}/mo</p>
+        <div className="rounded-xl border p-4 text-center"style={{ background: "#ECFDF5", borderColor: "#A7F3D0"}}>
+          <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: "#059669"}}>Monthly Recurring</p>
+          <p className="text-xl font-black"style={{ color: "#059669"}}>${monthlyTotal.toLocaleString()}/mo</p>
         </div>
-        <div className="rounded-xl border p-4 text-center" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#7C3AED" }}>Annual Value</p>
-          <p className="text-xl font-black" style={{ color: "#7C3AED" }}>${(monthlyTotal * 12 + setupTotal).toLocaleString()}</p>
+        <div className="rounded-xl border p-4 text-center"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
+          <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: "#7C3AED"}}>Annual Value</p>
+          <p className="text-xl font-black"style={{ color: "#7C3AED"}}>${(monthlyTotal * 12 + setupTotal).toLocaleString()}</p>
         </div>
-        <div className="rounded-xl border p-4 text-center" style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}>
-          <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#D97706" }}>Services Included</p>
-          <p className="text-xl font-black" style={{ color: "#D97706" }}>{services.length}</p>
+        <div className="rounded-xl border p-4 text-center"style={{ background: "#FFFBEB", borderColor: "#FDE68A"}}>
+          <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: "#D97706"}}>Services Included</p>
+          <p className="text-xl font-black"style={{ color: "#D97706"}}>{services.length}</p>
         </div>
       </div>
 
       <button
         onClick={() => setGenerated(true)}
-        className="w-full py-3 rounded-xl font-black text-sm"
-        style={{ background: generated ? "#F0FDF4" : "#6D28D9", color: generated ? "#15803D" : "white" }}
+        className="w-full py-3 rounded-xl font-black text-sm"style={{ background: generated ? "#F0FDF4": "#6D28D9", color: generated ? "#15803D": "white"}}
       >
-        {generated ? "✓ Proposal Generated — View Proposal Preview Tab" : "Generate Proposal"}
+        {generated ? "Proposal Generated — View Proposal Preview Tab": "Generate Proposal"}
       </button>
     </div>
   );
@@ -1729,51 +1679,51 @@ function DrawerProposalPreview({ rec }: { rec: Recommendation }) {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="rounded-xl border p-5 text-center" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
-        <p className="text-2xl mb-1">📄</p>
-        <p className="text-lg font-black" style={{ color: "#6D28D9" }}>Proposal Preview</p>
-        <p className="text-sm font-semibold" style={{ color: "#7C3AED" }}>{rec.client} — {rec.recommendedPackage}</p>
+      <div className="rounded-xl border p-5 text-center"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
+        <p className="text-2xl mb-1"></p>
+        <p className="text-lg font-black"style={{ color: "#6D28D9"}}>Proposal Preview</p>
+        <p className="text-sm font-semibold"style={{ color: "#7C3AED"}}>{rec.client} — {rec.recommendedPackage}</p>
       </div>
 
       {/* Services */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-        <div className="px-4 py-3 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Services Included</p>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+        <div className="px-4 py-3 border-b"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+          <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>Services Included</p>
         </div>
         <div className="p-4 space-y-2">
           {rec.packageServices.map((s, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span style={{ color: "#059669" }}>✓</span>
-              <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{s}</span>
+              <span style={{ color: "#059669"}}></span>
+              <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{s}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Line Items */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-        <div className="px-4 py-3 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Line Items</p>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+        <div className="px-4 py-3 border-b"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+          <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>Line Items</p>
         </div>
-        <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
+        <table className="w-full text-xs"style={{ borderCollapse: "collapse"}}>
           <thead>
-            <tr style={{ background: "#F9FAFB", borderBottom: "1px solid var(--rtm-border)" }}>
+            <tr style={{ background: "#F9FAFB", borderBottom: "1px solid var(--rtm-border)"}}>
               {["Item", "Setup Fee", "Monthly Fee", "Delivery"].map((h) => (
-                <th key={h} className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                <th key={h} className="text-left px-4 py-2 text-[10px] font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {rec.recommendedLineItems.map((li) => (
-              <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
-                <td className="px-4 py-2 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</td>
-                <td className="px-4 py-2" style={{ color: "#1D4ED8" }}>
+              <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
+                <td className="px-4 py-2 font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{li.name}</td>
+                <td className="px-4 py-2"style={{ color: "#1D4ED8"}}>
                   {li.setupFee > 0 ? `$${li.setupFee.toLocaleString()}` : "—"}
                 </td>
-                <td className="px-4 py-2" style={{ color: "#059669" }}>
+                <td className="px-4 py-2"style={{ color: "#059669"}}>
                   {li.recurringFee > 0 ? `$${li.recurringFee.toLocaleString()}/mo` : "—"}
                 </td>
-                <td className="px-4 py-2" style={{ color: "var(--rtm-text-muted)" }}>{li.deliveryStandard}</td>
+                <td className="px-4 py-2"style={{ color: "var(--rtm-text-muted)"}}>{li.deliveryStandard}</td>
               </tr>
             ))}
           </tbody>
@@ -1783,23 +1733,22 @@ function DrawerProposalPreview({ rec }: { rec: Recommendation }) {
       {/* Financials */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: "Setup Fees", value: `$${rec.packageSetupTotal.toLocaleString()}`, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE" },
-          { label: "Monthly Recurring", value: `$${rec.packageMonthlyTotal.toLocaleString()}/mo`, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
-          { label: "Est. Annual Value", value: `$${annualValue.toLocaleString()}`, color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
-          { label: "Package", value: rec.recommendedPackage, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
+          { label: "Setup Fees", value: `$${rec.packageSetupTotal.toLocaleString()}`, color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE"},
+          { label: "Monthly Recurring", value: `$${rec.packageMonthlyTotal.toLocaleString()}/mo`, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
+          { label: "Est. Annual Value", value: `$${annualValue.toLocaleString()}`, color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
+          { label: "Package", value: rec.recommendedPackage, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
         ].map((c) => (
-          <div key={c.label} className="rounded-xl border p-4 text-center" style={{ background: c.bg, borderColor: c.border }}>
-            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: c.color }}>{c.label}</p>
-            <p className="text-base font-black mt-1" style={{ color: c.color }}>{c.value}</p>
+          <div key={c.label} className="rounded-xl border p-4 text-center"style={{ background: c.bg, borderColor: c.border }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: c.color }}>{c.label}</p>
+            <p className="text-base font-black mt-1"style={{ color: c.color }}>{c.value}</p>
           </div>
         ))}
       </div>
 
       <button
-        className="w-full py-3 rounded-xl font-black text-sm text-white"
-        style={{ background: "#059669" }}
+        className="w-full py-3 rounded-xl font-black text-sm text-white"style={{ background: "#059669"}}
       >
-        📤 Send Proposal to Client
+         Send Proposal to Client
       </button>
     </div>
   );
@@ -1808,11 +1757,11 @@ function DrawerProposalPreview({ rec }: { rec: Recommendation }) {
 // -- Activity Timeline Tab
 function DrawerActivityTimeline({ rec }: { rec: Recommendation }) {
   const events = [
-    { date: rec.createdDate, event: "Recommendation generated by AI Engine", color: "#7C3AED" },
+    { date: rec.createdDate, event: "Recommendation generated by AI Engine", color: "#7C3AED"},
     { date: rec.createdDate, event: `Source: ${rec.source} analyzed`, icon: SOURCE_META[rec.source].icon, color: SOURCE_META[rec.source].color },
-    { date: rec.createdDate, event: `Assigned to ${rec.department} department`, color: "#1D4ED8" },
-    { date: rec.createdDate, event: `Status set to ${rec.status}`, color: "#059669" },
-    { date: "Jun 9, 2025", event: "Recommendation reviewed by sales team", icon: "👀", color: "#D97706" },
+    { date: rec.createdDate, event: `Assigned to ${rec.department} department`, color: "#1D4ED8"},
+    { date: rec.createdDate, event: `Status set to ${rec.status}`, color: "#059669"},
+    { date: "Jun 9, 2025", event: "Recommendation reviewed by sales team", icon: "", color: "#D97706"},
   ];
 
   return (
@@ -1820,14 +1769,13 @@ function DrawerActivityTimeline({ rec }: { rec: Recommendation }) {
       {events.map((e, i) => (
         <div key={i} className="flex items-start gap-3">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm border"
-            style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm border"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}
           >
             {e.icon}
           </div>
           <div className="flex-1">
-            <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{e.event}</p>
-            <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{e.date}</p>
+            <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{e.event}</p>
+            <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{e.date}</p>
           </div>
         </div>
       ))}
@@ -1840,38 +1788,36 @@ function RecommendationDrawer({ rec, onClose }: { rec: Recommendation; onClose: 
   const [activeTab, setActiveTab] = useState<DrawerTab>("overview");
 
   return (
-    <div className="fixed inset-0 z-50 flex" style={{ background: "rgba(0,0,0,0.35)" }} onClick={onClose}>
-      <div className="ml-auto h-full w-full max-w-3xl flex flex-col" style={{ background: "var(--rtm-bg)" }} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex"style={{ background: "rgba(0,0,0,0.35)"}} onClick={onClose}>
+      <div className="ml-auto h-full w-full max-w-3xl flex flex-col"style={{ background: "var(--rtm-bg)"}} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
           <div className="flex-1 min-w-0 pr-4">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <RecTypeBadge type={rec.recommendationType} />
               <PriorityBadge priority={rec.priority} />
               <StatusBadge status={rec.status} />
             </div>
-            <p className="text-base font-black" style={{ color: "var(--rtm-text-primary)" }}>{rec.client}</p>
-            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{rec.summary.slice(0, 100)}…</p>
+            <p className="text-base font-black"style={{ color: "var(--rtm-text-primary)"}}>{rec.client}</p>
+            <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{rec.summary.slice(0, 100)}…</p>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-            style={{ background: "var(--rtm-border)", color: "var(--rtm-text-muted)" }}
+            className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"style={{ background: "var(--rtm-border)", color: "var(--rtm-text-muted)"}}
           >
             ×
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex overflow-x-auto gap-0 border-b flex-shrink-0" style={{ borderColor: "var(--rtm-border)" }}>
+        <div className="flex overflow-x-auto gap-0 border-b flex-shrink-0"style={{ borderColor: "var(--rtm-border)"}}>
           {DRAWER_TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className="flex-shrink-0 px-4 py-3 text-[10px] font-bold uppercase tracking-wide border-b-2 whitespace-nowrap"
-              style={{
-                borderColor: activeTab === t.id ? "#7C3AED" : "transparent",
-                color: activeTab === t.id ? "#7C3AED" : "var(--rtm-text-muted)",
+              className="flex-shrink-0 px-4 py-3 text-[10px] font-bold uppercase tracking-wide border-b-2 whitespace-nowrap"style={{
+                borderColor: activeTab === t.id ? "#7C3AED": "transparent",
+                color: activeTab === t.id ? "#7C3AED": "var(--rtm-text-muted)",
                 background: "transparent",
               }}
             >
@@ -1882,24 +1828,24 @@ function RecommendationDrawer({ rec, onClose }: { rec: Recommendation; onClose: 
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6">
-          {activeTab === "overview" && <DrawerOverview rec={rec} />}
-          {activeTab === "source-data" && <DrawerSourceData rec={rec} />}
-          {activeTab === "audit-findings" && <DrawerAuditFindings rec={rec} />}
-          {activeTab === "comm-signals" && <DrawerCommSignals rec={rec} />}
-          {activeTab === "recommended-services" && <DrawerRecommendedServices rec={rec} />}
-          {activeTab === "recommended-line-items" && <DrawerRecommendedLineItems rec={rec} />}
-          {activeTab === "package-builder" && <DrawerPackageBuilder rec={rec} />}
-          {activeTab === "proposal-preview" && <DrawerProposalPreview rec={rec} />}
-          {activeTab === "activity-timeline" && <DrawerActivityTimeline rec={rec} />}
+          {activeTab === "overview"&& <DrawerOverview rec={rec} />}
+          {activeTab === "source-data"&& <DrawerSourceData rec={rec} />}
+          {activeTab === "audit-findings"&& <DrawerAuditFindings rec={rec} />}
+          {activeTab === "comm-signals"&& <DrawerCommSignals rec={rec} />}
+          {activeTab === "recommended-services"&& <DrawerRecommendedServices rec={rec} />}
+          {activeTab === "recommended-line-items"&& <DrawerRecommendedLineItems rec={rec} />}
+          {activeTab === "package-builder"&& <DrawerPackageBuilder rec={rec} />}
+          {activeTab === "proposal-preview"&& <DrawerProposalPreview rec={rec} />}
+          {activeTab === "activity-timeline"&& <DrawerActivityTimeline rec={rec} />}
         </div>
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Filter Bar
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function FilterBar({
   search, setSearch,
@@ -1928,14 +1874,11 @@ function FilterBar({
   };
 
   return (
-    <div className="rounded-xl border p-4 flex flex-wrap items-center gap-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+    <div className="rounded-xl border p-4 flex flex-wrap items-center gap-3"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
       <input
-        type="text"
-        placeholder="Search recommendations, clients…"
-        value={search}
+        type="text"placeholder="Search recommendations, clients…"value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="flex-1 min-w-48 rounded-lg border px-3 py-2 text-xs"
-        style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", outline: "none" }}
+        className="flex-1 min-w-48 rounded-lg border px-3 py-2 text-xs"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", outline: "none"}}
       />
       <select style={selectStyle} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
         <option value="">All Types</option>
@@ -1955,16 +1898,16 @@ function FilterBar({
         <option value="">All Sources</option>
         {(["Audit Findings", "Call Summary", "Client Notes", "Meeting Notes", "Renewal Signal", "Upsell Signal", "Project Health", "Client Health"] as InputSource[]).map((s) => <option key={s} value={s}>{s}</option>)}
       </select>
-      <span className="text-[10px] font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+      <span className="text-[10px] font-semibold"style={{ color: "var(--rtm-text-muted)"}}>
         Showing {filtered} of {total}
       </span>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Main Page
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 export default function RecommendationsPage() {
   const [search, setSearch] = useState("");
@@ -1973,7 +1916,7 @@ export default function RecommendationsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [sourceFilter, setSourceFilter] = useState("");
   const [selectedRec, setSelectedRec] = useState<Recommendation | null>(null);
-  const [activeSection, setActiveSection] = useState<"dashboard" | "table" | "renewal" | "executive">("dashboard");
+  const [activeSection, setActiveSection] = useState<"dashboard"| "table"| "renewal"| "executive">("dashboard");
 
   const filtered = useMemo(() => {
     return MOCK_RECOMMENDATIONS.filter((r) => {
@@ -1993,24 +1936,24 @@ export default function RecommendationsPage() {
   }, [search, typeFilter, priorityFilter, statusFilter, sourceFilter]);
 
   const navTabs = [
-    { id: "dashboard" as const, label: "Dashboard" },
-    { id: "table" as const, label: "All Recommendations" },
-    { id: "renewal" as const, label: "Renewal Intelligence" },
-    { id: "executive" as const, label: "Executive Summary" },
+    { id: "dashboard"as const, label: "Dashboard"},
+    { id: "table"as const, label: "All Recommendations"},
+    { id: "renewal"as const, label: "Renewal Intelligence"},
+    { id: "executive"as const, label: "Executive Summary"},
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--rtm-bg)" }}>
+    <div className="min-h-screen"style={{ background: "var(--rtm-bg)"}}>
       <div className="max-w-screen-2xl mx-auto px-6 py-8 space-y-8">
         {/* Page Header */}
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-3xl">🤖</span>
+            
             <div>
-              <h1 className="text-2xl font-black" style={{ color: "var(--rtm-text-primary)" }}>
+              <h1 className="text-2xl font-black"style={{ color: "var(--rtm-text-primary)"}}>
                 AI Recommendation Engine
               </h1>
-              <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+              <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>
                 Generate service recommendations, package recommendations, proposal recommendations, renewal opportunities, and growth opportunities using audit and communication intelligence.
               </p>
             </div>
@@ -2023,11 +1966,10 @@ export default function RecommendationsPage() {
             <button
               key={t.id}
               onClick={() => setActiveSection(t.id)}
-              className="px-4 py-2 rounded-xl text-xs font-bold border"
-              style={{
-                background: activeSection === t.id ? "#7C3AED" : "var(--rtm-surface)",
-                color: activeSection === t.id ? "white" : "var(--rtm-text-secondary)",
-                borderColor: activeSection === t.id ? "#7C3AED" : "var(--rtm-border)",
+              className="px-4 py-2 rounded-xl text-xs font-bold border"style={{
+                background: activeSection === t.id ? "#7C3AED": "var(--rtm-surface)",
+                color: activeSection === t.id ? "white": "var(--rtm-text-secondary)",
+                borderColor: activeSection === t.id ? "#7C3AED": "var(--rtm-border)",
               }}
             >
               {t.label}
@@ -2036,7 +1978,7 @@ export default function RecommendationsPage() {
         </div>
 
         {/* Dashboard Section */}
-        {activeSection === "dashboard" && (
+        {activeSection === "dashboard"&& (
           <div className="space-y-8">
             <KPICards recs={MOCK_RECOMMENDATIONS} />
             <AIExecutiveSummary recs={MOCK_RECOMMENDATIONS} />
@@ -2045,7 +1987,7 @@ export default function RecommendationsPage() {
         )}
 
         {/* Table Section */}
-        {activeSection === "table" && (
+        {activeSection === "table"&& (
           <div className="space-y-4">
             <FilterBar
               search={search} setSearch={setSearch}
@@ -2061,12 +2003,12 @@ export default function RecommendationsPage() {
         )}
 
         {/* Renewal Intelligence Section */}
-        {activeSection === "renewal" && (
+        {activeSection === "renewal"&& (
           <RenewalIntelligence recs={MOCK_RECOMMENDATIONS} />
         )}
 
         {/* Executive Summary Section */}
-        {activeSection === "executive" && (
+        {activeSection === "executive"&& (
           <AIExecutiveSummary recs={MOCK_RECOMMENDATIONS} />
         )}
       </div>

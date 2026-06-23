@@ -2,14 +2,14 @@ import type { Deliverable, Task, AssignedUser } from "./types";
 
 // ── Users ──────────────────────────────────────────────────────────────────
 export const MOCK_USERS: AssignedUser[] = [
-  { id: "u1", name: "Jessica Reyes",   initials: "JR", avatarColor: "#1B4FD8" },
-  { id: "u2", name: "Marcus Webb",     initials: "MW", avatarColor: "#059669" },
-  { id: "u3", name: "Priya Nair",      initials: "PN", avatarColor: "#7C3AED" },
-  { id: "u4", name: "Daniel Okonkwo",  initials: "DO", avatarColor: "#D97706" },
-  { id: "u5", name: "Sofia Castillo",  initials: "SC", avatarColor: "#DC2626" },
-  { id: "u6", name: "Aaron Park",      initials: "AP", avatarColor: "#0891B2" },
-  { id: "u7", name: "Lily Chen",       initials: "LC", avatarColor: "#BE185D" },
-  { id: "u8", name: "Ryan Torres",     initials: "RT", avatarColor: "#065F46" },
+  { id: "u1", name: "Jessica Reyes",   initials: "JR", avatarColor: "#1B4FD8"},
+  { id: "u2", name: "Marcus Webb",     initials: "MW", avatarColor: "#059669"},
+  { id: "u3", name: "Priya Nair",      initials: "PN", avatarColor: "#7C3AED"},
+  { id: "u4", name: "Daniel Okonkwo",  initials: "DO", avatarColor: "#D97706"},
+  { id: "u5", name: "Sofia Castillo",  initials: "SC", avatarColor: "#DC2626"},
+  { id: "u6", name: "Aaron Park",      initials: "AP", avatarColor: "#0891B2"},
+  { id: "u7", name: "Lily Chen",       initials: "LC", avatarColor: "#BE185D"},
+  { id: "u8", name: "Ryan Torres",     initials: "RT", avatarColor: "#065F46"},
 ];
 
 const [jess, marcus, priya, daniel, sofia, aaron, lily, ryan] = MOCK_USERS;

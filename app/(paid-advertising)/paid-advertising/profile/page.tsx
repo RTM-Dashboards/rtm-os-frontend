@@ -11,8 +11,6 @@ export default function ProfilePage() {
     <WorkspaceProfilePage
       workspace={workspace}
       profile={paidAdvertisingProfile}
-      teamRoute="/paid-advertising/team-members"
-      rolesRoute="/paid-advertising/roles"
-    />
+      teamRoute="/paid-advertising/team-members"rolesRoute="/paid-advertising/roles"/>
   );
 }

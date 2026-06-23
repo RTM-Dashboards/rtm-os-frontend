@@ -3,34 +3,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type ChangeRequestType =
-  | "Budget Reallocation"
-  | "Service Upgrade"
-  | "Service Downgrade"
-  | "Service Addition"
-  | "Service Removal"
-  | "Pause"
-  | "Reactivation"
-  | "Contract Amendment"
-  | "Custom Scope Change";
+  | "Budget Reallocation"| "Service Upgrade"| "Service Downgrade"| "Service Addition"| "Service Removal"| "Pause"| "Reactivation"| "Contract Amendment"| "Custom Scope Change";
 
 export type ChangeRequestStatus =
-  | "Draft"
-  | "Submitted"
-  | "Under Review"
-  | "Pending Approval"
-  | "Approved"
-  | "Rejected"
-  | "Implemented"
-  | "Cancelled";
+  | "Draft"| "Submitted"| "Under Review"| "Pending Approval"| "Approved"| "Rejected"| "Implemented"| "Cancelled";
 
 export type ApprovalStatus =
-  | "Pending"
-  | "Approved"
-  | "Rejected"
-  | "Not Required"
-  | "In Progress";
+  | "Pending"| "Approved"| "Rejected"| "Not Required"| "In Progress";
 
-export type RevenueDirection = "Increase" | "Decrease" | "Neutral";
+export type RevenueDirection = "Increase"| "Decrease"| "Neutral";
 
 export interface ApprovalStep {
   stage: string;
@@ -50,7 +31,7 @@ export interface BudgetLine {
 
 export interface ImplementationItem {
   area: string;
-  status: "Pending" | "In Progress" | "Completed" | "Not Required";
+  status: "Pending"| "In Progress"| "Completed"| "Not Required";
   completedDate?: string;
   notes?: string;
 }
@@ -80,9 +61,9 @@ export interface ChangeRequest {
 
   // Client context
   clientHealthScore: number;
-  clientHealthStatus: "Healthy" | "Needs Attention" | "At-Risk" | "Critical";
-  renewalRisk: "Low" | "Medium" | "High" | "Critical";
-  expansionOpportunity: "Low" | "Medium" | "High";
+  clientHealthStatus: "Healthy"| "Needs Attention"| "At-Risk"| "Critical";
+  renewalRisk: "Low"| "Medium"| "High"| "Critical";
+  expansionOpportunity: "Low"| "Medium"| "High";
   clientMRR: number;
   clientARR: number;
   openEscalations: number;
@@ -119,7 +100,7 @@ export interface ChangeRequest {
 
   // Implementation
   implementationItems: ImplementationItem[];
-  implementationStatus: "Not Started" | "In Progress" | "Completed";
+  implementationStatus: "Not Started"| "In Progress"| "Completed";
   implementationCompletedDate?: string;
 
   // AI analysis

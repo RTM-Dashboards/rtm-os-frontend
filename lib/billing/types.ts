@@ -1,10 +1,10 @@
 // ─── Billing Dashboard Types ───────────────────────────────────────────────
 
-export type CampaignStatus = "active" | "paused" | "pending" | "cancelled";
-export type BillingStatus = "current" | "past_due" | "overdue" | "pending" | "cancelled";
-export type InvoiceStatus = "paid" | "pending" | "overdue" | "draft" | "void";
-export type RiskLevel = "low" | "medium" | "high" | "critical";
-export type RenewalStatus = "on_track" | "at_risk" | "renewed" | "churned" | "pending";
+export type CampaignStatus = "active"| "paused"| "pending"| "cancelled";
+export type BillingStatus = "current"| "past_due"| "overdue"| "pending"| "cancelled";
+export type InvoiceStatus = "paid"| "pending"| "overdue"| "draft"| "void";
+export type RiskLevel = "low"| "medium"| "high"| "critical";
+export type RenewalStatus = "on_track"| "at_risk"| "renewed"| "churned"| "pending";
 
 export interface ActiveCampaign extends Record<string, unknown> {
   id: string;

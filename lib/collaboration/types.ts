@@ -4,17 +4,17 @@
 
 // ── Mention Target ──────────────────────────────────────────────────────────
 
-export type MentionKind = "user" | "department" | "role";
+export type MentionKind = "user"| "department"| "role";
 
 export interface Mention {
   id: string;
   kind: MentionKind;
-  label: string; // e.g. "@Jessica Reyes" | "@Billing" | "@SEO Manager"
+  label: string; // e.g. "@Jessica Reyes"| "@Billing"| "@SEO Manager"
 }
 
 // ── Comment ─────────────────────────────────────────────────────────────────
 
-export type CommentStatus = "Active" | "Resolved" | "Pinned";
+export type CommentStatus = "Active"| "Resolved"| "Pinned";
 
 export interface CommentAttachment {
   id: string;
@@ -53,7 +53,7 @@ export interface TaskComment {
 
 // ── Internal Note ────────────────────────────────────────────────────────────
 
-export type InternalNotePriority = "Low" | "Medium" | "High" | "Urgent";
+export type InternalNotePriority = "Low"| "Medium"| "High"| "Urgent";
 
 export interface InternalNote {
   id: string;
@@ -70,12 +70,7 @@ export interface InternalNote {
 // ── Client Note ──────────────────────────────────────────────────────────────
 
 export type ClientCommSource =
-  | "Email"
-  | "Phone Call"
-  | "Meeting"
-  | "Slack"
-  | "Text Message"
-  | "Portal";
+  | "Email"| "Phone Call"| "Meeting"| "Slack"| "Text Message"| "Portal";
 
 export interface ClientNote {
   id: string;
@@ -91,20 +86,11 @@ export interface ClientNote {
 // ── Attachment ───────────────────────────────────────────────────────────────
 
 export type AttachmentCategory =
-  | "Report"
-  | "Proposal"
-  | "Contract"
-  | "Creative Asset"
-  | "Screenshot"
-  | "Audit"
-  | "Access Request"
-  | "Spreadsheet"
-  | "Video"
-  | "Other";
+  | "Report"| "Proposal"| "Contract"| "Creative Asset"| "Screenshot"| "Audit"| "Access Request"| "Spreadsheet"| "Video"| "Other";
 
-export type AttachmentStatus = "Active" | "Superseded" | "Archived";
+export type AttachmentStatus = "Active"| "Superseded"| "Archived";
 
-export type FileType = "pdf" | "docx" | "png" | "jpg" | "mp4" | "xlsx" | "csv" | "zip";
+export type FileType = "pdf"| "docx"| "png"| "jpg"| "mp4"| "xlsx"| "csv"| "zip";
 
 export interface TaskAttachment {
   id: string;
@@ -134,11 +120,7 @@ export interface TaskWatcher {
 // ── Approval ─────────────────────────────────────────────────────────────────
 
 export type ApprovalStatus =
-  | "Pending Review"
-  | "Pending Approval"
-  | "Approved"
-  | "Rejected"
-  | "Needs Revision";
+  | "Pending Review"| "Pending Approval"| "Approved"| "Rejected"| "Needs Revision";
 
 export interface ApprovalStep {
   id: string;
@@ -159,24 +141,7 @@ export interface ApprovalStep {
 // ── Activity Event ───────────────────────────────────────────────────────────
 
 export type ActivityEventType =
-  | "Task Created"
-  | "Task Assigned"
-  | "Task Reassigned"
-  | "Status Changed"
-  | "Comment Added"
-  | "Attachment Uploaded"
-  | "Approval Requested"
-  | "Approval Completed"
-  | "Dependency Added"
-  | "Dependency Removed"
-  | "Due Date Changed"
-  | "Task Completed"
-  | "Note Added"
-  | "Watcher Added"
-  | "Watcher Removed"
-  | "Mention Added"
-  | "Blocker Added"
-  | "Blocker Resolved";
+  | "Task Created"| "Task Assigned"| "Task Reassigned"| "Status Changed"| "Comment Added"| "Attachment Uploaded"| "Approval Requested"| "Approval Completed"| "Dependency Added"| "Dependency Removed"| "Due Date Changed"| "Task Completed"| "Note Added"| "Watcher Added"| "Watcher Removed"| "Mention Added"| "Blocker Added"| "Blocker Resolved";
 
 export interface ActivityEvent {
   id: string;
@@ -193,21 +158,12 @@ export interface ActivityEvent {
 // ── Dependency ───────────────────────────────────────────────────────────────
 
 export type DependencyStatus =
-  | "Satisfied"
-  | "Pending"
-  | "Blocked"
-  | "Escalated";
+  | "Satisfied"| "Pending"| "Blocked"| "Escalated";
 
-export type DependencyScope = "Task" | "Milestone" | "Project";
+export type DependencyScope = "Task"| "Milestone"| "Project";
 
 export type DependencyBlockerReason =
-  | "Waiting on Client Access"
-  | "Waiting on Billing"
-  | "Waiting on Approval"
-  | "Waiting on Another Task"
-  | "Waiting on Department"
-  | "External Vendor"
-  | "Other";
+  | "Waiting on Client Access"| "Waiting on Billing"| "Waiting on Approval"| "Waiting on Another Task"| "Waiting on Department"| "External Vendor"| "Other";
 
 export interface TaskDependencyItem {
   id: string;
@@ -223,15 +179,7 @@ export interface TaskDependencyItem {
 // ── Notification Event ───────────────────────────────────────────────────────
 
 export type CollabNotificationType =
-  | "Comment Added"
-  | "Mention Added"
-  | "Approval Requested"
-  | "Approval Completed"
-  | "Task Assigned"
-  | "Task Reassigned"
-  | "Dependency Blocked"
-  | "Task Overdue"
-  | "Project Escalated";
+  | "Comment Added"| "Mention Added"| "Approval Requested"| "Approval Completed"| "Task Assigned"| "Task Reassigned"| "Dependency Blocked"| "Task Overdue"| "Project Escalated";
 
 export interface CollabNotificationEvent {
   id: string;
@@ -248,21 +196,12 @@ export interface CollabNotificationEvent {
 
 // ── Escalation ──────────────────────────────────────────────────────────────
 
-export type EscalationLevel = "L1 - Team" | "L2 - Department Head" | "L3 - Account Manager" | "L4 - Executive" | "L5 - VP / Director";
+export type EscalationLevel = "L1 - Team"| "L2 - Department Head"| "L3 - Account Manager"| "L4 - Executive"| "L5 - VP / Director";
 
-export type EscalationStatus = "Open" | "In Progress" | "Resolved" | "Escalated Further" | "Closed";
+export type EscalationStatus = "Open"| "In Progress"| "Resolved"| "Escalated Further"| "Closed";
 
 export type EscalationTrigger =
-  | "Task Overdue"
-  | "Dependency Blocked"
-  | "Client Access Missing"
-  | "Payment Overdue"
-  | "Client At Risk"
-  | "Approval Bottleneck"
-  | "Performance Issue"
-  | "Missed SLA"
-  | "Cross-Department Delay"
-  | "Manual Escalation";
+  | "Task Overdue"| "Dependency Blocked"| "Client Access Missing"| "Payment Overdue"| "Client At Risk"| "Approval Bottleneck"| "Performance Issue"| "Missed SLA"| "Cross-Department Delay"| "Manual Escalation";
 
 export interface EscalationRecord {
   id: string;
@@ -283,9 +222,9 @@ export interface EscalationRecord {
 // ── AI Collaboration Summary ─────────────────────────────────────────────────
 
 export interface AISummaryItem {
-  category: "update" | "blocker" | "approval" | "escalation" | "action" | "health";
+  category: "update"| "blocker"| "approval"| "escalation"| "action"| "health";
   text: string;
-  urgency: "info" | "warn" | "critical";
+  urgency: "info"| "warn"| "critical";
 }
 
 export interface AICollaborationSummary {

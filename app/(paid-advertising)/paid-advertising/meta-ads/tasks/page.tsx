@@ -9,8 +9,7 @@ const workspace = getWorkspace("paid-advertising")!;
 export default function MetaAdsTasksPage() {
   return (
     <WorkspaceTaskPage
-      workspaceName="Meta Ads"
-      tasks={metaAdsTasks}
+      workspaceName="Meta Ads"tasks={metaAdsTasks}
       accentColor={workspace.accentColor}
     />
   );

@@ -3,13 +3,9 @@
 // for display in the rich child-workspace task pages.
 
 export type WorkspaceTaskStatus =
-  | "Pending"
-  | "In Progress"
-  | "In Review"
-  | "Blocked"
-  | "Done";
+  | "Pending"| "In Progress"| "In Review"| "Blocked"| "Done";
 
-export type WorkspaceTaskPriority = "Low" | "Medium" | "High" | "Critical";
+export type WorkspaceTaskPriority = "Low"| "Medium"| "High"| "Critical";
 
 export interface WorkspaceTask {
   id: string;

@@ -12,8 +12,6 @@ export default function RolesPage() {
       workspace={workspace}
       roles={itSecurityRoles}
       permissionAreas={itSecurityPermissions}
-      teamRoute="/it-security/team-members"
-      profileRoute="/it-security/profile"
-    />
+      teamRoute="/it-security/team-members"profileRoute="/it-security/profile"/>
   );
 }

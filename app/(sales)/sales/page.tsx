@@ -8,46 +8,46 @@ import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("sales")!;
 
-// ── Client Lifecycle Engine ───────────────────────────────────────────────────
+//  Client Lifecycle Engine 
 
 const LIFECYCLE_STAGES = [
-  { stage: "Lead",                   owner: "Sales",              color: "#94A3B8" },
-  { stage: "Opportunity",            owner: "Sales",              color: "#2563EB" },
-  { stage: "Proposal",               owner: "Sales",              color: "#7C3AED" },
-  { stage: "Contract",               owner: "Sales",              color: "#0891B2" },
-  { stage: "Closed Won",             owner: "Sales",              color: "#059669" },
-  { stage: "Sent To Billing",        owner: "Sales",              color: "#D97706" },
-  { stage: "Invoice Sent",           owner: "Billing",            color: "#6366F1" },
-  { stage: "Awaiting Payment",       owner: "Billing",            color: "#8B5CF6" },
-  { stage: "Payment Confirmed",      owner: "Billing",            color: "#059669" },
-  { stage: "Activation Approved",    owner: "Billing",            color: "#0EA5E9" },
-  { stage: "Ready For Assignment",   owner: "Billing",            color: "#10B981" },
-  { stage: "Assigned",               owner: "Account Management", color: "#3B82F6" },
-  { stage: "Onboarding",             owner: "Account Management", color: "#6366F1" },
-  { stage: "Service Activation",     owner: "Account Management", color: "#8B5CF6" },
-  { stage: "Department Launch",      owner: "Account Management", color: "#A855F7" },
-  { stage: "Active",                 owner: "Account Management", color: "#059669" },
-  { stage: "Renewal Triggered",      owner: "Account Management", color: "#D97706" },
-  { stage: "QBR Scheduled",          owner: "Account Management", color: "#0891B2" },
-  { stage: "Renewal Negotiation",    owner: "Account Management", color: "#F59E0B" },
-  { stage: "Renewed",                owner: "Account Management", color: "#059669" },
+  { stage: "Lead",                   owner: "Sales",              color: "#94A3B8"},
+  { stage: "Opportunity",            owner: "Sales",              color: "#2563EB"},
+  { stage: "Proposal",               owner: "Sales",              color: "#7C3AED"},
+  { stage: "Contract",               owner: "Sales",              color: "#0891B2"},
+  { stage: "Closed Won",             owner: "Sales",              color: "#059669"},
+  { stage: "Sent To Billing",        owner: "Sales",              color: "#D97706"},
+  { stage: "Invoice Sent",           owner: "Billing",            color: "#6366F1"},
+  { stage: "Awaiting Payment",       owner: "Billing",            color: "#8B5CF6"},
+  { stage: "Payment Confirmed",      owner: "Billing",            color: "#059669"},
+  { stage: "Activation Approved",    owner: "Billing",            color: "#0EA5E9"},
+  { stage: "Ready For Assignment",   owner: "Billing",            color: "#10B981"},
+  { stage: "Assigned",               owner: "Account Management", color: "#3B82F6"},
+  { stage: "Onboarding",             owner: "Account Management", color: "#6366F1"},
+  { stage: "Service Activation",     owner: "Account Management", color: "#8B5CF6"},
+  { stage: "Department Launch",      owner: "Account Management", color: "#A855F7"},
+  { stage: "Active",                 owner: "Account Management", color: "#059669"},
+  { stage: "Renewal Triggered",      owner: "Account Management", color: "#D97706"},
+  { stage: "QBR Scheduled",          owner: "Account Management", color: "#0891B2"},
+  { stage: "Renewal Negotiation",    owner: "Account Management", color: "#F59E0B"},
+  { stage: "Renewed",                owner: "Account Management", color: "#059669"},
 ] as const;
 
 const OWNER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  "Sales":              { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  "Billing":            { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE" },
-  "Account Management": { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0" },
+  "Sales":              { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
+  "Billing":            { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
+  "Account Management": { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0"},
 };
 
 function ClientLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
   const active = activeStages ?? [];
   return (
-    <div className="rounded-xl border p-4 space-y-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+    <div className="rounded-xl border p-4 space-y-3"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
       <div className="flex items-center justify-between mb-1">
-        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Client Lifecycle Status Engine</p>
+        <p className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Client Lifecycle Status Engine</p>
         <div className="flex gap-2">
           {Object.entries(OWNER_COLORS).map(([owner, c]) => (
-            <span key={owner} className="text-[10px] font-semibold px-2 py-0.5 rounded-full border" style={{ background: c.bg, color: c.text, borderColor: c.border }}>{owner}</span>
+            <span key={owner} className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"style={{ background: c.bg, color: c.text, borderColor: c.border }}>{owner}</span>
           ))}
         </div>
       </div>
@@ -58,10 +58,9 @@ function ClientLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
           return (
             <React.Fragment key={s.stage}>
               <div
-                className="px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all"
-                style={{
+                className="px-2 py-1 rounded-lg text-[10px] font-semibold border transition-all"style={{
                   background: isActive ? s.color : c.bg,
-                  color: isActive ? "#fff" : c.text,
+                  color: isActive ? "#fff": c.text,
                   borderColor: isActive ? s.color : c.border,
                   opacity: active.length === 0 || isActive ? 1 : 0.55,
                 }}
@@ -69,7 +68,7 @@ function ClientLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
                 {s.stage}
               </div>
               {i < LIFECYCLE_STAGES.length - 1 && (
-                <span className="text-xs" style={{ color: "var(--rtm-border)" }}>→</span>
+                <span className="text-xs"style={{ color: "var(--rtm-border)"}}>→</span>
               )}
             </React.Fragment>
           );
@@ -79,9 +78,9 @@ function ClientLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
         {Object.entries(OWNER_COLORS).map(([owner, c]) => {
           const count = LIFECYCLE_STAGES.filter((s) => s.owner === owner).length;
           return (
-            <div key={owner} className="flex items-center gap-1.5 px-3 py-1 rounded-lg border" style={{ background: c.bg, borderColor: c.border }}>
-              <span className="text-xs font-bold" style={{ color: c.text }}>{owner}</span>
-              <span className="text-[10px]" style={{ color: c.text }}>owns {count} stages</span>
+            <div key={owner} className="flex items-center gap-1.5 px-3 py-1 rounded-lg border"style={{ background: c.bg, borderColor: c.border }}>
+              <span className="text-xs font-bold"style={{ color: c.text }}>{owner}</span>
+              <span className="text-[10px]"style={{ color: c.text }}>owns {count} stages</span>
             </div>
           );
         })}
@@ -90,7 +89,7 @@ function ClientLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
   );
 }
 
-// ── Billing Handoff Readiness (per-lead) ─────────────────────────────────────
+//  Billing Handoff Readiness (per-lead) 
 
 const HANDOFF_CHECKLIST_ITEMS = [
   "Proposal accepted",
@@ -106,15 +105,7 @@ const HANDOFF_CHECKLIST_ITEMS = [
 type HandoffChecklistItem = (typeof HANDOFF_CHECKLIST_ITEMS)[number];
 
 type HandoffStage =
-  | "Proposal Approved"
-  | "Handoff Incomplete"
-  | "Ready to Send"
-  | "Sent to Billing"
-  | "Billing Requested"
-  | "Invoice Created"
-  | "Invoice Sent"
-  | "Invoice Paid"
-  | "Ready for Activation";
+  | "Proposal Approved"| "Handoff Incomplete"| "Ready to Send"| "Sent to Billing"| "Billing Requested"| "Invoice Created"| "Invoice Sent"| "Invoice Paid"| "Ready for Activation";
 
 interface HandoffDeal {
   id: string;
@@ -248,25 +239,25 @@ function getHandoffReadiness(deal: HandoffDeal): { label: string; bg: string; co
   const total = HANDOFF_CHECKLIST_ITEMS.length;
   const done = deal.checkedItems.length;
   if (deal.handoffStage === "Ready for Activation")
-    return { label: "Ready for Activation", bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" };
-  if (deal.handoffStage === "Sent to Billing" || deal.handoffStage === "Billing Requested" || deal.handoffStage === "Invoice Created" || deal.handoffStage === "Invoice Sent" || deal.handoffStage === "Invoice Paid")
-    return { label: "Sent to Billing", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
+    return { label: "Ready for Activation", bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0"};
+  if (deal.handoffStage === "Sent to Billing"|| deal.handoffStage === "Billing Requested"|| deal.handoffStage === "Invoice Created"|| deal.handoffStage === "Invoice Sent"|| deal.handoffStage === "Invoice Paid")
+    return { label: "Sent to Billing", bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"};
   if (done === total)
-    return { label: "Ready to Send", bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
-  return { label: "Missing Requirements", bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" };
+    return { label: "Ready to Send", bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
+  return { label: "Missing Requirements", bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"};
 }
 
 function getHandoffStageBadge(stage: HandoffStage): { bg: string; color: string; border: string } {
   const map: Record<HandoffStage, { bg: string; color: string; border: string }> = {
-    "Proposal Approved":  { bg: "#F5F3FF", color: "#7C3AED", border: "#DDD6FE" },
-    "Handoff Incomplete": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
-    "Ready to Send":      { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
-    "Sent to Billing":    { bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE" },
-    "Billing Requested":  { bg: "#EFF6FF", color: "#0891B2", border: "#BAE6FD" },
-    "Invoice Created":    { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
-    "Invoice Sent":       { bg: "#FFF7ED", color: "#EA580C", border: "#FDBA74" },
-    "Invoice Paid":       { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" },
-    "Ready for Activation": { bg: "#F0FDF4", color: "#059669", border: "#6EE7B7" },
+    "Proposal Approved":  { bg: "#F5F3FF", color: "#7C3AED", border: "#DDD6FE"},
+    "Handoff Incomplete": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"},
+    "Ready to Send":      { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
+    "Sent to Billing":    { bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE"},
+    "Billing Requested":  { bg: "#EFF6FF", color: "#0891B2", border: "#BAE6FD"},
+    "Invoice Created":    { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
+    "Invoice Sent":       { bg: "#FFF7ED", color: "#EA580C", border: "#FDBA74"},
+    "Invoice Paid":       { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0"},
+    "Ready for Activation": { bg: "#F0FDF4", color: "#059669", border: "#6EE7B7"},
   };
   return map[stage];
 }
@@ -286,9 +277,9 @@ function BillingHandoffReadiness() {
         const allDone = next.length === HANDOFF_CHECKLIST_ITEMS.length;
         const sentDone = next.includes("Sent to Billing");
         let stage: HandoffStage = d.handoffStage;
-        if (d.handoffStage !== "Sent to Billing" && d.handoffStage !== "Billing Requested" &&
-            d.handoffStage !== "Invoice Created" && d.handoffStage !== "Invoice Sent" &&
-            d.handoffStage !== "Invoice Paid" && d.handoffStage !== "Ready for Activation") {
+        if (d.handoffStage !== "Sent to Billing"&& d.handoffStage !== "Billing Requested"&&
+            d.handoffStage !== "Invoice Created"&& d.handoffStage !== "Invoice Sent"&&
+            d.handoffStage !== "Invoice Paid"&& d.handoffStage !== "Ready for Activation") {
           if (allDone) stage = "Ready to Send";
           else if (sentDone) stage = "Sent to Billing";
           else if (next.length > 0) stage = "Handoff Incomplete";
@@ -300,43 +291,38 @@ function BillingHandoffReadiness() {
   };
 
   const readySummary = deals.filter(
-    (d) => d.checkedItems.length === HANDOFF_CHECKLIST_ITEMS.length && d.handoffStage === "Ready to Send"
-  ).length;
+    (d) => d.checkedItems.length === HANDOFF_CHECKLIST_ITEMS.length && d.handoffStage === "Ready to Send").length;
   const sentSummary = deals.filter((d) => d.handoffStage === "Sent to Billing").length;
   const incompleteSummary = deals.filter(
-    (d) => d.handoffStage === "Handoff Incomplete" || d.handoffStage === "Proposal Approved"
-  ).length;
+    (d) => d.handoffStage === "Handoff Incomplete"|| d.handoffStage === "Proposal Approved").length;
 
   return (
     <div className="space-y-4">
       {/* Summary bar */}
       <div className="flex flex-wrap gap-3">
         {[
-          { label: "Ready to Send", count: readySummary, bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
-          { label: "Sent to Billing", count: sentSummary, bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE" },
-          { label: "Incomplete", count: incompleteSummary, bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
-          { label: "Total Deals", count: deals.length, bg: "var(--rtm-surface)", color: "var(--rtm-text-primary)", border: "var(--rtm-border)" },
+          { label: "Ready to Send", count: readySummary, bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
+          { label: "Sent to Billing", count: sentSummary, bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE"},
+          { label: "Incomplete", count: incompleteSummary, bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"},
+          { label: "Total Deals", count: deals.length, bg: "var(--rtm-surface)", color: "var(--rtm-text-primary)", border: "var(--rtm-border)"},
         ].map(({ label, count, bg, color, border }) => (
-          <div key={label} className="flex items-center gap-2 px-3 py-2 rounded-lg border" style={{ background: bg, borderColor: border }}>
-            <span className="text-lg font-bold" style={{ color }}>{count}</span>
-            <span className="text-xs font-semibold" style={{ color }}>{label}</span>
+          <div key={label} className="flex items-center gap-2 px-3 py-2 rounded-lg border"style={{ background: bg, borderColor: border }}>
+            <span className="text-lg font-bold"style={{ color }}>{count}</span>
+            <span className="text-xs font-semibold"style={{ color }}>{label}</span>
           </div>
         ))}
         <a
-          href="/sales/handoffs"
-          className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold ml-auto"
-          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+          href="/sales/handoffs"className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-xs font-semibold ml-auto"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)"}}
         >
           Open Full Handoff Center →
         </a>
       </div>
 
       {/* Deal rows */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
         {/* Table header */}
         <div
-          className="grid text-[10px] font-bold uppercase tracking-widest px-4 py-2.5"
-          style={{
+          className="grid text-[10px] font-bold uppercase tracking-widest px-4 py-2.5"style={{
             gridTemplateColumns: "minmax(140px,1.5fr) 90px minmax(140px,1.2fr) 90px 130px minmax(120px,1fr) 140px minmax(140px,1.2fr) 200px",
             background: "var(--rtm-bg)",
             borderBottom: "1px solid var(--rtm-border)",
@@ -364,54 +350,50 @@ function BillingHandoffReadiness() {
           const progressPct = Math.round((done / total) * 100);
 
           return (
-            <div key={deal.id} style={{ borderBottom: idx < deals.length - 1 ? "1px solid var(--rtm-border)" : undefined }}>
+            <div key={deal.id} style={{ borderBottom: idx < deals.length - 1 ? "1px solid var(--rtm-border)": undefined }}>
               {/* Main row */}
               <div
-                className="grid items-center px-4 py-3 text-xs gap-x-2 hover:bg-slate-50/50 transition-colors"
-                style={{
+                className="grid items-center px-4 py-3 text-xs gap-x-2 hover:bg-slate-50/50 transition-colors"style={{
                   gridTemplateColumns: "minmax(140px,1.5fr) 90px minmax(140px,1.2fr) 90px 130px minmax(120px,1fr) 140px minmax(140px,1.2fr) 200px",
-                  background: idx % 2 === 0 ? "var(--rtm-surface)" : "var(--rtm-bg)",
+                  background: idx % 2 === 0 ? "var(--rtm-surface)": "var(--rtm-bg)",
                 }}
               >
                 {/* Lead / Client */}
                 <div className="flex flex-col gap-0.5">
-                  <span className="font-bold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{deal.client}</span>
-                  <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{deal.proposalName}</span>
+                  <span className="font-bold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{deal.client}</span>
+                  <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{deal.proposalName}</span>
                 </div>
 
                 {/* Proposal Status */}
                 <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start mt-0.5"
-                  style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start mt-0.5"style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0"}}
                 >
                   {deal.proposalStatus}
                 </span>
 
                 {/* Deal Value */}
-                <span className="font-semibold text-xs" style={{ color: "#059669" }}>{deal.dealValue}</span>
+                <span className="font-semibold text-xs"style={{ color: "#059669"}}>{deal.dealValue}</span>
 
                 {/* Sales Rep */}
-                <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{deal.salesRep}</span>
+                <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{deal.salesRep}</span>
 
                 {/* Handoff Readiness */}
                 <div className="flex flex-col gap-1">
                   <span
-                    className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start"
-                    style={{ background: readiness.bg, color: readiness.color, border: `1px solid ${readiness.border}` }}
+                    className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start"style={{ background: readiness.bg, color: readiness.color, border: `1px solid ${readiness.border}` }}
                   >
                     {readiness.label}
                   </span>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <div className="flex-1 h-1.5 rounded-full" style={{ background: "var(--rtm-border)" }}>
+                    <div className="flex-1 h-1.5 rounded-full"style={{ background: "var(--rtm-border)"}}>
                       <div
-                        className="h-1.5 rounded-full transition-all"
-                        style={{
+                        className="h-1.5 rounded-full transition-all"style={{
                           width: `${progressPct}%`,
-                          background: done === total ? "#059669" : done >= 5 ? "#D97706" : "#94A3B8",
+                          background: done === total ? "#059669": done >= 5 ? "#D97706": "#94A3B8",
                         }}
                       />
                     </div>
-                    <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>
+                    <span className="text-[10px] font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>
                       {done}/{total}
                     </span>
                   </div>
@@ -420,66 +402,58 @@ function BillingHandoffReadiness() {
                 {/* Missing Items */}
                 <div className="flex flex-col gap-0.5">
                   {missing.length === 0 ? (
-                    <span className="text-[10px] font-semibold" style={{ color: "#059669" }}>✓ All complete</span>
+                    <span className="text-[10px] font-semibold"style={{ color: "#059669"}}> All complete</span>
                   ) : (
                     missing.slice(0, 2).map((m) => (
-                      <span key={m} className="text-[10px]" style={{ color: "#D97706" }}>• {m}</span>
+                      <span key={m} className="text-[10px]"style={{ color: "#D97706"}}>• {m}</span>
                     ))
                   )}
                   {missing.length > 2 && (
-                    <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>+{missing.length - 2} more</span>
+                    <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>+{missing.length - 2} more</span>
                   )}
                 </div>
 
                 {/* Handoff Stage */}
                 <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start"
-                  style={{ background: stageBadge.bg, color: stageBadge.color, border: `1px solid ${stageBadge.border}` }}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full self-start"style={{ background: stageBadge.bg, color: stageBadge.color, border: `1px solid ${stageBadge.border}` }}
                 >
                   {deal.handoffStage}
                 </span>
 
                 {/* Next Action */}
-                <span className="text-[10px] italic" style={{ color: "var(--rtm-text-secondary)" }}>{deal.nextAction}</span>
+                <span className="text-[10px] italic"style={{ color: "var(--rtm-text-secondary)"}}>{deal.nextAction}</span>
 
                 {/* Actions */}
                 <div className="flex flex-wrap gap-1">
                   <button
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
-                    style={{ background: "#F5F3FF", color: "#7C3AED", borderColor: "#DDD6FE" }}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"style={{ background: "#F5F3FF", color: "#7C3AED", borderColor: "#DDD6FE"}}
                     onClick={() => setExpanded((p) => (p === deal.id ? null : deal.id))}
                   >
-                    {isExpanded ? "Hide ▲" : "Checklist ▼"}
+                    {isExpanded ? "Hide": "Checklist"}
                   </button>
                   <a
-                    href="/sales/handoffs"
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
-                    style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}
+                    href="/sales/handoffs"className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}
                   >
                     Handoff
                   </a>
                   <a
-                    href="/sales/proposals"
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
-                    style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}
+                    href="/sales/proposals"className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}
                   >
                     Proposal
                   </a>
                   <a
                     href={`/clients/${deal.slug}`}
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
-                    style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)"}}
                   >
                     Client
                   </a>
-                  {done === total && deal.handoffStage === "Ready to Send" && (
+                  {done === total && deal.handoffStage === "Ready to Send"&& (
                     <button
-                      className="text-[10px] font-bold px-2 py-0.5 rounded border transition-all hover:opacity-80"
-                      style={{ background: "#D97706", color: "#fff", borderColor: "#D97706" }}
+                      className="text-[10px] font-bold px-2 py-0.5 rounded border transition-all hover:opacity-80"style={{ background: "#D97706", color: "#fff", borderColor: "#D97706"}}
                       onClick={() =>
                         setDeals((prev) =>
                           prev.map((d) =>
-                            d.id === deal.id ? { ...d, handoffStage: "Sent to Billing" as HandoffStage } : d
+                            d.id === deal.id ? { ...d, handoffStage: "Sent to Billing"as HandoffStage } : d
                           )
                         )
                       }
@@ -488,9 +462,7 @@ function BillingHandoffReadiness() {
                     </button>
                   )}
                   <a
-                    href="/tasks"
-                    className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"
-                    style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}
+                    href="/tasks"className="text-[10px] font-semibold px-2 py-0.5 rounded border transition-all hover:opacity-80"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)"}}
                   >
                     Task
                   </a>
@@ -500,25 +472,24 @@ function BillingHandoffReadiness() {
               {/* Expanded checklist detail */}
               {isExpanded && (
                 <div
-                  className="px-6 py-4 space-y-4"
-                  style={{ background: "#FAFBFF", borderTop: "1px solid var(--rtm-border)" }}
+                  className="px-6 py-4 space-y-4"style={{ background: "#FAFBFF", borderTop: "1px solid var(--rtm-border)"}}
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Left: Deal info */}
                     <div className="space-y-2">
-                      <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Deal Details</p>
+                      <p className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Deal Details</p>
                       {[
                         { label: "Client", value: deal.client },
                         { label: "Proposal", value: deal.proposalName },
                         { label: "Deal Value", value: deal.dealValue },
                         { label: "Sales Rep", value: deal.salesRep },
                         { label: "Handoff Stage", value: deal.handoffStage },
-                        { label: "Billing Notes", value: deal.billingNotes || "—" },
+                        { label: "Billing Notes", value: deal.billingNotes || "—"},
                         { label: "Next Action", value: deal.nextAction },
                       ].map(({ label, value }) => (
                         <div key={label} className="flex gap-2">
-                          <span className="text-[10px] font-semibold w-24 flex-shrink-0" style={{ color: "var(--rtm-text-muted)" }}>{label}</span>
-                          <span className="text-[10px]" style={{ color: "var(--rtm-text-primary)" }}>{value}</span>
+                          <span className="text-[10px] font-semibold w-24 flex-shrink-0"style={{ color: "var(--rtm-text-muted)"}}>{label}</span>
+                          <span className="text-[10px]"style={{ color: "var(--rtm-text-primary)"}}>{value}</span>
                         </div>
                       ))}
                     </div>
@@ -526,13 +497,12 @@ function BillingHandoffReadiness() {
                     {/* Right: Checklist */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Handoff Checklist</p>
+                        <p className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Handoff Checklist</p>
                         <span
-                          className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border"
-                          style={{
-                            background: done === total ? "#ECFDF5" : "#FFFBEB",
-                            color: done === total ? "#059669" : "#D97706",
-                            borderColor: done === total ? "#A7F3D0" : "#FDE68A",
+                          className="text-[10px] font-bold px-2.5 py-0.5 rounded-full border"style={{
+                            background: done === total ? "#ECFDF5": "#FFFBEB",
+                            color: done === total ? "#059669": "#D97706",
+                            borderColor: done === total ? "#A7F3D0": "#FDE68A",
                           }}
                         >
                           {done}/{total} complete
@@ -543,34 +513,31 @@ function BillingHandoffReadiness() {
                         return (
                           <label key={item} className="flex items-center gap-2.5 cursor-pointer group">
                             <input
-                              type="checkbox"
-                              checked={checked}
+                              type="checkbox"checked={checked}
                               onChange={() => toggleItem(deal.id, item)}
-                              className="w-3.5 h-3.5 rounded accent-emerald-600"
-                            />
+                              className="w-3.5 h-3.5 rounded accent-emerald-600"/>
                             <span
-                              className="text-xs transition-all"
-                              style={{
-                                color: checked ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)",
-                                textDecoration: checked ? "line-through" : "none",
+                              className="text-xs transition-all"style={{
+                                color: checked ? "var(--rtm-text-muted)": "var(--rtm-text-secondary)",
+                                textDecoration: checked ? "line-through": "none",
                               }}
                             >
                               {item}
                             </span>
-                            {checked && <span className="text-[10px] text-emerald-600 font-semibold">✓</span>}
+                            {checked && <span className="text-emerald-500 text-xs font-bold">Yes</span>}
                           </label>
                         );
                       })}
                       {done === total && (
-                        <div className="rounded-lg p-2.5 mt-2 text-xs font-semibold text-emerald-700" style={{ background: "#ECFDF5", border: "1px solid #A7F3D0" }}>
-                          ✅ All checklist items complete — ready to send to Billing.
+                        <div className="rounded-lg p-2.5 mt-2 text-xs font-semibold text-emerald-700"style={{ background: "#ECFDF5", border: "1px solid #A7F3D0"}}>
+                           All checklist items complete — ready to send to Billing.
                         </div>
                       )}
                       {missing.length > 0 && (
-                        <div className="rounded-lg p-2.5 mt-2" style={{ background: "#FFFBEB", border: "1px solid #FDE68A" }}>
-                          <p className="text-[10px] font-bold mb-1" style={{ color: "#D97706" }}>Missing Items ({missing.length})</p>
+                        <div className="rounded-lg p-2.5 mt-2"style={{ background: "#FFFBEB", border: "1px solid #FDE68A"}}>
+                          <p className="text-[10px] font-bold mb-1"style={{ color: "#D97706"}}>Missing Items ({missing.length})</p>
                           {missing.map((m) => (
-                            <p key={m} className="text-[10px]" style={{ color: "#92400E" }}>• {m}</p>
+                            <p key={m} className="text-[10px]"style={{ color: "#92400E"}}>• {m}</p>
                           ))}
                         </div>
                       )}
@@ -578,37 +545,34 @@ function BillingHandoffReadiness() {
                   </div>
 
                   {/* Row action buttons */}
-                  <div className="flex flex-wrap gap-2 pt-1 border-t" style={{ borderColor: "var(--rtm-border)" }}>
+                  <div className="flex flex-wrap gap-2 pt-1 border-t"style={{ borderColor: "var(--rtm-border)"}}>
                     {[
-                      { label: "Open Handoff",         href: "/sales/handoffs",            bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE" },
-                      { label: "Open Proposal",        href: "/sales/proposals",            bg: "#F5F3FF", color: "#7C3AED", border: "#DDD6FE" },
-                      { label: `Open Client`,          href: `/clients/${deal.slug}`,       bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
-                      { label: "Create Task",          href: "/tasks",                     bg: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", border: "var(--rtm-border)" },
+                      { label: "Open Handoff",         href: "/sales/handoffs",            bg: "#EFF6FF", color: "#2563EB", border: "#BFDBFE"},
+                      { label: "Open Proposal",        href: "/sales/proposals",            bg: "#F5F3FF", color: "#7C3AED", border: "#DDD6FE"},
+                      { label: `Open Client`,          href: `/clients/${deal.slug}`,       bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
+                      { label: "Create Task",          href: "/tasks",                     bg: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", border: "var(--rtm-border)"},
                     ].map(({ label, href, bg, color, border }) => (
                       <a
                         key={label}
                         href={href}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
-                        style={{ background: bg, color, borderColor: border }}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"style={{ background: bg, color, borderColor: border }}
                       >
                         {label}
                       </a>
                     ))}
                     <button
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
-                      style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)"}}
                       onClick={() => alert(`[Mock] Add Note — ${deal.client}`)}
                     >
                       Add Note
                     </button>
-                    {done === total && deal.handoffStage === "Ready to Send" && (
+                    {done === total && deal.handoffStage === "Ready to Send"&& (
                       <button
-                        className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
-                        style={{ background: "#D97706", color: "#fff", borderColor: "#D97706" }}
+                        className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"style={{ background: "#D97706", color: "#fff", borderColor: "#D97706"}}
                         onClick={() =>
                           setDeals((prev) =>
                             prev.map((d) =>
-                              d.id === deal.id ? { ...d, handoffStage: "Sent to Billing" as HandoffStage } : d
+                              d.id === deal.id ? { ...d, handoffStage: "Sent to Billing"as HandoffStage } : d
                             )
                           )
                         }
@@ -616,10 +580,9 @@ function BillingHandoffReadiness() {
                         → Send to Billing
                       </button>
                     )}
-                    {deal.handoffStage !== "Ready to Send" && missing.length > 0 && (
+                    {deal.handoffStage !== "Ready to Send"&& missing.length > 0 && (
                       <button
-                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
-                        style={{ background: "#FFFBEB", color: "#D97706", borderColor: "#FDE68A" }}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"style={{ background: "#FFFBEB", color: "#D97706", borderColor: "#FDE68A"}}
                         onClick={() => alert(`[Mock] Complete Missing Items — ${deal.client}`)}
                       >
                         Complete Missing Items
@@ -633,15 +596,15 @@ function BillingHandoffReadiness() {
         })}
       </div>
 
-      <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
-        This widget shows summary visibility only. For full billing operations, open the{" "}
+      <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>
+        This widget shows summary visibility only. For full billing operations, open the{""}
         <a href="/sales/handoffs" className="underline" style={{ color: "#2563EB" }}>Handoff Center</a>.
       </p>
     </div>
   );
 }
 
-// ── Affiliate Types & Mock Data ──────────────────────────────────────────────
+//  Affiliate Types & Mock Data 
 
 interface AffiliateKPI {
   activeAffiliates: number;
@@ -656,7 +619,7 @@ interface TopAffiliate extends Record<string, unknown> {
   wonDeals: number;
   revenueGenerated: string;
   pendingCommission: string;
-  status: "Active" | "Inactive" | "Pending";
+  status: "Active"| "Inactive"| "Pending";
 }
 
 const affiliateKPI: AffiliateKPI = {
@@ -667,34 +630,24 @@ const affiliateKPI: AffiliateKPI = {
 };
 
 const topAffiliates: TopAffiliate[] = [
-  { affiliate: "Brandon Ellis (Ellis Consulting)",  referralCount: 5, wonDeals: 3, revenueGenerated: "$14,400/mo", pendingCommission: "$1,440", status: "Active" },
-  { affiliate: "Maria Santos (Santos Partners)",    referralCount: 4, wonDeals: 2, revenueGenerated: "$9,600/mo",  pendingCommission: "$960",   status: "Active" },
-  { affiliate: "Tyler Nguyen (Nguyen Agency)",      referralCount: 3, wonDeals: 2, revenueGenerated: "$8,800/mo",  pendingCommission: "$880",   status: "Active" },
-  { affiliate: "Lisa Park (Park Marketing Group)",  referralCount: 3, wonDeals: 1, revenueGenerated: "$6,000/mo",  pendingCommission: "$360",   status: "Active" },
-  { affiliate: "Carlos Reyes (Reyes Digital)",      referralCount: 2, wonDeals: 1, revenueGenerated: "$4,000/mo",  pendingCommission: "—",      status: "Active" },
+  { affiliate: "Brandon Ellis (Ellis Consulting)",  referralCount: 5, wonDeals: 3, revenueGenerated: "$14,400/mo", pendingCommission: "$1,440", status: "Active"},
+  { affiliate: "Maria Santos (Santos Partners)",    referralCount: 4, wonDeals: 2, revenueGenerated: "$9,600/mo",  pendingCommission: "$960",   status: "Active"},
+  { affiliate: "Tyler Nguyen (Nguyen Agency)",      referralCount: 3, wonDeals: 2, revenueGenerated: "$8,800/mo",  pendingCommission: "$880",   status: "Active"},
+  { affiliate: "Lisa Park (Park Marketing Group)",  referralCount: 3, wonDeals: 1, revenueGenerated: "$6,000/mo",  pendingCommission: "$360",   status: "Active"},
+  { affiliate: "Carlos Reyes (Reyes Digital)",      referralCount: 2, wonDeals: 1, revenueGenerated: "$4,000/mo",  pendingCommission: "—",      status: "Active"},
 ];
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+//  Types 
 
 type OpportunityStage =
-  | "New Lead"
-  | "Discovery"
-  | "Proposal"
-  | "Negotiation"
-  | "Verbal Agreement"
-  | "Closed Won"
-  | "Closed Lost";
+  | "New Lead"| "Discovery"| "Proposal"| "Negotiation"| "Verbal Agreement"| "Closed Won"| "Closed Lost";
 
-type ProposalStatus = "Draft" | "Sent" | "Viewed" | "Negotiating" | "Accepted" | "Rejected";
+type ProposalStatus = "Draft"| "Sent"| "Viewed"| "Negotiating"| "Accepted"| "Rejected";
 
-type ContractStatus = "Active" | "Pending" | "Expired" | "Cancelled";
+type ContractStatus = "Active"| "Pending"| "Expired"| "Cancelled";
 
 type BillingHandoffStatus =
-  | "Ready For Billing"
-  | "Sent To Billing"
-  | "Billing Accepted"
-  | "Awaiting Invoice"
-  | "Awaiting Payment";
+  | "Ready For Billing"| "Sent To Billing"| "Billing Accepted"| "Awaiting Invoice"| "Awaiting Payment";
 
 interface Opportunity extends Record<string, unknown> {
   client: string;
@@ -763,7 +716,7 @@ interface BillingHandoff extends Record<string, unknown> {
   commissionEligible: boolean;
 }
 
-// ── New Phase 2 Types ─────────────────────────────────────────────────────────
+//  New Phase 2 Types 
 
 interface ProposalBuilder extends Record<string, unknown> {
   proposalName: string;
@@ -815,7 +768,7 @@ interface SalesRepPerformance extends Record<string, unknown> {
   forecastRevenue: string;
 }
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const opportunities: Opportunity[] = [
   {
@@ -1148,7 +1101,7 @@ const billingHandoffs: BillingHandoff[] = [
   },
 ];
 
-// ── Phase 2 Mock Data ─────────────────────────────────────────────────────────
+//  Phase 2 Mock Data 
 
 const mockProposalBuilders: ProposalBuilder[] = [
   {
@@ -1190,57 +1143,57 @@ const mockProposalBuilders: ProposalBuilder[] = [
 ];
 
 const serviceConfigs: ServiceConfig[] = [
-  { service: "SEO",                  included: true,  monthlyFee: "$800",   setupFee: "$400",   departmentOwner: "SEO Team",     profitability: "84%" },
-  { service: "GBP",                  included: true,  monthlyFee: "$300",   setupFee: "$150",   departmentOwner: "Local Team",   profitability: "88%" },
-  { service: "Yelp",                 included: false, monthlyFee: "$200",   setupFee: "$100",   departmentOwner: "Local Team",   profitability: "79%" },
-  { service: "Meta Ads",             included: true,  monthlyFee: "$1,200", setupFee: "$600",   departmentOwner: "Paid Team",    profitability: "72%" },
-  { service: "Google Ads",           included: true,  monthlyFee: "$1,500", setupFee: "$750",   departmentOwner: "Paid Team",    profitability: "74%" },
-  { service: "LSA",                  included: false, monthlyFee: "$400",   setupFee: "$200",   departmentOwner: "Paid Team",    profitability: "81%" },
-  { service: "Content",              included: false, monthlyFee: "$500",   setupFee: "$250",   departmentOwner: "Content Team", profitability: "76%" },
-  { service: "Reporting",            included: true,  monthlyFee: "$150",   setupFee: "$0",     departmentOwner: "Ops Team",     profitability: "92%" },
-  { service: "Website Development",  included: false, monthlyFee: "$0",     setupFee: "$3,500", departmentOwner: "Dev Team",     profitability: "65%" },
-  { service: "Landing Pages",        included: false, monthlyFee: "$300",   setupFee: "$500",   departmentOwner: "Dev Team",     profitability: "70%" },
-  { service: "Call Tracking",        included: false, monthlyFee: "$100",   setupFee: "$50",    departmentOwner: "Ops Team",     profitability: "90%" },
-  { service: "Conversion Tracking",  included: false, monthlyFee: "$150",   setupFee: "$100",   departmentOwner: "Dev Team",     profitability: "87%" },
+  { service: "SEO",                  included: true,  monthlyFee: "$800",   setupFee: "$400",   departmentOwner: "SEO Team",     profitability: "84%"},
+  { service: "GBP",                  included: true,  monthlyFee: "$300",   setupFee: "$150",   departmentOwner: "Local Team",   profitability: "88%"},
+  { service: "Yelp",                 included: false, monthlyFee: "$200",   setupFee: "$100",   departmentOwner: "Local Team",   profitability: "79%"},
+  { service: "Meta Ads",             included: true,  monthlyFee: "$1,200", setupFee: "$600",   departmentOwner: "Paid Team",    profitability: "72%"},
+  { service: "Google Ads",           included: true,  monthlyFee: "$1,500", setupFee: "$750",   departmentOwner: "Paid Team",    profitability: "74%"},
+  { service: "LSA",                  included: false, monthlyFee: "$400",   setupFee: "$200",   departmentOwner: "Paid Team",    profitability: "81%"},
+  { service: "Content",              included: false, monthlyFee: "$500",   setupFee: "$250",   departmentOwner: "Content Team", profitability: "76%"},
+  { service: "Reporting",            included: true,  monthlyFee: "$150",   setupFee: "$0",     departmentOwner: "Ops Team",     profitability: "92%"},
+  { service: "Website Development",  included: false, monthlyFee: "$0",     setupFee: "$3,500", departmentOwner: "Dev Team",     profitability: "65%"},
+  { service: "Landing Pages",        included: false, monthlyFee: "$300",   setupFee: "$500",   departmentOwner: "Dev Team",     profitability: "70%"},
+  { service: "Call Tracking",        included: false, monthlyFee: "$100",   setupFee: "$50",    departmentOwner: "Ops Team",     profitability: "90%"},
+  { service: "Conversion Tracking",  included: false, monthlyFee: "$150",   setupFee: "$100",   departmentOwner: "Dev Team",     profitability: "87%"},
 ];
 
 const packageTemplates: PackageTemplate[] = [
-  { packageName: "SEO Growth Package",         includedServices: "SEO, GBP, Reporting",                                     monthlyValue: "$1,500/mo", setupFee: "$750",   contractLength: "6 months",  profitabilityScore: "82%" },
-  { packageName: "Local Domination Package",   includedServices: "SEO, GBP, Yelp, Reporting",                              monthlyValue: "$2,200/mo", setupFee: "$1,000", contractLength: "12 months", profitabilityScore: "88%" },
-  { packageName: "Lead Generation Package",    includedServices: "Meta Ads, Google Ads, Landing Pages, Reporting",          monthlyValue: "$3,500/mo", setupFee: "$1,500", contractLength: "6 months",  profitabilityScore: "76%" },
-  { packageName: "MedSpa Growth Package",      includedServices: "SEO, GBP, Meta Ads, Yelp, Reporting",                    monthlyValue: "$4,200/mo", setupFee: "$1,800", contractLength: "12 months", profitabilityScore: "83%" },
-  { packageName: "Home Services Growth Package", includedServices: "SEO, GBP, Google Ads, LSA, Reporting",                monthlyValue: "$3,800/mo", setupFee: "$1,600", contractLength: "12 months", profitabilityScore: "85%" },
+  { packageName: "SEO Growth Package",         includedServices: "SEO, GBP, Reporting",                                     monthlyValue: "$1,500/mo", setupFee: "$750",   contractLength: "6 months",  profitabilityScore: "82%"},
+  { packageName: "Local Domination Package",   includedServices: "SEO, GBP, Yelp, Reporting",                              monthlyValue: "$2,200/mo", setupFee: "$1,000", contractLength: "12 months", profitabilityScore: "88%"},
+  { packageName: "Lead Generation Package",    includedServices: "Meta Ads, Google Ads, Landing Pages, Reporting",          monthlyValue: "$3,500/mo", setupFee: "$1,500", contractLength: "6 months",  profitabilityScore: "76%"},
+  { packageName: "MedSpa Growth Package",      includedServices: "SEO, GBP, Meta Ads, Yelp, Reporting",                    monthlyValue: "$4,200/mo", setupFee: "$1,800", contractLength: "12 months", profitabilityScore: "83%"},
+  { packageName: "Home Services Growth Package", includedServices: "SEO, GBP, Google Ads, LSA, Reporting",                monthlyValue: "$3,800/mo", setupFee: "$1,600", contractLength: "12 months", profitabilityScore: "85%"},
 ];
 
 const salesActivityTimeline: SalesActivityEntry[] = [
-  { date: "Jun 2, 2025",  client: "Coastal Realty",    activity: "Lead Created",      owner: "Mike T.",    notes: "Inbound via LinkedIn" },
-  { date: "Jun 1, 2025",  client: "Summit Landscaping", activity: "Discovery Call",   owner: "Jordan M.",  notes: "Client interested in SEO + GBP" },
-  { date: "May 30, 2025", client: "Sunstate Solar",    activity: "Closed Won",        owner: "Sarah K.",   notes: "Contract signed electronically" },
-  { date: "May 28, 2025", client: "Sunstate Solar",    activity: "Sent To Billing",   owner: "Sarah K.",   notes: "Handoff packet submitted to billing" },
-  { date: "May 26, 2025", client: "Harbor Auto Group", activity: "Proposal Sent",     owner: "Mike T.",    notes: "Full Service proposal emailed" },
-  { date: "May 25, 2025", client: "Summit Landscaping", activity: "Proposal Viewed",  owner: "Jordan M.",  notes: "Client opened proposal link" },
-  { date: "May 22, 2025", client: "Metro Dental Group", activity: "Negotiation",      owner: "Jordan M.",  notes: "Price discussion on GBP tier" },
-  { date: "May 20, 2025", client: "Metro Dental Group", activity: "Proposal Sent",    owner: "Jordan M.",  notes: "Local Domination proposal sent" },
-  { date: "May 18, 2025", client: "Harbor Auto Group",  activity: "Discovery Call",   owner: "Mike T.",    notes: "Explored multi-channel needs" },
-  { date: "May 15, 2025", client: "Sunstate Solar",    activity: "Contract Signed",   owner: "Sarah K.",   notes: "Lead Gen 6-month contract" },
+  { date: "Jun 2, 2025",  client: "Coastal Realty",    activity: "Lead Created",      owner: "Mike T.",    notes: "Inbound via LinkedIn"},
+  { date: "Jun 1, 2025",  client: "Summit Landscaping", activity: "Discovery Call",   owner: "Jordan M.",  notes: "Client interested in SEO + GBP"},
+  { date: "May 30, 2025", client: "Sunstate Solar",    activity: "Closed Won",        owner: "Sarah K.",   notes: "Contract signed electronically"},
+  { date: "May 28, 2025", client: "Sunstate Solar",    activity: "Sent To Billing",   owner: "Sarah K.",   notes: "Handoff packet submitted to billing"},
+  { date: "May 26, 2025", client: "Harbor Auto Group", activity: "Proposal Sent",     owner: "Mike T.",    notes: "Full Service proposal emailed"},
+  { date: "May 25, 2025", client: "Summit Landscaping", activity: "Proposal Viewed",  owner: "Jordan M.",  notes: "Client opened proposal link"},
+  { date: "May 22, 2025", client: "Metro Dental Group", activity: "Negotiation",      owner: "Jordan M.",  notes: "Price discussion on GBP tier"},
+  { date: "May 20, 2025", client: "Metro Dental Group", activity: "Proposal Sent",    owner: "Jordan M.",  notes: "Local Domination proposal sent"},
+  { date: "May 18, 2025", client: "Harbor Auto Group",  activity: "Discovery Call",   owner: "Mike T.",    notes: "Explored multi-channel needs"},
+  { date: "May 15, 2025", client: "Sunstate Solar",    activity: "Contract Signed",   owner: "Sarah K.",   notes: "Lead Gen 6-month contract"},
 ];
 
 const salesTeamPerformance: SalesRepPerformance[] = [
-  { salesRep: "Jordan M.", opportunities: 3, proposalsSent: 3, closedWon: 1, closedLost: 1, conversionRate: "50%", revenueClosed: "$4,500/mo", forecastRevenue: "$8,100/mo" },
-  { salesRep: "Sarah K.",  opportunities: 2, proposalsSent: 2, closedWon: 1, closedLost: 0, conversionRate: "50%", revenueClosed: "$6,000/mo", forecastRevenue: "$6,720/mo" },
-  { salesRep: "Mike T.",   opportunities: 2, proposalsSent: 2, closedWon: 0, closedLost: 0, conversionRate: "0%",  revenueClosed: "$0",        forecastRevenue: "$5,100/mo" },
+  { salesRep: "Jordan M.", opportunities: 3, proposalsSent: 3, closedWon: 1, closedLost: 1, conversionRate: "50%", revenueClosed: "$4,500/mo", forecastRevenue: "$8,100/mo"},
+  { salesRep: "Sarah K.",  opportunities: 2, proposalsSent: 2, closedWon: 1, closedLost: 0, conversionRate: "50%", revenueClosed: "$6,000/mo", forecastRevenue: "$6,720/mo"},
+  { salesRep: "Mike T.",   opportunities: 2, proposalsSent: 2, closedWon: 0, closedLost: 0, conversionRate: "0%",  revenueClosed: "$0",        forecastRevenue: "$5,100/mo"},
 ];
 
-// ── Pipeline Stage Config ──────────────────────────────────────────────────────
+//  Pipeline Stage Config 
 
 const OPPORTUNITY_STAGES: { stage: OpportunityStage; color: string }[] = [
-  { stage: "New Lead",         color: "#94A3B8" },
-  { stage: "Discovery",        color: "#2563EB" },
-  { stage: "Proposal",         color: "#7C3AED" },
-  { stage: "Negotiation",      color: "#D97706" },
-  { stage: "Verbal Agreement", color: "#0891B2" },
-  { stage: "Closed Won",       color: "#059669" },
-  { stage: "Closed Lost",      color: "#DC2626" },
+  { stage: "New Lead",         color: "#94A3B8"},
+  { stage: "Discovery",        color: "#2563EB"},
+  { stage: "Proposal",         color: "#7C3AED"},
+  { stage: "Negotiation",      color: "#D97706"},
+  { stage: "Verbal Agreement", color: "#0891B2"},
+  { stage: "Closed Won",       color: "#059669"},
+  { stage: "Closed Lost",      color: "#DC2626"},
 ];
 
 function getPipelineStats() {
@@ -1259,10 +1212,10 @@ function getPipelineStats() {
   });
 }
 
-// ── Status Badge Helpers ───────────────────────────────────────────────────────
+//  Status Badge Helpers 
 
-function stageVariant(stage: OpportunityStage): "info" | "pending" | "warning" | "success" | "error" | "neutral" {
-  const map: Record<OpportunityStage, "info" | "pending" | "warning" | "success" | "error" | "neutral"> = {
+function stageVariant(stage: OpportunityStage): "info"| "pending"| "warning"| "success"| "error"| "neutral"{
+  const map: Record<OpportunityStage, "info"| "pending"| "warning"| "success"| "error"| "neutral"> = {
     "New Lead":         "neutral",
     "Discovery":        "info",
     "Proposal":         "pending",
@@ -1274,8 +1227,8 @@ function stageVariant(stage: OpportunityStage): "info" | "pending" | "warning" |
   return map[stage];
 }
 
-function proposalStatusVariant(s: ProposalStatus): "info" | "pending" | "warning" | "success" | "error" | "neutral" {
-  const map: Record<ProposalStatus, "info" | "pending" | "warning" | "success" | "error" | "neutral"> = {
+function proposalStatusVariant(s: ProposalStatus): "info"| "pending"| "warning"| "success"| "error"| "neutral"{
+  const map: Record<ProposalStatus, "info"| "pending"| "warning"| "success"| "error"| "neutral"> = {
     Draft:       "neutral",
     Sent:        "info",
     Viewed:      "info",
@@ -1286,8 +1239,8 @@ function proposalStatusVariant(s: ProposalStatus): "info" | "pending" | "warning
   return map[s];
 }
 
-function contractStatusVariant(s: ContractStatus): "success" | "pending" | "error" | "neutral" {
-  const map: Record<ContractStatus, "success" | "pending" | "error" | "neutral"> = {
+function contractStatusVariant(s: ContractStatus): "success"| "pending"| "error"| "neutral"{
+  const map: Record<ContractStatus, "success"| "pending"| "error"| "neutral"> = {
     Active:    "success",
     Pending:   "pending",
     Expired:   "error",
@@ -1296,8 +1249,8 @@ function contractStatusVariant(s: ContractStatus): "success" | "pending" | "erro
   return map[s];
 }
 
-function billingStatusVariant(s: BillingHandoffStatus): "neutral" | "info" | "success" | "warning" | "pending" {
-  const map: Record<BillingHandoffStatus, "neutral" | "info" | "success" | "warning" | "pending"> = {
+function billingStatusVariant(s: BillingHandoffStatus): "neutral"| "info"| "success"| "warning"| "pending"{
+  const map: Record<BillingHandoffStatus, "neutral"| "info"| "success"| "warning"| "pending"> = {
     "Ready For Billing": "neutral",
     "Sent To Billing":   "info",
     "Billing Accepted":  "success",
@@ -1307,18 +1260,18 @@ function billingStatusVariant(s: BillingHandoffStatus): "neutral" | "info" | "su
   return map[s];
 }
 
-// ── Table Columns ─────────────────────────────────────────────────────────────
+//  Table Columns 
 
 const opportunityColumns: Column<Opportunity>[] = [
-  { key: "client",         header: "Client",           width: "150px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "industry",       header: "Industry",         width: "120px" },
-  { key: "leadSource",     header: "Lead Source",      width: "120px" },
-  { key: "services",       header: "Services Interested", width: "200px", render: (v) => <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{String(v)}</span> },
-  { key: "estimatedValue", header: "Est. Value",       width: "100px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "salesRep",       header: "Sales Rep",        width: "110px" },
+  { key: "client",         header: "Client",           width: "150px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "industry",       header: "Industry",         width: "120px"},
+  { key: "leadSource",     header: "Lead Source",      width: "120px"},
+  { key: "services",       header: "Services Interested", width: "200px", render: (v) => <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{String(v)}</span> },
+  { key: "estimatedValue", header: "Est. Value",       width: "100px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "salesRep",       header: "Sales Rep",        width: "110px"},
   {
     key: "stage", header: "Stage", width: "140px",
-    render: (v) => <StatusBadge variant={stageVariant(v as OpportunityStage)} label={String(v)} size="sm" />,
+    render: (v) => <StatusBadge variant={stageVariant(v as OpportunityStage)} label={String(v)} size="sm"/>,
   },
   {
     key: "probability", header: "Win %", width: "130px",
@@ -1326,29 +1279,29 @@ const opportunityColumns: Column<Opportunity>[] = [
       const n = Number(v);
       return (
         <div className="flex items-center gap-2">
-          <ProgressBar value={n} color={n >= 70 ? "bg-emerald-500" : n >= 40 ? "bg-amber-500" : "bg-red-400"} height={5} />
+          <ProgressBar value={n} color={n >= 70 ? "bg-emerald-500": n >= 40 ? "bg-amber-500": "bg-red-400"} height={5} />
           <span className="text-xs font-semibold text-slate-600 w-8 flex-shrink-0">{n}%</span>
         </div>
       );
     },
   },
-  { key: "closeDate", header: "Expected Close", width: "130px" },
+  { key: "closeDate", header: "Expected Close", width: "130px"},
 ];
 
 const servicePackageColumns: Column<ServicePackage>[] = [
-  { key: "package",            header: "Package",           width: "200px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "includedServices",   header: "Included Services", width: "250px", render: (v) => <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{String(v)}</span> },
-  { key: "monthlyValue",       header: "Monthly Value",     width: "110px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "setupFee",           header: "Setup Fee",         width: "90px" },
-  { key: "contractLength",     header: "Contract Length",   width: "120px" },
+  { key: "package",            header: "Package",           width: "200px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "includedServices",   header: "Included Services", width: "250px", render: (v) => <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{String(v)}</span> },
+  { key: "monthlyValue",       header: "Monthly Value",     width: "110px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "setupFee",           header: "Setup Fee",         width: "90px"},
+  { key: "contractLength",     header: "Contract Length",   width: "120px"},
   {
     key: "profitabilityScore", header: "Profitability", width: "120px",
     render: (v) => {
       const n = parseFloat(String(v));
       return (
         <div className="flex items-center gap-2">
-          <ProgressBar value={n} color={n >= 80 ? "bg-emerald-500" : n >= 70 ? "bg-amber-500" : "bg-red-400"} height={5} />
-          <span className="text-xs font-semibold" style={{ color: n >= 80 ? "#059669" : n >= 70 ? "#D97706" : "#DC2626" }}>{String(v)}</span>
+          <ProgressBar value={n} color={n >= 80 ? "bg-emerald-500": n >= 70 ? "bg-amber-500": "bg-red-400"} height={5} />
+          <span className="text-xs font-semibold"style={{ color: n >= 80 ? "#059669": n >= 70 ? "#D97706": "#DC2626"}}>{String(v)}</span>
         </div>
       );
     },
@@ -1356,128 +1309,128 @@ const servicePackageColumns: Column<ServicePackage>[] = [
 ];
 
 const proposalColumns: Column<ProposalRecord>[] = [
-  { key: "proposal",         header: "Proposal",          width: "200px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "client",           header: "Client",            width: "140px" },
-  { key: "servicesIncluded", header: "Services Included", width: "220px", render: (v) => <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{String(v)}</span> },
-  { key: "monthlyValue",     header: "Monthly Value",     width: "110px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "setupFee",         header: "Setup Fee",         width: "90px" },
-  { key: "contractLength",   header: "Contract",          width: "100px" },
+  { key: "proposal",         header: "Proposal",          width: "200px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "client",           header: "Client",            width: "140px"},
+  { key: "servicesIncluded", header: "Services Included", width: "220px", render: (v) => <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{String(v)}</span> },
+  { key: "monthlyValue",     header: "Monthly Value",     width: "110px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "setupFee",         header: "Setup Fee",         width: "90px"},
+  { key: "contractLength",   header: "Contract",          width: "100px"},
   {
     key: "status", header: "Status", width: "120px",
-    render: (v) => <StatusBadge variant={proposalStatusVariant(v as ProposalStatus)} label={String(v)} size="sm" />,
+    render: (v) => <StatusBadge variant={proposalStatusVariant(v as ProposalStatus)} label={String(v)} size="sm"/>,
   },
-  { key: "sentDate",       header: "Sent Date",   width: "110px" },
-  { key: "expirationDate", header: "Expires",     width: "110px" },
+  { key: "sentDate",       header: "Sent Date",   width: "110px"},
+  { key: "expirationDate", header: "Expires",     width: "110px"},
 ];
 
 const contractColumns: Column<ContractRecord>[] = [
-  { key: "client",         header: "Client",           width: "150px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "contractType",   header: "Contract Type",    width: "160px" },
-  { key: "contractLength", header: "Length",           width: "100px" },
-  { key: "monthlyValue",   header: "Monthly Value",    width: "110px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "setupFee",       header: "Setup Fee",        width: "90px" },
-  { key: "startDate",      header: "Start Date",       width: "110px" },
-  { key: "endDate",        header: "End Date",         width: "110px" },
-  { key: "renewalDate",    header: "Renewal Date",     width: "110px" },
+  { key: "client",         header: "Client",           width: "150px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "contractType",   header: "Contract Type",    width: "160px"},
+  { key: "contractLength", header: "Length",           width: "100px"},
+  { key: "monthlyValue",   header: "Monthly Value",    width: "110px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "setupFee",       header: "Setup Fee",        width: "90px"},
+  { key: "startDate",      header: "Start Date",       width: "110px"},
+  { key: "endDate",        header: "End Date",         width: "110px"},
+  { key: "renewalDate",    header: "Renewal Date",     width: "110px"},
   {
     key: "status", header: "Status", width: "100px",
-    render: (v) => <StatusBadge variant={contractStatusVariant(v as ContractStatus)} label={String(v)} size="sm" />,
+    render: (v) => <StatusBadge variant={contractStatusVariant(v as ContractStatus)} label={String(v)} size="sm"/>,
   },
 ];
 
 const closedWonColumns: Column<ClosedWonRecord>[] = [
-  { key: "client",         header: "Client",           width: "150px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "servicesSold",   header: "Services Sold",    width: "250px", render: (v) => <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{String(v)}</span> },
-  { key: "contractValue",  header: "Contract Value",   width: "150px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
+  { key: "client",         header: "Client",           width: "150px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "servicesSold",   header: "Services Sold",    width: "250px", render: (v) => <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{String(v)}</span> },
+  { key: "contractValue",  header: "Contract Value",   width: "150px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
   {
     key: "billingStatus", header: "Billing Status", width: "140px",
-    render: (v) => <StatusBadge variant="info" label={String(v)} size="sm" />,
+    render: (v) => <StatusBadge variant="info"label={String(v)} size="sm"/>,
   },
   {
     key: "handoffStatus", header: "Handoff Status", width: "140px",
     render: (v) => {
       const s = String(v);
-      return <StatusBadge variant={s === "Handoff Complete" ? "success" : "warning"} label={s} size="sm" />;
+      return <StatusBadge variant={s === "Handoff Complete"? "success": "warning"} label={s} size="sm"/>;
     },
   },
 ];
 
 const billingHandoffColumns: Column<BillingHandoff>[] = [
-  { key: "client",          header: "Client",            width: "150px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "servicesSold",    header: "Services Sold",     width: "200px", render: (v) => <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{String(v)}</span> },
-  { key: "contractValue",   header: "Contract Value",    width: "110px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
+  { key: "client",          header: "Client",            width: "150px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "servicesSold",    header: "Services Sold",     width: "200px", render: (v) => <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{String(v)}</span> },
+  { key: "contractValue",   header: "Contract Value",    width: "110px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
   {
     key: "referralSource", header: "Referral Source", width: "120px",
     render: (v) => {
-      const c = String(v) === "Affiliate" ? "#059669" : "#2563EB";
-      return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: `${c}15`, color: c }}>{String(v)}</span>;
+      const c = String(v) === "Affiliate"? "#059669": "#2563EB";
+      return <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: `${c}15`, color: c }}>{String(v)}</span>;
     },
   },
   {
     key: "affiliateName", header: "Affiliate", width: "130px",
     render: (v) => {
       const s = String(v);
-      if (s === "—") return <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</span>;
-      return <span className="text-xs font-semibold" style={{ color: "#059669" }}>{s}</span>;
+      if (s === "—") return <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>—</span>;
+      return <span className="text-xs font-semibold"style={{ color: "#059669"}}>{s}</span>;
     },
   },
   {
     key: "commissionEligible", header: "Commission", width: "120px",
     render: (v) =>
       v ? (
-        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
-          ✓ Eligible
+        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0"}}>
+           Eligible
         </span>
       ) : (
-        <span className="text-[10px] font-semibold" style={{ color: "var(--rtm-text-muted)" }}>—</span>
+        <span className="text-[10px] font-semibold"style={{ color: "var(--rtm-text-muted)"}}>—</span>
       ),
   },
-  { key: "proposalStatus",  header: "Proposal Status",   width: "120px", render: (v) => <StatusBadge variant={proposalStatusVariant(v as ProposalStatus)} label={String(v)} size="sm" /> },
-  { key: "contractStatus",  header: "Contract Status",   width: "120px", render: (v) => <StatusBadge variant={contractStatusVariant(v as ContractStatus)} label={String(v)} size="sm" /> },
+  { key: "proposalStatus",  header: "Proposal Status",   width: "120px", render: (v) => <StatusBadge variant={proposalStatusVariant(v as ProposalStatus)} label={String(v)} size="sm"/> },
+  { key: "contractStatus",  header: "Contract Status",   width: "120px", render: (v) => <StatusBadge variant={contractStatusVariant(v as ContractStatus)} label={String(v)} size="sm"/> },
   {
     key: "billingStatus", header: "Billing Status", width: "150px",
-    render: (v) => <StatusBadge variant={billingStatusVariant(v as BillingHandoffStatus)} label={String(v)} size="sm" />,
+    render: (v) => <StatusBadge variant={billingStatusVariant(v as BillingHandoffStatus)} label={String(v)} size="sm"/>,
   },
-  { key: "handoffNotes", header: "Handoff Notes", width: "200px", render: (v) => <span className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>{String(v)}</span> },
-  { key: "nextAction",   header: "Next Action",   width: "190px", render: (v) => <span className="text-xs font-medium" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
+  { key: "handoffNotes", header: "Handoff Notes", width: "200px", render: (v) => <span className="text-xs italic"style={{ color: "var(--rtm-text-muted)"}}>{String(v)}</span> },
+  { key: "nextAction",   header: "Next Action",   width: "190px", render: (v) => <span className="text-xs font-medium"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
 ];
 
-// ── Phase 2 Table Columns ─────────────────────────────────────────────────────
+//  Phase 2 Table Columns 
 
 const proposalBuilderColumns: Column<ProposalBuilder>[] = [
-  { key: "proposalName",       header: "Proposal Name",       width: "200px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "client",             header: "Client",              width: "150px" },
-  { key: "opportunity",        header: "Opportunity",         width: "180px" },
-  { key: "salesRep",           header: "Sales Rep",           width: "110px" },
-  { key: "proposalDate",       header: "Proposal Date",       width: "120px" },
-  { key: "expirationDate",     header: "Expiration Date",     width: "120px" },
-  { key: "contractLength",     header: "Contract Length",     width: "120px" },
-  { key: "monthlyValue",       header: "Monthly Value",       width: "110px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "setupFee",           header: "Setup Fee",           width: "90px" },
-  { key: "totalContractValue", header: "Total Contract Value", width: "140px", render: (v) => <span className="font-bold text-xs" style={{ color: "#2563EB" }}>{String(v)}</span> },
+  { key: "proposalName",       header: "Proposal Name",       width: "200px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "client",             header: "Client",              width: "150px"},
+  { key: "opportunity",        header: "Opportunity",         width: "180px"},
+  { key: "salesRep",           header: "Sales Rep",           width: "110px"},
+  { key: "proposalDate",       header: "Proposal Date",       width: "120px"},
+  { key: "expirationDate",     header: "Expiration Date",     width: "120px"},
+  { key: "contractLength",     header: "Contract Length",     width: "120px"},
+  { key: "monthlyValue",       header: "Monthly Value",       width: "110px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "setupFee",           header: "Setup Fee",           width: "90px"},
+  { key: "totalContractValue", header: "Total Contract Value", width: "140px", render: (v) => <span className="font-bold text-xs"style={{ color: "#2563EB"}}>{String(v)}</span> },
 ];
 
 const serviceConfigColumns: Column<ServiceConfig>[] = [
-  { key: "service",         header: "Service",         width: "180px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
+  { key: "service",         header: "Service",         width: "180px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
   {
     key: "included", header: "Included", width: "90px",
     render: (v) => (
-      <span className={`text-xs font-bold ${v ? "text-emerald-600" : "text-slate-400"}`}>
-        {v ? "✓ Yes" : "— No"}
+      <span className={`text-xs font-bold ${v ? "text-emerald-600": "text-slate-400"}`}>
+        {v ? "Yes": "— No"}
       </span>
     ),
   },
-  { key: "monthlyFee",      header: "Monthly Fee",     width: "100px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "setupFee",        header: "Setup Fee",       width: "90px" },
-  { key: "departmentOwner", header: "Department Owner", width: "140px" },
+  { key: "monthlyFee",      header: "Monthly Fee",     width: "100px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "setupFee",        header: "Setup Fee",       width: "90px"},
+  { key: "departmentOwner", header: "Department Owner", width: "140px"},
   {
     key: "profitability", header: "Profitability", width: "130px",
     render: (v) => {
       const n = parseFloat(String(v));
       return (
         <div className="flex items-center gap-2">
-          <ProgressBar value={n} color={n >= 85 ? "bg-emerald-500" : n >= 75 ? "bg-amber-500" : "bg-red-400"} height={5} />
-          <span className="text-xs font-semibold" style={{ color: n >= 85 ? "#059669" : n >= 75 ? "#D97706" : "#DC2626" }}>{String(v)}</span>
+          <ProgressBar value={n} color={n >= 85 ? "bg-emerald-500": n >= 75 ? "bg-amber-500": "bg-red-400"} height={5} />
+          <span className="text-xs font-semibold"style={{ color: n >= 85 ? "#059669": n >= 75 ? "#D97706": "#DC2626"}}>{String(v)}</span>
         </div>
       );
     },
@@ -1485,19 +1438,19 @@ const serviceConfigColumns: Column<ServiceConfig>[] = [
 ];
 
 const packageTemplateColumns: Column<PackageTemplate>[] = [
-  { key: "packageName",       header: "Package Name",      width: "200px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "includedServices",  header: "Included Services", width: "280px", render: (v) => <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{String(v)}</span> },
-  { key: "monthlyValue",      header: "Monthly Value",     width: "110px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "setupFee",          header: "Setup Fee",         width: "90px" },
-  { key: "contractLength",    header: "Contract Length",   width: "120px" },
+  { key: "packageName",       header: "Package Name",      width: "200px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "includedServices",  header: "Included Services", width: "280px", render: (v) => <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{String(v)}</span> },
+  { key: "monthlyValue",      header: "Monthly Value",     width: "110px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "setupFee",          header: "Setup Fee",         width: "90px"},
+  { key: "contractLength",    header: "Contract Length",   width: "120px"},
   {
     key: "profitabilityScore", header: "Profitability Score", width: "140px",
     render: (v) => {
       const n = parseFloat(String(v));
       return (
         <div className="flex items-center gap-2">
-          <ProgressBar value={n} color={n >= 85 ? "bg-emerald-500" : n >= 75 ? "bg-amber-500" : "bg-red-400"} height={5} />
-          <span className="text-xs font-semibold" style={{ color: n >= 85 ? "#059669" : n >= 75 ? "#D97706" : "#DC2626" }}>{String(v)}</span>
+          <ProgressBar value={n} color={n >= 85 ? "bg-emerald-500": n >= 75 ? "bg-amber-500": "bg-red-400"} height={5} />
+          <span className="text-xs font-semibold"style={{ color: n >= 85 ? "#059669": n >= 75 ? "#D97706": "#DC2626"}}>{String(v)}</span>
         </div>
       );
     },
@@ -1505,8 +1458,8 @@ const packageTemplateColumns: Column<PackageTemplate>[] = [
 ];
 
 const salesActivityColumns: Column<SalesActivityEntry>[] = [
-  { key: "date",     header: "Date",     width: "120px" },
-  { key: "client",   header: "Client",   width: "160px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
+  { key: "date",     header: "Date",     width: "120px"},
+  { key: "client",   header: "Client",   width: "160px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
   {
     key: "activity", header: "Activity", width: "160px",
     render: (v) => {
@@ -1516,36 +1469,36 @@ const salesActivityColumns: Column<SalesActivityEntry>[] = [
         "Closed Won": "#059669", "Sent To Billing": "#D97706",
       };
       const c = colors[String(v)] ?? "#64748B";
-      return <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: `${c}15`, color: c }}>{String(v)}</span>;
+      return <span className="text-xs font-semibold px-2 py-0.5 rounded-full"style={{ background: `${c}15`, color: c }}>{String(v)}</span>;
     },
   },
-  { key: "owner", header: "Owner", width: "110px" },
-  { key: "notes", header: "Notes", width: "240px", render: (v) => <span className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>{String(v)}</span> },
+  { key: "owner", header: "Owner", width: "110px"},
+  { key: "notes", header: "Notes", width: "240px", render: (v) => <span className="text-xs italic"style={{ color: "var(--rtm-text-muted)"}}>{String(v)}</span> },
 ];
 
 const salesTeamColumns: Column<SalesRepPerformance>[] = [
-  { key: "salesRep",       header: "Sales Rep",       width: "130px", render: (v) => <span className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{String(v)}</span> },
-  { key: "opportunities",  header: "Opportunities",   width: "110px", render: (v) => <span className="font-bold text-xs" style={{ color: "#2563EB" }}>{String(v)}</span> },
-  { key: "proposalsSent",  header: "Proposals Sent",  width: "120px", render: (v) => <span className="font-bold text-xs" style={{ color: "#7C3AED" }}>{String(v)}</span> },
-  { key: "closedWon",      header: "Closed Won",      width: "100px", render: (v) => <span className="font-bold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "closedLost",     header: "Closed Lost",     width: "100px", render: (v) => <span className="font-bold text-xs" style={{ color: "#DC2626" }}>{String(v)}</span> },
+  { key: "salesRep",       header: "Sales Rep",       width: "130px", render: (v) => <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{String(v)}</span> },
+  { key: "opportunities",  header: "Opportunities",   width: "110px", render: (v) => <span className="font-bold text-xs"style={{ color: "#2563EB"}}>{String(v)}</span> },
+  { key: "proposalsSent",  header: "Proposals Sent",  width: "120px", render: (v) => <span className="font-bold text-xs"style={{ color: "#7C3AED"}}>{String(v)}</span> },
+  { key: "closedWon",      header: "Closed Won",      width: "100px", render: (v) => <span className="font-bold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "closedLost",     header: "Closed Lost",     width: "100px", render: (v) => <span className="font-bold text-xs"style={{ color: "#DC2626"}}>{String(v)}</span> },
   {
     key: "conversionRate", header: "Conversion Rate", width: "130px",
     render: (v) => {
       const n = parseFloat(String(v));
       return (
         <div className="flex items-center gap-2">
-          <ProgressBar value={n} color={n >= 40 ? "bg-emerald-500" : n >= 20 ? "bg-amber-500" : "bg-red-400"} height={5} />
-          <span className="text-xs font-semibold" style={{ color: n >= 40 ? "#059669" : n >= 20 ? "#D97706" : "#DC2626" }}>{String(v)}</span>
+          <ProgressBar value={n} color={n >= 40 ? "bg-emerald-500": n >= 20 ? "bg-amber-500": "bg-red-400"} height={5} />
+          <span className="text-xs font-semibold"style={{ color: n >= 40 ? "#059669": n >= 20 ? "#D97706": "#DC2626"}}>{String(v)}</span>
         </div>
       );
     },
   },
-  { key: "revenueClosed",   header: "Revenue Closed",   width: "120px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#059669" }}>{String(v)}</span> },
-  { key: "forecastRevenue", header: "Forecast Revenue", width: "130px", render: (v) => <span className="font-semibold text-xs" style={{ color: "#2563EB" }}>{String(v)}</span> },
+  { key: "revenueClosed",   header: "Revenue Closed",   width: "120px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#059669"}}>{String(v)}</span> },
+  { key: "forecastRevenue", header: "Forecast Revenue", width: "130px", render: (v) => <span className="font-semibold text-xs"style={{ color: "#2563EB"}}>{String(v)}</span> },
 ];
 
-// ── Component ─────────────────────────────────────────────────────────────────
+//  Component 
 
 export default function SalesDashboard() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -1610,165 +1563,126 @@ export default function SalesDashboard() {
 
   return (
     <div className="space-y-6">
-      <WorkspaceHeader workspace={workspace} subtitle="Revenue generation command center — pipeline, proposals, contracts, and billing handoffs." />
+      <WorkspaceHeader workspace={workspace} subtitle="Revenue generation command center — pipeline, proposals, contracts, and billing handoffs."/>
 
-      {/* ── Sales Ownership Banner ────────────────────────────────────────── */}
-      <div className="rounded-xl border p-4" style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}>
-        <p className="text-sm font-bold mb-1" style={{ color: "#1D4ED8" }}>Sales Module Ownership</p>
-        <p className="text-xs mb-2" style={{ color: "#1E40AF" }}>
+      {/*  Sales Ownership Banner  */}
+      <div className="rounded-xl border p-4"style={{ background: "#EFF6FF", borderColor: "#BFDBFE"}}>
+        <p className="text-sm font-bold mb-1"style={{ color: "#1D4ED8"}}>Sales Module Ownership</p>
+        <p className="text-xs mb-2"style={{ color: "#1E40AF"}}>
           Sales owns the client lifecycle from <strong>Lead</strong> through <strong>Sent To Billing</strong>.
           Sales does <em>not</em> own payment confirmation, client activation, account assignment, or onboarding — those belong to Billing and Account Management.
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
           {["Lead","Opportunity","Proposal","Contract","Closed Won","Sent To Billing"].map((s, i, arr) => (
             <React.Fragment key={s}>
-              <span className="text-xs font-bold px-2.5 py-1 rounded-lg" style={{ background: "#1D4ED8", color: "#fff" }}>{s}</span>
-              {i < arr.length - 1 && <span style={{ color: "#93C5FD" }}>→</span>}
+              <span className="text-xs font-bold px-2.5 py-1 rounded-lg"style={{ background: "#1D4ED8", color: "#fff"}}>{s}</span>
+              {i < arr.length - 1 && <span style={{ color: "#93C5FD"}}>→</span>}
             </React.Fragment>
           ))}
         </div>
       </div>
 
-      {/* ── Client Lifecycle Status ───────────────────────────────────────── */}
+      {/*  Client Lifecycle Status  */}
       <SectionWrapper
-        title="Client Lifecycle Status"
-        description="Full pipeline view showing Sales, Billing, and Account Management ownership across every client stage"
-      >
+        title="Client Lifecycle Status"description="Full pipeline view showing Sales, Billing, and Account Management ownership across every client stage">
         <ClientLifecycleEngine activeStages={["Lead","Opportunity","Proposal","Contract","Closed Won","Sent To Billing"]} />
       </SectionWrapper>
 
-      {/* ── Billing Handoff Readiness ─────────────────────────────────────── */}
+      {/*  Billing Handoff Readiness  */}
       <SectionWrapper
-        title="Billing Handoff Readiness"
-        description="Track approved proposals and confirm each deal is ready to send to Billing."
-        actions={
+        title="Billing Handoff Readiness"description="Track approved proposals and confirm each deal is ready to send to Billing."actions={
           <a href="/sales/handoffs" className="rtm-btn-secondary text-sm">Open Handoff Center →</a>
         }
       >
         <BillingHandoffReadiness />
       </SectionWrapper>
 
-      {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
+      {/*  KPI Cards  */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
-          title="New Leads"
-          value={String(opportunities.filter((o) => o.stage === "New Lead").length)}
-          trend="up" trendValue="3"
-          iconBg="#EFF6FF" iconColor="#2563EB"
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+          title="New Leads"value={String(opportunities.filter((o) => o.stage === "New Lead").length)}
+          trend="up"trendValue="3"iconBg="#EFF6FF"iconColor="#2563EB"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>}
         />
         <KpiCard
-          title="Opportunities"
-          value={String(opportunities.filter((o) => !["Closed Won", "Closed Lost"].includes(o.stage)).length)}
-          trend="up" trendValue="2"
-          iconBg="#F5F3FF" iconColor="#7C3AED"
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+          title="Opportunities"value={String(opportunities.filter((o) => !["Closed Won", "Closed Lost"].includes(o.stage)).length)}
+          trend="up"trendValue="2"iconBg="#F5F3FF"iconColor="#7C3AED"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
         />
         <KpiCard
-          title="Active Proposals"
-          value={String(proposals.filter((p) => ["Sent", "Viewed", "Negotiating"].includes(p.status)).length)}
-          trend="up" trendValue="1"
-          iconBg="#FFFBEB" iconColor="#D97706"
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+          title="Active Proposals"value={String(proposals.filter((p) => ["Sent", "Viewed", "Negotiating"].includes(p.status)).length)}
+          trend="up"trendValue="1"iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>}
         />
         <KpiCard
-          title="Closed Won"
-          value={String(opportunities.filter((o) => o.stage === "Closed Won").length)}
-          trend="up" trendValue="1"
-          iconBg="#ECFDF5" iconColor="#059669"
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>}
+          title="Closed Won"value={String(opportunities.filter((o) => o.stage === "Closed Won").length)}
+          trend="up"trendValue="1"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>}
         />
         <KpiCard
-          title="Closed Lost"
-          value={String(opportunities.filter((o) => o.stage === "Closed Lost").length)}
-          iconBg="#FEF2F2" iconColor="#DC2626"
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          title="Closed Lost"value={String(opportunities.filter((o) => o.stage === "Closed Lost").length)}
+          iconBg="#FEF2F2"iconColor="#DC2626"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
         />
         <KpiCard
-          title="Pipeline Value"
-          value={`$${Math.round(totalPipeline / 1000)}k/mo`}
-          trend="up" trendValue="12%"
-          iconBg="#EFF6FF" iconColor="#2563EB"
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
+          title="Pipeline Value"value={`$${Math.round(totalPipeline / 1000)}k/mo`}
+          trend="up"trendValue="12%"iconBg="#EFF6FF"iconColor="#2563EB"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>}
         />
         <KpiCard
-          title="Forecast Revenue"
-          value={`$${Math.round(forecastRevenue / 1000)}k/mo`}
-          trend="up" trendValue="8%"
-          iconBg="#ECFDF5" iconColor="#059669"
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
+          title="Forecast Revenue"value={`$${Math.round(forecastRevenue / 1000)}k/mo`}
+          trend="up"trendValue="8%"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
         />
         <KpiCard
-          title="Avg Deal Size"
-          value={`$${Math.round(avgDealSize / 100) * 100}/mo`}
-          iconBg="#FFFBEB" iconColor="#D97706"
-          icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          title="Avg Deal Size"value={`$${Math.round(avgDealSize / 100) * 100}/mo`}
+          iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
         />
       </div>
 
-      {/* ── Affiliate KPI Cards ─────────────────────────────────────── */}
+      {/*  Affiliate KPI Cards  */}
       <SectionWrapper
-        title="Affiliate Program Overview"
-        description="Referral pipeline driven by active affiliates and partner channels"
-        actions={
+        title="Affiliate Program Overview"description="Referral pipeline driven by active affiliates and partner channels"actions={
           <a href="/sales/affiliates" className="rtm-btn-secondary text-sm">Manage Affiliates →</a>
         }
       >
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
           <KpiCard
-            title="Active Affiliates"
-            value={String(affiliateKPI.activeAffiliates)}
-            trend="up" trendValue="2"
-            iconBg="#F0FDF4" iconColor="#16A34A"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+            title="Active Affiliates"value={String(affiliateKPI.activeAffiliates)}
+            trend="up"trendValue="2"iconBg="#F0FDF4"iconColor="#16A34A"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>}
           />
           <KpiCard
-            title="Referral Leads"
-            value={String(affiliateKPI.referralLeads)}
-            trend="up" trendValue="3"
-            iconBg="#EFF6FF" iconColor="#2563EB"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>}
+            title="Referral Leads"value={String(affiliateKPI.referralLeads)}
+            trend="up"trendValue="3"iconBg="#EFF6FF"iconColor="#2563EB"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
           />
           <KpiCard
-            title="Referral Revenue"
-            value={affiliateKPI.referralRevenue}
-            trend="up" trendValue="8%"
-            iconBg="#ECFDF5" iconColor="#059669"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            title="Referral Revenue"value={affiliateKPI.referralRevenue}
+            trend="up"trendValue="8%"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
           />
           <KpiCard
-            title="Pending Commissions"
-            value={affiliateKPI.pendingCommissions}
-            iconBg="#FFFBEB" iconColor="#D97706"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>}
+            title="Pending Commissions"value={affiliateKPI.pendingCommissions}
+            iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>}
           />
         </div>
 
         {/* Top Performing Affiliates Widget */}
-        <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-          <div className="px-4 py-3 flex items-center justify-between" style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
-            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Top Performing Affiliates</p>
+        <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+          <div className="px-4 py-3 flex items-center justify-between"style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
+            <p className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Top Performing Affiliates</p>
             <a href="/sales/affiliates" className="text-xs font-semibold" style={{ color: "#059669" }}>View All →</a>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border)", background: "var(--rtm-bg)" }}>
+                <tr style={{ borderBottom: "1px solid var(--rtm-border)", background: "var(--rtm-bg)"}}>
                   {["Affiliate", "Referral Count", "Won Deals", "Revenue Generated", "Pending Commission", "Status"].map((h) => (
-                    <th key={h} className="px-4 py-2.5 text-left font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    <th key={h} className="px-4 py-2.5 text-left font-semibold"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {topAffiliates.map((aff, i) => (
-                  <tr key={i} style={{ borderBottom: "1px solid var(--rtm-border)", background: i % 2 === 0 ? "var(--rtm-surface)" : "var(--rtm-bg)" }}>
-                    <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{aff.affiliate}</td>
-                    <td className="px-4 py-2.5 font-bold" style={{ color: "#2563EB" }}>{aff.referralCount}</td>
-                    <td className="px-4 py-2.5 font-bold" style={{ color: "#059669" }}>{aff.wonDeals}</td>
-                    <td className="px-4 py-2.5 font-semibold" style={{ color: "#059669" }}>{aff.revenueGenerated}</td>
-                    <td className="px-4 py-2.5 font-semibold" style={{ color: "#D97706" }}>{aff.pendingCommission}</td>
+                  <tr key={i} style={{ borderBottom: "1px solid var(--rtm-border)", background: i % 2 === 0 ? "var(--rtm-surface)": "var(--rtm-bg)"}}>
+                    <td className="px-4 py-2.5 font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{aff.affiliate}</td>
+                    <td className="px-4 py-2.5 font-bold"style={{ color: "#2563EB"}}>{aff.referralCount}</td>
+                    <td className="px-4 py-2.5 font-bold"style={{ color: "#059669"}}>{aff.wonDeals}</td>
+                    <td className="px-4 py-2.5 font-semibold"style={{ color: "#059669"}}>{aff.revenueGenerated}</td>
+                    <td className="px-4 py-2.5 font-semibold"style={{ color: "#D97706"}}>{aff.pendingCommission}</td>
                     <td className="px-4 py-2.5">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669" }}>{aff.status}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669"}}>{aff.status}</span>
                     </td>
                   </tr>
                 ))}
@@ -1778,21 +1692,20 @@ export default function SalesDashboard() {
         </div>
       </SectionWrapper>
 
-      {/* ── ACTION CENTER ─────────────────────────────────────────────────── */}
-      <SectionWrapper title="Action Center" description="Quick actions for the sales team">
+      {/*  ACTION CENTER  */}
+      <SectionWrapper title="Action Center"description="Quick actions for the sales team">
         <div className="flex flex-wrap gap-3">
           {[
-            { label: "＋ Create Proposal",    color: "#7C3AED" },
-            { label: "＋ Create Package",     color: "#2563EB" },
-            { label: "✎ Generate Contract",   color: "#0891B2" },
-            { label: "📊 Forecast Revenue",   color: "#059669" },
-            { label: "→ Send To Billing",     color: "#D97706" },
-            { label: "⧉ Clone Opportunity",  color: "#64748B" },
+            { label: "Create Proposal",    color: "#7C3AED"},
+            { label: "Create Package",     color: "#2563EB"},
+            { label: "Generate Contract",   color: "#0891B2"},
+            { label: "Forecast Revenue",   color: "#059669"},
+            { label: "→ Send To Billing",     color: "#D97706"},
+            { label: "Clone Opportunity",  color: "#64748B"},
           ].map(({ label, color }) => (
             <button
               key={label}
-              className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
-              style={{ background: `${color}15`, color, borderColor: `${color}40` }}
+              className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"style={{ background: `${color}15`, color, borderColor: `${color}40` }}
               onClick={() => alert(`[Mock] ${label}`)}
             >
               {label}
@@ -1801,40 +1714,37 @@ export default function SalesDashboard() {
         </div>
       </SectionWrapper>
 
-      {/* ── PROPOSAL BUILDER ──────────────────────────────────────────────── */}
+      {/*  PROPOSAL BUILDER  */}
       <SectionWrapper
-        title="Proposal Builder"
-        description="Create and manage proposal workspaces for clients"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("proposalBuilder")}>
-            {activeSection === "proposalBuilder" ? "Collapse ▲" : "Expand ▼"}
+        title="Proposal Builder"description="Create and manage proposal workspaces for clients"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("proposalBuilder")}>
+            {activeSection === "proposalBuilder"? "Collapse": "Expand"}
           </button>
         }
       >
-        {activeSection === "proposalBuilder" ? (
+        {activeSection === "proposalBuilder"? (
           <div className="space-y-6">
             {/* Form */}
-            <div className="rounded-xl border p-5 space-y-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-              <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>New Proposal Workspace</p>
+            <div className="rounded-xl border p-5 space-y-4"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+              <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>New Proposal Workspace</p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {[
-                  { label: "Proposal Name", key: "proposalName", placeholder: "e.g. Summit Landscaping – Q3 SEO" },
-                  { label: "Client", key: "client", placeholder: "Client name" },
-                  { label: "Opportunity", key: "opportunity", placeholder: "Linked opportunity" },
-                  { label: "Sales Rep", key: "salesRep", placeholder: "Rep name" },
-                  { label: "Proposal Date", key: "proposalDate", placeholder: "Jun 1, 2025" },
-                  { label: "Expiration Date", key: "expirationDate", placeholder: "Jun 15, 2025" },
-                  { label: "Contract Length", key: "contractLength", placeholder: "e.g. 12 months" },
-                  { label: "Monthly Value", key: "monthlyValue", placeholder: "$0" },
-                  { label: "Setup Fee", key: "setupFee", placeholder: "$0" },
-                  { label: "Total Contract Value", key: "totalContractValue", placeholder: "$0" },
+                  { label: "Proposal Name", key: "proposalName", placeholder: "e.g. Summit Landscaping – Q3 SEO"},
+                  { label: "Client", key: "client", placeholder: "Client name"},
+                  { label: "Opportunity", key: "opportunity", placeholder: "Linked opportunity"},
+                  { label: "Sales Rep", key: "salesRep", placeholder: "Rep name"},
+                  { label: "Proposal Date", key: "proposalDate", placeholder: "Jun 1, 2025"},
+                  { label: "Expiration Date", key: "expirationDate", placeholder: "Jun 15, 2025"},
+                  { label: "Contract Length", key: "contractLength", placeholder: "e.g. 12 months"},
+                  { label: "Monthly Value", key: "monthlyValue", placeholder: "$0"},
+                  { label: "Setup Fee", key: "setupFee", placeholder: "$0"},
+                  { label: "Total Contract Value", key: "totalContractValue", placeholder: "$0"},
                 ].map(({ label, key, placeholder }) => (
                   <div key={key} className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{label}</label>
+                    <label className="text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>{label}</label>
                     <input
-                      className="rtm-input text-sm"
-                      placeholder={placeholder}
+                      className="rtm-input text-sm"placeholder={placeholder}
                       value={proposalForm[key as keyof typeof proposalForm]}
                       onChange={(e) => setProposalForm((f) => ({ ...f, [key]: e.target.value }))}
                     />
@@ -1845,19 +1755,18 @@ export default function SalesDashboard() {
               {/* Sections */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 {[
-                  { label: "Services Included", key: "servicesIncluded", placeholder: "List services..." },
-                  { label: "Deliverables Included", key: "deliverablesIncluded", placeholder: "List deliverables..." },
-                  { label: "Assumptions", key: "assumptions", placeholder: "Assumptions..." },
-                  { label: "Exclusions", key: "exclusions", placeholder: "What is excluded..." },
-                  { label: "Special Terms", key: "specialTerms", placeholder: "Special terms..." },
-                  { label: "Notes", key: "notes", placeholder: "Internal notes..." },
+                  { label: "Services Included", key: "servicesIncluded", placeholder: "List services..."},
+                  { label: "Deliverables Included", key: "deliverablesIncluded", placeholder: "List deliverables..."},
+                  { label: "Assumptions", key: "assumptions", placeholder: "Assumptions..."},
+                  { label: "Exclusions", key: "exclusions", placeholder: "What is excluded..."},
+                  { label: "Special Terms", key: "specialTerms", placeholder: "Special terms..."},
+                  { label: "Notes", key: "notes", placeholder: "Internal notes..."},
                 ].map(({ label, key, placeholder }) => (
                   <div key={key} className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{label}</label>
+                    <label className="text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>{label}</label>
                     <textarea
                       rows={3}
-                      className="rtm-input text-sm resize-none"
-                      placeholder={placeholder}
+                      className="rtm-input text-sm resize-none"placeholder={placeholder}
                       value={proposalForm[key as keyof typeof proposalForm]}
                       onChange={(e) => setProposalForm((f) => ({ ...f, [key]: e.target.value }))}
                     />
@@ -1868,15 +1777,14 @@ export default function SalesDashboard() {
               {/* Buttons */}
               <div className="flex flex-wrap gap-3 pt-2">
                 {[
-                  { label: "💾 Save Proposal",     color: "#64748B" },
-                  { label: "📄 Generate Proposal",  color: "#2563EB" },
-                  { label: "✉ Send Proposal",       color: "#7C3AED" },
-                  { label: "⧉ Clone Proposal",      color: "#0891B2" },
+                  { label: "Save Proposal",     color: "#64748B"},
+                  { label: "Generate Proposal",  color: "#2563EB"},
+                  { label: "Send Proposal",       color: "#7C3AED"},
+                  { label: "Clone Proposal",      color: "#0891B2"},
                 ].map(({ label, color }) => (
                   <button
                     key={label}
-                    className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
-                    style={{ background: `${color}15`, color, borderColor: `${color}40` }}
+                    className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"style={{ background: `${color}15`, color, borderColor: `${color}40` }}
                     onClick={() => alert(`[Mock] ${label}`)}
                   >
                     {label}
@@ -1887,33 +1795,31 @@ export default function SalesDashboard() {
 
             {/* Existing proposals table */}
             <div>
-              <p className="text-xs font-semibold mb-2" style={{ color: "var(--rtm-text-secondary)" }}>Saved Proposals</p>
+              <p className="text-xs font-semibold mb-2"style={{ color: "var(--rtm-text-secondary)"}}>Saved Proposals</p>
               <DataTable columns={proposalBuilderColumns} data={mockProposalBuilders} />
             </div>
           </div>
         ) : (
-          <div className="py-2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+          <div className="py-2 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
             {mockProposalBuilders.length} saved proposals · Click Expand to open workspace
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── SERVICE CONFIGURATION CENTER ─────────────────────────────────── */}
+      {/*  SERVICE CONFIGURATION CENTER  */}
       <SectionWrapper
-        title="Service Configuration Center"
-        description="Configure services, pricing, department owners, and profitability for each service line"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("serviceConfig")}>
-            {activeSection === "serviceConfig" ? "Collapse ▲" : "Expand ▼"}
+        title="Service Configuration Center"description="Configure services, pricing, department owners, and profitability for each service line"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("serviceConfig")}>
+            {activeSection === "serviceConfig"? "Collapse": "Expand"}
           </button>
         }
       >
-        {activeSection === "serviceConfig" ? (
+        {activeSection === "serviceConfig"? (
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2 mb-2">
               {serviceConfigs.filter((s) => s.included).map((s) => (
-                <span key={s.service} className="text-xs font-semibold px-3 py-1 rounded-full" style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #BBF7D0" }}>
-                  ✓ {s.service}
+                <span key={s.service} className="text-xs font-semibold px-3 py-1 rounded-full"style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #BBF7D0"}}>
+                   {s.service}
                 </span>
               ))}
             </div>
@@ -1924,48 +1830,44 @@ export default function SalesDashboard() {
             {serviceConfigs.map((s) => (
               <span
                 key={s.service}
-                className="text-xs font-semibold px-2 py-1 rounded-full border"
-                style={{
-                  background: s.included ? "#ECFDF515" : "var(--rtm-surface)",
-                  color: s.included ? "#059669" : "var(--rtm-text-muted)",
-                  borderColor: s.included ? "#BBF7D0" : "var(--rtm-border)",
+                className="text-xs font-semibold px-2 py-1 rounded-full border"style={{
+                  background: s.included ? "#ECFDF515": "var(--rtm-surface)",
+                  color: s.included ? "#059669": "var(--rtm-text-muted)",
+                  borderColor: s.included ? "#BBF7D0": "var(--rtm-border)",
                 }}
               >
-                {s.included ? "✓" : "○"} {s.service}
+                {s.included ? "": ""} {s.service}
               </span>
             ))}
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── PACKAGE TEMPLATE LIBRARY ──────────────────────────────────────── */}
+      {/*  PACKAGE TEMPLATE LIBRARY  */}
       <SectionWrapper
-        title="Package Template Library"
-        description="Reusable service packages with pricing, contract terms, and profitability scores"
-        actions={
+        title="Package Template Library"description="Reusable service packages with pricing, contract terms, and profitability scores"actions={
           <div className="flex gap-2">
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border" style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }} onClick={() => alert("[Mock] Create Package")}>
-              ＋ Create Package
+            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}} onClick={() => alert("[Mock] Create Package")}>
+               Create Package
             </button>
-            <button className="rtm-btn-secondary text-sm" onClick={() => toggle("packageLibrary")}>
-              {activeSection === "packageLibrary" ? "Collapse ▲" : "Expand ▼"}
+            <button className="rtm-btn-secondary text-sm"onClick={() => toggle("packageLibrary")}>
+              {activeSection === "packageLibrary"? "Collapse": "Expand"}
             </button>
           </div>
         }
       >
-        {activeSection === "packageLibrary" ? (
+        {activeSection === "packageLibrary"? (
           <div className="space-y-4">
             <DataTable columns={packageTemplateColumns} data={packageTemplates} />
             <div className="flex flex-wrap gap-2 pt-1">
               {[
-                { label: "⧉ Clone Package",   color: "#0891B2" },
-                { label: "✎ Edit Package",    color: "#7C3AED" },
-                { label: "✗ Archive Package", color: "#DC2626" },
+                { label: "Clone Package",   color: "#0891B2"},
+                { label: "Edit Package",    color: "#7C3AED"},
+                { label: "Archive Package", color: "#DC2626"},
               ].map(({ label, color }) => (
                 <button
                   key={label}
-                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90"
-                  style={{ background: `${color}10`, color, borderColor: `${color}35` }}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90"style={{ background: `${color}10`, color, borderColor: `${color}35` }}
                   onClick={() => alert(`[Mock] ${label}`)}
                 >
                   {label}
@@ -1978,8 +1880,7 @@ export default function SalesDashboard() {
             {packageTemplates.map((pkg) => (
               <span
                 key={pkg.packageName}
-                className="text-xs font-semibold px-3 py-1.5 rounded-full border"
-                style={{ background: "#F5F3FF", color: "#7C3AED", borderColor: "#DDD6FE" }}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full border"style={{ background: "#F5F3FF", color: "#7C3AED", borderColor: "#DDD6FE"}}
               >
                 {pkg.packageName} — {pkg.monthlyValue}
               </span>
@@ -1988,33 +1889,29 @@ export default function SalesDashboard() {
         )}
       </SectionWrapper>
 
-      {/* ── PRICING ENGINE ────────────────────────────────────────────────── */}
+      {/*  PRICING ENGINE  */}
       <SectionWrapper
-        title="Pricing Engine"
-        description="Calculate revenue, contract value, and estimated margin for any service combination"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("pricingEngine")}>
-            {activeSection === "pricingEngine" ? "Collapse ▲" : "Expand ▼"}
+        title="Pricing Engine"description="Calculate revenue, contract value, and estimated margin for any service combination"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("pricingEngine")}>
+            {activeSection === "pricingEngine"? "Collapse": "Expand"}
           </button>
         }
       >
-        {activeSection === "pricingEngine" ? (
+        {activeSection === "pricingEngine"? (
           <div className="space-y-5">
             {/* Inputs */}
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {[
-                { label: "Service Total ($/mo)", key: "serviceTotal" },
-                { label: "Setup Fees ($)", key: "setupFees" },
-                { label: "Discounts ($/mo)", key: "discounts" },
-                { label: "Contract Length (months)", key: "contractLength" },
-                { label: "Estimated Margin (%)", key: "estimatedMargin" },
+                { label: "Service Total ($/mo)", key: "serviceTotal"},
+                { label: "Setup Fees ($)", key: "setupFees"},
+                { label: "Discounts ($/mo)", key: "discounts"},
+                { label: "Contract Length (months)", key: "contractLength"},
+                { label: "Estimated Margin (%)", key: "estimatedMargin"},
               ].map(({ label, key }) => (
                 <div key={key} className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{label}</label>
+                  <label className="text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>{label}</label>
                   <input
-                    type="number"
-                    className="rtm-input text-sm"
-                    value={pricing[key as keyof typeof pricing]}
+                    type="number"className="rtm-input text-sm"value={pricing[key as keyof typeof pricing]}
                     onChange={(e) => setPricing((p) => ({ ...p, [key]: Number(e.target.value) }))}
                   />
                 </div>
@@ -2024,27 +1921,27 @@ export default function SalesDashboard() {
             {/* Output Cards */}
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
               {[
-                { label: "Monthly Revenue",       value: `$${monthlyRevenue.toLocaleString()}`,              color: "#059669" },
-                { label: "Annual Revenue",         value: `$${annualRevenue.toLocaleString()}`,               color: "#2563EB" },
-                { label: "Contract Value",         value: `$${contractValue.toLocaleString()}`,               color: "#7C3AED" },
-                { label: "Gross Margin Estimate",  value: `$${grossMarginEst.toLocaleString()}/mo`,           color: "#D97706" },
+                { label: "Monthly Revenue",       value: `$${monthlyRevenue.toLocaleString()}`,              color: "#059669"},
+                { label: "Annual Revenue",         value: `$${annualRevenue.toLocaleString()}`,               color: "#2563EB"},
+                { label: "Contract Value",         value: `$${contractValue.toLocaleString()}`,               color: "#7C3AED"},
+                { label: "Gross Margin Estimate",  value: `$${grossMarginEst.toLocaleString()}/mo`,           color: "#D97706"},
               ].map(({ label, value, color }) => (
-                <div key={label} className="rounded-xl border p-4 text-center" style={{ background: `${color}08`, borderColor: `${color}30` }}>
-                  <p className="text-2xl font-bold" style={{ color }}>{value}</p>
-                  <p className="text-xs font-semibold mt-1" style={{ color: "var(--rtm-text-secondary)" }}>{label}</p>
+                <div key={label} className="rounded-xl border p-4 text-center"style={{ background: `${color}08`, borderColor: `${color}30` }}>
+                  <p className="text-2xl font-bold"style={{ color }}>{value}</p>
+                  <p className="text-xs font-semibold mt-1"style={{ color: "var(--rtm-text-secondary)"}}>{label}</p>
                 </div>
               ))}
             </div>
 
             {/* Margin bar */}
-            <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+            <div className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>Estimated Margin</span>
-                <span className="text-sm font-bold" style={{ color: pricing.estimatedMargin >= 75 ? "#059669" : "#D97706" }}>{pricing.estimatedMargin}%</span>
+                <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>Estimated Margin</span>
+                <span className="text-sm font-bold"style={{ color: pricing.estimatedMargin >= 75 ? "#059669": "#D97706"}}>{pricing.estimatedMargin}%</span>
               </div>
               <ProgressBar
                 value={pricing.estimatedMargin}
-                color={pricing.estimatedMargin >= 75 ? "bg-emerald-500" : "bg-amber-500"}
+                color={pricing.estimatedMargin >= 75 ? "bg-emerald-500": "bg-amber-500"}
                 height={8}
               />
             </div>
@@ -2052,46 +1949,44 @@ export default function SalesDashboard() {
         ) : (
           <div className="flex flex-wrap gap-4 py-1">
             {[
-              { label: "Monthly Revenue",  value: `$${monthlyRevenue.toLocaleString()}`, color: "#059669" },
-              { label: "Contract Value",   value: `$${contractValue.toLocaleString()}`, color: "#7C3AED" },
-              { label: "Est. Margin",      value: `${pricing.estimatedMargin}%`,         color: "#D97706" },
+              { label: "Monthly Revenue",  value: `$${monthlyRevenue.toLocaleString()}`, color: "#059669"},
+              { label: "Contract Value",   value: `$${contractValue.toLocaleString()}`, color: "#7C3AED"},
+              { label: "Est. Margin",      value: `${pricing.estimatedMargin}%`,         color: "#D97706"},
             ].map(({ label, value, color }) => (
-              <div key={label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{label}:</span>
-                <span className="text-sm font-bold" style={{ color }}>{value}</span>
+              <div key={label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-muted)"}}>{label}:</span>
+                <span className="text-sm font-bold"style={{ color }}>{value}</span>
               </div>
             ))}
-            <button className="text-xs text-slate-400 underline" onClick={() => toggle("pricingEngine")}>Open calculator →</button>
+            <button className="text-xs text-slate-400 underline"onClick={() => toggle("pricingEngine")}>Open calculator →</button>
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── REVENUE FORECASTING ───────────────────────────────────────────── */}
+      {/*  REVENUE FORECASTING  */}
       <SectionWrapper
-        title="Revenue Forecasting"
-        description="Pipeline-weighted forecast across monthly, quarterly, and annual horizons"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("revenueForecast")}>
-            {activeSection === "revenueForecast" ? "Collapse ▲" : "Expand ▼"}
+        title="Revenue Forecasting"description="Pipeline-weighted forecast across monthly, quarterly, and annual horizons"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("revenueForecast")}>
+            {activeSection === "revenueForecast"? "Collapse": "Expand"}
           </button>
         }
       >
         <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
           {[
-            { label: "Forecast Revenue This Month",  value: "$12,400",  color: "#2563EB", note: "Based on active pipeline" },
-            { label: "Forecast Revenue This Quarter", value: "$38,200", color: "#7C3AED", note: "Q2 weighted forecast" },
-            { label: "Forecast Revenue This Year",    value: "$148,500", color: "#059669", note: "Full-year projection" },
-            { label: "Weighted Pipeline Value",       value: `$${Math.round(forecastRevenue / 100) * 100}/mo`, color: "#0891B2", note: "Probability-weighted" },
-            { label: "Closed Won Revenue",            value: "$6,000/mo", color: "#059669", note: "Confirmed MRR" },
-            { label: "Revenue Goal Progress",         value: "62%",      color: "#D97706", note: "vs. $20k monthly goal" },
+            { label: "Forecast Revenue This Month",  value: "$12,400",  color: "#2563EB", note: "Based on active pipeline"},
+            { label: "Forecast Revenue This Quarter", value: "$38,200", color: "#7C3AED", note: "Q2 weighted forecast"},
+            { label: "Forecast Revenue This Year",    value: "$148,500", color: "#059669", note: "Full-year projection"},
+            { label: "Weighted Pipeline Value",       value: `$${Math.round(forecastRevenue / 100) * 100}/mo`, color: "#0891B2", note: "Probability-weighted"},
+            { label: "Closed Won Revenue",            value: "$6,000/mo", color: "#059669", note: "Confirmed MRR"},
+            { label: "Revenue Goal Progress",         value: "62%",      color: "#D97706", note: "vs. $20k monthly goal"},
           ].map(({ label, value, color, note }) => (
-            <div key={label} className="rounded-xl border p-4" style={{ background: `${color}08`, borderColor: `${color}25` }}>
-              <p className="text-2xl font-bold" style={{ color }}>{value}</p>
-              <p className="text-xs font-semibold mt-1" style={{ color: "var(--rtm-text-primary)" }}>{label}</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{note}</p>
-              {label === "Revenue Goal Progress" && (
+            <div key={label} className="rounded-xl border p-4"style={{ background: `${color}08`, borderColor: `${color}25` }}>
+              <p className="text-2xl font-bold"style={{ color }}>{value}</p>
+              <p className="text-xs font-semibold mt-1"style={{ color: "var(--rtm-text-primary)"}}>{label}</p>
+              <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{note}</p>
+              {label === "Revenue Goal Progress"&& (
                 <div className="mt-2">
-                  <ProgressBar value={62} color="bg-amber-500" height={6} />
+                  <ProgressBar value={62} color="bg-amber-500"height={6} />
                 </div>
               )}
             </div>
@@ -2099,78 +1994,71 @@ export default function SalesDashboard() {
         </div>
       </SectionWrapper>
 
-      {/* ── SALES ACTIVITY TIMELINE ───────────────────────────────────────── */}
+      {/*  SALES ACTIVITY TIMELINE  */}
       <SectionWrapper
-        title="Sales Activity Timeline"
-        description="Chronological log of all sales activities across leads, proposals, and closes"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("activityTimeline")}>
-            {activeSection === "activityTimeline" ? "Collapse ▲" : "Expand ▼"}
+        title="Sales Activity Timeline"description="Chronological log of all sales activities across leads, proposals, and closes"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("activityTimeline")}>
+            {activeSection === "activityTimeline"? "Collapse": "Expand"}
           </button>
         }
       >
         {/* Stage legend */}
         <div className="flex flex-wrap gap-2 mb-3">
           {[
-            { label: "Lead Created", color: "#94A3B8" },
-            { label: "Discovery Call", color: "#2563EB" },
-            { label: "Proposal Sent", color: "#7C3AED" },
-            { label: "Proposal Viewed", color: "#0891B2" },
-            { label: "Negotiation", color: "#D97706" },
-            { label: "Contract Signed", color: "#0891B2" },
-            { label: "Closed Won", color: "#059669" },
-            { label: "Sent To Billing", color: "#D97706" },
+            { label: "Lead Created", color: "#94A3B8"},
+            { label: "Discovery Call", color: "#2563EB"},
+            { label: "Proposal Sent", color: "#7C3AED"},
+            { label: "Proposal Viewed", color: "#0891B2"},
+            { label: "Negotiation", color: "#D97706"},
+            { label: "Contract Signed", color: "#0891B2"},
+            { label: "Closed Won", color: "#059669"},
+            { label: "Sent To Billing", color: "#D97706"},
           ].map(({ label, color }) => (
-            <span key={label} className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: `${color}15`, color }}>
+            <span key={label} className="text-xs px-2 py-0.5 rounded-full font-semibold"style={{ background: `${color}15`, color }}>
               {label}
             </span>
           ))}
         </div>
-        {activeSection === "activityTimeline" ? (
+        {activeSection === "activityTimeline"? (
           <DataTable columns={salesActivityColumns} data={salesActivityTimeline} />
         ) : (
-          <div className="py-2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+          <div className="py-2 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
             {salesActivityTimeline.length} activity entries · Click Expand to view timeline
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── SALES TEAM PERFORMANCE ────────────────────────────────────────── */}
+      {/*  SALES TEAM PERFORMANCE  */}
       <SectionWrapper
-        title="Sales Team Performance"
-        description="Rep-level performance metrics including conversion rate, closed revenue, and forecast"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("teamPerformance")}>
-            {activeSection === "teamPerformance" ? "Collapse ▲" : "Expand ▼"}
+        title="Sales Team Performance"description="Rep-level performance metrics including conversion rate, closed revenue, and forecast"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("teamPerformance")}>
+            {activeSection === "teamPerformance"? "Collapse": "Expand"}
           </button>
         }
       >
-        {activeSection === "teamPerformance" ? (
+        {activeSection === "teamPerformance"? (
           <DataTable columns={salesTeamColumns} data={salesTeamPerformance} />
         ) : (
           <div className="flex flex-wrap gap-3 py-1">
             {salesTeamPerformance.map((rep) => (
-              <div key={rep.salesRep} className="flex items-center gap-3 px-3 py-2 rounded-lg border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                <span className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{rep.salesRep}</span>
-                <span className="text-xs" style={{ color: "#059669" }}>{rep.closedWon} won</span>
-                <span className="text-xs" style={{ color: "#2563EB" }}>{rep.conversionRate} CR</span>
-                <span className="text-xs" style={{ color: "#7C3AED" }}>{rep.forecastRevenue}</span>
+              <div key={rep.salesRep} className="flex items-center gap-3 px-3 py-2 rounded-lg border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                <span className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{rep.salesRep}</span>
+                <span className="text-xs"style={{ color: "#059669"}}>{rep.closedWon} won</span>
+                <span className="text-xs"style={{ color: "#2563EB"}}>{rep.conversionRate} CR</span>
+                <span className="text-xs"style={{ color: "#7C3AED"}}>{rep.forecastRevenue}</span>
               </div>
             ))}
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── Opportunity Pipeline ──────────────────────────────────────────── */}
+      {/*  Opportunity Pipeline  */}
       <SectionWrapper
-        title="Opportunity Pipeline"
-        description="Stage-by-stage opportunity breakdown with count, value, and conversion rate"
-        actions={
+        title="Opportunity Pipeline"description="Stage-by-stage opportunity breakdown with count, value, and conversion rate"actions={
           <button
-            className="rtm-btn-secondary text-sm"
-            onClick={() => toggle("pipeline")}
+            className="rtm-btn-secondary text-sm"onClick={() => toggle("pipeline")}
           >
-            {activeSection === "pipeline" ? "Collapse ▲" : "Expand ▼"}
+            {activeSection === "pipeline"? "Collapse": "Expand"}
           </button>
         }
       >
@@ -2178,171 +2066,157 @@ export default function SalesDashboard() {
           {pipelineStats.map((s, i) => (
             <React.Fragment key={s.stage}>
               <div className="flex flex-col items-center gap-1 min-w-[100px]">
-                <div className="rounded-lg px-3 py-2.5 text-center w-full" style={{ background: `${s.color}12`, border: `1.5px solid ${s.color}35` }}>
-                  <p className="text-xl font-bold" style={{ color: s.color }}>{s.count}</p>
-                  <p className="text-[10px] font-bold mt-0.5" style={{ color: s.color }}>{s.stage}</p>
-                  <p className="text-[10px] font-semibold mt-1" style={{ color: s.color }}>
+                <div className="rounded-lg px-3 py-2.5 text-center w-full"style={{ background: `${s.color}12`, border: `1.5px solid ${s.color}35` }}>
+                  <p className="text-xl font-bold"style={{ color: s.color }}>{s.count}</p>
+                  <p className="text-[10px] font-bold mt-0.5"style={{ color: s.color }}>{s.stage}</p>
+                  <p className="text-[10px] font-semibold mt-1"style={{ color: s.color }}>
                     ${s.value.toLocaleString()}/mo
                   </p>
-                  <p className="text-[10px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                  <p className="text-[10px] mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
                     {s.convRate}% conv.
                   </p>
                 </div>
               </div>
               {i < pipelineStats.length - 1 && (
-                <div className="flex items-center text-lg" style={{ color: "var(--rtm-border)" }}>→</div>
+                <div className="flex items-center text-lg"style={{ color: "var(--rtm-border)"}}>→</div>
               )}
             </React.Fragment>
           ))}
         </div>
       </SectionWrapper>
 
-      {/* ── Opportunity Management ────────────────────────────────────────── */}
+      {/*  Opportunity Management  */}
       <SectionWrapper
-        title="Opportunity Management"
-        description="All active and historical opportunities with stage, probability, and close date"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("opportunities")}>
-            {activeSection === "opportunities" ? "Collapse ▲" : "Expand ▼"}
+        title="Opportunity Management"description="All active and historical opportunities with stage, probability, and close date"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("opportunities")}>
+            {activeSection === "opportunities"? "Collapse": "Expand"}
           </button>
         }
       >
-        {activeSection === "opportunities" ? (
+        {activeSection === "opportunities"? (
           <DataTable columns={opportunityColumns} data={opportunities} />
         ) : (
-          <div className="py-2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+          <div className="py-2 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
             {opportunities.length} opportunities · Click Expand to view details
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── Service Packaging Center ──────────────────────────────────────── */}
+      {/*  Service Packaging Center  */}
       <SectionWrapper
-        title="Service Packaging Center"
-        description="Available service bundles with pricing, contract terms, and profitability"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("packages")}>
-            {activeSection === "packages" ? "Collapse ▲" : "Expand ▼"}
+        title="Service Packaging Center"description="Available service bundles with pricing, contract terms, and profitability"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("packages")}>
+            {activeSection === "packages"? "Collapse": "Expand"}
           </button>
         }
       >
-        {activeSection === "packages" ? (
+        {activeSection === "packages"? (
           <DataTable columns={servicePackageColumns} data={servicePackages} />
         ) : (
           <div className="flex flex-wrap gap-2 py-1">
             {servicePackages.map((pkg) => (
               <span
                 key={pkg.package}
-                className="text-xs font-semibold px-3 py-1.5 rounded-full border"
-                style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}
+                className="text-xs font-semibold px-3 py-1.5 rounded-full border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}
               >
                 {pkg.package} — {pkg.monthlyValue}
               </span>
             ))}
-            <button className="text-xs text-slate-400 underline ml-1" onClick={() => toggle("packages")}>
+            <button className="text-xs text-slate-400 underline ml-1"onClick={() => toggle("packages")}>
               View all →
             </button>
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── Proposal Summary Center ───────────────────────────────────────── */}
+      {/*  Proposal Summary Center  */}
       <SectionWrapper
-        title="Proposal Summary Center"
-        description="All proposals with status, value, and key dates"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("proposals")}>
-            {activeSection === "proposals" ? "Collapse ▲" : "Expand ▼"}
+        title="Proposal Summary Center"description="All proposals with status, value, and key dates"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("proposals")}>
+            {activeSection === "proposals"? "Collapse": "Expand"}
           </button>
         }
       >
-        {activeSection === "proposals" ? (
+        {activeSection === "proposals"? (
           <DataTable columns={proposalColumns} data={proposals} />
         ) : (
           <div className="flex flex-wrap gap-2 py-1">
             {(["Draft", "Sent", "Viewed", "Negotiating", "Accepted", "Rejected"] as ProposalStatus[]).map((s) => {
               const count = proposals.filter((p) => p.status === s).length;
               return (
-                <div key={s} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                  <StatusBadge variant={proposalStatusVariant(s)} label={s} size="sm" />
-                  <span className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{count}</span>
+                <div key={s} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                  <StatusBadge variant={proposalStatusVariant(s)} label={s} size="sm"/>
+                  <span className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{count}</span>
                 </div>
               );
             })}
-            <button className="text-xs text-slate-400 underline ml-1" onClick={() => toggle("proposals")}>
+            <button className="text-xs text-slate-400 underline ml-1"onClick={() => toggle("proposals")}>
               View all →
             </button>
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── Contract Management ───────────────────────────────────────────── */}
+      {/*  Contract Management  */}
       <SectionWrapper
-        title="Contract Management"
-        description="All contracts with term, value, and renewal tracking"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("contracts")}>
-            {activeSection === "contracts" ? "Collapse ▲" : "Expand ▼"}
+        title="Contract Management"description="All contracts with term, value, and renewal tracking"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("contracts")}>
+            {activeSection === "contracts"? "Collapse": "Expand"}
           </button>
         }
       >
-        {activeSection === "contracts" ? (
+        {activeSection === "contracts"? (
           <DataTable columns={contractColumns} data={contracts} />
         ) : (
-          <div className="py-2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+          <div className="py-2 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
             {contracts.length} contracts · {contracts.filter((c) => c.status === "Active").length} active · Click Expand to view details
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── Closed Won Workflow ───────────────────────────────────────────── */}
+      {/*  Closed Won Workflow  */}
       <SectionWrapper
-        title="Closed Won Workflow"
-        description="Track won deals through the full handoff pipeline"
-        actions={
-          <button className="rtm-btn-secondary text-sm" onClick={() => toggle("closedWon")}>
-            {activeSection === "closedWon" ? "Collapse ▲" : "Expand ▼"}
+        title="Closed Won Workflow"description="Track won deals through the full handoff pipeline"actions={
+          <button className="rtm-btn-secondary text-sm"onClick={() => toggle("closedWon")}>
+            {activeSection === "closedWon"? "Collapse": "Expand"}
           </button>
         }
       >
         {/* Workflow Steps */}
         <div className="flex flex-wrap items-center gap-2 mb-4">
           {[
-            { label: "Lead",            color: "#94A3B8" },
-            { label: "Opportunity",     color: "#2563EB" },
-            { label: "Proposal",        color: "#7C3AED" },
-            { label: "Contract",        color: "#0891B2" },
-            { label: "Closed Won",      color: "#059669" },
-            { label: "Billing Handoff", color: "#D97706" },
+            { label: "Lead",            color: "#94A3B8"},
+            { label: "Opportunity",     color: "#2563EB"},
+            { label: "Proposal",        color: "#7C3AED"},
+            { label: "Contract",        color: "#0891B2"},
+            { label: "Closed Won",      color: "#059669"},
+            { label: "Billing Handoff", color: "#D97706"},
           ].map((step, i, arr) => (
             <React.Fragment key={step.label}>
               <div
-                className="px-3 py-1.5 rounded-lg text-xs font-bold border"
-                style={{ background: `${step.color}15`, color: step.color, borderColor: `${step.color}40` }}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold border"style={{ background: `${step.color}15`, color: step.color, borderColor: `${step.color}40` }}
               >
                 {step.label}
               </div>
-              {i < arr.length - 1 && <span className="text-base" style={{ color: "var(--rtm-border)" }}>→</span>}
+              {i < arr.length - 1 && <span className="text-base"style={{ color: "var(--rtm-border)"}}>→</span>}
             </React.Fragment>
           ))}
         </div>
 
-        {activeSection === "closedWon" ? (
+        {activeSection === "closedWon"? (
           <DataTable columns={closedWonColumns} data={closedWonRecords} />
         ) : (
-          <div className="py-2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+          <div className="py-2 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
             {closedWonRecords.length} closed won deals · Click Expand to view details
           </div>
         )}
       </SectionWrapper>
 
-      {/* ── Billing Handoff Center ────────────────────────────────────────── */}
+      {/*  Billing Handoff Center  */}
       <SectionWrapper
-        title="Billing Handoff Center"
-        description="Critical handoff tracking from closed deals to active billing"
-        actions={
-          <button className="rtm-btn-primary text-sm" onClick={() => toggle("billing")}>
-            {activeSection === "billing" ? "Collapse ▲" : "Expand ▼"}
+        title="Billing Handoff Center"description="Critical handoff tracking from closed deals to active billing"actions={
+          <button className="rtm-btn-primary text-sm"onClick={() => toggle("billing")}>
+            {activeSection === "billing"? "Collapse": "Expand"}
           </button>
         }
       >
@@ -2351,18 +2225,18 @@ export default function SalesDashboard() {
           {(["Ready For Billing", "Sent To Billing", "Billing Accepted", "Awaiting Invoice", "Awaiting Payment"] as BillingHandoffStatus[]).map((s) => {
             const count = billingHandoffs.filter((b) => b.billingStatus === s).length;
             return (
-              <div key={s} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                <StatusBadge variant={billingStatusVariant(s)} label={s} size="sm" />
-                <span className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{count}</span>
+              <div key={s} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                <StatusBadge variant={billingStatusVariant(s)} label={s} size="sm"/>
+                <span className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{count}</span>
               </div>
             );
           })}
         </div>
 
-        {activeSection === "billing" ? (
+        {activeSection === "billing"? (
           <DataTable columns={billingHandoffColumns} data={billingHandoffs} />
         ) : (
-          <div className="py-2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+          <div className="py-2 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
             {billingHandoffs.length} handoffs in progress · Click Expand to view details
           </div>
         )}

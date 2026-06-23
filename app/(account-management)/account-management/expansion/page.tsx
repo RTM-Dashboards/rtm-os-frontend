@@ -66,7 +66,7 @@ export default function ExpansionPage() {
   const [activeStatus, setActiveStatus] = useState<ExpansionStatus | "All">("All");
 
   const filtered = EXPANSION_OPPORTUNITIES.filter(
-    (o) => activeStatus === "All" || o.status === activeStatus
+    (o) => activeStatus === "All"|| o.status === activeStatus
   );
 
   // KPIs
@@ -77,8 +77,7 @@ export default function ExpansionPage() {
   const identified = EXPANSION_OPPORTUNITIES.filter((o) => o.status === "Identified").length;
   const declined = EXPANSION_OPPORTUNITIES.filter((o) => o.status === "Declined").length;
   const totalRevPipeline = EXPANSION_OPPORTUNITIES.filter(
-    (o) => o.status !== "Declined"
-  ).reduce((a, o) => a + o.estimatedRevenue, 0);
+    (o) => o.status !== "Declined").reduce((a, o) => a + o.estimatedRevenue, 0);
 
   // Pipeline by status for summary
   const pipelineByStatus = ALL_STATUSES.map((s) => ({
@@ -111,18 +110,15 @@ export default function ExpansionPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        <KpiCard label="Total" value={total} />
-        <KpiCard label="Closed Won" value={closedWon} color="text-emerald-600" />
-        <KpiCard label="In Negotiation" value={inNeg} color="text-amber-600" />
-        <KpiCard label="Proposed" value={proposed} color="text-indigo-600" />
-        <KpiCard label="Identified" value={identified} color="text-blue-600" />
-        <KpiCard label="Declined" value={declined} color="text-red-600" />
+        <KpiCard label="Total"value={total} />
+        <KpiCard label="Closed Won"value={closedWon} color="text-emerald-600"/>
+        <KpiCard label="In Negotiation"value={inNeg} color="text-amber-600"/>
+        <KpiCard label="Proposed"value={proposed} color="text-indigo-600"/>
+        <KpiCard label="Identified"value={identified} color="text-blue-600"/>
+        <KpiCard label="Declined"value={declined} color="text-red-600"/>
         <KpiCard
-          label="Pipeline / mo"
-          value={`$${totalRevPipeline.toLocaleString()}`}
-          sub="excl. declined"
-          color="text-teal-700"
-        />
+          label="Pipeline / mo"value={`$${totalRevPipeline.toLocaleString()}`}
+          sub="excl. declined"color="text-teal-700"/>
       </div>
 
       {/* Filter tabs */}
@@ -133,12 +129,10 @@ export default function ExpansionPage() {
             onClick={() => setActiveStatus(s)}
             className={`rounded-t-lg border border-b-0 px-3 py-2 text-xs font-semibold transition-colors ${
               activeStatus === s
-                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10": "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             {s}
-            {s !== "All" && (
+            {s !== "All"&& (
               <span className="ml-1 text-[10px] text-slate-400">
                 ({EXPANSION_OPPORTUNITIES.filter((o) => o.status === s).length})
               </span>
@@ -197,9 +191,9 @@ export default function ExpansionPage() {
                   >
                     {status}
                   </span>
-                  <span className="text-xs text-slate-400">{count} opp{count !== 1 ? "s" : ""}</span>
+                  <span className="text-xs text-slate-400">{count} opp{count !== 1 ? "s": ""}</span>
                 </div>
-                <span className={`text-sm font-bold ${revenue > 0 ? "text-emerald-700" : "text-slate-400"}`}>
+                <span className={`text-sm font-bold ${revenue > 0 ? "text-emerald-700": "text-slate-400"}`}>
                   {revenue > 0 ? `$${revenue.toLocaleString()}/mo` : "—"}
                 </span>
               </div>
@@ -252,8 +246,7 @@ function OpportunityRow({ opp }: { opp: ExpansionOpportunity }) {
           {opp.recommendedServices.map((s) => (
             <span
               key={s}
-              className="inline-block rounded-md bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700"
-            >
+              className="inline-block rounded-md bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
               {s}
             </span>
           ))}

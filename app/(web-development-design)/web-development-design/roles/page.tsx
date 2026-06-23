@@ -12,8 +12,6 @@ export default function RolesPage() {
       workspace={workspace}
       roles={webDevDesignRoles}
       permissionAreas={webDevDesignPermissions}
-      teamRoute="/web-development-design/team-members"
-      profileRoute="/web-development-design/profile"
-    />
+      teamRoute="/web-development-design/team-members"profileRoute="/web-development-design/profile"/>
   );
 }

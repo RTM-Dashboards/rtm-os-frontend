@@ -12,8 +12,6 @@ export default function RolesPage() {
       workspace={workspace}
       roles={contentRoles}
       permissionAreas={contentPermissions}
-      teamRoute="/content/team-members"
-      profileRoute="/content/profile"
-    />
+      teamRoute="/content/team-members"profileRoute="/content/profile"/>
   );
 }

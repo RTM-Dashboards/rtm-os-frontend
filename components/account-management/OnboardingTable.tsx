@@ -29,33 +29,29 @@ export function OnboardingTable({ items }: OnboardingTableProps) {
   }, [items, search, filterStatus]);
 
   const inProgressCount = items.filter(
-    (o) => o.status !== "Completed"
-  ).length;
+    (o) => o.status !== "Completed").length;
 
   return (
     <SectionCard
-      title="Onboarding Queue"
-      subtitle="New clients in onboarding process"
-      badge={inProgressCount}
-      badgeVariant={inProgressCount > 0 ? "warning" : "default"}
+      title="Onboarding Queue"subtitle="New clients in onboarding process"badge={inProgressCount}
+      badgeVariant={inProgressCount > 0 ? "warning": "default"}
     >
       <div className="px-5 py-3 border-b border-slate-100">
         <SearchFilter
           searchValue={search}
           onSearchChange={setSearch}
-          placeholder="Search clients..."
-          resultCount={filtered.length}
+          placeholder="Search clients..."resultCount={filtered.length}
           filters={[
             {
               label: "Status",
               value: filterStatus,
               onChange: setFilterStatus,
               options: [
-                { value: "Not Started", label: "Not Started" },
-                { value: "In Progress", label: "In Progress" },
-                { value: "Awaiting Assets", label: "Awaiting Assets" },
-                { value: "Stalled", label: "Stalled" },
-                { value: "Completed", label: "Completed" },
+                { value: "Not Started", label: "Not Started"},
+                { value: "In Progress", label: "In Progress"},
+                { value: "Awaiting Assets", label: "Awaiting Assets"},
+                { value: "Stalled", label: "Stalled"},
+                { value: "Completed", label: "Completed"},
               ],
             },
           ]}
@@ -101,7 +97,7 @@ export function OnboardingTable({ items }: OnboardingTableProps) {
               const pct = o.totalSteps > 0 ? Math.round((o.completedSteps / o.totalSteps) * 100) : 0;
               const isStalled = o.status === "Stalled";
               return (
-                <tr key={o.id} className={`hover:bg-slate-50 transition-colors ${isStalled ? "bg-amber-50/30" : ""}`}>
+                <tr key={o.id} className={`hover:bg-slate-50 transition-colors ${isStalled ? "bg-amber-50/30": ""}`}>
                   <td className="px-5 py-3">
                     <div className="font-medium text-slate-900">{o.clientName}</div>
                     {o.pendingItems.length > 0 && (
@@ -139,7 +135,7 @@ export function OnboardingTable({ items }: OnboardingTableProps) {
                     <div className="flex items-center gap-2 min-w-[100px]">
                       <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${isStalled ? "bg-amber-400" : "bg-indigo-500"}`}
+                          className={`h-full rounded-full ${isStalled ? "bg-amber-400": "bg-indigo-500"}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>

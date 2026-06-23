@@ -12,8 +12,6 @@ export default function RolesPage() {
       workspace={workspace}
       roles={paidAdvertisingRoles}
       permissionAreas={paidAdvertisingPermissions}
-      teamRoute="/paid-advertising/team-members"
-      profileRoute="/paid-advertising/profile"
-    />
+      teamRoute="/paid-advertising/team-members"profileRoute="/paid-advertising/profile"/>
   );
 }

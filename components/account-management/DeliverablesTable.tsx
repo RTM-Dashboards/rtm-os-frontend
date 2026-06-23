@@ -36,28 +36,25 @@ export function DeliverablesTable({ deliverables }: DeliverablesTableProps) {
 
   return (
     <SectionCard
-      title="Deliverables"
-      subtitle="Tracked tasks and outputs"
-      badge={overdueCount > 0 ? `${overdueCount} overdue` : filtered.length}
-      badgeVariant={overdueCount > 0 ? "danger" : "default"}
+      title="Deliverables"subtitle="Tracked tasks and outputs"badge={overdueCount > 0 ? `${overdueCount} overdue` : filtered.length}
+      badgeVariant={overdueCount > 0 ? "danger": "default"}
     >
       <div className="px-5 py-3 border-b border-slate-100">
         <SearchFilter
           searchValue={search}
           onSearchChange={setSearch}
-          placeholder="Search deliverables..."
-          resultCount={filtered.length}
+          placeholder="Search deliverables..."resultCount={filtered.length}
           filters={[
             {
               label: "Status",
               value: filterStatus,
               onChange: setFilterStatus,
               options: [
-                { value: "In Progress", label: "In Progress" },
-                { value: "Not Started", label: "Not Started" },
-                { value: "Overdue", label: "Overdue" },
-                { value: "Blocked", label: "Blocked" },
-                { value: "Completed", label: "Completed" },
+                { value: "In Progress", label: "In Progress"},
+                { value: "Not Started", label: "Not Started"},
+                { value: "Overdue", label: "Overdue"},
+                { value: "Blocked", label: "Blocked"},
+                { value: "Completed", label: "Completed"},
               ],
             },
             {
@@ -65,10 +62,10 @@ export function DeliverablesTable({ deliverables }: DeliverablesTableProps) {
               value: filterPriority,
               onChange: setFilterPriority,
               options: [
-                { value: "Critical", label: "Critical" },
-                { value: "High", label: "High" },
-                { value: "Medium", label: "Medium" },
-                { value: "Low", label: "Low" },
+                { value: "Critical", label: "Critical"},
+                { value: "High", label: "High"},
+                { value: "Medium", label: "Medium"},
+                { value: "Low", label: "Low"},
               ],
             },
           ]}
@@ -113,7 +110,7 @@ export function DeliverablesTable({ deliverables }: DeliverablesTableProps) {
             {filtered.map((d) => {
               const isOverdue = d.status === "Overdue";
               return (
-                <tr key={d.id} className={`hover:bg-slate-50 transition-colors ${isOverdue ? "bg-red-50/40" : ""}`}>
+                <tr key={d.id} className={`hover:bg-slate-50 transition-colors ${isOverdue ? "bg-red-50/40": ""}`}>
                   <td className="px-5 py-3">
                     <div className="font-medium text-slate-900">{d.title}</div>
                     <div className="text-xs text-slate-500 mt-0.5 max-w-xs truncate">{d.description}</div>
@@ -147,14 +144,14 @@ export function DeliverablesTable({ deliverables }: DeliverablesTableProps) {
 function DueDateCell({ date, status }: { date: string; status: string }) {
   const due = new Date(date);
   const now = new Date();
-  const isOverdue = status === "Overdue" || (due < now && status !== "Completed");
+  const isOverdue = status === "Overdue"|| (due < now && status !== "Completed");
   const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
   const isSoon = !isOverdue && diffDays <= 3 && diffDays >= 0;
 
   return (
     <div>
-      <span className={`font-medium text-sm ${isOverdue ? "text-red-600" : isSoon ? "text-amber-600" : "text-slate-700"}`}>
-        {due.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+      <span className={`font-medium text-sm ${isOverdue ? "text-red-600": isSoon ? "text-amber-600": "text-slate-700"}`}>
+        {due.toLocaleDateString("en-US", { month: "short", day: "numeric"})}
       </span>
       {isOverdue && <div className="text-xs text-red-500">Overdue</div>}
       {isSoon && !isOverdue && <div className="text-xs text-amber-500">Due soon</div>}

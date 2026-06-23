@@ -11,8 +11,6 @@ export default function ProfilePage() {
     <WorkspaceProfilePage
       workspace={workspace}
       profile={contentProfile}
-      teamRoute="/content/team-members"
-      rolesRoute="/content/roles"
-    />
+      teamRoute="/content/team-members"rolesRoute="/content/roles"/>
   );
 }

@@ -30,7 +30,7 @@ interface DashboardShellProps {
 }
 
 const SectionHeading = ({ label }: { label: string }) => (
-  <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+  <p className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>
     {label}
   </p>
 );

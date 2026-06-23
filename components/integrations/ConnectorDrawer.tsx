@@ -37,20 +37,16 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+        className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"onClick={onClose}
+        aria-hidden="true"/>
 
       {/* Drawer panel */}
       <aside
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[520px] flex flex-col shadow-2xl overflow-y-auto"
-        style={{ background: "var(--rtm-surface)", borderLeft: "1px solid var(--rtm-border)" }}
+        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[520px] flex flex-col shadow-2xl overflow-y-auto"style={{ background: "var(--rtm-surface)", borderLeft: "1px solid var(--rtm-border)"}}
       >
         {/* Header */}
         <div
-          className="flex items-start justify-between px-6 py-5 flex-shrink-0"
-          style={{ borderBottom: "1px solid var(--rtm-border)" }}
+          className="flex items-start justify-between px-6 py-5 flex-shrink-0"style={{ borderBottom: "1px solid var(--rtm-border)"}}
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -62,23 +58,20 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
               )}
             </div>
             <h2
-              className="text-lg font-bold truncate"
-              style={{ color: "var(--rtm-text-primary)" }}
+              className="text-lg font-bold truncate"style={{ color: "var(--rtm-text-primary)"}}
             >
               {integration.name}
             </h2>
-            <p className="text-sm mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-sm mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
               {integration.description}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="ml-4 p-2 rounded-lg transition-colors flex-shrink-0"
-            style={{ color: "var(--rtm-text-muted)" }}
-            aria-label="Close drawer"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            className="ml-4 p-2 rounded-lg transition-colors flex-shrink-0"style={{ color: "var(--rtm-text-muted)"}}
+            aria-label="Close drawer">
+            <svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24">
+              <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
             </svg>
           </button>
         </div>
@@ -87,7 +80,7 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
         <div className="flex-1 px-6 py-5 space-y-6">
           {/* Config Details */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3"style={{ color: "var(--rtm-text-muted)"}}>
               Connector Configuration
             </p>
             <div className="space-y-2">
@@ -97,20 +90,18 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
                 { label: "Auth Type",         value: integration.authType },
                 { label: "API Endpoint",      value: integration.apiEndpoint },
                 { label: "Owner",             value: integration.owner },
-                { label: "Built-in",          value: integration.isBuiltIn ? "Yes" : "Custom (Admin-configured)" },
-                { label: "Enabled",           value: integration.enabled ? "Yes" : "No" },
+                { label: "Built-in",          value: integration.isBuiltIn ? "Yes": "Custom (Admin-configured)"},
+                { label: "Enabled",           value: integration.enabled ? "Yes": "No"},
               ].map(({ label, value }) => (
                 <div
                   key={label}
-                  className="flex items-start justify-between gap-3 p-3 rounded-lg"
-                  style={{ background: "var(--rtm-surface-raised, #F8FAFC)", border: "1px solid var(--rtm-border-light)" }}
+                  className="flex items-start justify-between gap-3 p-3 rounded-lg"style={{ background: "var(--rtm-surface-raised, #F8FAFC)", border: "1px solid var(--rtm-border-light)"}}
                 >
-                  <span className="text-xs font-medium" style={{ color: "var(--rtm-text-muted)" }}>
+                  <span className="text-xs font-medium"style={{ color: "var(--rtm-text-muted)"}}>
                     {label}
                   </span>
                   <span
-                    className="text-xs font-semibold text-right break-all max-w-[280px]"
-                    style={{ color: "var(--rtm-text-primary)" }}
+                    className="text-xs font-semibold text-right break-all max-w-[280px]"style={{ color: "var(--rtm-text-primary)"}}
                   >
                     {value}
                   </span>
@@ -121,31 +112,28 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
 
           {/* Health */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3"style={{ color: "var(--rtm-text-muted)"}}>
               Integration Health
             </p>
             <div
-              className="rounded-xl border p-4"
-              style={{
+              className="rounded-xl border p-4"style={{
                 background: HEALTH_BG[integration.healthScore],
                 borderColor: "var(--rtm-border)",
               }}
             >
               <div className="flex items-center justify-between mb-3">
                 <span
-                  className="text-sm font-bold capitalize"
-                  style={{ color: HEALTH_COLOR[integration.healthScore] }}
+                  className="text-sm font-bold capitalize"style={{ color: HEALTH_COLOR[integration.healthScore] }}
                 >
                   {integration.healthScore} — {integration.healthPercent}%
                 </span>
-                <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                   Last Sync: {formatDate(integration.lastSync)}
                 </span>
               </div>
               <div className="w-full rounded-full h-2 bg-white/60 overflow-hidden mb-3">
                 <div
-                  className="h-full rounded-full transition-all"
-                  style={{
+                  className="h-full rounded-full transition-all"style={{
                     width: `${integration.healthPercent}%`,
                     background: HEALTH_COLOR[integration.healthScore],
                   }}
@@ -157,10 +145,10 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
                   { label: "Failed Requests",  value: integration.failedRequests },
                 ].map(({ label, value }) => (
                   <div key={label} className="text-center p-2 rounded-lg bg-white/60">
-                    <p className="text-lg font-bold" style={{ color: HEALTH_COLOR[integration.healthScore] }}>
+                    <p className="text-lg font-bold"style={{ color: HEALTH_COLOR[integration.healthScore] }}>
                       {value}
                     </p>
-                    <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
+                    <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{label}</p>
                   </div>
                 ))}
               </div>
@@ -169,18 +157,17 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
 
           {/* Data Objects */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3"style={{ color: "var(--rtm-text-muted)"}}>
               Data Source Mapping
             </p>
             <div className="flex flex-wrap gap-2">
               {integration.dataObjects.length === 0 ? (
-                <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>No data objects mapped.</p>
+                <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>No data objects mapped.</p>
               ) : (
                 integration.dataObjects.map((obj) => (
                   <span
                     key={obj}
-                    className="text-xs font-medium px-3 py-1 rounded-full border"
-                    style={{
+                    className="text-xs font-medium px-3 py-1 rounded-full border"style={{
                       background: "var(--rtm-blue-xlight)",
                       color: "var(--rtm-blue)",
                       borderColor: "var(--rtm-blue-light)",
@@ -195,18 +182,17 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
 
           {/* Departments */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3"style={{ color: "var(--rtm-text-muted)"}}>
               Departments Using
             </p>
             {integration.departmentsUsing.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>No departments assigned.</p>
+              <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>No departments assigned.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {integration.departmentsUsing.map((dept) => (
                   <span
                     key={dept}
-                    className="text-xs font-medium px-3 py-1 rounded-full border"
-                    style={{ background: "var(--rtm-surface-raised, #F8FAFC)", color: "var(--rtm-text-secondary, #475569)", borderColor: "var(--rtm-border)" }}
+                    className="text-xs font-medium px-3 py-1 rounded-full border"style={{ background: "var(--rtm-surface-raised, #F8FAFC)", color: "var(--rtm-text-secondary, #475569)", borderColor: "var(--rtm-border)"}}
                   >
                     {dept}
                   </span>
@@ -217,23 +203,22 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
 
           {/* Clients */}
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs font-semibold uppercase tracking-wider mb-3"style={{ color: "var(--rtm-text-muted)"}}>
               Clients Using
             </p>
-            <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
-              {integration.clientsUsing.length} {integration.clientsUsing.length === 1 ? "client" : "clients"} assigned
+            <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
+              {integration.clientsUsing.length} {integration.clientsUsing.length === 1 ? "client": "clients"} assigned
             </p>
           </div>
 
           {/* Webhook URL */}
           {integration.webhookUrl && (
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3"style={{ color: "var(--rtm-text-muted)"}}>
                 Webhook URL
               </p>
               <div
-                className="p-3 rounded-lg font-mono text-xs break-all"
-                style={{ background: "var(--rtm-surface-raised, #F8FAFC)", color: "var(--rtm-text-primary)", border: "1px solid var(--rtm-border)" }}
+                className="p-3 rounded-lg font-mono text-xs break-all"style={{ background: "var(--rtm-surface-raised, #F8FAFC)", color: "var(--rtm-text-primary)", border: "1px solid var(--rtm-border)"}}
               >
                 {integration.webhookUrl}
               </div>
@@ -243,19 +228,16 @@ export default function ConnectorDrawer({ integration, onClose }: Props) {
 
         {/* Footer actions */}
         <div
-          className="px-6 py-4 flex gap-3 flex-shrink-0"
-          style={{ borderTop: "1px solid var(--rtm-border)" }}
+          className="px-6 py-4 flex gap-3 flex-shrink-0"style={{ borderTop: "1px solid var(--rtm-border)"}}
         >
           <button
-            className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"
-            style={{ background: "var(--rtm-blue)" }}
+            className="flex-1 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors"style={{ background: "var(--rtm-blue)"}}
           >
             Save Configuration
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"
-            style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)"}}
           >
             Close
           </button>

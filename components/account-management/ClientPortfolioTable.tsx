@@ -43,16 +43,13 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
 
   return (
     <SectionCard
-      title="Client Portfolio"
-      subtitle="All active client accounts"
-      badge={filtered.length}
+      title="Client Portfolio"subtitle="All active client accounts"badge={filtered.length}
     >
       <div className="px-5 py-3 border-b border-slate-100">
         <SearchFilter
           searchValue={search}
           onSearchChange={setSearch}
-          placeholder="Search clients, industry, location..."
-          resultCount={filtered.length}
+          placeholder="Search clients, industry, location..."resultCount={filtered.length}
           filters={[
             {
               label: "AM",
@@ -65,10 +62,10 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
               value: filterHealth,
               onChange: setFilterHealth,
               options: [
-                { value: "Healthy", label: "Healthy" },
-                { value: "Needs Attention", label: "Needs Attention" },
-                { value: "At-Risk", label: "At-Risk" },
-                { value: "Critical", label: "Critical" },
+                { value: "Healthy", label: "Healthy"},
+                { value: "Needs Attention", label: "Needs Attention"},
+                { value: "At-Risk", label: "At-Risk"},
+                { value: "Critical", label: "Critical"},
               ],
             },
             {
@@ -76,9 +73,9 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
               value: filterStatus,
               onChange: setFilterStatus,
               options: [
-                { value: "Active", label: "Active" },
-                { value: "Paused", label: "Paused" },
-                { value: "Pending Launch", label: "Pending Launch" },
+                { value: "Active", label: "Active"},
+                { value: "Paused", label: "Paused"},
+                { value: "Pending Launch", label: "Pending Launch"},
               ],
             },
           ]}
@@ -113,7 +110,7 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
                 MRR
               </th>
-              <th className="px-4 py-3 w-8" />
+              <th className="px-4 py-3 w-8"/>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -127,8 +124,7 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
             {filtered.map((client) => (
               <React.Fragment key={client.id}>
                 <tr
-                  className="hover:bg-slate-50 transition-colors cursor-pointer"
-                  onClick={() => setExpandedId(expandedId === client.id ? null : client.id)}
+                  className="hover:bg-slate-50 transition-colors cursor-pointer"onClick={() => setExpandedId(expandedId === client.id ? null : client.id)}
                 >
                   <td className="px-5 py-3">
                     <div className="font-medium text-slate-900">{client.name}</div>
@@ -139,8 +135,7 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
                       {client.services.map((s) => (
                         <span
                           key={s}
-                          className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-600 text-xs rounded"
-                        >
+                          className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-600 text-xs rounded">
                           {s}
                         </span>
                       ))}
@@ -171,12 +166,9 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
                   </td>
                   <td className="px-4 py-3 text-slate-400">
                     <svg
-                      className={`w-4 h-4 transition-transform ${expandedId === client.id ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      className={`w-4 h-4 transition-transform ${expandedId === client.id ? "rotate-180": ""}`}
+                      fill="none"stroke="currentColor"viewBox="0 0 24 24">
+                      <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M19 9l-7 7-7-7"/>
                     </svg>
                   </td>
                 </tr>
@@ -201,13 +193,13 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
                             Open Items
                           </span>
                           <p className="text-slate-700 mt-0.5">
-                            {client.openDeliverables} deliverable{client.openDeliverables !== 1 ? "s" : ""},{" "}
-                            {client.reportsOverdue} report{client.reportsOverdue !== 1 ? "s" : ""} overdue
+                            {client.openDeliverables} deliverable{client.openDeliverables !== 1 ? "s": ""},{""}
+                            {client.reportsOverdue} report{client.reportsOverdue !== 1 ? "s": ""} overdue
                           </p>
                         </div>
                         <div>
                           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"/>
                             AI Notes
                             <span className="text-indigo-400 text-[10px] font-normal normal-case tracking-normal">(placeholder)</span>
                           </span>
@@ -235,8 +227,8 @@ function RenewalCell({ date }: { date: string }) {
 
   return (
     <div>
-      <div className={`font-medium ${isPast ? "text-red-600" : isUrgent ? "text-amber-600" : "text-slate-700"}`}>
-        {renewal.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+      <div className={`font-medium ${isPast ? "text-red-600": isUrgent ? "text-amber-600": "text-slate-700"}`}>
+        {renewal.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric"})}
       </div>
       {isUrgent && (
         <div className="text-xs text-amber-600">{diffDays}d left</div>

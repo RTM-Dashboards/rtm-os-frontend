@@ -9,7 +9,7 @@ import {
   type HealthStatus,
 } from "@/lib/account-management/am-client-success-data";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function fmt(n: number): string {
   return `$${n.toLocaleString()}`;
@@ -68,21 +68,21 @@ function KpiCard({
   );
 }
 
-// ── Derived data ──────────────────────────────────────────────────────────────
+//  Derived data 
 
 const totalMrr = PORTFOLIO_CLIENTS.reduce((a, c) => a + c.mrr, 0);
 const totalArr = PORTFOLIO_CLIENTS.reduce((a, c) => a + c.arr, 0);
 const activeClients = PORTFOLIO_CLIENTS.filter((c) => c.status === "Active").length;
 const revenueAtRiskClients = PORTFOLIO_CLIENTS.filter(
   (c) =>
-    c.healthStatus === "At Risk" ||
-    c.healthStatus === "Critical" ||
+    c.healthStatus === "At Risk"||
+    c.healthStatus === "Critical"||
     c.status === "Cancellation Requested"
 );
 const revenueAtRisk = revenueAtRiskClients.reduce((a, c) => a + c.mrr, 0);
 const largestAccounts = [...PORTFOLIO_CLIENTS].sort((a, b) => b.mrr - a.mrr).slice(0, 8);
 const accountsAtRisk = PORTFOLIO_CLIENTS.filter(
-  (c) => c.healthStatus === "At Risk" || c.healthStatus === "Critical"
+  (c) => c.healthStatus === "At Risk"|| c.healthStatus === "Critical"
 );
 const expansionPipeline = EXPANSION_OPPORTUNITIES.filter(
   (o) => o.status !== "Declined"
@@ -95,14 +95,14 @@ export default function ExecutivePage() {
   const [activeSection, setActiveSection] = useState<string>("overview");
 
   const sections = [
-    { id: "overview", label: "Overview" },
-    { id: "largest", label: "Largest Accounts" },
-    { id: "atrisk", label: "Accounts At Risk" },
-    { id: "renewals", label: "Renewal Forecast" },
-    { id: "revenue-risk", label: "Revenue At Risk" },
-    { id: "expansion", label: "Expansion Forecast" },
-    { id: "departments", label: "Department Issues" },
-    { id: "ai", label: "AI Summary" },
+    { id: "overview", label: "Overview"},
+    { id: "largest", label: "Largest Accounts"},
+    { id: "atrisk", label: "Accounts At Risk"},
+    { id: "renewals", label: "Renewal Forecast"},
+    { id: "revenue-risk", label: "Revenue At Risk"},
+    { id: "expansion", label: "Expansion Forecast"},
+    { id: "departments", label: "Department Issues"},
+    { id: "ai", label: "AI Summary"},
   ];
 
   return (
@@ -119,37 +119,19 @@ export default function ExecutivePage() {
       {/* Primary KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Total MRR"
-          value={fmt(totalMrr)}
-          sub="monthly recurring revenue"
-          color="text-blue-700"
-          bgColor="bg-blue-50"
-          borderColor="border-blue-200"
-        />
+          label="Total MRR"value={fmt(totalMrr)}
+          sub="monthly recurring revenue"color="text-blue-700"bgColor="bg-blue-50"borderColor="border-blue-200"/>
         <KpiCard
-          label="Total ARR"
-          value={fmt(totalArr)}
-          sub="annual recurring revenue"
-          color="text-indigo-700"
-          bgColor="bg-indigo-50"
-          borderColor="border-indigo-200"
-        />
+          label="Total ARR"value={fmt(totalArr)}
+          sub="annual recurring revenue"color="text-indigo-700"bgColor="bg-indigo-50"borderColor="border-indigo-200"/>
         <KpiCard
-          label="Active Clients"
-          value={activeClients}
+          label="Active Clients"value={activeClients}
           sub={`of ${PORTFOLIO_CLIENTS.length} total`}
-          color="text-emerald-700"
-          bgColor="bg-emerald-50"
-          borderColor="border-emerald-200"
-        />
+          color="text-emerald-700"bgColor="bg-emerald-50"borderColor="border-emerald-200"/>
         <KpiCard
-          label="Revenue At Risk"
-          value={fmt(revenueAtRisk)}
+          label="Revenue At Risk"value={fmt(revenueAtRisk)}
           sub={`${revenueAtRiskClients.length} clients`}
-          color="text-red-700"
-          bgColor="bg-red-50"
-          borderColor="border-red-200"
-        />
+          color="text-red-700"bgColor="bg-red-50"borderColor="border-red-200"/>
       </div>
 
       {/* Section nav */}
@@ -160,9 +142,7 @@ export default function ExecutivePage() {
             onClick={() => setActiveSection(s.id)}
             className={`rounded-t-lg border border-b-0 px-3 py-2 text-xs font-semibold transition-colors ${
               activeSection === s.id
-                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10": "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             {s.label}
           </button>
@@ -170,17 +150,17 @@ export default function ExecutivePage() {
       </div>
 
       {/* Overview */}
-      {activeSection === "overview" && (
+      {activeSection === "overview"&& (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Total Portfolio", value: PORTFOLIO_CLIENTS.length, sub: "clients", color: "text-slate-800" },
-            { label: "Healthy", value: PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "Healthy").length, sub: "health status", color: "text-emerald-700" },
-            { label: "Monitor", value: PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "Monitor").length, sub: "health status", color: "text-amber-700" },
-            { label: "At Risk", value: PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "At Risk").length, sub: "health status", color: "text-orange-700" },
-            { label: "Critical", value: PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "Critical").length, sub: "health status", color: "text-red-700" },
-            { label: "Renewals (90 days)", value: RENEWAL_RECORDS.filter((r) => r.daysRemaining <= 90).length, sub: "upcoming", color: "text-blue-700" },
-            { label: "Expansion Pipeline", value: fmt(expansionPipeline), sub: "est. monthly revenue", color: "text-teal-700" },
-            { label: "Dept. Escalations", value: DEPARTMENT_STATUS.reduce((a, d) => a + d.escalations, 0), sub: "open", color: "text-orange-700" },
+            { label: "Total Portfolio", value: PORTFOLIO_CLIENTS.length, sub: "clients", color: "text-slate-800"},
+            { label: "Healthy", value: PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "Healthy").length, sub: "health status", color: "text-emerald-700"},
+            { label: "Monitor", value: PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "Monitor").length, sub: "health status", color: "text-amber-700"},
+            { label: "At Risk", value: PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "At Risk").length, sub: "health status", color: "text-orange-700"},
+            { label: "Critical", value: PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "Critical").length, sub: "health status", color: "text-red-700"},
+            { label: "Renewals (90 days)", value: RENEWAL_RECORDS.filter((r) => r.daysRemaining <= 90).length, sub: "upcoming", color: "text-blue-700"},
+            { label: "Expansion Pipeline", value: fmt(expansionPipeline), sub: "est. monthly revenue", color: "text-teal-700"},
+            { label: "Dept. Escalations", value: DEPARTMENT_STATUS.reduce((a, d) => a + d.escalations, 0), sub: "open", color: "text-orange-700"},
           ].map(({ label, value, sub, color }) => (
             <div key={label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">{label}</p>
@@ -192,9 +172,9 @@ export default function ExecutivePage() {
       )}
 
       {/* Largest Accounts */}
-      {activeSection === "largest" && (
+      {activeSection === "largest"&& (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
-          <SectionHeader title="Largest Accounts by MRR" subtitle="Top 8 accounts by monthly recurring revenue" />
+          <SectionHeader title="Largest Accounts by MRR"subtitle="Top 8 accounts by monthly recurring revenue"/>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-left">
@@ -238,11 +218,10 @@ export default function ExecutivePage() {
       )}
 
       {/* Accounts At Risk */}
-      {activeSection === "atrisk" && (
+      {activeSection === "atrisk"&& (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
           <SectionHeader
-            title="Accounts At Risk"
-            subtitle={`${accountsAtRisk.length} clients with At Risk or Critical health status`}
+            title="Accounts At Risk"subtitle={`${accountsAtRisk.length} clients with At Risk or Critical health status`}
           />
           <table className="w-full text-sm">
             <thead>
@@ -265,7 +244,7 @@ export default function ExecutivePage() {
                   </td>
                   <td className="px-4 py-3 text-slate-700">{c.accountManager}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-lg font-bold ${c.healthScore >= 60 ? "text-amber-600" : "text-red-600"}`}>{c.healthScore}</span>
+                    <span className={`text-lg font-bold ${c.healthScore >= 60 ? "text-amber-600": "text-red-600"}`}>{c.healthScore}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${healthStatusBadge(c.healthStatus)}`}>
@@ -276,10 +255,7 @@ export default function ExecutivePage() {
                   <td className="px-4 py-3 text-right font-bold text-red-600">{fmt(c.mrr)}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                      c.status === "Cancellation Requested"
-                        ? "bg-red-100 text-red-700 border-red-200"
-                        : "bg-orange-100 text-orange-700 border-orange-200"
-                    }`}>
+                      c.status === "Cancellation Requested"? "bg-red-100 text-red-700 border-red-200": "bg-orange-100 text-orange-700 border-orange-200"}`}>
                       {c.status}
                     </span>
                   </td>
@@ -291,12 +267,10 @@ export default function ExecutivePage() {
       )}
 
       {/* Renewal Forecast */}
-      {activeSection === "renewals" && (
+      {activeSection === "renewals"&& (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
           <SectionHeader
-            title="Renewal Forecast"
-            subtitle="Upcoming renewals sorted by days remaining"
-          />
+            title="Renewal Forecast"subtitle="Upcoming renewals sorted by days remaining"/>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-left">
@@ -316,7 +290,7 @@ export default function ExecutivePage() {
                   <td className="px-4 py-3 font-semibold text-slate-900">{r.client}</td>
                   <td className="px-4 py-3 text-xs text-slate-500">{r.renewalWindow}</td>
                   <td className="px-4 py-3">
-                    <span className={`font-bold ${r.daysRemaining <= 30 ? "text-red-600" : r.daysRemaining <= 60 ? "text-amber-600" : "text-slate-700"}`}>
+                    <span className={`font-bold ${r.daysRemaining <= 30 ? "text-red-600": r.daysRemaining <= 60 ? "text-amber-600": "text-slate-700"}`}>
                       {r.daysRemaining}d
                     </span>
                   </td>
@@ -327,14 +301,7 @@ export default function ExecutivePage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                      r.renewalStatus === "At Risk"
-                        ? "bg-orange-100 text-orange-700 border-orange-200"
-                        : r.renewalStatus === "In Progress"
-                        ? "bg-blue-100 text-blue-700 border-blue-200"
-                        : r.renewalStatus === "Renewed"
-                        ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                        : "bg-slate-100 text-slate-500 border-slate-200"
-                    }`}>
+                      r.renewalStatus === "At Risk"? "bg-orange-100 text-orange-700 border-orange-200": r.renewalStatus === "In Progress"? "bg-blue-100 text-blue-700 border-blue-200": r.renewalStatus === "Renewed"? "bg-emerald-100 text-emerald-700 border-emerald-200": "bg-slate-100 text-slate-500 border-slate-200"}`}>
                       {r.renewalStatus}
                     </span>
                   </td>
@@ -349,7 +316,7 @@ export default function ExecutivePage() {
       )}
 
       {/* Revenue At Risk */}
-      {activeSection === "revenue-risk" && (
+      {activeSection === "revenue-risk"&& (
         <div className="space-y-4">
           <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4">
             <p className="text-base font-bold text-red-800">
@@ -397,7 +364,7 @@ export default function ExecutivePage() {
       )}
 
       {/* Expansion Forecast */}
-      {activeSection === "expansion" && (
+      {activeSection === "expansion"&& (
         <div className="space-y-4">
           <div className="grid sm:grid-cols-3 gap-4">
             <div className="rounded-xl border border-teal-200 bg-teal-50 p-4 shadow-sm">
@@ -417,7 +384,7 @@ export default function ExecutivePage() {
             </div>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
-            <SectionHeader title="Expansion Opportunities Pipeline" />
+            <SectionHeader title="Expansion Opportunities Pipeline"/>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 text-left">
@@ -435,19 +402,12 @@ export default function ExecutivePage() {
                     <td className="px-4 py-3 text-slate-700">{o.opportunity}</td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                        o.status === "Closed Won"
-                          ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                          : o.status === "In Negotiation"
-                          ? "bg-amber-100 text-amber-700 border-amber-200"
-                          : o.status === "Proposed"
-                          ? "bg-indigo-100 text-indigo-700 border-indigo-200"
-                          : "bg-blue-100 text-blue-700 border-blue-200"
-                      }`}>
+                        o.status === "Closed Won"? "bg-emerald-100 text-emerald-700 border-emerald-200": o.status === "In Negotiation"? "bg-amber-100 text-amber-700 border-amber-200": o.status === "Proposed"? "bg-indigo-100 text-indigo-700 border-indigo-200": "bg-blue-100 text-blue-700 border-blue-200"}`}>
                         {o.status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`font-semibold ${o.confidenceScore >= 80 ? "text-emerald-600" : o.confidenceScore >= 60 ? "text-amber-600" : "text-red-600"}`}>
+                      <span className={`font-semibold ${o.confidenceScore >= 80 ? "text-emerald-600": o.confidenceScore >= 60 ? "text-amber-600": "text-red-600"}`}>
                         {o.confidenceScore}%
                       </span>
                     </td>
@@ -461,9 +421,9 @@ export default function ExecutivePage() {
       )}
 
       {/* Department Issues */}
-      {activeSection === "departments" && (
+      {activeSection === "departments"&& (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-x-auto">
-          <SectionHeader title="Department Issues" subtitle="Open tasks, blocked work, and escalations by department" />
+          <SectionHeader title="Department Issues"subtitle="Open tasks, blocked work, and escalations by department"/>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50 text-left">
@@ -524,11 +484,11 @@ export default function ExecutivePage() {
       )}
 
       {/* AI Executive Summary */}
-      {activeSection === "ai" && (
+      {activeSection === "ai"&& (
         <div className="space-y-4">
           <div className="rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-800 p-6 text-white shadow-lg">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">🤖</span>
+              
               <div>
                 <h2 className="text-lg font-bold">AI Executive Summary</h2>
                 <p className="text-blue-200 text-xs">Generated analysis across all {PORTFOLIO_CLIENTS.length} clients</p>
@@ -537,32 +497,32 @@ export default function ExecutivePage() {
             <div className="grid sm:grid-cols-2 gap-4">
               {[
                 {
-                  icon: "📊",
+                  icon: "",
                   title: "Portfolio Overview",
-                  text: `The portfolio contains ${PORTFOLIO_CLIENTS.length} clients generating ${fmt(totalMrr)}/mo (${fmt(totalArr)}/yr ARR). ${PORTFOLIO_CLIENTS.filter(c => c.healthStatus === "Healthy").length} clients are healthy, while ${PORTFOLIO_CLIENTS.filter(c => c.healthStatus === "At Risk" || c.healthStatus === "Critical").length} require immediate intervention.`,
+                  text: `The portfolio contains ${PORTFOLIO_CLIENTS.length} clients generating ${fmt(totalMrr)}/mo (${fmt(totalArr)}/yr ARR). ${PORTFOLIO_CLIENTS.filter(c => c.healthStatus === "Healthy").length} clients are healthy, while ${PORTFOLIO_CLIENTS.filter(c => c.healthStatus === "At Risk"|| c.healthStatus === "Critical").length} require immediate intervention.`,
                 },
                 {
-                  icon: "⚠️",
+                  icon: "",
                   title: "Current Risks",
                   text: `${revenueAtRiskClients.length} accounts represent ${fmt(revenueAtRisk)}/mo in at-risk revenue. Lakeview Dental (renewal June 30, payment overdue) and Harbor View Realty (CRM stalled, VP escalation) are the most critical. Peak Performance HVAC has had no contact in 25 days with 2 overdue reports.`,
                 },
                 {
-                  icon: "📅",
+                  icon: "",
                   title: "Upcoming Deadlines",
                   text: `${RENEWAL_RECORDS.filter(r => r.daysRemaining <= 30).length} renewals due within 30 days. Lakeview Dental and Harbor View Realty renewals are critical-risk. Pinnacle HVAC renewal is low-risk with expansion interest. Keystone Law Group renewal is in progress.`,
                 },
                 {
-                  icon: "💰",
+                  icon: "",
                   title: "Renewal Opportunities",
                   text: `${RENEWAL_RECORDS.length} renewals tracked. ${RENEWAL_RECORDS.filter(r => r.renewalRisk === "Low").length} are low-risk. Total renewal ARR at stake this quarter: ${fmt(RENEWAL_RECORDS.reduce((a, r) => a + r.mrr, 0) * 12)}. Recommend prioritizing Pinnacle HVAC with an expansion add-on proposal to increase ARR.`,
                 },
                 {
-                  icon: "📈",
+                  icon: "",
                   title: "Expansion Opportunities",
                   text: `${fmt(expansionPipeline)}/mo in expansion pipeline identified. LinkedIn Ads for CloudPath Tech (${fmt(2400)}/mo) is already closed. Pinnacle HVAC GBP upgrade (${fmt(1200)}/mo) is in negotiation with 95% confidence. NorthStar Dental multi-location expansion (${fmt(3800)}/mo) is high-priority.`,
                 },
                 {
-                  icon: "✅",
+                  icon: "",
                   title: "Recommended Executive Actions",
                   text: "1) Escalate Lakeview Dental to leadership immediately — June 30 deadline. 2) VP call for Harbor View Realty CRM dispute. 3) Contact Peak Performance HVAC today. 4) Close Pinnacle HVAC expansion proposal. 5) Review department-wide blocked work in Paid Ads and Design (3 blocked each).",
                 },

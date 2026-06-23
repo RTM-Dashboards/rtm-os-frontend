@@ -100,7 +100,7 @@ export default function ClientPortfolioPage() {
   const [search, setSearch] = useState("");
 
   const filtered = PORTFOLIO_CLIENTS.filter((c) => {
-    const matchesStatus = activeStatus === "All" || c.status === activeStatus;
+    const matchesStatus = activeStatus === "All"|| c.status === activeStatus;
     const q = search.toLowerCase();
     const matchesSearch =
       !q ||
@@ -137,28 +137,24 @@ export default function ClientPortfolioPage() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        <KpiCard label="Total Clients" value={total} />
-        <KpiCard label="Active" value={active} color="text-emerald-600" />
-        <KpiCard label="At Risk" value={atRisk} color="text-orange-600" />
-        <KpiCard label="Critical" value={critical} color="text-red-600" />
+        <KpiCard label="Total Clients"value={total} />
+        <KpiCard label="Active"value={active} color="text-emerald-600"/>
+        <KpiCard label="At Risk"value={atRisk} color="text-orange-600"/>
+        <KpiCard label="Critical"value={critical} color="text-red-600"/>
         <KpiCard
-          label="Avg Health Score"
-          value={`${avgHealth}%`}
+          label="Avg Health Score"value={`${avgHealth}%`}
           color={healthColor(avgHealth)}
         />
-        <KpiCard label="Total MRR" value={fmt(totalMrr)} color="text-blue-700" />
-        <KpiCard label="Total ARR" value={fmt(totalArr)} color="text-indigo-700" />
+        <KpiCard label="Total MRR"value={fmt(totalMrr)} color="text-blue-700"/>
+        <KpiCard label="Total ARR"value={fmt(totalArr)} color="text-indigo-700"/>
       </div>
 
       {/* Search */}
       <div className="flex items-center gap-3">
         <input
-          type="text"
-          placeholder="Search clients, managers, services…"
-          value={search}
+          type="text"placeholder="Search clients, managers, services…"value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 max-w-md rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
-        />
+          className="flex-1 max-w-md rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"/>
         <span className="text-sm text-slate-400">{filtered.length} clients</span>
       </div>
 
@@ -170,12 +166,10 @@ export default function ClientPortfolioPage() {
             onClick={() => setActiveStatus(s)}
             className={`rounded-t-lg border border-b-0 px-3 py-2 text-xs font-semibold transition-colors ${
               activeStatus === s
-                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10": "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             {s}
-            {s !== "All" && (
+            {s !== "All"&& (
               <span className="ml-1 text-[10px] text-slate-400">
                 ({PORTFOLIO_CLIENTS.filter((c) => c.status === s).length})
               </span>
@@ -239,8 +233,7 @@ function ClientRow({ client }: { client: PortfolioClient }) {
           {client.services.map((s) => (
             <span
               key={s}
-              className="inline-block rounded-md bg-blue-50 border border-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
-            >
+              className="inline-block rounded-md bg-blue-50 border border-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
               {s}
             </span>
           ))}

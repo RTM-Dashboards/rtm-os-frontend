@@ -11,8 +11,6 @@ export default function ProfilePage() {
     <WorkspaceProfilePage
       workspace={workspace}
       profile={localServiceAdsProfile}
-      teamRoute="/local-service-ads/team-members"
-      rolesRoute="/local-service-ads/roles"
-    />
+      teamRoute="/local-service-ads/team-members"rolesRoute="/local-service-ads/roles"/>
   );
 }

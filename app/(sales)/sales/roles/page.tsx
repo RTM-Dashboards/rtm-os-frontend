@@ -12,8 +12,6 @@ export default function SalesRolesPage() {
       workspace={workspace}
       roles={salesRoles}
       permissionAreas={salesPermissions}
-      teamRoute="/sales/team-members"
-      profileRoute="/sales/profile"
-    />
+      teamRoute="/sales/team-members"profileRoute="/sales/profile"/>
   );
 }

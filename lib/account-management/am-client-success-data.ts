@@ -5,46 +5,23 @@
 // ── Shared Types ──────────────────────────────────────────────────────────────
 
 export type ClientStatus =
-  | "Prospect"
-  | "Onboarding"
-  | "Active"
-  | "Expansion"
-  | "Renewal"
-  | "At Risk"
-  | "Cancellation Requested"
-  | "Offboarding"
-  | "Archived";
+  | "Prospect"| "Onboarding"| "Active"| "Expansion"| "Renewal"| "At Risk"| "Cancellation Requested"| "Offboarding"| "Archived";
 
-export type HealthStatus = "Healthy" | "Monitor" | "At Risk" | "Critical";
-export type RenewalStatus = "Not Started" | "In Progress" | "Renewed" | "At Risk" | "Declined";
+export type HealthStatus = "Healthy"| "Monitor"| "At Risk"| "Critical";
+export type RenewalStatus = "Not Started"| "In Progress"| "Renewed"| "At Risk"| "Declined";
 export type OnboardingStatus =
-  | "Pending"
-  | "In Progress"
-  | "Waiting On Client"
-  | "Ready To Launch"
-  | "Completed";
+  | "Pending"| "In Progress"| "Waiting On Client"| "Ready To Launch"| "Completed";
 
 export type ProjectStatus =
-  | "Planning"
-  | "Active"
-  | "On Hold"
-  | "At Risk"
-  | "Completed"
-  | "Cancelled";
+  | "Planning"| "Active"| "On Hold"| "At Risk"| "Completed"| "Cancelled";
 
 export type CommunicationType =
-  | "Call Summary"
-  | "Meeting Notes"
-  | "Client Notes"
-  | "Email"
-  | "SMS"
-  | "Follow-Up"
-  | "Action Item";
+  | "Call Summary"| "Meeting Notes"| "Client Notes"| "Email"| "SMS"| "Follow-Up"| "Action Item";
 
-export type SentimentType = "Positive" | "Neutral" | "Negative" | "Mixed";
-export type ExpansionStatus = "Identified" | "Proposed" | "In Negotiation" | "Closed Won" | "Declined";
-export type CancellationStatus = "Submitted" | "Save Attempt" | "Escalated" | "Confirmed" | "Saved";
-export type OffboardingStatus = "Initiated" | "In Progress" | "Awaiting Client" | "Completed";
+export type SentimentType = "Positive"| "Neutral"| "Negative"| "Mixed";
+export type ExpansionStatus = "Identified"| "Proposed"| "In Negotiation"| "Closed Won"| "Declined";
+export type CancellationStatus = "Submitted"| "Save Attempt"| "Escalated"| "Confirmed"| "Saved";
+export type OffboardingStatus = "Initiated"| "In Progress"| "Awaiting Client"| "Completed";
 
 // ── Client Portfolio ──────────────────────────────────────────────────────────
 
@@ -68,36 +45,36 @@ export interface PortfolioClient {
 }
 
 export const PORTFOLIO_CLIENTS: PortfolioClient[] = [
-  { id: "pc01", name: "Apex Roofing", primaryContact: "Mark Hardin", accountManager: "Sarah Chen", services: ["SEO", "GBP", "Google Ads"], projectCount: 3, healthScore: 92, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 2800, arr: 33600, status: "Active", renewalDate: "2025-09-01", startDate: "2023-09-01", industry: "Roofing", location: "Phoenix, AZ" },
-  { id: "pc02", name: "Harbor Auto", primaryContact: "Linda Torres", accountManager: "Sarah Chen", services: ["Google Ads", "SEO"], projectCount: 2, healthScore: 48, healthStatus: "At Risk", renewalStatus: "At Risk", mrr: 3200, arr: 38400, status: "At Risk", renewalDate: "2025-07-11", startDate: "2022-07-11", industry: "Automotive", location: "Seattle, WA" },
-  { id: "pc03", name: "Lakeview Dental", primaryContact: "Dr. Sharon Kim", accountManager: "Sarah Chen", services: ["SEO", "Reporting"], projectCount: 2, healthScore: 34, healthStatus: "Critical", renewalStatus: "At Risk", mrr: 2400, arr: 28800, status: "At Risk", renewalDate: "2025-06-30", startDate: "2022-06-30", industry: "Dental", location: "Chicago, IL" },
-  { id: "pc04", name: "Blue Sky Solar", primaryContact: "James Brennan", accountManager: "Maria Santos", services: ["SEO", "Meta Ads", "Content", "Design"], projectCount: 4, healthScore: 78, healthStatus: "Monitor", renewalStatus: "In Progress", mrr: 5100, arr: 61200, status: "Onboarding", renewalDate: "2026-01-15", startDate: "2025-01-15", industry: "Solar", location: "San Diego, CA" },
-  { id: "pc05", name: "Metro Electrical", primaryContact: "Carlos Reyes", accountManager: "James Park", services: ["PPC", "LSA", "GBP"], projectCount: 3, healthScore: 58, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 3600, arr: 43200, status: "Active", renewalDate: "2025-11-20", startDate: "2023-11-20", industry: "Electrical", location: "Dallas, TX" },
-  { id: "pc06", name: "Pinnacle HVAC", primaryContact: "Rachel Moore", accountManager: "James Park", services: ["GBP", "LSA", "SEO"], projectCount: 3, healthScore: 88, healthStatus: "Healthy", renewalStatus: "In Progress", mrr: 4500, arr: 54000, status: "Renewal", renewalDate: "2025-07-01", startDate: "2023-07-01", industry: "HVAC", location: "Houston, TX" },
-  { id: "pc07", name: "Summit Landscaping", primaryContact: "Eric Walsh", accountManager: "James Park", services: ["SEO", "Content", "GBP"], projectCount: 2, healthScore: 62, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2900, arr: 34800, status: "Active", renewalDate: "2025-10-15", startDate: "2023-10-15", industry: "Landscaping", location: "Denver, CO" },
-  { id: "pc08", name: "NorthStar Dental", primaryContact: "Dr. Amy Lee", accountManager: "Tina Webb", services: ["SEO", "PPC", "Content"], projectCount: 3, healthScore: 84, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 3800, arr: 45600, status: "Active", renewalDate: "2025-12-01", startDate: "2023-12-01", industry: "Dental", location: "Minneapolis, MN" },
-  { id: "pc09", name: "Pacific Dental", primaryContact: "Dr. Brian Ngo", accountManager: "Tina Webb", services: ["SEO", "Reporting", "GBP"], projectCount: 2, healthScore: 71, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 3200, arr: 38400, status: "Active", renewalDate: "2025-08-10", startDate: "2023-08-10", industry: "Dental", location: "Sacramento, CA" },
-  { id: "pc10", name: "Radiance MedSpa", primaryContact: "Nicole Hart", accountManager: "Tina Webb", services: ["Meta Ads", "Design", "SEO"], projectCount: 3, healthScore: 80, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 4200, arr: 50400, status: "Active", renewalDate: "2025-11-01", startDate: "2023-11-01", industry: "MedSpa", location: "Miami, FL" },
-  { id: "pc11", name: "Urban Fitness Co.", primaryContact: "Dan Mitchell", accountManager: "Sarah Chen", services: ["Meta Ads", "SEO"], projectCount: 2, healthScore: 76, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 2600, arr: 31200, status: "Active", renewalDate: "2025-10-20", startDate: "2023-10-20", industry: "Fitness", location: "Austin, TX" },
-  { id: "pc12", name: "Bright Dental Studio", primaryContact: "Dr. Casey Long", accountManager: "Maria Santos", services: ["SEO", "Content", "GBP"], projectCount: 2, healthScore: 82, healthStatus: "Healthy", renewalStatus: "In Progress", mrr: 3400, arr: 40800, status: "Expansion", renewalDate: "2025-07-20", startDate: "2022-07-20", industry: "Dental", location: "Atlanta, GA" },
-  { id: "pc13", name: "CloudPath Tech", primaryContact: "Victor Huang", accountManager: "Maria Santos", services: ["SEO", "Content", "PPC", "Reporting"], projectCount: 4, healthScore: 91, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 9800, arr: 117600, status: "Active", renewalDate: "2025-12-31", startDate: "2023-01-01", industry: "Technology", location: "San Francisco, CA" },
-  { id: "pc14", name: "GreenLeaf Gardens", primaryContact: "Pam Stevens", accountManager: "James Park", services: ["SEO", "GBP"], projectCount: 1, healthScore: 55, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 1800, arr: 21600, status: "Active", renewalDate: "2025-09-05", startDate: "2024-09-05", industry: "Landscaping", location: "Portland, OR" },
-  { id: "pc15", name: "Harbor Eye Care", primaryContact: "Dr. Fiona Chang", accountManager: "Tina Webb", services: ["SEO", "PPC"], projectCount: 2, healthScore: 67, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2800, arr: 33600, status: "Active", renewalDate: "2025-10-05", startDate: "2023-10-05", industry: "Optometry", location: "Boston, MA" },
-  { id: "pc16", name: "Coastal Plumbing Co.", primaryContact: "Tom Caine", accountManager: "Sarah Chen", services: ["SEO", "Meta Ads", "GBP", "LSA"], projectCount: 3, healthScore: 89, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 4500, arr: 54000, status: "Active", renewalDate: "2026-03-15", startDate: "2023-03-15", industry: "Plumbing", location: "Miami, FL" },
-  { id: "pc17", name: "Peak Performance HVAC", primaryContact: "Greg Lang", accountManager: "James Park", services: ["Meta Ads", "PPC", "Reporting"], projectCount: 3, healthScore: 43, healthStatus: "Critical", renewalStatus: "At Risk", mrr: 6200, arr: 74400, status: "At Risk", renewalDate: "2025-09-01", startDate: "2022-09-01", industry: "HVAC", location: "Phoenix, AZ" },
-  { id: "pc18", name: "Elite Carpet Cleaners", primaryContact: "Wendy Russo", accountManager: "Maria Santos", services: ["GBP", "SEO"], projectCount: 1, healthScore: 73, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 1600, arr: 19200, status: "Active", renewalDate: "2026-02-01", startDate: "2024-02-01", industry: "Cleaning", location: "Nashville, TN" },
-  { id: "pc19", name: "Summit Roofing Group", primaryContact: "Paul Grant", accountManager: "Maria Santos", services: ["LSA", "PPC", "GBP"], projectCount: 2, healthScore: 29, healthStatus: "Critical", renewalStatus: "Declined", mrr: 5100, arr: 61200, status: "Cancellation Requested", renewalDate: "2025-08-01", startDate: "2023-06-01", industry: "Roofing", location: "Dallas, TX" },
-  { id: "pc20", name: "Luxe Dental Spa", primaryContact: "Dr. Maya Patel", accountManager: "Sarah Chen", services: ["SEO", "Content", "Design"], projectCount: 3, healthScore: 87, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 3800, arr: 45600, status: "Active", renewalDate: "2026-01-10", startDate: "2024-01-10", industry: "Dental", location: "Beverly Hills, CA" },
-  { id: "pc21", name: "TrueGrit Construction", primaryContact: "Dale Owens", accountManager: "James Park", services: ["SEO", "PPC"], projectCount: 2, healthScore: 69, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2400, arr: 28800, status: "Active", renewalDate: "2025-11-30", startDate: "2023-11-30", industry: "Construction", location: "Charlotte, NC" },
-  { id: "pc22", name: "FlowState Yoga Studio", primaryContact: "Ava Rivera", accountManager: "Tina Webb", services: ["Meta Ads", "GBP"], projectCount: 1, healthScore: 79, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 1400, arr: 16800, status: "Active", renewalDate: "2026-01-01", startDate: "2024-01-01", industry: "Fitness", location: "Portland, OR" },
-  { id: "pc23", name: "BrightPath Tutoring", primaryContact: "Kevin Mack", accountManager: "Sarah Chen", services: ["SEO", "PPC", "Content"], projectCount: 2, healthScore: 60, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2200, arr: 26400, status: "Active", renewalDate: "2025-08-15", startDate: "2024-02-15", industry: "Education", location: "Chicago, IL" },
-  { id: "pc24", name: "Harbor View Realty", primaryContact: "Sandra Chen", accountManager: "James Park", services: ["SEO", "Meta Ads", "Design", "Content"], projectCount: 4, healthScore: 46, healthStatus: "At Risk", renewalStatus: "At Risk", mrr: 7500, arr: 90000, status: "At Risk", renewalDate: "2025-07-01", startDate: "2023-07-01", industry: "Real Estate", location: "Seattle, WA" },
-  { id: "pc25", name: "Precision Auto Repair", primaryContact: "Hank Diaz", accountManager: "Maria Santos", services: ["GBP", "SEO", "Reviews"], projectCount: 2, healthScore: 83, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 1800, arr: 21600, status: "Active", renewalDate: "2026-06-01", startDate: "2024-06-01", industry: "Automotive", location: "Nashville, TN" },
-  { id: "pc26", name: "Keystone Law Group", primaryContact: "Atty. Drew Park", accountManager: "Tina Webb", services: ["SEO", "Content", "PPC"], projectCount: 3, healthScore: 77, healthStatus: "Healthy", renewalStatus: "In Progress", mrr: 4800, arr: 57600, status: "Renewal", renewalDate: "2025-07-15", startDate: "2022-07-15", industry: "Legal", location: "New York, NY" },
-  { id: "pc27", name: "ActiveStep Physical Therapy", primaryContact: "Dr. Lisa Grant", accountManager: "Maria Santos", services: ["SEO", "GBP"], projectCount: 1, healthScore: 75, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 2100, arr: 25200, status: "Active", renewalDate: "2026-02-10", startDate: "2024-02-10", industry: "Healthcare", location: "Columbus, OH" },
-  { id: "pc28", name: "Riverstone Remodeling", primaryContact: "Jake Torres", accountManager: "James Park", services: ["LSA", "GBP", "SEO"], projectCount: 2, healthScore: 64, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2700, arr: 32400, status: "Active", renewalDate: "2025-12-15", startDate: "2023-12-15", industry: "Construction", location: "Phoenix, AZ" },
-  { id: "pc29", name: "Golden Gate Urgent Care", primaryContact: "Dr. Mike Vo", accountManager: "Tina Webb", services: ["SEO", "PPC", "Reporting"], projectCount: 3, healthScore: 81, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 5500, arr: 66000, status: "Active", renewalDate: "2025-11-20", startDate: "2023-11-20", industry: "Healthcare", location: "San Francisco, CA" },
-  { id: "pc30", name: "Apex Solar Solutions", primaryContact: "Ravi Kapoor", accountManager: "Sarah Chen", services: ["Meta Ads", "SEO", "Content"], projectCount: 3, healthScore: 72, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 3900, arr: 46800, status: "Active", renewalDate: "2025-10-01", startDate: "2023-10-01", industry: "Solar", location: "Las Vegas, NV" },
+  { id: "pc01", name: "Apex Roofing", primaryContact: "Mark Hardin", accountManager: "Sarah Chen", services: ["SEO", "GBP", "Google Ads"], projectCount: 3, healthScore: 92, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 2800, arr: 33600, status: "Active", renewalDate: "2025-09-01", startDate: "2023-09-01", industry: "Roofing", location: "Phoenix, AZ"},
+  { id: "pc02", name: "Harbor Auto", primaryContact: "Linda Torres", accountManager: "Sarah Chen", services: ["Google Ads", "SEO"], projectCount: 2, healthScore: 48, healthStatus: "At Risk", renewalStatus: "At Risk", mrr: 3200, arr: 38400, status: "At Risk", renewalDate: "2025-07-11", startDate: "2022-07-11", industry: "Automotive", location: "Seattle, WA"},
+  { id: "pc03", name: "Lakeview Dental", primaryContact: "Dr. Sharon Kim", accountManager: "Sarah Chen", services: ["SEO", "Reporting"], projectCount: 2, healthScore: 34, healthStatus: "Critical", renewalStatus: "At Risk", mrr: 2400, arr: 28800, status: "At Risk", renewalDate: "2025-06-30", startDate: "2022-06-30", industry: "Dental", location: "Chicago, IL"},
+  { id: "pc04", name: "Blue Sky Solar", primaryContact: "James Brennan", accountManager: "Maria Santos", services: ["SEO", "Meta Ads", "Content", "Design"], projectCount: 4, healthScore: 78, healthStatus: "Monitor", renewalStatus: "In Progress", mrr: 5100, arr: 61200, status: "Onboarding", renewalDate: "2026-01-15", startDate: "2025-01-15", industry: "Solar", location: "San Diego, CA"},
+  { id: "pc05", name: "Metro Electrical", primaryContact: "Carlos Reyes", accountManager: "James Park", services: ["PPC", "LSA", "GBP"], projectCount: 3, healthScore: 58, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 3600, arr: 43200, status: "Active", renewalDate: "2025-11-20", startDate: "2023-11-20", industry: "Electrical", location: "Dallas, TX"},
+  { id: "pc06", name: "Pinnacle HVAC", primaryContact: "Rachel Moore", accountManager: "James Park", services: ["GBP", "LSA", "SEO"], projectCount: 3, healthScore: 88, healthStatus: "Healthy", renewalStatus: "In Progress", mrr: 4500, arr: 54000, status: "Renewal", renewalDate: "2025-07-01", startDate: "2023-07-01", industry: "HVAC", location: "Houston, TX"},
+  { id: "pc07", name: "Summit Landscaping", primaryContact: "Eric Walsh", accountManager: "James Park", services: ["SEO", "Content", "GBP"], projectCount: 2, healthScore: 62, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2900, arr: 34800, status: "Active", renewalDate: "2025-10-15", startDate: "2023-10-15", industry: "Landscaping", location: "Denver, CO"},
+  { id: "pc08", name: "NorthStar Dental", primaryContact: "Dr. Amy Lee", accountManager: "Tina Webb", services: ["SEO", "PPC", "Content"], projectCount: 3, healthScore: 84, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 3800, arr: 45600, status: "Active", renewalDate: "2025-12-01", startDate: "2023-12-01", industry: "Dental", location: "Minneapolis, MN"},
+  { id: "pc09", name: "Pacific Dental", primaryContact: "Dr. Brian Ngo", accountManager: "Tina Webb", services: ["SEO", "Reporting", "GBP"], projectCount: 2, healthScore: 71, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 3200, arr: 38400, status: "Active", renewalDate: "2025-08-10", startDate: "2023-08-10", industry: "Dental", location: "Sacramento, CA"},
+  { id: "pc10", name: "Radiance MedSpa", primaryContact: "Nicole Hart", accountManager: "Tina Webb", services: ["Meta Ads", "Design", "SEO"], projectCount: 3, healthScore: 80, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 4200, arr: 50400, status: "Active", renewalDate: "2025-11-01", startDate: "2023-11-01", industry: "MedSpa", location: "Miami, FL"},
+  { id: "pc11", name: "Urban Fitness Co.", primaryContact: "Dan Mitchell", accountManager: "Sarah Chen", services: ["Meta Ads", "SEO"], projectCount: 2, healthScore: 76, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 2600, arr: 31200, status: "Active", renewalDate: "2025-10-20", startDate: "2023-10-20", industry: "Fitness", location: "Austin, TX"},
+  { id: "pc12", name: "Bright Dental Studio", primaryContact: "Dr. Casey Long", accountManager: "Maria Santos", services: ["SEO", "Content", "GBP"], projectCount: 2, healthScore: 82, healthStatus: "Healthy", renewalStatus: "In Progress", mrr: 3400, arr: 40800, status: "Expansion", renewalDate: "2025-07-20", startDate: "2022-07-20", industry: "Dental", location: "Atlanta, GA"},
+  { id: "pc13", name: "CloudPath Tech", primaryContact: "Victor Huang", accountManager: "Maria Santos", services: ["SEO", "Content", "PPC", "Reporting"], projectCount: 4, healthScore: 91, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 9800, arr: 117600, status: "Active", renewalDate: "2025-12-31", startDate: "2023-01-01", industry: "Technology", location: "San Francisco, CA"},
+  { id: "pc14", name: "GreenLeaf Gardens", primaryContact: "Pam Stevens", accountManager: "James Park", services: ["SEO", "GBP"], projectCount: 1, healthScore: 55, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 1800, arr: 21600, status: "Active", renewalDate: "2025-09-05", startDate: "2024-09-05", industry: "Landscaping", location: "Portland, OR"},
+  { id: "pc15", name: "Harbor Eye Care", primaryContact: "Dr. Fiona Chang", accountManager: "Tina Webb", services: ["SEO", "PPC"], projectCount: 2, healthScore: 67, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2800, arr: 33600, status: "Active", renewalDate: "2025-10-05", startDate: "2023-10-05", industry: "Optometry", location: "Boston, MA"},
+  { id: "pc16", name: "Coastal Plumbing Co.", primaryContact: "Tom Caine", accountManager: "Sarah Chen", services: ["SEO", "Meta Ads", "GBP", "LSA"], projectCount: 3, healthScore: 89, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 4500, arr: 54000, status: "Active", renewalDate: "2026-03-15", startDate: "2023-03-15", industry: "Plumbing", location: "Miami, FL"},
+  { id: "pc17", name: "Peak Performance HVAC", primaryContact: "Greg Lang", accountManager: "James Park", services: ["Meta Ads", "PPC", "Reporting"], projectCount: 3, healthScore: 43, healthStatus: "Critical", renewalStatus: "At Risk", mrr: 6200, arr: 74400, status: "At Risk", renewalDate: "2025-09-01", startDate: "2022-09-01", industry: "HVAC", location: "Phoenix, AZ"},
+  { id: "pc18", name: "Elite Carpet Cleaners", primaryContact: "Wendy Russo", accountManager: "Maria Santos", services: ["GBP", "SEO"], projectCount: 1, healthScore: 73, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 1600, arr: 19200, status: "Active", renewalDate: "2026-02-01", startDate: "2024-02-01", industry: "Cleaning", location: "Nashville, TN"},
+  { id: "pc19", name: "Summit Roofing Group", primaryContact: "Paul Grant", accountManager: "Maria Santos", services: ["LSA", "PPC", "GBP"], projectCount: 2, healthScore: 29, healthStatus: "Critical", renewalStatus: "Declined", mrr: 5100, arr: 61200, status: "Cancellation Requested", renewalDate: "2025-08-01", startDate: "2023-06-01", industry: "Roofing", location: "Dallas, TX"},
+  { id: "pc20", name: "Luxe Dental Spa", primaryContact: "Dr. Maya Patel", accountManager: "Sarah Chen", services: ["SEO", "Content", "Design"], projectCount: 3, healthScore: 87, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 3800, arr: 45600, status: "Active", renewalDate: "2026-01-10", startDate: "2024-01-10", industry: "Dental", location: "Beverly Hills, CA"},
+  { id: "pc21", name: "TrueGrit Construction", primaryContact: "Dale Owens", accountManager: "James Park", services: ["SEO", "PPC"], projectCount: 2, healthScore: 69, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2400, arr: 28800, status: "Active", renewalDate: "2025-11-30", startDate: "2023-11-30", industry: "Construction", location: "Charlotte, NC"},
+  { id: "pc22", name: "FlowState Yoga Studio", primaryContact: "Ava Rivera", accountManager: "Tina Webb", services: ["Meta Ads", "GBP"], projectCount: 1, healthScore: 79, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 1400, arr: 16800, status: "Active", renewalDate: "2026-01-01", startDate: "2024-01-01", industry: "Fitness", location: "Portland, OR"},
+  { id: "pc23", name: "BrightPath Tutoring", primaryContact: "Kevin Mack", accountManager: "Sarah Chen", services: ["SEO", "PPC", "Content"], projectCount: 2, healthScore: 60, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2200, arr: 26400, status: "Active", renewalDate: "2025-08-15", startDate: "2024-02-15", industry: "Education", location: "Chicago, IL"},
+  { id: "pc24", name: "Harbor View Realty", primaryContact: "Sandra Chen", accountManager: "James Park", services: ["SEO", "Meta Ads", "Design", "Content"], projectCount: 4, healthScore: 46, healthStatus: "At Risk", renewalStatus: "At Risk", mrr: 7500, arr: 90000, status: "At Risk", renewalDate: "2025-07-01", startDate: "2023-07-01", industry: "Real Estate", location: "Seattle, WA"},
+  { id: "pc25", name: "Precision Auto Repair", primaryContact: "Hank Diaz", accountManager: "Maria Santos", services: ["GBP", "SEO", "Reviews"], projectCount: 2, healthScore: 83, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 1800, arr: 21600, status: "Active", renewalDate: "2026-06-01", startDate: "2024-06-01", industry: "Automotive", location: "Nashville, TN"},
+  { id: "pc26", name: "Keystone Law Group", primaryContact: "Atty. Drew Park", accountManager: "Tina Webb", services: ["SEO", "Content", "PPC"], projectCount: 3, healthScore: 77, healthStatus: "Healthy", renewalStatus: "In Progress", mrr: 4800, arr: 57600, status: "Renewal", renewalDate: "2025-07-15", startDate: "2022-07-15", industry: "Legal", location: "New York, NY"},
+  { id: "pc27", name: "ActiveStep Physical Therapy", primaryContact: "Dr. Lisa Grant", accountManager: "Maria Santos", services: ["SEO", "GBP"], projectCount: 1, healthScore: 75, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 2100, arr: 25200, status: "Active", renewalDate: "2026-02-10", startDate: "2024-02-10", industry: "Healthcare", location: "Columbus, OH"},
+  { id: "pc28", name: "Riverstone Remodeling", primaryContact: "Jake Torres", accountManager: "James Park", services: ["LSA", "GBP", "SEO"], projectCount: 2, healthScore: 64, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 2700, arr: 32400, status: "Active", renewalDate: "2025-12-15", startDate: "2023-12-15", industry: "Construction", location: "Phoenix, AZ"},
+  { id: "pc29", name: "Golden Gate Urgent Care", primaryContact: "Dr. Mike Vo", accountManager: "Tina Webb", services: ["SEO", "PPC", "Reporting"], projectCount: 3, healthScore: 81, healthStatus: "Healthy", renewalStatus: "Not Started", mrr: 5500, arr: 66000, status: "Active", renewalDate: "2025-11-20", startDate: "2023-11-20", industry: "Healthcare", location: "San Francisco, CA"},
+  { id: "pc30", name: "Apex Solar Solutions", primaryContact: "Ravi Kapoor", accountManager: "Sarah Chen", services: ["Meta Ads", "SEO", "Content"], projectCount: 3, healthScore: 72, healthStatus: "Monitor", renewalStatus: "Not Started", mrr: 3900, arr: 46800, status: "Active", renewalDate: "2025-10-01", startDate: "2023-10-01", industry: "Solar", location: "Las Vegas, NV"},
 ];
 
 // ── Onboarding Center ─────────────────────────────────────────────────────────
@@ -109,8 +86,8 @@ export interface OnboardingRecord {
   servicesPurchased: string[];
   assignedDepartments: string[];
   onboardingStatus: OnboardingStatus;
-  activationStatus: "Not Started" | "In Progress" | "Complete";
-  projectCreationStatus: "Not Created" | "Created" | "Launched";
+  activationStatus: "Not Started"| "In Progress"| "Complete";
+  projectCreationStatus: "Not Created"| "Created"| "Launched";
   assignedAM: string;
   startDate: string;
   targetDate: string;
@@ -156,21 +133,21 @@ export interface ActiveProject {
 }
 
 export const ACTIVE_PROJECTS: ActiveProject[] = [
-  { id: "pr01", name: "SEO + GBP Launch", client: "Apex Roofing", departments: ["SEO & Local"], milestones: ["Keyword Research", "On-Page Optimization", "GBP Audit", "Go-Live"], launchStatus: "Active", dependencies: [], completionPct: 75, blockedTasks: 0, escalations: 0, approvalsPending: 1, dueDate: "2025-07-15", accountManager: "Sarah Chen" },
-  { id: "pr02", name: "Google Ads Campaign", client: "Apex Roofing", departments: ["Paid Ads"], milestones: ["Campaign Setup", "Ad Copy Review", "Landing Page", "Launch"], launchStatus: "Active", dependencies: [], completionPct: 60, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-07-01", accountManager: "Sarah Chen" },
-  { id: "pr03", name: "Website Redesign", client: "Harbor Auto", departments: ["Design", "Web Development"], milestones: ["Discovery", "Wireframes", "Design Review", "Dev Build", "QA", "Launch"], launchStatus: "At Risk", dependencies: ["Client brand approval"], completionPct: 35, blockedTasks: 2, escalations: 1, approvalsPending: 2, dueDate: "2025-07-10", accountManager: "Sarah Chen" },
-  { id: "pr04", name: "SEO Foundation", client: "Blue Sky Solar", departments: ["SEO"], milestones: ["Site Audit", "Content Plan", "Link Building", "Go-Live"], launchStatus: "Active", dependencies: [], completionPct: 50, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-08-01", accountManager: "Maria Santos" },
-  { id: "pr05", name: "Meta Ads Campaign", client: "Blue Sky Solar", departments: ["Paid Ads"], milestones: ["Pixel Setup", "Audience Build", "Creative Review", "Launch"], launchStatus: "Active", dependencies: ["Brand kit delivery"], completionPct: 30, blockedTasks: 1, escalations: 0, approvalsPending: 1, dueDate: "2025-07-20", accountManager: "Maria Santos" },
-  { id: "pr06", name: "PPC Campaigns", client: "Metro Electrical", departments: ["Paid Ads", "LSA"], milestones: ["Account Setup", "Campaign Build", "Ad Copy", "Launch"], launchStatus: "On Hold", dependencies: ["LSA docs from client", "Ad account access"], completionPct: 20, blockedTasks: 3, escalations: 1, approvalsPending: 0, dueDate: "2025-07-15", accountManager: "James Park" },
-  { id: "pr07", name: "GBP Optimization", client: "Pinnacle HVAC", departments: ["SEO & Local"], milestones: ["Audit", "Optimization", "Photo Upload", "Posts Live"], launchStatus: "Active", dependencies: [], completionPct: 85, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-06-30", accountManager: "James Park" },
-  { id: "pr08", name: "LSA Setup", client: "Pinnacle HVAC", departments: ["LSA"], milestones: ["License Verification", "Profile Setup", "Budget Config", "Go-Live"], launchStatus: "Active", dependencies: [], completionPct: 90, blockedTasks: 0, escalations: 0, approvalsPending: 1, dueDate: "2025-06-25", accountManager: "James Park" },
-  { id: "pr09", name: "SEO + Content Program", client: "NorthStar Dental", departments: ["SEO", "Content"], milestones: ["Keyword Strategy", "Content Calendar", "Monthly Blogs", "Reporting"], launchStatus: "Active", dependencies: [], completionPct: 70, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-08-15", accountManager: "Tina Webb" },
-  { id: "pr10", name: "PPC Lead Generation", client: "NorthStar Dental", departments: ["Paid Ads"], milestones: ["Campaign Setup", "Landing Pages", "Call Tracking", "Launch"], launchStatus: "Active", dependencies: [], completionPct: 65, blockedTasks: 1, escalations: 0, approvalsPending: 0, dueDate: "2025-07-31", accountManager: "Tina Webb" },
-  { id: "pr11", name: "Meta Ads Launch", client: "Radiance MedSpa", departments: ["Paid Ads", "Design"], milestones: ["Creative Brief", "Ad Design", "Campaign Setup", "Launch"], launchStatus: "Active", dependencies: [], completionPct: 80, blockedTasks: 0, escalations: 0, approvalsPending: 1, dueDate: "2025-07-01", accountManager: "Tina Webb" },
-  { id: "pr12", name: "SEO Content Program", client: "Radiance MedSpa", departments: ["SEO", "Content"], milestones: ["Audit", "Content Strategy", "Monthly Delivery", "Reporting"], launchStatus: "Active", dependencies: [], completionPct: 55, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-09-01", accountManager: "Tina Webb" },
-  { id: "pr13", name: "Full Digital Overhaul", client: "CloudPath Tech", departments: ["SEO", "Content", "Paid Ads", "Reporting"], milestones: ["Strategy", "SEO Setup", "Ad Launch", "Q1 Report"], launchStatus: "Active", dependencies: [], completionPct: 88, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-07-30", accountManager: "Maria Santos" },
-  { id: "pr14", name: "Harbor View Realty Campaign", client: "Harbor View Realty", departments: ["SEO", "Meta Ads", "Design"], milestones: ["Market Research", "Ad Creative", "Campaign Build", "Launch"], launchStatus: "At Risk", dependencies: ["CRM API key", "Client ad approvals"], completionPct: 25, blockedTasks: 4, escalations: 2, approvalsPending: 3, dueDate: "2025-07-01", accountManager: "James Park" },
-  { id: "pr15", name: "SEO Foundation", client: "Keystone Law Group", departments: ["SEO", "Content"], milestones: ["Technical Audit", "Content Plan", "Link Outreach", "Q3 Reporting"], launchStatus: "Active", dependencies: [], completionPct: 72, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-08-30", accountManager: "Tina Webb" },
+  { id: "pr01", name: "SEO + GBP Launch", client: "Apex Roofing", departments: ["SEO & Local"], milestones: ["Keyword Research", "On-Page Optimization", "GBP Audit", "Go-Live"], launchStatus: "Active", dependencies: [], completionPct: 75, blockedTasks: 0, escalations: 0, approvalsPending: 1, dueDate: "2025-07-15", accountManager: "Sarah Chen"},
+  { id: "pr02", name: "Google Ads Campaign", client: "Apex Roofing", departments: ["Paid Ads"], milestones: ["Campaign Setup", "Ad Copy Review", "Landing Page", "Launch"], launchStatus: "Active", dependencies: [], completionPct: 60, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-07-01", accountManager: "Sarah Chen"},
+  { id: "pr03", name: "Website Redesign", client: "Harbor Auto", departments: ["Design", "Web Development"], milestones: ["Discovery", "Wireframes", "Design Review", "Dev Build", "QA", "Launch"], launchStatus: "At Risk", dependencies: ["Client brand approval"], completionPct: 35, blockedTasks: 2, escalations: 1, approvalsPending: 2, dueDate: "2025-07-10", accountManager: "Sarah Chen"},
+  { id: "pr04", name: "SEO Foundation", client: "Blue Sky Solar", departments: ["SEO"], milestones: ["Site Audit", "Content Plan", "Link Building", "Go-Live"], launchStatus: "Active", dependencies: [], completionPct: 50, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-08-01", accountManager: "Maria Santos"},
+  { id: "pr05", name: "Meta Ads Campaign", client: "Blue Sky Solar", departments: ["Paid Ads"], milestones: ["Pixel Setup", "Audience Build", "Creative Review", "Launch"], launchStatus: "Active", dependencies: ["Brand kit delivery"], completionPct: 30, blockedTasks: 1, escalations: 0, approvalsPending: 1, dueDate: "2025-07-20", accountManager: "Maria Santos"},
+  { id: "pr06", name: "PPC Campaigns", client: "Metro Electrical", departments: ["Paid Ads", "LSA"], milestones: ["Account Setup", "Campaign Build", "Ad Copy", "Launch"], launchStatus: "On Hold", dependencies: ["LSA docs from client", "Ad account access"], completionPct: 20, blockedTasks: 3, escalations: 1, approvalsPending: 0, dueDate: "2025-07-15", accountManager: "James Park"},
+  { id: "pr07", name: "GBP Optimization", client: "Pinnacle HVAC", departments: ["SEO & Local"], milestones: ["Audit", "Optimization", "Photo Upload", "Posts Live"], launchStatus: "Active", dependencies: [], completionPct: 85, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-06-30", accountManager: "James Park"},
+  { id: "pr08", name: "LSA Setup", client: "Pinnacle HVAC", departments: ["LSA"], milestones: ["License Verification", "Profile Setup", "Budget Config", "Go-Live"], launchStatus: "Active", dependencies: [], completionPct: 90, blockedTasks: 0, escalations: 0, approvalsPending: 1, dueDate: "2025-06-25", accountManager: "James Park"},
+  { id: "pr09", name: "SEO + Content Program", client: "NorthStar Dental", departments: ["SEO", "Content"], milestones: ["Keyword Strategy", "Content Calendar", "Monthly Blogs", "Reporting"], launchStatus: "Active", dependencies: [], completionPct: 70, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-08-15", accountManager: "Tina Webb"},
+  { id: "pr10", name: "PPC Lead Generation", client: "NorthStar Dental", departments: ["Paid Ads"], milestones: ["Campaign Setup", "Landing Pages", "Call Tracking", "Launch"], launchStatus: "Active", dependencies: [], completionPct: 65, blockedTasks: 1, escalations: 0, approvalsPending: 0, dueDate: "2025-07-31", accountManager: "Tina Webb"},
+  { id: "pr11", name: "Meta Ads Launch", client: "Radiance MedSpa", departments: ["Paid Ads", "Design"], milestones: ["Creative Brief", "Ad Design", "Campaign Setup", "Launch"], launchStatus: "Active", dependencies: [], completionPct: 80, blockedTasks: 0, escalations: 0, approvalsPending: 1, dueDate: "2025-07-01", accountManager: "Tina Webb"},
+  { id: "pr12", name: "SEO Content Program", client: "Radiance MedSpa", departments: ["SEO", "Content"], milestones: ["Audit", "Content Strategy", "Monthly Delivery", "Reporting"], launchStatus: "Active", dependencies: [], completionPct: 55, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-09-01", accountManager: "Tina Webb"},
+  { id: "pr13", name: "Full Digital Overhaul", client: "CloudPath Tech", departments: ["SEO", "Content", "Paid Ads", "Reporting"], milestones: ["Strategy", "SEO Setup", "Ad Launch", "Q1 Report"], launchStatus: "Active", dependencies: [], completionPct: 88, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-07-30", accountManager: "Maria Santos"},
+  { id: "pr14", name: "Harbor View Realty Campaign", client: "Harbor View Realty", departments: ["SEO", "Meta Ads", "Design"], milestones: ["Market Research", "Ad Creative", "Campaign Build", "Launch"], launchStatus: "At Risk", dependencies: ["CRM API key", "Client ad approvals"], completionPct: 25, blockedTasks: 4, escalations: 2, approvalsPending: 3, dueDate: "2025-07-01", accountManager: "James Park"},
+  { id: "pr15", name: "SEO Foundation", client: "Keystone Law Group", departments: ["SEO", "Content"], milestones: ["Technical Audit", "Content Plan", "Link Outreach", "Q3 Reporting"], launchStatus: "Active", dependencies: [], completionPct: 72, blockedTasks: 0, escalations: 0, approvalsPending: 0, dueDate: "2025-08-30", accountManager: "Tina Webb"},
 ];
 
 // ── Communications ─────────────────────────────────────────────────────────────
@@ -234,27 +211,27 @@ export interface ClientHealth {
   accountManager: string;
   healthScore: number;
   healthStatus: HealthStatus;
-  communicationHealth: "Strong" | "Good" | "Weak" | "Poor";
-  projectHealth: "On Track" | "Monitor" | "Delayed" | "Blocked";
-  billingHealth: "Current" | "Overdue" | "At Risk" | "Failed";
-  renewalRisk: "Low" | "Medium" | "High" | "Critical";
-  escalationRisk: "Low" | "Medium" | "High" | "Critical";
-  clientEngagement: "High" | "Medium" | "Low" | "Unresponsive";
+  communicationHealth: "Strong"| "Good"| "Weak"| "Poor";
+  projectHealth: "On Track"| "Monitor"| "Delayed"| "Blocked";
+  billingHealth: "Current"| "Overdue"| "At Risk"| "Failed";
+  renewalRisk: "Low"| "Medium"| "High"| "Critical";
+  escalationRisk: "Low"| "Medium"| "High"| "Critical";
+  clientEngagement: "High"| "Medium"| "Low"| "Unresponsive";
   lastHealthReview: string;
   aiInsights: string;
 }
 
 export const CLIENT_HEALTH: ClientHealth[] = [
-  { clientId: "pc01", client: "Apex Roofing", accountManager: "Sarah Chen", healthScore: 92, healthStatus: "Healthy", communicationHealth: "Strong", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "High", lastHealthReview: "2025-06-02", aiInsights: "Strong performer. Storm season creates expansion opportunity. Recommend LSA upsell conversation." },
-  { clientId: "pc02", client: "Harbor Auto", accountManager: "Sarah Chen", healthScore: 48, healthStatus: "At Risk", communicationHealth: "Weak", projectHealth: "Delayed", billingHealth: "Overdue", renewalRisk: "High", escalationRisk: "High", clientEngagement: "Low", lastHealthReview: "2025-05-15", aiInsights: "Payment overdue. Lead quality concerns. Renewal in 37 days. Immediate intervention required." },
-  { clientId: "pc03", client: "Lakeview Dental", accountManager: "Sarah Chen", healthScore: 34, healthStatus: "Critical", communicationHealth: "Poor", projectHealth: "Blocked", billingHealth: "Overdue", renewalRisk: "Critical", escalationRisk: "Critical", clientEngagement: "Unresponsive", lastHealthReview: "2025-05-28", aiInsights: "Account in critical state. Payment 45 days overdue. Renewal June 30. No response to outreach." },
-  { clientId: "pc04", client: "Blue Sky Solar", accountManager: "Maria Santos", healthScore: 78, healthStatus: "Monitor", communicationHealth: "Good", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "Medium", lastHealthReview: "2025-06-01", aiInsights: "Onboarding progressing well but brand kit delay may push project timeline." },
-  { clientId: "pc05", client: "Metro Electrical", accountManager: "James Park", healthScore: 58, healthStatus: "Monitor", communicationHealth: "Weak", projectHealth: "Blocked", billingHealth: "Current", renewalRisk: "Medium", escalationRisk: "Medium", clientEngagement: "Low", lastHealthReview: "2025-06-04", aiInsights: "Onboarding stalled. LSA docs missing. Client slow to respond. PPC campaign on hold." },
-  { clientId: "pc06", client: "Pinnacle HVAC", accountManager: "James Park", healthScore: 88, healthStatus: "Healthy", communicationHealth: "Strong", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "High", lastHealthReview: "2025-06-01", aiInsights: "Strong account. Renewal conversation underway. High expansion probability for GBP and analytics." },
-  { clientId: "pc13", client: "CloudPath Tech", accountManager: "Maria Santos", healthScore: 91, healthStatus: "Healthy", communicationHealth: "Strong", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "High", lastHealthReview: "2025-06-03", aiInsights: "Flagship client. Budget increasing. LinkedIn Ads approved. No risk signals." },
-  { clientId: "pc17", client: "Peak Performance HVAC", accountManager: "James Park", healthScore: 43, healthStatus: "Critical", communicationHealth: "Poor", projectHealth: "Delayed", billingHealth: "Current", renewalRisk: "High", escalationRisk: "High", clientEngagement: "Unresponsive", lastHealthReview: "2025-06-04", aiInsights: "2 consecutive overdue reports. No client contact in 25 days. Escalation required immediately." },
-  { clientId: "pc24", client: "Harbor View Realty", accountManager: "James Park", healthScore: 46, healthStatus: "At Risk", communicationHealth: "Weak", projectHealth: "Blocked", billingHealth: "Current", renewalRisk: "High", escalationRisk: "High", clientEngagement: "Low", lastHealthReview: "2025-05-30", aiInsights: "CRM integration stalled. Lead tracking broken. Client frustrated. VP escalation in progress." },
-  { clientId: "pc08", client: "NorthStar Dental", accountManager: "Tina Webb", healthScore: 84, healthStatus: "Healthy", communicationHealth: "Strong", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "High", lastHealthReview: "2025-06-03", aiInsights: "Strong performance. Multi-location expansion interest. Good candidate for expansion proposal." },
+  { clientId: "pc01", client: "Apex Roofing", accountManager: "Sarah Chen", healthScore: 92, healthStatus: "Healthy", communicationHealth: "Strong", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "High", lastHealthReview: "2025-06-02", aiInsights: "Strong performer. Storm season creates expansion opportunity. Recommend LSA upsell conversation."},
+  { clientId: "pc02", client: "Harbor Auto", accountManager: "Sarah Chen", healthScore: 48, healthStatus: "At Risk", communicationHealth: "Weak", projectHealth: "Delayed", billingHealth: "Overdue", renewalRisk: "High", escalationRisk: "High", clientEngagement: "Low", lastHealthReview: "2025-05-15", aiInsights: "Payment overdue. Lead quality concerns. Renewal in 37 days. Immediate intervention required."},
+  { clientId: "pc03", client: "Lakeview Dental", accountManager: "Sarah Chen", healthScore: 34, healthStatus: "Critical", communicationHealth: "Poor", projectHealth: "Blocked", billingHealth: "Overdue", renewalRisk: "Critical", escalationRisk: "Critical", clientEngagement: "Unresponsive", lastHealthReview: "2025-05-28", aiInsights: "Account in critical state. Payment 45 days overdue. Renewal June 30. No response to outreach."},
+  { clientId: "pc04", client: "Blue Sky Solar", accountManager: "Maria Santos", healthScore: 78, healthStatus: "Monitor", communicationHealth: "Good", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "Medium", lastHealthReview: "2025-06-01", aiInsights: "Onboarding progressing well but brand kit delay may push project timeline."},
+  { clientId: "pc05", client: "Metro Electrical", accountManager: "James Park", healthScore: 58, healthStatus: "Monitor", communicationHealth: "Weak", projectHealth: "Blocked", billingHealth: "Current", renewalRisk: "Medium", escalationRisk: "Medium", clientEngagement: "Low", lastHealthReview: "2025-06-04", aiInsights: "Onboarding stalled. LSA docs missing. Client slow to respond. PPC campaign on hold."},
+  { clientId: "pc06", client: "Pinnacle HVAC", accountManager: "James Park", healthScore: 88, healthStatus: "Healthy", communicationHealth: "Strong", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "High", lastHealthReview: "2025-06-01", aiInsights: "Strong account. Renewal conversation underway. High expansion probability for GBP and analytics."},
+  { clientId: "pc13", client: "CloudPath Tech", accountManager: "Maria Santos", healthScore: 91, healthStatus: "Healthy", communicationHealth: "Strong", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "High", lastHealthReview: "2025-06-03", aiInsights: "Flagship client. Budget increasing. LinkedIn Ads approved. No risk signals."},
+  { clientId: "pc17", client: "Peak Performance HVAC", accountManager: "James Park", healthScore: 43, healthStatus: "Critical", communicationHealth: "Poor", projectHealth: "Delayed", billingHealth: "Current", renewalRisk: "High", escalationRisk: "High", clientEngagement: "Unresponsive", lastHealthReview: "2025-06-04", aiInsights: "2 consecutive overdue reports. No client contact in 25 days. Escalation required immediately."},
+  { clientId: "pc24", client: "Harbor View Realty", accountManager: "James Park", healthScore: 46, healthStatus: "At Risk", communicationHealth: "Weak", projectHealth: "Blocked", billingHealth: "Current", renewalRisk: "High", escalationRisk: "High", clientEngagement: "Low", lastHealthReview: "2025-05-30", aiInsights: "CRM integration stalled. Lead tracking broken. Client frustrated. VP escalation in progress."},
+  { clientId: "pc08", client: "NorthStar Dental", accountManager: "Tina Webb", healthScore: 84, healthStatus: "Healthy", communicationHealth: "Strong", projectHealth: "On Track", billingHealth: "Current", renewalRisk: "Low", escalationRisk: "Low", clientEngagement: "High", lastHealthReview: "2025-06-03", aiInsights: "Strong performance. Multi-location expansion interest. Good candidate for expansion proposal."},
 ];
 
 // ── Renewals (extended) ────────────────────────────────────────────────────────
@@ -266,7 +243,7 @@ export interface RenewalRecord {
   renewalDate: string;
   daysRemaining: number;
   renewalStatus: RenewalStatus;
-  renewalRisk: "Low" | "Medium" | "High" | "Critical";
+  renewalRisk: "Low"| "Medium"| "High"| "Critical";
   assignedOwner: string;
   nextAction: string;
   contractValue: string;
@@ -301,16 +278,16 @@ export interface ExpansionOpportunity {
 }
 
 export const EXPANSION_OPPORTUNITIES: ExpansionOpportunity[] = [
-  { id: "ex01", client: "Apex Roofing", opportunity: "Storm Season LSA Expansion", recommendedServices: ["LSA", "Call Tracking"], estimatedRevenue: 800, confidenceScore: 92, status: "Proposed", assignedOwner: "Sarah Chen", notes: "Storm season demand surge. High probability of approval." },
-  { id: "ex02", client: "Pinnacle HVAC", opportunity: "GBP + Analytics Upgrade", recommendedServices: ["GBP Enhanced", "Analytics Pro"], estimatedRevenue: 1200, confidenceScore: 95, status: "In Negotiation", assignedOwner: "James Park", notes: "Client verbally agreed. Sending formal proposal June 15." },
-  { id: "ex03", client: "NorthStar Dental", opportunity: "Multi-Location Expansion", recommendedServices: ["SEO", "PPC", "GBP"], estimatedRevenue: 3800, confidenceScore: 78, status: "Identified", assignedOwner: "Tina Webb", notes: "2 new locations opening Q3. High expansion potential." },
-  { id: "ex04", client: "CloudPath Tech", opportunity: "LinkedIn Ads Program", recommendedServices: ["LinkedIn Ads", "Content"], estimatedRevenue: 2400, confidenceScore: 98, status: "Closed Won", assignedOwner: "Maria Santos", notes: "Client approved. Campaign starting July 1." },
-  { id: "ex05", client: "Radiance MedSpa", opportunity: "Summer Promotions Campaign", recommendedServices: ["Meta Ads", "SMS Marketing"], estimatedRevenue: 900, confidenceScore: 85, status: "Proposed", assignedOwner: "Tina Webb", notes: "Summer seasonal demand for MedSpa services. Proposal sent." },
-  { id: "ex06", client: "Keystone Law Group", opportunity: "Reputation Management Add-on", recommendedServices: ["Reputation Management", "Reviews"], estimatedRevenue: 600, confidenceScore: 70, status: "Identified", assignedOwner: "Tina Webb", notes: "Client has low review count. Opportunity to differentiate." },
-  { id: "ex07", client: "Bright Dental Studio", opportunity: "Content Marketing Expansion", recommendedServices: ["Content", "Email Marketing"], estimatedRevenue: 800, confidenceScore: 80, status: "In Negotiation", assignedOwner: "Maria Santos", notes: "Client wants blog + newsletter program. Budget confirmed." },
-  { id: "ex08", client: "Harbor Auto", opportunity: "Display Ads Recovery Program", recommendedServices: ["Display Ads", "Remarketing"], estimatedRevenue: 600, confidenceScore: 45, status: "Identified", assignedOwner: "Sarah Chen", notes: "Low confidence due to payment issues. Flagged pending resolution." },
-  { id: "ex09", client: "Golden Gate Urgent Care", opportunity: "Telehealth Marketing Program", recommendedServices: ["SEO", "Content", "Paid Social"], estimatedRevenue: 1500, confidenceScore: 75, status: "Proposed", assignedOwner: "Tina Webb", notes: "Telehealth expansion. Client interested in building digital trust content." },
-  { id: "ex10", client: "Coastal Plumbing Co.", opportunity: "Emergency Services Ads", recommendedServices: ["PPC", "LSA"], estimatedRevenue: 1000, confidenceScore: 88, status: "Identified", assignedOwner: "Sarah Chen", notes: "High-intent emergency search traffic. LSA + PPC combo recommended." },
+  { id: "ex01", client: "Apex Roofing", opportunity: "Storm Season LSA Expansion", recommendedServices: ["LSA", "Call Tracking"], estimatedRevenue: 800, confidenceScore: 92, status: "Proposed", assignedOwner: "Sarah Chen", notes: "Storm season demand surge. High probability of approval."},
+  { id: "ex02", client: "Pinnacle HVAC", opportunity: "GBP + Analytics Upgrade", recommendedServices: ["GBP Enhanced", "Analytics Pro"], estimatedRevenue: 1200, confidenceScore: 95, status: "In Negotiation", assignedOwner: "James Park", notes: "Client verbally agreed. Sending formal proposal June 15."},
+  { id: "ex03", client: "NorthStar Dental", opportunity: "Multi-Location Expansion", recommendedServices: ["SEO", "PPC", "GBP"], estimatedRevenue: 3800, confidenceScore: 78, status: "Identified", assignedOwner: "Tina Webb", notes: "2 new locations opening Q3. High expansion potential."},
+  { id: "ex04", client: "CloudPath Tech", opportunity: "LinkedIn Ads Program", recommendedServices: ["LinkedIn Ads", "Content"], estimatedRevenue: 2400, confidenceScore: 98, status: "Closed Won", assignedOwner: "Maria Santos", notes: "Client approved. Campaign starting July 1."},
+  { id: "ex05", client: "Radiance MedSpa", opportunity: "Summer Promotions Campaign", recommendedServices: ["Meta Ads", "SMS Marketing"], estimatedRevenue: 900, confidenceScore: 85, status: "Proposed", assignedOwner: "Tina Webb", notes: "Summer seasonal demand for MedSpa services. Proposal sent."},
+  { id: "ex06", client: "Keystone Law Group", opportunity: "Reputation Management Add-on", recommendedServices: ["Reputation Management", "Reviews"], estimatedRevenue: 600, confidenceScore: 70, status: "Identified", assignedOwner: "Tina Webb", notes: "Client has low review count. Opportunity to differentiate."},
+  { id: "ex07", client: "Bright Dental Studio", opportunity: "Content Marketing Expansion", recommendedServices: ["Content", "Email Marketing"], estimatedRevenue: 800, confidenceScore: 80, status: "In Negotiation", assignedOwner: "Maria Santos", notes: "Client wants blog + newsletter program. Budget confirmed."},
+  { id: "ex08", client: "Harbor Auto", opportunity: "Display Ads Recovery Program", recommendedServices: ["Display Ads", "Remarketing"], estimatedRevenue: 600, confidenceScore: 45, status: "Identified", assignedOwner: "Sarah Chen", notes: "Low confidence due to payment issues. Flagged pending resolution."},
+  { id: "ex09", client: "Golden Gate Urgent Care", opportunity: "Telehealth Marketing Program", recommendedServices: ["SEO", "Content", "Paid Social"], estimatedRevenue: 1500, confidenceScore: 75, status: "Proposed", assignedOwner: "Tina Webb", notes: "Telehealth expansion. Client interested in building digital trust content."},
+  { id: "ex10", client: "Coastal Plumbing Co.", opportunity: "Emergency Services Ads", recommendedServices: ["PPC", "LSA"], estimatedRevenue: 1000, confidenceScore: 88, status: "Identified", assignedOwner: "Sarah Chen", notes: "High-intent emergency search traffic. LSA + PPC combo recommended."},
 ];
 
 // ── Cancellation Center ────────────────────────────────────────────────────────
@@ -319,8 +296,8 @@ export interface CancellationRecord {
   id: string;
   client: string;
   reason: string;
-  riskLevel: "Low" | "Medium" | "High" | "Critical";
-  saveAttemptStatus: "Not Started" | "In Progress" | "Escalated" | "Successful" | "Failed";
+  riskLevel: "Low"| "Medium"| "High"| "Critical";
+  saveAttemptStatus: "Not Started"| "In Progress"| "Escalated"| "Successful"| "Failed";
   assignedOwner: string;
   status: CancellationStatus;
   requestDate: string;
@@ -329,11 +306,11 @@ export interface CancellationRecord {
 }
 
 export const CANCELLATION_RECORDS: CancellationRecord[] = [
-  { id: "ca01", client: "Summit Roofing Group", reason: "Budget disputes and poor lead volume", riskLevel: "Critical", saveAttemptStatus: "Escalated", assignedOwner: "Maria Santos", status: "Escalated", requestDate: "2025-05-20", mrr: 5100, notes: "Client threatening cancellation. Director intervention in progress." },
-  { id: "ca02", client: "Harbor Auto", reason: "Dissatisfied with lead quality — considering in-house marketing", riskLevel: "High", saveAttemptStatus: "In Progress", assignedOwner: "Sarah Chen", status: "Save Attempt", requestDate: "2025-06-01", mrr: 3200, notes: "Save attempt underway. Performance review call scheduled June 10." },
-  { id: "ca03", client: "Lakeview Dental", reason: "Financial challenges; uncertain about ROI", riskLevel: "Critical", saveAttemptStatus: "In Progress", assignedOwner: "Sarah Chen", status: "Save Attempt", requestDate: "2025-06-03", mrr: 2400, notes: "Payment overdue. Renewal at risk. Executive retention call needed." },
-  { id: "ca04", client: "Metro Electrical", reason: "Onboarding stalled — considering alternative agency", riskLevel: "Medium", saveAttemptStatus: "In Progress", assignedOwner: "James Park", status: "Save Attempt", requestDate: "2025-06-04", mrr: 3600, notes: "Client frustrated with delayed onboarding. AM working on resolution." },
-  { id: "ca05", client: "Peak Performance HVAC", reason: "No contact in 25 days; missed reports", riskLevel: "High", saveAttemptStatus: "Not Started", assignedOwner: "James Park", status: "Submitted", requestDate: "2025-06-05", mrr: 6200, notes: "Client sent cancellation warning email. No AM response yet." },
+  { id: "ca01", client: "Summit Roofing Group", reason: "Budget disputes and poor lead volume", riskLevel: "Critical", saveAttemptStatus: "Escalated", assignedOwner: "Maria Santos", status: "Escalated", requestDate: "2025-05-20", mrr: 5100, notes: "Client threatening cancellation. Director intervention in progress."},
+  { id: "ca02", client: "Harbor Auto", reason: "Dissatisfied with lead quality — considering in-house marketing", riskLevel: "High", saveAttemptStatus: "In Progress", assignedOwner: "Sarah Chen", status: "Save Attempt", requestDate: "2025-06-01", mrr: 3200, notes: "Save attempt underway. Performance review call scheduled June 10."},
+  { id: "ca03", client: "Lakeview Dental", reason: "Financial challenges; uncertain about ROI", riskLevel: "Critical", saveAttemptStatus: "In Progress", assignedOwner: "Sarah Chen", status: "Save Attempt", requestDate: "2025-06-03", mrr: 2400, notes: "Payment overdue. Renewal at risk. Executive retention call needed."},
+  { id: "ca04", client: "Metro Electrical", reason: "Onboarding stalled — considering alternative agency", riskLevel: "Medium", saveAttemptStatus: "In Progress", assignedOwner: "James Park", status: "Save Attempt", requestDate: "2025-06-04", mrr: 3600, notes: "Client frustrated with delayed onboarding. AM working on resolution."},
+  { id: "ca05", client: "Peak Performance HVAC", reason: "No contact in 25 days; missed reports", riskLevel: "High", saveAttemptStatus: "Not Started", assignedOwner: "James Park", status: "Submitted", requestDate: "2025-06-05", mrr: 6200, notes: "Client sent cancellation warning email. No AM response yet."},
 ];
 
 // ── Offboarding Center ─────────────────────────────────────────────────────────
@@ -342,10 +319,10 @@ export interface OffboardingRecord {
   id: string;
   client: string;
   offboardingProject: string;
-  assetTransfer: "Not Started" | "In Progress" | "Complete";
-  accessRemoval: "Not Started" | "In Progress" | "Complete";
-  finalBilling: "Pending" | "Sent" | "Paid" | "Waived";
-  archiveStatus: "Not Archived" | "In Progress" | "Archived";
+  assetTransfer: "Not Started"| "In Progress"| "Complete";
+  accessRemoval: "Not Started"| "In Progress"| "Complete";
+  finalBilling: "Pending"| "Sent"| "Paid"| "Waived";
+  archiveStatus: "Not Archived"| "In Progress"| "Archived";
   status: OffboardingStatus;
   assignedOwner: string;
   startDate: string;
@@ -354,11 +331,11 @@ export interface OffboardingRecord {
 }
 
 export const OFFBOARDING_RECORDS: OffboardingRecord[] = [
-  { id: "of01", client: "TechForward Inc.", offboardingProject: "TechForward Offboarding Q1", assetTransfer: "Complete", accessRemoval: "Complete", finalBilling: "Paid", archiveStatus: "Archived", status: "Completed", assignedOwner: "Sarah Chen", startDate: "2025-03-01", targetDate: "2025-03-31", notes: "Clean offboarding. Client moved services in-house." },
-  { id: "of02", client: "Summit Roofing Group", offboardingProject: "Summit Roofing Cancellation", assetTransfer: "In Progress", accessRemoval: "Not Started", finalBilling: "Pending", archiveStatus: "Not Archived", status: "In Progress", assignedOwner: "Maria Santos", startDate: "2025-06-01", targetDate: "2025-06-30", notes: "Assets being compiled. Access removal pending final billing." },
-  { id: "of03", client: "Harbor Bakery Group", offboardingProject: "Harbor Bakery Exit", assetTransfer: "Complete", accessRemoval: "In Progress", finalBilling: "Sent", archiveStatus: "In Progress", status: "In Progress", assignedOwner: "James Park", startDate: "2025-04-15", targetDate: "2025-05-15", notes: "Final billing sent. Access removal in progress across 4 platforms." },
-  { id: "of04", client: "Westside Pet Clinic", offboardingProject: "Westside Pet Clinic Wrap-Up", assetTransfer: "Not Started", accessRemoval: "Not Started", finalBilling: "Pending", archiveStatus: "Not Archived", status: "Initiated", assignedOwner: "Tina Webb", startDate: "2025-06-05", targetDate: "2025-07-05", notes: "Client confirmed cancellation. Offboarding project just initiated." },
-  { id: "of05", client: "Lakefront Realty", offboardingProject: "Lakefront Exit Q4", assetTransfer: "Complete", accessRemoval: "Complete", finalBilling: "Paid", archiveStatus: "Archived", status: "Completed", assignedOwner: "Maria Santos", startDate: "2024-12-01", targetDate: "2024-12-31", notes: "Smooth exit. Client satisfied with offboarding process." },
+  { id: "of01", client: "TechForward Inc.", offboardingProject: "TechForward Offboarding Q1", assetTransfer: "Complete", accessRemoval: "Complete", finalBilling: "Paid", archiveStatus: "Archived", status: "Completed", assignedOwner: "Sarah Chen", startDate: "2025-03-01", targetDate: "2025-03-31", notes: "Clean offboarding. Client moved services in-house."},
+  { id: "of02", client: "Summit Roofing Group", offboardingProject: "Summit Roofing Cancellation", assetTransfer: "In Progress", accessRemoval: "Not Started", finalBilling: "Pending", archiveStatus: "Not Archived", status: "In Progress", assignedOwner: "Maria Santos", startDate: "2025-06-01", targetDate: "2025-06-30", notes: "Assets being compiled. Access removal pending final billing."},
+  { id: "of03", client: "Harbor Bakery Group", offboardingProject: "Harbor Bakery Exit", assetTransfer: "Complete", accessRemoval: "In Progress", finalBilling: "Sent", archiveStatus: "In Progress", status: "In Progress", assignedOwner: "James Park", startDate: "2025-04-15", targetDate: "2025-05-15", notes: "Final billing sent. Access removal in progress across 4 platforms."},
+  { id: "of04", client: "Westside Pet Clinic", offboardingProject: "Westside Pet Clinic Wrap-Up", assetTransfer: "Not Started", accessRemoval: "Not Started", finalBilling: "Pending", archiveStatus: "Not Archived", status: "Initiated", assignedOwner: "Tina Webb", startDate: "2025-06-05", targetDate: "2025-07-05", notes: "Client confirmed cancellation. Offboarding project just initiated."},
+  { id: "of05", client: "Lakefront Realty", offboardingProject: "Lakefront Exit Q4", assetTransfer: "Complete", accessRemoval: "Complete", finalBilling: "Paid", archiveStatus: "Archived", status: "Completed", assignedOwner: "Maria Santos", startDate: "2024-12-01", targetDate: "2024-12-31", notes: "Smooth exit. Client satisfied with offboarding process."},
 ];
 
 // ── Department Coordination ────────────────────────────────────────────────────

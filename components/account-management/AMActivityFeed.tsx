@@ -11,12 +11,9 @@ interface Props {
 export default function AMActivityFeed({ items, maxItems = 10 }: Props) {
   return (
     <SectionWrapper
-      title="AM Activity Feed"
-      description="Real-time account management activity"
-      actions={
+      title="AM Activity Feed"description="Real-time account management activity"actions={
         <button
-          className="text-xs font-semibold hover:underline"
-          style={{ color: "var(--rtm-blue)" }}
+          className="text-xs font-semibold hover:underline"style={{ color: "var(--rtm-blue)"}}
         >
           View all
         </button>

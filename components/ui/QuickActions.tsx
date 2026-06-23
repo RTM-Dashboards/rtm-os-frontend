@@ -15,7 +15,7 @@ interface QuickActionsProps {
 }
 
 export default function QuickActions({ actions, cols = 2 }: QuickActionsProps) {
-  const colClass = { 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-2 sm:grid-cols-4" }[cols];
+  const colClass = { 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-2 sm:grid-cols-4"}[cols];
   return (
     <div className={`grid ${colClass} gap-3`}>
       {actions.map((action) => (
@@ -40,11 +40,11 @@ export default function QuickActions({ actions, cols = 2 }: QuickActionsProps) {
             {action.icon}
           </div>
           <div>
-            <p className="text-sm font-semibold transition-colors" style={{ color: "var(--rtm-text-primary)" }}>
+            <p className="text-sm font-semibold transition-colors"style={{ color: "var(--rtm-text-primary)"}}>
               {action.label}
             </p>
             {action.description && (
-              <p className="text-xs mt-0.5 leading-snug" style={{ color: "var(--rtm-text-muted)" }}>
+              <p className="text-xs mt-0.5 leading-snug"style={{ color: "var(--rtm-text-muted)"}}>
                 {action.description}
               </p>
             )}

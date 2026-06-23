@@ -11,8 +11,6 @@ export default function BillingTeamMembersPage() {
     <WorkspaceTeamMembersPage
       workspace={workspace}
       members={billingMembers}
-      rolesRoute="/billing/roles"
-      profileRoute="/billing/profile"
-    />
+      rolesRoute="/billing/roles"profileRoute="/billing/profile"/>
   );
 }

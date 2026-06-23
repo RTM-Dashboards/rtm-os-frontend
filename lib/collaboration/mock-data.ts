@@ -21,14 +21,14 @@ import type {
 // ── Shared Team ──────────────────────────────────────────────────────────────
 
 const TEAM = {
-  priya:   { id: "u3", name: "Priya Nair",       initials: "PN", color: "#7C3AED" },
-  jessica: { id: "u1", name: "Jessica Reyes",     initials: "JR", color: "#1B4FD8" },
-  marcus:  { id: "u2", name: "Marcus Webb",       initials: "MW", color: "#059669" },
-  daniel:  { id: "u4", name: "Daniel Okonkwo",   initials: "DO", color: "#D97706" },
-  sofia:   { id: "u5", name: "Sofia Castillo",   initials: "SC", color: "#DC2626" },
-  aaron:   { id: "u6", name: "Aaron Park",       initials: "AP", color: "#0891B2" },
-  lily:    { id: "u7", name: "Lily Chen",        initials: "LC", color: "#BE185D" },
-  ryan:    { id: "u8", name: "Ryan Torres",      initials: "RT", color: "#065F46" },
+  priya:   { id: "u3", name: "Priya Nair",       initials: "PN", color: "#7C3AED"},
+  jessica: { id: "u1", name: "Jessica Reyes",     initials: "JR", color: "#1B4FD8"},
+  marcus:  { id: "u2", name: "Marcus Webb",       initials: "MW", color: "#059669"},
+  daniel:  { id: "u4", name: "Daniel Okonkwo",   initials: "DO", color: "#D97706"},
+  sofia:   { id: "u5", name: "Sofia Castillo",   initials: "SC", color: "#DC2626"},
+  aaron:   { id: "u6", name: "Aaron Park",       initials: "AP", color: "#0891B2"},
+  lily:    { id: "u7", name: "Lily Chen",        initials: "LC", color: "#BE185D"},
+  ryan:    { id: "u8", name: "Ryan Torres",      initials: "RT", color: "#065F46"},
 };
 
 // ── TASK 1: Horizon Dental — Technical SEO Audit ─────────────────────────────
@@ -56,7 +56,7 @@ const comments_t1: TaskComment[] = [
     authorInitials: TEAM.priya.initials,
     authorColor: TEAM.priya.color,
     body: "Great. @Aaron Park — can you also flag any redirect chains? The client mentioned their old site had a lot of them.",
-    mentions: [{ id: "m1", kind: "user", label: "@Aaron Park" }],
+    mentions: [{ id: "m1", kind: "user", label: "@Aaron Park"}],
     attachments: [],
     status: "Active",
     createdAt: "2025-07-22T10:30:00Z",
@@ -82,7 +82,7 @@ const comments_t1: TaskComment[] = [
     authorInitials: TEAM.marcus.initials,
     authorColor: TEAM.marcus.color,
     body: "Just noticed the audit is now 2 days from its due date. @SEO Manager — do we need to escalate timeline?",
-    mentions: [{ id: "m2", kind: "role", label: "@SEO Manager" }],
+    mentions: [{ id: "m2", kind: "role", label: "@SEO Manager"}],
     attachments: [],
     status: "Pinned",
     createdAt: "2025-07-26T14:00:00Z",
@@ -99,7 +99,7 @@ const comments_t1: TaskComment[] = [
     body: "Audit report is complete and uploaded. Identified 47 broken links, 3 redirect chains, and 12 missing meta descriptions. Report attached.",
     mentions: [],
     attachments: [
-      { id: "att-c1", fileName: "Horizon-Dental-Technical-Audit-Jul2025.pdf", fileType: "pdf", url: "#" },
+      { id: "att-c1", fileName: "Horizon-Dental-Technical-Audit-Jul2025.pdf", fileType: "pdf", url: "#"},
     ],
     status: "Active",
     createdAt: "2025-07-28T16:30:00Z",
@@ -241,16 +241,16 @@ const approvals_t1: ApprovalStep[] = [
 ];
 
 const activity_t1: ActivityEvent[] = [
-  { id: "ev-t1-1", eventType: "Task Created", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-15T08:00:00Z", notes: "Task created from project template" },
-  { id: "ev-t1-2", eventType: "Task Assigned", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-15T08:05:00Z", notes: "Assigned to Aaron Park", meta: { assignee: "Aaron Park" } },
-  { id: "ev-t1-3", eventType: "Watcher Added", userId: TEAM.priya.id, userName: TEAM.priya.name, userInitials: TEAM.priya.initials, userColor: TEAM.priya.color, timestamp: "2025-07-15T09:00:00Z", meta: { watcher: "Priya Nair" } },
-  { id: "ev-t1-4", eventType: "Status Changed", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-22T09:00:00Z", notes: "Open → In Progress", meta: { from: "Open", to: "In Progress" } },
-  { id: "ev-t1-5", eventType: "Comment Added", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-22T09:14:00Z" },
-  { id: "ev-t1-6", eventType: "Mention Added", userId: TEAM.priya.id, userName: TEAM.priya.name, userInitials: TEAM.priya.initials, userColor: TEAM.priya.color, timestamp: "2025-07-22T10:30:00Z", meta: { mentioned: "@Aaron Park" } },
-  { id: "ev-t1-7", eventType: "Approval Requested", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-26T09:00:00Z", notes: "SEO Audit Strategy Approval requested" },
-  { id: "ev-t1-8", eventType: "Approval Completed", userId: TEAM.daniel.id, userName: TEAM.daniel.name, userInitials: TEAM.daniel.initials, userColor: TEAM.daniel.color, timestamp: "2025-07-27T14:00:00Z", notes: "Approved with notes" },
-  { id: "ev-t1-9", eventType: "Attachment Uploaded", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-28T16:30:00Z", meta: { file: "Horizon-Dental-Technical-Audit-Jul2025.pdf" } },
-  { id: "ev-t1-10", eventType: "Approval Requested", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-28T17:00:00Z", notes: "Client Report Approval requested" },
+  { id: "ev-t1-1", eventType: "Task Created", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-15T08:00:00Z", notes: "Task created from project template"},
+  { id: "ev-t1-2", eventType: "Task Assigned", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-15T08:05:00Z", notes: "Assigned to Aaron Park", meta: { assignee: "Aaron Park"} },
+  { id: "ev-t1-3", eventType: "Watcher Added", userId: TEAM.priya.id, userName: TEAM.priya.name, userInitials: TEAM.priya.initials, userColor: TEAM.priya.color, timestamp: "2025-07-15T09:00:00Z", meta: { watcher: "Priya Nair"} },
+  { id: "ev-t1-4", eventType: "Status Changed", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-22T09:00:00Z", notes: "Open → In Progress", meta: { from: "Open", to: "In Progress"} },
+  { id: "ev-t1-5", eventType: "Comment Added", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-22T09:14:00Z"},
+  { id: "ev-t1-6", eventType: "Mention Added", userId: TEAM.priya.id, userName: TEAM.priya.name, userInitials: TEAM.priya.initials, userColor: TEAM.priya.color, timestamp: "2025-07-22T10:30:00Z", meta: { mentioned: "@Aaron Park"} },
+  { id: "ev-t1-7", eventType: "Approval Requested", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-26T09:00:00Z", notes: "SEO Audit Strategy Approval requested"},
+  { id: "ev-t1-8", eventType: "Approval Completed", userId: TEAM.daniel.id, userName: TEAM.daniel.name, userInitials: TEAM.daniel.initials, userColor: TEAM.daniel.color, timestamp: "2025-07-27T14:00:00Z", notes: "Approved with notes"},
+  { id: "ev-t1-9", eventType: "Attachment Uploaded", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-28T16:30:00Z", meta: { file: "Horizon-Dental-Technical-Audit-Jul2025.pdf"} },
+  { id: "ev-t1-10", eventType: "Approval Requested", userId: TEAM.aaron.id, userName: TEAM.aaron.name, userInitials: TEAM.aaron.initials, userColor: TEAM.aaron.color, timestamp: "2025-07-28T17:00:00Z", notes: "Client Report Approval requested"},
 ];
 
 const dependencies_t1: TaskDependencyItem[] = [
@@ -275,9 +275,9 @@ const dependencies_t1: TaskDependencyItem[] = [
 ];
 
 const notifications_t1: CollabNotificationEvent[] = [
-  { id: "notif-t1-1", type: "Comment Added", taskId: "t-001-2-1", taskName: "Technical SEO Audit", projectName: "Horizon Dental — SEO Launch", triggeredBy: TEAM.aaron.name, recipient: TEAM.priya.name, timestamp: "2025-07-22T09:14:00Z", read: true, message: "Aaron Park commented on Technical SEO Audit" },
-  { id: "notif-t1-2", type: "Mention Added", taskId: "t-001-2-1", taskName: "Technical SEO Audit", projectName: "Horizon Dental — SEO Launch", triggeredBy: TEAM.priya.name, recipient: TEAM.aaron.name, timestamp: "2025-07-22T10:30:00Z", read: true, message: "Priya Nair mentioned you in a comment" },
-  { id: "notif-t1-3", type: "Approval Requested", taskId: "t-001-2-1", taskName: "Technical SEO Audit", projectName: "Horizon Dental — SEO Launch", triggeredBy: TEAM.aaron.name, recipient: TEAM.priya.name, timestamp: "2025-07-28T17:00:00Z", read: false, message: "Client Report Approval is pending your review" },
+  { id: "notif-t1-1", type: "Comment Added", taskId: "t-001-2-1", taskName: "Technical SEO Audit", projectName: "Horizon Dental — SEO Launch", triggeredBy: TEAM.aaron.name, recipient: TEAM.priya.name, timestamp: "2025-07-22T09:14:00Z", read: true, message: "Aaron Park commented on Technical SEO Audit"},
+  { id: "notif-t1-2", type: "Mention Added", taskId: "t-001-2-1", taskName: "Technical SEO Audit", projectName: "Horizon Dental — SEO Launch", triggeredBy: TEAM.priya.name, recipient: TEAM.aaron.name, timestamp: "2025-07-22T10:30:00Z", read: true, message: "Priya Nair mentioned you in a comment"},
+  { id: "notif-t1-3", type: "Approval Requested", taskId: "t-001-2-1", taskName: "Technical SEO Audit", projectName: "Horizon Dental — SEO Launch", triggeredBy: TEAM.aaron.name, recipient: TEAM.priya.name, timestamp: "2025-07-28T17:00:00Z", read: false, message: "Client Report Approval is pending your review"},
 ];
 
 // ── TASK 2: Maple Ridge — Landing Page Development ────────────────────────────
@@ -290,7 +290,7 @@ const comments_t2: TaskComment[] = [
     authorInitials: TEAM.sofia.initials,
     authorColor: TEAM.sofia.color,
     body: "Wireframes are done. Sharing the Figma link for review before we move to dev. @Account Manager please review client brand guidelines before approving.",
-    mentions: [{ id: "m3", kind: "role", label: "@Account Manager" }],
+    mentions: [{ id: "m3", kind: "role", label: "@Account Manager"}],
     attachments: [],
     status: "Active",
     createdAt: "2025-07-18T13:00:00Z",
@@ -316,7 +316,7 @@ const comments_t2: TaskComment[] = [
     authorInitials: TEAM.ryan.initials,
     authorColor: TEAM.ryan.color,
     body: "Development started. One blocker — @Billing the client's hosting access hasn't been granted yet. We can't deploy until we have that.",
-    mentions: [{ id: "m4", kind: "department", label: "@Billing" }],
+    mentions: [{ id: "m4", kind: "department", label: "@Billing"}],
     attachments: [],
     status: "Pinned",
     createdAt: "2025-07-20T10:00:00Z",
@@ -331,7 +331,7 @@ const comments_t2: TaskComment[] = [
     authorInitials: TEAM.lily.initials,
     authorColor: TEAM.lily.color,
     body: "This task is now 3 days overdue. @Department Head escalation needed.",
-    mentions: [{ id: "m5", kind: "role", label: "@Department Head" }],
+    mentions: [{ id: "m5", kind: "role", label: "@Department Head"}],
     attachments: [],
     status: "Active",
     createdAt: "2025-07-23T09:00:00Z",
@@ -510,17 +510,17 @@ const approvals_t2: ApprovalStep[] = [
 ];
 
 const activity_t2: ActivityEvent[] = [
-  { id: "ev-t2-1", eventType: "Task Created", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-10T08:00:00Z" },
-  { id: "ev-t2-2", eventType: "Task Assigned", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-10T08:10:00Z", meta: { assignee: "Ryan Torres & Sofia Castillo" } },
-  { id: "ev-t2-3", eventType: "Due Date Changed", userId: TEAM.daniel.id, userName: TEAM.daniel.name, userInitials: TEAM.daniel.initials, userColor: TEAM.daniel.color, timestamp: "2025-07-17T14:00:00Z", notes: "Client requested delay to Aug 1", meta: { from: "2025-07-20", to: "2025-08-01" } },
-  { id: "ev-t2-4", eventType: "Attachment Uploaded", userId: TEAM.sofia.id, userName: TEAM.sofia.name, userInitials: TEAM.sofia.initials, userColor: TEAM.sofia.color, timestamp: "2025-07-18T12:00:00Z", meta: { file: "MapleRidge-LandingPage-Wireframes-v1.pdf" } },
-  { id: "ev-t2-5", eventType: "Approval Requested", userId: TEAM.sofia.id, userName: TEAM.sofia.name, userInitials: TEAM.sofia.initials, userColor: TEAM.sofia.color, timestamp: "2025-07-18T13:00:00Z", notes: "Landing Page Design Approval requested" },
-  { id: "ev-t2-6", eventType: "Approval Completed", userId: TEAM.daniel.id, userName: TEAM.daniel.name, userInitials: TEAM.daniel.initials, userColor: TEAM.daniel.color, timestamp: "2025-07-19T10:00:00Z", notes: "Design approved" },
-  { id: "ev-t2-7", eventType: "Status Changed", userId: TEAM.ryan.id, userName: TEAM.ryan.name, userInitials: TEAM.ryan.initials, userColor: TEAM.ryan.color, timestamp: "2025-07-20T10:00:00Z", meta: { from: "Open", to: "In Progress" } },
-  { id: "ev-t2-8", eventType: "Blocker Added", userId: TEAM.ryan.id, userName: TEAM.ryan.name, userInitials: TEAM.ryan.initials, userColor: TEAM.ryan.color, timestamp: "2025-07-20T10:05:00Z", notes: "Hosting access not granted" },
-  { id: "ev-t2-9", eventType: "Approval Requested", userId: TEAM.sofia.id, userName: TEAM.sofia.name, userInitials: TEAM.sofia.initials, userColor: TEAM.sofia.color, timestamp: "2025-07-20T15:00:00Z", notes: "Content Final Approval requested" },
-  { id: "ev-t2-10", eventType: "Approval Completed", userId: TEAM.daniel.id, userName: TEAM.daniel.name, userInitials: TEAM.daniel.initials, userColor: TEAM.daniel.color, timestamp: "2025-07-22T11:00:00Z", notes: "Content rejected — needs revision" },
-  { id: "ev-t2-11", eventType: "Status Changed", userId: TEAM.lily.id, userName: TEAM.lily.name, userInitials: TEAM.lily.initials, userColor: TEAM.lily.color, timestamp: "2025-07-23T08:00:00Z", meta: { from: "In Progress", to: "Blocked" } },
+  { id: "ev-t2-1", eventType: "Task Created", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-10T08:00:00Z"},
+  { id: "ev-t2-2", eventType: "Task Assigned", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-10T08:10:00Z", meta: { assignee: "Ryan Torres & Sofia Castillo"} },
+  { id: "ev-t2-3", eventType: "Due Date Changed", userId: TEAM.daniel.id, userName: TEAM.daniel.name, userInitials: TEAM.daniel.initials, userColor: TEAM.daniel.color, timestamp: "2025-07-17T14:00:00Z", notes: "Client requested delay to Aug 1", meta: { from: "2025-07-20", to: "2025-08-01"} },
+  { id: "ev-t2-4", eventType: "Attachment Uploaded", userId: TEAM.sofia.id, userName: TEAM.sofia.name, userInitials: TEAM.sofia.initials, userColor: TEAM.sofia.color, timestamp: "2025-07-18T12:00:00Z", meta: { file: "MapleRidge-LandingPage-Wireframes-v1.pdf"} },
+  { id: "ev-t2-5", eventType: "Approval Requested", userId: TEAM.sofia.id, userName: TEAM.sofia.name, userInitials: TEAM.sofia.initials, userColor: TEAM.sofia.color, timestamp: "2025-07-18T13:00:00Z", notes: "Landing Page Design Approval requested"},
+  { id: "ev-t2-6", eventType: "Approval Completed", userId: TEAM.daniel.id, userName: TEAM.daniel.name, userInitials: TEAM.daniel.initials, userColor: TEAM.daniel.color, timestamp: "2025-07-19T10:00:00Z", notes: "Design approved"},
+  { id: "ev-t2-7", eventType: "Status Changed", userId: TEAM.ryan.id, userName: TEAM.ryan.name, userInitials: TEAM.ryan.initials, userColor: TEAM.ryan.color, timestamp: "2025-07-20T10:00:00Z", meta: { from: "Open", to: "In Progress"} },
+  { id: "ev-t2-8", eventType: "Blocker Added", userId: TEAM.ryan.id, userName: TEAM.ryan.name, userInitials: TEAM.ryan.initials, userColor: TEAM.ryan.color, timestamp: "2025-07-20T10:05:00Z", notes: "Hosting access not granted"},
+  { id: "ev-t2-9", eventType: "Approval Requested", userId: TEAM.sofia.id, userName: TEAM.sofia.name, userInitials: TEAM.sofia.initials, userColor: TEAM.sofia.color, timestamp: "2025-07-20T15:00:00Z", notes: "Content Final Approval requested"},
+  { id: "ev-t2-10", eventType: "Approval Completed", userId: TEAM.daniel.id, userName: TEAM.daniel.name, userInitials: TEAM.daniel.initials, userColor: TEAM.daniel.color, timestamp: "2025-07-22T11:00:00Z", notes: "Content rejected — needs revision"},
+  { id: "ev-t2-11", eventType: "Status Changed", userId: TEAM.lily.id, userName: TEAM.lily.name, userInitials: TEAM.lily.initials, userColor: TEAM.lily.color, timestamp: "2025-07-23T08:00:00Z", meta: { from: "In Progress", to: "Blocked"} },
 ];
 
 const dependencies_t2: TaskDependencyItem[] = [
@@ -557,10 +557,10 @@ const dependencies_t2: TaskDependencyItem[] = [
 ];
 
 const notifications_t2: CollabNotificationEvent[] = [
-  { id: "notif-t2-1", type: "Dependency Blocked", taskId: "t-002-lp", taskName: "Landing Page Development", projectName: "Maple Ridge Clinic — SEO + GBP", triggeredBy: "System", recipient: TEAM.jessica.name, timestamp: "2025-07-20T10:05:00Z", read: false, message: "Task blocked: Hosting access not yet granted" },
-  { id: "notif-t2-2", type: "Task Overdue", taskId: "t-002-lp", taskName: "Landing Page Development", projectName: "Maple Ridge Clinic — SEO + GBP", triggeredBy: "System", recipient: TEAM.daniel.name, timestamp: "2025-07-23T08:00:00Z", read: false, message: "Landing Page Development is 3 days overdue" },
-  { id: "notif-t2-3", type: "Approval Requested", taskId: "t-002-lp", taskName: "Landing Page Development", projectName: "Maple Ridge Clinic — SEO + GBP", triggeredBy: TEAM.ryan.name, recipient: TEAM.jessica.name, timestamp: "2025-07-22T09:00:00Z", read: false, message: "Landing Page Launch Approval is pending your review" },
-  { id: "notif-t2-4", type: "Project Escalated", taskId: "t-002-lp", taskName: "Landing Page Development", projectName: "Maple Ridge Clinic — SEO + GBP", triggeredBy: TEAM.lily.name, recipient: TEAM.marcus.name, timestamp: "2025-07-23T09:00:00Z", read: false, message: "Project escalated — Maple Ridge landing page is blocked and overdue" },
+  { id: "notif-t2-1", type: "Dependency Blocked", taskId: "t-002-lp", taskName: "Landing Page Development", projectName: "Maple Ridge Clinic — SEO + GBP", triggeredBy: "System", recipient: TEAM.jessica.name, timestamp: "2025-07-20T10:05:00Z", read: false, message: "Task blocked: Hosting access not yet granted"},
+  { id: "notif-t2-2", type: "Task Overdue", taskId: "t-002-lp", taskName: "Landing Page Development", projectName: "Maple Ridge Clinic — SEO + GBP", triggeredBy: "System", recipient: TEAM.daniel.name, timestamp: "2025-07-23T08:00:00Z", read: false, message: "Landing Page Development is 3 days overdue"},
+  { id: "notif-t2-3", type: "Approval Requested", taskId: "t-002-lp", taskName: "Landing Page Development", projectName: "Maple Ridge Clinic — SEO + GBP", triggeredBy: TEAM.ryan.name, recipient: TEAM.jessica.name, timestamp: "2025-07-22T09:00:00Z", read: false, message: "Landing Page Launch Approval is pending your review"},
+  { id: "notif-t2-4", type: "Project Escalated", taskId: "t-002-lp", taskName: "Landing Page Development", projectName: "Maple Ridge Clinic — SEO + GBP", triggeredBy: TEAM.lily.name, recipient: TEAM.marcus.name, timestamp: "2025-07-23T09:00:00Z", read: false, message: "Project escalated — Maple Ridge landing page is blocked and overdue"},
 ];
 
 // ── TASK 3: PPC Campaign Launch ───────────────────────────────────────────────
@@ -588,9 +588,9 @@ const comments_t3: TaskComment[] = [
     authorInitials: TEAM.priya.initials,
     authorColor: TEAM.priya.color,
     body: "Client approved ad copy via email! Attached is the written approval. @Marcus Webb — you're clear to go live.",
-    mentions: [{ id: "m6", kind: "user", label: "@Marcus Webb" }],
+    mentions: [{ id: "m6", kind: "user", label: "@Marcus Webb"}],
     attachments: [
-      { id: "att-c3", fileName: "AdCopy-Client-Approval-Email.pdf", fileType: "pdf", url: "#" },
+      { id: "att-c3", fileName: "AdCopy-Client-Approval-Email.pdf", fileType: "pdf", url: "#"},
     ],
     status: "Resolved",
     createdAt: "2025-07-21T14:30:00Z",
@@ -722,14 +722,14 @@ const approvals_t3: ApprovalStep[] = [
 ];
 
 const activity_t3: ActivityEvent[] = [
-  { id: "ev-t3-1", eventType: "Task Created", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-15T08:00:00Z" },
-  { id: "ev-t3-2", eventType: "Task Assigned", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-15T08:05:00Z", meta: { assignee: "Marcus Webb" } },
-  { id: "ev-t3-3", eventType: "Status Changed", userId: TEAM.marcus.id, userName: TEAM.marcus.name, userInitials: TEAM.marcus.initials, userColor: TEAM.marcus.color, timestamp: "2025-07-19T10:00:00Z", meta: { from: "Open", to: "In Progress" } },
-  { id: "ev-t3-4", eventType: "Approval Requested", userId: TEAM.marcus.id, userName: TEAM.marcus.name, userInitials: TEAM.marcus.initials, userColor: TEAM.marcus.color, timestamp: "2025-07-19T10:00:00Z", notes: "Ad Copy Approval requested" },
-  { id: "ev-t3-5", eventType: "Attachment Uploaded", userId: TEAM.priya.id, userName: TEAM.priya.name, userInitials: TEAM.priya.initials, userColor: TEAM.priya.color, timestamp: "2025-07-21T14:30:00Z", meta: { file: "AdCopy-Client-Approval-Email.pdf" } },
-  { id: "ev-t3-6", eventType: "Approval Completed", userId: TEAM.priya.id, userName: TEAM.priya.name, userInitials: TEAM.priya.initials, userColor: TEAM.priya.color, timestamp: "2025-07-21T14:30:00Z", notes: "Ad copy approved by client" },
-  { id: "ev-t3-7", eventType: "Status Changed", userId: TEAM.marcus.id, userName: TEAM.marcus.name, userInitials: TEAM.marcus.initials, userColor: TEAM.marcus.color, timestamp: "2025-07-21T15:00:00Z", meta: { from: "In Progress", to: "Review" } },
-  { id: "ev-t3-8", eventType: "Task Completed", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-21T15:30:00Z" },
+  { id: "ev-t3-1", eventType: "Task Created", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-15T08:00:00Z"},
+  { id: "ev-t3-2", eventType: "Task Assigned", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-15T08:05:00Z", meta: { assignee: "Marcus Webb"} },
+  { id: "ev-t3-3", eventType: "Status Changed", userId: TEAM.marcus.id, userName: TEAM.marcus.name, userInitials: TEAM.marcus.initials, userColor: TEAM.marcus.color, timestamp: "2025-07-19T10:00:00Z", meta: { from: "Open", to: "In Progress"} },
+  { id: "ev-t3-4", eventType: "Approval Requested", userId: TEAM.marcus.id, userName: TEAM.marcus.name, userInitials: TEAM.marcus.initials, userColor: TEAM.marcus.color, timestamp: "2025-07-19T10:00:00Z", notes: "Ad Copy Approval requested"},
+  { id: "ev-t3-5", eventType: "Attachment Uploaded", userId: TEAM.priya.id, userName: TEAM.priya.name, userInitials: TEAM.priya.initials, userColor: TEAM.priya.color, timestamp: "2025-07-21T14:30:00Z", meta: { file: "AdCopy-Client-Approval-Email.pdf"} },
+  { id: "ev-t3-6", eventType: "Approval Completed", userId: TEAM.priya.id, userName: TEAM.priya.name, userInitials: TEAM.priya.initials, userColor: TEAM.priya.color, timestamp: "2025-07-21T14:30:00Z", notes: "Ad copy approved by client"},
+  { id: "ev-t3-7", eventType: "Status Changed", userId: TEAM.marcus.id, userName: TEAM.marcus.name, userInitials: TEAM.marcus.initials, userColor: TEAM.marcus.color, timestamp: "2025-07-21T15:00:00Z", meta: { from: "In Progress", to: "Review"} },
+  { id: "ev-t3-8", eventType: "Task Completed", userId: TEAM.jessica.id, userName: TEAM.jessica.name, userInitials: TEAM.jessica.initials, userColor: TEAM.jessica.color, timestamp: "2025-07-21T15:30:00Z"},
 ];
 
 const dependencies_t3: TaskDependencyItem[] = [
@@ -754,7 +754,7 @@ const dependencies_t3: TaskDependencyItem[] = [
 ];
 
 const notifications_t3: CollabNotificationEvent[] = [
-  { id: "notif-t3-1", type: "Approval Completed", taskId: "t-003-ppc", taskName: "PPC Campaign Launch", projectName: "PPC + Landing Page Project", triggeredBy: TEAM.priya.name, recipient: TEAM.marcus.name, timestamp: "2025-07-21T14:30:00Z", read: true, message: "Ad Copy Approval completed — you're clear to launch" },
+  { id: "notif-t3-1", type: "Approval Completed", taskId: "t-003-ppc", taskName: "PPC Campaign Launch", projectName: "PPC + Landing Page Project", triggeredBy: TEAM.priya.name, recipient: TEAM.marcus.name, timestamp: "2025-07-21T14:30:00Z", read: true, message: "Ad Copy Approval completed — you're clear to launch"},
 ];
 
 // ── Escalations ──────────────────────────────────────────────────────────────────
@@ -843,25 +843,25 @@ const aiSummary_t1: AICollaborationSummary = {
   taskId: "t-001-2-1",
   generatedAt: "2025-07-28T18:00:00Z",
   latestUpdates: [
-    { category: "update", text: "Technical SEO Audit report completed and uploaded by Aaron Park (Jul 28). Identified 47 broken links, 3 redirect chains, and 12 missing meta descriptions.", urgency: "info" },
-    { category: "update", text: "Screaming Frog crawl completed. Full redirect map included in audit report.", urgency: "info" },
+    { category: "update", text: "Technical SEO Audit report completed and uploaded by Aaron Park (Jul 28). Identified 47 broken links, 3 redirect chains, and 12 missing meta descriptions.", urgency: "info"},
+    { category: "update", text: "Screaming Frog crawl completed. Full redirect map included in audit report.", urgency: "info"},
   ],
   currentBlockers: [
-    { category: "blocker", text: "Client Report Approval is pending review by Priya Nair. No blockers on technical side.", urgency: "warn" },
+    { category: "blocker", text: "Client Report Approval is pending review by Priya Nair. No blockers on technical side.", urgency: "warn"},
   ],
   pendingApprovals: [
-    { category: "approval", text: "Client Report Approval requested by Aaron Park — Priya Nair must review and approve before sending to client.", urgency: "warn" },
+    { category: "approval", text: "Client Report Approval requested by Aaron Park — Priya Nair must review and approve before sending to client.", urgency: "warn"},
   ],
   recentEscalations: [
-    { category: "escalation", text: "Approval bottleneck escalated to Daniel Okonkwo (L2) on Jul 26. Resolved Jul 27 — SEO strategy approved with notes.", urgency: "info" },
+    { category: "escalation", text: "Approval bottleneck escalated to Daniel Okonkwo (L2) on Jul 26. Resolved Jul 27 — SEO strategy approved with notes.", urgency: "info"},
   ],
   recommendedActions: [
-    { category: "action", text: "Priya Nair should review and approve the Client Report before Jul 30 to avoid delivery delays.", urgency: "warn" },
-    { category: "action", text: "Aaron Park should prepare narrative summary of audit findings as client requested simplified format.", urgency: "info" },
+    { category: "action", text: "Priya Nair should review and approve the Client Report before Jul 30 to avoid delivery delays.", urgency: "warn"},
+    { category: "action", text: "Aaron Park should prepare narrative summary of audit findings as client requested simplified format.", urgency: "info"},
   ],
   projectHealthNotes: [
-    { category: "health", text: "Project health is GREEN. Technical audit is complete. One approval pending. No critical blockers.", urgency: "info" },
-    { category: "health", text: "Keyword strategy and on-page optimization are queued and depend on audit completion.", urgency: "info" },
+    { category: "health", text: "Project health is GREEN. Technical audit is complete. One approval pending. No critical blockers.", urgency: "info"},
+    { category: "health", text: "Keyword strategy and on-page optimization are queued and depend on audit completion.", urgency: "info"},
   ],
 };
 
@@ -869,31 +869,31 @@ const aiSummary_t2: AICollaborationSummary = {
   taskId: "t-002-lp",
   generatedAt: "2025-07-23T10:00:00Z",
   latestUpdates: [
-    { category: "update", text: "Landing page is currently BLOCKED. Task is 3 days overdue. Dev cannot deploy until hosting access is granted.", urgency: "critical" },
-    { category: "update", text: "Content revision needed on hero section — client wants clinic photos instead of stock photography.", urgency: "warn" },
+    { category: "update", text: "Landing page is currently BLOCKED. Task is 3 days overdue. Dev cannot deploy until hosting access is granted.", urgency: "critical"},
+    { category: "update", text: "Content revision needed on hero section — client wants clinic photos instead of stock photography.", urgency: "warn"},
   ],
   currentBlockers: [
-    { category: "blocker", text: "Client has not provided hosting access (requested Jul 16). Development cannot deploy.", urgency: "critical" },
-    { category: "blocker", text: "Client invoice overdue by 7 days. Launch is on hold per internal policy until billing confirms payment.", urgency: "critical" },
-    { category: "blocker", text: "Hero section content pending — waiting on client to provide clinic photographs.", urgency: "warn" },
+    { category: "blocker", text: "Client has not provided hosting access (requested Jul 16). Development cannot deploy.", urgency: "critical"},
+    { category: "blocker", text: "Client invoice overdue by 7 days. Launch is on hold per internal policy until billing confirms payment.", urgency: "critical"},
+    { category: "blocker", text: "Hero section content pending — waiting on client to provide clinic photographs.", urgency: "warn"},
   ],
   pendingApprovals: [
-    { category: "approval", text: "Landing Page Launch Approval awaiting Jessica Reyes — blocked on billing confirmation.", urgency: "critical" },
-    { category: "approval", text: "Content Final Approval rejected — needs revision. Client wants clinic photos in hero section.", urgency: "warn" },
+    { category: "approval", text: "Landing Page Launch Approval awaiting Jessica Reyes — blocked on billing confirmation.", urgency: "critical"},
+    { category: "approval", text: "Content Final Approval rejected — needs revision. Client wants clinic photos in hero section.", urgency: "warn"},
   ],
   recentEscalations: [
-    { category: "escalation", text: "Task overdue escalation triggered Jul 23. Lily Chen (Department Head) notified. Currently In Progress.", urgency: "warn" },
-    { category: "escalation", text: "Client access escalation raised to Account Manager (Jessica Reyes). Open — no resolution yet.", urgency: "warn" },
-    { category: "escalation", text: "Payment escalation raised to Executive level (Marcus Webb). Open — executive action required.", urgency: "critical" },
+    { category: "escalation", text: "Task overdue escalation triggered Jul 23. Lily Chen (Department Head) notified. Currently In Progress.", urgency: "warn"},
+    { category: "escalation", text: "Client access escalation raised to Account Manager (Jessica Reyes). Open — no resolution yet.", urgency: "warn"},
+    { category: "escalation", text: "Payment escalation raised to Executive level (Marcus Webb). Open — executive action required.", urgency: "critical"},
   ],
   recommendedActions: [
-    { category: "action", text: "Executive (Marcus Webb) must contact client billing department directly — invoice 7 days overdue.", urgency: "critical" },
-    { category: "action", text: "Jessica Reyes should call client to obtain hosting access credentials today.", urgency: "critical" },
-    { category: "action", text: "Daniel Okonkwo should follow up on content photo assets from client with 24-hour deadline.", urgency: "warn" },
+    { category: "action", text: "Executive (Marcus Webb) must contact client billing department directly — invoice 7 days overdue.", urgency: "critical"},
+    { category: "action", text: "Jessica Reyes should call client to obtain hosting access credentials today.", urgency: "critical"},
+    { category: "action", text: "Daniel Okonkwo should follow up on content photo assets from client with 24-hour deadline.", urgency: "warn"},
   ],
   projectHealthNotes: [
-    { category: "health", text: "Project health is RED. Three simultaneous blockers: hosting access, payment, and content revision.", urgency: "critical" },
-    { category: "health", text: "Revenue impact: monthly retainer at risk if client cancels due to delayed launch.", urgency: "critical" },
+    { category: "health", text: "Project health is RED. Three simultaneous blockers: hosting access, payment, and content revision.", urgency: "critical"},
+    { category: "health", text: "Revenue impact: monthly retainer at risk if client cancels due to delayed launch.", urgency: "critical"},
   ],
 };
 
@@ -901,26 +901,26 @@ const aiSummary_t3: AICollaborationSummary = {
   taskId: "t-003-ppc",
   generatedAt: "2025-07-28T10:00:00Z",
   latestUpdates: [
-    { category: "update", text: "Google Ads campaign went live Jul 21. Week 1 performance report uploaded. Campaign generating calls.", urgency: "info" },
-    { category: "update", text: "Client approved all ad copy via phone and email on Jul 21. Written approval on file.", urgency: "info" },
+    { category: "update", text: "Google Ads campaign went live Jul 21. Week 1 performance report uploaded. Campaign generating calls.", urgency: "info"},
+    { category: "update", text: "Client approved all ad copy via phone and email on Jul 21. Written approval on file.", urgency: "info"},
   ],
   currentBlockers: [
-    { category: "blocker", text: "No active blockers. Campaign is live and performing.", urgency: "info" },
-    { category: "blocker", text: "$500 setup fee outstanding — not blocking current operations but should be resolved before Aug 1.", urgency: "warn" },
+    { category: "blocker", text: "No active blockers. Campaign is live and performing.", urgency: "info"},
+    { category: "blocker", text: "$500 setup fee outstanding — not blocking current operations but should be resolved before Aug 1.", urgency: "warn"},
   ],
   pendingApprovals: [
-    { category: "approval", text: "No pending approvals. Both Ad Copy and Campaign Launch approvals completed.", urgency: "info" },
+    { category: "approval", text: "No pending approvals. Both Ad Copy and Campaign Launch approvals completed.", urgency: "info"},
   ],
   recentEscalations: [
-    { category: "escalation", text: "No recent escalations. Approval bottleneck resolved quickly on Jul 21.", urgency: "info" },
+    { category: "escalation", text: "No recent escalations. Approval bottleneck resolved quickly on Jul 21.", urgency: "info"},
   ],
   recommendedActions: [
-    { category: "action", text: "Marcus Webb should review Week 1 PPC report and prepare client update for this week.", urgency: "info" },
-    { category: "action", text: "Follow up with Billing team on $500 outstanding setup fee before Aug 1.", urgency: "warn" },
+    { category: "action", text: "Marcus Webb should review Week 1 PPC report and prepare client update for this week.", urgency: "info"},
+    { category: "action", text: "Follow up with Billing team on $500 outstanding setup fee before Aug 1.", urgency: "warn"},
   ],
   projectHealthNotes: [
-    { category: "health", text: "Project health is GREEN. Campaign is live. Client is happy. No critical blockers.", urgency: "info" },
-    { category: "health", text: "Client emphasized call-only conversion goal — ensure call extensions and call tracking are active.", urgency: "info" },
+    { category: "health", text: "Project health is GREEN. Campaign is live. Client is happy. No critical blockers.", urgency: "info"},
+    { category: "health", text: "Client emphasized call-only conversion goal — ensure call extensions and call tracking are active.", urgency: "info"},
   ],
 };
 

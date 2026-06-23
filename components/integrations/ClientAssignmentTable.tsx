@@ -25,14 +25,14 @@ function IntegrationCell({
   }
   const integration = integrations.find((i) => i.id === integrationId);
   if (!integration) {
-    return <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Unknown</span>;
+    return <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>Unknown</span>;
   }
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+      <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
         {integration.name}
       </span>
-      <IntegrationStatusBadge status={integration.status} size="sm" />
+      <IntegrationStatusBadge status={integration.status} size="sm"/>
     </div>
   );
 }
@@ -40,18 +40,15 @@ function IntegrationCell({
 export default function ClientAssignmentTable({ assignments, integrations }: Props) {
   return (
     <SectionWrapper
-      title="Client Integration Assignment"
-      description="Per-client connector assignments — fully configurable, no vendor lock-in"
-      actions={
+      title="Client Integration Assignment"description="Per-client connector assignments — fully configurable, no vendor lock-in"actions={
         <button
-          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"
-          style={{ background: "var(--rtm-blue)" }}
+          className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors"style={{ background: "var(--rtm-blue)"}}
         >
           + Assign Client
         </button>
       }
     >
-      <div className="overflow-x-auto rounded-lg border" style={{ borderColor: "var(--rtm-border)" }}>
+      <div className="overflow-x-auto rounded-lg border"style={{ borderColor: "var(--rtm-border)"}}>
         <table className="w-full text-sm">
           <thead>
             <tr
@@ -63,8 +60,7 @@ export default function ClientAssignmentTable({ assignments, integrations }: Pro
               {["Client", "CRM Provider", "Call Tracking", "Analytics", "Advertising", "AI Provider", "Actions"].map((col) => (
                 <th
                   key={col}
-                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap"
-                  style={{ color: "var(--rtm-text-muted)" }}
+                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                 >
                   {col}
                 </th>
@@ -76,15 +72,15 @@ export default function ClientAssignmentTable({ assignments, integrations }: Pro
               <tr
                 key={assignment.clientId}
                 style={{
-                  borderBottom: idx < assignments.length - 1 ? "1px solid var(--rtm-border-light)" : undefined,
+                  borderBottom: idx < assignments.length - 1 ? "1px solid var(--rtm-border-light)": undefined,
                   background: "var(--rtm-surface)",
                 }}
               >
                 <td className="px-4 py-3">
-                  <p className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>
+                  <p className="font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>
                     {assignment.clientName}
                   </p>
-                  <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+                  <p className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>
                     {assignment.clientId}
                   </p>
                 </td>
@@ -105,8 +101,7 @@ export default function ClientAssignmentTable({ assignments, integrations }: Pro
                 </td>
                 <td className="px-4 py-3">
                   <button
-                    className="text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors"
-                    style={{
+                    className="text-xs font-medium px-2.5 py-1 rounded-lg border transition-colors"style={{
                       color: "var(--rtm-blue)",
                       borderColor: "var(--rtm-blue-light)",
                       background: "var(--rtm-blue-xlight)",

@@ -15,12 +15,9 @@ export default function BarChart({
   const max = Math.max(...data.map((d) => d.value));
   const barW = 100 / data.length;
   return (
-    <div className="w-full" style={{ height }}>
+    <div className="w-full"style={{ height }}>
       <svg
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
-        className="w-full"
-        style={{ height: showLabels ? height - 20 : height }}
+        viewBox="0 0 100 100"preserveAspectRatio="none"className="w-full"style={{ height: showLabels ? height - 20 : height }}
       >
         {data.map((d, i) => {
           const barH = (d.value / max) * 90;
@@ -45,8 +42,7 @@ export default function BarChart({
           {data.map((d) => (
             <span
               key={d.label}
-              className="text-[10px] truncate"
-              style={{ width: `${barW}%`, textAlign: "center", color: "var(--rtm-text-muted)" }}
+              className="text-[10px] truncate"style={{ width: `${barW}%`, textAlign: "center", color: "var(--rtm-text-muted)"}}
             >
               {d.label}
             </span>

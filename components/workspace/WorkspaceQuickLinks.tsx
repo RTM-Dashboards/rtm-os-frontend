@@ -14,13 +14,12 @@ interface WorkspaceQuickLinksProps {
   title?: string;
 }
 
-export default function WorkspaceQuickLinks({ links, title = "Quick Access" }: WorkspaceQuickLinksProps) {
+export default function WorkspaceQuickLinks({ links, title = "Quick Access"}: WorkspaceQuickLinksProps) {
   return (
     <div
-      className="rounded-xl border p-5"
-      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+      className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
     >
-      <h2 className="text-sm font-bold mb-4" style={{ color: "var(--rtm-text-primary)" }}>
+      <h2 className="text-sm font-bold mb-4"style={{ color: "var(--rtm-text-primary)"}}>
         {title}
       </h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -28,8 +27,7 @@ export default function WorkspaceQuickLinks({ links, title = "Quick Access" }: W
           <Link
             key={link.href}
             href={link.href}
-            className="group flex flex-col items-start gap-2 p-4 rounded-lg border transition-all duration-150"
-            style={{
+            className="group flex flex-col items-start gap-2 p-4 rounded-lg border transition-all duration-150"style={{
               background: "var(--rtm-bg)",
               borderColor: "var(--rtm-border-light)",
             }}
@@ -44,11 +42,11 @@ export default function WorkspaceQuickLinks({ links, title = "Quick Access" }: W
           >
             <span className="text-2xl">{link.icon}</span>
             <div className="min-w-0">
-              <p className="text-sm font-semibold leading-tight" style={{ color: "var(--rtm-text-primary)" }}>
+              <p className="text-sm font-semibold leading-tight"style={{ color: "var(--rtm-text-primary)"}}>
                 {link.label}
               </p>
               {link.description && (
-                <p className="text-[11px] mt-0.5 leading-snug" style={{ color: "var(--rtm-text-muted)" }}>
+                <p className="text-[11px] mt-0.5 leading-snug"style={{ color: "var(--rtm-text-muted)"}}>
                   {link.description}
                 </p>
               )}

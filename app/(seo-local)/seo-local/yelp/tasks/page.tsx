@@ -9,8 +9,7 @@ const workspace = getWorkspace("seo-local")!;
 export default function YelpTasksPage() {
   return (
     <WorkspaceTaskPage
-      workspaceName="Yelp"
-      tasks={yelpTasks}
+      workspaceName="Yelp"tasks={yelpTasks}
       accentColor={workspace.accentColor}
     />
   );

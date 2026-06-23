@@ -46,8 +46,7 @@ export default function PageHeader({
   const crumbs: BreadcrumbItem[] =
     !breadcrumb
       ? []
-      : typeof breadcrumb === "string"
-        ? [{ label: breadcrumb }]
+      : typeof breadcrumb === "string"? [{ label: breadcrumb }]
         : breadcrumb;
 
   const hasActions = primaryActions || secondaryActions || actions;
@@ -56,23 +55,22 @@ export default function PageHeader({
     <div className="mb-6 space-y-3">
       {/* Row 1: breadcrumb */}
       {crumbs.length > 0 && (
-        <nav className="flex items-center gap-1.5 text-[11px] font-medium" aria-label="Breadcrumb">
+        <nav className="flex items-center gap-1.5 text-[11px] font-medium"aria-label="Breadcrumb">
           {crumbs.map((crumb, idx) => (
             <React.Fragment key={idx}>
               {idx > 0 && (
-                <span style={{ color: "var(--rtm-text-muted)" }}>/</span>
+                <span style={{ color: "var(--rtm-text-muted)"}}>/</span>
               )}
               {crumb.href ? (
                 <a
                   href={crumb.href}
-                  className="hover:underline transition-colors"
-                  style={{ color: idx === crumbs.length - 1 ? "var(--rtm-blue)" : "var(--rtm-text-muted)" }}
+                  className="hover:underline transition-colors"style={{ color: idx === crumbs.length - 1 ? "var(--rtm-blue)": "var(--rtm-text-muted)"}}
                 >
                   {crumb.label}
                 </a>
               ) : (
                 <span
-                  style={{ color: idx === crumbs.length - 1 ? "var(--rtm-blue)" : "var(--rtm-text-muted)" }}
+                  style={{ color: idx === crumbs.length - 1 ? "var(--rtm-blue)": "var(--rtm-text-muted)"}}
                 >
                   {crumb.label}
                 </span>
@@ -85,11 +83,11 @@ export default function PageHeader({
       {/* Row 2: title + actions */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-bold leading-tight" style={{ color: "var(--rtm-text-primary)" }}>
+          <h1 className="text-xl font-bold leading-tight"style={{ color: "var(--rtm-text-primary)"}}>
             {title}
           </h1>
           {description && (
-            <p className="mt-1 text-sm max-w-2xl leading-relaxed" style={{ color: "var(--rtm-text-secondary)" }}>
+            <p className="mt-1 text-sm max-w-2xl leading-relaxed"style={{ color: "var(--rtm-text-secondary)"}}>
               {description}
             </p>
           )}
@@ -114,20 +112,15 @@ export default function PageHeader({
       {/* Row 3: quick filters */}
       {quickFilters && quickFilters.length > 0 && (
         <div
-          className="flex items-center gap-1 overflow-x-auto pb-0.5"
-          role="tablist"
-          aria-label="Quick filters"
-        >
+          className="flex items-center gap-1 overflow-x-auto pb-0.5"role="tablist"aria-label="Quick filters">
           {quickFilters.map((f) => {
             const isActive = f.value === activeFilter;
             return (
               <button
                 key={f.value}
-                role="tab"
-                aria-selected={isActive}
+                role="tab"aria-selected={isActive}
                 onClick={() => onFilterChange?.(f.value)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all"
-                style={
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all"style={
                   isActive
                     ? {
                         background: "var(--rtm-blue)",
@@ -144,11 +137,10 @@ export default function PageHeader({
                 {f.label}
                 {f.count !== undefined && (
                   <span
-                    className="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none"
-                    style={
+                    className="px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none"style={
                       isActive
-                        ? { background: "rgba(255,255,255,0.25)", color: "#fff" }
-                        : { background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }
+                        ? { background: "rgba(255,255,255,0.25)", color: "#fff"}
+                        : { background: "var(--rtm-bg)", color: "var(--rtm-text-muted)"}
                     }
                   >
                     {f.count}

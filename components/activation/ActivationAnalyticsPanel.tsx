@@ -3,20 +3,20 @@
 import { ACTIVATION_ANALYTICS, ACTIVATION_RECORDS } from "@/lib/activation-data";
 
 function formatCurrency(n: number) {
-  return "$" + n.toLocaleString("en-US");
+  return "$"+ n.toLocaleString("en-US");
 }
 
-function HBar({ label, value, max, color, suffix = "" }: { label: string; value: number; max: number; color: string; suffix?: string }) {
+function HBar({ label, value, max, color, suffix = ""}: { label: string; value: number; max: number; color: string; suffix?: string }) {
   const pct = Math.round((value / max) * 100);
   return (
-    <div className="flex items-center gap-3 py-2" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
-      <p className="text-xs font-medium w-44 flex-shrink-0" style={{ color: "var(--rtm-text-secondary)" }}>
+    <div className="flex items-center gap-3 py-2"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
+      <p className="text-xs font-medium w-44 flex-shrink-0"style={{ color: "var(--rtm-text-secondary)"}}>
         {label}
       </p>
-      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--rtm-border)" }}>
-        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+      <div className="flex-1 h-2 rounded-full overflow-hidden"style={{ background: "var(--rtm-border)"}}>
+        <div className="h-full rounded-full"style={{ width: `${pct}%`, background: color }} />
       </div>
-      <p className="text-xs font-bold w-16 text-right flex-shrink-0" style={{ color }}>
+      <p className="text-xs font-bold w-16 text-right flex-shrink-0"style={{ color }}>
         {value}{suffix}
       </p>
     </div>
@@ -83,16 +83,15 @@ export default function ActivationAnalyticsPanel() {
         {kpis.map(({ label, value, sub, color, bg, border }) => (
           <div
             key={label}
-            className="rounded-xl p-5 flex flex-col gap-2"
-            style={{ background: bg, border: `1px solid ${border}`, boxShadow: "0 1px 3px rgba(15,28,56,0.04)" }}
+            className="rounded-xl p-5 flex flex-col gap-2"style={{ background: bg, border: `1px solid ${border}`, boxShadow: "0 1px 3px rgba(15,28,56,0.04)"}}
           >
-            <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color }}>
+            <p className="text-[11px] font-bold uppercase tracking-wide"style={{ color }}>
               {label}
             </p>
-            <p className="text-2xl font-bold" style={{ color }}>
+            <p className="text-2xl font-bold"style={{ color }}>
               {value}
             </p>
-            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
               {sub}
             </p>
           </div>
@@ -104,13 +103,12 @@ export default function ActivationAnalyticsPanel() {
 
         {/* Activation Bottlenecks */}
         <div
-          className="rounded-xl border p-5"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)" }}
+          className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)"}}
         >
-          <p className="text-sm font-bold mb-1" style={{ color: "var(--rtm-text-primary)" }}>
+          <p className="text-sm font-bold mb-1"style={{ color: "var(--rtm-text-primary)"}}>
             Activation Bottlenecks
           </p>
-          <p className="text-xs mb-4" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs mb-4"style={{ color: "var(--rtm-text-muted)"}}>
             Average days spent at each stage
           </p>
           {a.bottlenecks.map((b) => (
@@ -119,21 +117,18 @@ export default function ActivationAnalyticsPanel() {
               label={`${b.stage} (${b.count})`}
               value={b.avgDays}
               max={maxBottleneckDays}
-              color="var(--rtm-blue)"
-              suffix=" days"
-            />
+              color="var(--rtm-blue)"suffix="days"/>
           ))}
         </div>
 
         {/* Department Delays */}
         <div
-          className="rounded-xl border p-5"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)" }}
+          className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)"}}
         >
-          <p className="text-sm font-bold mb-1" style={{ color: "var(--rtm-text-primary)" }}>
+          <p className="text-sm font-bold mb-1"style={{ color: "var(--rtm-text-primary)"}}>
             Department Delays
           </p>
-          <p className="text-xs mb-4" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs mb-4"style={{ color: "var(--rtm-text-muted)"}}>
             Average delay in days per department
           </p>
           {a.departmentDelays.map((d) => (
@@ -142,35 +137,31 @@ export default function ActivationAnalyticsPanel() {
               label={`${d.department} (${d.cases})`}
               value={d.avgDelay}
               max={maxDeptDelay}
-              color="#7C3AED"
-              suffix=" days"
-            />
+              color="#7C3AED"suffix="days"/>
           ))}
         </div>
       </div>
 
       {/* Status Distribution */}
       <div
-        className="rounded-xl border p-5"
-        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)" }}
+        className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)"}}
       >
-        <p className="text-sm font-bold mb-1" style={{ color: "var(--rtm-text-primary)" }}>
+        <p className="text-sm font-bold mb-1"style={{ color: "var(--rtm-text-primary)"}}>
           Activation Status Distribution
         </p>
-        <p className="text-xs mb-4" style={{ color: "var(--rtm-text-muted)" }}>
+        <p className="text-xs mb-4"style={{ color: "var(--rtm-text-muted)"}}>
           Current breakdown of all 20 activation records
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           {(Object.entries(statusCounts) as [string, number][]).map(([status, count]) => (
             <div
               key={status}
-              className="rounded-lg p-3 text-center"
-              style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)" }}
+              className="rounded-lg p-3 text-center"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)"}}
             >
-              <p className="text-2xl font-bold" style={{ color: "var(--rtm-blue)" }}>
+              <p className="text-2xl font-bold"style={{ color: "var(--rtm-blue)"}}>
                 {count}
               </p>
-              <p className="text-[11px] font-medium mt-1 leading-tight" style={{ color: "var(--rtm-text-muted)" }}>
+              <p className="text-[11px] font-medium mt-1 leading-tight"style={{ color: "var(--rtm-text-muted)"}}>
                 {status}
               </p>
             </div>

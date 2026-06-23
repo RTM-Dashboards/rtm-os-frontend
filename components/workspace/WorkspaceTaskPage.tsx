@@ -6,8 +6,8 @@ export interface WorkspaceTask extends Record<string, unknown> {
   title: string;
   client: string;
   assignee: string;
-  priority: "high" | "medium" | "low";
-  status: "open" | "in-progress" | "done" | "blocked";
+  priority: "high"| "medium"| "low";
+  status: "open"| "in-progress"| "done"| "blocked";
   due: string;
 }
 
@@ -18,16 +18,16 @@ interface WorkspaceTaskPageProps {
 }
 
 const priorityVariant = (p: string) => {
-  if (p === "high")   return "warning" as const;
-  if (p === "medium") return "warning"  as const;
-  return               "info"     as const;
+  if (p === "high")   return "warning"as const;
+  if (p === "medium") return "warning"as const;
+  return               "info"as const;
 };
 
 const statusVariant = (s: string) => {
-  if (s === "done")        return "success"  as const;
-  if (s === "in-progress") return "info"     as const;
-  if (s === "blocked")     return "warning" as const;
-  return                          "neutral"  as const;
+  if (s === "done")        return "success"as const;
+  if (s === "in-progress") return "info"as const;
+  if (s === "blocked")     return "warning"as const;
+  return                          "neutral"as const;
 };
 
 const statusLabel: Record<string, string> = {
@@ -38,21 +38,21 @@ const statusLabel: Record<string, string> = {
 };
 
 const columns: Column<WorkspaceTask>[] = [
-  { key: "title",    header: "Task" },
-  { key: "client",   header: "Client",   width: "160px" },
-  { key: "assignee", header: "Assignee", width: "130px" },
-  { key: "due",      header: "Due",      width: "110px" },
+  { key: "title",    header: "Task"},
+  { key: "client",   header: "Client",   width: "160px"},
+  { key: "assignee", header: "Assignee", width: "130px"},
+  { key: "due",      header: "Due",      width: "110px"},
   {
     key: "priority",
     header: "Priority",
     width: "100px",
-    render: (v) => <StatusBadge variant={priorityVariant(String(v))} label={String(v).charAt(0).toUpperCase() + String(v).slice(1)} size="sm" />,
+    render: (v) => <StatusBadge variant={priorityVariant(String(v))} label={String(v).charAt(0).toUpperCase() + String(v).slice(1)} size="sm"/>,
   },
   {
     key: "status",
     header: "Status",
     width: "130px",
-    render: (v) => <StatusBadge variant={statusVariant(String(v))} label={statusLabel[String(v)] ?? String(v)} size="sm" />,
+    render: (v) => <StatusBadge variant={statusVariant(String(v))} label={statusLabel[String(v)] ?? String(v)} size="sm"/>,
   },
 ];
 
@@ -67,15 +67,14 @@ export default function WorkspaceTaskPage({ workspaceName, tasks, accentColor }:
       {/* ── Header ── */}
       <div>
         <p
-          className="text-[11px] font-bold uppercase tracking-widest mb-1"
-          style={{ color: accentColor ?? "var(--rtm-blue)" }}
+          className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: accentColor ?? "var(--rtm-blue)"}}
         >
           {workspaceName}
         </p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
           Tasks
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           All active tasks for {workspaceName}.
         </p>
       </div>
@@ -83,18 +82,17 @@ export default function WorkspaceTaskPage({ workspaceName, tasks, accentColor }:
       {/* ── Summary KPIs ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Open",        value: open,       bg: "#EFF6FF", color: "#2563EB" },
-          { label: "In Progress", value: inProgress, bg: "#FFFBEB", color: "#D97706" },
-          { label: "Done",        value: done,       bg: "#ECFDF5", color: "#059669" },
-          { label: "Blocked",     value: blocked,    bg: "#FEF2F2", color: "#DC2626" },
+          { label: "Open",        value: open,       bg: "#EFF6FF", color: "#2563EB"},
+          { label: "In Progress", value: inProgress, bg: "#FFFBEB", color: "#D97706"},
+          { label: "Done",        value: done,       bg: "#ECFDF5", color: "#059669"},
+          { label: "Blocked",     value: blocked,    bg: "#FEF2F2", color: "#DC2626"},
         ].map((s) => (
           <div
             key={s.label}
-            className="rounded-xl border p-4"
-            style={{ background: s.bg, borderColor: `${s.color}20` }}
+            className="rounded-xl border p-4"style={{ background: s.bg, borderColor: `${s.color}20` }}
           >
-            <p className="text-3xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs font-semibold mt-1" style={{ color: s.color }}>{s.label}</p>
+            <p className="text-3xl font-bold"style={{ color: s.color }}>{s.value}</p>
+            <p className="text-xs font-semibold mt-1"style={{ color: s.color }}>{s.label}</p>
           </div>
         ))}
       </div>

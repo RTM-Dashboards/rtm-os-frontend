@@ -48,7 +48,7 @@ export default function CampaignsTab({ client }: { client: ClientProfile }) {
                       <CampaignBadge status={c.status} />
                     </td>
                     <td className="px-5 py-3.5 text-slate-600 dark:text-slate-400">
-                      {new Date(c.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                      {new Date(c.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric"})}
                     </td>
                     <td className="px-5 py-3.5 text-right font-semibold text-slate-800 dark:text-slate-200">
                       ${c.budget.toLocaleString()}
@@ -64,9 +64,7 @@ export default function CampaignsTab({ client }: { client: ClientProfile }) {
           
           <p className="text-sm font-medium text-slate-700 dark:text-slate-300">No active campaigns</p>
           <p className="text-xs text-slate-400 mt-1">
-            {client.campaignStatus === "paused"
-              ? "Campaigns are currently paused for this client."
-              : "No campaigns have been set up yet."}
+            {client.campaignStatus === "paused"? "Campaigns are currently paused for this client.": "No campaigns have been set up yet."}
           </p>
         </div>
       )}

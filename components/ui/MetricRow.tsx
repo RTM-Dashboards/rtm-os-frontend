@@ -22,28 +22,26 @@ export default function MetricRow({ items, cols = 3 }: MetricRowProps) {
   return (
     <div
       className={`grid ${colMap[cols] || colMap[3]}`}
-      style={{ borderTop: "1px solid var(--rtm-border-light)" }}
+      style={{ borderTop: "1px solid var(--rtm-border-light)"}}
     >
       {items.map((item, i) => (
         <div
           key={i}
-          className="px-4 py-3 first:pl-0"
-          style={{ borderRight: i < items.length - 1 ? "1px solid var(--rtm-border-light)" : undefined }}
+          className="px-4 py-3 first:pl-0"style={{ borderRight: i < items.length - 1 ? "1px solid var(--rtm-border-light)": undefined }}
         >
-          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{item.label}</p>
-          <p className="mt-0.5 text-xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+          <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{item.label}</p>
+          <p className="mt-0.5 text-xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
             {item.value}
           </p>
           {item.change && (
             <p
-              className="text-xs font-semibold mt-0.5"
-              style={{ color: item.changeUp ? "#059669" : "#DC2626" }}
+              className="text-xs font-semibold mt-0.5"style={{ color: item.changeUp ? "#059669": "#DC2626"}}
             >
-              {item.changeUp ? "↑" : "↓"} {item.change}
+              {item.changeUp ? "↑": "↓"} {item.change}
             </p>
           )}
           {item.subtext && (
-            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
               {item.subtext}
             </p>
           )}

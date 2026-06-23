@@ -28,20 +28,18 @@ export default function SectionWrapper({
     >
       {(title || actions) && (
         <div
-          className="flex items-start justify-between gap-4 px-5 py-4"
-          style={{ borderBottom: "1px solid var(--rtm-border-light)" }}
+          className="flex items-start justify-between gap-4 px-5 py-4"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}
         >
           <div>
             {title && (
               <h2
-                className="text-sm font-semibold"
-                style={{ color: "var(--rtm-text-primary)" }}
+                className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}
               >
                 {title}
               </h2>
             )}
             {description && (
-              <p className="mt-0.5 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+              <p className="mt-0.5 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                 {description}
               </p>
             )}
@@ -51,7 +49,7 @@ export default function SectionWrapper({
           )}
         </div>
       )}
-      <div className={noPadding ? "" : "p-5"}>{children}</div>
+      <div className={noPadding ? "": "p-5"}>{children}</div>
     </section>
   );
 }

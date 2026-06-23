@@ -11,8 +11,6 @@ export default function TeamMembersPage() {
     <WorkspaceTeamMembersPage
       workspace={workspace}
       members={localServiceAdsMembers}
-      rolesRoute="/local-service-ads/roles"
-      profileRoute="/local-service-ads/profile"
-    />
+      rolesRoute="/local-service-ads/roles"profileRoute="/local-service-ads/profile"/>
   );
 }

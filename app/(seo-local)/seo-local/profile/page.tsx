@@ -11,8 +11,6 @@ export default function ProfilePage() {
     <WorkspaceProfilePage
       workspace={workspace}
       profile={seoLocalProfile}
-      teamRoute="/seo-local/team-members"
-      rolesRoute="/seo-local/roles"
-    />
+      teamRoute="/seo-local/team-members"rolesRoute="/seo-local/roles"/>
   );
 }

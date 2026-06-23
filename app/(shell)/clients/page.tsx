@@ -5,44 +5,23 @@ import Link from "next/link";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 import { NOTIFICATIONS } from "@/lib/notifications";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // TYPES
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 type ClientStatus =
-  | "Lead"
-  | "Proposal Sent"
-  | "Invoice Sent"
-  | "Invoice Paid"
-  | "Ready for Onboarding"
-  | "AM Assignment Needed"
-  | "Onboarding Pending"
-  | "Department Activation Pending"
-  | "Active"
-  | "Renewal Due"
-  | "Cancellation Requested"
-  | "Offboarding";
+  | "Lead"| "Proposal Sent"| "Invoice Sent"| "Invoice Paid"| "Ready for Onboarding"| "AM Assignment Needed"| "Onboarding Pending"| "Department Activation Pending"| "Active"| "Renewal Due"| "Cancellation Requested"| "Offboarding";
 
 type WorkflowStatus =
-  | "Not Started"
-  | "Pending Review"
-  | "In Progress"
-  | "Awaiting Client"
-  | "Escalated"
-  | "Complete";
+  | "Not Started"| "Pending Review"| "In Progress"| "Awaiting Client"| "Escalated"| "Complete";
 
-type BillingStatus = "Pending" | "Paid" | "Overdue" | "Cleared" | "Closed";
+type BillingStatus = "Pending"| "Paid"| "Overdue"| "Cleared"| "Closed";
 
 type ActivationStatus =
-  | "Not Started"
-  | "Ready for Onboarding"
-  | "AM Assignment Needed"
-  | "Onboarding Pending"
-  | "Department Activation Pending"
-  | "Active";
+  | "Not Started"| "Ready for Onboarding"| "AM Assignment Needed"| "Onboarding Pending"| "Department Activation Pending"| "Active";
 
-type HealthStatus = "Excellent" | "Good" | "At Risk" | "Critical";
-type Priority = "High" | "Medium" | "Low";
+type HealthStatus = "Excellent"| "Good"| "At Risk"| "Critical";
+type Priority = "High"| "Medium"| "Low";
 
 interface ActivationChecklist {
   invoicePaid: boolean;
@@ -89,12 +68,12 @@ interface MasterClient {
   referralSource?: string;
   affiliateName?: string;
   referralRevenue?: string;
-  commissionStatus?: "Paid" | "Pending" | "Processing" | "Not Applicable";
+  commissionStatus?: "Paid"| "Pending"| "Processing"| "Not Applicable";
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // MOCK DATA — 20 clients
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 const PORTFOLIO_CLIENTS: MasterClient[] = [
   {
@@ -118,8 +97,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Send June performance report",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-28", actor: "Jordan M.", action: "Sent May performance report" },
-      { date: "2025-05-22", actor: "System", action: "Invoice #1042 processed – $5,350" },
+      { date: "2025-05-28", actor: "Jordan M.", action: "Sent May performance report"},
+      { date: "2025-05-22", actor: "System", action: "Invoice #1042 processed – $5,350"},
     ],
     notes: "High-value client. Storm season drives spike in leads.",
     avatarColor: "#6366f1",
@@ -147,8 +126,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Escalate billing — personal outreach required",
     activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-27", actor: "Sarah K.", action: "Flagged as at-risk — invoice 30+ days overdue" },
-      { date: "2025-05-10", actor: "Sarah K.", action: "Called Linda — no answer. Left voicemail." },
+      { date: "2025-05-27", actor: "Sarah K.", action: "Flagged as at-risk — invoice 30+ days overdue"},
+      { date: "2025-05-10", actor: "Sarah K.", action: "Called Linda — no answer. Left voicemail."},
     ],
     notes: "At-risk. Invoice overdue 30 days. Campaigns paused.",
     avatarColor: "#f59e0b",
@@ -178,8 +157,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Send renewal proposal — due in 16 days",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-29", actor: "System", action: "Monthly report sent to Dr. Yee" },
-      { date: "2025-05-15", actor: "Jordan M.", action: "Discussed second location expansion — Q4 2025 target" },
+      { date: "2025-05-29", actor: "System", action: "Monthly report sent to Dr. Yee"},
+      { date: "2025-05-15", actor: "Jordan M.", action: "Discussed second location expansion — Q4 2025 target"},
     ],
     notes: "Long-term client. Renewal in 16 days.",
     avatarColor: "#10b981",
@@ -209,8 +188,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Complete website wireframes and department activation",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: false, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-28", actor: "Casey L.", action: "Started website wireframe design" },
-      { date: "2025-05-08", actor: "Alex R.", action: "Onboarding kickoff call — all access received" },
+      { date: "2025-05-28", actor: "Casey L.", action: "Started website wireframe design"},
+      { date: "2025-05-08", actor: "Alex R.", action: "Onboarding kickoff call — all access received"},
     ],
     notes: "New client — onboarded May 2025. Website build in progress.",
     avatarColor: "#3b82f6",
@@ -236,8 +215,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Resolve content quality dispute — escalate to director",
     activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-26", actor: "Sarah K.", action: "Escalation raised — content quality complaint from Frank" },
-      { date: "2025-05-15", actor: "Mike T.", action: "Launched Summer Sale Meta campaign — $8k budget" },
+      { date: "2025-05-26", actor: "Sarah K.", action: "Escalation raised — content quality complaint from Frank"},
+      { date: "2025-05-15", actor: "Mike T.", action: "Launched Summer Sale Meta campaign — $8k budget"},
     ],
     notes: "At-risk due to content package dispute. Ad performance strong.",
     avatarColor: "#ef4444",
@@ -263,7 +242,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Send initial proposal",
     activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: false, servicesConfirmed: false, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
     recentEvents: [
-      { date: "2025-05-30", actor: "Mike T.", action: "Discovery call completed — strong fit for SEO + Google Ads" },
+      { date: "2025-05-30", actor: "Mike T.", action: "Discovery call completed — strong fit for SEO + Google Ads"},
     ],
     notes: "Inbound lead from referral. Strong fit.",
     avatarColor: "#84cc16",
@@ -289,8 +268,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Follow up on proposal — 5 days no response",
     activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: false, servicesConfirmed: false, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
     recentEvents: [
-      { date: "2025-05-25", actor: "Sarah K.", action: "Sent $4,200/mo proposal — SEO + PPC + Content" },
-      { date: "2025-05-20", actor: "Mike T.", action: "Second discovery call completed" },
+      { date: "2025-05-25", actor: "Sarah K.", action: "Sent $4,200/mo proposal — SEO + PPC + Content"},
+      { date: "2025-05-20", actor: "Mike T.", action: "Second discovery call completed"},
     ],
     notes: "High-value prospect. Proposal sent. Awaiting partner sign-off.",
     avatarColor: "#8b5cf6",
@@ -316,8 +295,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Wait for invoice payment to trigger onboarding",
     activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
     recentEvents: [
-      { date: "2025-05-29", actor: "System", action: "Invoice #1110 sent — $2,800/mo SEO + GBP + Content" },
-      { date: "2025-05-26", actor: "Mike T.", action: "Contract signed — services confirmed" },
+      { date: "2025-05-29", actor: "System", action: "Invoice #1110 sent — $2,800/mo SEO + GBP + Content"},
+      { date: "2025-05-26", actor: "Mike T.", action: "Contract signed — services confirmed"},
     ],
     notes: "Contract signed. Invoice sent. Waiting for payment to start onboarding.",
     avatarColor: "#06b6d4",
@@ -343,8 +322,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Assign Account Manager immediately",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
     recentEvents: [
-      { date: "2025-05-31", actor: "System", action: "Invoice #1115 confirmed paid — $3,200" },
-      { date: "2025-05-28", actor: "Mike T.", action: "Deal closed — Meta Ads + SEO + Content package" },
+      { date: "2025-05-31", actor: "System", action: "Invoice #1115 confirmed paid — $3,200"},
+      { date: "2025-05-28", actor: "Mike T.", action: "Deal closed — Meta Ads + SEO + Content package"},
     ],
     notes: "Invoice paid. AM assignment needed before onboarding can begin.",
     avatarColor: "#f97316",
@@ -370,8 +349,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Schedule onboarding kickoff call",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
     recentEvents: [
-      { date: "2025-05-31", actor: "Sarah K.", action: "Onboarding record queued — kickoff call to be scheduled" },
-      { date: "2025-05-30", actor: "System", action: "Billing cleared — ready to activate" },
+      { date: "2025-05-31", actor: "Sarah K.", action: "Onboarding record queued — kickoff call to be scheduled"},
+      { date: "2025-05-30", actor: "System", action: "Billing cleared — ready to activate"},
     ],
     notes: "All pre-conditions met. Ready for onboarding kickoff.",
     avatarColor: "#0ea5e9",
@@ -397,8 +376,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Complete onboarding tasks — access credentials pending",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: false, kickoffNeeded: true },
     recentEvents: [
-      { date: "2025-05-27", actor: "Alex R.", action: "Waiting on client to share GBP access credentials" },
-      { date: "2025-05-20", actor: "Alex R.", action: "Onboarding record created — tasks assigned to SEO team" },
+      { date: "2025-05-27", actor: "Alex R.", action: "Waiting on client to share GBP access credentials"},
+      { date: "2025-05-20", actor: "Alex R.", action: "Onboarding record created — tasks assigned to SEO team"},
     ],
     notes: "Onboarding in progress. Waiting on GBP access from client.",
     avatarColor: "#78716c",
@@ -424,8 +403,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Quarterly business review — schedule for June",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-30", actor: "Jordan M.", action: "May report delivered — all KPIs green" },
-      { date: "2025-05-01", actor: "System", action: "Invoice #2088 processed — $7,200" },
+      { date: "2025-05-30", actor: "Jordan M.", action: "May report delivered — all KPIs green"},
+      { date: "2025-05-01", actor: "System", action: "Invoice #2088 processed — $7,200"},
     ],
     notes: "Top-performing account. Upsell opportunity: email marketing.",
     avatarColor: "#ec4899",
@@ -451,8 +430,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Retention call — director must be on the line",
     activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-29", actor: "Craig W.", action: "Submitted cancellation request via portal" },
-      { date: "2025-05-28", actor: "Sarah K.", action: "Escalated to director — retention required" },
+      { date: "2025-05-29", actor: "Craig W.", action: "Submitted cancellation request via portal"},
+      { date: "2025-05-28", actor: "Sarah K.", action: "Escalated to director — retention required"},
     ],
     notes: "Cancellation requested. Director retention call scheduled for June 3.",
     avatarColor: "#dc2626",
@@ -478,8 +457,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Complete data export and access revocation",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-26", actor: "Alex R.", action: "Initiated offboarding — data export in progress" },
-      { date: "2025-05-20", actor: "System", action: "Final invoice #988 issued and paid" },
+      { date: "2025-05-26", actor: "Alex R.", action: "Initiated offboarding — data export in progress"},
+      { date: "2025-05-20", actor: "System", action: "Final invoice #988 issued and paid"},
     ],
     notes: "Client moving in-house. Offboarding in progress. Friendly exit.",
     avatarColor: "#94a3b8",
@@ -505,8 +484,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Deliver June SEO performance report",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-28", actor: "Lisa P.", action: "Google Ads optimized — CPC reduced 18%" },
-      { date: "2025-05-01", actor: "System", action: "Invoice #1890 processed — $3,600" },
+      { date: "2025-05-28", actor: "Lisa P.", action: "Google Ads optimized — CPC reduced 18%"},
+      { date: "2025-05-01", actor: "System", action: "Invoice #1890 processed — $3,600"},
     ],
     notes: "Stable account. Google Ads performing well.",
     avatarColor: "#14b8a6",
@@ -532,8 +511,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Send second billing notice — flag for collections if no response",
     activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-24", actor: "System", action: "Second billing reminder sent — no response" },
-      { date: "2025-05-10", actor: "Sarah K.", action: "Left voicemail for billing contact" },
+      { date: "2025-05-24", actor: "System", action: "Second billing reminder sent — no response"},
+      { date: "2025-05-10", actor: "Sarah K.", action: "Left voicemail for billing contact"},
     ],
     notes: "Invoice 15 days overdue. No contact response. Escalating.",
     avatarColor: "#854d0e",
@@ -559,8 +538,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "No immediate action needed",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-27", actor: "Alex R.", action: "May deliverables completed — client confirmed satisfaction" },
-      { date: "2025-05-01", actor: "System", action: "Invoice #1777 processed — $2,100" },
+      { date: "2025-05-27", actor: "Alex R.", action: "May deliverables completed — client confirmed satisfaction"},
+      { date: "2025-05-01", actor: "System", action: "Invoice #1777 processed — $2,100"},
     ],
     notes: "Low-maintenance, high-satisfaction account.",
     avatarColor: "#22c55e",
@@ -586,8 +565,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Send renewal agreement — 30 days out",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-29", actor: "Jordan M.", action: "Renewal conversation started — client open to expansion" },
-      { date: "2025-05-01", actor: "System", action: "Invoice #2222 processed — $5,800" },
+      { date: "2025-05-29", actor: "Jordan M.", action: "Renewal conversation started — client open to expansion"},
+      { date: "2025-05-01", actor: "System", action: "Invoice #2222 processed — $5,800"},
     ],
     notes: "Renewal in 30 days. Client hinted at adding two new locations.",
     avatarColor: "#1d4ed8",
@@ -613,8 +592,8 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Deliver June content calendar",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-26", actor: "Sarah K.", action: "Email campaign Q2 wrap-up — 42% open rate" },
-      { date: "2025-05-01", actor: "System", action: "Invoice #2011 processed — $3,300" },
+      { date: "2025-05-26", actor: "Sarah K.", action: "Email campaign Q2 wrap-up — 42% open rate"},
+      { date: "2025-05-01", actor: "System", action: "Invoice #2011 processed — $3,300"},
     ],
     notes: "Solid retention. Email marketing exceeding benchmarks.",
     avatarColor: "#a855f7",
@@ -640,75 +619,75 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     nextRequiredAction: "Present Q2 results deck",
     activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
     recentEvents: [
-      { date: "2025-05-28", actor: "Alex R.", action: "LinkedIn Ads showing 3.2x ROAS — reporting in progress" },
-      { date: "2025-05-01", actor: "System", action: "Invoice #1955 processed — $4,400" },
+      { date: "2025-05-28", actor: "Alex R.", action: "LinkedIn Ads showing 3.2x ROAS — reporting in progress"},
+      { date: "2025-05-01", actor: "System", action: "Invoice #1955 processed — $4,400"},
     ],
     notes: "B2B client. LinkedIn driving strong pipeline results.",
     avatarColor: "#0891b2",
   },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // BADGE CONFIGS
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 const CLIENT_STATUS_STYLES: Record<ClientStatus, { bg: string; text: string; dot: string; border: string }> = {
-  "Lead":                          { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0" },
-  "Proposal Sent":                 { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe" },
-  "Invoice Sent":                  { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a" },
-  "Invoice Paid":                  { bg: "#f0fdf4", text: "#166534", dot: "#22c55e", border: "#bbf7d0" },
-  "Ready for Onboarding":          { bg: "#f0fdf4", text: "#15803d", dot: "#16a34a", border: "#86efac" },
-  "AM Assignment Needed":          { bg: "#fff7ed", text: "#c2410c", dot: "#f97316", border: "#fed7aa" },
-  "Onboarding Pending":            { bg: "#eff6ff", text: "#1e40af", dot: "#6366f1", border: "#c7d2fe" },
-  "Department Activation Pending": { bg: "#fdf4ff", text: "#7e22ce", dot: "#a855f7", border: "#e9d5ff" },
-  "Active":                        { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0" },
-  "Renewal Due":                   { bg: "#fffbeb", text: "#b45309", dot: "#f59e0b", border: "#fde68a" },
-  "Cancellation Requested":        { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca" },
-  "Offboarding":                   { bg: "#f8fafc", text: "#475569", dot: "#64748b", border: "#cbd5e1" },
+  "Lead":                          { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0"},
+  "Proposal Sent":                 { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe"},
+  "Invoice Sent":                  { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a"},
+  "Invoice Paid":                  { bg: "#f0fdf4", text: "#166534", dot: "#22c55e", border: "#bbf7d0"},
+  "Ready for Onboarding":          { bg: "#f0fdf4", text: "#15803d", dot: "#16a34a", border: "#86efac"},
+  "AM Assignment Needed":          { bg: "#fff7ed", text: "#c2410c", dot: "#f97316", border: "#fed7aa"},
+  "Onboarding Pending":            { bg: "#eff6ff", text: "#1e40af", dot: "#6366f1", border: "#c7d2fe"},
+  "Department Activation Pending": { bg: "#fdf4ff", text: "#7e22ce", dot: "#a855f7", border: "#e9d5ff"},
+  "Active":                        { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
+  "Renewal Due":                   { bg: "#fffbeb", text: "#b45309", dot: "#f59e0b", border: "#fde68a"},
+  "Cancellation Requested":        { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca"},
+  "Offboarding":                   { bg: "#f8fafc", text: "#475569", dot: "#64748b", border: "#cbd5e1"},
 };
 
 const WORKFLOW_STATUS_STYLES: Record<WorkflowStatus, { bg: string; text: string; dot: string; border: string }> = {
-  "Not Started":    { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0" },
-  "Pending Review": { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a" },
-  "In Progress":    { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe" },
-  "Awaiting Client":{ bg: "#fff7ed", text: "#c2410c", dot: "#f97316", border: "#fed7aa" },
-  "Escalated":      { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca" },
-  "Complete":       { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0" },
+  "Not Started":    { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0"},
+  "Pending Review": { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a"},
+  "In Progress":    { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe"},
+  "Awaiting Client":{ bg: "#fff7ed", text: "#c2410c", dot: "#f97316", border: "#fed7aa"},
+  "Escalated":      { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca"},
+  "Complete":       { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
 };
 
 const BILLING_STATUS_STYLES: Record<BillingStatus, { bg: string; text: string; dot: string; border: string }> = {
-  "Pending": { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a" },
-  "Paid":    { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0" },
-  "Overdue": { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca" },
-  "Cleared": { bg: "#f0fdf4", text: "#166534", dot: "#22c55e", border: "#bbf7d0" },
-  "Closed":  { bg: "#f8fafc", text: "#475569", dot: "#64748b", border: "#cbd5e1" },
+  "Pending": { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a"},
+  "Paid":    { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
+  "Overdue": { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca"},
+  "Cleared": { bg: "#f0fdf4", text: "#166534", dot: "#22c55e", border: "#bbf7d0"},
+  "Closed":  { bg: "#f8fafc", text: "#475569", dot: "#64748b", border: "#cbd5e1"},
 };
 
 const ACTIVATION_STATUS_STYLES: Record<ActivationStatus, { bg: string; text: string; dot: string; border: string }> = {
-  "Not Started":                   { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0" },
-  "Ready for Onboarding":          { bg: "#f0fdf4", text: "#15803d", dot: "#16a34a", border: "#86efac" },
-  "AM Assignment Needed":          { bg: "#fff7ed", text: "#c2410c", dot: "#f97316", border: "#fed7aa" },
-  "Onboarding Pending":            { bg: "#eff6ff", text: "#1e40af", dot: "#6366f1", border: "#c7d2fe" },
-  "Department Activation Pending": { bg: "#fdf4ff", text: "#7e22ce", dot: "#a855f7", border: "#e9d5ff" },
-  "Active":                        { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0" },
+  "Not Started":                   { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0"},
+  "Ready for Onboarding":          { bg: "#f0fdf4", text: "#15803d", dot: "#16a34a", border: "#86efac"},
+  "AM Assignment Needed":          { bg: "#fff7ed", text: "#c2410c", dot: "#f97316", border: "#fed7aa"},
+  "Onboarding Pending":            { bg: "#eff6ff", text: "#1e40af", dot: "#6366f1", border: "#c7d2fe"},
+  "Department Activation Pending": { bg: "#fdf4ff", text: "#7e22ce", dot: "#a855f7", border: "#e9d5ff"},
+  "Active":                        { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
 };
 
 const HEALTH_STATUS_STYLES: Record<HealthStatus, { bg: string; text: string; dot: string; border: string }> = {
-  "Excellent": { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0" },
-  "Good":      { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe" },
-  "At Risk":   { bg: "#fffbeb", text: "#b45309", dot: "#f59e0b", border: "#fde68a" },
-  "Critical":  { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca" },
+  "Excellent": { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
+  "Good":      { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe"},
+  "At Risk":   { bg: "#fffbeb", text: "#b45309", dot: "#f59e0b", border: "#fde68a"},
+  "Critical":  { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca"},
 };
 
 const PRIORITY_STYLES: Record<Priority, { bg: string; text: string; border: string }> = {
-  "High":   { bg: "#fef2f2", text: "#b91c1c", border: "#fecaca" },
-  "Medium": { bg: "#fffbeb", text: "#b45309", border: "#fde68a" },
-  "Low":    { bg: "#f8fafc", text: "#64748b", border: "#e2e8f0" },
+  "High":   { bg: "#fef2f2", text: "#b91c1c", border: "#fecaca"},
+  "Medium": { bg: "#fffbeb", text: "#b45309", border: "#fde68a"},
+  "Low":    { bg: "#f8fafc", text: "#64748b", border: "#e2e8f0"},
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // BADGE COMPONENT
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function StatusPill({
   label,
@@ -717,25 +696,25 @@ function StatusPill({
 }: {
   label: string;
   styles: { bg: string; text: string; dot?: string; border: string };
-  size?: "xs" | "sm";
+  size?: "xs"| "sm";
 }) {
-  const padding = size === "xs" ? "px-2 py-0.5 text-[10px]" : "px-2.5 py-1 text-xs";
+  const padding = size === "xs"? "px-2 py-0.5 text-[10px]": "px-2.5 py-1 text-xs";
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full font-semibold border whitespace-nowrap ${padding}`}
       style={{ background: styles.bg, color: styles.text, borderColor: styles.border }}
     >
       {styles.dot && (
-        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: styles.dot }} />
+        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: styles.dot }} />
       )}
       {label}
     </span>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // KPI CARDS
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function KpiCard({
   label,
@@ -753,37 +732,36 @@ function KpiCard({
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex flex-col gap-1">
       <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-tight">{label}</p>
-      <p className="text-2xl font-bold" style={{ color }}>
+      <p className="text-2xl font-bold"style={{ color }}>
         {value}
       </p>
       {sub && <p className="text-[11px] text-slate-400">{sub}</p>}
-      <div className="mt-1 h-1 rounded-full w-8" style={{ background: bg }} />
+      <div className="mt-1 h-1 rounded-full w-8"style={{ background: bg }} />
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // CHECKLIST ROW
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function CheckRow({ label, done }: { label: string; done: boolean }) {
   return (
     <div className="flex items-center gap-2 text-sm">
       <span
         className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 ${
-          done ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
-        }`}
+          done ? "bg-emerald-100 text-emerald-600": "bg-slate-100 text-slate-400"}`}
       >
-        {done ? "✓" : "○"}
+        {done ? "": ""}
       </span>
-      <span className={done ? "text-slate-700 dark:text-slate-300" : "text-slate-400"}>{label}</span>
+      <span className={done ? "text-slate-700 dark:text-slate-300": "text-slate-400"}>{label}</span>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // CLIENT PROFILE DRAWER
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function ClientDrawer({
   client,
@@ -801,8 +779,7 @@ function ClientDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
-        onClick={onClose}
+        className="fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"onClick={onClose}
       />
       {/* Panel */}
       <div className="fixed right-0 top-0 h-full w-full max-w-2xl bg-white dark:bg-slate-950 border-l border-slate-200 dark:border-slate-800 z-50 overflow-y-auto shadow-2xl flex flex-col">
@@ -810,8 +787,7 @@ function ClientDrawer({
         <div className="sticky top-0 bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-start justify-between gap-4 z-10">
           <div className="flex items-center gap-3">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0"
-              style={{ background: client.avatarColor }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-base flex-shrink-0"style={{ background: client.avatarColor }}
             >
               {client.clientName.charAt(0)}
             </div>
@@ -822,9 +798,8 @@ function ClientDrawer({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors text-xl leading-none mt-0.5"
-          >
-            ✕
+            className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors text-xl leading-none mt-0.5">
+            
           </button>
         </div>
 
@@ -914,7 +889,7 @@ function ClientDrawer({
               <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-600 dark:text-slate-400">Referral Source</span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669" }}>{client.referralSource}</span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669"}}>{client.referralSource}</span>
                 </div>
                 {client.affiliateName && (
                   <div className="flex items-center justify-between">
@@ -931,9 +906,9 @@ function ClientDrawer({
                 {client.commissionStatus && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-600 dark:text-slate-400">Commission Status</span>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{
-                      background: client.commissionStatus === "Paid" ? "#ECFDF5" : client.commissionStatus === "Pending" ? "#FFFBEB" : "#EFF6FF",
-                      color:      client.commissionStatus === "Paid" ? "#059669" : client.commissionStatus === "Pending" ? "#D97706" : "#2563EB",
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full"style={{
+                      background: client.commissionStatus === "Paid"? "#ECFDF5": client.commissionStatus === "Pending"? "#FFFBEB": "#EFF6FF",
+                      color:      client.commissionStatus === "Paid"? "#059669": client.commissionStatus === "Pending"? "#D97706": "#2563EB",
                     }}>
                       {client.commissionStatus}
                     </span>
@@ -952,8 +927,7 @@ function ClientDrawer({
             <div className="flex items-center gap-3 mb-3">
               <div className="flex-1 h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-emerald-500 transition-all"
-                  style={{ width: `${checklistPct}%` }}
+                  className="h-full rounded-full bg-emerald-500 transition-all"style={{ width: `${checklistPct}%` }}
                 />
               </div>
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 whitespace-nowrap">
@@ -961,15 +935,15 @@ function ClientDrawer({
               </span>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 space-y-2">
-              <CheckRow label="Invoice paid" done={cl.invoicePaid} />
-              <CheckRow label="Billing cleared" done={cl.billingCleared} />
-              <CheckRow label="Contract confirmed" done={cl.contractConfirmed} />
-              <CheckRow label="Services confirmed" done={cl.servicesConfirmed} />
-              <CheckRow label="Client contact verified" done={cl.clientContactVerified} />
-              <CheckRow label="AM assigned" done={cl.amAssigned} />
-              <CheckRow label="Onboarding record created" done={cl.onboardingRecordCreated} />
-              <CheckRow label="Activation tasks created" done={cl.activationTasksCreated} />
-              <CheckRow label="Kickoff needed" done={!cl.kickoffNeeded} />
+              <CheckRow label="Invoice paid"done={cl.invoicePaid} />
+              <CheckRow label="Billing cleared"done={cl.billingCleared} />
+              <CheckRow label="Contract confirmed"done={cl.contractConfirmed} />
+              <CheckRow label="Services confirmed"done={cl.servicesConfirmed} />
+              <CheckRow label="Client contact verified"done={cl.clientContactVerified} />
+              <CheckRow label="AM assigned"done={cl.amAssigned} />
+              <CheckRow label="Onboarding record created"done={cl.onboardingRecordCreated} />
+              <CheckRow label="Activation tasks created"done={cl.activationTasksCreated} />
+              <CheckRow label="Kickoff needed"done={!cl.kickoffNeeded} />
             </div>
             <div className="mt-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
               <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-0.5">Next Required Action</p>
@@ -985,8 +959,7 @@ function ClientDrawer({
                 {client.activeServices.map((s) => (
                   <span
                     key={s}
-                    className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700"
-                  >
+                    className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium border border-slate-200 dark:border-slate-700">
                     {s}
                   </span>
                 ))}
@@ -995,7 +968,7 @@ function ClientDrawer({
           )}
 
           {/* Cancellation / Offboarding */}
-          {(client.currentStatus === "Cancellation Requested" || client.currentStatus === "Offboarding") && (
+          {(client.currentStatus === "Cancellation Requested"|| client.currentStatus === "Offboarding") && (
             <section>
               <h3 className="text-xs font-semibold text-red-500 uppercase tracking-widest mb-3">Cancellation / Offboarding</h3>
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 flex items-center justify-between">
@@ -1018,14 +991,14 @@ function ClientDrawer({
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">Client Tasks Summary</h3>
             <div className="grid grid-cols-2 gap-2 mb-3">
               {[
-                { label: "Open Tasks",   value: 5, color: "#1D4ED8", bg: "#EFF6FF" },
-                { label: "Overdue",      value: 2, color: "#DC2626", bg: "#FEF2F2" },
-                { label: "Upcoming",     value: 3, color: "#D97706", bg: "#FFFBEB" },
-                { label: "Completed",    value: 12, color: "#059669", bg: "#ECFDF5" },
+                { label: "Open Tasks",   value: 5, color: "#1D4ED8", bg: "#EFF6FF"},
+                { label: "Overdue",      value: 2, color: "#DC2626", bg: "#FEF2F2"},
+                { label: "Upcoming",     value: 3, color: "#D97706", bg: "#FFFBEB"},
+                { label: "Completed",    value: 12, color: "#059669", bg: "#ECFDF5"},
               ].map(({ label, value, color, bg }) => (
-                <div key={label} className="rounded-lg p-2.5 text-center" style={{ background: bg }}>
-                  <div className="text-xl font-black" style={{ color }}>{value}</div>
-                  <div className="text-[10px] font-semibold mt-0.5" style={{ color }}>{label}</div>
+                <div key={label} className="rounded-lg p-2.5 text-center"style={{ background: bg }}>
+                  <div className="text-xl font-black"style={{ color }}>{value}</div>
+                  <div className="text-[10px] font-semibold mt-0.5"style={{ color }}>{label}</div>
                 </div>
               ))}
             </div>
@@ -1054,9 +1027,9 @@ function ClientDrawer({
               {client.recentEvents.map((ev, i) => (
                 <div key={i} className="flex gap-3">
                   <div className="flex flex-col items-center">
-                    <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 mt-1 flex-shrink-0" />
+                    <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 mt-1 flex-shrink-0"/>
                     {i < client.recentEvents.length - 1 && (
-                      <div className="w-px flex-1 bg-slate-200 dark:bg-slate-800 mt-1" />
+                      <div className="w-px flex-1 bg-slate-200 dark:bg-slate-800 mt-1"/>
                     )}
                   </div>
                   <div className="pb-3">
@@ -1075,9 +1048,9 @@ function ClientDrawer({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // ROW ACTION DROPDOWN
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 function RowActions({
   client,
@@ -1092,52 +1065,48 @@ function RowActions({
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"
-        title="Actions"
-      >
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-          <circle cx="10" cy="4" r="1.5" />
-          <circle cx="10" cy="10" r="1.5" />
-          <circle cx="10" cy="16" r="1.5" />
+        className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors"title="Actions">
+        <svg className="w-4 h-4"fill="currentColor"viewBox="0 0 20 20">
+          <circle cx="10"cy="4"r="1.5"/>
+          <circle cx="10"cy="10"r="1.5"/>
+          <circle cx="10"cy="16"r="1.5"/>
         </svg>
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 z-10"onClick={() => setOpen(false)} />
           <div className="absolute right-0 top-8 z-20 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
             <button
               onClick={() => { onViewClient(); setOpen(false); }}
-              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-            >
-              <span>👤</span> View Client
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2">
+              <span></span> View Client
             </button>
             <Link href="/admin/workflows" className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 block" onClick={() => setOpen(false)}>
-              <span>⚙️</span> Open Workflow
+              <span></span> Open Workflow
             </Link>
             <Link href="/billing/invoices" className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 block" onClick={() => setOpen(false)}>
-              <span>💳</span> View Billing
+              <span></span> View Billing
             </Link>
             <Link href="/billing/activation" className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 block" onClick={() => setOpen(false)}>
-              <span>🚀</span> View Activation
+              <span></span> View Activation
             </Link>
             <Link href="/tasks" className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 block" onClick={() => setOpen(false)}>
-              <span>✅</span> View Tasks
+              <span></span> View Tasks
             </Link>
             <Link href="/renewals" className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 block" onClick={() => setOpen(false)}>
-              <span>🔄</span> View Renewal
+              <span></span> View Renewal
             </Link>
             <Link href="/billing/cancellations" className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 block" onClick={() => setOpen(false)}>
-              <span>❌</span> View Cancellation
+              <span></span> View Cancellation
             </Link>
             <Link href="/cancellations/offboarding" className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2 block" onClick={() => setOpen(false)}>
-              <span>📦</span> Offboarding
+              <span></span> Offboarding
             </Link>
-            <div className="border-t border-slate-100 dark:border-slate-800" />
+            <div className="border-t border-slate-100 dark:border-slate-800"/>
             <button
-              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"
-              onClick={() => setOpen(false)}
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-center gap-2"onClick={() => setOpen(false)}
             >
-              <span>📝</span> Add Note
+              <span></span> Add Note
             </button>
           </div>
         </>
@@ -1146,9 +1115,9 @@ function RowActions({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // MAIN PAGE
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
 export default function ClientPortfolioPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -1161,7 +1130,7 @@ export default function ClientPortfolioPage() {
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [activeDrawer, setActiveDrawer] = useState<MasterClient | null>(null);
 
-  // ── Computed KPIs ──────────────────────────────────────────────────────────
+  //  Computed KPIs 
   const totalClients = PORTFOLIO_CLIENTS.length;
   const activeClients = PORTFOLIO_CLIENTS.filter((c) => c.currentStatus === "Active").length;
   const readyForOnboarding = PORTFOLIO_CLIENTS.filter((c) => c.currentStatus === "Ready for Onboarding").length;
@@ -1171,10 +1140,10 @@ export default function ClientPortfolioPage() {
   const offboarding = PORTFOLIO_CLIENTS.filter((c) => c.currentStatus === "Offboarding").length;
   const totalMRR = PORTFOLIO_CLIENTS.reduce((s, c) => s + c.monthlyValue, 0);
 
-  // ── Unique filter options ──────────────────────────────────────────────────
+  //  Unique filter options 
   const allAMs = Array.from(new Set(PORTFOLIO_CLIENTS.map((c) => c.assignedAM))).sort();
 
-  // ── Filtered clients ───────────────────────────────────────────────────────
+  //  Filtered clients 
   const filtered = useMemo(() => {
     return PORTFOLIO_CLIENTS.filter((c) => {
       const q = searchQuery.toLowerCase();
@@ -1186,13 +1155,13 @@ export default function ClientPortfolioPage() {
         c.assignedAM.toLowerCase().includes(q) ||
         c.activeServices.some((s) => s.toLowerCase().includes(q));
 
-      const matchStatus = filterStatus === "all" || c.currentStatus === filterStatus;
-      const matchWorkflow = filterWorkflow === "all" || c.workflowStatus === filterWorkflow;
-      const matchBilling = filterBilling === "all" || c.billingStatus === filterBilling;
-      const matchActivation = filterActivation === "all" || c.activationStatus === filterActivation;
-      const matchAM = filterAM === "all" || c.assignedAM === filterAM;
-      const matchHealth = filterHealth === "all" || c.clientHealth === filterHealth;
-      const matchPriority = filterPriority === "all" || c.priority === filterPriority;
+      const matchStatus = filterStatus === "all"|| c.currentStatus === filterStatus;
+      const matchWorkflow = filterWorkflow === "all"|| c.workflowStatus === filterWorkflow;
+      const matchBilling = filterBilling === "all"|| c.billingStatus === filterBilling;
+      const matchActivation = filterActivation === "all"|| c.activationStatus === filterActivation;
+      const matchAM = filterAM === "all"|| c.assignedAM === filterAM;
+      const matchHealth = filterHealth === "all"|| c.clientHealth === filterHealth;
+      const matchPriority = filterPriority === "all"|| c.priority === filterPriority;
 
       return matchSearch && matchStatus && matchWorkflow && matchBilling && matchActivation && matchAM && matchHealth && matchPriority;
     });
@@ -1203,15 +1172,12 @@ export default function ClientPortfolioPage() {
 
   return (
     <div className="space-y-6">
-      {/* ── Task Management Engine Banner ── */}
+      {/*  Task Management Engine Banner  */}
       <TaskAccessCard
-        context="Client Portfolio"
-        variant="banner"
-        counters={{ open: 47, overdue: 8, dueToday: 12, completed: 67 }}
-        createLabel="Create Client Task"
-      />
+        context="Client Portfolio"variant="banner"counters={{ open: 47, overdue: 8, dueToday: 12, completed: 67 }}
+        createLabel="Create Client Task"/>
 
-      {/* ── Page header ────────────────────────────────────────────────────── */}
+      {/*  Page header  */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <p className="text-xs font-semibold text-[var(--rtm-blue)] uppercase tracking-widest mb-1">
@@ -1238,54 +1204,42 @@ export default function ClientPortfolioPage() {
             ↓ Export
           </button>
           <Link
-            href="/admin/workflows"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold transition-colors"
-          >
-            ⚙ Workflow Queue
+            href="/admin/workflows"className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold transition-colors">
+             Workflow Queue
           </Link>
           <button className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold transition-colors">
-            📝 Create Note
+             Create Note
           </button>
         </div>
       </div>
 
-      {/* ── KPI cards ──────────────────────────────────────────────────────── */}
+      {/*  KPI cards  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-        <KpiCard label="Total Clients"           value={totalClients}           color="#1d4ed8" bg="#bfdbfe" />
-        <KpiCard label="Active Clients"           value={activeClients}          color="#059669" bg="#a7f3d0" />
-        <KpiCard label="Ready for Onboarding"    value={readyForOnboarding}     color="#15803d" bg="#86efac" />
-        <KpiCard label="Dept Activation"         value={inDeptActivation}       color="#7e22ce" bg="#e9d5ff" />
-        <KpiCard label="Renewal Due"             value={renewalDue}             color="#b45309" bg="#fde68a" />
-        <KpiCard label="Cancellation Requested"  value={cancellationRequested}  color="#b91c1c" bg="#fecaca" />
-        <KpiCard label="Offboarding"             value={offboarding}            color="#475569" bg="#cbd5e1" />
+        <KpiCard label="Total Clients"value={totalClients}           color="#1d4ed8"bg="#bfdbfe"/>
+        <KpiCard label="Active Clients"value={activeClients}          color="#059669"bg="#a7f3d0"/>
+        <KpiCard label="Ready for Onboarding"value={readyForOnboarding}     color="#15803d"bg="#86efac"/>
+        <KpiCard label="Dept Activation"value={inDeptActivation}       color="#7e22ce"bg="#e9d5ff"/>
+        <KpiCard label="Renewal Due"value={renewalDue}             color="#b45309"bg="#fde68a"/>
+        <KpiCard label="Cancellation Requested"value={cancellationRequested}  color="#b91c1c"bg="#fecaca"/>
+        <KpiCard label="Offboarding"value={offboarding}            color="#475569"bg="#cbd5e1"/>
         <KpiCard
-          label="Monthly Recurring Revenue"
-          value={`$${(totalMRR / 1000).toFixed(0)}k`}
+          label="Monthly Recurring Revenue"value={`$${(totalMRR / 1000).toFixed(0)}k`}
           sub={`$${totalMRR.toLocaleString()}/mo`}
-          color="#1d4ed8"
-          bg="#bfdbfe"
-        />
+          color="#1d4ed8"bg="#bfdbfe"/>
       </div>
 
-      {/* ── Search + Filters ───────────────────────────────────────────────── */}
+      {/*  Search + Filters  */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
         {/* Search */}
         <div className="relative">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"fill="none"stroke="currentColor"viewBox="0 0 24 24">
+            <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
           <input
-            type="text"
-            placeholder="Search by client name, email, AM, or service…"
-            value={searchQuery}
+            type="text"placeholder="Search by client name, email, AM, or service…"value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+            className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"/>
         </div>
 
         {/* Filter row */}
@@ -1337,7 +1291,7 @@ export default function ClientPortfolioPage() {
             ))}
           </select>
 
-          {(searchQuery || filterStatus !== "all" || filterWorkflow !== "all" || filterBilling !== "all" || filterActivation !== "all" || filterAM !== "all" || filterHealth !== "all" || filterPriority !== "all") && (
+          {(searchQuery || filterStatus !== "all"|| filterWorkflow !== "all"|| filterBilling !== "all"|| filterActivation !== "all"|| filterAM !== "all"|| filterHealth !== "all"|| filterPriority !== "all") && (
             <button
               onClick={() => {
                 setSearchQuery("");
@@ -1349,9 +1303,8 @@ export default function ClientPortfolioPage() {
                 setFilterHealth("all");
                 setFilterPriority("all");
               }}
-              className="text-xs px-3 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium transition-colors"
-            >
-              ✕ Clear Filters
+              className="text-xs px-3 py-2 rounded-lg border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-medium transition-colors">
+               Clear Filters
             </button>
           )}
         </div>
@@ -1361,7 +1314,7 @@ export default function ClientPortfolioPage() {
         </div>
       </div>
 
-      {/* ── Client table ───────────────────────────────────────────────────── */}
+      {/*  Client table  */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[1400px]">
@@ -1387,8 +1340,7 @@ export default function ClientPortfolioPage() {
                 ].map((h) => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap"
-                  >
+                    className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -1406,15 +1358,13 @@ export default function ClientPortfolioPage() {
                 <tr
                   key={client.id}
                   className={`border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 transition-colors ${
-                    idx % 2 === 0 ? "" : "bg-slate-50/30 dark:bg-slate-950/30"
-                  }`}
+                    idx % 2 === 0 ? "": "bg-slate-50/30 dark:bg-slate-950/30"}`}
                 >
                   {/* Client Name */}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                        style={{ background: client.avatarColor }}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold flex-shrink-0"style={{ background: client.avatarColor }}
                       >
                         {client.clientName.charAt(0)}
                       </div>
@@ -1422,30 +1372,28 @@ export default function ClientPortfolioPage() {
                         <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => setActiveDrawer(client)}
-                            className="font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left leading-tight"
-                          >
+                            className="font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left leading-tight">
                             {client.clientName}
                           </button>
                           {/* Notification alert badge */}
                           {(() => {
                             const alertCount = NOTIFICATIONS.filter(
                               (n) => n.clientSlug === client.slug &&
-                                (n.status === "Unread" || n.status === "Escalated")
+                                (n.status === "Unread"|| n.status === "Escalated")
                             ).length;
                             const hasCritical = NOTIFICATIONS.some(
                               (n) => n.clientSlug === client.slug &&
-                                (n.status === "Unread" || n.status === "Escalated") &&
-                                (n.priority === "Critical" || n.priority === "Urgent")
+                                (n.status === "Unread"|| n.status === "Escalated") &&
+                                (n.priority === "Critical"|| n.priority === "Urgent")
                             );
                             if (alertCount === 0) return null;
                             return (
                               <span
-                                className="text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1"
-                                style={{
-                                  background: hasCritical ? "#DC2626" : "#F97316",
+                                className="text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1"style={{
+                                  background: hasCritical ? "#DC2626": "#F97316",
                                   color: "#ffffff",
                                 }}
-                                title={`${alertCount} active alert${alertCount !== 1 ? "s" : ""}`}
+                                title={`${alertCount} active alert${alertCount !== 1 ? "s": ""}`}
                               >
                                 {alertCount}
                               </span>
@@ -1470,9 +1418,9 @@ export default function ClientPortfolioPage() {
                   {/* Referral Source */}
                   <td className="px-4 py-3">
                     {client.referralSource ? (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap" style={{
-                        background: client.referralSource === "Affiliate" ? "#ECFDF5" : "#EFF6FF",
-                        color:      client.referralSource === "Affiliate" ? "#059669" : "#2563EB",
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"style={{
+                        background: client.referralSource === "Affiliate"? "#ECFDF5": "#EFF6FF",
+                        color:      client.referralSource === "Affiliate"? "#059669": "#2563EB",
                       }}>
                         {client.referralSource}
                       </span>
@@ -1488,22 +1436,22 @@ export default function ClientPortfolioPage() {
 
                   {/* Current Status */}
                   <td className="px-4 py-3">
-                    <StatusPill label={client.currentStatus} styles={CLIENT_STATUS_STYLES[client.currentStatus]} size="xs" />
+                    <StatusPill label={client.currentStatus} styles={CLIENT_STATUS_STYLES[client.currentStatus]} size="xs"/>
                   </td>
 
                   {/* Workflow Status */}
                   <td className="px-4 py-3">
-                    <StatusPill label={client.workflowStatus} styles={WORKFLOW_STATUS_STYLES[client.workflowStatus]} size="xs" />
+                    <StatusPill label={client.workflowStatus} styles={WORKFLOW_STATUS_STYLES[client.workflowStatus]} size="xs"/>
                   </td>
 
                   {/* Billing Status */}
                   <td className="px-4 py-3">
-                    <StatusPill label={client.billingStatus} styles={BILLING_STATUS_STYLES[client.billingStatus]} size="xs" />
+                    <StatusPill label={client.billingStatus} styles={BILLING_STATUS_STYLES[client.billingStatus]} size="xs"/>
                   </td>
 
                   {/* Activation Status */}
                   <td className="px-4 py-3">
-                    <StatusPill label={client.activationStatus} styles={ACTIVATION_STATUS_STYLES[client.activationStatus]} size="xs" />
+                    <StatusPill label={client.activationStatus} styles={ACTIVATION_STATUS_STYLES[client.activationStatus]} size="xs"/>
                   </td>
 
                   {/* Active Services */}
@@ -1515,8 +1463,7 @@ export default function ClientPortfolioPage() {
                         {client.activeServices.slice(0, 2).map((s) => (
                           <span
                             key={s}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap"
-                          >
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium whitespace-nowrap">
                             {s}
                           </span>
                         ))}
@@ -1543,14 +1490,13 @@ export default function ClientPortfolioPage() {
 
                   {/* Client Health */}
                   <td className="px-4 py-3">
-                    <StatusPill label={client.clientHealth} styles={HEALTH_STATUS_STYLES[client.clientHealth]} size="xs" />
+                    <StatusPill label={client.clientHealth} styles={HEALTH_STATUS_STYLES[client.clientHealth]} size="xs"/>
                   </td>
 
                   {/* Priority */}
                   <td className="px-4 py-3">
                     <span
-                      className="inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap"
-                      style={{
+                      className="inline-flex text-[10px] font-semibold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{
                         background: PRIORITY_STYLES[client.priority].bg,
                         color: PRIORITY_STYLES[client.priority].text,
                         borderColor: PRIORITY_STYLES[client.priority].border,
@@ -1578,17 +1524,17 @@ export default function ClientPortfolioPage() {
         {/* Table footer */}
         <div className="px-4 py-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex items-center justify-between">
           <span className="text-xs text-slate-400">
-            {filtered.length} client{filtered.length !== 1 ? "s" : ""} shown
+            {filtered.length} client{filtered.length !== 1 ? "s": ""} shown
           </span>
           <div className="flex items-center gap-4 text-xs text-slate-400">
             <span>
-              Total MRR:{" "}
+              Total MRR:{""}
               <span className="font-bold text-slate-700 dark:text-slate-300">
                 ${filtered.reduce((s, c) => s + c.monthlyValue, 0).toLocaleString()}
               </span>
             </span>
             <span>
-              Active:{" "}
+              Active:{""}
               <span className="font-bold text-slate-700 dark:text-slate-300">
                 {filtered.filter((c) => c.currentStatus === "Active").length}
               </span>
@@ -1597,7 +1543,7 @@ export default function ClientPortfolioPage() {
         </div>
       </div>
 
-      {/* ── Client profile drawer ──────────────────────────────────────────── */}
+      {/*  Client profile drawer  */}
       {activeDrawer && (
         <ClientDrawer client={activeDrawer} onClose={() => setActiveDrawer(null)} />
       )}

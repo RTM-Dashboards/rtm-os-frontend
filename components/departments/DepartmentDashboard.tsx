@@ -21,15 +21,7 @@ import DepartmentSettingsPanel    from "./DepartmentSettingsPanel";
 // ── Tab IDs ───────────────────────────────────────────────────────────────────
 
 type DashboardTab =
-  | "overview"
-  | "projects"
-  | "tasks"
-  | "reports"
-  | "escalations"
-  | "workflows"
-  | "integrations"
-  | "notifications"
-  | "settings";
+  | "overview"| "projects"| "tasks"| "reports"| "escalations"| "workflows"| "integrations"| "notifications"| "settings";
 
 interface TabConfig {
   id: DashboardTab;
@@ -39,15 +31,15 @@ interface TabConfig {
 }
 
 const ALL_TABS: TabConfig[] = [
-  { id: "overview",      label: "Overview"      },
-  { id: "projects",      label: "Projects",      moduleId: "projects"      },
-  { id: "tasks",         label: "Tasks",         moduleId: "tasks"         },
-  { id: "reports",       label: "Reports",       moduleId: "reports"       },
-  { id: "escalations",   label: "Escalations",   moduleId: "escalations"   },
-  { id: "workflows",     label: "Workflows",     moduleId: "workflows"     },
-  { id: "integrations",  label: "Integrations",  moduleId: "integrations"  },
-  { id: "notifications", label: "Notifications", moduleId: "notifications" },
-  { id: "settings",      label: "Settings"       },
+  { id: "overview",      label: "Overview"},
+  { id: "projects",      label: "Projects",      moduleId: "projects"},
+  { id: "tasks",         label: "Tasks",         moduleId: "tasks"},
+  { id: "reports",       label: "Reports",       moduleId: "reports"},
+  { id: "escalations",   label: "Escalations",   moduleId: "escalations"},
+  { id: "workflows",     label: "Workflows",     moduleId: "workflows"},
+  { id: "integrations",  label: "Integrations",  moduleId: "integrations"},
+  { id: "notifications", label: "Notifications", moduleId: "notifications"},
+  { id: "settings",      label: "Settings"},
 ];
 
 // ─── Helper: is a module enabled ─────────────────────────────────────────────
@@ -65,10 +57,10 @@ interface Props {
 }
 
 const TYPE_LABEL: Record<DepartmentConfig["departmentType"], { label: string; color: string; bg: string }> = {
-  core:      { label: "Core",      color: "#1D4ED8", bg: "#EFF6FF" },
-  service:   { label: "Service",   color: "#059669", bg: "#ECFDF5" },
-  support:   { label: "Support",   color: "#B45309", bg: "#FFFBEB" },
-  executive: { label: "Executive", color: "#7C3AED", bg: "#F5F3FF" },
+  core:      { label: "Core",      color: "#1D4ED8", bg: "#EFF6FF"},
+  service:   { label: "Service",   color: "#059669", bg: "#ECFDF5"},
+  support:   { label: "Support",   color: "#B45309", bg: "#FFFBEB"},
+  executive: { label: "Executive", color: "#7C3AED", bg: "#F5F3FF"},
 };
 
 export default function DepartmentDashboard({ dept }: Props) {
@@ -88,31 +80,28 @@ export default function DepartmentDashboard({ dept }: Props) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span
-              className="text-xs px-2 py-0.5 rounded-full font-semibold"
-              style={{ background: typeCfg.bg, color: typeCfg.color }}
+              className="text-xs px-2 py-0.5 rounded-full font-semibold"style={{ background: typeCfg.bg, color: typeCfg.color }}
             >
               {typeCfg.label} Department
             </span>
             <span
-              className="text-xs px-2 py-0.5 rounded-full font-semibold"
-              style={{
-                background: dept.status === "active" ? "#ECFDF5" : "#F8FAFC",
-                color:      dept.status === "active" ? "#059669"  : "#64748B",
+              className="text-xs px-2 py-0.5 rounded-full font-semibold"style={{
+                background: dept.status === "active"? "#ECFDF5": "#F8FAFC",
+                color:      dept.status === "active"? "#059669": "#64748B",
               }}
             >
               {dept.status.charAt(0).toUpperCase() + dept.status.slice(1)}
             </span>
           </div>
           <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "var(--rtm-text-primary)" }}
+            className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}
           >
             {dept.name}
           </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+          <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
             {dept.description}
           </p>
-          <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs mt-1"style={{ color: "var(--rtm-text-muted)"}}>
             Owner: <span className="font-semibold">{dept.owner}</span>
           </p>
         </div>
@@ -121,15 +110,12 @@ export default function DepartmentDashboard({ dept }: Props) {
           {dept.workspaceSlug && (
             <a
               href={`/${dept.workspaceSlug}`}
-              className="rtm-btn-secondary text-sm inline-flex items-center gap-1"
-            >
+              className="rtm-btn-secondary text-sm inline-flex items-center gap-1">
               Workspace
             </a>
           )}
           <a
-            href="/settings/departments"
-            className="rtm-btn-secondary text-sm inline-flex items-center gap-1"
-          >
+            href="/settings/departments"className="rtm-btn-secondary text-sm inline-flex items-center gap-1">
             Settings
           </a>
         </div>
@@ -139,14 +125,13 @@ export default function DepartmentDashboard({ dept }: Props) {
       <DepartmentKpiRow kpis={dept.kpis} accentColor={dept.accentColor} />
 
       {/* ── Tab Bar ── */}
-      <div className="border-b" style={{ borderColor: "var(--rtm-border-light)" }}>
+      <div className="border-b"style={{ borderColor: "var(--rtm-border-light)"}}>
         <nav className="-mb-px flex gap-1 overflow-x-auto">
           {visibleTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="whitespace-nowrap px-4 py-2.5 text-sm font-medium border-b-2 transition-colors"
-              style={{
+              className="whitespace-nowrap px-4 py-2.5 text-sm font-medium border-b-2 transition-colors"style={{
                 borderColor: activeTab === tab.id ? dept.accentColor : "transparent",
                 color:       activeTab === tab.id ? dept.accentColor : "var(--rtm-text-muted)",
               }}
@@ -159,16 +144,14 @@ export default function DepartmentDashboard({ dept }: Props) {
 
       {/* ── Tab Panels ── */}
 
-      {activeTab === "overview" && (
+      {activeTab === "overview"&& (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Quick module links */}
           <div
-            className="rounded-xl border p-5"
-            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+            className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
           >
             <p
-              className="text-xs font-semibold uppercase tracking-widest mb-4"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-semibold uppercase tracking-widest mb-4"style={{ color: "var(--rtm-text-muted)"}}
             >
               Department Modules
             </p>
@@ -182,14 +165,13 @@ export default function DepartmentDashboard({ dept }: Props) {
                       const tab = ALL_TABS.find((t) => t.moduleId === mod.id);
                       if (tab) setActiveTab(tab.id);
                     }}
-                    className="flex items-center gap-2 p-3 rounded-lg border text-sm font-medium text-left transition-colors hover:opacity-90"
-                    style={{
+                    className="flex items-center gap-2 p-3 rounded-lg border text-sm font-medium text-left transition-colors hover:opacity-90"style={{
                       background:   `${dept.accentColor}08`,
                       borderColor:  `${dept.accentColor}25`,
                       color:        dept.accentColor,
                     }}
                   >
-                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dept.accentColor }} />
+                    <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: dept.accentColor }} />
                     {mod.label}
                   </button>
                 ))}
@@ -198,12 +180,10 @@ export default function DepartmentDashboard({ dept }: Props) {
 
           {/* KPI summary */}
           <div
-            className="rounded-xl border p-5"
-            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+            className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
           >
             <p
-              className="text-xs font-semibold uppercase tracking-widest mb-4"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-semibold uppercase tracking-widest mb-4"style={{ color: "var(--rtm-text-muted)"}}
             >
               Department KPIs
             </p>
@@ -211,20 +191,19 @@ export default function DepartmentDashboard({ dept }: Props) {
               {dept.kpis.slice(0, 5).map((kpi) => (
                 <div
                   key={kpi.id}
-                  className="flex items-center justify-between py-2 border-b last:border-0"
-                  style={{ borderColor: "var(--rtm-border-light)" }}
+                  className="flex items-center justify-between py-2 border-b last:border-0"style={{ borderColor: "var(--rtm-border-light)"}}
                 >
-                  <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <span className="text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
                     {kpi.name}
                   </span>
-                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669" }}>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669"}}>
                     {kpi.target}
                   </span>
                 </div>
               ))}
             </div>
             {dept.kpis.length > 5 && (
-              <p className="text-xs mt-2" style={{ color: "var(--rtm-text-muted)" }}>
+              <p className="text-xs mt-2"style={{ color: "var(--rtm-text-muted)"}}>
                 +{dept.kpis.length - 5} more KPIs in Settings
               </p>
             )}
@@ -232,12 +211,10 @@ export default function DepartmentDashboard({ dept }: Props) {
 
           {/* Integrations summary */}
           <div
-            className="rounded-xl border p-5"
-            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+            className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
           >
             <p
-              className="text-xs font-semibold uppercase tracking-widest mb-3"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-semibold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}
             >
               Integration Hub
             </p>
@@ -245,8 +222,7 @@ export default function DepartmentDashboard({ dept }: Props) {
               {dept.integrations.map((int) => (
                 <span
                   key={int.integrationId}
-                  className="text-xs px-2.5 py-1 rounded-full border font-medium"
-                  style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg)" }}
+                  className="text-xs px-2.5 py-1 rounded-full border font-medium"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg)"}}
                 >
                   {int.displayName}
                 </span>
@@ -256,12 +232,10 @@ export default function DepartmentDashboard({ dept }: Props) {
 
           {/* Workflows summary */}
           <div
-            className="rounded-xl border p-5"
-            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+            className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
           >
             <p
-              className="text-xs font-semibold uppercase tracking-widest mb-3"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-semibold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}
             >
               Workflow Engine
             </p>
@@ -269,15 +243,14 @@ export default function DepartmentDashboard({ dept }: Props) {
               {dept.workflows.map((wf) => (
                 <div
                   key={wf.workflowId}
-                  className="flex items-start gap-2 py-2 border-b last:border-0"
-                  style={{ borderColor: "var(--rtm-border-light)" }}
+                  className="flex items-start gap-2 py-2 border-b last:border-0"style={{ borderColor: "var(--rtm-border-light)"}}
                 >
-                  <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: "#059669" }} />
+                  <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"style={{ background: "#059669"}} />
                   <div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                       {wf.displayName}
                     </p>
-                    <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                    <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
                       {wf.description}
                     </p>
                   </div>
@@ -288,21 +261,21 @@ export default function DepartmentDashboard({ dept }: Props) {
         </div>
       )}
 
-      {activeTab === "projects" && (
+      {activeTab === "projects"&& (
         <DepartmentProjectsPanel
           accentColor={dept.accentColor}
           disabled={!isModuleEnabled(dept, "projects")}
         />
       )}
 
-      {activeTab === "tasks" && (
+      {activeTab === "tasks"&& (
         <DepartmentTasksPanel
           accentColor={dept.accentColor}
           disabled={!isModuleEnabled(dept, "tasks")}
         />
       )}
 
-      {activeTab === "reports" && (
+      {activeTab === "reports"&& (
         <DepartmentReportsPanel
           reports={dept.reports}
           accentColor={dept.accentColor}
@@ -310,14 +283,14 @@ export default function DepartmentDashboard({ dept }: Props) {
         />
       )}
 
-      {activeTab === "escalations" && (
+      {activeTab === "escalations"&& (
         <DepartmentEscalationsPanel
           accentColor={dept.accentColor}
           disabled={!isModuleEnabled(dept, "escalations")}
         />
       )}
 
-      {activeTab === "workflows" && (
+      {activeTab === "workflows"&& (
         <DepartmentWorkflowsPanel
           workflows={dept.workflows}
           accentColor={dept.accentColor}
@@ -325,21 +298,21 @@ export default function DepartmentDashboard({ dept }: Props) {
         />
       )}
 
-      {activeTab === "integrations" && (
+      {activeTab === "integrations"&& (
         <DepartmentIntegrationsPanel
           integrations={dept.integrations}
           accentColor={dept.accentColor}
         />
       )}
 
-      {activeTab === "notifications" && (
+      {activeTab === "notifications"&& (
         <DepartmentNotificationsPanel
           accentColor={dept.accentColor}
           disabled={!isModuleEnabled(dept, "notifications")}
         />
       )}
 
-      {activeTab === "settings" && (
+      {activeTab === "settings"&& (
         <DepartmentSettingsPanel dept={dept} />
       )}
     </div>

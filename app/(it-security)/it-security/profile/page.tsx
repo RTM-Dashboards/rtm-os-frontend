@@ -11,8 +11,6 @@ export default function ProfilePage() {
     <WorkspaceProfilePage
       workspace={workspace}
       profile={itSecurityProfile}
-      teamRoute="/it-security/team-members"
-      rolesRoute="/it-security/roles"
-    />
+      teamRoute="/it-security/team-members"rolesRoute="/it-security/roles"/>
   );
 }

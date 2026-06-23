@@ -5,20 +5,9 @@ import React, { useState } from "react";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type DateRangeOption =
-  | "today"
-  | "yesterday"
-  | "last7"
-  | "last14"
-  | "last30"
-  | "thisMonth"
-  | "lastMonth"
-  | "thisQuarter"
-  | "lastQuarter"
-  | "ytd"
-  | "last12months"
-  | "custom";
+  | "today"| "yesterday"| "last7"| "last14"| "last30"| "thisMonth"| "lastMonth"| "thisQuarter"| "lastQuarter"| "ytd"| "last12months"| "custom";
 
-export type ComparisonMode = "previousPeriod" | "previousYear" | "none";
+export type ComparisonMode = "previousPeriod"| "previousYear"| "none";
 
 export interface PerformanceFilterState {
   dateRange: DateRangeOption;
@@ -91,7 +80,7 @@ function comparisonLabel(range: DateRangeOption, comparison: ComparisonMode): st
     last7: "vs Previous 7 Days",
     last14: "vs Previous 14 Days",
     last12months: "vs Previous 12 Months",
-    ytd: comparison === "previousYear" ? "vs Last Year" : "vs Previous YTD",
+    ytd: comparison === "previousYear"? "vs Last Year": "vs Previous YTD",
     today: "vs Yesterday",
     yesterday: "vs Day Before",
   };
@@ -146,8 +135,7 @@ function Input({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="text-xs rounded-lg border px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
-      style={{
+      className="text-xs rounded-lg border px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500"style={{
         background: "var(--rtm-surface)",
         borderColor: "var(--rtm-border)",
         color: "var(--rtm-text-primary)",
@@ -169,8 +157,7 @@ function ExportBtn({
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1 text-xs font-medium rounded-lg border px-2.5 py-1.5 transition-colors hover:bg-slate-50 active:scale-95"
-      style={{
+      className="inline-flex items-center gap-1 text-xs font-medium rounded-lg border px-2.5 py-1.5 transition-colors hover:bg-slate-50 active:scale-95"style={{
         borderColor: "var(--rtm-border)",
         color: "var(--rtm-text-secondary)",
         background: "var(--rtm-surface)",
@@ -215,8 +202,7 @@ export default function PerformanceFilters({
 
   return (
     <div
-      className="rounded-xl border p-3"
-      style={{
+      className="rounded-xl border p-3"style={{
         background: "var(--rtm-surface)",
         borderColor: "var(--rtm-border)",
         boxShadow: "0 1px 3px rgba(15,28,56,0.04)",
@@ -226,7 +212,7 @@ export default function PerformanceFilters({
       <div className="flex flex-wrap items-center gap-2">
         {/* Date Range */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>
             Period
           </span>
           <Select
@@ -247,24 +233,20 @@ export default function PerformanceFilters({
         {showCustom && (
           <>
             <Input
-              type="date"
-              value={value.customStart}
+              type="date"value={value.customStart}
               onChange={(v) => set("customStart", v)}
-              placeholder="Start"
-            />
-            <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>→</span>
+              placeholder="Start"/>
+            <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>→</span>
             <Input
-              type="date"
-              value={value.customEnd}
+              type="date"value={value.customEnd}
               onChange={(v) => set("customEnd", v)}
-              placeholder="End"
-            />
+              placeholder="End"/>
           </>
         )}
 
         {/* Comparison */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>
             Compare
           </span>
           <Select
@@ -280,8 +262,7 @@ export default function PerformanceFilters({
         {/* Comparison label pill */}
         {compLabel && (
           <span
-            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-            style={{
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"style={{
               background: "var(--rtm-blue-xlight, #EFF6FF)",
               borderColor: "var(--rtm-blue-light, #DBEAFE)",
               color: "var(--rtm-blue, #2563EB)",
@@ -292,13 +273,12 @@ export default function PerformanceFilters({
         )}
 
         {/* Spacer */}
-        <div className="flex-1" />
+        <div className="flex-1"/>
 
         {/* Export toggle */}
         <button
           onClick={() => setShowExports((p) => !p)}
-          className="inline-flex items-center gap-1 text-xs font-medium rounded-lg border px-2.5 py-1.5 transition-colors hover:bg-slate-50"
-          style={{
+          className="inline-flex items-center gap-1 text-xs font-medium rounded-lg border px-2.5 py-1.5 transition-colors hover:bg-slate-50"style={{
             borderColor: "var(--rtm-border)",
             color: "var(--rtm-text-secondary)",
             background: "var(--rtm-surface)",
@@ -310,18 +290,18 @@ export default function PerformanceFilters({
 
         {showExports && (
           <>
-            <ExportBtn label="CSV" icon="CSV" onClick={handleCSV} />
-            <ExportBtn label="Excel" icon="XLS" onClick={handleExcel} />
-            <ExportBtn label="PDF" icon="PDF" onClick={handlePDF} />
+            <ExportBtn label="CSV"icon="CSV"onClick={handleCSV} />
+            <ExportBtn label="Excel"icon="XLS"onClick={handleExcel} />
+            <ExportBtn label="PDF"icon="PDF"onClick={handlePDF} />
           </>
         )}
       </div>
 
       {/* Row 2 – Global Filters */}
-      <div className="flex flex-wrap items-center gap-2 mt-2 pt-2" style={{ borderTop: "1px solid var(--rtm-border-light)" }}>
+      <div className="flex flex-wrap items-center gap-2 mt-2 pt-2"style={{ borderTop: "1px solid var(--rtm-border-light)"}}>
         {/* Client */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>
             Client
           </span>
           <Select value={value.client} onChange={(v) => set("client", v)}>
@@ -338,7 +318,7 @@ export default function PerformanceFilters({
 
         {/* Location */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>
             Location
           </span>
           <Select value={value.location} onChange={(v) => set("location", v)}>
@@ -353,7 +333,7 @@ export default function PerformanceFilters({
         {/* Campaign */}
         {!hideCampaignFilter && (
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>
               Campaign
             </span>
             <Select value={value.campaign} onChange={(v) => set("campaign", v)}>
@@ -370,7 +350,7 @@ export default function PerformanceFilters({
         {/* Service */}
         {!hideServiceFilter && (
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>
               Service
             </span>
             <Select value={value.service} onChange={(v) => set("service", v)}>

@@ -1,13 +1,13 @@
 import type { ClientProfile, ActivityItem } from "@/lib/mock/clients";
 
 const typeConfig: Record<ActivityItem["type"], { icon: string; dot: string }> = {
-  note:       { icon: "N", dot: "bg-slate-400" },
-  task:       { icon: "T", dot: "bg-emerald-500" },
-  billing:    { icon: "B", dot: "bg-indigo-500" },
-  campaign:   { icon: "C", dot: "bg-purple-500" },
-  onboarding: { icon: "O", dot: "bg-blue-500" },
-  system:     { icon: "S", dot: "bg-slate-400" },
-  alert:      { icon: "!", dot: "bg-red-500" },
+  note:       { icon: "N", dot: "bg-slate-400"},
+  task:       { icon: "T", dot: "bg-emerald-500"},
+  billing:    { icon: "B", dot: "bg-indigo-500"},
+  campaign:   { icon: "C", dot: "bg-purple-500"},
+  onboarding: { icon: "O", dot: "bg-blue-500"},
+  system:     { icon: "S", dot: "bg-slate-400"},
+  alert:      { icon: "!", dot: "bg-red-500"},
 };
 
 export default function HistoryTab({ client }: { client: ClientProfile }) {
@@ -32,23 +32,12 @@ export default function HistoryTab({ client }: { client: ClientProfile }) {
                   <li key={item.id} className="relative flex gap-4 pb-6 last:pb-0">
                     {/* Vertical line */}
                     {i < sorted.length - 1 && (
-                      <div className="absolute left-[15px] top-7 bottom-0 w-px bg-slate-100 dark:bg-slate-800" />
+                      <div className="absolute left-[15px] top-7 bottom-0 w-px bg-slate-100 dark:bg-slate-800"/>
                     )}
 
                     {/* Dot */}
                     <div className={`relative z-10 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 border-white dark:border-slate-900 shadow-sm ${
-                      item.type === "alert"
-                        ? "bg-red-100 dark:bg-red-900/20"
-                        : item.type === "billing"
-                        ? "bg-indigo-50 dark:bg-indigo-900/20"
-                        : item.type === "campaign"
-                        ? "bg-purple-50 dark:bg-purple-900/20"
-                        : item.type === "onboarding"
-                        ? "bg-blue-50 dark:bg-blue-900/20"
-                        : item.type === "task"
-                        ? "bg-emerald-50 dark:bg-emerald-900/20"
-                        : "bg-slate-100 dark:bg-slate-800"
-                    }`}>
+                      item.type === "alert"? "bg-red-100 dark:bg-red-900/20": item.type === "billing"? "bg-indigo-50 dark:bg-indigo-900/20": item.type === "campaign"? "bg-purple-50 dark:bg-purple-900/20": item.type === "onboarding"? "bg-blue-50 dark:bg-blue-900/20": item.type === "task"? "bg-emerald-50 dark:bg-emerald-900/20": "bg-slate-100 dark:bg-slate-800"}`}>
                       {cfg.icon}
                     </div>
 
@@ -57,11 +46,11 @@ export default function HistoryTab({ client }: { client: ClientProfile }) {
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1">
                         <p className="text-sm text-slate-700 dark:text-slate-300 leading-snug">
                           <span className="font-semibold text-slate-900 dark:text-white">{item.actor}</span>
-                          {" — "}
+                          {"— "}
                           {item.action}
                         </p>
                         <time className="text-xs text-slate-400 flex-shrink-0 sm:text-right">
-                          {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          {new Date(item.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric"})}
                         </time>
                       </div>
                     </div>
@@ -84,7 +73,7 @@ export default function HistoryTab({ client }: { client: ClientProfile }) {
           <div>
             <p className="text-xs text-slate-500">Client since</p>
             <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-              {new Date(client.clientSince).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+              {new Date(client.clientSince).toLocaleDateString("en-US", { month: "long", year: "numeric"})}
             </p>
           </div>
           <div>
@@ -94,10 +83,10 @@ export default function HistoryTab({ client }: { client: ClientProfile }) {
                 const months = Math.floor(
                   (Date.now() - new Date(client.clientSince).getTime()) / (1000 * 60 * 60 * 24 * 30)
                 );
-                if (months < 12) return `${months} month${months !== 1 ? "s" : ""}`;
+                if (months < 12) return `${months} month${months !== 1 ? "s": ""}`;
                 const yrs = Math.floor(months / 12);
                 const rem = months % 12;
-                return `${yrs}yr${yrs !== 1 ? "s" : ""}${rem > 0 ? ` ${rem}mo` : ""}`;
+                return `${yrs}yr${yrs !== 1 ? "s": ""}${rem > 0 ? ` ${rem}mo` : ""}`;
               })()}
             </p>
           </div>
@@ -105,7 +94,7 @@ export default function HistoryTab({ client }: { client: ClientProfile }) {
             <div>
               <p className="text-xs text-slate-500">Onboarded</p>
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-0.5">
-                {new Date(client.onboardedDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                {new Date(client.onboardedDate).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric"})}
               </p>
             </div>
           )}

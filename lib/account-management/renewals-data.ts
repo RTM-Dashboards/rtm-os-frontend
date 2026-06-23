@@ -7,34 +7,15 @@
 // ══════════════════════════════════════════════════════════════════════════════
 
 export type RenewalStatus =
-  | "Not Started"
-  | "Planning"
-  | "Review Scheduled"
-  | "Proposal In Progress"
-  | "Negotiation"
-  | "Pending Signature"
-  | "Renewed"
-  | "Lost"
-  | "Cancelled";
+  | "Not Started"| "Planning"| "Review Scheduled"| "Proposal In Progress"| "Negotiation"| "Pending Signature"| "Renewed"| "Lost"| "Cancelled";
 
-export type RenewalRisk = "Low Risk" | "Moderate Risk" | "High Risk" | "Critical";
+export type RenewalRisk = "Low Risk"| "Moderate Risk"| "High Risk"| "Critical";
 
 export type RenewalStrategy =
-  | "Renew As-Is"
-  | "Renew With Upgrade"
-  | "Renew With Budget Adjustment"
-  | "Renew With Service Changes"
-  | "Retention Plan Required"
-  | "Executive Intervention Required";
+  | "Renew As-Is"| "Renew With Upgrade"| "Renew With Budget Adjustment"| "Renew With Service Changes"| "Retention Plan Required"| "Executive Intervention Required";
 
 export type TimelineMilestone =
-  | "90 Days Before"
-  | "60 Days Before"
-  | "30 Days Before"
-  | "Proposal Sent"
-  | "Negotiation"
-  | "Contract Signed"
-  | "Renewal Completed";
+  | "90 Days Before"| "60 Days Before"| "30 Days Before"| "Proposal Sent"| "Negotiation"| "Contract Signed"| "Renewal Completed";
 
 // ── Score Model ───────────────────────────────────────────────────────────────
 
@@ -95,9 +76,9 @@ export interface RenewalRecord {
   lastContactDays: number;
   openInvoices: number;
   delayedDeliverables: number;
-  callSentiment: "Positive" | "Neutral" | "Negative" | "Mixed";
-  reportingStatus: "Current" | "Overdue" | "Pending";
-  projectStatus: "On Track" | "Monitor" | "Delayed" | "Blocked";
+  callSentiment: "Positive"| "Neutral"| "Negative"| "Mixed";
+  reportingStatus: "Current"| "Overdue"| "Pending";
+  projectStatus: "On Track"| "Monitor"| "Delayed"| "Blocked";
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1398,17 +1379,17 @@ export function getRenewalsByDaysWindow(days: number): RenewalRecord[] {
 }
 
 export function getAtRiskRenewals(): RenewalRecord[] {
-  return RENEWALS.filter((r) => r.risk === "High Risk" || r.risk === "Critical");
+  return RENEWALS.filter((r) => r.risk === "High Risk"|| r.risk === "Critical");
 }
 
 export function getActiveRenewals(): RenewalRecord[] {
-  return RENEWALS.filter((r) => r.status !== "Renewed" && r.status !== "Lost" && r.status !== "Cancelled");
+  return RENEWALS.filter((r) => r.status !== "Renewed"&& r.status !== "Lost"&& r.status !== "Cancelled");
 }
 
 export function computeRevenueSummary() {
   const total = RENEWALS.reduce((s, r) => s + r.arr, 0);
   const atRisk = getAtRiskRenewals().reduce((s, r) => s + r.arr, 0);
-  const lost = RENEWALS.filter((r) => r.status === "Lost" || r.status === "Cancelled").reduce((s, r) => s + r.arr, 0);
+  const lost = RENEWALS.filter((r) => r.status === "Lost"|| r.status === "Cancelled").reduce((s, r) => s + r.arr, 0);
   const renewed = RENEWALS.filter((r) => r.status === "Renewed").reduce((s, r) => s + r.arr, 0);
   const forecast = getActiveRenewals().reduce((s, r) => s + Math.round(r.arr * (r.renewalProbability / 100)), 0);
   return { total, atRisk, lost, renewed, forecast };

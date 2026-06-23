@@ -2,41 +2,18 @@
 // All vendor/connector data is runtime-configurable — nothing is hardcoded.
 
 export type IntegrationCategory =
-  | "CRM"
-  | "Call Tracking"
-  | "Analytics"
-  | "Advertising"
-  | "Communication"
-  | "AI"
-  | "Storage"
-  | "Reporting"
-  | "Custom API";
+  | "CRM"| "Call Tracking"| "Analytics"| "Advertising"| "Communication"| "AI"| "Storage"| "Reporting"| "Custom API";
 
 export type IntegrationStatus =
-  | "connected"
-  | "disconnected"
-  | "pending"
-  | "error"
-  | "disabled";
+  | "connected"| "disconnected"| "pending"| "error"| "disabled";
 
 export type AuthType =
-  | "API Key"
-  | "OAuth"
-  | "Bearer Token"
-  | "Webhook"
-  | "Custom";
+  | "API Key"| "OAuth"| "Bearer Token"| "Webhook"| "Custom";
 
 export type DataSourceObject =
-  | "Calls"
-  | "Leads"
-  | "Opportunities"
-  | "Projects"
-  | "Reports"
-  | "Communications"
-  | "Revenue"
-  | "Custom Objects";
+  | "Calls"| "Leads"| "Opportunities"| "Projects"| "Reports"| "Communications"| "Revenue"| "Custom Objects";
 
-export type HealthScore = "excellent" | "good" | "fair" | "poor";
+export type HealthScore = "excellent"| "good"| "fair"| "poor";
 
 export interface Integration {
   id: string;
@@ -88,7 +65,7 @@ export interface CallIntelligenceMapping {
 export interface CallClassification {
   id: string;
   label: string;
-  type: "booked_call" | "qualified_lead" | "spam" | "custom";
+  type: "booked_call"| "qualified_lead"| "spam"| "custom";
   enabled: boolean;
   keywords: string[];
 }
@@ -99,7 +76,7 @@ export interface WorkflowConnection {
   triggerSource: string;
   dataSource: string;
   connectedIntegrationId: string;
-  status: "active" | "paused" | "error";
+  status: "active"| "paused"| "error";
 }
 
 export interface WebhookEntry {
@@ -107,7 +84,7 @@ export interface WebhookEntry {
   name: string;
   integrationId: string;
   providerName: string;
-  status: "active" | "inactive" | "error";
+  status: "active"| "inactive"| "error";
   lastEvent: string | null;
   errorCount: number;
   endpoint: string;
@@ -127,9 +104,9 @@ export interface IntegrationHealthEntry {
 
 export interface AIRecommendation {
   id: string;
-  type: "unused" | "redundant" | "missing" | "improvement";
+  type: "unused"| "redundant"| "missing"| "improvement";
   title: string;
   description: string;
   affectedIntegrationIds: string[];
-  priority: "high" | "medium" | "low";
+  priority: "high"| "medium"| "low";
 }

@@ -7,39 +7,18 @@ import Link from "next/link";
 
 const workspace = getWorkspace("sales")!;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+//  Types 
 
 type LeadStage =
-  | "New Lead"
-  | "Contact Attempted"
-  | "Contacted"
-  | "Discovery Scheduled"
-  | "Discovery Complete"
-  | "Qualified"
-  | "Disqualified";
+  | "New Lead"| "Contact Attempted"| "Contacted"| "Discovery Scheduled"| "Discovery Complete"| "Qualified"| "Disqualified";
 
-type GHLSyncStatus = "Synced" | "Pending Sync" | "Sync Failed" | "Manual Override";
+type GHLSyncStatus = "Synced"| "Pending Sync"| "Sync Failed"| "Manual Override";
 
 type OpportunityReadiness =
-  | "Not Ready"
-  | "Discovery Complete"
-  | "Budget Discussed"
-  | "Decision Maker Identified"
-  | "Business Need Identified"
-  | "Qualified"
-  | "Ready For Opportunity";
+  | "Not Ready"| "Discovery Complete"| "Budget Discussed"| "Decision Maker Identified"| "Business Need Identified"| "Qualified"| "Ready For Opportunity";
 
 type LeadSource =
-  | "Website"
-  | "Google Ads"
-  | "Meta Ads"
-  | "GBP"
-  | "LSA"
-  | "Referral"
-  | "Affiliate"
-  | "Partner"
-  | "Direct"
-  | "Outbound";
+  | "Website"| "Google Ads"| "Meta Ads"| "GBP"| "LSA"| "Referral"| "Affiliate"| "Partner"| "Direct"| "Outbound";
 
 interface Lead {
   id: string;
@@ -73,10 +52,10 @@ interface Lead {
   painPoints: string[];
   requestedServices: string[];
   // BANT
-  budget: "High" | "Medium" | "Low" | "Unknown";
-  authority: "Decision Maker" | "Influencer" | "Unknown";
-  need: "High" | "Medium" | "Low";
-  timeline: "Immediate" | "1-3 months" | "3-6 months" | "6+ months";
+  budget: "High"| "Medium"| "Low"| "Unknown";
+  authority: "Decision Maker"| "Influencer"| "Unknown";
+  need: "High"| "Medium"| "Low";
+  timeline: "Immediate"| "1-3 months"| "3-6 months"| "6+ months";
   // Misc
   estimatedValue: number;
   affiliateName: string;
@@ -85,7 +64,7 @@ interface Lead {
   notes: string;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const LEADS: Lead[] = [
   {
@@ -659,7 +638,7 @@ const LEADS: Lead[] = [
   },
 ];
 
-// ─── Stage Config ─────────────────────────────────────────────────────────────
+//  Stage Config 
 
 const STAGE_CONFIG: Record<LeadStage, { color: string; bg: string; border: string; order: number }> = {
   "New Lead":            { color: "#6366F1", bg: "#EEF2FF", border: "#C7D2FE", order: 0 },
@@ -672,10 +651,10 @@ const STAGE_CONFIG: Record<LeadStage, { color: string; bg: string; border: strin
 };
 
 const GHL_SYNC_CONFIG: Record<GHLSyncStatus, { color: string; bg: string; icon?: string }> = {
-  "Synced":          { color: "#059669", bg: "#ECFDF5", icon: "✓" },
-  "Pending Sync":    { color: "#D97706", bg: "#FFFBEB" },
-  "Sync Failed":     { color: "#DC2626", bg: "#FEF2F2", icon: "✕" },
-  "Manual Override": { color: "#7C3AED", bg: "#F5F3FF" },
+  "Synced":          { color: "#059669", bg: "#ECFDF5", icon: ""},
+  "Pending Sync":    { color: "#D97706", bg: "#FFFBEB"},
+  "Sync Failed":     { color: "#DC2626", bg: "#FEF2F2", icon: ""},
+  "Manual Override": { color: "#7C3AED", bg: "#F5F3FF"},
 };
 
 const READINESS_CONFIG: Record<OpportunityReadiness, { color: string; bg: string; order: number }> = {
@@ -699,13 +678,12 @@ const LEAD_STAGES: LeadStage[] = [
   "Discovery Scheduled", "Discovery Complete", "Qualified", "Disqualified",
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function stageBadge(stage: LeadStage) {
   const c = STAGE_CONFIG[stage];
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border"
-      style={{ background: c.bg, color: c.color, borderColor: c.border }}>
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border"style={{ background: c.bg, color: c.color, borderColor: c.border }}>
       {stage}
     </span>
   );
@@ -714,8 +692,7 @@ function stageBadge(stage: LeadStage) {
 function ghlSyncBadge(status: GHLSyncStatus) {
   const c = GHL_SYNC_CONFIG[status];
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-      style={{ background: c.bg, color: c.color }}>
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"style={{ background: c.bg, color: c.color }}>
       {c.icon} {status}
     </span>
   );
@@ -724,8 +701,7 @@ function ghlSyncBadge(status: GHLSyncStatus) {
 function readinessBadge(readiness: OpportunityReadiness) {
   const c = READINESS_CONFIG[readiness];
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
-      style={{ background: c.bg, color: c.color }}>
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"style={{ background: c.bg, color: c.color }}>
       {readiness}
     </span>
   );
@@ -734,8 +710,7 @@ function readinessBadge(readiness: OpportunityReadiness) {
 function sourceBadge(source: string) {
   const color = SOURCE_COLORS[source] ?? "#64748B";
   return (
-    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border"
-      style={{ background: `${color}15`, color, borderColor: `${color}30` }}>
+    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border"style={{ background: `${color}15`, color, borderColor: `${color}30` }}>
       {source}
     </span>
   );
@@ -745,94 +720,85 @@ function fmt$(v: number) {
   return v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v}`;
 }
 
-// ─── Drawer Component ─────────────────────────────────────────────────────────
+//  Drawer Component 
 
 function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "ghl" | "qualification" | "discovery" | "readiness" | "affiliate" | "timeline"
-  >("overview");
+    "overview"| "ghl"| "qualification"| "discovery"| "readiness"| "affiliate"| "timeline">("overview");
 
   const tabs = [
-    { key: "overview" as const,      label: "Overview" },
-    { key: "ghl" as const,           label: "GHL Contact" },
-    { key: "qualification" as const, label: "Qualification" },
-    { key: "discovery" as const,     label: "Discovery" },
-    { key: "readiness" as const,     label: "Opp Readiness" },
-    { key: "affiliate" as const,     label: "Affiliate" },
-    { key: "timeline" as const,      label: "Timeline" },
+    { key: "overview"as const,      label: "Overview"},
+    { key: "ghl"as const,           label: "GHL Contact"},
+    { key: "qualification"as const, label: "Qualification"},
+    { key: "discovery"as const,     label: "Discovery"},
+    { key: "readiness"as const,     label: "Opp Readiness"},
+    { key: "affiliate"as const,     label: "Affiliate"},
+    { key: "timeline"as const,      label: "Timeline"},
   ];
 
   const isReadyForOpportunity = lead.opportunityReadiness === "Ready For Opportunity";
   const isQualified = lead.stage === "Qualified";
 
   const readinessChecklist = [
-    { label: "Discovery Complete",        done: lead.opportunityReadiness !== "Not Ready" },
-    { label: "Budget Discussed",          done: lead.budget !== "Unknown" },
-    { label: "Decision Maker Identified", done: lead.authority === "Decision Maker" },
-    { label: "Business Need Identified",  done: lead.need === "High" || lead.need === "Medium" },
+    { label: "Discovery Complete",        done: lead.opportunityReadiness !== "Not Ready"},
+    { label: "Budget Discussed",          done: lead.budget !== "Unknown"},
+    { label: "Decision Maker Identified", done: lead.authority === "Decision Maker"},
+    { label: "Business Need Identified",  done: lead.need === "High"|| lead.need === "Medium"},
     { label: "Lead Qualified",            done: isQualified },
   ];
 
   const timeline = [
-    { date: lead.ghlCreatedDate, event: "GHL Contact Created" },
-    { date: lead.createdDate,    event: "Lead Created in RTM" },
+    { date: lead.ghlCreatedDate, event: "GHL Contact Created"},
+    { date: lead.createdDate,    event: "Lead Created in RTM"},
     { date: lead.createdDate,    event: `Assigned to ${lead.assignedRep}` },
-    ...(lead.discoveryDate ? [{ date: lead.discoveryDate, event: "Discovery Completed" }] : []),
-    ...(isQualified ? [{ date: lead.lastActivity, event: "Lead Qualified" }] : []),
-    ...(isReadyForOpportunity ? [{ date: lead.lastActivity, event: "Ready For Opportunity" }] : []),
+    ...(lead.discoveryDate ? [{ date: lead.discoveryDate, event: "Discovery Completed"}] : []),
+    ...(isQualified ? [{ date: lead.lastActivity, event: "Lead Qualified"}] : []),
+    ...(isReadyForOpportunity ? [{ date: lead.lastActivity, event: "Ready For Opportunity"}] : []),
     { date: lead.lastActivity,   event: `Current Stage: ${lead.stage}` },
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="w-[720px] h-full flex flex-col shadow-2xl overflow-hidden"
-        style={{ background: "var(--rtm-bg)", borderLeft: "1px solid var(--rtm-border)" }}>
+      <div className="flex-1 bg-black/40 backdrop-blur-sm"onClick={onClose} />
+      <div className="w-[720px] h-full flex flex-col shadow-2xl overflow-hidden"style={{ background: "var(--rtm-bg)", borderLeft: "1px solid var(--rtm-border)"}}>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0"
-          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}>
+        <div className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               {stageBadge(lead.stage)}
               {ghlSyncBadge(lead.ghlSyncStatus)}
               {isReadyForOpportunity && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
-                  🚀 Ready For Opportunity
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0"}}>
+                   Ready For Opportunity
                 </span>
               )}
             </div>
-            <h2 className="text-xl font-bold truncate" style={{ color: "var(--rtm-text-primary)" }}>{lead.businessName}</h2>
-            <p className="text-sm mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
+            <h2 className="text-xl font-bold truncate"style={{ color: "var(--rtm-text-primary)"}}>{lead.businessName}</h2>
+            <p className="text-sm mt-0.5"style={{ color: "var(--rtm-text-secondary)"}}>
               {lead.name} · {lead.industry} · {lead.location}
             </p>
-            <p className="text-xs mt-0.5 font-mono" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs mt-0.5 font-mono"style={{ color: "var(--rtm-text-muted)"}}>
               GHL: {lead.ghlContactId}
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4 flex-shrink-0">
             {isReadyForOpportunity && (
-              <Link href="/sales/pipeline"
-                className="text-xs px-3 py-1.5 rounded-lg font-bold border"
-                style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>
+              <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-bold border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>
                 Create Opportunity →
               </Link>
             )}
             <button className="rtm-btn-primary text-xs px-3 py-1.5">Edit Lead</button>
             <button onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-lg"
-              style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>✕</button>
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-lg"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)"}}></button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 border-b flex-shrink-0 overflow-x-auto"
-          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}>
+        <div className="flex gap-0 border-b flex-shrink-0 overflow-x-auto"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}>
           {tabs.map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
-              className="px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2"
-              style={{
+              className="px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2"style={{
                 borderBottomColor: activeTab === t.key ? workspace.accentColor : "transparent",
                 color: activeTab === t.key ? workspace.accentColor : "var(--rtm-text-muted)",
               }}>
@@ -844,11 +810,11 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
-          {/* ── OVERVIEW ── */}
-          {activeTab === "overview" && (
+          {/*  OVERVIEW  */}
+          {activeTab === "overview"&& (
             <>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Lead Overview</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Lead Overview</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     ["Lead Name", lead.name],
@@ -864,34 +830,29 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                     ["Last Activity", lead.lastActivity],
                     ["Est. Monthly Value", `${fmt$(lead.estimatedValue)}/mo`],
                   ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg p-3 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
-                      <p className="text-sm font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>{v}</p>
+                    <div key={k} className="rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{k}</p>
+                      <p className="text-sm font-semibold truncate"style={{ color: "var(--rtm-text-primary)"}}>{v}</p>
                     </div>
                   ))}
                 </div>
               </section>
 
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Opportunity Readiness</h3>
-                <div className="rounded-lg p-4 border flex items-center justify-between"
-                  style={{ background: isReadyForOpportunity ? "#ECFDF5" : "var(--rtm-surface)", borderColor: isReadyForOpportunity ? "#A7F3D0" : "var(--rtm-border)" }}>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Opportunity Readiness</h3>
+                <div className="rounded-lg p-4 border flex items-center justify-between"style={{ background: isReadyForOpportunity ? "#ECFDF5": "var(--rtm-surface)", borderColor: isReadyForOpportunity ? "#A7F3D0": "var(--rtm-border)"}}>
                   <div>
                     {readinessBadge(lead.opportunityReadiness)}
-                    <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>
-                      {isReadyForOpportunity ? "This lead is ready to become an opportunity." : "Complete discovery and qualification steps to advance."}
+                    <p className="text-xs mt-1"style={{ color: "var(--rtm-text-muted)"}}>
+                      {isReadyForOpportunity ? "This lead is ready to become an opportunity.": "Complete discovery and qualification steps to advance."}
                     </p>
                   </div>
                   {isReadyForOpportunity && (
                     <div className="flex gap-2 flex-shrink-0 ml-4">
-                      <Link href="/sales/pipeline"
-                        className="text-xs px-3 py-1.5 rounded-lg font-bold"
-                        style={{ background: "#059669", color: "#fff" }}>
+                      <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-bold"style={{ background: "#059669", color: "#fff"}}>
                         Create Opportunity
                       </Link>
-                      <Link href="/sales/pipeline"
-                        className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
-                        style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0" }}>
+                      <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-semibold border"style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0"}}>
                         Open Pipeline →
                       </Link>
                     </div>
@@ -900,15 +861,13 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               </section>
 
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Quick Actions</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Quick Actions</h3>
                 <div className="flex flex-wrap gap-2">
                   {["Assign Sales Rep", "Schedule Discovery", "Create Follow-Up", "Move Stage", "Add Note"].map(a => (
                     <button key={a} className="rtm-btn-secondary text-xs px-3 py-1.5">{a}</button>
                   ))}
                   {isReadyForOpportunity && (
-                    <Link href="/sales/pipeline"
-                      className="text-xs px-3 py-1.5 rounded-lg font-bold inline-block"
-                      style={{ background: workspace.accentColor, color: "#fff" }}>
+                    <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-bold inline-block"style={{ background: workspace.accentColor, color: "#fff"}}>
                       Send To Pipeline →
                     </Link>
                   )}
@@ -917,12 +876,12 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             </>
           )}
 
-          {/* ── GHL CONTACT ── */}
-          {activeTab === "ghl" && (
+          {/*  GHL CONTACT  */}
+          {activeTab === "ghl"&& (
             <>
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>GHL Contact Details</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>GHL Contact Details</h3>
                   {ghlSyncBadge(lead.ghlSyncStatus)}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -935,46 +894,44 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                     ["Last Activity",     lead.ghlLastActivityDate],
                     ["Sync Status",       lead.ghlSyncStatus],
                   ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg p-3 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
-                      <p className="text-sm font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>{v}</p>
+                    <div key={k} className="rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{k}</p>
+                      <p className="text-sm font-semibold truncate"style={{ color: "var(--rtm-text-primary)"}}>{v}</p>
                     </div>
                   ))}
                 </div>
               </section>
 
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>GHL Contact Tags</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>GHL Contact Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {lead.ghlContactTags.map(tag => (
-                    <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                      style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>
+                    <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-semibold"style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE"}}>
                       {tag}
                     </span>
                   ))}
                 </div>
               </section>
 
-              {lead.ghlSyncStatus === "Sync Failed" && (
+              {lead.ghlSyncStatus === "Sync Failed"&& (
                 <section>
-                  <div className="rounded-lg p-4 border" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
-                    <p className="text-sm font-bold mb-1" style={{ color: "#DC2626" }}>⚠️ GHL Sync Error</p>
-                    <p className="text-xs mb-3" style={{ color: "#B91C1C" }}>
+                  <div className="rounded-lg p-4 border"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
+                    <p className="text-sm font-bold mb-1"style={{ color: "#DC2626"}}> GHL Sync Error</p>
+                    <p className="text-xs mb-3"style={{ color: "#B91C1C"}}>
                       This contact failed to sync with GoHighLevel. Review and resolve the sync issue.
                     </p>
-                    <button className="text-xs px-3 py-1.5 rounded-lg font-bold"
-                      style={{ background: "#DC2626", color: "#fff" }}>
+                    <button className="text-xs px-3 py-1.5 rounded-lg font-bold"style={{ background: "#DC2626", color: "#fff"}}>
                       Retry Sync
                     </button>
                   </div>
                 </section>
               )}
 
-              {lead.ghlSyncStatus === "Manual Override" && (
+              {lead.ghlSyncStatus === "Manual Override"&& (
                 <section>
-                  <div className="rounded-lg p-4 border" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
-                    <p className="text-sm font-bold mb-1" style={{ color: "#7C3AED" }}>⚡ Manual Override Active</p>
-                    <p className="text-xs" style={{ color: "#6D28D9" }}>
+                  <div className="rounded-lg p-4 border"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
+                    <p className="text-sm font-bold mb-1"style={{ color: "#7C3AED"}}> Manual Override Active</p>
+                    <p className="text-xs"style={{ color: "#6D28D9"}}>
                       This contact has a manual sync override. GHL auto-sync is disabled for this record.
                     </p>
                   </div>
@@ -983,27 +940,24 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             </>
           )}
 
-          {/* ── QUALIFICATION ── */}
-          {activeTab === "qualification" && (
+          {/*  QUALIFICATION  */}
+          {activeTab === "qualification"&& (
             <>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>BANT Qualification</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>BANT Qualification</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Budget",    value: lead.budget,    icon: "💰", good: lead.budget === "High" || lead.budget === "Medium" },
-                    { label: "Authority", value: lead.authority, good: lead.authority === "Decision Maker" },
-                    { label: "Need",      value: lead.need,      icon: "🎯", good: lead.need === "High" },
-                    { label: "Timeline",  value: lead.timeline,  icon: "📅", good: lead.timeline === "Immediate" || lead.timeline === "1-3 months" },
+                    { label: "Budget",    value: lead.budget,    icon: "", good: lead.budget === "High"|| lead.budget === "Medium"},
+                    { label: "Authority", value: lead.authority, good: lead.authority === "Decision Maker"},
+                    { label: "Need",      value: lead.need,      icon: "", good: lead.need === "High"},
+                    { label: "Timeline",  value: lead.timeline,  icon: "", good: lead.timeline === "Immediate"|| lead.timeline === "1-3 months"},
                   ].map(item => (
-                    <div key={item.label} className="rounded-lg p-4 border"
-                      style={{ background: item.good ? "#F0FDF4" : "#FEF2F2", borderColor: item.good ? "#A7F3D0" : "#FECACA" }}>
+                    <div key={item.label} className="rounded-lg p-4 border"style={{ background: item.good ? "#F0FDF4": "#FEF2F2", borderColor: item.good ? "#A7F3D0": "#FECACA"}}>
                       <div className="flex items-center gap-2 mb-1">
                         <span>{item.icon}</span>
-                        <p className="text-[10px] font-bold uppercase tracking-wide"
-                          style={{ color: item.good ? "#15803D" : "#DC2626" }}>{item.label}</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: item.good ? "#15803D": "#DC2626"}}>{item.label}</p>
                       </div>
-                      <p className="text-sm font-bold"
-                        style={{ color: item.good ? "#15803D" : "#DC2626" }}>{item.value}</p>
+                      <p className="text-sm font-bold"style={{ color: item.good ? "#15803D": "#DC2626"}}>{item.value}</p>
                     </div>
                   ))}
                 </div>
@@ -1011,20 +965,19 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
               {lead.requestedServices.length > 0 && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Requested Services</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Requested Services</h3>
                   <div className="flex flex-wrap gap-2">
                     {lead.requestedServices.map(s => (
-                      <span key={s} className="text-xs px-2.5 py-1 rounded-full font-semibold border"
-                        style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}>{s}</span>
+                      <span key={s} className="text-xs px-2.5 py-1 rounded-full font-semibold border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}>{s}</span>
                     ))}
                   </div>
                 </section>
               )}
 
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Estimated Monthly Value</h3>
-                <div className="rounded-lg p-4 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                  <p className="text-2xl font-bold" style={{ color: workspace.accentColor }}>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Estimated Monthly Value</h3>
+                <div className="rounded-lg p-4 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                  <p className="text-2xl font-bold"style={{ color: workspace.accentColor }}>
                     {fmt$(lead.estimatedValue)}<span className="text-sm font-normal text-slate-400">/mo</span>
                   </p>
                 </div>
@@ -1032,20 +985,20 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             </>
           )}
 
-          {/* ── DISCOVERY ── */}
-          {activeTab === "discovery" && (
+          {/*  DISCOVERY  */}
+          {activeTab === "discovery"&& (
             <>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Discovery Management</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Discovery Management</h3>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   {[
-                    ["Discovery Scheduled", lead.discoveryScheduled ? "Yes" : "No"],
+                    ["Discovery Scheduled", lead.discoveryScheduled ? "Yes": "No"],
                     ["Discovery Date",      lead.discoveryDate || "Not Scheduled"],
                     ["Assigned Rep",        lead.assignedRep],
                   ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg p-3 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
-                      <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{v as string}</p>
+                    <div key={k} className="rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{k}</p>
+                      <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{v as string}</p>
                     </div>
                   ))}
                 </div>
@@ -1053,9 +1006,8 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
               {lead.discoveryNotes && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Discovery Notes</h3>
-                  <div className="rounded-lg p-4 border text-sm"
-                    style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Discovery Notes</h3>
+                  <div className="rounded-lg p-4 border text-sm"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}>
                     {lead.discoveryNotes}
                   </div>
                 </section>
@@ -1063,11 +1015,11 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
               {lead.businessGoals.length > 0 && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Business Goals</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Business Goals</h3>
                   <ul className="space-y-1.5">
                     {lead.businessGoals.map(g => (
-                      <li key={g} className="flex items-start gap-2 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
-                        <span className="text-emerald-500 mt-0.5">✓</span>{g}
+                      <li key={g} className="flex items-start gap-2 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
+                        {g}
                       </li>
                     ))}
                   </ul>
@@ -1076,10 +1028,10 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
               {lead.painPoints.length > 0 && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Pain Points</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Pain Points</h3>
                   <ul className="space-y-1.5">
                     {lead.painPoints.map(p => (
-                      <li key={p} className="flex items-start gap-2 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+                      <li key={p} className="flex items-start gap-2 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
                         <span className="text-amber-500 mt-0.5">!</span>{p}
                       </li>
                     ))}
@@ -1097,24 +1049,21 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             </>
           )}
 
-          {/* ── OPP READINESS ── */}
-          {activeTab === "readiness" && (
+          {/*  OPP READINESS  */}
+          {activeTab === "readiness"&& (
             <>
               <section>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Opportunity Readiness</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Opportunity Readiness</h3>
                   {readinessBadge(lead.opportunityReadiness)}
                 </div>
                 <div className="space-y-2">
                   {readinessChecklist.map(item => (
-                    <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg border"
-                      style={{ background: item.done ? "#F0FDF4" : "var(--rtm-surface)", borderColor: item.done ? "#A7F3D0" : "var(--rtm-border)" }}>
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                        style={{ background: item.done ? "#059669" : "#E2E8F0", color: item.done ? "#fff" : "#94A3B8" }}>
-                        {item.done ? "✓" : "○"}
+                    <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg border"style={{ background: item.done ? "#F0FDF4": "var(--rtm-surface)", borderColor: item.done ? "#A7F3D0": "var(--rtm-border)"}}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"style={{ background: item.done ? "#059669": "#E2E8F0", color: item.done ? "#fff": "#94A3B8"}}>
+                        {item.done ? "": ""}
                       </div>
-                      <span className="text-sm font-medium"
-                        style={{ color: item.done ? "#15803D" : "var(--rtm-text-secondary)" }}>{item.label}</span>
+                      <span className="text-sm font-medium"style={{ color: item.done ? "#15803D": "var(--rtm-text-secondary)"}}>{item.label}</span>
                     </div>
                   ))}
                 </div>
@@ -1122,26 +1071,19 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
               {isReadyForOpportunity && (
                 <section>
-                  <div className="rounded-xl p-5 border-2"
-                    style={{ background: "#ECFDF5", borderColor: "#059669" }}>
-                    <p className="text-sm font-bold mb-1" style={{ color: "#059669" }}>🚀 Ready For Opportunity</p>
-                    <p className="text-xs mb-4" style={{ color: "#15803D" }}>
+                  <div className="rounded-xl p-5 border-2"style={{ background: "#ECFDF5", borderColor: "#059669"}}>
+                    <p className="text-sm font-bold mb-1"style={{ color: "#059669"}}> Ready For Opportunity</p>
+                    <p className="text-xs mb-4"style={{ color: "#15803D"}}>
                       All readiness criteria met. Create an opportunity in the Sales Pipeline to advance this lead.
                     </p>
                     <div className="flex gap-2">
-                      <Link href="/sales/pipeline"
-                        className="text-xs px-4 py-2 rounded-lg font-bold inline-block"
-                        style={{ background: "#059669", color: "#fff" }}>
+                      <Link href="/sales/pipeline"className="text-xs px-4 py-2 rounded-lg font-bold inline-block"style={{ background: "#059669", color: "#fff"}}>
                         Create Opportunity
                       </Link>
-                      <Link href="/sales/pipeline"
-                        className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"
-                        style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0" }}>
+                      <Link href="/sales/pipeline"className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0"}}>
                         Send To Pipeline →
                       </Link>
-                      <Link href="/sales/pipeline"
-                        className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"
-                        style={{ background: "#fff", color: "#15803D", borderColor: "#A7F3D0" }}>
+                      <Link href="/sales/pipeline"className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"style={{ background: "#fff", color: "#15803D", borderColor: "#A7F3D0"}}>
                         Open Pipeline →
                       </Link>
                     </div>
@@ -1151,9 +1093,9 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
               {!isReadyForOpportunity && (
                 <section>
-                  <div className="rounded-lg p-4 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                    <p className="text-sm font-semibold mb-1" style={{ color: "var(--rtm-text-primary)" }}>Next Steps</p>
-                    <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                  <div className="rounded-lg p-4 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                    <p className="text-sm font-semibold mb-1"style={{ color: "var(--rtm-text-primary)"}}>Next Steps</p>
+                    <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                       Complete outstanding readiness criteria above before creating an opportunity.
                       Opportunity management happens in <strong>/sales/pipeline</strong>.
                     </p>
@@ -1163,20 +1105,20 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             </>
           )}
 
-          {/* ── AFFILIATE ── */}
-          {activeTab === "affiliate" && (
+          {/*  AFFILIATE  */}
+          {activeTab === "affiliate"&& (
             <>
-              {lead.affiliateName !== "—" ? (
+              {lead.affiliateName !== "—"? (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Affiliate Attribution</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Affiliate Attribution</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       ["Affiliate Name",    lead.affiliateName],
                       ["GHL Contact Source", lead.ghlSource],
                     ].map(([k, v]) => (
-                      <div key={k} className="rounded-lg p-3 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                        <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
-                        <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{v as string}</p>
+                      <div key={k} className="rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{k}</p>
+                        <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{v as string}</p>
                       </div>
                     ))}
                   </div>
@@ -1187,38 +1129,36 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                   </div>
                 </section>
               ) : (
-                <div className="rounded-lg p-6 border text-center" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                  <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>This lead has no affiliate attribution.</p>
+                <div className="rounded-lg p-6 border text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                  <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>This lead has no affiliate attribution.</p>
                 </div>
               )}
             </>
           )}
 
-          {/* ── TIMELINE ── */}
-          {activeTab === "timeline" && (
+          {/*  TIMELINE  */}
+          {activeTab === "timeline"&& (
             <>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Lead Journey</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Lead Journey</h3>
                 <div className="relative pl-6 space-y-4">
-                  <div className="absolute left-2 top-0 bottom-0 w-px" style={{ background: "var(--rtm-border)" }} />
+                  <div className="absolute left-2 top-0 bottom-0 w-px"style={{ background: "var(--rtm-border)"}} />
                   {timeline.map((item, i) => (
                     <div key={i} className="relative flex items-start gap-3">
-                      <div className="absolute -left-4 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px]"
-                        style={{ background: "var(--rtm-surface)", borderColor: workspace.accentColor }}>
+                      <div className="absolute -left-4 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px]"style={{ background: "var(--rtm-surface)", borderColor: workspace.accentColor }}>
                         {(item as { icon?: string; date: string; event: string }).icon ?? "·"}
                       </div>
-                      <div className="flex-1 rounded-lg p-3 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                        <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{item.event}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{item.date}</p>
+                      <div className="flex-1 rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                        <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{item.event}</p>
+                        <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{item.date}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </section>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Notes</h3>
-                <div className="rounded-lg p-4 border text-sm"
-                  style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Notes</h3>
+                <div className="rounded-lg p-4 border text-sm"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}>
                   {lead.notes || "No notes added."}
                 </div>
                 <button className="mt-2 rtm-btn-secondary text-xs px-3 py-1.5">Add Note</button>
@@ -1228,24 +1168,20 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t flex-shrink-0"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="flex items-center justify-between px-6 py-4 border-t flex-shrink-0"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
           <div className="flex gap-2">
-            <button className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
-              style={{ color: "#DC2626", borderColor: "#FECACA", background: "#FEF2F2" }}>
+            <button className="text-xs px-3 py-1.5 rounded-lg font-semibold border"style={{ color: "#DC2626", borderColor: "#FECACA", background: "#FEF2F2"}}>
               Disqualify
             </button>
           </div>
           <div className="flex gap-2">
             <button className="rtm-btn-secondary text-xs px-3 py-1.5">Move Stage</button>
             {isReadyForOpportunity ? (
-              <Link href="/sales/pipeline"
-                className="text-xs px-3 py-1.5 rounded-lg font-bold inline-block"
-                style={{ background: "#059669", color: "#fff" }}>
+              <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-bold inline-block"style={{ background: "#059669", color: "#fff"}}>
                 Create Opportunity →
               </Link>
             ) : (
-              <button className="rtm-btn-primary text-xs px-3 py-1.5" disabled={!isQualified}
+              <button className="rtm-btn-primary text-xs px-3 py-1.5"disabled={!isQualified}
                 style={{ opacity: isQualified ? 1 : 0.4 }}>
                 Create Opportunity
               </button>
@@ -1257,7 +1193,7 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+//  Main Page 
 
 export default function SalesLeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -1268,9 +1204,9 @@ export default function SalesLeadsPage() {
   const [showSyncPanel, setShowSyncPanel] = useState(false);
 
   const filtered = LEADS.filter(l => {
-    if (stageFilter !== "All" && l.stage !== stageFilter) return false;
-    if (sourceFilter !== "All" && l.leadSource !== sourceFilter) return false;
-    if (syncFilter !== "All" && l.ghlSyncStatus !== syncFilter) return false;
+    if (stageFilter !== "All"&& l.stage !== stageFilter) return false;
+    if (sourceFilter !== "All"&& l.leadSource !== sourceFilter) return false;
+    if (syncFilter !== "All"&& l.ghlSyncStatus !== syncFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -1283,7 +1219,7 @@ export default function SalesLeadsPage() {
     return true;
   });
 
-  // ── KPI calcs ──
+  //  KPI calcs 
   const newLeads            = LEADS.filter(l => l.stage === "New Lead").length;
   const contactAttempted    = LEADS.filter(l => l.stage === "Contact Attempted").length;
   const discoveryScheduled  = LEADS.filter(l => l.stage === "Discovery Scheduled").length;
@@ -1304,24 +1240,22 @@ export default function SalesLeadsPage() {
     <div className="space-y-6">
       {selectedLead && <LeadDrawer lead={selectedLead} onClose={() => setSelectedLead(null)} />}
 
-      {/* ── Page Header ── */}
+      {/*  Page Header  */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>Sales</p>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+          <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>Sales</p>
+          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
             Lead Management Center
           </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+          <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
             GHL contact intake · Lead qualification · Discovery management · Opportunity readiness
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-[11px] px-2 py-0.5 rounded font-semibold"
-              style={{ background: "#ECFDF5", color: "#059669" }}>
+            <span className="text-[11px] px-2 py-0.5 rounded font-semibold"style={{ background: "#ECFDF5", color: "#059669"}}>
               Lead Management
             </span>
-            <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>·</span>
-            <Link href="/sales/pipeline" className="text-[11px] px-2 py-0.5 rounded font-semibold"
-              style={{ background: "#EEF2FF", color: "#6366F1" }}>
+            <span className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>·</span>
+            <Link href="/sales/pipeline" className="text-[11px] px-2 py-0.5 rounded font-semibold"style={{ background: "#EEF2FF", color: "#6366F1"}}>
               Opportunity Management → /sales/pipeline
             </Link>
           </div>
@@ -1330,77 +1264,71 @@ export default function SalesLeadsPage() {
         {/* Top Action Bar */}
         <div className="flex flex-wrap gap-2 flex-shrink-0">
           <button className="rtm-btn-primary text-sm flex items-center gap-1.5 px-3 py-2">
-            <span>＋</span> Add Lead
+            <span></span> Add Lead
           </button>
           <button className="rtm-btn-secondary text-sm px-3 py-2">↑ Import Leads</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2">👤 Assign Leads</button>
+          <button className="rtm-btn-secondary text-sm px-3 py-2"> Assign Leads</button>
           <button className="rtm-btn-secondary text-sm px-3 py-2">↓ Export Leads</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2">📊 Lead Sources Report</button>
+          <button className="rtm-btn-secondary text-sm px-3 py-2"> Lead Sources Report</button>
           <button
             onClick={() => setShowSyncPanel(v => !v)}
-            className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"
-            style={{
-              background: showSyncPanel ? "#ECFDF5" : "var(--rtm-surface)",
-              color: showSyncPanel ? "#059669" : "var(--rtm-text-primary)",
-              borderColor: showSyncPanel ? "#A7F3D0" : "var(--rtm-border)",
+            className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"style={{
+              background: showSyncPanel ? "#ECFDF5": "var(--rtm-surface)",
+              color: showSyncPanel ? "#059669": "var(--rtm-text-primary)",
+              borderColor: showSyncPanel ? "#A7F3D0": "var(--rtm-border)",
             }}>
-            🔗 Sync GHL Contacts
+             Sync GHL Contacts
           </button>
           <button
             onClick={() => setShowSyncPanel(v => !v)}
-            className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"
-            style={{
-              background: ghlFailed > 0 ? "#FEF2F2" : "var(--rtm-surface)",
-              color: ghlFailed > 0 ? "#DC2626" : "var(--rtm-text-primary)",
-              borderColor: ghlFailed > 0 ? "#FECACA" : "var(--rtm-border)",
+            className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"style={{
+              background: ghlFailed > 0 ? "#FEF2F2": "var(--rtm-surface)",
+              color: ghlFailed > 0 ? "#DC2626": "var(--rtm-text-primary)",
+              borderColor: ghlFailed > 0 ? "#FECACA": "var(--rtm-border)",
             }}>
-            {ghlFailed > 0 ? `⚠️ ${ghlFailed} Sync Issues` : "✓ GHL Sync Status"}
+            {ghlFailed > 0 ? ` ${ghlFailed} Sync Issues` : "GHL Sync Status"}
           </button>
         </div>
       </div>
 
-      {/* ── GHL Sync Panel ── */}
+      {/*  GHL Sync Panel  */}
       {showSyncPanel && (
-        <div className="rounded-xl border p-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>GHL Lead Sync Status</h2>
-              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+              <h2 className="text-base font-bold"style={{ color: "var(--rtm-text-primary)"}}>GHL Lead Sync Status</h2>
+              <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
                 GoHighLevel contact synchronization · Last sync: Today, 9:42 AM
               </p>
             </div>
             <button onClick={() => setShowSyncPanel(false)}
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold"
-              style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)" }}>
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)"}}>
               Close
             </button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {[
-              { label: "Synced Contacts",  value: ghlSynced,  color: "#059669", bg: "#ECFDF5" },
-              { label: "Pending Sync",     value: ghlPending, color: "#D97706", bg: "#FFFBEB" },
-              { label: "Sync Failed",      value: ghlFailed,  color: "#DC2626", bg: "#FEF2F2" },
-              { label: "Manual Override",  value: LEADS.filter(l => l.ghlSyncStatus === "Manual Override").length, color: "#7C3AED", bg: "#F5F3FF" },
+              { label: "Synced Contacts",  value: ghlSynced,  color: "#059669", bg: "#ECFDF5"},
+              { label: "Pending Sync",     value: ghlPending, color: "#D97706", bg: "#FFFBEB"},
+              { label: "Sync Failed",      value: ghlFailed,  color: "#DC2626", bg: "#FEF2F2"},
+              { label: "Manual Override",  value: LEADS.filter(l => l.ghlSyncStatus === "Manual Override").length, color: "#7C3AED", bg: "#F5F3FF"},
             ].map(item => (
-              <div key={item.label} className="rounded-lg p-4 border"
-                style={{ background: item.bg, borderColor: `${item.color}30` }}>
-                <p className="text-2xl font-bold" style={{ color: item.color }}>{item.value}</p>
-                <p className="text-[10px] font-bold mt-0.5 uppercase tracking-wide" style={{ color: item.color }}>{item.label}</p>
+              <div key={item.label} className="rounded-lg p-4 border"style={{ background: item.bg, borderColor: `${item.color}30` }}>
+                <p className="text-2xl font-bold"style={{ color: item.color }}>{item.value}</p>
+                <p className="text-[10px] font-bold mt-0.5 uppercase tracking-wide"style={{ color: item.color }}>{item.label}</p>
               </div>
             ))}
           </div>
 
           {ghlFailed > 0 && (
-            <div className="rounded-lg p-4 border mb-4" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
-              <p className="text-sm font-bold mb-2" style={{ color: "#DC2626" }}>⚠️ Sync Issues Detected</p>
+            <div className="rounded-lg p-4 border mb-4"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
+              <p className="text-sm font-bold mb-2"style={{ color: "#DC2626"}}> Sync Issues Detected</p>
               <div className="space-y-2">
                 {LEADS.filter(l => l.ghlSyncStatus === "Sync Failed").map(l => (
-                  <div key={l.id} className="flex items-center justify-between text-xs"
-                    style={{ color: "#B91C1C" }}>
+                  <div key={l.id} className="flex items-center justify-between text-xs"style={{ color: "#B91C1C"}}>
                     <span>{l.businessName} ({l.ghlContactId})</span>
-                    <button className="px-2 py-0.5 rounded font-bold"
-                      style={{ background: "#DC2626", color: "#fff" }}>Retry</button>
+                    <button className="px-2 py-0.5 rounded font-bold"style={{ background: "#DC2626", color: "#fff"}}>Retry</button>
                   </div>
                 ))}
               </div>
@@ -1410,9 +1338,8 @@ export default function SalesLeadsPage() {
           <div className="flex flex-wrap gap-2">
             {(["Synced", "Pending Sync", "Sync Failed", "Manual Override"] as GHLSyncStatus[]).map(s => (
               <button key={s}
-                onClick={() => setSyncFilter(syncFilter === s ? "All" : s)}
-                className="text-xs px-3 py-1.5 rounded-lg font-semibold border transition-colors"
-                style={{
+                onClick={() => setSyncFilter(syncFilter === s ? "All": s)}
+                className="text-xs px-3 py-1.5 rounded-lg font-semibold border transition-colors"style={{
                   background: syncFilter === s ? GHL_SYNC_CONFIG[s].bg : "var(--rtm-bg)",
                   color: syncFilter === s ? GHL_SYNC_CONFIG[s].color : "var(--rtm-text-muted)",
                   borderColor: syncFilter === s ? GHL_SYNC_CONFIG[s].color : "var(--rtm-border)",
@@ -1420,10 +1347,9 @@ export default function SalesLeadsPage() {
                 {GHL_SYNC_CONFIG[s].icon} Filter: {s}
               </button>
             ))}
-            {syncFilter !== "All" && (
+            {syncFilter !== "All"&& (
               <button onClick={() => setSyncFilter("All")}
-                className="text-xs px-2 py-1 rounded font-semibold"
-                style={{ background: "#FEF2F2", color: "#DC2626" }}>
+                className="text-xs px-2 py-1 rounded font-semibold"style={{ background: "#FEF2F2", color: "#DC2626"}}>
                 Clear Sync Filter
               </button>
             )}
@@ -1431,17 +1357,17 @@ export default function SalesLeadsPage() {
         </div>
       )}
 
-      {/* ── KPI Cards ── */}
+      {/*  KPI Cards  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
-          { title: "New Leads",            value: String(newLeads),           icon: "🎯", iconBg: "#EEF2FF", iconColor: "#6366F1", trend: "up" as const,      trendValue: "+5"  },
-          { title: "Contact Attempted",    value: String(contactAttempted),   icon: "📞", iconBg: "#F5F3FF", iconColor: "#8B5CF6", trend: "neutral" as const, trendValue: "±0"  },
-          { title: "Discovery Scheduled",  value: String(discoveryScheduled), iconBg: "#F0F9FF", iconColor: "#0284C7", trend: "up" as const,      trendValue: "+2"  },
-          { title: "Discovery Complete",   value: String(discoveryComplete),  icon: "🔍", iconBg: "#ECFEFF", iconColor: "#0891B2", trend: "up" as const,      trendValue: "+3"  },
-          { title: "Qualified Leads",      value: String(qualifiedLeads),     icon: "✅", iconBg: "#FFFBEB", iconColor: "#D97706", trend: "up" as const,      trendValue: "+4"  },
-          { title: "Disqualified",         value: String(disqualifiedLeads),  icon: "✕",  iconBg: "#F1F5F9", iconColor: "#94A3B8", trend: "neutral" as const, trendValue: "±0"  },
-          { title: "Conversion Rate",      value: `${conversionRate}%`,       icon: "📈", iconBg: "#F0FDF4", iconColor: "#16A34A", trend: "up" as const,      trendValue: "+2%" },
-          { title: "GHL Contacts Synced",  value: String(ghlSynced),          icon: "🔗", iconBg: "#ECFDF5", iconColor: "#059669", trend: "up" as const,      trendValue: `+${ghlSynced}` },
+          { title: "New Leads",            value: String(newLeads),           icon: "", iconBg: "#EEF2FF", iconColor: "#6366F1", trend: "up"as const,      trendValue: "+5"},
+          { title: "Contact Attempted",    value: String(contactAttempted),   icon: "", iconBg: "#F5F3FF", iconColor: "#8B5CF6", trend: "neutral"as const, trendValue: "±0"},
+          { title: "Discovery Scheduled",  value: String(discoveryScheduled), iconBg: "#F0F9FF", iconColor: "#0284C7", trend: "up"as const,      trendValue: "+2"},
+          { title: "Discovery Complete",   value: String(discoveryComplete),  icon: "", iconBg: "#ECFEFF", iconColor: "#0891B2", trend: "up"as const,      trendValue: "+3"},
+          { title: "Qualified Leads",      value: String(qualifiedLeads),     icon: "", iconBg: "#FFFBEB", iconColor: "#D97706", trend: "up"as const,      trendValue: "+4"},
+          { title: "Disqualified",         value: String(disqualifiedLeads),  icon: "",  iconBg: "#F1F5F9", iconColor: "#94A3B8", trend: "neutral"as const, trendValue: "±0"},
+          { title: "Conversion Rate",      value: `${conversionRate}%`,       icon: "", iconBg: "#F0FDF4", iconColor: "#16A34A", trend: "up"as const,      trendValue: "+2%"},
+          { title: "GHL Contacts Synced",  value: String(ghlSynced),          icon: "", iconBg: "#ECFDF5", iconColor: "#059669", trend: "up"as const,      trendValue: `+${ghlSynced}` },
         ].map(card => (
           <KpiCard key={card.title} title={card.title} value={card.value}
             icon={<span className="text-lg">{card.icon}</span>}
@@ -1450,18 +1376,17 @@ export default function SalesLeadsPage() {
         ))}
       </div>
 
-      {/* ── Lead Stage Pipeline ── */}
-      <div className="rounded-xl border p-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      {/*  Lead Stage Pipeline  */}
+      <div className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Lead Stages</h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+            <h2 className="text-base font-bold"style={{ color: "var(--rtm-text-primary)"}}>Lead Stages</h2>
+            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
               {LEADS.length} total leads · {readyForOpp} ready for opportunity
             </p>
           </div>
           <div className="flex gap-2">
-            <Link href="/sales/pipeline"
-              className="rtm-btn-secondary text-xs px-3 py-1.5 flex items-center gap-1">
+            <Link href="/sales/pipeline"className="rtm-btn-secondary text-xs px-3 py-1.5 flex items-center gap-1">
               <span>→</span> Sales Pipeline
             </Link>
           </div>
@@ -1474,23 +1399,22 @@ export default function SalesLeadsPage() {
             const isActive = stageFilter === stage;
             return (
               <button key={stage}
-                onClick={() => setStageFilter(isActive ? "All" : stage)}
-                className="flex-shrink-0 rounded-xl border p-3 text-left min-w-[140px] transition-all"
-                style={{
+                onClick={() => setStageFilter(isActive ? "All": stage)}
+                className="flex-shrink-0 rounded-xl border p-3 text-left min-w-[140px] transition-all"style={{
                   background: isActive ? cfg.bg : "var(--rtm-bg)",
                   borderColor: isActive ? cfg.color : "var(--rtm-border)",
                   boxShadow: isActive ? `0 0 0 2px ${cfg.color}30` : undefined,
                 }}>
-                <p className="text-2xl font-bold mb-1" style={{ color: cfg.color }}>{count}</p>
-                <p className="text-[10px] font-bold leading-tight" style={{ color: cfg.color }}>{stage}</p>
+                <p className="text-2xl font-bold mb-1"style={{ color: cfg.color }}>{count}</p>
+                <p className="text-[10px] font-bold leading-tight"style={{ color: cfg.color }}>{stage}</p>
               </button>
             );
           })}
         </div>
 
         {/* Lead → Opportunity Workflow */}
-        <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--rtm-border)" }}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>
+        <div className="mt-4 pt-4 border-t"style={{ borderColor: "var(--rtm-border)"}}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>
             Lead → Opportunity Workflow
           </p>
           <div className="flex items-center gap-1 flex-wrap text-[10px] font-semibold">
@@ -1504,11 +1428,10 @@ export default function SalesLeadsPage() {
               { label: "Sales Pipeline",       here: false },
             ].map((step, i, arr) => (
               <span key={step.label} className="flex items-center gap-1">
-                <span className="px-2 py-0.5 rounded"
-                  style={{
-                    background: step.here ? "var(--rtm-bg)" : "#EEF2FF",
-                    color: step.here ? "var(--rtm-text-secondary)" : "#6366F1",
-                    border: step.here ? "1px solid var(--rtm-border)" : "1px solid #C7D2FE",
+                <span className="px-2 py-0.5 rounded"style={{
+                    background: step.here ? "var(--rtm-bg)": "#EEF2FF",
+                    color: step.here ? "var(--rtm-text-secondary)": "#6366F1",
+                    border: step.here ? "1px solid var(--rtm-border)": "1px solid #C7D2FE",
                     fontWeight: step.here ? 500 : 700,
                   }}>
                   {step.here ? step.label : `→ ${step.label}`}
@@ -1519,8 +1442,8 @@ export default function SalesLeadsPage() {
               </span>
             ))}
           </div>
-          <p className="text-[10px] mt-2" style={{ color: "var(--rtm-text-muted)" }}>
-            Leads live here. Opportunities belong in{" "}
+          <p className="text-[10px] mt-2"style={{ color: "var(--rtm-text-muted)"}}>
+            Leads live here. Opportunities belong in{""}
             <Link href="/sales/pipeline" className="font-bold underline" style={{ color: "#6366F1" }}>
               /sales/pipeline
             </Link>
@@ -1528,90 +1451,83 @@ export default function SalesLeadsPage() {
         </div>
       </div>
 
-      {/* ── Lead Sources ── */}
+      {/*  Lead Sources  */}
       <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-3">
         {sources.sort((a, b) => sourceCounts[b] - sourceCounts[a]).map(source => {
           const color    = SOURCE_COLORS[source] ?? "#64748B";
           const isActive = sourceFilter === source;
           return (
             <button key={source}
-              onClick={() => setSourceFilter(isActive ? "All" : source)}
-              className="rounded-xl border p-3 text-center transition-all"
-              style={{
+              onClick={() => setSourceFilter(isActive ? "All": source)}
+              className="rounded-xl border p-3 text-center transition-all"style={{
                 background: isActive ? `${color}15` : "var(--rtm-surface)",
                 borderColor: isActive ? color : "var(--rtm-border)",
               }}>
-              <p className="text-xl font-bold" style={{ color }}>{sourceCounts[source]}</p>
-              <p className="text-[10px] font-bold mt-0.5 leading-tight"
-                style={{ color: isActive ? color : "var(--rtm-text-muted)" }}>{source}</p>
+              <p className="text-xl font-bold"style={{ color }}>{sourceCounts[source]}</p>
+              <p className="text-[10px] font-bold mt-0.5 leading-tight"style={{ color: isActive ? color : "var(--rtm-text-muted)"}}>{source}</p>
             </button>
           );
         })}
       </div>
 
-      {/* ── Search & Filter Bar ── */}
+      {/*  Search & Filter Bar  */}
       <div className="flex items-center gap-3">
         <div className="flex-1 relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>🔍</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"style={{ color: "var(--rtm-text-muted)"}}></span>
           <input
             value={searchQuery}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-            placeholder="Search leads by name, business, industry, or GHL ID..."
-            className="w-full pl-8 pr-4 py-2 rounded-lg border text-sm outline-none transition-colors"
-            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            placeholder="Search leads by name, business, industry, or GHL ID..."className="w-full pl-8 pr-4 py-2 rounded-lg border text-sm outline-none transition-colors"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
           />
         </div>
-        <div className="flex items-center gap-2 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+        <div className="flex items-center gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
           <span>{filtered.length} leads</span>
-          {(stageFilter !== "All" || sourceFilter !== "All" || syncFilter !== "All" || searchQuery) && (
+          {(stageFilter !== "All"|| sourceFilter !== "All"|| syncFilter !== "All"|| searchQuery) && (
             <button
               onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
-              className="px-2 py-1 rounded font-semibold"
-              style={{ background: "#FEF2F2", color: "#DC2626" }}>
+              className="px-2 py-1 rounded font-semibold"style={{ background: "#FEF2F2", color: "#DC2626"}}>
               Clear Filters
             </button>
           )}
         </div>
       </div>
 
-      {/* ── Lead Table ── */}
-      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+      {/*  Lead Table  */}
+      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
+              <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
                 {[
                   "Lead Name", "Business Name", "Lead Source", "Assigned Rep",
                   "Lead Stage", "Opp Readiness", "GHL Sync Status",
                   "Created Date", "Last Activity", "Actions",
                 ].map(h => (
                   <th key={h}
-                    className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
-                    style={{ color: "var(--rtm-text-muted)" }}>
+                    className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>
                     {h}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y" style={{ borderColor: "var(--rtm-border)" }}>
+            <tbody className="divide-y"style={{ borderColor: "var(--rtm-border)"}}>
               {filtered.map((lead, i) => {
                 const isReady = lead.opportunityReadiness === "Ready For Opportunity";
                 return (
                   <tr key={lead.id}
-                    className="transition-colors hover:cursor-pointer"
-                    style={{ background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}
+                    className="transition-colors hover:cursor-pointer"style={{ background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)"}}
                     onClick={() => setSelectedLead(lead)}>
 
                     {/* Lead Name */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{lead.name}</p>
-                      <p className="text-xs font-mono" style={{ color: "var(--rtm-text-muted)" }}>{lead.ghlContactId}</p>
+                      <p className="font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{lead.name}</p>
+                      <p className="text-xs font-mono"style={{ color: "var(--rtm-text-muted)"}}>{lead.ghlContactId}</p>
                     </td>
 
                     {/* Business Name */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{lead.businessName}</p>
-                      <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{lead.location}</p>
+                      <p className="font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{lead.businessName}</p>
+                      <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{lead.location}</p>
                     </td>
 
                     {/* Lead Source */}
@@ -1619,7 +1535,7 @@ export default function SalesLeadsPage() {
 
                     {/* Assigned Rep */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{lead.assignedRep}</p>
+                      <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{lead.assignedRep}</p>
                     </td>
 
                     {/* Lead Stage */}
@@ -1630,15 +1546,11 @@ export default function SalesLeadsPage() {
                       <div className="space-y-1">
                         {readinessBadge(lead.opportunityReadiness)}
                         {isReady && (
-                          <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                            <Link href="/sales/pipeline"
-                              className="text-[10px] px-1.5 py-0.5 rounded font-bold inline-block"
-                              style={{ background: "#059669", color: "#fff" }}>
+                          <div className="flex gap-1"onClick={e => e.stopPropagation()}>
+                            <Link href="/sales/pipeline"className="text-[10px] px-1.5 py-0.5 rounded font-bold inline-block"style={{ background: "#059669", color: "#fff"}}>
                               Create Opp
                             </Link>
-                            <Link href="/sales/pipeline"
-                              className="text-[10px] px-1.5 py-0.5 rounded font-semibold border inline-block"
-                              style={{ color: "#059669", borderColor: "#A7F3D0", background: "#F0FDF4" }}>
+                            <Link href="/sales/pipeline"className="text-[10px] px-1.5 py-0.5 rounded font-semibold border inline-block"style={{ color: "#059669", borderColor: "#A7F3D0", background: "#F0FDF4"}}>
                               Pipeline →
                             </Link>
                           </div>
@@ -1651,41 +1563,35 @@ export default function SalesLeadsPage() {
 
                     {/* Created Date */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{lead.createdDate}</p>
+                      <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{lead.createdDate}</p>
                     </td>
 
                     {/* Last Activity */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{lead.lastActivity}</p>
+                      <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>{lead.lastActivity}</p>
                     </td>
 
                     {/* Actions */}
-                    <td className="px-4 py-3 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                    <td className="px-4 py-3 whitespace-nowrap"onClick={e => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         <button onClick={() => setSelectedLead(lead)}
-                          className="text-xs px-2 py-1 rounded font-semibold"
-                          style={{ background: "var(--rtm-bg)", color: workspace.accentColor, border: `1px solid ${workspace.accentColor}30` }}>
+                          className="text-xs px-2 py-1 rounded font-semibold"style={{ background: "var(--rtm-bg)", color: workspace.accentColor, border: `1px solid ${workspace.accentColor}30` }}>
                           View
                         </button>
                         <div className="relative group">
-                          <button className="text-xs px-2 py-1 rounded font-semibold"
-                            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)" }}>
+                          <button className="text-xs px-2 py-1 rounded font-semibold"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)"}}>
                             ···
                           </button>
-                          <div className="absolute right-0 top-full mt-1 w-44 rounded-lg border shadow-lg z-10 hidden group-hover:block"
-                            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                          <div className="absolute right-0 top-full mt-1 w-44 rounded-lg border shadow-lg z-10 hidden group-hover:block"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
                             {["Edit Lead", "Assign Sales Rep", "Schedule Discovery", "Create Follow-Up", "Move Stage", "Retry GHL Sync", "Add Note", "Disqualify"].map(action => (
                               <button key={action}
-                                className="block w-full text-left px-3 py-2 text-xs hover:bg-slate-50 first:rounded-t-lg last:rounded-b-lg"
-                                style={{ color: action === "Disqualify" ? "#DC2626" : "var(--rtm-text-primary)" }}>
+                                className="block w-full text-left px-3 py-2 text-xs hover:bg-slate-50 first:rounded-t-lg last:rounded-b-lg"style={{ color: action === "Disqualify"? "#DC2626": "var(--rtm-text-primary)"}}>
                                 {action}
                               </button>
                             ))}
                             {isReady && (
-                              <Link href="/sales/pipeline"
-                                className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"
-                                style={{ color: "#059669", background: "#ECFDF5" }}>
-                                🚀 Create Opportunity →
+                              <Link href="/sales/pipeline"className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"style={{ color: "#059669", background: "#ECFDF5"}}>
+                                 Create Opportunity →
                               </Link>
                             )}
                           </div>
@@ -1701,8 +1607,8 @@ export default function SalesLeadsPage() {
 
         {filtered.length === 0 && (
           <div className="py-16 text-center">
-            <p className="text-3xl mb-2">🎯</p>
-            <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No leads match your filters.</p>
+            <p className="text-3xl mb-2"></p>
+            <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}>No leads match your filters.</p>
             <button
               onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
               className="mt-3 rtm-btn-secondary text-xs px-3 py-1.5">
@@ -1712,22 +1618,20 @@ export default function SalesLeadsPage() {
         )}
       </div>
 
-      {/* ── Bottom Navigation ── */}
+      {/*  Bottom Navigation  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Sales Pipeline",  href: "/sales/pipeline",  icon: "📊", desc: "Opportunity management · deal stages · close tracking", color: "#6366F1" },
-          { label: "Tasks Center",    href: "/tasks",            icon: "✅", desc: "Follow-ups · discovery reminders · lead tasks",          color: "#0284C7" },
-          { label: "Workflows",       href: "/admin/workflows",  icon: "⚙️", desc: "Lead → discovery → qualification automation",          color: "#7C3AED" },
-          { label: "Affiliates",      href: "/sales/affiliates", desc: "Affiliate attribution · commission tracking",            color: "#D97706" },
+          { label: "Sales Pipeline",  href: "/sales/pipeline",  icon: "", desc: "Opportunity management · deal stages · close tracking", color: "#6366F1"},
+          { label: "Tasks Center",    href: "/tasks",            icon: "", desc: "Follow-ups · discovery reminders · lead tasks",          color: "#0284C7"},
+          { label: "Workflows",       href: "/admin/workflows",  icon: "", desc: "Lead → discovery → qualification automation",          color: "#7C3AED"},
+          { label: "Affiliates",      href: "/sales/affiliates", desc: "Affiliate attribution · commission tracking",            color: "#D97706"},
         ].map(item => (
           <Link key={item.label} href={item.href}
-            className="rounded-xl border p-4 flex items-start gap-3 transition-all hover:shadow-md"
-            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"
-              style={{ background: `${item.color}15` }}>{item.icon}</div>
+            className="rounded-xl border p-4 flex items-start gap-3 transition-all hover:shadow-md"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"style={{ background: `${item.color}15` }}>{item.icon}</div>
             <div className="min-w-0">
-              <p className="text-sm font-bold" style={{ color: item.color }}>{item.label} →</p>
-              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{item.desc}</p>
+              <p className="text-sm font-bold"style={{ color: item.color }}>{item.label} →</p>
+              <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{item.desc}</p>
             </div>
           </Link>
         ))}

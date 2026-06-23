@@ -8,32 +8,19 @@ import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 
 const workspace = getWorkspace("billing")!;
 
-// ── Types ──────────────────────────────────────────────────────────────────────
+//  Types 
 
-type BadgeVariant = "success" | "error" | "warning" | "info" | "neutral" | "pending";
+type BadgeVariant = "success"| "error"| "warning"| "info"| "neutral"| "pending";
 
 type CancellationStatus =
-  | "Cancellation Requested"
-  | "Billing Review"
-  | "Final Invoice Needed"
-  | "Pending Balance"
-  | "Approved for Offboarding"
-  | "Offboarding Triggered"
-  | "Billing Hold"
-  | "Billing Closed"
-  | "Cancelled";
+  | "Cancellation Requested"| "Billing Review"| "Final Invoice Needed"| "Pending Balance"| "Approved for Offboarding"| "Offboarding Triggered"| "Billing Hold"| "Billing Closed"| "Cancelled";
 
-type FinalInvoiceStatus = "Not Required" | "Needed" | "Created" | "Sent" | "Paid" | "Overdue";
-type OffboardingStatus  = "Not Started" | "Pending" | "Triggered" | "In Progress" | "Complete";
+type FinalInvoiceStatus = "Not Required"| "Needed"| "Created"| "Sent"| "Paid"| "Overdue";
+type OffboardingStatus  = "Not Started"| "Pending"| "Triggered"| "In Progress"| "Complete";
 type BillingDecision    =
-  | "Continue Billing Until End Date"
-  | "Stop Billing Immediately"
-  | "Create Final Invoice"
-  | "Apply Refund"
-  | "Write Off Balance"
-  | "Escalate to AM";
-type FinalBillingStatus = "Closed - Paid" | "Closed - Written Off" | "Closed - Refunded" | "Closed - Escalated";
-type InvoiceType        = "Final Invoice" | "Prorated Invoice" | "Cancellation Fee" | "Outstanding Balance";
+  | "Continue Billing Until End Date"| "Stop Billing Immediately"| "Create Final Invoice"| "Apply Refund"| "Write Off Balance"| "Escalate to AM";
+type FinalBillingStatus = "Closed - Paid"| "Closed - Written Off"| "Closed - Refunded"| "Closed - Escalated";
+type InvoiceType        = "Final Invoice"| "Prorated Invoice"| "Cancellation Fee"| "Outstanding Balance";
 
 interface CancellationRecord {
   id: string;
@@ -48,7 +35,7 @@ interface CancellationRecord {
   outstandingBalance: string;
   finalInvoiceStatus: FinalInvoiceStatus;
   offboardingStatus: OffboardingStatus;
-  priority: "Critical" | "High" | "Medium" | "Low";
+  priority: "Critical"| "High"| "Medium"| "Low";
   nextBillingAction: string;
   // billing impact panel
   currentPlan: string;
@@ -111,7 +98,7 @@ type ModalKind =
   | { kind: "close";     record: CancellationRecord }
   | null;
 
-// ── Mock Data ──────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const mockCancellations: CancellationRecord[] = [
   {
@@ -137,7 +124,7 @@ const mockCancellations: CancellationRecord[] = [
     paymentMethodStatus: "Active",
     billingDecision: "Continue Billing Until End Date",
     recentEvents: [
-      { date: "Jun 18", event: "Cancellation Requested", by: "Client" },
+      { date: "Jun 18", event: "Cancellation Requested", by: "Client"},
     ],
   },
   {
@@ -163,8 +150,8 @@ const mockCancellations: CancellationRecord[] = [
     paymentMethodStatus: "Active",
     billingDecision: "Create Final Invoice",
     recentEvents: [
-      { date: "Jun 10", event: "Cancellation Requested", by: "Client" },
-      { date: "Jun 12", event: "Billing Review Started", by: "Sarah K." },
+      { date: "Jun 10", event: "Cancellation Requested", by: "Client"},
+      { date: "Jun 12", event: "Billing Review Started", by: "Sarah K."},
     ],
   },
   {
@@ -190,10 +177,10 @@ const mockCancellations: CancellationRecord[] = [
     paymentMethodStatus: "Failed",
     billingDecision: "Escalate to AM",
     recentEvents: [
-      { date: "May 28", event: "Cancellation Requested", by: "Billing" },
-      { date: "May 30", event: "Billing Review Started", by: "Lisa P." },
-      { date: "Jun 01", event: "Final Invoice Created", by: "Lisa P." },
-      { date: "Jun 15", event: "Balance Cleared - Partial", by: "System" },
+      { date: "May 28", event: "Cancellation Requested", by: "Billing"},
+      { date: "May 30", event: "Billing Review Started", by: "Lisa P."},
+      { date: "Jun 01", event: "Final Invoice Created", by: "Lisa P."},
+      { date: "Jun 15", event: "Balance Cleared - Partial", by: "System"},
     ],
   },
   {
@@ -219,10 +206,10 @@ const mockCancellations: CancellationRecord[] = [
     paymentMethodStatus: "Active",
     billingDecision: "Stop Billing Immediately",
     recentEvents: [
-      { date: "Jun 05", event: "Cancellation Requested", by: "AM" },
-      { date: "Jun 07", event: "Billing Review Started", by: "Sarah K." },
-      { date: "Jun 10", event: "Final Invoice Created", by: "Sarah K." },
-      { date: "Jun 15", event: "Balance Cleared", by: "System" },
+      { date: "Jun 05", event: "Cancellation Requested", by: "AM"},
+      { date: "Jun 07", event: "Billing Review Started", by: "Sarah K."},
+      { date: "Jun 10", event: "Final Invoice Created", by: "Sarah K."},
+      { date: "Jun 15", event: "Balance Cleared", by: "System"},
     ],
   },
   {
@@ -248,11 +235,11 @@ const mockCancellations: CancellationRecord[] = [
     paymentMethodStatus: "Active",
     billingDecision: "Stop Billing Immediately",
     recentEvents: [
-      { date: "May 15", event: "Cancellation Requested", by: "Client" },
-      { date: "May 17", event: "Billing Review Started", by: "Lisa P." },
-      { date: "May 20", event: "Final Invoice Created", by: "Lisa P." },
-      { date: "May 25", event: "Balance Cleared", by: "System" },
-      { date: "May 28", event: "Offboarding Triggered", by: "Lisa P." },
+      { date: "May 15", event: "Cancellation Requested", by: "Client"},
+      { date: "May 17", event: "Billing Review Started", by: "Lisa P."},
+      { date: "May 20", event: "Final Invoice Created", by: "Lisa P."},
+      { date: "May 25", event: "Balance Cleared", by: "System"},
+      { date: "May 28", event: "Offboarding Triggered", by: "Lisa P."},
     ],
   },
   {
@@ -278,8 +265,8 @@ const mockCancellations: CancellationRecord[] = [
     paymentMethodStatus: "On Hold",
     billingDecision: "Escalate to AM",
     recentEvents: [
-      { date: "Jun 12", event: "Cancellation Requested", by: "Client" },
-      { date: "Jun 13", event: "Billing Hold Placed", by: "Sarah K." },
+      { date: "Jun 12", event: "Cancellation Requested", by: "Client"},
+      { date: "Jun 13", event: "Billing Hold Placed", by: "Sarah K."},
     ],
   },
   {
@@ -305,12 +292,12 @@ const mockCancellations: CancellationRecord[] = [
     paymentMethodStatus: "Closed",
     billingDecision: "Stop Billing Immediately",
     recentEvents: [
-      { date: "Apr 01", event: "Cancellation Requested", by: "Client" },
-      { date: "Apr 03", event: "Billing Review Started", by: "Lisa P." },
-      { date: "Apr 07", event: "Final Invoice Created", by: "Lisa P." },
-      { date: "Apr 15", event: "Balance Cleared", by: "System" },
-      { date: "Apr 20", event: "Offboarding Triggered", by: "Lisa P." },
-      { date: "Apr 30", event: "Billing Closed", by: "Lisa P." },
+      { date: "Apr 01", event: "Cancellation Requested", by: "Client"},
+      { date: "Apr 03", event: "Billing Review Started", by: "Lisa P."},
+      { date: "Apr 07", event: "Final Invoice Created", by: "Lisa P."},
+      { date: "Apr 15", event: "Balance Cleared", by: "System"},
+      { date: "Apr 20", event: "Offboarding Triggered", by: "Lisa P."},
+      { date: "Apr 30", event: "Billing Closed", by: "Lisa P."},
     ],
   },
   {
@@ -336,15 +323,15 @@ const mockCancellations: CancellationRecord[] = [
     paymentMethodStatus: "Closed",
     billingDecision: "Write Off Balance",
     recentEvents: [
-      { date: "Mar 15", event: "Cancellation Requested", by: "Billing" },
-      { date: "Mar 18", event: "Billing Review Started", by: "Sarah K." },
-      { date: "Mar 22", event: "Balance Cleared", by: "Sarah K." },
-      { date: "Mar 31", event: "Billing Closed", by: "Sarah K." },
+      { date: "Mar 15", event: "Cancellation Requested", by: "Billing"},
+      { date: "Mar 18", event: "Billing Review Started", by: "Sarah K."},
+      { date: "Mar 22", event: "Balance Cleared", by: "Sarah K."},
+      { date: "Mar 31", event: "Billing Closed", by: "Sarah K."},
     ],
   },
 ];
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function cancellationStatusVariant(s: CancellationStatus): BadgeVariant {
   switch (s) {
@@ -397,8 +384,7 @@ function priorityVariant(p: CancellationRecord["priority"]): BadgeVariant {
 function Th({ children }: { children: React.ReactNode }) {
   return (
     <th
-      className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2.5 whitespace-nowrap border-b"
-      style={{
+      className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2.5 whitespace-nowrap border-b"style={{
         color: "var(--rtm-text-muted)",
         borderColor: "var(--rtm-border-light)",
         background: "var(--rtm-bg-alt, #F9FAFB)",
@@ -420,11 +406,10 @@ function Td({
 }) {
   return (
     <td
-      className="px-3 py-2.5 text-sm border-b align-middle"
-      style={{
-        color: muted ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)",
+      className="px-3 py-2.5 text-sm border-b align-middle"style={{
+        color: muted ? "var(--rtm-text-muted)": "var(--rtm-text-secondary)",
         borderColor: "var(--rtm-border-light)",
-        maxWidth: tight ? "140px" : undefined,
+        maxWidth: tight ? "140px": undefined,
       }}
     >
       {children}
@@ -440,10 +425,10 @@ function ActionBtn({
 }: {
   label: string;
   onClick: () => void;
-  variant?: "primary" | "secondary" | "danger" | "ghost";
+  variant?: "primary"| "secondary"| "danger"| "ghost";
   small?: boolean;
 }) {
-  const base = `font-semibold rounded-lg border transition-colors cursor-pointer whitespace-nowrap ${small ? "text-xs px-2.5 py-1" : "text-sm px-3.5 py-2"}`;
+  const base = `font-semibold rounded-lg border transition-colors cursor-pointer whitespace-nowrap ${small ? "text-xs px-2.5 py-1": "text-sm px-3.5 py-2"}`;
   const styles: Record<string, string> = {
     primary:
       "bg-[var(--rtm-blue,#1B4FD8)] text-white border-transparent hover:opacity-90",
@@ -463,22 +448,20 @@ function ActionBtn({
 
 function LifecycleFlow() {
   const steps: { label: string; color: string; bg: string; border: string }[] = [
-    { label: "Cancellation Requested",   color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-    { label: "Billing Review",           color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE" },
-    { label: "Final Invoice Needed",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-    { label: "Pending Balance",          color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-    { label: "Approved for Offboarding", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
-    { label: "Offboarding Triggered",    color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" },
-    { label: "Billing Closed",           color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
+    { label: "Cancellation Requested",   color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+    { label: "Billing Review",           color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE"},
+    { label: "Final Invoice Needed",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+    { label: "Pending Balance",          color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
+    { label: "Approved for Offboarding", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
+    { label: "Offboarding Triggered",    color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC"},
+    { label: "Billing Closed",           color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
   ];
   return (
     <div
-      className="rounded-xl border p-4"
-      style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}
+      className="rounded-xl border p-4"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}
     >
       <p
-        className="text-xs font-bold uppercase tracking-widest mb-3"
-        style={{ color: "#7C3AED" }}
+        className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "#7C3AED"}}
       >
         Cancellation Lifecycle
       </p>
@@ -486,27 +469,26 @@ function LifecycleFlow() {
         {steps.map((s, i) => (
           <React.Fragment key={s.label}>
             <span
-              className="text-xs font-semibold px-2.5 py-1 rounded-lg border"
-              style={{ background: s.bg, color: s.color, borderColor: s.border }}
+              className="text-xs font-semibold px-2.5 py-1 rounded-lg border"style={{ background: s.bg, color: s.color, borderColor: s.border }}
             >
               {s.label}
             </span>
             {i < steps.length - 1 && (
-              <span className="text-sm" style={{ color: "var(--rtm-border)" }}>
+              <span className="text-sm"style={{ color: "var(--rtm-border)"}}>
                 →
               </span>
             )}
           </React.Fragment>
         ))}
       </div>
-      <p className="text-xs mt-2.5" style={{ color: "#6D28D9" }}>
+      <p className="text-xs mt-2.5"style={{ color: "#6D28D9"}}>
         Alternative path: Billing Review → Billing Hold → Escalated to AM
       </p>
     </div>
   );
 }
 
-// ── Modal Shell ────────────────────────────────────────────────────────────────
+//  Modal Shell 
 
 function ModalShell({
   title,
@@ -520,32 +502,28 @@ function ModalShell({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
       <div
-        className="w-full max-w-lg rounded-2xl border shadow-2xl overflow-y-auto"
-        style={{
+        className="w-full max-w-lg rounded-2xl border shadow-2xl overflow-y-auto"style={{
           background: "var(--rtm-surface)",
           borderColor: "var(--rtm-border)",
           maxHeight: "90vh",
         }}
       >
         <div
-          className="flex items-center justify-between px-6 py-4 border-b"
-          style={{ borderColor: "var(--rtm-border-light)" }}
+          className="flex items-center justify-between px-6 py-4 border-b"style={{ borderColor: "var(--rtm-border-light)"}}
         >
           <h2
-            className="text-base font-bold"
-            style={{ color: "var(--rtm-text-primary)" }}
+            className="text-base font-bold"style={{ color: "var(--rtm-text-primary)"}}
           >
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
-            style={{
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{
               color: "var(--rtm-text-muted)",
               borderColor: "var(--rtm-border)",
             }}
           >
-            ✕ Close
+             Close
           </button>
         </div>
         <div className="px-6 py-5 space-y-4">{children}</div>
@@ -564,8 +542,7 @@ function FormField({
   return (
     <div className="space-y-1">
       <label
-        className="block text-xs font-semibold uppercase tracking-wide"
-        style={{ color: "var(--rtm-text-muted)" }}
+        className="block text-xs font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}
       >
         {label}
       </label>
@@ -616,8 +593,7 @@ function TextInput({
 }) {
   return (
     <input
-      type="text"
-      className={inputClass}
+      type="text"className={inputClass}
       style={inputStyle}
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -657,19 +633,17 @@ function CheckboxField({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 cursor-pointer text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+    <label className="flex items-center gap-2 cursor-pointer text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
       <input
-        type="checkbox"
-        checked={checked}
+        type="checkbox"checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="w-4 h-4 rounded"
-      />
+        className="w-4 h-4 rounded"/>
       {label}
     </label>
   );
 }
 
-// ── Review Billing Modal ───────────────────────────────────────────────────────
+//  Review Billing Modal 
 
 function ReviewBillingModal({
   record,
@@ -694,7 +668,7 @@ function ReviewBillingModal({
   }
 
   return (
-    <ModalShell title="Review Billing" onClose={onClose}>
+    <ModalShell title="Review Billing"onClose={onClose}>
       <FormField label="Client">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
@@ -702,17 +676,14 @@ function ReviewBillingModal({
         <TextInput
           value={form.outstandingBalance}
           onChange={(v) => f("outstandingBalance", v)}
-          placeholder="$0"
-        />
+          placeholder="$0"/>
       </FormField>
       <CheckboxField
-        label="Final Invoice Required"
-        checked={form.finalInvoiceRequired}
+        label="Final Invoice Required"checked={form.finalInvoiceRequired}
         onChange={(v) => f("finalInvoiceRequired", v)}
       />
       <CheckboxField
-        label="Refund Required"
-        checked={form.refundRequired}
+        label="Refund Required"checked={form.refundRequired}
         onChange={(v) => f("refundRequired", v)}
       />
       <FormField label="Billing Decision">
@@ -733,13 +704,10 @@ function ReviewBillingModal({
         <TextArea
           value={form.notes}
           onChange={(v) => f("notes", v)}
-          placeholder="Add review notes…"
-        />
+          placeholder="Add review notes…"/>
       </FormField>
       <ActionBtn
-        variant="primary"
-        label="Save Billing Review"
-        onClick={() => {
+        variant="primary"label="Save Billing Review"onClick={() => {
           onSave(
             `Billing reviewed for ${form.client} — Decision: ${form.billingDecision}`
           );
@@ -750,7 +718,7 @@ function ReviewBillingModal({
   );
 }
 
-// ── Create Final Invoice Modal ─────────────────────────────────────────────────
+//  Create Final Invoice Modal 
 
 function CreateFinalInvoiceModal({
   record,
@@ -774,7 +742,7 @@ function CreateFinalInvoiceModal({
   }
 
   return (
-    <ModalShell title="Create Final Invoice" onClose={onClose}>
+    <ModalShell title="Create Final Invoice"onClose={onClose}>
       <FormField label="Client">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
@@ -782,8 +750,7 @@ function CreateFinalInvoiceModal({
         <TextInput
           value={form.invoiceAmount}
           onChange={(v) => f("invoiceAmount", v)}
-          placeholder="$0.00"
-        />
+          placeholder="$0.00"/>
       </FormField>
       <FormField label="Invoice Type">
         <SelectInput
@@ -801,20 +768,16 @@ function CreateFinalInvoiceModal({
         <TextInput
           value={form.dueDate}
           onChange={(v) => f("dueDate", v)}
-          placeholder="e.g. Jul 15, 2025"
-        />
+          placeholder="e.g. Jul 15, 2025"/>
       </FormField>
       <FormField label="Invoice Notes">
         <TextArea
           value={form.invoiceNotes}
           onChange={(v) => f("invoiceNotes", v)}
-          placeholder="Add invoice notes…"
-        />
+          placeholder="Add invoice notes…"/>
       </FormField>
       <ActionBtn
-        variant="primary"
-        label="Create Final Invoice"
-        onClick={() => {
+        variant="primary"label="Create Final Invoice"onClick={() => {
           onSave(
             `Final invoice created for ${form.client} — ${form.invoiceType} — ${form.invoiceAmount}`
           );
@@ -825,7 +788,7 @@ function CreateFinalInvoiceModal({
   );
 }
 
-// ── Place Billing Hold Modal ───────────────────────────────────────────────────
+//  Place Billing Hold Modal 
 
 function BillingHoldModal({
   record,
@@ -849,7 +812,7 @@ function BillingHoldModal({
   }
 
   return (
-    <ModalShell title="Place Billing Hold" onClose={onClose}>
+    <ModalShell title="Place Billing Hold"onClose={onClose}>
       <FormField label="Client">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
@@ -857,34 +820,28 @@ function BillingHoldModal({
         <TextInput
           value={form.holdReason}
           onChange={(v) => f("holdReason", v)}
-          placeholder="e.g. AM escalation pending"
-        />
+          placeholder="e.g. AM escalation pending"/>
       </FormField>
       <FormField label="Hold Start Date">
         <TextInput
           value={form.holdStartDate}
           onChange={(v) => f("holdStartDate", v)}
-          placeholder="e.g. Jun 20, 2025"
-        />
+          placeholder="e.g. Jun 20, 2025"/>
       </FormField>
       <FormField label="Hold End Date">
         <TextInput
           value={form.holdEndDate}
           onChange={(v) => f("holdEndDate", v)}
-          placeholder="e.g. Jul 01, 2025"
-        />
+          placeholder="e.g. Jul 01, 2025"/>
       </FormField>
       <FormField label="Notes">
         <TextArea
           value={form.notes}
           onChange={(v) => f("notes", v)}
-          placeholder="Add hold notes…"
-        />
+          placeholder="Add hold notes…"/>
       </FormField>
       <ActionBtn
-        variant="danger"
-        label="Place Billing Hold"
-        onClick={() => {
+        variant="danger"label="Place Billing Hold"onClick={() => {
           onSave(`Billing hold placed for ${form.client} — Reason: ${form.holdReason}`);
           onClose();
         }}
@@ -893,7 +850,7 @@ function BillingHoldModal({
   );
 }
 
-// ── Trigger Offboarding Modal ──────────────────────────────────────────────────
+//  Trigger Offboarding Modal 
 
 function TriggerOffboardingModal({
   record,
@@ -907,7 +864,7 @@ function TriggerOffboardingModal({
   const [form, setForm] = useState<TriggerOffboardingForm>({
     client: record.client,
     billingCleared: record.outstandingBalance === "$0",
-    finalInvoiceSent: record.finalInvoiceStatus === "Paid" || record.finalInvoiceStatus === "Sent",
+    finalInvoiceSent: record.finalInvoiceStatus === "Paid"|| record.finalInvoiceStatus === "Sent",
     outstandingBalance: record.outstandingBalance,
     amOwner: record.amOwner,
     operationsOwner: "Operations Team",
@@ -919,28 +876,25 @@ function TriggerOffboardingModal({
   }
 
   return (
-    <ModalShell title="Trigger Offboarding" onClose={onClose}>
+    <ModalShell title="Trigger Offboarding"onClose={onClose}>
       <div
-        className="rounded-lg border p-3 text-xs"
-        style={{ background: "#F5F3FF", borderColor: "#DDD6FE", color: "#7C3AED" }}
+        className="rounded-lg border p-3 text-xs"style={{ background: "#F5F3FF", borderColor: "#DDD6FE", color: "#7C3AED"}}
       >
-        <strong>Offboarding Handoff:</strong> This will hand off to{" "}
+        <strong>Offboarding Handoff:</strong> This will hand off to{""}
         <Link href="/billing/cancellations/offboarding" className="underline font-semibold">
           /billing/cancellations/offboarding
-        </Link>{" "}
+        </Link>{""}
         and notify AM and Operations.
       </div>
       <FormField label="Client">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
       <CheckboxField
-        label="Billing Cleared"
-        checked={form.billingCleared}
+        label="Billing Cleared"checked={form.billingCleared}
         onChange={(v) => f("billingCleared", v)}
       />
       <CheckboxField
-        label="Final Invoice Sent"
-        checked={form.finalInvoiceSent}
+        label="Final Invoice Sent"checked={form.finalInvoiceSent}
         onChange={(v) => f("finalInvoiceSent", v)}
       />
       <FormField label="Outstanding Balance">
@@ -962,13 +916,10 @@ function TriggerOffboardingModal({
         <TextArea
           value={form.offboardingNotes}
           onChange={(v) => f("offboardingNotes", v)}
-          placeholder="Add offboarding notes…"
-        />
+          placeholder="Add offboarding notes…"/>
       </FormField>
       <ActionBtn
-        variant="primary"
-        label="Trigger Offboarding"
-        onClick={() => {
+        variant="primary"label="Trigger Offboarding"onClick={() => {
           onSave(
             `Offboarding triggered for ${form.client} — AM: ${form.amOwner} — Ops: ${form.operationsOwner}`
           );
@@ -979,7 +930,7 @@ function TriggerOffboardingModal({
   );
 }
 
-// ── Close Billing Modal ────────────────────────────────────────────────────────
+//  Close Billing Modal 
 
 function CloseBillingModal({
   record,
@@ -1001,7 +952,7 @@ function CloseBillingModal({
   }
 
   return (
-    <ModalShell title="Close Billing" onClose={onClose}>
+    <ModalShell title="Close Billing"onClose={onClose}>
       <FormField label="Client">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
@@ -1021,13 +972,10 @@ function CloseBillingModal({
         <TextArea
           value={form.closureNotes}
           onChange={(v) => f("closureNotes", v)}
-          placeholder="Add closure notes…"
-        />
+          placeholder="Add closure notes…"/>
       </FormField>
       <ActionBtn
-        variant="primary"
-        label="Close Billing"
-        onClick={() => {
+        variant="primary"label="Close Billing"onClick={() => {
           onSave(`Billing closed for ${form.client} — Status: ${form.finalBillingStatus}`);
           onClose();
         }}
@@ -1036,7 +984,7 @@ function CloseBillingModal({
   );
 }
 
-// ── Page ───────────────────────────────────────────────────────────────────────
+//  Page 
 
 export default function BillingCancellationsPage() {
   const [records, setRecords] = useState<CancellationRecord[]>(mockCancellations);
@@ -1044,19 +992,19 @@ export default function BillingCancellationsPage() {
   const [eventLog, setEventLog] = useState<
     { date: string; client: string; event: string; by: string; billingStatus: string; offboardingStatus: string; notes: string }[]
   >([
-    { date: "Jun 18", client: "Green Valley Pools",  event: "Cancellation Requested",  by: "Client",    billingStatus: "Cancellation Requested",  offboardingStatus: "Not Started", notes: "Client contacted via email" },
-    { date: "Jun 13", client: "Blue Ridge Plumbing", event: "Billing Hold Placed",     by: "Sarah K.",  billingStatus: "Billing Hold",            offboardingStatus: "Not Started", notes: "AM escalation pending" },
-    { date: "Jun 12", client: "Blue Ridge Plumbing", event: "Cancellation Requested",  by: "Client",    billingStatus: "Cancellation Requested",  offboardingStatus: "Not Started", notes: "" },
-    { date: "Jun 10", client: "Metro Dental",         event: "Cancellation Requested",  by: "Client",    billingStatus: "Cancellation Requested",  offboardingStatus: "Not Started", notes: "Moved to competitor" },
-    { date: "Jun 07", client: "Harbor Auto Group",    event: "Billing Review Started",  by: "Sarah K.",  billingStatus: "Billing Review",          offboardingStatus: "Not Started", notes: "" },
-    { date: "Jun 05", client: "Harbor Auto Group",    event: "Cancellation Requested",  by: "AM",        billingStatus: "Cancellation Requested",  offboardingStatus: "Not Started", notes: "" },
-    { date: "May 28", client: "Sunbelt HVAC",         event: "Offboarding Triggered",   by: "Lisa P.",   billingStatus: "Offboarding Triggered",   offboardingStatus: "Triggered",   notes: "All billing cleared" },
-    { date: "Apr 30", client: "Pacific Dental",       event: "Billing Closed",          by: "Lisa P.",   billingStatus: "Billing Closed",          offboardingStatus: "Complete",    notes: "Closed - Paid" },
+    { date: "Jun 18", client: "Green Valley Pools",  event: "Cancellation Requested",  by: "Client",    billingStatus: "Cancellation Requested",  offboardingStatus: "Not Started", notes: "Client contacted via email"},
+    { date: "Jun 13", client: "Blue Ridge Plumbing", event: "Billing Hold Placed",     by: "Sarah K.",  billingStatus: "Billing Hold",            offboardingStatus: "Not Started", notes: "AM escalation pending"},
+    { date: "Jun 12", client: "Blue Ridge Plumbing", event: "Cancellation Requested",  by: "Client",    billingStatus: "Cancellation Requested",  offboardingStatus: "Not Started", notes: ""},
+    { date: "Jun 10", client: "Metro Dental",         event: "Cancellation Requested",  by: "Client",    billingStatus: "Cancellation Requested",  offboardingStatus: "Not Started", notes: "Moved to competitor"},
+    { date: "Jun 07", client: "Harbor Auto Group",    event: "Billing Review Started",  by: "Sarah K.",  billingStatus: "Billing Review",          offboardingStatus: "Not Started", notes: ""},
+    { date: "Jun 05", client: "Harbor Auto Group",    event: "Cancellation Requested",  by: "AM",        billingStatus: "Cancellation Requested",  offboardingStatus: "Not Started", notes: ""},
+    { date: "May 28", client: "Sunbelt HVAC",         event: "Offboarding Triggered",   by: "Lisa P.",   billingStatus: "Offboarding Triggered",   offboardingStatus: "Triggered",   notes: "All billing cleared"},
+    { date: "Apr 30", client: "Pacific Dental",       event: "Billing Closed",          by: "Lisa P.",   billingStatus: "Billing Closed",          offboardingStatus: "Complete",    notes: "Closed - Paid"},
   ]);
 
   function addEvent(client: string, event: string, by: string, billingStatus: string, offboardingStatus: string, notes = "") {
     const now = new Date();
-    const date = `${now.toLocaleString("en-US", { month: "short" })} ${now.getDate()}`;
+    const date = `${now.toLocaleString("en-US", { month: "short"})} ${now.getDate()}`;
     setEventLog((prev) => [{ date, client, event, by, billingStatus, offboardingStatus, notes }, ...prev.slice(0, 19)]);
   }
 
@@ -1075,7 +1023,7 @@ export default function BillingCancellationsPage() {
   const approvedCount     = records.filter((r) => ["Approved for Offboarding", "Offboarding Triggered", "Billing Closed", "Cancelled"].includes(r.cancellationStatus)).length;
   const finalInvPending   = records.filter((r) => ["Needed", "Created", "Sent"].includes(r.finalInvoiceStatus)).length;
   const unpaidBalances    = records.filter((r) => r.outstandingBalance !== "$0").length;
-  const offboardTriggered = records.filter((r) => r.offboardingStatus === "Triggered" || r.offboardingStatus === "In Progress").length;
+  const offboardTriggered = records.filter((r) => r.offboardingStatus === "Triggered"|| r.offboardingStatus === "In Progress").length;
   const billingHolds      = records.filter((r) => r.cancellationStatus === "Billing Hold").length;
   const closedThisMonth   = records.filter((r) => r.cancellationStatus === "Billing Closed").length;
   const revenueAtRisk     = records
@@ -1088,55 +1036,47 @@ export default function BillingCancellationsPage() {
   // Offboarding-ready records
   const offboardingReady = records.filter(
     (r) =>
-      (r.cancellationStatus === "Approved for Offboarding" ||
-        r.finalInvoiceStatus === "Paid" ||
+      (r.cancellationStatus === "Approved for Offboarding"||
+        r.finalInvoiceStatus === "Paid"||
         r.outstandingBalance === "$0") &&
-      r.offboardingStatus !== "Triggered" &&
-      r.offboardingStatus !== "In Progress" &&
-      r.offboardingStatus !== "Complete" &&
-      r.cancellationStatus !== "Billing Closed"
-  );
+      r.offboardingStatus !== "Triggered"&&
+      r.offboardingStatus !== "In Progress"&&
+      r.offboardingStatus !== "Complete"&&
+      r.cancellationStatus !== "Billing Closed");
 
   return (
     <div className="space-y-8">
 
-      {/* ── Task Management Engine Banner ── */}
+      {/*  Task Management Engine Banner  */}
       <TaskAccessCard
-        context="Cancellations"
-        variant="banner"
-        counters={{ open: 5, overdue: 1, dueToday: 2, completed: 9 }}
-        createLabel="Create Cancellation Task"
-        examples={["Cancellation Review", "Retention Call", "Final Invoice", "Billing Close"]}
+        context="Cancellations"variant="banner"counters={{ open: 5, overdue: 1, dueToday: 2, completed: 9 }}
+        createLabel="Create Cancellation Task"examples={["Cancellation Review", "Retention Call", "Final Invoice", "Billing Close"]}
       />
 
-      {/* ── Header ────────────────────────────────────────────────────────── */}
+      {/*  Header  */}
       <div>
         <p
-          className="text-[11px] font-bold uppercase tracking-widest mb-1"
-          style={{ color: workspace.accentColor }}
+          className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}
         >
           {workspace.name}
         </p>
         <h1
-          className="text-2xl font-bold tracking-tight"
-          style={{ color: "var(--rtm-text-primary)" }}
+          className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}
         >
           Billing Cancellations &amp; Offboarding
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Manage cancellation billing impact, final invoice status, offboarding triggers, and account closure readiness.
         </p>
       </div>
 
-      {/* ── Top Action Bar ────────────────────────────────────────────────── */}
+      {/*  Top Action Bar  */}
       <div className="flex flex-wrap gap-2">
-        <ActionBtn variant="primary"   label="+ New Cancellation Review" onClick={() => addEvent("—", "New Cancellation Review Started", "Billing", "Cancellation Requested", "Not Started")} />
-        <ActionBtn variant="secondary" label="Export Cancellation Queue"  onClick={() => addEvent("—", "Cancellation Queue Exported", "Billing", "—", "—")} />
-        <ActionBtn variant="secondary" label="Sync Billing Status"        onClick={() => addEvent("—", "Billing Status Synced", "System", "—", "—")} />
+        <ActionBtn variant="primary"label="+ New Cancellation Review"onClick={() => addEvent("—", "New Cancellation Review Started", "Billing", "Cancellation Requested", "Not Started")} />
+        <ActionBtn variant="secondary"label="Export Cancellation Queue"onClick={() => addEvent("—", "Cancellation Queue Exported", "Billing", "—", "—")} />
+        <ActionBtn variant="secondary"label="Sync Billing Status"onClick={() => addEvent("—", "Billing Status Synced", "System", "—", "—")} />
         <Link
-          href="/billing/cancellations/offboarding"
-          className="text-sm font-semibold px-3.5 py-2 rounded-lg border transition-colors"
-          style={{
+          href="/billing/cancellations/offboarding"className="text-sm font-semibold px-3.5 py-2 rounded-lg border transition-colors"style={{
             background: "#F5F3FF",
             color: "#7C3AED",
             borderColor: "#DDD6FE",
@@ -1146,95 +1086,52 @@ export default function BillingCancellationsPage() {
         </Link>
       </div>
 
-      {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
+      {/*  KPI Cards  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiCard
-          title="Pending Reviews"
-          value={String(pendingReviews)}
-          subtitle="Awaiting billing review"
-          accentColor="#D97706"
-          iconBg="#FFFBEB"
-          iconColor="#D97706"
-          icon={<span className="text-lg">🔍</span>}
+          title="Pending Reviews"value={String(pendingReviews)}
+          subtitle="Awaiting billing review"accentColor="#D97706"iconBg="#FFFBEB"iconColor="#D97706"
         />
         <KpiCard
-          title="Approved Cancellations"
-          value={String(approvedCount)}
-          subtitle="Approved or closed"
-          accentColor="#059669"
-          iconBg="#ECFDF5"
-          iconColor="#059669"
-          icon={<span className="text-lg">✅</span>}
+          title="Approved Cancellations"value={String(approvedCount)}
+          subtitle="Approved or closed"accentColor="#059669"iconBg="#ECFDF5"iconColor="#059669"
         />
         <KpiCard
-          title="Final Invoices Pending"
-          value={String(finalInvPending)}
-          subtitle="Need invoice action"
-          accentColor="#1B4FD8"
-          iconBg="#EFF6FF"
-          iconColor="#1B4FD8"
-          icon={<span className="text-lg">🧾</span>}
+          title="Final Invoices Pending"value={String(finalInvPending)}
+          subtitle="Need invoice action"accentColor="#1B4FD8"iconBg="#EFF6FF"iconColor="#1B4FD8"
         />
         <KpiCard
-          title="Unpaid Balances"
-          value={String(unpaidBalances)}
-          subtitle="Outstanding amounts"
-          accentColor="#DC2626"
-          iconBg="#FEF2F2"
-          iconColor="#DC2626"
-          icon={<span className="text-lg">⚠️</span>}
+          title="Unpaid Balances"value={String(unpaidBalances)}
+          subtitle="Outstanding amounts"accentColor="#DC2626"iconBg="#FEF2F2"iconColor="#DC2626"
         />
         <KpiCard
-          title="Offboarding Triggered"
-          value={String(offboardTriggered)}
-          subtitle="In offboarding flow"
-          accentColor="#7C3AED"
-          iconBg="#F5F3FF"
-          iconColor="#7C3AED"
-          icon={<span className="text-lg">🚀</span>}
+          title="Offboarding Triggered"value={String(offboardTriggered)}
+          subtitle="In offboarding flow"accentColor="#7C3AED"iconBg="#F5F3FF"iconColor="#7C3AED"
         />
         <KpiCard
-          title="Billing Holds"
-          value={String(billingHolds)}
-          subtitle="Active holds"
-          accentColor="#0891B2"
-          iconBg="#ECFEFF"
-          iconColor="#0891B2"
-          icon={<span className="text-lg">🔒</span>}
+          title="Billing Holds"value={String(billingHolds)}
+          subtitle="Active holds"accentColor="#0891B2"iconBg="#ECFEFF"iconColor="#0891B2"
         />
         <KpiCard
-          title="Closed This Month"
-          value={String(closedThisMonth)}
-          subtitle="Billing fully closed"
-          accentColor="#059669"
-          iconBg="#ECFDF5"
-          iconColor="#059669"
-          icon={<span className="text-lg">📁</span>}
+          title="Closed This Month"value={String(closedThisMonth)}
+          subtitle="Billing fully closed"accentColor="#059669"iconBg="#ECFDF5"iconColor="#059669"
         />
         <KpiCard
-          title="Revenue at Risk"
-          value={`$${revenueAtRisk.toLocaleString()}`}
-          subtitle="MRR from open cancellations"
-          accentColor="#DC2626"
-          iconBg="#FEF2F2"
-          iconColor="#DC2626"
-          icon={<span className="text-lg">📉</span>}
+          title="Revenue at Risk"value={`$${revenueAtRisk.toLocaleString()}`}
+          subtitle="MRR from open cancellations"accentColor="#DC2626"iconBg="#FEF2F2"iconColor="#DC2626"
         />
       </div>
 
-      {/* ── Lifecycle Flow ────────────────────────────────────────────────── */}
+      {/*  Lifecycle Flow  */}
       <LifecycleFlow />
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* ── 1. Cancellation Review Queue ─────────────────────────────────── */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  1. Cancellation Review Queue  */}
+      {/*  */}
       <SectionWrapper
-        title="Cancellation Review Queue"
-        description="Primary billing review table. Take action on each cancellation record."
-      >
+        title="Cancellation Review Queue"description="Primary billing review table. Take action on each cancellation record.">
         <div
-          className="overflow-x-auto rounded-lg border"
-          style={{ borderColor: "var(--rtm-border-light)" }}
+          className="overflow-x-auto rounded-lg border"style={{ borderColor: "var(--rtm-border-light)"}}
         >
           <table className="min-w-full">
             <thead>
@@ -1259,13 +1156,11 @@ export default function BillingCancellationsPage() {
               {records.map((row) => (
                 <tr
                   key={row.id}
-                  style={{ background: "var(--rtm-bg)" }}
-                  className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors"
-                >
+                  style={{ background: "var(--rtm-bg)"}}
+                  className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors">
                   <Td>
                     <span
-                      className="font-semibold"
-                      style={{ color: "var(--rtm-text-primary)" }}
+                      className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}
                     >
                       {row.client}
                     </span>
@@ -1274,8 +1169,7 @@ export default function BillingCancellationsPage() {
                     <StatusBadge
                       variant={cancellationStatusVariant(row.cancellationStatus)}
                       label={row.cancellationStatus}
-                      size="sm"
-                    />
+                      size="sm"/>
                   </Td>
                   <Td muted>{row.requestedDate}</Td>
                   <Td muted>{row.requestedBy}</Td>
@@ -1283,8 +1177,7 @@ export default function BillingCancellationsPage() {
                   <Td muted>{row.billingOwner}</Td>
                   <Td>
                     <span
-                      className="font-semibold text-sm"
-                      style={{ color: "#DC2626" }}
+                      className="font-semibold text-sm"style={{ color: "#DC2626"}}
                     >
                       {row.mrrImpact}
                     </span>
@@ -1292,8 +1185,7 @@ export default function BillingCancellationsPage() {
                   <Td muted>{row.contractEndDate}</Td>
                   <Td>
                     <span
-                      className="font-semibold text-sm"
-                      style={{ color: row.outstandingBalance !== "$0" ? "#DC2626" : "#059669" }}
+                      className="font-semibold text-sm"style={{ color: row.outstandingBalance !== "$0"? "#DC2626": "#059669"}}
                     >
                       {row.outstandingBalance}
                     </span>
@@ -1302,27 +1194,23 @@ export default function BillingCancellationsPage() {
                     <StatusBadge
                       variant={finalInvoiceVariant(row.finalInvoiceStatus)}
                       label={row.finalInvoiceStatus}
-                      size="sm"
-                    />
+                      size="sm"/>
                   </Td>
                   <Td>
                     <StatusBadge
                       variant={offboardingVariant(row.offboardingStatus)}
                       label={row.offboardingStatus}
-                      size="sm"
-                    />
+                      size="sm"/>
                   </Td>
                   <Td>
                     <StatusBadge
                       variant={priorityVariant(row.priority)}
                       label={row.priority}
-                      size="sm"
-                    />
+                      size="sm"/>
                   </Td>
                   <Td tight>
                     <span
-                      className="text-xs"
-                      style={{ color: "var(--rtm-text-muted)" }}
+                      className="text-xs"style={{ color: "var(--rtm-text-muted)"}}
                     >
                       {row.nextBillingAction}
                     </span>
@@ -1331,48 +1219,34 @@ export default function BillingCancellationsPage() {
                     <div className="flex flex-wrap gap-1.5">
                       <ActionBtn
                         small
-                        variant="secondary"
-                        label="Review Billing"
-                        onClick={() => setModal({ kind: "review", record: row })}
+                        variant="secondary"label="Review Billing"onClick={() => setModal({ kind: "review", record: row })}
                       />
                       <ActionBtn
                         small
-                        variant="secondary"
-                        label="Create Final Invoice"
-                        onClick={() => setModal({ kind: "invoice", record: row })}
+                        variant="secondary"label="Create Final Invoice"onClick={() => setModal({ kind: "invoice", record: row })}
                       />
                       <ActionBtn
                         small
-                        variant="secondary"
-                        label="Mark Balance Cleared"
-                        onClick={() => {
+                        variant="secondary"label="Mark Balance Cleared"onClick={() => {
                           updateRecordStatus(row.id, "Approved for Offboarding", "Trigger Offboarding");
                           addEvent(row.client, "Balance Cleared", "Billing", "Approved for Offboarding", row.offboardingStatus, "Balance marked cleared");
                         }}
                       />
                       <ActionBtn
                         small
-                        variant="danger"
-                        label="Place Billing Hold"
-                        onClick={() => setModal({ kind: "hold", record: row })}
+                        variant="danger"label="Place Billing Hold"onClick={() => setModal({ kind: "hold", record: row })}
                       />
                       <ActionBtn
                         small
-                        variant="secondary"
-                        label="Trigger Offboarding"
-                        onClick={() => setModal({ kind: "offboard", record: row })}
+                        variant="secondary"label="Trigger Offboarding"onClick={() => setModal({ kind: "offboard", record: row })}
                       />
                       <ActionBtn
                         small
-                        variant="secondary"
-                        label="Close Billing"
-                        onClick={() => setModal({ kind: "close", record: row })}
+                        variant="secondary"label="Close Billing"onClick={() => setModal({ kind: "close", record: row })}
                       />
                       <ActionBtn
                         small
-                        variant="ghost"
-                        label="Add Note"
-                        onClick={() => addEvent(row.client, "Note Added", "Billing", row.cancellationStatus, row.offboardingStatus)}
+                        variant="ghost"label="Add Note"onClick={() => addEvent(row.client, "Note Added", "Billing", row.cancellationStatus, row.offboardingStatus)}
                       />
                     </div>
                   </Td>
@@ -1383,16 +1257,13 @@ export default function BillingCancellationsPage() {
         </div>
       </SectionWrapper>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* ── 2. Billing Impact Review ──────────────────────────────────────── */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  2. Billing Impact Review  */}
+      {/*  */}
       <SectionWrapper
-        title="Billing Impact Review"
-        description="Financial snapshot of each cancellation — refunds, prorations, balances, and billing decisions."
-      >
+        title="Billing Impact Review"description="Financial snapshot of each cancellation — refunds, prorations, balances, and billing decisions.">
         <div
-          className="overflow-x-auto rounded-lg border"
-          style={{ borderColor: "var(--rtm-border-light)" }}
+          className="overflow-x-auto rounded-lg border"style={{ borderColor: "var(--rtm-border-light)"}}
         >
           <table className="min-w-full">
             <thead>
@@ -1413,36 +1284,33 @@ export default function BillingCancellationsPage() {
               {records.map((row) => (
                 <tr
                   key={row.id}
-                  style={{ background: "var(--rtm-bg)" }}
-                  className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors"
-                >
+                  style={{ background: "var(--rtm-bg)"}}
+                  className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors">
                   <Td>
                     <span
-                      className="font-semibold"
-                      style={{ color: "var(--rtm-text-primary)" }}
+                      className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}
                     >
                       {row.client}
                     </span>
                   </Td>
                   <Td muted>{row.currentPlan}</Td>
                   <Td>
-                    <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                       {row.monthlyValue}
                     </span>
                   </Td>
                   <Td muted>{row.remainingContractValue}</Td>
                   <Td>
                     {row.refundRequired ? (
-                      <StatusBadge variant="warning" label="Yes" size="sm" />
+                      <StatusBadge variant="warning"label="Yes"size="sm"/>
                     ) : (
-                      <StatusBadge variant="neutral" label="No" size="sm" />
+                      <StatusBadge variant="neutral"label="No"size="sm"/>
                     )}
                   </Td>
                   <Td muted>{row.proratedAmount}</Td>
                   <Td>
                     <span
-                      className="font-semibold text-sm"
-                      style={{ color: row.outstandingBalance !== "$0" ? "#DC2626" : "#059669" }}
+                      className="font-semibold text-sm"style={{ color: row.outstandingBalance !== "$0"? "#DC2626": "#059669"}}
                     >
                       {row.outstandingBalance}
                     </span>
@@ -1451,18 +1319,12 @@ export default function BillingCancellationsPage() {
                     <StatusBadge
                       variant={finalInvoiceVariant(row.finalInvoiceStatus)}
                       label={row.finalInvoiceStatus}
-                      size="sm"
-                    />
+                      size="sm"/>
                   </Td>
                   <Td>
                     <span
-                      className="text-xs font-medium"
-                      style={{
-                        color: row.paymentMethodStatus === "Failed" || row.paymentMethodStatus === "On Hold"
-                          ? "#DC2626"
-                          : row.paymentMethodStatus === "Closed"
-                          ? "var(--rtm-text-muted)"
-                          : "#059669",
+                      className="text-xs font-medium"style={{
+                        color: row.paymentMethodStatus === "Failed"|| row.paymentMethodStatus === "On Hold"? "#DC2626": row.paymentMethodStatus === "Closed"? "var(--rtm-text-muted)": "#059669",
                       }}
                     >
                       {row.paymentMethodStatus}
@@ -1470,8 +1332,7 @@ export default function BillingCancellationsPage() {
                   </Td>
                   <Td>
                     <span
-                      className="text-xs font-semibold px-2 py-0.5 rounded-md border"
-                      style={{
+                      className="text-xs font-semibold px-2 py-0.5 rounded-md border"style={{
                         background: "#EFF6FF",
                         color: "#1B4FD8",
                         borderColor: "#BFDBFE",
@@ -1487,24 +1348,20 @@ export default function BillingCancellationsPage() {
         </div>
       </SectionWrapper>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* ── 3. Offboarding Trigger Queue ──────────────────────────────────── */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  3. Offboarding Trigger Queue  */}
+      {/*  */}
       <SectionWrapper
-        title="Offboarding Trigger Queue"
-        description="Clients ready for billing-to-offboarding handoff. Trigger offboarding once billing is cleared."
-      >
+        title="Offboarding Trigger Queue"description="Clients ready for billing-to-offboarding handoff. Trigger offboarding once billing is cleared.">
         {offboardingReady.length === 0 ? (
           <div
-            className="text-center py-8 text-sm"
-            style={{ color: "var(--rtm-text-muted)" }}
+            className="text-center py-8 text-sm"style={{ color: "var(--rtm-text-muted)"}}
           >
             No clients currently ready for offboarding trigger.
           </div>
         ) : (
           <div
-            className="overflow-x-auto rounded-lg border"
-            style={{ borderColor: "var(--rtm-border-light)" }}
+            className="overflow-x-auto rounded-lg border"style={{ borderColor: "var(--rtm-border-light)"}}
           >
             <table className="min-w-full">
               <thead>
@@ -1524,35 +1381,34 @@ export default function BillingCancellationsPage() {
               <tbody>
                 {offboardingReady.map((row) => {
                   const billingCleared = row.outstandingBalance === "$0";
-                  const finalSent      = row.finalInvoiceStatus === "Paid" || row.finalInvoiceStatus === "Sent" || row.finalInvoiceStatus === "Not Required";
+                  const finalSent      = row.finalInvoiceStatus === "Paid"|| row.finalInvoiceStatus === "Sent"|| row.finalInvoiceStatus === "Not Required";
                   const approved       = ["Approved for Offboarding", "Final Invoice Needed", "Pending Balance"].includes(row.cancellationStatus) || billingCleared;
                   return (
                     <tr
                       key={row.id}
-                      style={{ background: "var(--rtm-bg)" }}
-                      className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors"
-                    >
+                      style={{ background: "var(--rtm-bg)"}}
+                      className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors">
                       <Td>
-                        <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                        <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                           {row.client}
                         </span>
                       </Td>
                       <Td>
-                        <StatusBadge variant={billingCleared ? "success" : "warning"} label={billingCleared ? "Yes" : "No"} size="sm" />
+                        <StatusBadge variant={billingCleared ? "success": "warning"} label={billingCleared ? "Yes": "No"} size="sm"/>
                       </Td>
                       <Td>
-                        <StatusBadge variant={finalSent ? "success" : "warning"} label={finalSent ? "Yes" : "No"} size="sm" />
+                        <StatusBadge variant={finalSent ? "success": "warning"} label={finalSent ? "Yes": "No"} size="sm"/>
                       </Td>
                       <Td>
-                        <span className="font-semibold text-sm" style={{ color: row.outstandingBalance !== "$0" ? "#DC2626" : "#059669" }}>
+                        <span className="font-semibold text-sm"style={{ color: row.outstandingBalance !== "$0"? "#DC2626": "#059669"}}>
                           {row.outstandingBalance}
                         </span>
                       </Td>
                       <Td>
-                        <StatusBadge variant={approved ? "success" : "warning"} label={approved ? "Yes" : "Pending"} size="sm" />
+                        <StatusBadge variant={approved ? "success": "warning"} label={approved ? "Yes": "Pending"} size="sm"/>
                       </Td>
                       <Td>
-                        <StatusBadge variant={offboardingVariant(row.offboardingStatus)} label={row.offboardingStatus} size="sm" />
+                        <StatusBadge variant={offboardingVariant(row.offboardingStatus)} label={row.offboardingStatus} size="sm"/>
                       </Td>
                       <Td muted>Operations Team</Td>
                       <Td muted>{row.amOwner}</Td>
@@ -1563,32 +1419,22 @@ export default function BillingCancellationsPage() {
                         <div className="flex flex-wrap gap-1.5">
                           <ActionBtn
                             small
-                            variant="primary"
-                            label="Trigger Offboarding"
-                            onClick={() => setModal({ kind: "offboard", record: row })}
+                            variant="primary"label="Trigger Offboarding"onClick={() => setModal({ kind: "offboard", record: row })}
                           />
                           <ActionBtn
                             small
-                            variant="secondary"
-                            label="Notify AM"
-                            onClick={() => addEvent(row.client, "AM Notified", "Billing", row.cancellationStatus, row.offboardingStatus, "AM notified for offboarding")}
+                            variant="secondary"label="Notify AM"onClick={() => addEvent(row.client, "AM Notified", "Billing", row.cancellationStatus, row.offboardingStatus, "AM notified for offboarding")}
                           />
                           <ActionBtn
                             small
-                            variant="secondary"
-                            label="Notify Operations"
-                            onClick={() => addEvent(row.client, "Operations Notified", "Billing", row.cancellationStatus, row.offboardingStatus, "Ops notified for offboarding")}
+                            variant="secondary"label="Notify Operations"onClick={() => addEvent(row.client, "Operations Notified", "Billing", row.cancellationStatus, row.offboardingStatus, "Ops notified for offboarding")}
                           />
                           <ActionBtn
                             small
-                            variant="secondary"
-                            label="Create Offboarding Tasks"
-                            onClick={() => addEvent(row.client, "Offboarding Tasks Created", "Billing", row.cancellationStatus, row.offboardingStatus)}
+                            variant="secondary"label="Create Offboarding Tasks"onClick={() => addEvent(row.client, "Offboarding Tasks Created", "Billing", row.cancellationStatus, row.offboardingStatus)}
                           />
                           <Link
-                            href="/admin/workflows"
-                            className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors"
-                            style={{
+                            href="/admin/workflows"className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors"style={{
                               background: "var(--rtm-surface,#fff)",
                               color: "var(--rtm-text-primary)",
                               borderColor: "var(--rtm-border)",
@@ -1607,16 +1453,13 @@ export default function BillingCancellationsPage() {
         )}
       </SectionWrapper>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* ── 4. Recent Cancellation Billing Events ─────────────────────────── */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  4. Recent Cancellation Billing Events  */}
+      {/*  */}
       <SectionWrapper
-        title="Recent Cancellation Billing Events"
-        description="Live event log for all cancellation and offboarding billing actions."
-      >
+        title="Recent Cancellation Billing Events"description="Live event log for all cancellation and offboarding billing actions.">
         <div
-          className="overflow-x-auto rounded-lg border"
-          style={{ borderColor: "var(--rtm-border-light)" }}
+          className="overflow-x-auto rounded-lg border"style={{ borderColor: "var(--rtm-border-light)"}}
         >
           <table className="min-w-full">
             <thead>
@@ -1633,30 +1476,22 @@ export default function BillingCancellationsPage() {
             <tbody>
               {eventLog.map((ev, i) => {
                 const evVariant: BadgeVariant =
-                  ev.event === "Billing Closed" || ev.event === "Balance Cleared"
-                    ? "success"
-                    : ev.event === "Offboarding Triggered" || ev.event.includes("Triggered")
-                    ? "info"
-                    : ev.event === "Billing Hold Placed"
-                    ? "error"
-                    : ev.event === "Final Invoice Created"
-                    ? "warning"
-                    : "neutral";
+                  ev.event === "Billing Closed"|| ev.event === "Balance Cleared"? "success": ev.event === "Offboarding Triggered"|| ev.event.includes("Triggered")
+                    ? "info": ev.event === "Billing Hold Placed"? "error": ev.event === "Final Invoice Created"? "warning": "neutral";
 
                 return (
                   <tr
                     key={i}
-                    style={{ background: "var(--rtm-bg)" }}
-                    className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors"
-                  >
+                    style={{ background: "var(--rtm-bg)"}}
+                    className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors">
                     <Td muted>{ev.date}</Td>
                     <Td>
-                      <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                      <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                         {ev.client}
                       </span>
                     </Td>
                     <Td>
-                      <StatusBadge variant={evVariant} label={ev.event} size="sm" />
+                      <StatusBadge variant={evVariant} label={ev.event} size="sm"/>
                     </Td>
                     <Td muted>{ev.by}</Td>
                     <Td muted>
@@ -1676,31 +1511,28 @@ export default function BillingCancellationsPage() {
         </div>
       </SectionWrapper>
 
-      {/* ── Route-Ready Navigation Links ─────────────────────────────────── */}
+      {/*  Route-Ready Navigation Links  */}
       <div
-        className="rounded-xl border p-5 space-y-3"
-        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        className="rounded-xl border p-5 space-y-3"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
       >
         <p
-          className="text-xs font-bold uppercase tracking-widest"
-          style={{ color: "var(--rtm-text-muted)" }}
+          className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}
         >
           Connected Systems
         </p>
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "Account Management", href: "/account-management", color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE" },
-            { label: "Client Portfolio",   href: "/clients",            color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
-            { label: "Workflow Engine",    href: "/admin/workflows",    color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
-            { label: "Tasks",             href: "/tasks",              color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-            { label: "Offboarding Queue", href: "/billing/cancellations/offboarding", color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" },
-            { label: "Billing Dashboard", href: workspace.dashboardRoute, color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB" },
+            { label: "Account Management", href: "/account-management", color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE"},
+            { label: "Client Portfolio",   href: "/clients",            color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
+            { label: "Workflow Engine",    href: "/admin/workflows",    color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
+            { label: "Tasks",             href: "/tasks",              color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+            { label: "Offboarding Queue", href: "/billing/cancellations/offboarding", color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC"},
+            { label: "Billing Dashboard", href: workspace.dashboardRoute, color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB"},
           ].map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-semibold px-3.5 py-2 rounded-lg border transition-colors hover:opacity-80"
-              style={{ background: link.bg, color: link.color, borderColor: link.border }}
+              className="text-sm font-semibold px-3.5 py-2 rounded-lg border transition-colors hover:opacity-80"style={{ background: link.bg, color: link.color, borderColor: link.border }}
             >
               {link.label} →
             </Link>
@@ -1708,8 +1540,8 @@ export default function BillingCancellationsPage() {
         </div>
       </div>
 
-      {/* ── Modals ────────────────────────────────────────────────────────── */}
-      {modal?.kind === "review" && (
+      {/*  Modals  */}
+      {modal?.kind === "review"&& (
         <ReviewBillingModal
           record={modal.record}
           onClose={() => setModal(null)}
@@ -1719,7 +1551,7 @@ export default function BillingCancellationsPage() {
           }}
         />
       )}
-      {modal?.kind === "invoice" && (
+      {modal?.kind === "invoice"&& (
         <CreateFinalInvoiceModal
           record={modal.record}
           onClose={() => setModal(null)}
@@ -1729,7 +1561,7 @@ export default function BillingCancellationsPage() {
           }}
         />
       )}
-      {modal?.kind === "hold" && (
+      {modal?.kind === "hold"&& (
         <BillingHoldModal
           record={modal.record}
           onClose={() => setModal(null)}
@@ -1739,7 +1571,7 @@ export default function BillingCancellationsPage() {
           }}
         />
       )}
-      {modal?.kind === "offboard" && (
+      {modal?.kind === "offboard"&& (
         <TriggerOffboardingModal
           record={modal.record}
           onClose={() => setModal(null)}
@@ -1749,7 +1581,7 @@ export default function BillingCancellationsPage() {
           }}
         />
       )}
-      {modal?.kind === "close" && (
+      {modal?.kind === "close"&& (
         <CloseBillingModal
           record={modal.record}
           onClose={() => setModal(null)}

@@ -7,39 +7,39 @@ import type { RTMNotification, NotificationStatus } from "@/lib/notifications";
 
 // ─── Filter tabs ─────────────────────────────────────────────────
 const FILTER_TABS = [
-  { key: "All",          label: "All" },
-  { key: "Unread",       label: "Unread" },
-  { key: "Task",         label: "Tasks" },
-  { key: "Workflow",     label: "Workflow" },
-  { key: "Billing",      label: "Billing" },
-  { key: "Renewal",      label: "Renewals" },
-  { key: "Cancellation", label: "Cancellations" },
-  { key: "Affiliate",    label: "Affiliates" },
+  { key: "All",          label: "All"},
+  { key: "Unread",       label: "Unread"},
+  { key: "Task",         label: "Tasks"},
+  { key: "Workflow",     label: "Workflow"},
+  { key: "Billing",      label: "Billing"},
+  { key: "Renewal",      label: "Renewals"},
+  { key: "Cancellation", label: "Cancellations"},
+  { key: "Affiliate",    label: "Affiliates"},
 ] as const;
 
 // ─── Priority colors ─────────────────────────────────────────────
 const PRIORITY_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  Low:      { bg: "#F0FDF4", text: "#15803D", dot: "#22C55E" },
-  Medium:   { bg: "#FFFBEB", text: "#B45309", dot: "#F59E0B" },
-  High:     { bg: "#FFF7ED", text: "#C2410C", dot: "#F97316" },
-  Urgent:   { bg: "#FEF2F2", text: "#B91C1C", dot: "#EF4444" },
-  Critical: { bg: "#FFF0F0", text: "#991B1B", dot: "#DC2626" },
+  Low:      { bg: "#F0FDF4", text: "#15803D", dot: "#22C55E"},
+  Medium:   { bg: "#FFFBEB", text: "#B45309", dot: "#F59E0B"},
+  High:     { bg: "#FFF7ED", text: "#C2410C", dot: "#F97316"},
+  Urgent:   { bg: "#FEF2F2", text: "#B91C1C", dot: "#EF4444"},
+  Critical: { bg: "#FFF0F0", text: "#991B1B", dot: "#DC2626"},
 };
 
 // ─── Module tag colors ────────────────────────────────────────────
 const MODULE_COLORS: Record<string, { bg: string; text: string }> = {
-  "Workflow Engine":    { bg: "#EFF6FF", text: "#1D4ED8" },
-  "Task Engine":        { bg: "#F5F3FF", text: "#6D28D9" },
-  "Billing":            { bg: "#ECFDF5", text: "#065F46" },
-  "Billing Activation": { bg: "#FFF0FE", text: "#86198F" },
-  "Account Management": { bg: "#F0F9FF", text: "#075985" },
-  "Client Portfolio":   { bg: "#F0F9FF", text: "#075985" },
-  "Sales":              { bg: "#FFF7ED", text: "#C2410C" },
-  "Renewals":           { bg: "#ECFDF5", text: "#065F46" },
-  "Cancellations":      { bg: "#FEF2F2", text: "#B91C1C" },
-  "Offboarding":        { bg: "#FDF2F8", text: "#831843" },
-  "Affiliate Management": { bg: "#FFFBEB", text: "#B45309" },
-  "Admin":              { bg: "#F1F5F9", text: "#475569" },
+  "Workflow Engine":    { bg: "#EFF6FF", text: "#1D4ED8"},
+  "Task Engine":        { bg: "#F5F3FF", text: "#6D28D9"},
+  "Billing":            { bg: "#ECFDF5", text: "#065F46"},
+  "Billing Activation": { bg: "#FFF0FE", text: "#86198F"},
+  "Account Management": { bg: "#F0F9FF", text: "#075985"},
+  "Client Portfolio":   { bg: "#F0F9FF", text: "#075985"},
+  "Sales":              { bg: "#FFF7ED", text: "#C2410C"},
+  "Renewals":           { bg: "#ECFDF5", text: "#065F46"},
+  "Cancellations":      { bg: "#FEF2F2", text: "#B91C1C"},
+  "Offboarding":        { bg: "#FDF2F8", text: "#831843"},
+  "Affiliate Management": { bg: "#FFFBEB", text: "#B45309"},
+  "Admin":              { bg: "#F1F5F9", text: "#475569"},
 };
 
 // ─── Badge count formatting ───────────────────────────────────────
@@ -54,12 +54,10 @@ function PriorityDot({ priority }: { priority: string }) {
   const c = PRIORITY_COLORS[priority] ?? PRIORITY_COLORS.Medium;
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none flex-shrink-0"
-      style={{ background: c.bg, color: c.text }}
+      className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none flex-shrink-0"style={{ background: c.bg, color: c.text }}
     >
       <span
-        className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-        style={{ background: c.dot }}
+        className="w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: c.dot }}
       />
       {priority}
     </span>
@@ -68,11 +66,10 @@ function PriorityDot({ priority }: { priority: string }) {
 
 // ─── ModuleTag ────────────────────────────────────────────────────
 function ModuleTag({ module }: { module: string }) {
-  const c = MODULE_COLORS[module] ?? { bg: "#F1F5F9", text: "#475569" };
+  const c = MODULE_COLORS[module] ?? { bg: "#F1F5F9", text: "#475569"};
   return (
     <span
-      className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md leading-none flex-shrink-0"
-      style={{ background: c.bg, color: c.text }}
+      className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md leading-none flex-shrink-0"style={{ background: c.bg, color: c.text }}
     >
       {module}
     </span>
@@ -100,7 +97,7 @@ export default function NotificationBell() {
   const [items,    setItems]    = useState<RTMNotification[]>(NOTIFICATIONS);
 
   const unreadCount = useMemo(
-    () => items.filter((n) => n.status === "Unread" || n.status === "Escalated").length,
+    () => items.filter((n) => n.status === "Unread"|| n.status === "Escalated").length,
     [items]
   );
 
@@ -122,8 +119,8 @@ export default function NotificationBell() {
   // Filtered list (max 12 in dropdown)
   const filtered = useMemo(() => {
     const base =
-      filter === "All"    ? items :
-      filter === "Unread" ? items.filter((n) => n.status === "Unread" || n.status === "Escalated") :
+      filter === "All"? items :
+      filter === "Unread"? items.filter((n) => n.status === "Unread"|| n.status === "Escalated") :
                             items.filter((n) => n.type === filter);
     return base.slice(0, 12);
   }, [items, filter]);
@@ -131,8 +128,8 @@ export default function NotificationBell() {
   // ── Actions ────────────────────────────────────────────────────
   function markRead(id: string) {
     setItems((prev) =>
-      prev.map((n) => n.id === id && (n.status === "Unread" || n.status === "Escalated")
-        ? { ...n, status: "Read" as NotificationStatus }
+      prev.map((n) => n.id === id && (n.status === "Unread"|| n.status === "Escalated")
+        ? { ...n, status: "Read"as NotificationStatus }
         : n
       )
     );
@@ -140,7 +137,7 @@ export default function NotificationBell() {
 
   function acknowledge(id: string) {
     setItems((prev) =>
-      prev.map((n) => n.id === id ? { ...n, status: "Acknowledged" as NotificationStatus } : n)
+      prev.map((n) => n.id === id ? { ...n, status: "Acknowledged"as NotificationStatus } : n)
     );
   }
 
@@ -151,15 +148,14 @@ export default function NotificationBell() {
   function markAllRead() {
     setItems((prev) =>
       prev.map((n) =>
-        n.status === "Unread" || n.status === "Escalated"
-          ? { ...n, status: "Read" as NotificationStatus }
+        n.status === "Unread"|| n.status === "Escalated"? { ...n, status: "Read"as NotificationStatus }
           : n
       )
     );
   }
 
   function clearRead() {
-    setItems((prev) => prev.filter((n) => n.status !== "Read" && n.status !== "Resolved"));
+    setItems((prev) => prev.filter((n) => n.status !== "Read"&& n.status !== "Resolved"));
   }
 
   function openNotification(n: RTMNotification) {
@@ -170,26 +166,22 @@ export default function NotificationBell() {
 
   // ── Row ────────────────────────────────────────────────────────
   function NotifRow({ n }: { n: RTMNotification }) {
-    const isUnread   = n.status === "Unread" || n.status === "Escalated";
+    const isUnread   = n.status === "Unread"|| n.status === "Escalated";
     const isEscalted = n.status === "Escalated";
     return (
       <div
-        className="group relative"
-        style={{
+        className="group relative"style={{
           borderBottom: "1px solid var(--rtm-border-light)",
-          background: isEscalted ? "#FFFAFA" : isUnread ? "var(--rtm-blue-xlight)" : "var(--rtm-surface)",
+          background: isEscalted ? "#FFFAFA": isUnread ? "var(--rtm-blue-xlight)": "var(--rtm-surface)",
         }}
       >
         <div className="flex items-start gap-2.5 px-3 py-2.5">
           {/* Unread dot */}
           <span
-            className="mt-1.5 w-2 h-2 rounded-full flex-shrink-0"
-            style={{
+            className="mt-1.5 w-2 h-2 rounded-full flex-shrink-0"style={{
               background: isEscalted
-                ? "#DC2626"
-                : isUnread
-                ? "var(--rtm-blue)"
-                : "transparent",
+                ? "#DC2626": isUnread
+                ? "var(--rtm-blue)": "transparent",
             }}
           />
 
@@ -197,15 +189,14 @@ export default function NotificationBell() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-0.5">
               <p
-                className="text-xs font-semibold truncate leading-snug"
-                style={{
-                  color: isEscalted ? "#B91C1C" : "var(--rtm-text-primary)",
+                className="text-xs font-semibold truncate leading-snug"style={{
+                  color: isEscalted ? "#B91C1C": "var(--rtm-text-primary)",
                   maxWidth: "200px",
                 }}
               >
                 {n.title}
               </p>
-              <span className="text-[10px] flex-shrink-0" style={{ color: "var(--rtm-text-muted)" }}>
+              <span className="text-[10px] flex-shrink-0"style={{ color: "var(--rtm-text-muted)"}}>
                 {relativeDate(n.createdDate)}
               </span>
             </div>
@@ -213,14 +204,13 @@ export default function NotificationBell() {
             <div className="flex items-center gap-1.5 mb-1 flex-wrap">
               <PriorityDot priority={n.priority} />
               <ModuleTag module={n.module} />
-              {n.client && n.client !== "—" && (
+              {n.client && n.client !== "—"&& (
                 <span className="text-[10px] text-gray-400 truncate">{n.client}</span>
               )}
             </div>
 
             <p
-              className="text-[11px] leading-relaxed line-clamp-2"
-              style={{ color: "var(--rtm-text-secondary)" }}
+              className="text-[11px] leading-relaxed line-clamp-2"style={{ color: "var(--rtm-text-secondary)"}}
             >
               {n.description}
             </p>
@@ -229,33 +219,29 @@ export default function NotificationBell() {
             <div className="flex items-center gap-1 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 onClick={() => openNotification(n)}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded"
-                style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
               >
                 Open
               </button>
               {isUnread && (
                 <button
                   onClick={(e) => { e.stopPropagation(); markRead(n.id); }}
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded"
-                  style={{ background: "#F0FDF4", color: "#15803D" }}
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded"style={{ background: "#F0FDF4", color: "#15803D"}}
                 >
                   Mark Read
                 </button>
               )}
-              {n.status !== "Acknowledged" && (
+              {n.status !== "Acknowledged"&& (
                 <button
                   onClick={(e) => { e.stopPropagation(); acknowledge(n.id); }}
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded"
-                  style={{ background: "#FFFBEB", color: "#B45309" }}
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded"style={{ background: "#FFFBEB", color: "#B45309"}}
                 >
                   Ack
                 </button>
               )}
               <button
                 onClick={(e) => { e.stopPropagation(); dismiss(n.id); }}
-                className="text-[10px] font-semibold px-2 py-0.5 rounded"
-                style={{ background: "#FEF2F2", color: "#B91C1C" }}
+                className="text-[10px] font-semibold px-2 py-0.5 rounded"style={{ background: "#FEF2F2", color: "#B91C1C"}}
               >
                 Dismiss
               </button>
@@ -268,43 +254,33 @@ export default function NotificationBell() {
 
   // ── Render ─────────────────────────────────────────────────────
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative"ref={ref}>
       {/* Bell button */}
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={`Notifications${badge ? ` — ${badge} unread` : ""}`}
-        aria-haspopup="true"
-        aria-expanded={open}
-        className="relative p-2 rounded-lg transition-colors"
-        style={{ color: "var(--rtm-text-secondary)" }}
+        aria-haspopup="true"aria-expanded={open}
+        className="relative p-2 rounded-lg transition-colors"style={{ color: "var(--rtm-text-secondary)"}}
         onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rtm-blue-xlight)")}
-        onMouseLeave={(e) => (e.currentTarget.style.background = open ? "var(--rtm-blue-xlight)" : "transparent")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = open ? "var(--rtm-blue-xlight)": "transparent")}
       >
         {/* Bell SVG */}
         <svg
-          className="w-[18px] h-[18px]"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          className="w-[18px] h-[18px]"fill="none"stroke="currentColor"viewBox="0 0 24 24"strokeWidth={2}
+          strokeLinecap="round"strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
         </svg>
 
         {/* Badge */}
         {badge && (
           <span
-            className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full text-white font-bold ring-2 ring-white px-0.5"
-            style={{
+            className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full text-white font-bold ring-2 ring-white px-0.5"style={{
               fontSize: "9px",
               lineHeight: "1",
               background: unreadCount > 0
-                ? (items.some((n) => n.status === "Escalated" && (n.priority === "Critical" || n.priority === "Urgent"))
-                    ? "#DC2626"
-                    : "var(--rtm-blue)")
+                ? (items.some((n) => n.status === "Escalated"&& (n.priority === "Critical"|| n.priority === "Urgent"))
+                    ? "#DC2626": "var(--rtm-blue)")
                 : "var(--rtm-blue)",
             }}
           >
@@ -316,8 +292,7 @@ export default function NotificationBell() {
       {/* Dropdown panel */}
       {open && (
         <div
-          className="absolute right-0 mt-2 z-50 flex flex-col"
-          style={{
+          className="absolute right-0 mt-2 z-50 flex flex-col"style={{
             width: "380px",
             maxHeight: "560px",
             background: "#ffffff",
@@ -329,17 +304,15 @@ export default function NotificationBell() {
         >
           {/* Header */}
           <div
-            className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-            style={{ borderBottom: "1px solid var(--rtm-border)" }}
+            className="flex items-center justify-between px-4 py-3 flex-shrink-0"style={{ borderBottom: "1px solid var(--rtm-border)"}}
           >
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              <span className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                 Notifications
               </span>
               {badge && (
                 <span
-                  className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
-                  style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+                  className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
                 >
                   {badge} unread
                 </span>
@@ -350,8 +323,7 @@ export default function NotificationBell() {
             <div className="flex items-center gap-1">
               <button
                 onClick={markAllRead}
-                className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors"
-                style={{ color: "var(--rtm-blue)" }}
+                className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors"style={{ color: "var(--rtm-blue)"}}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rtm-blue-xlight)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
@@ -359,8 +331,7 @@ export default function NotificationBell() {
               </button>
               <button
                 onClick={clearRead}
-                className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors"
-                style={{ color: "var(--rtm-text-muted)" }}
+                className="text-[11px] font-semibold px-2 py-1 rounded-lg transition-colors"style={{ color: "var(--rtm-text-muted)"}}
                 onMouseEnter={(e) => (e.currentTarget.style.background = "var(--rtm-bg)")}
                 onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
@@ -371,24 +342,22 @@ export default function NotificationBell() {
 
           {/* Filter tabs */}
           <div
-            className="flex items-center gap-0.5 px-3 py-2 overflow-x-auto flex-shrink-0"
-            style={{ borderBottom: "1px solid var(--rtm-border-light)" }}
+            className="flex items-center gap-0.5 px-3 py-2 overflow-x-auto flex-shrink-0"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}
           >
             {FILTER_TABS.map((tab) => {
               const isActive = filter === tab.key;
               const count =
-                tab.key === "All"    ? items.length :
-                tab.key === "Unread" ? items.filter((n) => n.status === "Unread" || n.status === "Escalated").length :
+                tab.key === "All"? items.length :
+                tab.key === "Unread"? items.filter((n) => n.status === "Unread"|| n.status === "Escalated").length :
                                        items.filter((n) => n.type === tab.key).length;
               return (
                 <button
                   key={tab.key}
                   onClick={() => setFilter(tab.key)}
-                  className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all whitespace-nowrap"
-                  style={
+                  className="flex-shrink-0 text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all whitespace-nowrap"style={
                     isActive
-                      ? { background: "var(--rtm-blue)", color: "#ffffff" }
-                      : { color: "var(--rtm-text-secondary)" }
+                      ? { background: "var(--rtm-blue)", color: "#ffffff"}
+                      : { color: "var(--rtm-text-secondary)"}
                   }
                   onMouseEnter={(e) => {
                     if (!isActive) e.currentTarget.style.background = "var(--rtm-blue-xlight)";
@@ -411,17 +380,13 @@ export default function NotificationBell() {
             {filtered.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 gap-3">
                 <svg
-                  className="w-10 h-10"
-                  style={{ color: "var(--rtm-text-muted)" }}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
+                  className="w-10 h-10"style={{ color: "var(--rtm-text-muted)"}}
+                  fill="none"stroke="currentColor"viewBox="0 0 24 24"strokeWidth={1.5}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.73 21a2 2 0 0 1-3.46 0" />
+                  <path strokeLinecap="round"strokeLinejoin="round"d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path strokeLinecap="round"strokeLinejoin="round"d="M13.73 21a2 2 0 0 1-3.46 0"/>
                 </svg>
-                <p className="text-sm font-medium" style={{ color: "var(--rtm-text-muted)" }}>
+                <p className="text-sm font-medium"style={{ color: "var(--rtm-text-muted)"}}>
                   No notifications
                 </p>
               </div>
@@ -432,16 +397,14 @@ export default function NotificationBell() {
 
           {/* Footer */}
           <div
-            className="flex items-center justify-between px-4 py-2.5 flex-shrink-0"
-            style={{ borderTop: "1px solid var(--rtm-border)", background: "var(--rtm-bg)" }}
+            className="flex items-center justify-between px-4 py-2.5 flex-shrink-0"style={{ borderTop: "1px solid var(--rtm-border)", background: "var(--rtm-bg)"}}
           >
-            <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+            <span className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>
               Showing {filtered.length} of {items.length}
             </span>
             <button
               onClick={() => { setOpen(false); router.push("/notifications"); }}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
-              style={{
+              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"style={{
                 background: "var(--rtm-blue)",
                 color: "#ffffff",
               }}
@@ -449,8 +412,8 @@ export default function NotificationBell() {
               onMouseLeave={(e) => (e.currentTarget.style.background = "var(--rtm-blue)")}
             >
               View All Notifications
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              <svg className="w-3 h-3"fill="none"stroke="currentColor"viewBox="0 0 24 24"strokeWidth={2.5}>
+                <path strokeLinecap="round"strokeLinejoin="round"d="M9 5l7 7-7 7"/>
               </svg>
             </button>
           </div>

@@ -3,55 +3,33 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // Task Activation Rules
 // Route: /tasks/activation-rules
 // Controls when task templates are automatically activated based on sold line
 // items, contracts, billing status, and client lifecycle events.
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 
-// ── Types ────────────────────────────────────────────────────────────────────
+//  Types 
 
 type TriggerEvent =
-  | "Proposal Approved"
-  | "Contract Signed"
-  | "Invoice Paid"
-  | "Client Activated"
-  | "Upsell Approved"
-  | "Renewal Signed"
-  | "Cancellation Requested"
-  | "Offboarding Approved";
+  | "Proposal Approved"| "Contract Signed"| "Invoice Paid"| "Client Activated"| "Upsell Approved"| "Renewal Signed"| "Cancellation Requested"| "Offboarding Approved";
 
 type RuleCondition =
-  | "Line Item Selected"
-  | "Contract Signed"
-  | "Setup Invoice Paid"
-  | "Recurring Invoice Active"
-  | "Client Onboarding Started"
-  | "Department Access Complete"
-  | "Prerequisites Satisfied";
+  | "Line Item Selected"| "Contract Signed"| "Setup Invoice Paid"| "Recurring Invoice Active"| "Client Onboarding Started"| "Department Access Complete"| "Prerequisites Satisfied";
 
-type RuleStatus = "Active" | "Inactive" | "Pending Review";
+type RuleStatus = "Active"| "Inactive"| "Pending Review";
 
 type Department =
-  | "SEO"
-  | "GBP"
-  | "Paid Advertising"
-  | "Meta Ads"
-  | "LSA"
-  | "Reporting"
-  | "Web Development"
-  | "Creative"
-  | "Account Management"
-  | "Billing";
+  | "SEO"| "GBP"| "Paid Advertising"| "Meta Ads"| "LSA"| "Reporting"| "Web Development"| "Creative"| "Account Management"| "Billing";
 
-type ContractRequirement = "Required" | "Optional" | "Not Required";
-type BillingRequirement = "Setup Invoice" | "Recurring Invoice" | "Any Invoice" | "Contract Only" | "None";
+type ContractRequirement = "Required"| "Optional"| "Not Required";
+type BillingRequirement = "Setup Invoice"| "Recurring Invoice"| "Any Invoice"| "Contract Only"| "None";
 
 interface RuleDependency {
   ruleId: string;
   ruleName: string;
-  type: "blocks" | "triggers" | "requires";
+  type: "blocks"| "triggers"| "requires";
 }
 
 interface ActivityLogEntry {
@@ -74,7 +52,7 @@ interface LineItemSLARef {
   targetCompletionDays: number;
   dueDateOffset: number;
   escalationAfterDays: number;
-  slaPriority: "Standard" | "Priority" | "Rush" | "Custom";
+  slaPriority: "Standard"| "Priority"| "Rush"| "Custom";
 }
 
 interface ActivationRule {
@@ -100,10 +78,10 @@ interface ActivationRule {
   lineItemSLA: LineItemSLARef;
 }
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const ACTIVATION_RULES: ActivationRule[] = [
-  // ── SEO ──────────────────────────────────────────────────────────────────
+  //  SEO 
   {
     id: "ar-001",
     name: "SEO Setup — Invoice Paid",
@@ -120,7 +98,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Fires when the SEO Setup line item is present and the setup invoice has been paid. Activates the SEO Setup Template which generates 6 tasks including keyword research, technical audit, and baseline reporting.",
     dependencies: [
-      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires" },
+      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -132,13 +110,13 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-22", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental" },
-      { date: "2025-07-20", action: "Test passed", by: "Admin" },
-      { date: "2025-07-15", action: "Rule updated", by: "Admin", detail: "Added prerequisite: Client Onboarding" },
+      { date: "2025-07-22", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental"},
+      { date: "2025-07-20", action: "Test passed", by: "Admin"},
+      { date: "2025-07-15", action: "Rule updated", by: "Admin", detail: "Added prerequisite: Client Onboarding"},
     ],
     priority: 2,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, slaPriority: "Standard"},
   },
   {
     id: "ar-002",
@@ -156,7 +134,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Activates recurring SEO management tasks every month once the client is fully activated. Requires SEO Setup to be completed first.",
     dependencies: [
-      { ruleId: "ar-001", ruleName: "SEO Setup — Invoice Paid", type: "requires" },
+      { ruleId: "ar-001", ruleName: "SEO Setup — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -169,15 +147,15 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle — 12 clients" },
-      { date: "2025-07-18", action: "Test passed", by: "Admin" },
+      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle — 12 clients"},
+      { date: "2025-07-18", action: "Test passed", by: "Admin"},
     ],
     priority: 5,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, dueDateOffset: 5, escalationAfterDays: 14, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, dueDateOffset: 5, escalationAfterDays: 14, slaPriority: "Standard"},
   },
 
-  // ── GBP ──────────────────────────────────────────────────────────────────
+  //  GBP 
   {
     id: "ar-003",
     name: "GBP Launch — Invoice Paid",
@@ -194,7 +172,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Triggers the GBP Launch Template when GBP Optimization is sold and the setup invoice is collected. Generates 6 tasks covering claim, verification, category optimization, and baseline reporting.",
     dependencies: [
-      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires" },
+      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -206,12 +184,12 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-23", action: "Rule triggered", by: "System", detail: "Client: Maple Ridge Clinic" },
-      { date: "2025-07-21", action: "Test passed", by: "Admin" },
+      { date: "2025-07-23", action: "Rule triggered", by: "System", detail: "Client: Maple Ridge Clinic"},
+      { date: "2025-07-21", action: "Test passed", by: "Admin"},
     ],
     priority: 3,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 0, escalationAfterDays: 5, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 0, escalationAfterDays: 5, slaPriority: "Standard"},
   },
   {
     id: "ar-004",
@@ -229,7 +207,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Activates monthly GBP management tasks including posts, review responses, Q&A monitoring, and monthly reporting.",
     dependencies: [
-      { ruleId: "ar-003", ruleName: "GBP Launch — Invoice Paid", type: "requires" },
+      { ruleId: "ar-003", ruleName: "GBP Launch — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -241,14 +219,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle" },
+      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle"},
     ],
     priority: 6,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 3, escalationAfterDays: 5, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 3, escalationAfterDays: 5, slaPriority: "Standard"},
   },
 
-  // ── PPC ──────────────────────────────────────────────────────────────────
+  //  PPC 
   {
     id: "ar-005",
     name: "PPC Launch — Invoice Paid",
@@ -265,7 +243,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Fires on PPC Management line item + paid setup invoice. Generates the PPC Launch Template with 6 tasks: account access, conversion tracking, campaign setup, audience setup, landing page review, and launch approval.",
     dependencies: [
-      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires" },
+      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -278,12 +256,12 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-20", action: "Rule triggered", by: "System", detail: "Client: Summit Auto Group" },
-      { date: "2025-07-19", action: "Test passed", by: "Admin" },
+      { date: "2025-07-20", action: "Rule triggered", by: "System", detail: "Client: Summit Auto Group"},
+      { date: "2025-07-19", action: "Test passed", by: "Admin"},
     ],
     priority: 4,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, slaPriority: "Priority" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, slaPriority: "Priority"},
   },
   {
     id: "ar-006",
@@ -301,7 +279,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Activates recurring PPC management tasks monthly: bid management, ad copy refresh, negative keyword review, budget pacing review, and performance reporting.",
     dependencies: [
-      { ruleId: "ar-005", ruleName: "PPC Launch — Invoice Paid", type: "requires" },
+      { ruleId: "ar-005", ruleName: "PPC Launch — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -313,14 +291,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle" },
+      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle"},
     ],
     priority: 7,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 12, dueDateOffset: 5, escalationAfterDays: 15, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 12, dueDateOffset: 5, escalationAfterDays: 15, slaPriority: "Standard"},
   },
 
-  // ── META ADS ──────────────────────────────────────────────────────────────
+  //  META ADS 
   {
     id: "ar-007",
     name: "Meta Ads Launch — Invoice Paid",
@@ -337,7 +315,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Activates Meta Ads launch tasks including Business Manager access, pixel setup, audience research, creative brief, and campaign launch.",
     dependencies: [
-      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires" },
+      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -349,11 +327,11 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-19", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental" },
+      { date: "2025-07-19", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental"},
     ],
     priority: 4,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, slaPriority: "Standard"},
   },
   {
     id: "ar-008",
@@ -371,18 +349,18 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Monthly Meta Ads management tasks: campaign optimization, creative refresh, audience updates, budget review, and performance reporting.",
     dependencies: [
-      { ruleId: "ar-007", ruleName: "Meta Ads Launch — Invoice Paid", type: "requires" },
+      { ruleId: "ar-007", ruleName: "Meta Ads Launch — Invoice Paid", type: "requires"},
     ],
     testResults: null,
     activityLog: [
-      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle" },
+      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle"},
     ],
     priority: 7,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, dueDateOffset: 5, escalationAfterDays: 14, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 10, dueDateOffset: 5, escalationAfterDays: 14, slaPriority: "Standard"},
   },
 
-  // ── LSA ───────────────────────────────────────────────────────────────────
+  //  LSA 
   {
     id: "ar-009",
     name: "LSA Setup — Invoice Paid",
@@ -399,7 +377,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Activates LSA verification and setup tasks when the LSA Management line item is sold and the invoice is paid.",
     dependencies: [
-      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires" },
+      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -411,14 +389,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-15", action: "Rule triggered", by: "System", detail: "Client: Maple Ridge Clinic" },
+      { date: "2025-07-15", action: "Rule triggered", by: "System", detail: "Client: Maple Ridge Clinic"},
     ],
     priority: 4,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 8, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 8, slaPriority: "Standard"},
   },
 
-  // ── REPORTING ─────────────────────────────────────────────────────────────
+  //  REPORTING 
   {
     id: "ar-010",
     name: "Reporting Setup — Invoice Paid",
@@ -435,7 +413,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Configures the client reporting dashboard, connects all data sources, and delivers initial walkthrough upon invoice payment.",
     dependencies: [
-      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires" },
+      { ruleId: "ar-013", ruleName: "Client Onboarding — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -448,11 +426,11 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-22", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental" },
+      { date: "2025-07-22", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental"},
     ],
     priority: 3,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, dueDateOffset: 0, escalationAfterDays: 10, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, dueDateOffset: 0, escalationAfterDays: 10, slaPriority: "Standard"},
   },
   {
     id: "ar-011",
@@ -470,7 +448,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Generates monthly reporting tasks for active clients: data collection, report drafting, AM review, and delivery.",
     dependencies: [
-      { ruleId: "ar-010", ruleName: "Reporting Setup — Invoice Paid", type: "requires" },
+      { ruleId: "ar-010", ruleName: "Reporting Setup — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -481,14 +459,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle — 19 clients" },
+      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle — 19 clients"},
     ],
     priority: 8,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, dueDateOffset: 28, escalationAfterDays: 32, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 7, dueDateOffset: 28, escalationAfterDays: 32, slaPriority: "Standard"},
   },
 
-  // ── WEB / CREATIVE ────────────────────────────────────────────────────────
+  //  WEB / CREATIVE 
   {
     id: "ar-012",
     name: "Website Build — Contract Signed",
@@ -514,14 +492,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-14", action: "Rule triggered", by: "System", detail: "Client: BlueSky Roofing" },
+      { date: "2025-07-14", action: "Rule triggered", by: "System", detail: "Client: BlueSky Roofing"},
     ],
     priority: 1,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 14, dueDateOffset: 0, escalationAfterDays: 18, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 14, dueDateOffset: 0, escalationAfterDays: 18, slaPriority: "Standard"},
   },
 
-  // ── ONBOARDING ────────────────────────────────────────────────────────────
+  //  ONBOARDING 
   {
     id: "ar-013",
     name: "Client Onboarding — Invoice Paid",
@@ -548,16 +526,16 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-24", action: "Rule triggered", by: "System", detail: "Client: Maple Ridge Clinic" },
-      { date: "2025-07-22", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental" },
-      { date: "2025-07-23", action: "Test passed", by: "Admin" },
+      { date: "2025-07-24", action: "Rule triggered", by: "System", detail: "Client: Maple Ridge Clinic"},
+      { date: "2025-07-22", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental"},
+      { date: "2025-07-23", action: "Test passed", by: "Admin"},
     ],
     priority: 1,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, slaPriority: "Standard"},
   },
 
-  // ── RENEWALS ──────────────────────────────────────────────────────────────
+  //  RENEWALS 
   {
     id: "ar-014",
     name: "Renewal Process — Renewal Signed",
@@ -582,14 +560,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-16", action: "Rule triggered", by: "System", detail: "Client: Prestige Law Group" },
+      { date: "2025-07-16", action: "Rule triggered", by: "System", detail: "Client: Prestige Law Group"},
     ],
     priority: 1,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, slaPriority: "Standard"},
   },
 
-  // ── CANCELLATIONS ─────────────────────────────────────────────────────────
+  //  CANCELLATIONS 
   {
     id: "ar-015",
     name: "Cancellation Process — Cancellation Requested",
@@ -614,14 +592,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-21", action: "Rule triggered", by: "System", detail: "Client: Clearwater Spa" },
+      { date: "2025-07-21", action: "Rule triggered", by: "System", detail: "Client: Clearwater Spa"},
     ],
     priority: 1,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 0, escalationAfterDays: 5, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 3, dueDateOffset: 0, escalationAfterDays: 5, slaPriority: "Standard"},
   },
 
-  // ── OFFBOARDING ───────────────────────────────────────────────────────────
+  //  OFFBOARDING 
   {
     id: "ar-016",
     name: "Offboarding Process — Offboarding Approved",
@@ -638,7 +616,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Full client offboarding: final report, access transfer, campaign shutdown, domain release, account closure, and NPS survey.",
     dependencies: [
-      { ruleId: "ar-015", ruleName: "Cancellation Process — Cancellation Requested", type: "requires" },
+      { ruleId: "ar-015", ruleName: "Cancellation Process — Cancellation Requested", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -648,14 +626,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-22", action: "Rule triggered", by: "System", detail: "Client: Clearwater Spa" },
+      { date: "2025-07-22", action: "Rule triggered", by: "System", detail: "Client: Clearwater Spa"},
     ],
     priority: 2,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, slaPriority: "Standard"},
   },
 
-  // ── UPSELL ────────────────────────────────────────────────────────────────
+  //  UPSELL 
   {
     id: "ar-017",
     name: "Upsell Activation — Upsell Approved",
@@ -681,11 +659,11 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-18", action: "Rule triggered", by: "System", detail: "Client: Prestige Law Group — Meta Ads upsell" },
+      { date: "2025-07-18", action: "Rule triggered", by: "System", detail: "Client: Prestige Law Group — Meta Ads upsell"},
     ],
     priority: 1,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, slaPriority: "Priority" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, slaPriority: "Priority"},
   },
   {
     id: "ar-018",
@@ -712,14 +690,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-12", action: "Rule triggered", by: "System", detail: "Client: Summit Auto Group — PPC to Meta shift" },
+      { date: "2025-07-12", action: "Rule triggered", by: "System", detail: "Client: Summit Auto Group — PPC to Meta shift"},
     ],
     priority: 2,
     autoActivate: false,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 4, dueDateOffset: 0, escalationAfterDays: 6, slaPriority: "Standard"},
   },
 
-  // ── CREATIVE ─────────────────────────────────────────────────────────────
+  //  CREATIVE 
   {
     id: "ar-019",
     name: "Creative Production — Contract Signed",
@@ -738,14 +716,14 @@ const ACTIVATION_RULES: ActivationRule[] = [
     dependencies: [],
     testResults: null,
     activityLog: [
-      { date: "2025-07-11", action: "Rule triggered", by: "System", detail: "Client: BlueSky Roofing — Brand Package" },
+      { date: "2025-07-11", action: "Rule triggered", by: "System", detail: "Client: BlueSky Roofing — Brand Package"},
     ],
     priority: 1,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 8, dueDateOffset: 5, escalationAfterDays: 12, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 8, dueDateOffset: 5, escalationAfterDays: 12, slaPriority: "Standard"},
   },
 
-  // ── STRATEGY / QBR ────────────────────────────────────────────────────────
+  //  STRATEGY / QBR 
   {
     id: "ar-020",
     name: "Strategy Consulting — Invoice Paid",
@@ -764,12 +742,12 @@ const ACTIVATION_RULES: ActivationRule[] = [
     dependencies: [],
     testResults: null,
     activityLog: [
-      { date: "2025-07-04", action: "Rule created", by: "Admin" },
-      { date: "2025-07-05", action: "Sent for review", by: "Admin" },
+      { date: "2025-07-04", action: "Rule created", by: "Admin"},
+      { date: "2025-07-05", action: "Sent for review", by: "Admin"},
     ],
     priority: 3,
     autoActivate: false,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 3, escalationAfterDays: 8, slaPriority: "Priority" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 3, escalationAfterDays: 8, slaPriority: "Priority"},
   },
   {
     id: "ar-021",
@@ -787,18 +765,18 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Activates the full quarterly business review workflow every 90 days for premium clients. Includes QBR data pull, deck prep, director review, meeting, follow-up, and roadmap update. Template in draft state — pending activation.",
     dependencies: [
-      { ruleId: "ar-011", ruleName: "Reporting Monthly — Client Activated", type: "requires" },
+      { ruleId: "ar-011", ruleName: "Reporting Monthly — Client Activated", type: "requires"},
     ],
     testResults: null,
     activityLog: [
-      { date: "2025-07-02", action: "Rule created", by: "Admin" },
+      { date: "2025-07-02", action: "Rule created", by: "Admin"},
     ],
     priority: 9,
     autoActivate: false,
-    lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 5, dueDateOffset: 85, escalationAfterDays: 90, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "2 business days", targetCompletionDays: 5, dueDateOffset: 85, escalationAfterDays: 90, slaPriority: "Standard"},
   },
 
-  // ── ADDITIONAL RULES ──────────────────────────────────────────────────────
+  //  ADDITIONAL RULES 
   {
     id: "ar-022",
     name: "Proposal Approval — Activate Sales Workflow",
@@ -823,11 +801,11 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-24", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental" },
+      { date: "2025-07-24", action: "Rule triggered", by: "System", detail: "Client: Horizon Dental"},
     ],
     priority: 1,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 2, dueDateOffset: 0, escalationAfterDays: 3, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 2, dueDateOffset: 0, escalationAfterDays: 3, slaPriority: "Standard"},
   },
   {
     id: "ar-023",
@@ -845,7 +823,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
     description:
       "Monthly LSA management tasks including lead review, budget optimization, review response, and monthly reporting.",
     dependencies: [
-      { ruleId: "ar-009", ruleName: "LSA Setup — Invoice Paid", type: "requires" },
+      { ruleId: "ar-009", ruleName: "LSA Setup — Invoice Paid", type: "requires"},
     ],
     testResults: {
       passed: true,
@@ -856,74 +834,73 @@ const ACTIVATION_RULES: ActivationRule[] = [
       ],
     },
     activityLog: [
-      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle" },
+      { date: "2025-07-01", action: "Rule triggered", by: "System", detail: "Monthly cycle"},
     ],
     priority: 7,
     autoActivate: true,
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 6, dueDateOffset: 3, escalationAfterDays: 10, slaPriority: "Standard" },
+    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 6, dueDateOffset: 3, escalationAfterDays: 10, slaPriority: "Standard"},
   },
 ];
 
-// ── Design helpers ────────────────────────────────────────────────────────────
+//  Design helpers 
 
 const TRIGGER_CFG: Record<TriggerEvent, { bg: string; color: string; border: string; icon?: string }> = {
-  "Proposal Approved":      { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-  "Contract Signed":        { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", icon: "📄" },
-  "Invoice Paid":           { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
-  "Client Activated":       { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE" },
-  "Upsell Approved":        { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
-  "Renewal Signed":         { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0" },
-  "Cancellation Requested": { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" },
-  "Offboarding Approved":   { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3" },
+  "Proposal Approved":      { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"},
+  "Contract Signed":        { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", icon: ""},
+  "Invoice Paid":           { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
+  "Client Activated":       { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE"},
+  "Upsell Approved":        { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"},
+  "Renewal Signed":         { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0"},
+  "Cancellation Requested": { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"},
+  "Offboarding Approved":   { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3"},
 };
 
 const STATUS_CFG: Record<RuleStatus, { bg: string; color: string; border: string; dot: string }> = {
-  "Active":         { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", dot: "#10B981" },
-  "Inactive":       { bg: "#F8FAFC", color: "#94A3B8", border: "#CBD5E1", dot: "#CBD5E1" },
-  "Pending Review": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", dot: "#F59E0B" },
+  "Active":         { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", dot: "#10B981"},
+  "Inactive":       { bg: "#F8FAFC", color: "#94A3B8", border: "#CBD5E1", dot: "#CBD5E1"},
+  "Pending Review": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", dot: "#F59E0B"},
 };
 
 const CONTRACT_CFG: Record<ContractRequirement, { bg: string; color: string }> = {
-  "Required":     { bg: "#EFF6FF", color: "#1D4ED8" },
-  "Optional":     { bg: "#FFFBEB", color: "#D97706" },
-  "Not Required": { bg: "#F8FAFC", color: "#94A3B8" },
+  "Required":     { bg: "#EFF6FF", color: "#1D4ED8"},
+  "Optional":     { bg: "#FFFBEB", color: "#D97706"},
+  "Not Required": { bg: "#F8FAFC", color: "#94A3B8"},
 };
 
 const BILLING_CFG: Record<BillingRequirement, { bg: string; color: string }> = {
-  "Setup Invoice":     { bg: "#FFF7ED", color: "#C2410C" },
-  "Recurring Invoice": { bg: "#FAF5FF", color: "#7C3AED" },
-  "Any Invoice":       { bg: "#ECFDF5", color: "#059669" },
-  "Contract Only":     { bg: "#EFF6FF", color: "#1D4ED8" },
-  "None":              { bg: "#F8FAFC", color: "#94A3B8" },
+  "Setup Invoice":     { bg: "#FFF7ED", color: "#C2410C"},
+  "Recurring Invoice": { bg: "#FAF5FF", color: "#7C3AED"},
+  "Any Invoice":       { bg: "#ECFDF5", color: "#059669"},
+  "Contract Only":     { bg: "#EFF6FF", color: "#1D4ED8"},
+  "None":              { bg: "#F8FAFC", color: "#94A3B8"},
 };
 
 const DEPT_CFG: Record<Department, { bg: string; color: string; border: string }> = {
-  "SEO":                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
-  "GBP":                { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
-  "Paid Advertising":   { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
-  "Meta Ads":           { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE" },
-  "LSA":                { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0" },
-  "Reporting":          { bg: "#ECFEFF", color: "#0891B2", border: "#A5F3FC" },
-  "Web Development":    { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0" },
-  "Creative":           { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3" },
-  "Account Management": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
-  "Billing":            { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1" },
+  "SEO":                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"},
+  "GBP":                { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
+  "Paid Advertising":   { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
+  "Meta Ads":           { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE"},
+  "LSA":                { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0"},
+  "Reporting":          { bg: "#ECFEFF", color: "#0891B2", border: "#A5F3FC"},
+  "Web Development":    { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0"},
+  "Creative":           { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3"},
+  "Account Management": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"},
+  "Billing":            { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1"},
 };
 
 const DEP_TYPE_CFG: Record<string, { bg: string; color: string }> = {
-  "blocks":   { bg: "#FEF2F2", color: "#DC2626" },
-  "triggers": { bg: "#ECFDF5", color: "#059669" },
-  "requires": { bg: "#EFF6FF", color: "#1D4ED8" },
+  "blocks":   { bg: "#FEF2F2", color: "#DC2626"},
+  "triggers": { bg: "#ECFDF5", color: "#059669"},
+  "requires": { bg: "#EFF6FF", color: "#1D4ED8"},
 };
 
-// ── Small badges ─────────────────────────────────────────────────────────────
+//  Small badges 
 
 function TriggerBadge({ trigger }: { trigger: TriggerEvent }) {
   const c = TRIGGER_CFG[trigger];
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap"
-      style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap"style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}
     >
       <span>{c.icon}</span>
       {trigger}
@@ -935,10 +912,9 @@ function StatusBadge({ status }: { status: RuleStatus }) {
   const c = STATUS_CFG[status];
   return (
     <span
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap"
-      style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap"style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}
     >
-      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: c.dot }} />
       {status}
     </span>
   );
@@ -948,8 +924,7 @@ function ContractBadge({ req }: { req: ContractRequirement }) {
   const c = CONTRACT_CFG[req];
   return (
     <span
-      className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full"
-      style={{ background: c.bg, color: c.color }}
+      className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full"style={{ background: c.bg, color: c.color }}
     >
       {req}
     </span>
@@ -960,8 +935,7 @@ function BillingBadge({ req }: { req: BillingRequirement }) {
   const c = BILLING_CFG[req];
   return (
     <span
-      className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full"
-      style={{ background: c.bg, color: c.color }}
+      className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full"style={{ background: c.bg, color: c.color }}
     >
       {req}
     </span>
@@ -972,17 +946,16 @@ function DeptBadge({ dept }: { dept: Department }) {
   const c = DEPT_CFG[dept];
   return (
     <span
-      className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full"
-      style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}
+      className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full"style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}
     >
       {dept}
     </span>
   );
 }
 
-// ── Rule Detail Drawer ────────────────────────────────────────────────────────
+//  Rule Detail Drawer 
 
-type DrawerTab = "overview" | "conditions" | "line-items" | "templates" | "dependencies" | "test" | "activity";
+type DrawerTab = "overview"| "conditions"| "line-items"| "templates"| "dependencies"| "test"| "activity";
 
 function RuleDrawer({
   rule,
@@ -994,95 +967,88 @@ function RuleDrawer({
   const [activeTab, setActiveTab] = useState<DrawerTab>("overview");
 
   const tabs: { id: DrawerTab; label: string }[] = [
-    { id: "overview",     label: "Overview" },
-    { id: "conditions",   label: "Conditions" },
-    { id: "line-items",   label: "Line Items" },
-    { id: "templates",    label: "Task Templates" },
+    { id: "overview",     label: "Overview"},
+    { id: "conditions",   label: "Conditions"},
+    { id: "line-items",   label: "Line Items"},
+    { id: "templates",    label: "Task Templates"},
     { id: "dependencies", label: `Dependencies (${rule.dependencies.length})` },
-    { id: "test",         label: "Test Results" },
-    { id: "activity",     label: "Activity Log" },
+    { id: "test",         label: "Test Results"},
+    { id: "activity",     label: "Activity Log"},
   ];
 
   const trigCfg = TRIGGER_CFG[rule.triggerEvent];
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end"
-      style={{ background: "rgba(0,0,0,0.35)" }}
+      className="fixed inset-0 z-50 flex justify-end"style={{ background: "rgba(0,0,0,0.35)"}}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div
-        className="h-full w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl"
-        style={{ background: "var(--rtm-surface)" }}
+        className="h-full w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl"style={{ background: "var(--rtm-surface)"}}
       >
         {/* Header */}
         <div
-          className="flex items-start justify-between px-6 py-5"
-          style={{ borderBottom: "1px solid var(--rtm-border)", background: trigCfg.bg }}
+          className="flex items-start justify-between px-6 py-5"style={{ borderBottom: "1px solid var(--rtm-border)", background: trigCfg.bg }}
         >
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <span className="text-[11px] font-bold uppercase tracking-widest" style={{ color: trigCfg.color }}>
+              <span className="text-[11px] font-bold uppercase tracking-widest"style={{ color: trigCfg.color }}>
                 {rule.id}
               </span>
               <StatusBadge status={rule.status} />
               {rule.autoActivate && (
                 <span
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: "rgba(255,255,255,0.8)", color: trigCfg.color }}
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "rgba(255,255,255,0.8)", color: trigCfg.color }}
                 >
-                  ⚡ Auto-Activate
+                   Auto-Activate
                 </span>
               )}
             </div>
-            <h2 className="text-lg font-extrabold mt-1" style={{ color: "var(--rtm-text-primary)" }}>
+            <h2 className="text-lg font-extrabold mt-1"style={{ color: "var(--rtm-text-primary)"}}>
               {rule.name}
             </h2>
-            <p className="text-xs mt-1 max-w-lg" style={{ color: "var(--rtm-text-secondary)" }}>
+            <p className="text-xs mt-1 max-w-lg"style={{ color: "var(--rtm-text-secondary)"}}>
               {rule.description}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="ml-4 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg hover:opacity-70 transition-opacity"
-            style={{ background: "rgba(0,0,0,0.08)", color: "var(--rtm-text-primary)" }}
+            className="ml-4 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg hover:opacity-70 transition-opacity"style={{ background: "rgba(0,0,0,0.08)", color: "var(--rtm-text-primary)"}}
           >
             ×
           </button>
         </div>
 
         {/* Quick stats */}
-        <div className="grid grid-cols-4 gap-0" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+        <div className="grid grid-cols-4 gap-0"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
           {[
             { label: "Trigger Count", value: rule.triggerCount },
             { label: "Priority", value: `#${rule.priority}` },
             { label: "Conditions", value: rule.conditions.length },
-            { label: "Last Fired", value: rule.lastTriggered ?? "Never" },
+            { label: "Last Fired", value: rule.lastTriggered ?? "Never"},
           ].map((s, i) => (
             <div
               key={s.label}
-              className="px-4 py-3 text-center"
-              style={{
-                borderRight: i < 3 ? "1px solid var(--rtm-border)" : undefined,
+              className="px-4 py-3 text-center"style={{
+                borderRight: i < 3 ? "1px solid var(--rtm-border)": undefined,
                 background: "var(--rtm-bg)",
               }}
             >
-              <div className="text-lg font-black" style={{ color: "var(--rtm-text-primary)" }}>{s.value}</div>
-              <div className="text-[10px] font-semibold mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{s.label}</div>
+              <div className="text-lg font-black"style={{ color: "var(--rtm-text-primary)"}}>{s.value}</div>
+              <div className="text-[10px] font-semibold mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Tabs */}
-        <div className="flex overflow-x-auto" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+        <div className="flex overflow-x-auto"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className="px-4 py-3 text-xs font-bold whitespace-nowrap transition-colors flex-shrink-0"
-              style={{
-                color: activeTab === tab.id ? "var(--rtm-blue)" : "var(--rtm-text-secondary)",
-                borderBottom: activeTab === tab.id ? "2px solid var(--rtm-blue)" : "2px solid transparent",
+              className="px-4 py-3 text-xs font-bold whitespace-nowrap transition-colors flex-shrink-0"style={{
+                color: activeTab === tab.id ? "var(--rtm-blue)": "var(--rtm-text-secondary)",
+                borderBottom: activeTab === tab.id ? "2px solid var(--rtm-blue)": "2px solid transparent",
               }}
             >
               {tab.label}
@@ -1093,8 +1059,8 @@ function RuleDrawer({
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
-          {/* ── OVERVIEW ── */}
-          {activeTab === "overview" && (
+          {/*  OVERVIEW  */}
+          {activeTab === "overview"&& (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 {[
@@ -1116,34 +1082,32 @@ function RuleDrawer({
                   },
                   {
                     label: "Line Item",
-                    content: <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{rule.lineItem}</span>,
+                    content: <span className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>{rule.lineItem}</span>,
                   },
                   {
                     label: "Task Template",
-                    content: <span className="text-sm font-semibold" style={{ color: "var(--rtm-blue)" }}>{rule.taskTemplate}</span>,
+                    content: <span className="text-sm font-semibold"style={{ color: "var(--rtm-blue)"}}>{rule.taskTemplate}</span>,
                   },
                   {
                     label: "Auto Activate",
                     content: (
                       <span
-                        className="text-xs font-bold px-2 py-0.5 rounded-full"
-                        style={{ background: rule.autoActivate ? "#ECFDF5" : "#F8FAFC", color: rule.autoActivate ? "#059669" : "#94A3B8" }}
+                        className="text-xs font-bold px-2 py-0.5 rounded-full"style={{ background: rule.autoActivate ? "#ECFDF5": "#F8FAFC", color: rule.autoActivate ? "#059669": "#94A3B8"}}
                       >
-                        {rule.autoActivate ? "✓ Enabled" : "✗ Manual"}
+                        {rule.autoActivate ? "Enabled": "Manual"}
                       </span>
                     ),
                   },
                   {
                     label: "Evaluation Priority",
-                    content: <span className="text-sm font-black" style={{ color: "var(--rtm-text-primary)" }}>#{rule.priority}</span>,
+                    content: <span className="text-sm font-black"style={{ color: "var(--rtm-text-primary)"}}>#{rule.priority}</span>,
                   },
                 ].map(({ label, content }) => (
                   <div
                     key={label}
-                    className="rounded-xl p-3"
-                    style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
+                    className="rounded-xl p-3"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}
                   >
-                    <div className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "var(--rtm-text-muted)" }}>
+                    <div className="text-[10px] font-bold uppercase tracking-wider mb-1.5"style={{ color: "var(--rtm-text-muted)"}}>
                       {label}
                     </div>
                     {content}
@@ -1153,10 +1117,9 @@ function RuleDrawer({
 
               {/* Flow preview */}
               <div
-                className="rounded-xl p-4"
-                style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}
+                className="rounded-xl p-4"style={{ background: "#EFF6FF", border: "1px solid #BFDBFE"}}
               >
-                <div className="text-xs font-bold mb-3" style={{ color: "#1D4ED8" }}>Activation Flow</div>
+                <div className="text-xs font-bold mb-3"style={{ color: "#1D4ED8"}}>Activation Flow</div>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   {[
                     { label: rule.lineItem },
@@ -1167,13 +1130,12 @@ function RuleDrawer({
                     "→",
                     { label: rule.department },
                   ].map((step, i) =>
-                    step === "→" ? (
-                      <span key={i} className="font-black" style={{ color: "#60A5FA" }}>→</span>
+                    step === "→"? (
+                      <span key={i} className="font-black"style={{ color: "#60A5FA"}}>→</span>
                     ) : (
                       <div
                         key={i}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold"
-                        style={{ background: "rgba(255,255,255,0.8)", color: "#1D4ED8", border: "1px solid #BFDBFE" }}
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold"style={{ background: "rgba(255,255,255,0.8)", color: "#1D4ED8", border: "1px solid #BFDBFE"}}
                       >
                         <span>{(step as { label: string; icon: string }).icon}</span>
                         {(step as { label: string; icon: string }).label}
@@ -1185,73 +1147,66 @@ function RuleDrawer({
 
               {/* Pseudo-code */}
               <div
-                className="rounded-xl p-4"
-                style={{ background: "#0F172A", border: "1px solid #1E293B" }}
+                className="rounded-xl p-4"style={{ background: "#0F172A", border: "1px solid #1E293B"}}
               >
-                <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#64748B" }}>
+                <div className="text-[10px] font-bold uppercase tracking-wider mb-2"style={{ color: "#64748B"}}>
                   Rule Logic
                 </div>
-                <pre className="text-xs leading-relaxed font-mono" style={{ color: "#7DD3FC" }}>
-{`RULE ${rule.id}: "${rule.name}"
-
-WHEN   trigger_event = "${rule.triggerEvent}"
+                <pre className="text-xs leading-relaxed font-mono"style={{ color: "#7DD3FC"}}>
+{`RULE ${rule.id}: "${rule.name}"WHEN   trigger_event = "${rule.triggerEvent}"
 AND    line_item IN ["${rule.lineItem}"]
-AND    contract_status ${rule.contractRequirement === "Required" ? "= SIGNED" : rule.contractRequirement === "Not Required" ? "= ANY" : "= SIGNED | PENDING"}
-AND    billing_status ${rule.billingRequirement === "None" ? "= ANY" : `= "${rule.billingRequirement.toUpperCase().replace(" ", "_")}"`}
+AND    contract_status ${rule.contractRequirement === "Required"? "= SIGNED": rule.contractRequirement === "Not Required"? "= ANY": "= SIGNED | PENDING"}
+AND    billing_status ${rule.billingRequirement === "None"? "= ANY": `= "${rule.billingRequirement.toUpperCase().replace("", "_")}"`}
 ${rule.conditions.map(c => `AND    condition.${c.replace(/ /g, "_").toLowerCase()} = TRUE`).join("\n")}
 
 THEN   activate("${rule.taskTemplate}")
-       → department: "${rule.department}"
-       → mode: ${rule.autoActivate ? '"auto"' : '"manual"'}
+       → department: "${rule.department}"→ mode: ${rule.autoActivate ? '"auto"' : '"manual"'}
        → priority: ${rule.priority}`}
                 </pre>
               </div>
             </div>
           )}
 
-          {/* ── CONDITIONS ── */}
-          {activeTab === "conditions" && (
+          {/*  CONDITIONS  */}
+          {activeTab === "conditions"&& (
             <div className="space-y-4">
-              <div className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              <div className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                 Required Conditions ({rule.conditions.length})
               </div>
               <div className="space-y-2">
                 {rule.conditions.map((cond, i) => (
                   <div
                     key={cond}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl"
-                    style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}
                   >
                     <span
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"
-                      style={{ background: "var(--rtm-blue)" }}
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white flex-shrink-0"style={{ background: "var(--rtm-blue)"}}
                     >
                       {i + 1}
                     </span>
-                    <span className="text-sm font-semibold flex-1" style={{ color: "var(--rtm-text-primary)" }}>
+                    <span className="text-sm font-semibold flex-1"style={{ color: "var(--rtm-text-primary)"}}>
                       {cond}
                     </span>
                     <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: "#ECFDF5", color: "#059669" }}
+                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669"}}
                     >
-                      ✓ Required
+                       Required
                     </span>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-xl p-4" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
-                <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>
+              <div className="rounded-xl p-4"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
+                <div className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}>
                   Contract &amp; Billing Gates
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Contract Requirement</span>
+                    <span className="text-sm"style={{ color: "var(--rtm-text-secondary)"}}>Contract Requirement</span>
                     <ContractBadge req={rule.contractRequirement} />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Billing Requirement</span>
+                    <span className="text-sm"style={{ color: "var(--rtm-text-secondary)"}}>Billing Requirement</span>
                     <BillingBadge req={rule.billingRequirement} />
                   </div>
                 </div>
@@ -1259,84 +1214,71 @@ THEN   activate("${rule.taskTemplate}")
             </div>
           )}
 
-          {/* ── LINE ITEMS ── */}
-          {activeTab === "line-items" && (
+          {/*  LINE ITEMS  */}
+          {activeTab === "line-items"&& (
             <div className="space-y-4">
-              <div className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              <div className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                 Mapped Line Item &amp; SLA
               </div>
               <div
-                className="rounded-xl p-5 flex items-center gap-4"
-                style={{ background: "var(--rtm-bg)", border: "2px solid var(--rtm-border)" }}
+                className="rounded-xl p-5 flex items-center gap-4"style={{ background: "var(--rtm-bg)", border: "2px solid var(--rtm-border)"}}
               >
-                <span className="text-2xl">📦</span>
+                
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+                  <div className="text-[10px] font-bold uppercase tracking-wider mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                     Primary Line Item
                   </div>
-                  <div className="text-lg font-black" style={{ color: "var(--rtm-text-primary)" }}>
+                  <div className="text-lg font-black"style={{ color: "var(--rtm-text-primary)"}}>
                     {rule.lineItem}
                   </div>
                 </div>
               </div>
 
               {/* Line Item SLA — Primary Delivery Source */}
-              <div className="rounded-xl p-4" style={{ background: "#EFF6FF", border: "2px solid #BFDBFE" }}>
-                <div className="text-[10px] font-black uppercase tracking-wider mb-3" style={{ color: "#1D4ED8" }}>Line Item SLA — Primary Delivery Source</div>
+              <div className="rounded-xl p-4"style={{ background: "#EFF6FF", border: "2px solid #BFDBFE"}}>
+                <div className="text-[10px] font-black uppercase tracking-wider mb-3"style={{ color: "#1D4ED8"}}>Line Item SLA — Primary Delivery Source</div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {[
-                    { label: "First Response SLA", value: rule.lineItemSLA.firstResponseSLA, color: "#1D4ED8" },
-                    { label: "Target Completion", value: `${rule.lineItemSLA.targetCompletionDays} business days`, color: "#059669" },
-                    { label: "Due Date Offset", value: rule.lineItemSLA.dueDateOffset > 0 ? `Day ${rule.lineItemSLA.dueDateOffset}` : "Immediate", color: "#374151" },
-                    { label: "Escalation After", value: `${rule.lineItemSLA.escalationAfterDays} days`, color: "#C2410C" },
-                    { label: "SLA Priority", value: rule.lineItemSLA.slaPriority, color: rule.lineItemSLA.slaPriority === "Priority" ? "#1D4ED8" : rule.lineItemSLA.slaPriority === "Rush" ? "#BE123C" : "#374151" },
+                    { label: "First Response SLA", value: rule.lineItemSLA.firstResponseSLA, color: "#1D4ED8"},
+                    { label: "Target Completion", value: `${rule.lineItemSLA.targetCompletionDays} business days`, color: "#059669"},
+                    { label: "Due Date Offset", value: rule.lineItemSLA.dueDateOffset > 0 ? `Day ${rule.lineItemSLA.dueDateOffset}` : "Immediate", color: "#374151"},
+                    { label: "Escalation After", value: `${rule.lineItemSLA.escalationAfterDays} days`, color: "#C2410C"},
+                    { label: "SLA Priority", value: rule.lineItemSLA.slaPriority, color: rule.lineItemSLA.slaPriority === "Priority"? "#1D4ED8": rule.lineItemSLA.slaPriority === "Rush"? "#BE123C": "#374151"},
                   ].map((r) => (
-                    <div key={r.label} className="rounded-lg p-2.5" style={{ background: "rgba(255,255,255,0.8)", border: "1px solid #BFDBFE" }}>
-                      <div className="text-[9px] font-bold uppercase tracking-wide mb-1" style={{ color: "#6B7280" }}>{r.label}</div>
-                      <div className="text-xs font-black" style={{ color: r.color }}>{r.value}</div>
+                    <div key={r.label} className="rounded-lg p-2.5"style={{ background: "rgba(255,255,255,0.8)", border: "1px solid #BFDBFE"}}>
+                      <div className="text-[9px] font-bold uppercase tracking-wide mb-1"style={{ color: "#6B7280"}}>{r.label}</div>
+                      <div className="text-xs font-black"style={{ color: r.color }}>{r.value}</div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] mt-2" style={{ color: "#1E40AF" }}>Department SLA is a fallback default only. This line item SLA is the primary delivery commitment.</p>
+                <p className="text-[10px] mt-2"style={{ color: "#1E40AF"}}>Department SLA is a fallback default only. This line item SLA is the primary delivery commitment.</p>
               </div>
 
-              <div className="rounded-xl p-4" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
-                <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>
+              <div className="rounded-xl p-4"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
+                <div className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}>
                   Billing Gate
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">💳</span>
+                  
                   <div>
                     <BillingBadge req={rule.billingRequirement} />
-                    <div className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>
-                      {rule.billingRequirement === "Setup Invoice"
-                        ? "Rule fires when the one-time setup invoice is collected."
-                        : rule.billingRequirement === "Recurring Invoice"
-                        ? "Rule fires when a recurring monthly invoice is active."
-                        : rule.billingRequirement === "Any Invoice"
-                        ? "Rule fires on any paid invoice for this line item."
-                        : rule.billingRequirement === "Contract Only"
-                        ? "Rule fires on contract execution — no invoice required."
-                        : "No billing gate required."}
+                    <div className="text-xs mt-1"style={{ color: "var(--rtm-text-muted)"}}>
+                      {rule.billingRequirement === "Setup Invoice"? "Rule fires when the one-time setup invoice is collected.": rule.billingRequirement === "Recurring Invoice"? "Rule fires when a recurring monthly invoice is active.": rule.billingRequirement === "Any Invoice"? "Rule fires on any paid invoice for this line item.": rule.billingRequirement === "Contract Only"? "Rule fires on contract execution — no invoice required.": "No billing gate required."}
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-xl p-4" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
-                <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>
+              <div className="rounded-xl p-4"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
+                <div className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}>
                   Contract Gate
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xl">📄</span>
+                  
                   <div>
                     <ContractBadge req={rule.contractRequirement} />
-                    <div className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>
-                      {rule.contractRequirement === "Required"
-                        ? "A signed contract must be on file before this rule can fire."
-                        : rule.contractRequirement === "Optional"
-                        ? "Contract is preferred but not enforced for this rule."
-                        : "No contract is required for this activation."}
+                    <div className="text-xs mt-1"style={{ color: "var(--rtm-text-muted)"}}>
+                      {rule.contractRequirement === "Required"? "A signed contract must be on file before this rule can fire.": rule.contractRequirement === "Optional"? "Contract is preferred but not enforced for this rule.": "No contract is required for this activation."}
                     </div>
                   </div>
                 </div>
@@ -1344,23 +1286,22 @@ THEN   activate("${rule.taskTemplate}")
             </div>
           )}
 
-          {/* ── TASK TEMPLATES ── */}
-          {activeTab === "templates" && (
+          {/*  TASK TEMPLATES  */}
+          {activeTab === "templates"&& (
             <div className="space-y-4">
-              <div className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              <div className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                 Mapped Task Template
               </div>
               <div
-                className="rounded-xl p-5"
-                style={{ background: "var(--rtm-bg)", border: "2px solid var(--rtm-border)" }}
+                className="rounded-xl p-5"style={{ background: "var(--rtm-bg)", border: "2px solid var(--rtm-border)"}}
               >
                 <div className="flex items-start gap-4">
-                  <span className="text-2xl mt-0.5">📋</span>
+                  
                   <div className="flex-1">
-                    <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+                    <div className="text-[10px] font-bold uppercase tracking-wider mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                       Task Template
                     </div>
-                    <div className="text-lg font-black mb-2" style={{ color: "var(--rtm-blue)" }}>
+                    <div className="text-lg font-black mb-2"style={{ color: "var(--rtm-blue)"}}>
                       {rule.taskTemplate}
                     </div>
                     <DeptBadge dept={rule.department} />
@@ -1369,20 +1310,17 @@ THEN   activate("${rule.taskTemplate}")
               </div>
 
               <div
-                className="rounded-xl p-4"
-                style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}
+                className="rounded-xl p-4"style={{ background: "#EFF6FF", border: "1px solid #BFDBFE"}}
               >
-                <div className="text-xs font-bold mb-2" style={{ color: "#1D4ED8" }}>
+                <div className="text-xs font-bold mb-2"style={{ color: "#1D4ED8"}}>
                   Department Activation
                 </div>
-                <p className="text-xs" style={{ color: "#1E40AF" }}>
-                  When this rule fires, the <strong>{rule.taskTemplate}</strong> will be instantiated and all tasks assigned to the{" "}
+                <p className="text-xs"style={{ color: "#1E40AF"}}>
+                  When this rule fires, the <strong>{rule.taskTemplate}</strong> will be instantiated and all tasks assigned to the{""}
                   <strong>{rule.department}</strong> department. SLA tracking will update automatically.
                 </p>
                 <Link
-                  href="/tasks/templates"
-                  className="inline-flex items-center gap-1 mt-3 text-xs font-bold"
-                  style={{ color: "#1D4ED8" }}
+                  href="/tasks/templates"className="inline-flex items-center gap-1 mt-3 text-xs font-bold"style={{ color: "#1D4ED8"}}
                 >
                   View full template →
                 </Link>
@@ -1390,38 +1328,36 @@ THEN   activate("${rule.taskTemplate}")
             </div>
           )}
 
-          {/* ── DEPENDENCIES ── */}
-          {activeTab === "dependencies" && (
+          {/*  DEPENDENCIES  */}
+          {activeTab === "dependencies"&& (
             <div className="space-y-4">
               {rule.dependencies.length === 0 ? (
-                <div className="text-center py-10" style={{ color: "var(--rtm-text-muted)" }}>
-                  <div className="text-3xl mb-2">🔗</div>
+                <div className="text-center py-10"style={{ color: "var(--rtm-text-muted)"}}>
+                  
                   <div className="text-sm font-semibold">No rule dependencies configured.</div>
                   <div className="text-xs mt-1">This rule evaluates independently.</div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                  <div className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                     Rule Dependencies ({rule.dependencies.length})
                   </div>
                   {rule.dependencies.map((dep) => {
-                    const cfg = DEP_TYPE_CFG[dep.type] ?? { bg: "#F8FAFC", color: "#64748B" };
+                    const cfg = DEP_TYPE_CFG[dep.type] ?? { bg: "#F8FAFC", color: "#64748B"};
                     return (
                       <div
                         key={dep.ruleId}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl"
-                        style={{ background: cfg.bg, border: `1px solid ${cfg.color}33` }}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl"style={{ background: cfg.bg, border: `1px solid ${cfg.color}33` }}
                       >
-                        <span className="text-lg">🔗</span>
+                        
                         <div className="flex-1">
-                          <div className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                          <div className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                             {dep.ruleName}
                           </div>
-                          <div className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{dep.ruleId}</div>
+                          <div className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{dep.ruleId}</div>
                         </div>
                         <span
-                          className="text-[11px] font-bold px-2.5 py-1 rounded-full capitalize"
-                          style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}55` }}
+                          className="text-[11px] font-bold px-2.5 py-1 rounded-full capitalize"style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}55` }}
                         >
                           {dep.type}
                         </span>
@@ -1431,25 +1367,20 @@ THEN   activate("${rule.taskTemplate}")
                 </div>
               )}
 
-              <div className="rounded-xl p-4" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
-                <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>Dependency Types</div>
+              <div className="rounded-xl p-4"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
+                <div className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}>Dependency Types</div>
                 <div className="space-y-2">
                   {(["blocks", "triggers", "requires"] as const).map((t) => {
                     const c = DEP_TYPE_CFG[t];
-                    const desc = t === "blocks"
-                      ? "This rule cannot fire until the dependency is resolved."
-                      : t === "triggers"
-                      ? "This rule fires after the dependency rule completes."
-                      : "The dependency rule must have fired at least once.";
+                    const desc = t === "blocks"? "This rule cannot fire until the dependency is resolved.": t === "triggers"? "This rule fires after the dependency rule completes.": "The dependency rule must have fired at least once.";
                     return (
                       <div key={t} className="flex items-start gap-2">
                         <span
-                          className="text-[10px] font-bold px-2 py-0.5 rounded capitalize flex-shrink-0"
-                          style={{ background: c.bg, color: c.color }}
+                          className="text-[10px] font-bold px-2 py-0.5 rounded capitalize flex-shrink-0"style={{ background: c.bg, color: c.color }}
                         >
                           {t}
                         </span>
-                        <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{desc}</span>
+                        <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{desc}</span>
                       </div>
                     );
                   })}
@@ -1458,17 +1389,16 @@ THEN   activate("${rule.taskTemplate}")
             </div>
           )}
 
-          {/* ── TEST RESULTS ── */}
-          {activeTab === "test" && (
+          {/*  TEST RESULTS  */}
+          {activeTab === "test"&& (
             <div className="space-y-4">
               {rule.testResults === null ? (
-                <div className="text-center py-10" style={{ color: "var(--rtm-text-muted)" }}>
-                  <div className="text-3xl mb-2">🧪</div>
+                <div className="text-center py-10"style={{ color: "var(--rtm-text-muted)"}}>
+                  
                   <div className="text-sm font-semibold">No test results available.</div>
                   <div className="text-xs mt-1">Run a test to validate rule conditions.</div>
                   <button
-                    className="mt-4 px-4 py-2 rounded-lg text-sm font-bold text-white"
-                    style={{ background: "var(--rtm-blue)" }}
+                    className="mt-4 px-4 py-2 rounded-lg text-sm font-bold text-white"style={{ background: "var(--rtm-blue)"}}
                   >
                     Run Test
                   </button>
@@ -1476,55 +1406,50 @@ THEN   activate("${rule.taskTemplate}")
               ) : (
                 <>
                   <div
-                    className="rounded-xl p-4 flex items-center gap-4"
-                    style={{
-                      background: rule.testResults.passed ? "#ECFDF5" : "#FEF2F2",
-                      border: `1px solid ${rule.testResults.passed ? "#A7F3D0" : "#FECACA"}`,
+                    className="rounded-xl p-4 flex items-center gap-4"style={{
+                      background: rule.testResults.passed ? "#ECFDF5": "#FEF2F2",
+                      border: `1px solid ${rule.testResults.passed ? "#A7F3D0": "#FECACA"}`,
                     }}
                   >
-                    <span className="text-3xl">{rule.testResults.passed ? "✅" : "❌"}</span>
+                    <span className="text-3xl">{rule.testResults.passed ? "": ""}</span>
                     <div>
                       <div
-                        className="font-extrabold text-sm"
-                        style={{ color: rule.testResults.passed ? "#059669" : "#DC2626" }}
+                        className="font-extrabold text-sm"style={{ color: rule.testResults.passed ? "#059669": "#DC2626"}}
                       >
-                        Test {rule.testResults.passed ? "Passed" : "Failed"}
+                        Test {rule.testResults.passed ? "Passed": "Failed"}
                       </div>
-                      <div className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                      <div className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                         Last run: {rule.testResults.testedAt}
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <div className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                    <div className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                       Condition Results
                     </div>
                     {rule.testResults.conditions.map((cond) => (
                       <div
                         key={cond.name}
-                        className="flex items-center justify-between px-4 py-3 rounded-xl"
-                        style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
+                        className="flex items-center justify-between px-4 py-3 rounded-xl"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}
                       >
-                        <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                        <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                           {cond.name}
                         </span>
                         <span
-                          className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                          style={{
-                            background: cond.met ? "#ECFDF5" : "#FEF2F2",
-                            color: cond.met ? "#059669" : "#DC2626",
+                          className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={{
+                            background: cond.met ? "#ECFDF5": "#FEF2F2",
+                            color: cond.met ? "#059669": "#DC2626",
                           }}
                         >
-                          {cond.met ? "✓ Met" : "✗ Not Met"}
+                          {cond.met ? "Met": "Not Met"}
                         </span>
                       </div>
                     ))}
                   </div>
 
                   <button
-                    className="w-full px-4 py-2 rounded-lg text-sm font-bold text-white"
-                    style={{ background: "var(--rtm-blue)" }}
+                    className="w-full px-4 py-2 rounded-lg text-sm font-bold text-white"style={{ background: "var(--rtm-blue)"}}
                   >
                     Re-run Test
                   </button>
@@ -1533,53 +1458,49 @@ THEN   activate("${rule.taskTemplate}")
             </div>
           )}
 
-          {/* ── ACTIVITY LOG ── */}
-          {activeTab === "activity" && (
+          {/*  ACTIVITY LOG  */}
+          {activeTab === "activity"&& (
             <div className="space-y-3">
-              <div className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              <div className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                 Activity Log ({rule.activityLog.length} entries)
               </div>
               {rule.activityLog.map((entry, i) => (
                 <div
                   key={i}
-                  className="flex items-start gap-3 px-4 py-3 rounded-xl"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
+                  className="flex items-start gap-3 px-4 py-3 rounded-xl"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}
                 >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ background: "var(--rtm-blue)" }} />
+                  <span className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"style={{ background: "var(--rtm-blue)"}} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                      <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                         {entry.action}
                       </span>
-                      <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>by {entry.by}</span>
+                      <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>by {entry.by}</span>
                     </div>
                     {entry.detail && (
-                      <div className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
+                      <div className="text-xs mt-0.5"style={{ color: "var(--rtm-text-secondary)"}}>
                         {entry.detail}
                       </div>
                     )}
                   </div>
-                  <span className="text-xs flex-shrink-0" style={{ color: "var(--rtm-text-muted)" }}>
+                  <span className="text-xs flex-shrink-0"style={{ color: "var(--rtm-text-muted)"}}>
                     {entry.date}
                   </span>
                 </div>
               ))}
 
-              <div className="rounded-xl p-4" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
-                <div className="text-xs font-bold mb-2" style={{ color: "var(--rtm-text-primary)" }}>Add Note</div>
+              <div className="rounded-xl p-4"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
+                <div className="text-xs font-bold mb-2"style={{ color: "var(--rtm-text-primary)"}}>Add Note</div>
                 <textarea
                   rows={3}
-                  placeholder="Add a note to the activity log..."
-                  className="w-full text-sm p-2 rounded-lg resize-none outline-none"
-                  style={{
+                  placeholder="Add a note to the activity log..."className="w-full text-sm p-2 rounded-lg resize-none outline-none"style={{
                     background: "var(--rtm-surface)",
                     border: "1px solid var(--rtm-border)",
                     color: "var(--rtm-text-primary)",
                   }}
                 />
                 <button
-                  className="mt-2 px-4 py-1.5 rounded-lg text-xs font-bold text-white"
-                  style={{ background: "var(--rtm-blue)" }}
+                  className="mt-2 px-4 py-1.5 rounded-lg text-xs font-bold text-white"style={{ background: "var(--rtm-blue)"}}
                 >
                   Add Note
                 </button>
@@ -1590,39 +1511,33 @@ THEN   activate("${rule.taskTemplate}")
 
         {/* Footer */}
         <div
-          className="px-6 py-4 flex items-center gap-2 flex-wrap"
-          style={{ borderTop: "1px solid var(--rtm-border)" }}
+          className="px-6 py-4 flex items-center gap-2 flex-wrap"style={{ borderTop: "1px solid var(--rtm-border)"}}
         >
           <button
-            className="px-4 py-2 rounded-lg text-sm font-bold text-white"
-            style={{ background: "var(--rtm-blue)" }}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-white"style={{ background: "var(--rtm-blue)"}}
           >
             Edit Rule
           </button>
           <button
-            className="px-4 py-2 rounded-lg text-sm font-semibold border"
-            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
           >
             Test Rule
           </button>
           <button
-            className="px-4 py-2 rounded-lg text-sm font-semibold border"
-            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            className="px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
           >
             View Dependencies
           </button>
           <button
-            className="px-4 py-2 rounded-lg text-sm font-semibold"
-            style={{
-              background: rule.status === "Active" ? "#FEF2F2" : "#ECFDF5",
-              color: rule.status === "Active" ? "#DC2626" : "#059669",
+            className="px-4 py-2 rounded-lg text-sm font-semibold"style={{
+              background: rule.status === "Active"? "#FEF2F2": "#ECFDF5",
+              color: rule.status === "Active"? "#DC2626": "#059669",
             }}
           >
-            {rule.status === "Active" ? "Deactivate" : "Activate"}
+            {rule.status === "Active"? "Deactivate": "Activate"}
           </button>
           <button
-            className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold"
-            style={{ color: "var(--rtm-text-muted)" }}
+            className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}
             onClick={onClose}
           >
             Close
@@ -1633,7 +1548,7 @@ THEN   activate("${rule.taskTemplate}")
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
+//  Main Page 
 
 const ALL_TRIGGERS: (TriggerEvent | "All")[] = [
   "All",
@@ -1661,7 +1576,7 @@ export default function ActivationRulesPage() {
   const [filterDept, setFilterDept] = useState<Department | "All">("All");
   const [filterStatus, setFilterStatus] = useState<RuleStatus | "All">("All");
 
-  // ── Derived ─────────────────────────────────────────────────────────────
+  //  Derived 
   const filtered = useMemo(() => {
     return ACTIVATION_RULES.filter((r) => {
       const q = search.toLowerCase();
@@ -1671,14 +1586,14 @@ export default function ActivationRulesPage() {
         r.lineItem.toLowerCase().includes(q) ||
         r.taskTemplate.toLowerCase().includes(q) ||
         r.department.toLowerCase().includes(q);
-      const matchTrigger = filterTrigger === "All" || r.triggerEvent === filterTrigger;
-      const matchDept = filterDept === "All" || r.department === filterDept;
-      const matchStatus = filterStatus === "All" || r.status === filterStatus;
+      const matchTrigger = filterTrigger === "All"|| r.triggerEvent === filterTrigger;
+      const matchDept = filterDept === "All"|| r.department === filterDept;
+      const matchStatus = filterStatus === "All"|| r.status === filterStatus;
       return matchSearch && matchTrigger && matchDept && matchStatus;
     }).sort((a, b) => a.priority - b.priority);
   }, [search, filterTrigger, filterDept, filterStatus]);
 
-  // ── KPIs ────────────────────────────────────────────────────────────────
+  //  KPIs 
   const kpis = useMemo(() => {
     const total = ACTIVATION_RULES.length;
     const active = ACTIVATION_RULES.filter((r) => r.status === "Active").length;
@@ -1687,99 +1602,91 @@ export default function ActivationRulesPage() {
     const totalTriggers = ACTIVATION_RULES.reduce((s, r) => s + r.triggerCount, 0);
     const depts = new Set(ACTIVATION_RULES.map((r) => r.department)).size;
     const blocked = ACTIVATION_RULES.filter(
-      (r) => r.status === "Active" && r.dependencies.some((d) => d.type === "blocks")
+      (r) => r.status === "Active"&& r.dependencies.some((d) => d.type === "blocks")
     ).length;
-    const recent = ACTIVATION_RULES.filter((r) => r.lastTriggered === "2025-07-24" || r.lastTriggered === "2025-07-23" || r.lastTriggered === "2025-07-22").length;
+    const recent = ACTIVATION_RULES.filter((r) => r.lastTriggered === "2025-07-24"|| r.lastTriggered === "2025-07-23"|| r.lastTriggered === "2025-07-22").length;
     return { total, active, inactive, pending, totalTriggers, depts, blocked, recent };
   }, []);
 
   return (
     <div className="space-y-6">
 
-      {/* ── Page Header ── */}
+      {/*  Page Header  */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-blue)" }}>
+            <p className="text-[11px] font-bold uppercase tracking-widest"style={{ color: "var(--rtm-blue)"}}>
               Task Operations
             </p>
-            <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>›</span>
-            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
+            <span className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>›</span>
+            <p className="text-[11px] font-semibold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>
               Activation Rules
             </p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
             Task Activation Rules
           </h1>
-          <p className="text-sm mt-1 max-w-xl" style={{ color: "var(--rtm-text-secondary)" }}>
+          <p className="text-sm mt-1 max-w-xl"style={{ color: "var(--rtm-text-secondary)"}}>
             Configure when line items, contracts, invoices, and lifecycle events activate task templates and department work.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
           <button
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border"
-            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
           >
             ↑ Import Rules
           </button>
           <button
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border"
-            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
           >
             ↓ Export Rules
           </button>
           <button
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border"
-            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
           >
-            🧪 Test Rule
+             Test Rule
           </button>
           <Link
-            href="/tasks/templates"
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border"
-            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}
+            href="/tasks/templates"className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
           >
-            📋 View Task Templates
+             View Task Templates
           </Link>
           <button
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"
-            style={{ background: "var(--rtm-blue)" }}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white"style={{ background: "var(--rtm-blue)"}}
           >
             + New Activation Rule
           </button>
         </div>
       </div>
 
-      {/* ── Primary Flow Banner ── */}
+      {/*  Primary Flow Banner  */}
       <div
-        className="rounded-xl p-4"
-        style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}
+        className="rounded-xl p-4"style={{ background: "#EFF6FF", border: "1px solid #BFDBFE"}}
       >
-        <div className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "#1D4ED8" }}>
+        <div className="text-[10px] font-bold uppercase tracking-wider mb-2"style={{ color: "#1D4ED8"}}>
           Primary Activation Flow
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
           {[
-            { label: "Line Item Sold" },
+            { label: "Line Item Sold"},
             "→",
-            { label: "Contract Signed", icon: "📄" },
+            { label: "Contract Signed", icon: ""},
             "→",
-            { label: "Invoice Paid" },
+            { label: "Invoice Paid"},
             "→",
-            { label: "Activation Rule Fires" },
+            { label: "Activation Rule Fires"},
             "→",
-            { label: "Task Template Generates Tasks" },
+            { label: "Task Template Generates Tasks"},
             "→",
-            { label: "Department Queue Activated" },
+            { label: "Department Queue Activated"},
           ].map((step, i) =>
-            step === "→" ? (
-              <span key={i} className="font-black" style={{ color: "#93C5FD" }}>→</span>
+            step === "→"? (
+              <span key={i} className="font-black"style={{ color: "#93C5FD"}}>→</span>
             ) : (
               <span
                 key={i}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-                style={{ background: "rgba(255,255,255,0.8)", color: "#1D4ED8", border: "1px solid #BFDBFE" }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"style={{ background: "rgba(255,255,255,0.8)", color: "#1D4ED8", border: "1px solid #BFDBFE"}}
               >
                 <span>{(step as { label: string; icon: string }).icon}</span>
                 {(step as { label: string; icon: string }).label}
@@ -1789,52 +1696,45 @@ export default function ActivationRulesPage() {
         </div>
       </div>
 
-      {/* ── KPI Cards ── */}
+      {/*  KPI Cards  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
         {[
-          { label: "Total Rules",          value: kpis.total,        color: "var(--rtm-blue)" },
-          { label: "Active Rules",          value: kpis.active,       color: "#059669" },
-          { label: "Inactive Rules",        value: kpis.inactive,     color: "#94A3B8" },
-          { label: "Pending Review",        value: kpis.pending,      color: "#D97706" },
-          { label: "Templates Triggered",   value: kpis.totalTriggers,color: "#7C3AED" },
-          { label: "Departments Covered",   value: kpis.depts,        color: "#0891B2" },
-          { label: "Blocked Activations",   value: kpis.blocked,      color: "#DC2626" },
-          { label: "Recent Activations",    value: kpis.recent,       color: "#16A34A" },
+          { label: "Total Rules",          value: kpis.total,        color: "var(--rtm-blue)"},
+          { label: "Active Rules",          value: kpis.active,       color: "#059669"},
+          { label: "Inactive Rules",        value: kpis.inactive,     color: "#94A3B8"},
+          { label: "Pending Review",        value: kpis.pending,      color: "#D97706"},
+          { label: "Templates Triggered",   value: kpis.totalTriggers,color: "#7C3AED"},
+          { label: "Departments Covered",   value: kpis.depts,        color: "#0891B2"},
+          { label: "Blocked Activations",   value: kpis.blocked,      color: "#DC2626"},
+          { label: "Recent Activations",    value: kpis.recent,       color: "#16A34A"},
         ].map(({ label, value, color }) => (
           <div
             key={label}
-            className="rounded-xl p-3 text-center"
-            style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+            className="rounded-xl p-3 text-center"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
           >
-            <div className="text-2xl font-black" style={{ color }}>{value}</div>
-            <div className="text-[10px] font-semibold mt-1 leading-tight" style={{ color: "var(--rtm-text-secondary)" }}>
+            <div className="text-2xl font-black"style={{ color }}>{value}</div>
+            <div className="text-[10px] font-semibold mt-1 leading-tight"style={{ color: "var(--rtm-text-secondary)"}}>
               {label}
             </div>
           </div>
         ))}
       </div>
 
-      {/* ── Filters ── */}
+      {/*  Filters  */}
       <div
-        className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3"
-        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+        className="rounded-xl px-4 py-3 flex flex-wrap items-center gap-3"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
       >
         {/* Search */}
         <div className="relative flex-1 min-w-[200px]">
           <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-            style={{ color: "var(--rtm-text-muted)" }}
-            fill="none" stroke="currentColor" viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"style={{ color: "var(--rtm-text-muted)"}}
+            fill="none"stroke="currentColor"viewBox="0 0 24 24">
+            <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
           </svg>
           <input
-            type="text"
-            placeholder="Search rules, line items, templates..."
-            value={search}
+            type="text"placeholder="Search rules, line items, templates..."value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg outline-none"
-            style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg outline-none"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)"}}
           />
         </div>
 
@@ -1842,11 +1742,10 @@ export default function ActivationRulesPage() {
         <select
           value={filterTrigger}
           onChange={(e) => setFilterTrigger(e.target.value as TriggerEvent | "All")}
-          className="text-sm px-3 py-2 rounded-lg outline-none"
-          style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+          className="text-sm px-3 py-2 rounded-lg outline-none"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)"}}
         >
           {ALL_TRIGGERS.map((t) => (
-            <option key={t} value={t}>{t === "All" ? "All Triggers" : t}</option>
+            <option key={t} value={t}>{t === "All"? "All Triggers": t}</option>
           ))}
         </select>
 
@@ -1854,11 +1753,10 @@ export default function ActivationRulesPage() {
         <select
           value={filterDept}
           onChange={(e) => setFilterDept(e.target.value as Department | "All")}
-          className="text-sm px-3 py-2 rounded-lg outline-none"
-          style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+          className="text-sm px-3 py-2 rounded-lg outline-none"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)"}}
         >
           {ALL_DEPARTMENTS.map((d) => (
-            <option key={d} value={d}>{d === "All" ? "All Departments" : d}</option>
+            <option key={d} value={d}>{d === "All"? "All Departments": d}</option>
           ))}
         </select>
 
@@ -1866,28 +1764,26 @@ export default function ActivationRulesPage() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as RuleStatus | "All")}
-          className="text-sm px-3 py-2 rounded-lg outline-none"
-          style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+          className="text-sm px-3 py-2 rounded-lg outline-none"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)"}}
         >
           {ALL_STATUSES.map((s) => (
-            <option key={s} value={s}>{s === "All" ? "All Statuses" : s}</option>
+            <option key={s} value={s}>{s === "All"? "All Statuses": s}</option>
           ))}
         </select>
 
-        <span className="text-xs font-semibold ml-auto" style={{ color: "var(--rtm-text-muted)" }}>
+        <span className="text-xs font-semibold ml-auto"style={{ color: "var(--rtm-text-muted)"}}>
           {filtered.length} of {ACTIVATION_RULES.length} rules
         </span>
       </div>
 
-      {/* ── Rules Table ── */}
+      {/*  Rules Table  */}
       <div
-        className="rounded-xl overflow-hidden"
-        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+        className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm min-w-[1100px]">
             <thead>
-              <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)" }}>
+              <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)"}}>
                 {[
                   "#",
                   "Rule Name",
@@ -1905,8 +1801,7 @@ export default function ActivationRulesPage() {
                 ].map((col) => (
                   <th
                     key={col}
-                    className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-wider"
-                    style={{ color: "var(--rtm-text-secondary)" }}
+                    className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-wider"style={{ color: "var(--rtm-text-secondary)"}}
                   >
                     {col}
                   </th>
@@ -1917,16 +1812,14 @@ export default function ActivationRulesPage() {
               {filtered.map((rule, i) => (
                 <tr
                   key={rule.id}
-                  className="hover:bg-blue-50/20 transition-colors"
-                  style={{
-                    borderBottom: i < filtered.length - 1 ? "1px solid var(--rtm-border-light)" : "none",
+                  className="hover:bg-blue-50/20 transition-colors"style={{
+                    borderBottom: i < filtered.length - 1 ? "1px solid var(--rtm-border-light)": "none",
                   }}
                 >
                   {/* Priority */}
                   <td className="px-4 py-3">
                     <span
-                      className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white"
-                      style={{ background: "var(--rtm-blue)" }}
+                      className="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black text-white"style={{ background: "var(--rtm-blue)"}}
                     >
                       {rule.priority}
                     </span>
@@ -1936,17 +1829,15 @@ export default function ActivationRulesPage() {
                   <td className="px-4 py-3 max-w-[200px]">
                     <button
                       onClick={() => setSelectedRule(rule)}
-                      className="font-bold text-left hover:underline"
-                      style={{ color: "var(--rtm-blue)" }}
+                      className="font-bold text-left hover:underline"style={{ color: "var(--rtm-blue)"}}
                     >
                       {rule.name}
                     </button>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{rule.id}</span>
+                      <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{rule.id}</span>
                       {rule.autoActivate && (
                         <span
-                          className="text-[9px] font-bold px-1.5 py-0.5 rounded"
-                          style={{ background: "#EFF6FF", color: "#1D4ED8" }}
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded"style={{ background: "#EFF6FF", color: "#1D4ED8"}}
                         >
                           AUTO
                         </span>
@@ -1961,22 +1852,22 @@ export default function ActivationRulesPage() {
 
                   {/* Line Item */}
                   <td className="px-4 py-3">
-                    <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                       {rule.lineItem}
                     </span>
                   </td>
 
                   {/* Line Item SLA — primary source */}
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="text-[11px] font-semibold" style={{ color: "#1D4ED8" }}>⚡ {rule.lineItemSLA.firstResponseSLA}</span>
+                    <span className="text-[11px] font-semibold"style={{ color: "#1D4ED8"}}> {rule.lineItemSLA.firstResponseSLA}</span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="text-[11px] font-bold" style={{ color: "#059669" }}>{rule.lineItemSLA.targetCompletionDays} biz days</span>
+                    <span className="text-[11px] font-bold"style={{ color: "#059669"}}>{rule.lineItemSLA.targetCompletionDays} biz days</span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="px-4 py-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {rule.lineItemSLA.dueDateOffset > 0 ? `Day ${rule.lineItemSLA.dueDateOffset}` : "Immediate"}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap" style={{ color: "#C2410C" }}>
+                  <td className="px-4 py-3 whitespace-nowrap"style={{ color: "#C2410C"}}>
                     After {rule.lineItemSLA.escalationAfterDays}d
                   </td>
 
@@ -1992,7 +1883,7 @@ export default function ActivationRulesPage() {
 
                   {/* Task Template */}
                   <td className="px-4 py-3 max-w-[180px]">
-                    <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                       {rule.taskTemplate}
                     </span>
                   </td>
@@ -2009,11 +1900,11 @@ export default function ActivationRulesPage() {
 
                   {/* Last Triggered */}
                   <td className="px-4 py-3">
-                    <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                    <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                       {rule.lastTriggered ?? "Never"}
                     </span>
                     {rule.triggerCount > 0 && (
-                      <div className="text-[10px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                      <div className="text-[10px] mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
                         {rule.triggerCount}× total
                       </div>
                     )}
@@ -2024,20 +1915,17 @@ export default function ActivationRulesPage() {
                     <div className="flex items-center gap-1 flex-wrap">
                       <button
                         onClick={() => setSelectedRule(rule)}
-                        className="text-[11px] font-semibold px-2 py-1 rounded-lg hover:opacity-80 transition-opacity"
-                        style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+                        className="text-[11px] font-semibold px-2 py-1 rounded-lg hover:opacity-80 transition-opacity"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
                       >
                         View
                       </button>
                       <button
-                        className="text-[11px] font-semibold px-2 py-1 rounded-lg hover:opacity-80 transition-opacity border"
-                        style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+                        className="text-[11px] font-semibold px-2 py-1 rounded-lg hover:opacity-80 transition-opacity border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}
                       >
                         Edit
                       </button>
                       <button
-                        className="text-[11px] font-semibold px-2 py-1 rounded-lg hover:opacity-80 transition-opacity border"
-                        style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+                        className="text-[11px] font-semibold px-2 py-1 rounded-lg hover:opacity-80 transition-opacity border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}
                       >
                         Test
                       </button>
@@ -2050,42 +1938,38 @@ export default function ActivationRulesPage() {
         </div>
 
         {filtered.length === 0 && (
-          <div className="py-12 text-center" style={{ color: "var(--rtm-text-muted)" }}>
-            <div className="text-3xl mb-2">⚡</div>
+          <div className="py-12 text-center"style={{ color: "var(--rtm-text-muted)"}}>
+            
             <div className="text-sm font-semibold">No rules match your filters.</div>
           </div>
         )}
 
         <div
-          className="px-5 py-3 flex items-center justify-between"
-          style={{ borderTop: "1px solid var(--rtm-border-light)" }}
+          className="px-5 py-3 flex items-center justify-between"style={{ borderTop: "1px solid var(--rtm-border-light)"}}
         >
-          <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             Showing {filtered.length} of {ACTIVATION_RULES.length} activation rules
           </span>
-          <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+          <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-muted)"}}>
             {kpis.totalTriggers} total activations fired
           </span>
         </div>
       </div>
 
-      {/* ── Trigger Event Summary ── */}
+      {/*  Trigger Event Summary  */}
       <div
-        className="rounded-xl overflow-hidden"
-        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+        className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
       >
         <div
-          className="px-5 py-4"
-          style={{ borderBottom: "1px solid var(--rtm-border)", background: "#FFFBEB" }}
+          className="px-5 py-4"style={{ borderBottom: "1px solid var(--rtm-border)", background: "#FFFBEB"}}
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg">⚡</span>
-            <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
+            
+            <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>
               Rules by Trigger Event
             </h2>
             <span
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-              style={{ background: "#FDE68A", color: "#D97706" }}
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#FDE68A", color: "#D97706"}}
             >
               {ACTIVATION_RULES.length} total rules
             </span>
@@ -2109,42 +1993,39 @@ export default function ActivationRulesPage() {
             return (
               <div
                 key={trigger}
-                className="rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                style={{ border: `1px solid ${cfg.border}` }}
+                className="rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"style={{ border: `1px solid ${cfg.border}` }}
                 onClick={() => setFilterTrigger(trigger)}
               >
-                <div className="px-4 py-3 flex items-center gap-2" style={{ background: cfg.bg }}>
+                <div className="px-4 py-3 flex items-center gap-2"style={{ background: cfg.bg }}>
                   <span className="text-base">{cfg.icon}</span>
-                  <span className="text-xs font-black" style={{ color: cfg.color }}>
+                  <span className="text-xs font-black"style={{ color: cfg.color }}>
                     {trigger}
                   </span>
                   <span
-                    className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "rgba(255,255,255,0.7)", color: cfg.color }}
+                    className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "rgba(255,255,255,0.7)", color: cfg.color }}
                   >
                     {rules.length} rules
                   </span>
                 </div>
                 <div className="px-4 py-2 space-y-1 bg-white">
                   {rules.slice(0, 3).map((r) => (
-                    <div key={r.id} className="flex items-center gap-1 text-[11px]" style={{ color: "var(--rtm-text-secondary)" }}>
+                    <div key={r.id} className="flex items-center gap-1 text-[11px]"style={{ color: "var(--rtm-text-secondary)"}}>
                       <span style={{ color: cfg.color }}>→</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); setSelectedRule(r); }}
-                        className="hover:underline text-left truncate"
-                        style={{ color: "var(--rtm-text-primary)" }}
+                        className="hover:underline text-left truncate"style={{ color: "var(--rtm-text-primary)"}}
                       >
                         {r.name}
                       </button>
                     </div>
                   ))}
                   {rules.length > 3 && (
-                    <div className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+                    <div className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>
                       +{rules.length - 3} more
                     </div>
                   )}
                   {rules.length === 0 && (
-                    <div className="text-[11px] py-1" style={{ color: "var(--rtm-text-muted)" }}>
+                    <div className="text-[11px] py-1"style={{ color: "var(--rtm-text-muted)"}}>
                       No rules configured
                     </div>
                   )}
@@ -2155,16 +2036,15 @@ export default function ActivationRulesPage() {
         </div>
       </div>
 
-      {/* ── Department Coverage ── */}
+      {/*  Department Coverage  */}
       <div
-        className="rounded-xl overflow-hidden"
-        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+        className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
       >
-        <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-          <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
-            🏢 Department Coverage
+        <div className="px-5 py-4"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
+          <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>
+             Department Coverage
           </h2>
-          <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
             Activation rules mapped per department.
           </p>
         </div>
@@ -2189,15 +2069,14 @@ export default function ActivationRulesPage() {
             return (
               <div
                 key={dept}
-                className="rounded-xl p-3 text-center cursor-pointer hover:opacity-90 transition-opacity"
-                style={{ background: c.bg, border: `1px solid ${c.border}` }}
+                className="rounded-xl p-3 text-center cursor-pointer hover:opacity-90 transition-opacity"style={{ background: c.bg, border: `1px solid ${c.border}` }}
                 onClick={() => setFilterDept(dept)}
               >
-                <div className="text-xl font-black" style={{ color: c.color }}>{deptRules.length}</div>
-                <div className="text-[10px] font-bold mt-0.5" style={{ color: c.color }}>
+                <div className="text-xl font-black"style={{ color: c.color }}>{deptRules.length}</div>
+                <div className="text-[10px] font-bold mt-0.5"style={{ color: c.color }}>
                   {activeCount} active
                 </div>
-                <div className="text-[10px] mt-1 font-semibold leading-tight" style={{ color: "var(--rtm-text-secondary)" }}>
+                <div className="text-[10px] mt-1 font-semibold leading-tight"style={{ color: "var(--rtm-text-secondary)"}}>
                   {dept}
                 </div>
               </div>
@@ -2206,47 +2085,45 @@ export default function ActivationRulesPage() {
         </div>
       </div>
 
-      {/* ── Connected Systems ── */}
+      {/*  Connected Systems  */}
       <div
-        className="rounded-xl p-4"
-        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+        className="rounded-xl p-4"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
       >
-        <div className="text-xs font-bold mb-3" style={{ color: "var(--rtm-text-primary)" }}>
-          🔗 Connected Systems
+        <div className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}>
+           Connected Systems
         </div>
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "Finance / Line Items",    href: "/billing" },
-            { label: "Proposal Generator",      href: "/sales/proposals" },
-            { label: "Contract Generator",      href: "/billing/invoices" },
-            { label: "Billing",                 href: "/billing/client-portfolio" },
-            { label: "Task Templates",          href: "/tasks/templates" },
-            { label: "Task Engine",             href: "/tasks" },
-            { label: "Dept. Throughput",       href: "/tasks/workload-planning" },
-            { label: "Onboarding",              href: "/account-management/onboarding" },
-            { label: "Renewals",                href: "/renewals" },
-            { label: "Cancellations",           href: "/billing/cancellations" },
-            { label: "Offboarding",             href: "/cancellations/offboarding" },
-            { label: "Clients",                 href: "/clients" },
+            { label: "Finance / Line Items",    href: "/billing"},
+            { label: "Proposal Generator",      href: "/sales/proposals"},
+            { label: "Contract Generator",      href: "/billing/invoices"},
+            { label: "Billing",                 href: "/billing/client-portfolio"},
+            { label: "Task Templates",          href: "/tasks/templates"},
+            { label: "Task Engine",             href: "/tasks"},
+            { label: "Dept. Throughput",       href: "/tasks/workload-planning"},
+            { label: "Onboarding",              href: "/account-management/onboarding"},
+            { label: "Renewals",                href: "/renewals"},
+            { label: "Cancellations",           href: "/billing/cancellations"},
+            { label: "Offboarding",             href: "/cancellations/offboarding"},
+            { label: "Clients",                 href: "/clients"},
           ].map((r) => (
             <Link
               key={r.label}
               href={r.href}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border hover:opacity-80 transition-opacity"
-              style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)", borderColor: "#BFDBFE" }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border hover:opacity-80 transition-opacity"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)", borderColor: "#BFDBFE"}}
             >
               {r.label}
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-                <polyline points="15 3 21 3 21 9" />
-                <line x1="10" y1="14" x2="21" y2="3" />
+              <svg width="10"height="10"viewBox="0 0 24 24"fill="none"stroke="currentColor"strokeWidth="2">
+                <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+                <polyline points="15 3 21 3 21 9"/>
+                <line x1="10"y1="14"x2="21"y2="3"/>
               </svg>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* ── Rule Detail Drawer ── */}
+      {/*  Rule Detail Drawer  */}
       {selectedRule && (
         <RuleDrawer rule={selectedRule} onClose={() => setSelectedRule(null)} />
       )}

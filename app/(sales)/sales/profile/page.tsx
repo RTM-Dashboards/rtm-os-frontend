@@ -11,8 +11,6 @@ export default function SalesProfilePage() {
     <WorkspaceProfilePage
       workspace={workspace}
       profile={salesProfile}
-      teamRoute="/sales/team-members"
-      rolesRoute="/sales/roles"
-    />
+      teamRoute="/sales/team-members"rolesRoute="/sales/roles"/>
   );
 }

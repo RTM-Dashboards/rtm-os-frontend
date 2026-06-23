@@ -7,11 +7,11 @@ import Link from "next/link";
 
 const workspace = getWorkspace("sales")!;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+//  Types 
 
-type DateRange = "month" | "quarter" | "year";
+type DateRange = "month"| "quarter"| "year";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 // Sales Reps
 const SALES_REPS = [
@@ -101,14 +101,14 @@ const GHL_PIPELINE_STAGES = [
 
 // Proposal Performance
 const PROPOSAL_STAGES = [
-  { stage: "Draft",                 count: 7,  value: 22400, approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "—" },
-  { stage: "Internal Review",       count: 3,  value: 9600,  approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "—" },
-  { stage: "Sent",                  count: 8,  value: 28200, approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "—" },
-  { stage: "Viewed",                count: 5,  value: 17800, approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "3.2 days" },
-  { stage: "Negotiation",           count: 4,  value: 14600, approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "5.8 days" },
-  { stage: "Approved",              count: 9,  value: 42100, approvedValue: 42100, rejectedValue: 0,     approvalRate: 100, avgTimeToApproval: "6.1 days" },
-  { stage: "Rejected",              count: 5,  value: 16300, approvedValue: 0,     rejectedValue: 16300, approvalRate: 0,   avgTimeToApproval: "—" },
-  { stage: "Pushed to Handoff",     count: 6,  value: 23800, approvedValue: 23800, rejectedValue: 0,     approvalRate: 100, avgTimeToApproval: "4.4 days" },
+  { stage: "Draft",                 count: 7,  value: 22400, approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "—"},
+  { stage: "Internal Review",       count: 3,  value: 9600,  approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "—"},
+  { stage: "Sent",                  count: 8,  value: 28200, approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "—"},
+  { stage: "Viewed",                count: 5,  value: 17800, approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "3.2 days"},
+  { stage: "Negotiation",           count: 4,  value: 14600, approvedValue: 0,     rejectedValue: 0,     approvalRate: 0,   avgTimeToApproval: "5.8 days"},
+  { stage: "Approved",              count: 9,  value: 42100, approvedValue: 42100, rejectedValue: 0,     approvalRate: 100, avgTimeToApproval: "6.1 days"},
+  { stage: "Rejected",              count: 5,  value: 16300, approvedValue: 0,     rejectedValue: 16300, approvalRate: 0,   avgTimeToApproval: "—"},
+  { stage: "Pushed to Handoff",     count: 6,  value: 23800, approvedValue: 23800, rejectedValue: 0,     approvalRate: 100, avgTimeToApproval: "4.4 days"},
 ];
 
 // Handoff Performance
@@ -180,11 +180,11 @@ const GHL_SYNC_HEALTH = {
 
 // Task Examples
 const TASK_EXAMPLES = [
-  { id: "t1", title: "Sales report review",   dueDate: "Jan 12, 2025", owner: "Jordan M.", status: "Open" },
-  { id: "t2", title: "Follow-up overdue",     dueDate: "Jan 11, 2025", owner: "Alex R.",   status: "Overdue" },
-  { id: "t3", title: "Proposal needs review", dueDate: "Jan 13, 2025", owner: "Sarah K.",  status: "Open" },
-  { id: "t4", title: "Handoff blocked",       dueDate: "Jan 11, 2025", owner: "Mike T.",   status: "Overdue" },
-  { id: "t5", title: "Commission review",     dueDate: "Jan 15, 2025", owner: "Jordan M.", status: "Open" },
+  { id: "t1", title: "Sales report review",   dueDate: "Jan 12, 2025", owner: "Jordan M.", status: "Open"},
+  { id: "t2", title: "Follow-up overdue",     dueDate: "Jan 11, 2025", owner: "Alex R.",   status: "Overdue"},
+  { id: "t3", title: "Proposal needs review", dueDate: "Jan 13, 2025", owner: "Sarah K.",  status: "Open"},
+  { id: "t4", title: "Handoff blocked",       dueDate: "Jan 11, 2025", owner: "Mike T.",   status: "Overdue"},
+  { id: "t5", title: "Commission review",     dueDate: "Jan 15, 2025", owner: "Jordan M.", status: "Open"},
 ];
 
 // Notification Examples
@@ -196,7 +196,7 @@ const NOTIFICATION_EXAMPLES = [
   { id: "n5", type: "Commission", message: "Affiliate payout due: $3,250 pending across 6 affiliates.", date: "Jan 10, 2025", read: true },
 ];
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function fmt$(n: number): string {
   return n >= 1000 ? `$${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `$${n}`;
@@ -212,7 +212,7 @@ function winRateColor(rate: number): string {
   return "#DC2626";
 }
 
-function statusColor(status: string): "green" | "yellow" | "red" | "blue" | "gray" {
+function statusColor(status: string): "green"| "yellow"| "red"| "blue"| "gray"{
   if (["Open", "Synced", "Active", "Completed", "Approved", "Paid", "Live"].includes(status)) return "green";
   if (["Pending Sync", "Pending", "Manual Override", "Drafted", "In Progress"].includes(status)) return "yellow";
   if (["Sync Failed", "Overdue", "Blocked", "Rejected", "Not Connected"].includes(status)) return "red";
@@ -220,23 +220,23 @@ function statusColor(status: string): "green" | "yellow" | "red" | "blue" | "gra
   return "gray";
 }
 
-// ─── Sub-Components ────────────────────────────────────────────────────────────
+//  Sub-Components 
 
 function ActionBar() {
   const actions = [
-    { label: "Sync GHL Data",     icon: "🔄", primary: true  },
-    { label: "Export Report",     icon: "📤", primary: false },
-    { label: "Revenue Forecast",  icon: "📈", primary: false },
-    { label: "Sales Rep Report",  icon: "👤", primary: false },
-    { label: "Lead Source Report",icon: "🎯", primary: false },
-    { label: "Affiliate Report",  icon: "🤝", primary: false },
+    { label: "Sync GHL Data",     icon: "", primary: true  },
+    { label: "Export Report",     icon: "", primary: false },
+    { label: "Revenue Forecast",  icon: "", primary: false },
+    { label: "Sales Rep Report",  icon: "", primary: false },
+    { label: "Lead Source Report",icon: "", primary: false },
+    { label: "Affiliate Report",  icon: "", primary: false },
   ];
   return (
     <div className="flex flex-wrap gap-2">
       {actions.map((a) => (
         <button
           key={a.label}
-          className={a.primary ? "rtm-btn-primary text-sm inline-flex items-center gap-1.5" : "rtm-btn-secondary text-sm inline-flex items-center gap-1.5"}
+          className={a.primary ? "rtm-btn-primary text-sm inline-flex items-center gap-1.5": "rtm-btn-secondary text-sm inline-flex items-center gap-1.5"}
         >
           <span>{a.icon}</span>
           {a.label}
@@ -249,12 +249,11 @@ function ActionBar() {
 function ForecastCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
   return (
     <div
-      className="rounded-xl border p-4 flex flex-col gap-1"
-      style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+      className="rounded-xl border p-4 flex flex-col gap-1"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
     >
-      <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
-      <p className="text-2xl font-bold tracking-tight" style={{ color }}>{value}</p>
-      {sub && <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{sub}</p>}
+      <p className="text-[11px] font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>{label}</p>
+      <p className="text-2xl font-bold tracking-tight"style={{ color }}>{value}</p>
+      {sub && <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{sub}</p>}
     </div>
   );
 }
@@ -262,16 +261,16 @@ function ForecastCard({ label, value, sub, color }: { label: string; value: stri
 function SectionHeader({ title, description }: { title: string; description?: string }) {
   return (
     <div className="mb-3">
-      <h2 className="text-base font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
-      {description && <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{description}</p>}
+      <h2 className="text-base font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>{title}</h2>
+      {description && <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{description}</p>}
     </div>
   );
 }
 
 function TableWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--rtm-border)" }}>
-      <table className="w-full text-sm" style={{ borderCollapse: "collapse" }}>
+    <div className="overflow-x-auto rounded-xl border"style={{ borderColor: "var(--rtm-border)"}}>
+      <table className="w-full text-sm"style={{ borderCollapse: "collapse"}}>
         {children}
       </table>
     </div>
@@ -281,8 +280,8 @@ function TableWrapper({ children }: { children: React.ReactNode }) {
 function Th({ children, right }: { children: React.ReactNode; right?: boolean }) {
   return (
     <th
-      className={`px-3 py-2.5 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap ${right ? "text-right" : "text-left"}`}
-      style={{ color: "var(--rtm-text-muted)", background: "var(--rtm-surface-alt, var(--rtm-surface))", borderBottom: "1px solid var(--rtm-border)" }}
+      className={`px-3 py-2.5 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap ${right ? "text-right": "text-left"}`}
+      style={{ color: "var(--rtm-text-muted)", background: "var(--rtm-surface-alt, var(--rtm-surface))", borderBottom: "1px solid var(--rtm-border)"}}
     >
       {children}
     </th>
@@ -292,8 +291,8 @@ function Th({ children, right }: { children: React.ReactNode; right?: boolean })
 function Td({ children, right, muted }: { children: React.ReactNode; right?: boolean; muted?: boolean }) {
   return (
     <td
-      className={`px-3 py-2.5 whitespace-nowrap ${right ? "text-right" : ""}`}
-      style={{ color: muted ? "var(--rtm-text-muted)" : "var(--rtm-text-primary)", borderBottom: "1px solid var(--rtm-border)" }}
+      className={`px-3 py-2.5 whitespace-nowrap ${right ? "text-right": ""}`}
+      style={{ color: muted ? "var(--rtm-text-muted)": "var(--rtm-text-primary)", borderBottom: "1px solid var(--rtm-border)"}}
     >
       {children}
     </td>
@@ -302,18 +301,17 @@ function Td({ children, right, muted }: { children: React.ReactNode; right?: boo
 
 function WinRateBadge({ rate }: { rate: number }) {
   const color = winRateColor(rate);
-  const bg = rate >= 70 ? "#ECFDF5" : rate >= 50 ? "#FFFBEB" : "#FEF2F2";
+  const bg = rate >= 70 ? "#ECFDF5": rate >= 50 ? "#FFFBEB": "#FEF2F2";
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"
-      style={{ color, background: bg }}
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"style={{ color, background: bg }}
     >
       {rate}%
     </span>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+//  Page 
 
 export default function SalesPerformancePage() {
   const [dateRange, setDateRange] = useState<DateRange>("month");
@@ -328,129 +326,98 @@ export default function SalesPerformancePage() {
 
   return (
     <div className="space-y-8 pb-10">
-      {/* ── Header ── */}
+      {/*  Header  */}
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>
+        <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>
           Sales
         </p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
           Sales Performance &amp; Revenue Forecasting
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Track sales performance, GHL opportunity revenue, lead source conversion, affiliate contribution, and forecasted revenue.
         </p>
       </div>
 
-      {/* ── Top Action Bar ── */}
+      {/*  Top Action Bar  */}
       <ActionBar />
 
-      {/* ── Date Range Toggle ── */}
+      {/*  Date Range Toggle  */}
       <div className="flex items-center gap-2">
-        <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-muted)" }}>Period:</span>
+        <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-muted)"}}>Period:</span>
         {(["month", "quarter", "year"] as DateRange[]).map((r) => (
           <button
             key={r}
             onClick={() => setDateRange(r)}
-            className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors"
-            style={{
+            className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors"style={{
               background: dateRange === r ? workspace.accentColor : "var(--rtm-surface)",
-              color: dateRange === r ? "#fff" : "var(--rtm-text-secondary)",
+              color: dateRange === r ? "#fff": "var(--rtm-text-secondary)",
               border: `1px solid ${dateRange === r ? workspace.accentColor : "var(--rtm-border)"}`,
             }}
           >
-            {r === "month" ? "This Month" : r === "quarter" ? "This Quarter" : "This Year"}
+            {r === "month"? "This Month": r === "quarter"? "This Quarter": "This Year"}
           </button>
         ))}
       </div>
 
-      {/* ── KPI Cards ── */}
+      {/*  KPI Cards  */}
       <div>
-        <SectionHeader title="Key Performance Indicators" />
+        <SectionHeader title="Key Performance Indicators"/>
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <KpiCard
-            title="GHL Contacts Synced"
-            value={GHL_SYNC_HEALTH.contactsSynced.toString()}
-            trend="up" trendValue="14%"
-            iconBg="#EFF6FF" iconColor="#2563EB"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0" /></svg>}
+            title="GHL Contacts Synced"value={GHL_SYNC_HEALTH.contactsSynced.toString()}
+            trend="up"trendValue="14%"iconBg="#EFF6FF"iconColor="#2563EB"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>}
           />
           <KpiCard
-            title="Open Opportunities"
-            value="38"
-            trend="up" trendValue="6"
-            iconBg="#F5F3FF" iconColor="#7C3AED"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>}
+            title="Open Opportunities"value="38"trend="up"trendValue="6"iconBg="#F5F3FF"iconColor="#7C3AED"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>}
           />
           <KpiCard
-            title="Pipeline Value"
-            value={fmt$(totalPipelineValue)}
-            trend="up" trendValue="9%"
-            iconBg="#FFFBEB" iconColor="#D97706"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>}
+            title="Pipeline Value"value={fmt$(totalPipelineValue)}
+            trend="up"trendValue="9%"iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>}
           />
           <KpiCard
-            title="Weighted Forecast"
-            value={fmt$(totalWeighted)}
-            trend="up" trendValue="7%"
-            iconBg="#ECFDF5" iconColor="#059669"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
+            title="Weighted Forecast"value={fmt$(totalWeighted)}
+            trend="up"trendValue="7%"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
           />
           <KpiCard
-            title="Closed Won Revenue"
-            value={fmt$(closedWonRevenue)}
-            trend="up" trendValue="18%"
-            iconBg="#ECFDF5" iconColor="#059669"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            title="Closed Won Revenue"value={fmt$(closedWonRevenue)}
+            trend="up"trendValue="18%"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
           />
           <KpiCard
-            title="Closed Lost Revenue"
-            value={fmt$(totalClosedLost * 2100)}
-            trend="down" trendValue="3%"
-            iconBg="#FEF2F2" iconColor="#DC2626"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            title="Closed Lost Revenue"value={fmt$(totalClosedLost * 2100)}
+            trend="down"trendValue="3%"iconBg="#FEF2F2"iconColor="#DC2626"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
           />
           <KpiCard
-            title="Win Rate"
-            value={`${overallWinRate}%`}
-            trend="up" trendValue="4%"
-            iconBg="#F0FDF4" iconColor="#16A34A"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>}
+            title="Win Rate"value={`${overallWinRate}%`}
+            trend="up"trendValue="4%"iconBg="#F0FDF4"iconColor="#16A34A"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>}
           />
           <KpiCard
-            title="Avg Sales Cycle"
-            value="42 days"
-            trend="down" trendValue="3 days"
-            iconBg="#F5F3FF" iconColor="#7C3AED"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            title="Avg Sales Cycle"value="42 days"trend="down"trendValue="3 days"iconBg="#F5F3FF"iconColor="#7C3AED"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
           />
         </div>
       </div>
 
-      {/* ── Revenue Forecasting ── */}
+      {/*  Revenue Forecasting  */}
       <div>
         <SectionHeader
-          title="Revenue Forecasting"
-          description="Forecast based on GHL Opportunities, Proposal Value, Negotiation Stage, Proposal Approved, and Sales Handoff."
-        />
+          title="Revenue Forecasting"description="Forecast based on GHL Opportunities, Proposal Value, Negotiation Stage, Proposal Approved, and Sales Handoff."/>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-          <ForecastCard label="Forecast This Month"   value="$87.4k"   sub="GHL + Proposal pipeline" color="#2563EB" />
-          <ForecastCard label="Forecast This Quarter" value="$248k"    sub="Q1 2025 projected"       color="#7C3AED" />
-          <ForecastCard label="Forecast This Year"    value="$1.02M"   sub="FY 2025 projection"      color="#059669" />
-          <ForecastCard label="Weighted Revenue"      value={fmt$(totalWeighted)} sub="Probability-adjusted"    color="#D97706" />
+          <ForecastCard label="Forecast This Month"value="$87.4k"sub="GHL + Proposal pipeline"color="#2563EB"/>
+          <ForecastCard label="Forecast This Quarter"value="$248k"sub="Q1 2025 projected"color="#7C3AED"/>
+          <ForecastCard label="Forecast This Year"value="$1.02M"sub="FY 2025 projection"color="#059669"/>
+          <ForecastCard label="Weighted Revenue"value={fmt$(totalWeighted)} sub="Probability-adjusted"color="#D97706"/>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-          <ForecastCard label="Best Case Revenue"      value="$124k"  sub="All open opps close"   color="#059669" />
-          <ForecastCard label="Committed Revenue"      value="$62k"   sub="Prob. ≥ 80% only"      color="#2563EB" />
-          <ForecastCard label="At Risk Revenue"        value="$18.4k" sub="Stalled + overdue opps" color="#DC2626" />
+          <ForecastCard label="Best Case Revenue"value="$124k"sub="All open opps close"color="#059669"/>
+          <ForecastCard label="Committed Revenue"value="$62k"sub="Prob. ≥ 80% only"color="#2563EB"/>
+          <ForecastCard label="At Risk Revenue"value="$18.4k"sub="Stalled + overdue opps"color="#DC2626"/>
         </div>
       </div>
 
-      {/* ── Sales Rep Performance ── */}
+      {/*  Sales Rep Performance  */}
       <div>
         <SectionHeader
-          title="Sales Rep Performance"
-          description="Individual rep metrics across leads, opportunities, proposals, and closed deals."
-        />
+          title="Sales Rep Performance"description="Individual rep metrics across leads, opportunities, proposals, and closed deals."/>
         <TableWrapper>
           <thead>
             <tr>
@@ -469,7 +436,7 @@ export default function SalesPerformancePage() {
           </thead>
           <tbody>
             {SALES_REPS.map((rep) => (
-              <tr key={rep.id} style={{ background: "var(--rtm-surface)" }}>
+              <tr key={rep.id} style={{ background: "var(--rtm-surface)"}}>
                 <Td>
                   <span className="font-semibold">{rep.name}</span>
                 </Td>
@@ -493,12 +460,10 @@ export default function SalesPerformancePage() {
         </TableWrapper>
       </div>
 
-      {/* ── Lead Source Performance ── */}
+      {/*  Lead Source Performance  */}
       <div>
         <SectionHeader
-          title="Lead Source Performance"
-          description="Conversion and cost metrics across all lead acquisition channels."
-        />
+          title="Lead Source Performance"description="Conversion and cost metrics across all lead acquisition channels."/>
         <TableWrapper>
           <thead>
             <tr>
@@ -516,7 +481,7 @@ export default function SalesPerformancePage() {
           </thead>
           <tbody>
             {LEAD_SOURCES.map((ls) => (
-              <tr key={ls.source} style={{ background: "var(--rtm-surface)" }}>
+              <tr key={ls.source} style={{ background: "var(--rtm-surface)"}}>
                 <Td>
                   <span className="font-semibold">{ls.source}</span>
                 </Td>
@@ -537,12 +502,10 @@ export default function SalesPerformancePage() {
         </TableWrapper>
       </div>
 
-      {/* ── GHL Pipeline Stage Performance ── */}
+      {/*  GHL Pipeline Stage Performance  */}
       <div>
         <SectionHeader
-          title="GHL Pipeline Stage Performance"
-          description="Opportunity flow, value, and conversion across GHL pipeline stages mapped to RTM OS stages."
-        />
+          title="GHL Pipeline Stage Performance"description="Opportunity flow, value, and conversion across GHL pipeline stages mapped to RTM OS stages."/>
         <TableWrapper>
           <thead>
             <tr>
@@ -558,7 +521,7 @@ export default function SalesPerformancePage() {
           </thead>
           <tbody>
             {GHL_PIPELINE_STAGES.map((stage) => (
-              <tr key={stage.ghlStage} style={{ background: "var(--rtm-surface)" }}>
+              <tr key={stage.ghlStage} style={{ background: "var(--rtm-surface)"}}>
                 <Td><span className="font-semibold">{stage.ghlStage}</span></Td>
                 <Td muted>{stage.rtmStage}</Td>
                 <Td right>{stage.oppCount}</Td>
@@ -566,13 +529,12 @@ export default function SalesPerformancePage() {
                 <Td right>{stage.weightedRevenue > 0 ? fmtFull$(stage.weightedRevenue) : "—"}</Td>
                 <Td right muted>{stage.avgDaysInStage > 0 ? `${stage.avgDaysInStage}d` : "—"}</Td>
                 <Td right>
-                  {stage.conversionRate > 0 ? <WinRateBadge rate={stage.conversionRate} /> : <span style={{ color: "var(--rtm-text-muted)" }}>—</span>}
+                  {stage.conversionRate > 0 ? <WinRateBadge rate={stage.conversionRate} /> : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
                 </Td>
                 <Td right>
                   {stage.dropOffRate > 0 ? (
                     <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"
-                      style={{ color: stage.dropOffRate > 30 ? "#DC2626" : "#D97706", background: stage.dropOffRate > 30 ? "#FEF2F2" : "#FFFBEB" }}
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"style={{ color: stage.dropOffRate > 30 ? "#DC2626": "#D97706", background: stage.dropOffRate > 30 ? "#FEF2F2": "#FFFBEB"}}
                     >
                       {stage.dropOffRate}%
                     </span>
@@ -584,12 +546,10 @@ export default function SalesPerformancePage() {
         </TableWrapper>
       </div>
 
-      {/* ── Proposal Performance ── */}
+      {/*  Proposal Performance  */}
       <div>
         <SectionHeader
-          title="Proposal Performance"
-          description="Proposal counts, values, and approval rates across all proposal stages."
-        />
+          title="Proposal Performance"description="Proposal counts, values, and approval rates across all proposal stages."/>
         <TableWrapper>
           <thead>
             <tr>
@@ -604,24 +564,24 @@ export default function SalesPerformancePage() {
           </thead>
           <tbody>
             {PROPOSAL_STAGES.map((ps) => (
-              <tr key={ps.stage} style={{ background: "var(--rtm-surface)" }}>
+              <tr key={ps.stage} style={{ background: "var(--rtm-surface)"}}>
                 <Td><span className="font-semibold">{ps.stage}</span></Td>
                 <Td right>{ps.count}</Td>
                 <Td right>{fmtFull$(ps.value)}</Td>
                 <Td right>
                   {ps.approvedValue > 0
                     ? <span style={{ color: "#059669", fontWeight: 600 }}>{fmtFull$(ps.approvedValue)}</span>
-                    : <span style={{ color: "var(--rtm-text-muted)" }}>—</span>}
+                    : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
                 </Td>
                 <Td right>
                   {ps.rejectedValue > 0
                     ? <span style={{ color: "#DC2626", fontWeight: 600 }}>{fmtFull$(ps.rejectedValue)}</span>
-                    : <span style={{ color: "var(--rtm-text-muted)" }}>—</span>}
+                    : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
                 </Td>
                 <Td right>
                   {ps.approvalRate > 0
                     ? <WinRateBadge rate={ps.approvalRate} />
-                    : <span style={{ color: "var(--rtm-text-muted)" }}>—</span>}
+                    : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
                 </Td>
                 <Td right muted>{ps.avgTimeToApproval}</Td>
               </tr>
@@ -630,12 +590,10 @@ export default function SalesPerformancePage() {
         </TableWrapper>
       </div>
 
-      {/* ── Handoff Performance ── */}
+      {/*  Handoff Performance  */}
       <div>
         <SectionHeader
-          title="Handoff Performance"
-          description="Revenue and status tracking across all sales handoff stages."
-        />
+          title="Handoff Performance"description="Revenue and status tracking across all sales handoff stages."/>
         <TableWrapper>
           <thead>
             <tr>
@@ -651,11 +609,11 @@ export default function SalesPerformancePage() {
           </thead>
           <tbody>
             {HANDOFF_STAGES.map((hs) => (
-              <tr key={hs.stage} style={{ background: "var(--rtm-surface)" }}>
+              <tr key={hs.stage} style={{ background: "var(--rtm-surface)"}}>
                 <Td>
                   <span className="font-semibold">{hs.stage}</span>
-                  {hs.stage === "Blocked" && (
-                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: "#FEF2F2", color: "#DC2626" }}>
+                  {hs.stage === "Blocked"&& (
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold"style={{ background: "#FEF2F2", color: "#DC2626"}}>
                       BLOCKED
                     </span>
                   )}
@@ -666,16 +624,16 @@ export default function SalesPerformancePage() {
                 <Td right>
                   {hs.blocked > 0
                     ? <span style={{ color: "#DC2626", fontWeight: 600 }}>{hs.blocked}</span>
-                    : <span style={{ color: "var(--rtm-text-muted)" }}>0</span>}
+                    : <span style={{ color: "var(--rtm-text-muted)"}}>0</span>}
                 </Td>
                 <Td right>{hs.invoiceCreated}</Td>
                 <Td right>
-                  <span style={{ color: hs.invoicePaid > 0 ? "#059669" : "var(--rtm-text-muted)", fontWeight: hs.invoicePaid > 0 ? 600 : 400 }}>
+                  <span style={{ color: hs.invoicePaid > 0 ? "#059669": "var(--rtm-text-muted)", fontWeight: hs.invoicePaid > 0 ? 600 : 400 }}>
                     {hs.invoicePaid}
                   </span>
                 </Td>
                 <Td right>
-                  <span style={{ color: hs.readyForActivation > 0 ? "#2563EB" : "var(--rtm-text-muted)", fontWeight: hs.readyForActivation > 0 ? 600 : 400 }}>
+                  <span style={{ color: hs.readyForActivation > 0 ? "#2563EB": "var(--rtm-text-muted)", fontWeight: hs.readyForActivation > 0 ? 600 : 400 }}>
                     {hs.readyForActivation}
                   </span>
                 </Td>
@@ -685,17 +643,13 @@ export default function SalesPerformancePage() {
         </TableWrapper>
       </div>
 
-      {/* ── Affiliate Revenue Performance ── */}
+      {/*  Affiliate Revenue Performance  */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <SectionHeader
-            title="Affiliate Revenue Performance"
-            description="Referral leads, deal conversion, and commission tracking across all affiliates."
-          />
+            title="Affiliate Revenue Performance"description="Referral leads, deal conversion, and commission tracking across all affiliates."/>
           <Link
-            href="/sales/affiliates"
-            className="text-xs font-semibold inline-flex items-center gap-1"
-            style={{ color: workspace.accentColor }}
+            href="/sales/affiliates"className="text-xs font-semibold inline-flex items-center gap-1"style={{ color: workspace.accentColor }}
           >
             View Affiliates →
           </Link>
@@ -716,7 +670,7 @@ export default function SalesPerformancePage() {
           </thead>
           <tbody>
             {AFFILIATES.map((aff) => (
-              <tr key={aff.name} style={{ background: "var(--rtm-surface)" }}>
+              <tr key={aff.name} style={{ background: "var(--rtm-surface)"}}>
                 <Td><span className="font-semibold">{aff.name}</span></Td>
                 <Td right>{aff.referralLeads}</Td>
                 <Td right>{aff.qualifiedLeads}</Td>
@@ -736,17 +690,13 @@ export default function SalesPerformancePage() {
         </TableWrapper>
       </div>
 
-      {/* ── Follow-Up Performance ── */}
+      {/*  Follow-Up Performance  */}
       <div>
         <div className="flex items-center justify-between mb-3">
           <SectionHeader
-            title="Follow-Up Performance"
-            description="Follow-up completion rates and response times by sales rep."
-          />
+            title="Follow-Up Performance"description="Follow-up completion rates and response times by sales rep."/>
           <Link
-            href="/sales/followups"
-            className="text-xs font-semibold inline-flex items-center gap-1"
-            style={{ color: workspace.accentColor }}
+            href="/sales/followups"className="text-xs font-semibold inline-flex items-center gap-1"style={{ color: workspace.accentColor }}
           >
             View Follow-Ups →
           </Link>
@@ -765,7 +715,7 @@ export default function SalesPerformancePage() {
           </thead>
           <tbody>
             {FOLLOWUP_PERFORMANCE.map((fp) => (
-              <tr key={fp.rep} style={{ background: "var(--rtm-surface)" }}>
+              <tr key={fp.rep} style={{ background: "var(--rtm-surface)"}}>
                 <Td><span className="font-semibold">{fp.rep}</span></Td>
                 <Td right>{fp.dueFollowUps}</Td>
                 <Td right>
@@ -774,12 +724,12 @@ export default function SalesPerformancePage() {
                 <Td right>
                   {fp.overdueFollowUps > 0
                     ? <span style={{ color: "#DC2626", fontWeight: 600 }}>{fp.overdueFollowUps}</span>
-                    : <span style={{ color: "var(--rtm-text-muted)" }}>0</span>}
+                    : <span style={{ color: "var(--rtm-text-muted)"}}>0</span>}
                 </Td>
                 <Td right><WinRateBadge rate={fp.completionRate} /></Td>
                 <Td right muted>{fp.avgResponseTime}</Td>
                 <Td right>
-                  <span style={{ color: fp.stalledRecovered > 0 ? "#2563EB" : "var(--rtm-text-muted)", fontWeight: fp.stalledRecovered > 0 ? 600 : 400 }}>
+                  <span style={{ color: fp.stalledRecovered > 0 ? "#2563EB": "var(--rtm-text-muted)", fontWeight: fp.stalledRecovered > 0 ? 600 : 400 }}>
                     {fp.stalledRecovered}
                   </span>
                 </Td>
@@ -789,15 +739,12 @@ export default function SalesPerformancePage() {
         </TableWrapper>
       </div>
 
-      {/* ── Conversion Funnel ── */}
+      {/*  Conversion Funnel  */}
       <div>
         <SectionHeader
-          title="Conversion Funnel"
-          description="Full sales funnel from GHL Contacts to Activated Client — count, conversion rate, and revenue value at each stage."
-        />
+          title="Conversion Funnel"description="Full sales funnel from GHL Contacts to Activated Client — count, conversion rate, and revenue value at each stage."/>
         <div
-          className="rounded-xl border overflow-hidden"
-          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+          className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
         >
           {CONVERSION_FUNNEL.map((step, i) => {
             const maxCount = CONVERSION_FUNNEL[0].count;
@@ -807,16 +754,14 @@ export default function SalesPerformancePage() {
             return (
               <div
                 key={step.stage}
-                className="flex items-center gap-4 px-5 py-3"
-                style={{ borderBottom: isLast ? "none" : "1px solid var(--rtm-border)" }}
+                className="flex items-center gap-4 px-5 py-3"style={{ borderBottom: isLast ? "none": "1px solid var(--rtm-border)"}}
               >
                 {/* Step number */}
                 <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                  style={{
-                    background: isFirst ? workspace.accentColor : isLast ? "#059669" : "var(--rtm-surface-alt, #f8fafc)",
-                    color: isFirst || isLast ? "#fff" : "var(--rtm-text-muted)",
-                    border: `1px solid ${isFirst ? workspace.accentColor : isLast ? "#059669" : "var(--rtm-border)"}`,
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"style={{
+                    background: isFirst ? workspace.accentColor : isLast ? "#059669": "var(--rtm-surface-alt, #f8fafc)",
+                    color: isFirst || isLast ? "#fff": "var(--rtm-text-muted)",
+                    border: `1px solid ${isFirst ? workspace.accentColor : isLast ? "#059669": "var(--rtm-border)"}`,
                   }}
                 >
                   {i + 1}
@@ -824,17 +769,16 @@ export default function SalesPerformancePage() {
 
                 {/* Stage name */}
                 <div className="w-44 flex-shrink-0">
-                  <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{step.stage}</p>
+                  <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{step.stage}</p>
                 </div>
 
                 {/* Bar */}
                 <div className="flex-1 min-w-0">
-                  <div className="w-full rounded-full overflow-hidden" style={{ height: 8, background: "var(--rtm-border)" }}>
+                  <div className="w-full rounded-full overflow-hidden"style={{ height: 8, background: "var(--rtm-border)"}}>
                     <div
-                      className="h-full rounded-full transition-all"
-                      style={{
+                      className="h-full rounded-full transition-all"style={{
                         width: `${widthPct}%`,
-                        background: isFirst ? workspace.accentColor : isLast ? "#059669" : "#2563EB",
+                        background: isFirst ? workspace.accentColor : isLast ? "#059669": "#2563EB",
                       }}
                     />
                   </div>
@@ -842,34 +786,33 @@ export default function SalesPerformancePage() {
 
                 {/* Count */}
                 <div className="w-16 text-right flex-shrink-0">
-                  <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{step.count}</span>
+                  <span className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>{step.count}</span>
                 </div>
 
                 {/* Conversion rate */}
                 <div className="w-20 text-right flex-shrink-0">
                   {i > 0 ? (
                     <span
-                      className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                      style={{
-                        background: step.conversionRate >= 70 ? "#ECFDF5" : step.conversionRate >= 50 ? "#FFFBEB" : "#FEF2F2",
-                        color: step.conversionRate >= 70 ? "#059669" : step.conversionRate >= 50 ? "#D97706" : "#DC2626",
+                      className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={{
+                        background: step.conversionRate >= 70 ? "#ECFDF5": step.conversionRate >= 50 ? "#FFFBEB": "#FEF2F2",
+                        color: step.conversionRate >= 70 ? "#059669": step.conversionRate >= 50 ? "#D97706": "#DC2626",
                       }}
                     >
                       {step.conversionRate}%
                     </span>
                   ) : (
-                    <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>base</span>
+                    <span className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>base</span>
                   )}
                 </div>
 
                 {/* Revenue value */}
                 <div className="w-24 text-right flex-shrink-0">
                   {step.revenueValue != null ? (
-                    <span className="text-xs font-semibold" style={{ color: "#059669" }}>
+                    <span className="text-xs font-semibold"style={{ color: "#059669"}}>
                       {fmt$(step.revenueValue)}
                     </span>
                   ) : (
-                    <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</span>
+                    <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>—</span>
                   )}
                 </div>
               </div>
@@ -878,44 +821,40 @@ export default function SalesPerformancePage() {
         </div>
       </div>
 
-      {/* ── Revenue by Service ── */}
+      {/*  Revenue by Service  */}
       <div>
         <SectionHeader
-          title="Revenue by Service"
-          description="Monthly revenue, setup fees, average deal value, and upsell potential broken down by service type."
-        />
+          title="Revenue by Service"description="Monthly revenue, setup fees, average deal value, and upsell potential broken down by service type."/>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {REVENUE_BY_SERVICE.map((svc) => (
             <div
               key={svc.service}
-              className="rounded-xl border p-4 space-y-3"
-              style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+              className="rounded-xl border p-4 space-y-3"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
             >
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{svc.service}</span>
+                <span className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>{svc.service}</span>
                 <span
-                  className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                  style={{ background: "#EFF6FF", color: "#2563EB" }}
+                  className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#EFF6FF", color: "#2563EB"}}
                 >
                   {svc.dealsSold} deals
                 </span>
               </div>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: "var(--rtm-text-muted)" }}>Monthly Revenue</span>
-                  <span className="font-semibold" style={{ color: "#059669" }}>{fmtFull$(svc.monthlyRevenue)}</span>
+                  <span style={{ color: "var(--rtm-text-muted)"}}>Monthly Revenue</span>
+                  <span className="font-semibold"style={{ color: "#059669"}}>{fmtFull$(svc.monthlyRevenue)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: "var(--rtm-text-muted)" }}>Setup Fees</span>
-                  <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fmtFull$(svc.setupFees)}</span>
+                  <span style={{ color: "var(--rtm-text-muted)"}}>Setup Fees</span>
+                  <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fmtFull$(svc.setupFees)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: "var(--rtm-text-muted)" }}>Avg Deal Value</span>
-                  <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fmtFull$(svc.avgDealValue)}</span>
+                  <span style={{ color: "var(--rtm-text-muted)"}}>Avg Deal Value</span>
+                  <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fmtFull$(svc.avgDealValue)}</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span style={{ color: "var(--rtm-text-muted)" }}>Upsell Potential</span>
-                  <span className="font-semibold" style={{ color: "#D97706" }}>{fmtFull$(svc.upsellPotential)}</span>
+                  <span style={{ color: "var(--rtm-text-muted)"}}>Upsell Potential</span>
+                  <span className="font-semibold"style={{ color: "#D97706"}}>{fmtFull$(svc.upsellPotential)}</span>
                 </div>
               </div>
             </div>
@@ -923,97 +862,87 @@ export default function SalesPerformancePage() {
         </div>
       </div>
 
-      {/* ── GHL Sync Health ── */}
+      {/*  GHL Sync Health  */}
       <div>
         <SectionHeader
-          title="GHL Sync Health"
-          description="GoHighLevel data sync status, quality metrics, and manual override tracking."
-        />
+          title="GHL Sync Health"description="GoHighLevel data sync status, quality metrics, and manual override tracking."/>
         <div
-          className="rounded-xl border p-5"
-          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+          className="rounded-xl border p-5"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
         >
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
             {[
-              { label: "Last Sync Date",     value: GHL_SYNC_HEALTH.lastSyncDate,                   color: "var(--rtm-text-primary)" },
-              { label: "Contacts Synced",    value: GHL_SYNC_HEALTH.contactsSynced.toString(),        color: "#059669" },
-              { label: "Opportunities Synced", value: GHL_SYNC_HEALTH.opportunitiesSynced.toString(), color: "#059669" },
-              { label: "Activities Synced",  value: GHL_SYNC_HEALTH.activitiesSynced.toLocaleString(), color: "#059669" },
+              { label: "Last Sync Date",     value: GHL_SYNC_HEALTH.lastSyncDate,                   color: "var(--rtm-text-primary)"},
+              { label: "Contacts Synced",    value: GHL_SYNC_HEALTH.contactsSynced.toString(),        color: "#059669"},
+              { label: "Opportunities Synced", value: GHL_SYNC_HEALTH.opportunitiesSynced.toString(), color: "#059669"},
+              { label: "Activities Synced",  value: GHL_SYNC_HEALTH.activitiesSynced.toLocaleString(), color: "#059669"},
             ].map(({ label, value, color }) => (
               <div key={label}>
-                <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
-                <p className="text-lg font-bold" style={{ color }}>{value}</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "var(--rtm-text-muted)"}}>{label}</p>
+                <p className="text-lg font-bold"style={{ color }}>{value}</p>
               </div>
             ))}
           </div>
 
           <div className="grid grid-cols-3 gap-4 mb-5">
             {[
-              { label: "Sync Failed",         value: GHL_SYNC_HEALTH.syncFailed,         color: "#DC2626", bg: "#FEF2F2" },
-              { label: "Manual Overrides",    value: GHL_SYNC_HEALTH.manualOverrides,    color: "#D97706", bg: "#FFFBEB" },
-              { label: "Data Quality Issues", value: GHL_SYNC_HEALTH.dataQualityIssues,  color: "#D97706", bg: "#FFFBEB" },
+              { label: "Sync Failed",         value: GHL_SYNC_HEALTH.syncFailed,         color: "#DC2626", bg: "#FEF2F2"},
+              { label: "Manual Overrides",    value: GHL_SYNC_HEALTH.manualOverrides,    color: "#D97706", bg: "#FFFBEB"},
+              { label: "Data Quality Issues", value: GHL_SYNC_HEALTH.dataQualityIssues,  color: "#D97706", bg: "#FFFBEB"},
             ].map(({ label, value, color, bg }) => (
               <div
                 key={label}
-                className="rounded-lg px-4 py-3 flex items-center justify-between"
-                style={{ background: bg }}
+                className="rounded-lg px-4 py-3 flex items-center justify-between"style={{ background: bg }}
               >
-                <span className="text-xs font-semibold" style={{ color }}>{label}</span>
-                <span className="text-xl font-bold" style={{ color }}>{value}</span>
+                <span className="text-xs font-semibold"style={{ color }}>{label}</span>
+                <span className="text-xl font-bold"style={{ color }}>{value}</span>
               </div>
             ))}
           </div>
 
           <div className="flex gap-2">
             <button className="rtm-btn-primary text-sm inline-flex items-center gap-1.5">
-              🔄 Sync Now
+               Sync Now
             </button>
             <button className="rtm-btn-secondary text-sm inline-flex items-center gap-1.5">
-              ⚠️ View Sync Issues ({GHL_SYNC_HEALTH.syncFailed + GHL_SYNC_HEALTH.dataQualityIssues})
+               View Sync Issues ({GHL_SYNC_HEALTH.syncFailed + GHL_SYNC_HEALTH.dataQualityIssues})
             </button>
           </div>
         </div>
       </div>
 
-      {/* ── Task Integration + Notification Integration (side by side) ── */}
+      {/*  Task Integration + Notification Integration (side by side)  */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tasks */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <SectionHeader title="Sales Tasks" description="Recent and overdue tasks requiring attention." />
+            <SectionHeader title="Sales Tasks"description="Recent and overdue tasks requiring attention."/>
             <Link
-              href="/tasks"
-              className="text-xs font-semibold inline-flex items-center gap-1"
-              style={{ color: workspace.accentColor }}
+              href="/tasks"className="text-xs font-semibold inline-flex items-center gap-1"style={{ color: workspace.accentColor }}
             >
               View All Tasks →
             </Link>
           </div>
           <div
-            className="rounded-xl border overflow-hidden"
-            style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+            className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
           >
             {TASK_EXAMPLES.map((task, i) => (
               <div
                 key={task.id}
-                className="flex items-center justify-between px-4 py-3"
-                style={{ borderBottom: i < TASK_EXAMPLES.length - 1 ? "1px solid var(--rtm-border)" : "none" }}
+                className="flex items-center justify-between px-4 py-3"style={{ borderBottom: i < TASK_EXAMPLES.length - 1 ? "1px solid var(--rtm-border)": "none"}}
               >
                 <div className="flex items-center gap-3">
                   <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ background: task.status === "Overdue" ? "#DC2626" : "#059669" }}
+                    className="w-2 h-2 rounded-full flex-shrink-0"style={{ background: task.status === "Overdue"? "#DC2626": "#059669"}}
                   />
                   <div>
-                    <p className="text-sm font-medium" style={{ color: "var(--rtm-text-primary)" }}>{task.title}</p>
-                    <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>{task.owner} · Due {task.dueDate}</p>
+                    <p className="text-sm font-medium"style={{ color: "var(--rtm-text-primary)"}}>{task.title}</p>
+                    <p className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>{task.owner} · Due {task.dueDate}</p>
                   </div>
                 </div>
                 <span
-                  className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-                  style={{
-                    background: task.status === "Overdue" ? "#FEF2F2" : "#ECFDF5",
-                    color: task.status === "Overdue" ? "#DC2626" : "#059669",
+                  className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={{
+                    background: task.status === "Overdue"? "#FEF2F2": "#ECFDF5",
+                    color: task.status === "Overdue"? "#DC2626": "#059669",
                   }}
                 >
                   {task.status}
@@ -1026,53 +955,45 @@ export default function SalesPerformancePage() {
         {/* Notifications */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <SectionHeader title="Sales Notifications" description="Alerts, risks, and action items for sales leadership." />
+            <SectionHeader title="Sales Notifications"description="Alerts, risks, and action items for sales leadership."/>
             <Link
-              href="/notifications"
-              className="text-xs font-semibold inline-flex items-center gap-1"
-              style={{ color: workspace.accentColor }}
+              href="/notifications"className="text-xs font-semibold inline-flex items-center gap-1"style={{ color: workspace.accentColor }}
             >
               View All →
             </Link>
           </div>
           <div
-            className="rounded-xl border overflow-hidden"
-            style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+            className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
           >
             {NOTIFICATION_EXAMPLES.map((notif, i) => (
               <div
                 key={notif.id}
-                className="flex items-start gap-3 px-4 py-3"
-                style={{
-                  borderBottom: i < NOTIFICATION_EXAMPLES.length - 1 ? "1px solid var(--rtm-border)" : "none",
+                className="flex items-start gap-3 px-4 py-3"style={{
+                  borderBottom: i < NOTIFICATION_EXAMPLES.length - 1 ? "1px solid var(--rtm-border)": "none",
                   opacity: notif.read ? 0.65 : 1,
                 }}
               >
                 <span
-                  className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"
-                  style={{
-                    background: notif.type === "Risk" || notif.type === "Alert" || notif.type === "Blocked" || notif.type === "Sync"
-                      ? "#DC2626"
-                      : "#D97706",
+                  className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"style={{
+                    background: notif.type === "Risk"|| notif.type === "Alert"|| notif.type === "Blocked"|| notif.type === "Sync"? "#DC2626": "#D97706",
                   }}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest"
-                      style={{
-                        background: notif.type === "Commission" ? "#FFFBEB" : "#FEF2F2",
-                        color: notif.type === "Commission" ? "#D97706" : "#DC2626",
+                      className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest"style={{
+                        background: notif.type === "Commission"? "#FFFBEB": "#FEF2F2",
+                        color: notif.type === "Commission"? "#D97706": "#DC2626",
                       }}
                     >
                       {notif.type}
                     </span>
                     {!notif.read && (
-                      <span className="text-[10px] font-bold" style={{ color: "#2563EB" }}>NEW</span>
+                      <span className="text-[10px] font-bold"style={{ color: "#2563EB"}}>NEW</span>
                     )}
                   </div>
-                  <p className="text-xs" style={{ color: "var(--rtm-text-primary)" }}>{notif.message}</p>
-                  <p className="text-[11px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{notif.date}</p>
+                  <p className="text-xs"style={{ color: "var(--rtm-text-primary)"}}>{notif.message}</p>
+                  <p className="text-[11px] mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{notif.date}</p>
                 </div>
               </div>
             ))}
@@ -1080,19 +1001,18 @@ export default function SalesPerformancePage() {
         </div>
       </div>
 
-      {/* ── Footer Nav ── */}
+      {/*  Footer Nav  */}
       <div
-        className="flex flex-wrap gap-2 pt-4"
-        style={{ borderTop: "1px solid var(--rtm-border)" }}
+        className="flex flex-wrap gap-2 pt-4"style={{ borderTop: "1px solid var(--rtm-border)"}}
       >
-        <Link href="/sales/leads"       className="rtm-btn-secondary text-sm">GHL Contacts →</Link>
-        <Link href="/sales/pipeline"    className="rtm-btn-secondary text-sm">GHL Pipeline →</Link>
-        <Link href="/sales/affiliates"  className="rtm-btn-secondary text-sm">Affiliates →</Link>
-        <Link href="/sales/followups"   className="rtm-btn-secondary text-sm">Follow-Ups →</Link>
-        <Link href="/sales/proposals"   className="rtm-btn-secondary text-sm">Proposals →</Link>
-        <Link href="/sales/handoffs"    className="rtm-btn-secondary text-sm">Handoffs →</Link>
-        <Link href="/tasks"             className="rtm-btn-secondary text-sm">Tasks →</Link>
-        <Link href="/notifications"     className="rtm-btn-secondary text-sm">Notifications →</Link>
+        <Link href="/sales/leads"className="rtm-btn-secondary text-sm">GHL Contacts →</Link>
+        <Link href="/sales/pipeline"className="rtm-btn-secondary text-sm">GHL Pipeline →</Link>
+        <Link href="/sales/affiliates"className="rtm-btn-secondary text-sm">Affiliates →</Link>
+        <Link href="/sales/followups"className="rtm-btn-secondary text-sm">Follow-Ups →</Link>
+        <Link href="/sales/proposals"className="rtm-btn-secondary text-sm">Proposals →</Link>
+        <Link href="/sales/handoffs"className="rtm-btn-secondary text-sm">Handoffs →</Link>
+        <Link href="/tasks"className="rtm-btn-secondary text-sm">Tasks →</Link>
+        <Link href="/notifications"className="rtm-btn-secondary text-sm">Notifications →</Link>
       </div>
     </div>
   );

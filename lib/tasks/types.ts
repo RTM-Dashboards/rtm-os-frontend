@@ -1,20 +1,11 @@
 // EPIC 06 — Deliverables & Task Management types
 
-export type TaskStatus = "Pending" | "In Progress" | "In Review" | "Blocked" | "Done";
+export type TaskStatus = "Pending"| "In Progress"| "In Review"| "Blocked"| "Done";
 
-export type TaskPriority = "Low" | "Medium" | "High" | "Critical";
+export type TaskPriority = "Low"| "Medium"| "High"| "Critical";
 
 export type Department =
-  | "Account Management"
-  | "Sales"
-  | "Billing"
-  | "Content"
-  | "Design"
-  | "SEO"
-  | "Meta Ads & PPC"
-  | "Reporting"
-  | "Local Service Ads"
-  | "IT & Security";
+  | "Account Management"| "Sales"| "Billing"| "Content"| "Design"| "SEO"| "Meta Ads & PPC"| "Reporting"| "Local Service Ads"| "IT & Security";
 
 export interface AssignedUser {
   id: string;

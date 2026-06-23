@@ -27,26 +27,18 @@ import {
 import type { Integration, IntegrationCategory } from "@/lib/integrations/types";
 
 type TabKey =
-  | "overview"
-  | "registry"
-  | "clients"
-  | "departments"
-  | "call-intelligence"
-  | "workflows"
-  | "webhooks"
-  | "health"
-  | "ai-recommendations";
+  | "overview"| "registry"| "clients"| "departments"| "call-intelligence"| "workflows"| "webhooks"| "health"| "ai-recommendations";
 
 const TABS: { key: TabKey; label: string }[] = [
-  { key: "overview",           label: "Overview" },
-  { key: "registry",           label: "Integration Registry" },
-  { key: "clients",            label: "Client Assignment" },
-  { key: "departments",        label: "Department Assignment" },
-  { key: "call-intelligence",  label: "Call Intelligence" },
-  { key: "workflows",          label: "Workflow Connections" },
-  { key: "webhooks",           label: "Webhooks" },
-  { key: "health",             label: "Health Monitor" },
-  { key: "ai-recommendations", label: "AI Recommendations" },
+  { key: "overview",           label: "Overview"},
+  { key: "registry",           label: "Integration Registry"},
+  { key: "clients",            label: "Client Assignment"},
+  { key: "departments",        label: "Department Assignment"},
+  { key: "call-intelligence",  label: "Call Intelligence"},
+  { key: "workflows",          label: "Workflow Connections"},
+  { key: "webhooks",           label: "Webhooks"},
+  { key: "health",             label: "Health Monitor"},
+  { key: "ai-recommendations", label: "AI Recommendations"},
 ];
 
 export default function IntegrationsPage() {
@@ -65,19 +57,18 @@ export default function IntegrationsPage() {
       {/* ── Page header ── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-xs font-semibold uppercase tracking-widest mb-1"style={{ color: "var(--rtm-text-muted)"}}>
             Settings
           </p>
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
             Integration Hub
           </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--rtm-text-muted)" }}>
+          <p className="text-sm mt-1"style={{ color: "var(--rtm-text-muted)"}}>
             Dynamic connector framework. Configure, replace, enable, or disable integrations without code changes.
           </p>
         </div>
         <button
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors self-start flex-shrink-0"
-          style={{ background: "var(--rtm-blue)" }}
+          className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors self-start flex-shrink-0"style={{ background: "var(--rtm-blue)"}}
         >
           + Add Integration
         </button>
@@ -88,17 +79,15 @@ export default function IntegrationsPage() {
 
       {/* ── Tabs ── */}
       <div
-        className="flex gap-1 overflow-x-auto pb-0.5"
-        style={{ borderBottom: "1px solid var(--rtm-border)" }}
+        className="flex gap-1 overflow-x-auto pb-0.5"style={{ borderBottom: "1px solid var(--rtm-border)"}}
       >
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className="px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors relative flex-shrink-0"
-            style={{
-              color:         activeTab === tab.key ? "var(--rtm-blue)" : "var(--rtm-text-muted)",
-              borderBottom:  activeTab === tab.key ? "2px solid var(--rtm-blue)" : "2px solid transparent",
+            className="px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors relative flex-shrink-0"style={{
+              color:         activeTab === tab.key ? "var(--rtm-blue)": "var(--rtm-text-muted)",
+              borderBottom:  activeTab === tab.key ? "2px solid var(--rtm-blue)": "2px solid transparent",
               marginBottom:  "-1px",
               background:    "transparent",
             }}
@@ -110,10 +99,10 @@ export default function IntegrationsPage() {
 
       {/* ── Tab content ── */}
       <div>
-        {activeTab === "overview" && (
+        {activeTab === "overview"&& (
           <div className="space-y-5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+              <p className="text-xs font-semibold uppercase tracking-wider mb-3"style={{ color: "var(--rtm-text-muted)"}}>
                 Integration Categories
               </p>
               <CategoryOverviewCards
@@ -132,50 +121,50 @@ export default function IntegrationsPage() {
           </div>
         )}
 
-        {activeTab === "registry" && (
+        {activeTab === "registry"&& (
           <IntegrationTable
             integrations={MOCK_INTEGRATIONS}
             onSelect={setSelectedIntegration}
           />
         )}
 
-        {activeTab === "clients" && (
+        {activeTab === "clients"&& (
           <ClientAssignmentTable
             assignments={MOCK_CLIENT_ASSIGNMENTS}
             integrations={MOCK_INTEGRATIONS}
           />
         )}
 
-        {activeTab === "departments" && (
+        {activeTab === "departments"&& (
           <DepartmentAssignmentTable
             assignments={MOCK_DEPARTMENT_ASSIGNMENTS}
             integrations={MOCK_INTEGRATIONS}
           />
         )}
 
-        {activeTab === "call-intelligence" && (
+        {activeTab === "call-intelligence"&& (
           <CallIntelligencePanel
             mappings={MOCK_CALL_INTELLIGENCE}
             integrations={MOCK_INTEGRATIONS}
           />
         )}
 
-        {activeTab === "workflows" && (
+        {activeTab === "workflows"&& (
           <WorkflowConnectionsTable
             connections={MOCK_WORKFLOW_CONNECTIONS}
             integrations={MOCK_INTEGRATIONS}
           />
         )}
 
-        {activeTab === "webhooks" && (
+        {activeTab === "webhooks"&& (
           <WebhookManagementTable webhooks={MOCK_WEBHOOKS} />
         )}
 
-        {activeTab === "health" && (
+        {activeTab === "health"&& (
           <IntegrationHealthPanel integrations={MOCK_INTEGRATIONS} />
         )}
 
-        {activeTab === "ai-recommendations" && (
+        {activeTab === "ai-recommendations"&& (
           <AIRecommendationsPanel
             recommendations={MOCK_AI_RECOMMENDATIONS}
             integrations={MOCK_INTEGRATIONS}

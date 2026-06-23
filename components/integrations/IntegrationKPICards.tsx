@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function IntegrationKPICards({ integrations }: Props) {
-  const active       = integrations.filter((i) => i.status === "connected" && i.enabled).length;
+  const active       = integrations.filter((i) => i.status === "connected"&& i.enabled).length;
   const disconnected = integrations.filter((i) => i.status === "disconnected").length;
   const pending      = integrations.filter((i) => i.status === "pending").length;
   const errored      = integrations.filter((i) => i.status === "error").length;
@@ -15,7 +15,7 @@ export default function IntegrationKPICards({ integrations }: Props) {
   const dataSources  = integrations.filter((i) => i.status === "connected").flatMap((i) => i.dataObjects);
   const uniqueDataSources = new Set(dataSources).size;
   const automationConnections = integrations.filter(
-    (i) => i.status === "connected" && i.dataObjects.some((d) => ["Leads", "Calls", "Opportunities"].includes(d))
+    (i) => i.status === "connected"&& i.dataObjects.some((d) => ["Leads", "Calls", "Opportunities"].includes(d))
   ).length;
 
   const cards = [
@@ -74,21 +74,18 @@ export default function IntegrationKPICards({ integrations }: Props) {
       {cards.map((card) => (
         <div
           key={card.label}
-          className="rounded-xl border p-4 flex flex-col gap-1"
-          style={{
+          className="rounded-xl border p-4 flex flex-col gap-1"style={{
             background: card.bg,
             borderColor: card.border,
           }}
         >
           <span
-            className="text-2xl font-bold leading-none"
-            style={{ color: card.color }}
+            className="text-2xl font-bold leading-none"style={{ color: card.color }}
           >
             {card.value}
           </span>
           <span
-            className="text-xs font-semibold"
-            style={{ color: card.color }}
+            className="text-xs font-semibold"style={{ color: card.color }}
           >
             {card.label}
           </span>

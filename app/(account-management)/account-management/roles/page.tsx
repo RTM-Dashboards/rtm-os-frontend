@@ -15,8 +15,6 @@ export default function RolesPage() {
       workspace={workspace}
       roles={accountManagementRoles}
       permissionAreas={accountManagementPermissions}
-      teamRoute="/account-management/team-members"
-      profileRoute="/account-management/profile"
-    />
+      teamRoute="/account-management/team-members"profileRoute="/account-management/profile"/>
   );
 }

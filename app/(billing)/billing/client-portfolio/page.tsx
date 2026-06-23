@@ -7,15 +7,10 @@ import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("billing")!;
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+//  Types 
 
 type BadgeVariant =
-  | "success"
-  | "error"
-  | "warning"
-  | "info"
-  | "neutral"
-  | "pending";
+  | "success"| "error"| "warning"| "info"| "neutral"| "pending";
 
 interface ClientPortfolioRow {
   id: string;
@@ -60,29 +55,29 @@ interface ClientPortfolioRow {
 
 interface ClientIssue {
   type: string;
-  status: "Open" | "In Progress" | "Escalated" | "Resolved";
+  status: "Open"| "In Progress"| "Escalated"| "Resolved";
 }
 
-// ── Lifecycle Stages ──────────────────────────────────────────────────────────
+//  Lifecycle Stages 
 
 const LIFECYCLE_STAGES = [
-  { key: "lead",               label: "Lead" },
-  { key: "opportunity",        label: "Opportunity" },
-  { key: "proposal",           label: "Proposal" },
-  { key: "contract",           label: "Contract" },
-  { key: "closed_won",         label: "Closed Won" },
-  { key: "sent_to_billing",    label: "Sent To Billing" },
-  { key: "invoice_sent",       label: "Invoice Sent" },
-  { key: "awaiting_payment",   label: "Awaiting Payment" },
-  { key: "payment_confirmed",  label: "Payment Confirmed" },
-  { key: "activation_approved",label: "Activation Approved" },
-  { key: "sent_to_am",         label: "Sent To AM" },
-  { key: "onboarding",         label: "Onboarding" },
-  { key: "active",             label: "Active" },
-  { key: "renewal",            label: "Renewal" },
+  { key: "lead",               label: "Lead"},
+  { key: "opportunity",        label: "Opportunity"},
+  { key: "proposal",           label: "Proposal"},
+  { key: "contract",           label: "Contract"},
+  { key: "closed_won",         label: "Closed Won"},
+  { key: "sent_to_billing",    label: "Sent To Billing"},
+  { key: "invoice_sent",       label: "Invoice Sent"},
+  { key: "awaiting_payment",   label: "Awaiting Payment"},
+  { key: "payment_confirmed",  label: "Payment Confirmed"},
+  { key: "activation_approved",label: "Activation Approved"},
+  { key: "sent_to_am",         label: "Sent To AM"},
+  { key: "onboarding",         label: "Onboarding"},
+  { key: "active",             label: "Active"},
+  { key: "renewal",            label: "Renewal"},
 ] as const;
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const clientPortfolioRows: ClientPortfolioRow[] = [
   {
@@ -111,7 +106,7 @@ const clientPortfolioRows: ClientPortfolioRow[] = [
     renewalOwner: "Unassigned",
     currentDepartment: "Billing",
     currentWorkflowStage: "Invoice Sent",
-    issues: [{ type: "Missing Payment", status: "Open" }],
+    issues: [{ type: "Missing Payment", status: "Open"}],
   },
   {
     id: "2",
@@ -168,8 +163,8 @@ const clientPortfolioRows: ClientPortfolioRow[] = [
     currentDepartment: "Billing",
     currentWorkflowStage: "Awaiting Payment",
     issues: [
-      { type: "Failed Payment", status: "In Progress" },
-      { type: "Cancellation Request", status: "Open" },
+      { type: "Failed Payment", status: "In Progress"},
+      { type: "Cancellation Request", status: "Open"},
     ],
   },
   {
@@ -226,7 +221,7 @@ const clientPortfolioRows: ClientPortfolioRow[] = [
     renewalOwner: "Unassigned",
     currentDepartment: "Billing",
     currentWorkflowStage: "Sent To Billing",
-    issues: [{ type: "Cancellation Request", status: "Escalated" }],
+    issues: [{ type: "Cancellation Request", status: "Escalated"}],
   },
   {
     id: "6",
@@ -283,9 +278,9 @@ const clientPortfolioRows: ClientPortfolioRow[] = [
     currentDepartment: "Billing",
     currentWorkflowStage: "Collections",
     issues: [
-      { type: "Failed Payment", status: "Escalated" },
-      { type: "Billing Dispute", status: "Open" },
-      { type: "Renewal Issue", status: "Escalated" },
+      { type: "Failed Payment", status: "Escalated"},
+      { type: "Billing Dispute", status: "Open"},
+      { type: "Renewal Issue", status: "Escalated"},
     ],
   },
   {
@@ -343,8 +338,8 @@ const clientPortfolioRows: ClientPortfolioRow[] = [
     currentDepartment: "Billing",
     currentWorkflowStage: "Collections",
     issues: [
-      { type: "Missing Payment", status: "Escalated" },
-      { type: "Activation Delay", status: "In Progress" },
+      { type: "Missing Payment", status: "Escalated"},
+      { type: "Activation Delay", status: "In Progress"},
     ],
   },
   {
@@ -373,24 +368,24 @@ const clientPortfolioRows: ClientPortfolioRow[] = [
     renewalOwner: "Sarah K.",
     currentDepartment: "Account Management",
     currentWorkflowStage: "Active",
-    issues: [{ type: "Contract Issue", status: "In Progress" }],
+    issues: [{ type: "Contract Issue", status: "In Progress"}],
   },
 ];
 
-// ── KPI helpers ───────────────────────────────────────────────────────────────
+//  KPI helpers 
 
 const kpiData = {
   activeClients:            clientPortfolioRows.filter((c) => c.lifecycleStatus === "Active").length,
-  awaitingInvoice:          clientPortfolioRows.filter((c) => c.invoiceStatus === "Draft" || c.activationStatus === "Awaiting Invoice").length,
-  awaitingPayment:          clientPortfolioRows.filter((c) => c.paymentVariant === "warning" || c.paymentStatus === "Awaiting Payment").length,
+  awaitingInvoice:          clientPortfolioRows.filter((c) => c.invoiceStatus === "Draft"|| c.activationStatus === "Awaiting Invoice").length,
+  awaitingPayment:          clientPortfolioRows.filter((c) => c.paymentVariant === "warning"|| c.paymentStatus === "Awaiting Payment").length,
   paymentConfirmed:         clientPortfolioRows.filter((c) => c.paymentStatus === "Confirmed").length,
   readyForActivation:       clientPortfolioRows.filter((c) => c.activationStatus === "Ready For Activation").length,
-  activeServices:           clientPortfolioRows.filter((c) => c.activationStatus === "Activated" || c.activationStatus === "Active").length,
-  cancellationRequests:     clientPortfolioRows.filter((c) => c.issues.some((i) => i.type === "Cancellation Request" && i.status !== "Resolved")).length,
-  renewalBillingRequired:   clientPortfolioRows.filter((c) => c.renewalStatus === "Retention Plan" || c.renewalStatus === "Schedule Pending" || c.renewalStatus === "At Risk").length,
+  activeServices:           clientPortfolioRows.filter((c) => c.activationStatus === "Activated"|| c.activationStatus === "Active").length,
+  cancellationRequests:     clientPortfolioRows.filter((c) => c.issues.some((i) => i.type === "Cancellation Request"&& i.status !== "Resolved")).length,
+  renewalBillingRequired:   clientPortfolioRows.filter((c) => c.renewalStatus === "Retention Plan"|| c.renewalStatus === "Schedule Pending"|| c.renewalStatus === "At Risk").length,
 };
 
-// ── Issue status color ────────────────────────────────────────────────────────
+//  Issue status color 
 
 const issueStatusVariant: Record<string, BadgeVariant> = {
   "Open":        "warning",
@@ -399,13 +394,12 @@ const issueStatusVariant: Record<string, BadgeVariant> = {
   "Resolved":    "success",
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
     <th
-      className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2 whitespace-nowrap border-b"
-      style={{
+      className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2 whitespace-nowrap border-b"style={{
         color: "var(--rtm-text-muted)",
         borderColor: "var(--rtm-border-light)",
         background: "var(--rtm-bg-alt, #F9FAFB)",
@@ -425,9 +419,8 @@ function Td({
 }) {
   return (
     <td
-      className="px-3 py-2.5 text-sm whitespace-nowrap border-b"
-      style={{
-        color: muted ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)",
+      className="px-3 py-2.5 text-sm whitespace-nowrap border-b"style={{
+        color: muted ? "var(--rtm-text-muted)": "var(--rtm-text-secondary)",
         borderColor: "var(--rtm-border-light)",
       }}
     >
@@ -446,12 +439,11 @@ function InfoRow({
   return (
     <div className="flex flex-col gap-0.5">
       <span
-        className="text-[10px] font-bold uppercase tracking-wider"
-        style={{ color: "var(--rtm-text-muted)" }}
+        className="text-[10px] font-bold uppercase tracking-wider"style={{ color: "var(--rtm-text-muted)"}}
       >
         {label}
       </span>
-      <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+      <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
         {value}
       </span>
     </div>
@@ -465,7 +457,7 @@ function ActionBtn({
 }: {
   label: string;
   onClick: () => void;
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary"| "secondary"| "danger";
 }) {
   const base =
     "text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer whitespace-nowrap";
@@ -484,7 +476,7 @@ function ActionBtn({
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+//  Page 
 
 export default function BillingClientPortfolioPage() {
   const [selected, setSelected] = useState<ClientPortfolioRow | null>(null);
@@ -509,106 +501,69 @@ export default function BillingClientPortfolioPage() {
   return (
     <div className="space-y-8">
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      {/*  Header  */}
       <div>
         <p
-          className="text-[11px] font-bold uppercase tracking-widest mb-1"
-          style={{ color: workspace.accentColor }}
+          className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}
         >
           {workspace.name}
         </p>
         <h1
-          className="text-2xl font-bold tracking-tight"
-          style={{ color: "var(--rtm-text-primary)" }}
+          className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}
         >
           Client Portfolio Dashboard
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Billing&rsquo;s primary client management workspace — full lifecycle
           visibility across Sales, Billing, Account Management, and Renewals.
         </p>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           Client Portfolio Dashboard — KPI Cards
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         <KpiCard
-          title="Active Clients"
-          value={String(kpiData.activeClients)}
-          accentColor="#059669"
-          iconBg="#ECFDF5"
-          iconColor="#059669"
-          icon={<span className="text-lg">✓</span>}
+          title="Active Clients"value={String(kpiData.activeClients)}
+          accentColor="#059669"iconBg="#ECFDF5"iconColor="#059669"
         />
         <KpiCard
-          title="Awaiting Invoice"
-          value={String(kpiData.awaitingInvoice)}
-          accentColor="#6366F1"
-          iconBg="#EEF2FF"
-          iconColor="#6366F1"
-          icon={<span className="text-lg">📄</span>}
+          title="Awaiting Invoice"value={String(kpiData.awaitingInvoice)}
+          accentColor="#6366F1"iconBg="#EEF2FF"iconColor="#6366F1"
         />
         <KpiCard
-          title="Awaiting Payment"
-          value={String(kpiData.awaitingPayment)}
-          accentColor="#D97706"
-          iconBg="#FFFBEB"
-          iconColor="#D97706"
-          icon={<span className="text-lg">⏳</span>}
+          title="Awaiting Payment"value={String(kpiData.awaitingPayment)}
+          accentColor="#D97706"iconBg="#FFFBEB"iconColor="#D97706"icon={<span className="text-sm font-medium text-amber-600">Pending</span>}
         />
         <KpiCard
-          title="Payment Confirmed"
-          value={String(kpiData.paymentConfirmed)}
-          accentColor="#059669"
-          iconBg="#ECFDF5"
-          iconColor="#059669"
-          icon={<span className="text-lg">💳</span>}
+          title="Payment Confirmed"value={String(kpiData.paymentConfirmed)}
+          accentColor="#059669"iconBg="#ECFDF5"iconColor="#059669"
         />
         <KpiCard
-          title="Ready For Activation"
-          value={String(kpiData.readyForActivation)}
-          accentColor="#1B4FD8"
-          iconBg="#EFF6FF"
-          iconColor="#1B4FD8"
-          icon={<span className="text-lg">🚀</span>}
+          title="Ready For Activation"value={String(kpiData.readyForActivation)}
+          accentColor="#1B4FD8"iconBg="#EFF6FF"iconColor="#1B4FD8"
         />
         <KpiCard
-          title="Active Services"
-          value={String(kpiData.activeServices)}
-          accentColor="#059669"
-          iconBg="#ECFDF5"
-          iconColor="#059669"
-          icon={<span className="text-lg">⚡</span>}
+          title="Active Services"value={String(kpiData.activeServices)}
+          accentColor="#059669"iconBg="#ECFDF5"iconColor="#059669"
         />
         <KpiCard
-          title="Cancellation Requests"
-          value={String(kpiData.cancellationRequests)}
-          accentColor="#DC2626"
-          iconBg="#FEF2F2"
-          iconColor="#DC2626"
-          icon={<span className="text-lg">⚠️</span>}
+          title="Cancellation Requests"value={String(kpiData.cancellationRequests)}
+          accentColor="#DC2626"iconBg="#FEF2F2"iconColor="#DC2626"
         />
         <KpiCard
-          title="Renewal Billing Required"
-          value={String(kpiData.renewalBillingRequired)}
-          accentColor="#D97706"
-          iconBg="#FFFBEB"
-          iconColor="#D97706"
-          icon={<span className="text-lg">🔁</span>}
+          title="Renewal Billing Required"value={String(kpiData.renewalBillingRequired)}
+          accentColor="#D97706"iconBg="#FFFBEB"iconColor="#D97706"
         />
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           CLIENT PORTFOLIO TABLE
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       <SectionWrapper
-        title="Client Portfolio Table"
-        description="Click a row to open the Client Detail Workspace"
-      >
+        title="Client Portfolio Table"description="Click a row to open the Client Detail Workspace">
         <div
-          className="overflow-x-auto rounded-lg border"
-          style={{ borderColor: "var(--rtm-border-light)" }}
+          className="overflow-x-auto rounded-lg border"style={{ borderColor: "var(--rtm-border-light)"}}
         >
           <table className="min-w-full">
             <thead>
@@ -634,17 +589,14 @@ export default function BillingClientPortfolioPage() {
                   <tr
                     key={row.id}
                     onClick={() => setSelected(isSelected ? null : row)}
-                    className="cursor-pointer transition-colors"
-                    style={{
+                    className="cursor-pointer transition-colors"style={{
                       background: isSelected
-                        ? "#EFF6FF"
-                        : "var(--rtm-bg)",
+                        ? "#EFF6FF": "var(--rtm-bg)",
                     }}
                   >
                     <Td>
                       <span
-                        className="font-semibold"
-                        style={{ color: "var(--rtm-text-primary)" }}
+                        className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}
                       >
                         {row.client}
                       </span>
@@ -653,64 +605,55 @@ export default function BillingClientPortfolioPage() {
                       <StatusBadge
                         variant={row.lifecycleVariant}
                         label={row.lifecycleStatus}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td>
                       <StatusBadge
                         variant={row.salesVariant}
                         label={row.salesStatus}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td>
                       <StatusBadge
                         variant={row.invoiceVariant}
                         label={row.invoiceStatus}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td>
                       <StatusBadge
                         variant={row.paymentVariant}
                         label={row.paymentStatus}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td>
                       <StatusBadge
                         variant={row.activationVariant}
                         label={row.activationStatus}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td>
                       <StatusBadge
                         variant={row.amVariant}
                         label={row.amStatus}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td>
                       <StatusBadge
                         variant={row.onboardingVariant}
                         label={row.onboardingStatus}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td>
                       <StatusBadge
                         variant={row.renewalVariant}
                         label={row.renewalStatus}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td>
                       <StatusBadge
                         variant={row.billingRiskVariant}
                         label={row.billingRisk}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td muted>{row.billingOwner}</Td>
                     <Td muted>
@@ -726,13 +669,12 @@ export default function BillingClientPortfolioPage() {
         </div>
       </SectionWrapper>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           CLIENT DETAIL WORKSPACE
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       {selected && (
         <div
-          className="rounded-xl border p-6 space-y-6"
-          style={{
+          className="rounded-xl border p-6 space-y-6"style={{
             background: "var(--rtm-surface)",
             borderColor: "var(--rtm-border)",
           }}
@@ -741,90 +683,82 @@ export default function BillingClientPortfolioPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p
-                className="text-[10px] font-bold uppercase tracking-widest mb-0.5"
-                style={{ color: workspace.accentColor }}
+                className="text-[10px] font-bold uppercase tracking-widest mb-0.5"style={{ color: workspace.accentColor }}
               >
                 Client Detail Workspace
               </p>
               <h2
-                className="text-lg font-bold"
-                style={{ color: "var(--rtm-text-primary)" }}
+                className="text-lg font-bold"style={{ color: "var(--rtm-text-primary)"}}
               >
                 {selected.client}
               </h2>
-              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-                Billing Owner: {selected.billingOwner} · Next:{" "}
+              <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
+                Billing Owner: {selected.billingOwner} · Next:{""}
                 {selected.nextAction}
               </p>
             </div>
             <button
               onClick={() => setSelected(null)}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border flex-shrink-0"
-              style={{
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border flex-shrink-0"style={{
                 color: "var(--rtm-text-muted)",
                 borderColor: "var(--rtm-border)",
               }}
             >
-              ✕ Close
+               Close
             </button>
           </div>
 
-          {/* ── Client Information ── */}
+          {/*  Client Information  */}
           <div
-            className="rounded-xl border p-5"
-            style={{
+            className="rounded-xl border p-5"style={{
               background: "var(--rtm-bg)",
               borderColor: "var(--rtm-border-light)",
             }}
           >
             <p
-              className="text-xs font-bold uppercase tracking-wide mb-4"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-bold uppercase tracking-wide mb-4"style={{ color: "var(--rtm-text-muted)"}}
             >
               Client Information
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <InfoRow label="Client Name"       value={selected.client} />
-              <InfoRow label="Contract Value"    value={selected.contractValue} />
-              <InfoRow label="Monthly Value"     value={selected.monthlyValue} />
-              <InfoRow label="Setup Fee"         value={selected.setupFee} />
-              <InfoRow label="Services Purchased" value={selected.servicesPurchased} />
-              <InfoRow label="Contract Start"    value={selected.contractStart} />
-              <InfoRow label="Contract End"      value={selected.contractEnd} />
-              <InfoRow label="Renewal Date"      value={selected.renewalDate} />
+              <InfoRow label="Client Name"value={selected.client} />
+              <InfoRow label="Contract Value"value={selected.contractValue} />
+              <InfoRow label="Monthly Value"value={selected.monthlyValue} />
+              <InfoRow label="Setup Fee"value={selected.setupFee} />
+              <InfoRow label="Services Purchased"value={selected.servicesPurchased} />
+              <InfoRow label="Contract Start"value={selected.contractStart} />
+              <InfoRow label="Contract End"value={selected.contractEnd} />
+              <InfoRow label="Renewal Date"value={selected.renewalDate} />
             </div>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════════════
+          {/* 
               CLIENT LIFECYCLE TIMELINE
-          ══════════════════════════════════════════════════════════════════ */}
+           */}
           <div
-            className="rounded-xl border p-5"
-            style={{
+            className="rounded-xl border p-5"style={{
               background: "var(--rtm-bg)",
               borderColor: "var(--rtm-border-light)",
             }}
           >
             <p
-              className="text-xs font-bold uppercase tracking-wide mb-1"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}
             >
               Client Lifecycle Timeline
             </p>
-            <p className="text-xs mb-4" style={{ color: "var(--rtm-text-muted)" }}>
-              Current Stage:{" "}
+            <p className="text-xs mb-4"style={{ color: "var(--rtm-text-muted)"}}>
+              Current Stage:{""}
               <span
-                className="font-semibold"
-                style={{ color: "var(--rtm-text-primary)" }}
+                className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}
               >
                 {selected.lifecycleStatus}
-              </span>{" "}
-              · Owner Module:{" "}
-              <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+              </span>{""}
+              · Owner Module:{""}
+              <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                 {selected.currentDepartment}
-              </span>{" "}
-              · Next Action:{" "}
-              <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+              </span>{""}
+              · Next Action:{""}
+              <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                 {selected.nextAction}
               </span>
             </p>
@@ -838,31 +772,26 @@ export default function BillingClientPortfolioPage() {
                   const isFuture  = idx > currentStageIndex;
 
                   const dotColor = isCurrent
-                    ? "#1B4FD8"
-                    : isPast
-                    ? "#059669"
-                    : "var(--rtm-border)";
+                    ? "#1B4FD8": isPast
+                    ? "#059669": "var(--rtm-border)";
                   const labelColor = isCurrent
-                    ? "var(--rtm-text-primary)"
-                    : isPast
-                    ? "#059669"
-                    : "var(--rtm-text-muted)";
-                  const lineColor = isPast ? "#059669" : "var(--rtm-border-light)";
+                    ? "var(--rtm-text-primary)": isPast
+                    ? "#059669": "var(--rtm-text-muted)";
+                  const lineColor = isPast ? "#059669": "var(--rtm-border-light)";
 
                   return (
                     <React.Fragment key={stage.key}>
                       <div className="flex flex-col items-center gap-1">
                         {/* Dot */}
                         <div
-                          className="w-3 h-3 rounded-full border-2 flex-shrink-0 transition-colors"
-                          style={{
+                          className="w-3 h-3 rounded-full border-2 flex-shrink-0 transition-colors"style={{
                             background: isCurrent ? dotColor : isPast ? dotColor : "var(--rtm-bg)",
                             borderColor: dotColor,
                           }}
                         />
                         {/* Label */}
                         <span
-                          className={`text-[10px] font-semibold text-center max-w-[72px] leading-tight ${isCurrent ? "font-bold" : ""}`}
+                          className={`text-[10px] font-semibold text-center max-w-[72px] leading-tight ${isCurrent ? "font-bold": ""}`}
                           style={{ color: labelColor, minWidth: 56 }}
                         >
                           {stage.label}
@@ -871,8 +800,7 @@ export default function BillingClientPortfolioPage() {
                       {/* Connector */}
                       {idx < LIFECYCLE_STAGES.length - 1 && (
                         <div
-                          className="h-0.5 w-6 flex-shrink-0 mt-[-14px]"
-                          style={{ background: lineColor }}
+                          className="h-0.5 w-6 flex-shrink-0 mt-[-14px]"style={{ background: lineColor }}
                         />
                       )}
                     </React.Fragment>
@@ -882,87 +810,63 @@ export default function BillingClientPortfolioPage() {
             </div>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════════════
+          {/* 
               BILLING ACTION CENTER
-          ══════════════════════════════════════════════════════════════════ */}
+           */}
           <div
-            className="rounded-xl border p-5"
-            style={{
+            className="rounded-xl border p-5"style={{
               background: "var(--rtm-bg)",
               borderColor: "var(--rtm-border-light)",
             }}
           >
             <p
-              className="text-xs font-bold uppercase tracking-wide mb-3"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-bold uppercase tracking-wide mb-3"style={{ color: "var(--rtm-text-muted)"}}
             >
               Billing Action Center
             </p>
             <div className="flex flex-wrap gap-2">
               <ActionBtn
-                variant="secondary"
-                label="Open Invoice"
-                onClick={() => log(`Opening invoice for ${selected.client}`)}
+                variant="secondary"label="Open Invoice"onClick={() => log(`Opening invoice for ${selected.client}`)}
               />
               <ActionBtn
-                variant="primary"
-                label="Generate Invoice"
-                onClick={() => log(`Generating invoice for ${selected.client}`)}
+                variant="primary"label="Generate Invoice"onClick={() => log(`Generating invoice for ${selected.client}`)}
               />
               <ActionBtn
-                variant="secondary"
-                label="Record Payment"
-                onClick={() => log(`Recording payment for ${selected.client}`)}
+                variant="secondary"label="Record Payment"onClick={() => log(`Recording payment for ${selected.client}`)}
               />
               <ActionBtn
-                variant="primary"
-                label="Confirm Payment"
-                onClick={() => log(`Confirming payment for ${selected.client}`)}
+                variant="primary"label="Confirm Payment"onClick={() => log(`Confirming payment for ${selected.client}`)}
               />
               <ActionBtn
-                variant="primary"
-                label="Approve Activation"
-                onClick={() => log(`Approving activation for ${selected.client}`)}
+                variant="primary"label="Approve Activation"onClick={() => log(`Approving activation for ${selected.client}`)}
               />
               <ActionBtn
-                variant="secondary"
-                label="Send To Account Management"
-                onClick={() => log(`Sending ${selected.client} to Account Management`)}
+                variant="secondary"label="Send To Account Management"onClick={() => log(`Sending ${selected.client} to Account Management`)}
               />
               <ActionBtn
-                variant="secondary"
-                label="Create Billing Task"
-                onClick={() => log(`Billing task created for ${selected.client}`)}
+                variant="secondary"label="Create Billing Task"onClick={() => log(`Billing task created for ${selected.client}`)}
               />
               <ActionBtn
-                variant="danger"
-                label="Start Cancellation"
-                onClick={() => log(`Cancellation started for ${selected.client}`)}
+                variant="danger"label="Start Cancellation"onClick={() => log(`Cancellation started for ${selected.client}`)}
               />
               <ActionBtn
-                variant="secondary"
-                label="Create Renewal Billing Task"
-                onClick={() => log(`Renewal billing task created for ${selected.client}`)}
+                variant="secondary"label="Create Renewal Billing Task"onClick={() => log(`Renewal billing task created for ${selected.client}`)}
               />
               <ActionBtn
-                variant="danger"
-                label="Flag Billing Issue"
-                onClick={() => log(`Billing issue flagged for ${selected.client}`)}
+                variant="danger"label="Flag Billing Issue"onClick={() => log(`Billing issue flagged for ${selected.client}`)}
               />
             </div>
 
             {/* Action log */}
             {actionLog.length > 0 && (
               <div
-                className="rounded-lg border mt-4 p-3"
-                style={{
+                className="rounded-lg border mt-4 p-3"style={{
                   background: "var(--rtm-surface)",
                   borderColor: "var(--rtm-border-light)",
                 }}
               >
                 <p
-                  className="text-xs font-bold uppercase tracking-wide mb-2"
-                  style={{ color: "var(--rtm-text-muted)" }}
+                  className="text-xs font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}
                 >
                   Action Log
                 </p>
@@ -970,8 +874,7 @@ export default function BillingClientPortfolioPage() {
                   {actionLog.map((entry, i) => (
                     <p
                       key={i}
-                      className="text-xs font-mono"
-                      style={{ color: "var(--rtm-text-secondary)" }}
+                      className="text-xs font-mono"style={{ color: "var(--rtm-text-secondary)"}}
                     >
                       {entry}
                     </p>
@@ -981,24 +884,22 @@ export default function BillingClientPortfolioPage() {
             )}
           </div>
 
-          {/* ══════════════════════════════════════════════════════════════════
+          {/* 
               CLIENT ISSUE CENTER
-          ══════════════════════════════════════════════════════════════════ */}
+           */}
           <div
-            className="rounded-xl border p-5"
-            style={{
+            className="rounded-xl border p-5"style={{
               background: "var(--rtm-bg)",
               borderColor: "var(--rtm-border-light)",
             }}
           >
             <p
-              className="text-xs font-bold uppercase tracking-wide mb-3"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-bold uppercase tracking-wide mb-3"style={{ color: "var(--rtm-text-muted)"}}
             >
               Client Issue Center
             </p>
             {selected.issues.length === 0 ? (
-              <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+              <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>
                 No active issues.
               </p>
             ) : (
@@ -1006,33 +907,29 @@ export default function BillingClientPortfolioPage() {
                 {selected.issues.map((issue, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-2 rounded-lg border px-3 py-2"
-                    style={{
+                    className="flex items-center gap-2 rounded-lg border px-3 py-2"style={{
                       background: "var(--rtm-surface)",
                       borderColor: "var(--rtm-border)",
                     }}
                   >
                     <span
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--rtm-text-primary)" }}
+                      className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}
                     >
                       {issue.type}
                     </span>
                     <StatusBadge
                       variant={issueStatusVariant[issue.status] ?? "neutral"}
                       label={issue.status}
-                      size="sm"
-                    />
+                      size="sm"/>
                   </div>
                 ))}
               </div>
             )}
 
             {/* Issue type legend */}
-            <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--rtm-border-light)" }}>
+            <div className="mt-4 pt-4 border-t"style={{ borderColor: "var(--rtm-border-light)"}}>
               <p
-                className="text-[10px] font-bold uppercase tracking-wider mb-2"
-                style={{ color: "var(--rtm-text-muted)" }}
+                className="text-[10px] font-bold uppercase tracking-wider mb-2"style={{ color: "var(--rtm-text-muted)"}}
               >
                 Issue Types
               </p>
@@ -1048,8 +945,7 @@ export default function BillingClientPortfolioPage() {
                 ].map((t) => (
                   <span
                     key={t}
-                    className="text-xs px-2 py-1 rounded border"
-                    style={{
+                    className="text-xs px-2 py-1 rounded border"style={{
                       color: "var(--rtm-text-muted)",
                       borderColor: "var(--rtm-border-light)",
                       background: "var(--rtm-surface)",
@@ -1062,23 +958,21 @@ export default function BillingClientPortfolioPage() {
             </div>
           </div>
 
-          {/* ══════════════════════════════════════════════════════════════════
+          {/* 
               CROSS MODULE VISIBILITY
-          ══════════════════════════════════════════════════════════════════ */}
+           */}
           <div
-            className="rounded-xl border p-5"
-            style={{
+            className="rounded-xl border p-5"style={{
               background: "var(--rtm-bg)",
               borderColor: "var(--rtm-border-light)",
             }}
           >
             <p
-              className="text-xs font-bold uppercase tracking-wide mb-1"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}
             >
               Cross Module Visibility
             </p>
-            <p className="text-xs mb-4" style={{ color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs mb-4"style={{ color: "var(--rtm-text-muted)"}}>
               Read-only status across all departments
             </p>
 
@@ -1092,53 +986,47 @@ export default function BillingClientPortfolioPage() {
               ].map((m) => (
                 <div
                   key={m.module}
-                  className="rounded-lg border p-3 flex flex-col gap-2"
-                  style={{
+                  className="rounded-lg border p-3 flex flex-col gap-2"style={{
                     background: "var(--rtm-surface)",
                     borderColor: "var(--rtm-border)",
                   }}
                 >
                   <span
-                    className="text-[10px] font-bold uppercase tracking-wider"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-[10px] font-bold uppercase tracking-wider"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {m.module}
                   </span>
-                  <StatusBadge variant={m.variant} label={m.status} size="sm" />
+                  <StatusBadge variant={m.variant} label={m.status} size="sm"/>
                 </div>
               ))}
             </div>
 
             {/* Read-only ownership fields */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-              <InfoRow label="Sales Owner"            value={selected.salesOwner} />
-              <InfoRow label="AM Owner"               value={selected.amOwner} />
-              <InfoRow label="Renewal Owner"          value={selected.renewalOwner} />
-              <InfoRow label="Current Department"     value={selected.currentDepartment} />
-              <InfoRow label="Current Workflow Stage" value={selected.currentWorkflowStage} />
+              <InfoRow label="Sales Owner"value={selected.salesOwner} />
+              <InfoRow label="AM Owner"value={selected.amOwner} />
+              <InfoRow label="Renewal Owner"value={selected.renewalOwner} />
+              <InfoRow label="Current Department"value={selected.currentDepartment} />
+              <InfoRow label="Current Workflow Stage"value={selected.currentWorkflowStage} />
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Footer nav ──────────────────────────────────────────────────────── */}
+      {/*  Footer nav  */}
       <div className="flex gap-2">
         <Link
           href={workspace.dashboardRoute}
-          className="rtm-btn-secondary text-sm inline-flex items-center gap-1"
-        >
+          className="rtm-btn-secondary text-sm inline-flex items-center gap-1">
           ← Dashboard
         </Link>
         <Link
-          href="/billing/invoices"
-          className="rtm-btn-secondary text-sm inline-flex items-center gap-1"
-        >
+          href="/billing/invoices"className="rtm-btn-secondary text-sm inline-flex items-center gap-1">
           Invoices →
         </Link>
         <Link
           href={workspace.tasksRoute}
-          className="rtm-btn-primary text-sm inline-flex items-center gap-1"
-        >
+          className="rtm-btn-primary text-sm inline-flex items-center gap-1">
           Tasks →
         </Link>
       </div>

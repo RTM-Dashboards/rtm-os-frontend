@@ -6,11 +6,11 @@ import BillingSearchFilter from "./BillingSearchFilter";
 import { InvoiceStatusBadge } from "./BillingStatusBadge";
 
 const STATUS_FILTER_OPTIONS = [
-  { value: "paid", label: "Paid" },
-  { value: "pending", label: "Pending" },
-  { value: "overdue", label: "Overdue" },
-  { value: "draft", label: "Draft" },
-  { value: "void", label: "Void" },
+  { value: "paid", label: "Paid"},
+  { value: "pending", label: "Pending"},
+  { value: "overdue", label: "Overdue"},
+  { value: "draft", label: "Draft"},
+  { value: "void", label: "Void"},
 ];
 
 function formatDate(iso: string) {
@@ -52,9 +52,7 @@ export default function InvoiceTrackingTable({ data }: Props) {
         filterValue={statusFilter}
         onFilterChange={setStatusFilter}
         filterOptions={STATUS_FILTER_OPTIONS}
-        filterPlaceholder="All Statuses"
-        searchPlaceholder="Search client or invoice #..."
-        resultCount={filtered.length}
+        filterPlaceholder="All Statuses"searchPlaceholder="Search client or invoice #..."resultCount={filtered.length}
       />
       <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
         <table className="w-full text-sm">
@@ -79,8 +77,7 @@ export default function InvoiceTrackingTable({ data }: Props) {
               filtered.map((row) => (
                 <tr
                   key={row.id}
-                  className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                >
+                  className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="px-4 py-3 font-mono text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                     {row.invoiceNumber}
                   </td>

@@ -6,11 +6,11 @@ import BillingSearchFilter from "./BillingSearchFilter";
 import { RenewalStatusBadge } from "./BillingStatusBadge";
 
 const STATUS_FILTER_OPTIONS = [
-  { value: "on_track", label: "On Track" },
-  { value: "at_risk", label: "At Risk" },
-  { value: "renewed", label: "Renewed" },
-  { value: "pending", label: "Pending" },
-  { value: "churned", label: "Churned" },
+  { value: "on_track", label: "On Track"},
+  { value: "at_risk", label: "At Risk"},
+  { value: "renewed", label: "Renewed"},
+  { value: "pending", label: "Pending"},
+  { value: "churned", label: "Churned"},
 ];
 
 function formatDate(iso: string) {
@@ -76,9 +76,7 @@ export default function RenewalQueueTable({ data }: Props) {
         filterValue={statusFilter}
         onFilterChange={setStatusFilter}
         filterOptions={STATUS_FILTER_OPTIONS}
-        filterPlaceholder="All Statuses"
-        searchPlaceholder="Search client or AM..."
-        resultCount={sorted.length}
+        filterPlaceholder="All Statuses"searchPlaceholder="Search client or AM..."resultCount={sorted.length}
       />
       <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
         <table className="w-full text-sm">
@@ -103,8 +101,7 @@ export default function RenewalQueueTable({ data }: Props) {
               sorted.map((row) => (
                 <tr
                   key={row.id}
-                  className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-                >
+                  className="bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100 whitespace-nowrap">
                     {row.client as string}
                   </td>

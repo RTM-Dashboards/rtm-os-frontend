@@ -7,30 +7,15 @@ import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("billing")!;
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+//  Types 
 
 type TaskStatus =
-  | "Not Started"
-  | "In Progress"
-  | "Waiting For Client"
-  | "Waiting For Sales"
-  | "Waiting For AM"
-  | "Waiting For Department"
-  | "Blocked"
-  | "Completed"
-  | "Cancelled";
+  | "Not Started"| "In Progress"| "Waiting For Client"| "Waiting For Sales"| "Waiting For AM"| "Waiting For Department"| "Blocked"| "Completed"| "Cancelled";
 
-type TaskPriority = "Low" | "Medium" | "High" | "Urgent";
-type BadgeVariant = "success" | "error" | "warning" | "info" | "neutral" | "pending";
+type TaskPriority = "Low"| "Medium"| "High"| "Urgent";
+type BadgeVariant = "success"| "error"| "warning"| "info"| "neutral"| "pending";
 type CrossModuleSource =
-  | "Sales Handoff"
-  | "Invoice Creation"
-  | "Payment Confirmation"
-  | "Activation Review"
-  | "Cancellation"
-  | "Offboarding"
-  | "Renewal Billing"
-  | "Collections";
+  | "Sales Handoff"| "Invoice Creation"| "Payment Confirmation"| "Activation Review"| "Cancellation"| "Offboarding"| "Renewal Billing"| "Collections";
 
 interface BillingTask {
   id: string;
@@ -68,7 +53,7 @@ interface DashboardCard {
   border: string;
 }
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const billingTaskQueue: BillingTask[] = [
   {
@@ -373,7 +358,7 @@ const billingTaskQueue: BillingTask[] = [
   },
 ];
 
-// ── Cross-Module Source Mock Data ─────────────────────────────────────────────
+//  Cross-Module Source Mock Data 
 
 interface CrossModuleEntry {
   source: CrossModuleSource;
@@ -444,7 +429,7 @@ const crossModuleData: CrossModuleEntry[] = [
   },
 ];
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+//  Helpers 
 
 function statusVariant(s: TaskStatus): BadgeVariant {
   switch (s) {
@@ -463,27 +448,26 @@ function statusVariant(s: TaskStatus): BadgeVariant {
 
 function priorityColor(p: TaskPriority): { bg: string; color: string; border: string } {
   switch (p) {
-    case "Urgent": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
-    case "High":   return { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" };
-    case "Medium": return { bg: "#EFF6FF", color: "#1B4FD8", border: "#BFDBFE" };
-    case "Low":    return { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" };
+    case "Urgent": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
+    case "High":   return { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"};
+    case "Medium": return { bg: "#EFF6FF", color: "#1B4FD8", border: "#BFDBFE"};
+    case "Low":    return { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB"};
   }
 }
 
 const BADGE_COLORS: Record<BadgeVariant, { bg: string; color: string; border: string }> = {
-  success: { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" },
-  error:   { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" },
-  warning: { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
-  info:    { bg: "#EFF6FF", color: "#1B4FD8", border: "#BFDBFE" },
-  neutral: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB" },
-  pending: { bg: "#FFF7ED", color: "#D97706", border: "#FDE68A" },
+  success: { bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0"},
+  error:   { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"},
+  warning: { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"},
+  info:    { bg: "#EFF6FF", color: "#1B4FD8", border: "#BFDBFE"},
+  neutral: { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB"},
+  pending: { bg: "#FFF7ED", color: "#D97706", border: "#FDE68A"},
 };
 
 function Th({ children }: { children: React.ReactNode }) {
   return (
     <th
-      className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2 whitespace-nowrap border-b"
-      style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-alt, #F9FAFB)" }}
+      className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2 whitespace-nowrap border-b"style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-alt, #F9FAFB)"}}
     >
       {children}
     </th>
@@ -493,8 +477,7 @@ function Th({ children }: { children: React.ReactNode }) {
 function Td({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
   return (
     <td
-      className="px-3 py-2.5 text-sm border-b"
-      style={{ color: muted ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)", borderColor: "var(--rtm-border-light)" }}
+      className="px-3 py-2.5 text-sm border-b"style={{ color: muted ? "var(--rtm-text-muted)": "var(--rtm-text-secondary)", borderColor: "var(--rtm-border-light)"}}
     >
       {children}
     </td>
@@ -508,7 +491,7 @@ function ActionBtn({
 }: {
   label: string;
   onClick: () => void;
-  variant?: "primary" | "secondary" | "danger";
+  variant?: "primary"| "secondary"| "danger";
 }) {
   const base =
     "text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer whitespace-nowrap";
@@ -527,7 +510,7 @@ function ActionBtn({
   );
 }
 
-// ── Task Statuses ─────────────────────────────────────────────────────────────
+//  Task Statuses 
 
 const STATUSES: TaskStatus[] = [
   "Not Started",
@@ -541,14 +524,14 @@ const STATUSES: TaskStatus[] = [
   "Cancelled",
 ];
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+//  Page 
 
 export default function BillingTasksPage() {
   const [selected, setSelected] = useState<BillingTask | null>(null);
   const [actionLog, setActionLog] = useState<string[]>([]);
   const [filterStatus, setFilterStatus] = useState<TaskStatus | "All">("All");
   const [noteText, setNoteText] = useState("");
-  const [activeDetailTab, setActiveDetailTab] = useState<"detail" | "notes" | "history">("detail");
+  const [activeDetailTab, setActiveDetailTab] = useState<"detail"| "notes"| "history">("detail");
 
   function log(msg: string) {
     setActionLog((prev) => [
@@ -558,97 +541,83 @@ export default function BillingTasksPage() {
   }
 
   const filtered =
-    filterStatus === "All"
-      ? billingTaskQueue
+    filterStatus === "All"? billingTaskQueue
       : billingTaskQueue.filter((t) => t.status === filterStatus);
 
-  // ── Billing Task Dashboard counts ──────────────────────────────────────────
+  //  Billing Task Dashboard counts 
 
   const now = new Date();
   const startOfWeek = new Date(now);
   startOfWeek.setDate(now.getDate() - now.getDay());
 
   const openTasks = billingTaskQueue.filter(
-    (t) => t.status !== "Completed" && t.status !== "Cancelled"
-  ).length;
-  // Using "Jun 15" as overdue reference (static mock)
+    (t) => t.status !== "Completed"&& t.status !== "Cancelled").length;
+  // Using "Jun 15"as overdue reference (static mock)
   const overdueTasks = billingTaskQueue.filter(
     (t) =>
-      t.status !== "Completed" &&
-      t.status !== "Cancelled" &&
-      (t.dueDate === "Jun 15" || t.dueDate === "Jun 16")
+      t.status !== "Completed"&&
+      t.status !== "Cancelled"&&
+      (t.dueDate === "Jun 15"|| t.dueDate === "Jun 16")
   ).length;
   const waitingForSales = billingTaskQueue.filter(
-    (t) => t.status === "Waiting For Sales"
-  ).length;
+    (t) => t.status === "Waiting For Sales").length;
   const waitingForClient = billingTaskQueue.filter(
-    (t) => t.status === "Waiting For Client"
-  ).length;
+    (t) => t.status === "Waiting For Client").length;
   const waitingForAM = billingTaskQueue.filter(
-    (t) => t.status === "Waiting For AM"
-  ).length;
+    (t) => t.status === "Waiting For AM").length;
   const blockedTasks = billingTaskQueue.filter(
-    (t) => t.status === "Blocked"
-  ).length;
+    (t) => t.status === "Blocked").length;
   const completedThisWeek = billingTaskQueue.filter(
-    (t) => t.status === "Completed"
-  ).length;
+    (t) => t.status === "Completed").length;
 
   const dashboardCards: DashboardCard[] = [
-    { label: "Open Billing Tasks",    count: openTasks,         color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE" },
-    { label: "Overdue Tasks",         count: overdueTasks,      color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-    { label: "Waiting For Sales",     count: waitingForSales,   color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-    { label: "Waiting For Client",    count: waitingForClient,  color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-    { label: "Waiting For AM",        count: waitingForAM,      color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-    { label: "Blocked Tasks",         count: blockedTasks,      color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-    { label: "Completed This Week",   count: completedThisWeek, color: "#065F46", bg: "#ECFDF5", border: "#A7F3D0" },
+    { label: "Open Billing Tasks",    count: openTasks,         color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE"},
+    { label: "Overdue Tasks",         count: overdueTasks,      color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
+    { label: "Waiting For Sales",     count: waitingForSales,   color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+    { label: "Waiting For Client",    count: waitingForClient,  color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+    { label: "Waiting For AM",        count: waitingForAM,      color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+    { label: "Blocked Tasks",         count: blockedTasks,      color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
+    { label: "Completed This Week",   count: completedThisWeek, color: "#065F46", bg: "#ECFDF5", border: "#A7F3D0"},
   ];
 
   return (
     <div className="space-y-10">
 
-      {/* ── Header ── */}
+      {/*  Header  */}
       <div>
         <p
-          className="text-[11px] font-bold uppercase tracking-widest mb-1"
-          style={{ color: workspace.accentColor }}
+          className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}
         >
           {workspace.name}
         </p>
         <h1
-          className="text-2xl font-bold tracking-tight"
-          style={{ color: "var(--rtm-text-primary)" }}
+          className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}
         >
           Billing Tasks
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Create, assign, escalate, and manage all billing tasks. Full operational task management for Billing.
         </p>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* ── Billing Task Dashboard ─────────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  Billing Task Dashboard  */}
+      {/*  */}
       <SectionWrapper
-        title="Billing Task Dashboard"
-        description="Real-time snapshot of open, overdue, waiting, and completed billing tasks"
-      >
+        title="Billing Task Dashboard"description="Real-time snapshot of open, overdue, waiting, and completed billing tasks">
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {dashboardCards.map((card) => (
             <div
               key={card.label}
-              className="flex flex-col px-4 py-3 rounded-xl border"
-              style={{ background: card.bg, borderColor: card.border }}
+              className="flex flex-col px-4 py-3 rounded-xl border"style={{ background: card.bg, borderColor: card.border }}
             >
               <span
-                className="text-[11px] font-semibold uppercase tracking-wide leading-tight"
-                style={{ color: "var(--rtm-text-muted)" }}
+                className="text-[11px] font-semibold uppercase tracking-wide leading-tight"style={{ color: "var(--rtm-text-muted)"}}
               >
                 {card.label}
               </span>
               <span
-                className="text-3xl font-bold mt-1"
-                style={{ color: card.color }}
+                className="text-3xl font-bold mt-1"style={{ color: card.color }}
               >
                 {card.count}
               </span>
@@ -657,34 +626,30 @@ export default function BillingTasksPage() {
         </div>
       </SectionWrapper>
 
-      {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* ── Task Action Panel (Global) ─────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  Task Action Panel (Global)  */}
+      {/*  */}
       <SectionWrapper
-        title="Task Action Panel"
-        description="Global billing task actions — create, assign, escalate, and follow up"
-      >
+        title="Task Action Panel"description="Global billing task actions — create, assign, escalate, and follow up">
         <div className="flex flex-wrap gap-2">
-          <ActionBtn variant="primary"   label="Create Task"           onClick={() => log("Create Task triggered")} />
-          <ActionBtn variant="secondary" label="Assign Task"           onClick={() => log("Assign Task triggered")} />
-          <ActionBtn variant="secondary" label="Change Status"         onClick={() => log("Change Status triggered")} />
-          <ActionBtn variant="secondary" label="Add Note"              onClick={() => log("Add Note triggered")} />
-          <ActionBtn variant="secondary" label="Add Comment"           onClick={() => log("Add Comment triggered")} />
-          <ActionBtn variant="secondary" label="Send Internal Note"    onClick={() => log("Send Internal Note triggered")} />
-          <ActionBtn variant="secondary" label="Escalate"              onClick={() => log("Escalate triggered")} />
-          <ActionBtn variant="secondary" label="Mark Complete"         onClick={() => log("Mark Complete triggered")} />
-          <ActionBtn variant="secondary" label="Request Sales Update"  onClick={() => log("Request Sales Update triggered")} />
-          <ActionBtn variant="secondary" label="Request AM Update"     onClick={() => log("Request AM Update triggered")} />
-          <ActionBtn variant="secondary" label="Create Follow-up"      onClick={() => log("Create Follow-up triggered")} />
+          <ActionBtn variant="primary"label="Create Task"onClick={() => log("Create Task triggered")} />
+          <ActionBtn variant="secondary"label="Assign Task"onClick={() => log("Assign Task triggered")} />
+          <ActionBtn variant="secondary"label="Change Status"onClick={() => log("Change Status triggered")} />
+          <ActionBtn variant="secondary"label="Add Note"onClick={() => log("Add Note triggered")} />
+          <ActionBtn variant="secondary"label="Add Comment"onClick={() => log("Add Comment triggered")} />
+          <ActionBtn variant="secondary"label="Send Internal Note"onClick={() => log("Send Internal Note triggered")} />
+          <ActionBtn variant="secondary"label="Escalate"onClick={() => log("Escalate triggered")} />
+          <ActionBtn variant="secondary"label="Mark Complete"onClick={() => log("Mark Complete triggered")} />
+          <ActionBtn variant="secondary"label="Request Sales Update"onClick={() => log("Request Sales Update triggered")} />
+          <ActionBtn variant="secondary"label="Request AM Update"onClick={() => log("Request AM Update triggered")} />
+          <ActionBtn variant="secondary"label="Create Follow-up"onClick={() => log("Create Follow-up triggered")} />
         </div>
         {actionLog.length > 0 && (
           <div
-            className="mt-4 rounded-lg border p-3"
-            style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)" }}
+            className="mt-4 rounded-lg border p-3"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)"}}
           >
             <p
-              className="text-xs font-bold uppercase tracking-wide mb-2"
-              style={{ color: "var(--rtm-text-muted)" }}
+              className="text-xs font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}
             >
               Action Log
             </p>
@@ -692,8 +657,7 @@ export default function BillingTasksPage() {
               {actionLog.map((entry, i) => (
                 <p
                   key={i}
-                  className="text-xs font-mono"
-                  style={{ color: "var(--rtm-text-secondary)" }}
+                  className="text-xs font-mono"style={{ color: "var(--rtm-text-secondary)"}}
                 >
                   {entry}
                 </p>
@@ -703,23 +667,20 @@ export default function BillingTasksPage() {
         )}
       </SectionWrapper>
 
-      {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* ── Billing Task Queue ─────────────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  Billing Task Queue  */}
+      {/*  */}
       <SectionWrapper
-        title="Billing Task Queue"
-        description="All billing tasks — click a row to open Billing Task Detail, Notes, and task-level actions"
-      >
+        title="Billing Task Queue"description="All billing tasks — click a row to open Billing Task Detail, Notes, and task-level actions">
         {/* Status filter */}
         <div className="flex flex-wrap gap-1.5 mb-4">
           {(["All", ...STATUSES] as (TaskStatus | "All")[]).map((s) => (
             <button
               key={s}
               onClick={() => setFilterStatus(s)}
-              className="text-xs font-semibold px-3 py-1 rounded-full border transition-colors"
-              style={
+              className="text-xs font-semibold px-3 py-1 rounded-full border transition-colors"style={
                 filterStatus === s
-                  ? { background: "#1B4FD8", color: "#fff", borderColor: "#1B4FD8" }
+                  ? { background: "#1B4FD8", color: "#fff", borderColor: "#1B4FD8"}
                   : {
                       background: "var(--rtm-surface)",
                       color: "var(--rtm-text-muted)",
@@ -734,8 +695,7 @@ export default function BillingTasksPage() {
 
         {/* Task table */}
         <div
-          className="overflow-x-auto rounded-lg border"
-          style={{ borderColor: "var(--rtm-border-light)" }}
+          className="overflow-x-auto rounded-lg border"style={{ borderColor: "var(--rtm-border-light)"}}
         >
           <table className="min-w-full">
             <thead>
@@ -763,17 +723,14 @@ export default function BillingTasksPage() {
                       setSelected(isSelected ? null : t);
                       setActiveDetailTab("detail");
                     }}
-                    className="cursor-pointer transition-colors"
-                    style={{
+                    className="cursor-pointer transition-colors"style={{
                       background: isSelected
-                        ? "#EFF6FF"
-                        : "var(--rtm-bg)",
+                        ? "#EFF6FF": "var(--rtm-bg)",
                     }}
                   >
                     <Td>
                       <span
-                        className="font-semibold"
-                        style={{ color: "var(--rtm-text-primary)" }}
+                        className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}
                       >
                         {t.task}
                       </span>
@@ -784,8 +741,7 @@ export default function BillingTasksPage() {
                     <Td muted>{t.dueDate}</Td>
                     <Td>
                       <span
-                        className="text-xs font-semibold px-2.5 py-1 rounded-full border"
-                        style={{
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full border"style={{
                           background: pc.bg,
                           color: pc.color,
                           borderColor: pc.border,
@@ -798,8 +754,7 @@ export default function BillingTasksPage() {
                       <StatusBadge
                         variant={statusVariant(t.status)}
                         label={t.status}
-                        size="sm"
-                      />
+                        size="sm"/>
                     </Td>
                     <Td muted>{t.relatedModule}</Td>
                     <Td muted>
@@ -816,13 +771,12 @@ export default function BillingTasksPage() {
         </div>
       </SectionWrapper>
 
-      {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* ── Billing Task Detail + Notes & Comments (inline panel) ─────────── */}
-      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  Billing Task Detail + Notes & Comments (inline panel)  */}
+      {/*  */}
       {selected && (
         <div
-          className="rounded-xl border p-6 space-y-6"
-          style={{
+          className="rounded-xl border p-6 space-y-6"style={{
             background: "var(--rtm-surface)",
             borderColor: "var(--rtm-border)",
           }}
@@ -831,33 +785,30 @@ export default function BillingTasksPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2
-                className="text-base font-bold"
-                style={{ color: "var(--rtm-text-primary)" }}
+                className="text-base font-bold"style={{ color: "var(--rtm-text-primary)"}}
               >
                 {selected.task}
               </h2>
               <p
-                className="text-xs mt-0.5"
-                style={{ color: "var(--rtm-text-muted)" }}
+                className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}
               >
-                {selected.client} · {selected.billingArea} · Due{" "}
+                {selected.client} · {selected.billingArea} · Due{""}
                 {selected.dueDate} · Assigned: {selected.assignedUser}
               </p>
             </div>
             <button
               onClick={() => setSelected(null)}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border shrink-0"
-              style={{
+              className="text-xs font-semibold px-3 py-1.5 rounded-lg border shrink-0"style={{
                 color: "var(--rtm-text-muted)",
                 borderColor: "var(--rtm-border)",
               }}
             >
-              ✕ Close
+               Close
             </button>
           </div>
 
           {/* Tab bar */}
-          <div className="flex gap-1 border-b" style={{ borderColor: "var(--rtm-border-light)" }}>
+          <div className="flex gap-1 border-b"style={{ borderColor: "var(--rtm-border-light)"}}>
             {(["detail", "notes", "history"] as const).map((tab) => {
               const labels: Record<string, string> = {
                 detail: "Billing Task Detail",
@@ -868,8 +819,7 @@ export default function BillingTasksPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveDetailTab(tab)}
-                  className="text-xs font-semibold px-4 py-2 rounded-t-lg border-b-2 transition-colors"
-                  style={
+                  className="text-xs font-semibold px-4 py-2 rounded-t-lg border-b-2 transition-colors"style={
                     activeDetailTab === tab
                       ? {
                           color: "#1B4FD8",
@@ -889,8 +839,8 @@ export default function BillingTasksPage() {
             })}
           </div>
 
-          {/* ── Tab: Billing Task Detail ── */}
-          {activeDetailTab === "detail" && (
+          {/*  Tab: Billing Task Detail  */}
+          {activeDetailTab === "detail"&& (
             <div className="space-y-5">
               {/* Detail grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -904,27 +854,24 @@ export default function BillingTasksPage() {
                   { label: "Due Date",           value: selected.dueDate },
                   { label: "Priority",           value: selected.priority },
                   { label: "Status",             value: selected.status },
-                  { label: "Blocker",            value: selected.blocker || "None" },
+                  { label: "Blocker",            value: selected.blocker || "None"},
                   { label: "Source Module",      value: selected.source },
                   { label: "Next Action",        value: selected.nextAction },
                 ].map(({ label, value }) => (
                   <div
                     key={label}
-                    className="rounded-lg border p-3"
-                    style={{
+                    className="rounded-lg border p-3"style={{
                       background: "var(--rtm-bg)",
                       borderColor: "var(--rtm-border-light)",
                     }}
                   >
                     <p
-                      className="text-[10px] font-bold uppercase tracking-widest mb-1"
-                      style={{ color: "var(--rtm-text-muted)" }}
+                      className="text-[10px] font-bold uppercase tracking-widest mb-1"style={{ color: "var(--rtm-text-muted)"}}
                     >
                       {label}
                     </p>
                     <p
-                      className="text-sm font-medium leading-snug"
-                      style={{ color: "var(--rtm-text-primary)" }}
+                      className="text-sm font-medium leading-snug"style={{ color: "var(--rtm-text-primary)"}}
                     >
                       {value}
                     </p>
@@ -935,8 +882,7 @@ export default function BillingTasksPage() {
               {/* Change Status */}
               <div>
                 <p
-                  className="text-xs font-bold uppercase tracking-wide mb-2"
-                  style={{ color: "var(--rtm-text-muted)" }}
+                  className="text-xs font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}
                 >
                   Change Status
                 </p>
@@ -950,11 +896,10 @@ export default function BillingTasksPage() {
                         key={s}
                         onClick={() =>
                           log(
-                            `Status changed to "${s}" for task: ${selected.task}`
+                            `Status changed to "${s}"for task: ${selected.task}`
                           )
                         }
-                        className="text-xs font-semibold px-3 py-1 rounded-full border transition-colors"
-                        style={
+                        className="text-xs font-semibold px-3 py-1 rounded-full border transition-colors"style={
                           isActive
                             ? {
                                 background: c.color,
@@ -978,66 +923,47 @@ export default function BillingTasksPage() {
               {/* Task-level actions */}
               <div>
                 <p
-                  className="text-xs font-bold uppercase tracking-wide mb-2"
-                  style={{ color: "var(--rtm-text-muted)" }}
+                  className="text-xs font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}
                 >
                   Task Actions
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <ActionBtn
-                    variant="primary"
-                    label="Assign Task"
-                    onClick={() => log(`Assigned task: ${selected.task}`)}
+                    variant="primary"label="Assign Task"onClick={() => log(`Assigned task: ${selected.task}`)}
                   />
                   <ActionBtn
-                    variant="secondary"
-                    label="Add Comment"
-                    onClick={() => log(`Comment added to: ${selected.task}`)}
+                    variant="secondary"label="Add Comment"onClick={() => log(`Comment added to: ${selected.task}`)}
                   />
                   <ActionBtn
-                    variant="secondary"
-                    label="Send Internal Note"
-                    onClick={() =>
+                    variant="secondary"label="Send Internal Note"onClick={() =>
                       log(`Internal note sent: ${selected.task}`)
                     }
                   />
                   <ActionBtn
-                    variant="secondary"
-                    label="Escalate"
-                    onClick={() => log(`Escalated task: ${selected.task}`)}
+                    variant="secondary"label="Escalate"onClick={() => log(`Escalated task: ${selected.task}`)}
                   />
                   <ActionBtn
-                    variant="secondary"
-                    label="Mark Complete"
-                    onClick={() =>
+                    variant="secondary"label="Mark Complete"onClick={() =>
                       log(`Marked complete: ${selected.task}`)
                     }
                   />
                   <ActionBtn
-                    variant="secondary"
-                    label="Request Sales Update"
-                    onClick={() =>
+                    variant="secondary"label="Request Sales Update"onClick={() =>
                       log(`Sales update requested: ${selected.task}`)
                     }
                   />
                   <ActionBtn
-                    variant="secondary"
-                    label="Request AM Update"
-                    onClick={() =>
+                    variant="secondary"label="Request AM Update"onClick={() =>
                       log(`AM update requested: ${selected.task}`)
                     }
                   />
                   <ActionBtn
-                    variant="secondary"
-                    label="Create Follow-up"
-                    onClick={() =>
+                    variant="secondary"label="Create Follow-up"onClick={() =>
                       log(`Follow-up created: ${selected.task}`)
                     }
                   />
                   <ActionBtn
-                    variant="danger"
-                    label="Cancel Task"
-                    onClick={() => log(`Cancelled task: ${selected.task}`)}
+                    variant="danger"label="Cancel Task"onClick={() => log(`Cancelled task: ${selected.task}`)}
                   />
                 </div>
               </div>
@@ -1045,27 +971,22 @@ export default function BillingTasksPage() {
               {/* Add note inline */}
               <div className="space-y-2">
                 <p
-                  className="text-xs font-bold uppercase tracking-wide"
-                  style={{ color: "var(--rtm-text-muted)" }}
+                  className="text-xs font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}
                 >
                   Add Note
                 </p>
                 <textarea
                   rows={2}
-                  placeholder="Add a note to this task…"
-                  value={noteText}
+                  placeholder="Add a note to this task…"value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
-                  className="w-full text-sm px-3 py-2 rounded-lg border resize-none"
-                  style={{
+                  className="w-full text-sm px-3 py-2 rounded-lg border resize-none"style={{
                     background: "var(--rtm-bg)",
                     borderColor: "var(--rtm-border)",
                     color: "var(--rtm-text-primary)",
                   }}
                 />
                 <ActionBtn
-                  variant="primary"
-                  label="Save Note"
-                  onClick={() => {
+                  variant="primary"label="Save Note"onClick={() => {
                     log(`Note saved: "${noteText}"`);
                     setNoteText("");
                   }}
@@ -1074,8 +995,8 @@ export default function BillingTasksPage() {
             </div>
           )}
 
-          {/* ── Tab: Notes & Comments ── */}
-          {activeDetailTab === "notes" && (
+          {/*  Tab: Notes & Comments  */}
+          {activeDetailTab === "notes"&& (
             <div className="space-y-5">
               {[
                 {
@@ -1102,15 +1023,13 @@ export default function BillingTasksPage() {
               ].map(({ heading, items, color, bg, border }) => (
                 <div key={heading}>
                   <p
-                    className="text-xs font-bold uppercase tracking-wide mb-2"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-xs font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {heading}
                   </p>
                   {items.length === 0 ? (
                     <p
-                      className="text-xs italic"
-                      style={{ color: "var(--rtm-text-muted)" }}
+                      className="text-xs italic"style={{ color: "var(--rtm-text-muted)"}}
                     >
                       No {heading.toLowerCase()} recorded.
                     </p>
@@ -1119,8 +1038,7 @@ export default function BillingTasksPage() {
                       {items.map((note, i) => (
                         <div
                           key={i}
-                          className="rounded-lg border px-4 py-2.5 text-sm"
-                          style={{ background: bg, borderColor: border, color }}
+                          className="rounded-lg border px-4 py-2.5 text-sm"style={{ background: bg, borderColor: border, color }}
                         >
                           {note}
                         </div>
@@ -1132,8 +1050,8 @@ export default function BillingTasksPage() {
             </div>
           )}
 
-          {/* ── Tab: Activity History ── */}
-          {activeDetailTab === "history" && (
+          {/*  Tab: Activity History  */}
+          {activeDetailTab === "history"&& (
             <div className="space-y-5">
               {[
                 { heading: "Activity History",       items: selected.activityHistory },
@@ -1141,15 +1059,13 @@ export default function BillingTasksPage() {
               ].map(({ heading, items }) => (
                 <div key={heading}>
                   <p
-                    className="text-xs font-bold uppercase tracking-wide mb-2"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-xs font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {heading}
                   </p>
                   {items.length === 0 ? (
                     <p
-                      className="text-xs italic"
-                      style={{ color: "var(--rtm-text-muted)" }}
+                      className="text-xs italic"style={{ color: "var(--rtm-text-muted)"}}
                     >
                       No history recorded.
                     </p>
@@ -1158,12 +1074,10 @@ export default function BillingTasksPage() {
                       {items.map((entry, i) => (
                         <div
                           key={i}
-                          className="flex items-start gap-2 text-sm"
-                          style={{ color: "var(--rtm-text-secondary)" }}
+                          className="flex items-start gap-2 text-sm"style={{ color: "var(--rtm-text-secondary)"}}
                         >
                           <span
-                            className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0"
-                            style={{ background: "var(--rtm-text-muted)" }}
+                            className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0"style={{ background: "var(--rtm-text-muted)"}}
                           />
                           {entry}
                         </div>
@@ -1177,8 +1091,7 @@ export default function BillingTasksPage() {
               {actionLog.length > 0 && (
                 <div>
                   <p
-                    className="text-xs font-bold uppercase tracking-wide mb-2"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-xs font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     Session Action Log
                   </p>
@@ -1186,8 +1099,7 @@ export default function BillingTasksPage() {
                     {actionLog.map((entry, i) => (
                       <p
                         key={i}
-                        className="text-xs font-mono"
-                        style={{ color: "var(--rtm-text-secondary)" }}
+                        className="text-xs font-mono"style={{ color: "var(--rtm-text-secondary)"}}
                       >
                         {entry}
                       </p>
@@ -1200,43 +1112,36 @@ export default function BillingTasksPage() {
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* ── Cross-Module Task Sources ──────────────────────────────────────── */}
-      {/* ══════════════════════════════════════════════════════════════════════ */}
+      {/*  */}
+      {/*  Cross-Module Task Sources  */}
+      {/*  */}
       <SectionWrapper
-        title="Cross-Module Task Sources"
-        description="Billing tasks created from other modules — Sales Handoff, Invoices, Payments, Activation, Cancellations, Offboarding, Renewals, and Collections"
-      >
+        title="Cross-Module Task Sources"description="Billing tasks created from other modules — Sales Handoff, Invoices, Payments, Activation, Cancellations, Offboarding, Renewals, and Collections">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {crossModuleData.map((entry) => (
             <div
               key={entry.source}
-              className="rounded-xl border p-4 space-y-2"
-              style={{ background: entry.bg, borderColor: entry.border }}
+              className="rounded-xl border p-4 space-y-2"style={{ background: entry.bg, borderColor: entry.border }}
             >
               <div className="flex items-center justify-between">
                 <p
-                  className="text-xs font-bold uppercase tracking-wide"
-                  style={{ color: entry.color }}
+                  className="text-xs font-bold uppercase tracking-wide"style={{ color: entry.color }}
                 >
                   {entry.source}
                 </p>
                 <span
-                  className="text-lg font-bold"
-                  style={{ color: entry.color }}
+                  className="text-lg font-bold"style={{ color: entry.color }}
                 >
                   {entry.count}
                 </span>
               </div>
               <p
-                className="text-xs leading-relaxed"
-                style={{ color: "var(--rtm-text-secondary)" }}
+                className="text-xs leading-relaxed"style={{ color: "var(--rtm-text-secondary)"}}
               >
                 {entry.description}
               </p>
               <p
-                className="text-[11px] font-medium"
-                style={{ color: "var(--rtm-text-muted)" }}
+                className="text-[11px] font-medium"style={{ color: "var(--rtm-text-muted)"}}
               >
                 Most recent: {entry.recent}
               </p>
@@ -1245,24 +1150,19 @@ export default function BillingTasksPage() {
         </div>
       </SectionWrapper>
 
-      {/* ── Footer nav ── */}
+      {/*  Footer nav  */}
       <div className="flex gap-2 flex-wrap">
         <Link
           href={workspace.dashboardRoute}
-          className="rtm-btn-secondary text-sm inline-flex items-center gap-1"
-        >
+          className="rtm-btn-secondary text-sm inline-flex items-center gap-1">
           ← Dashboard
         </Link>
         <Link
-          href="/billing/invoices"
-          className="rtm-btn-secondary text-sm inline-flex items-center gap-1"
-        >
+          href="/billing/invoices"className="rtm-btn-secondary text-sm inline-flex items-center gap-1">
           Invoices →
         </Link>
         <Link
-          href="/billing/client-portfolio"
-          className="rtm-btn-primary text-sm inline-flex items-center gap-1"
-        >
+          href="/billing/client-portfolio"className="rtm-btn-primary text-sm inline-flex items-center gap-1">
           Client Portfolio →
         </Link>
       </div>

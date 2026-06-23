@@ -59,12 +59,12 @@ const variantStyles: Record<string, string> = {
 
 interface StatusBadgeProps {
   value: BadgeVariant | string;
-  size?: "sm" | "md";
+  size?: "sm"| "md";
 }
 
-export function StatusBadge({ value, size = "sm" }: StatusBadgeProps) {
+export function StatusBadge({ value, size = "sm"}: StatusBadgeProps) {
   const style = variantStyles[value] ?? "bg-slate-100 text-slate-600 border-slate-200";
-  const sizeClass = size === "md" ? "px-3 py-1 text-sm" : "px-2.5 py-0.5 text-xs";
+  const sizeClass = size === "md"? "px-3 py-1 text-sm": "px-2.5 py-0.5 text-xs";
   return (
     <span
       className={`inline-flex items-center rounded-full border font-medium whitespace-nowrap ${sizeClass} ${style}`}

@@ -7,9 +7,9 @@ import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("account-management")!;
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+//  Types 
 
-type StatusV = "success" | "warning" | "error" | "info" | "neutral" | "pending";
+type StatusV = "success"| "warning"| "error"| "info"| "neutral"| "pending";
 
 interface CheckinRow {
   id: string;
@@ -22,7 +22,7 @@ interface CheckinRow {
   statusLabel: string;
   health: StatusV;
   healthLabel: string;
-  priority: "High" | "Medium" | "Low";
+  priority: "High"| "Medium"| "Low";
 }
 
 interface NoteSection {
@@ -57,7 +57,7 @@ interface FollowupRow {
   notes: string;
 }
 
-// ── Mock Data ─────────────────────────────────────────────────────────────────
+//  Mock Data 
 
 const scheduleRows: CheckinRow[] = [
   {
@@ -400,54 +400,53 @@ const followupRows: FollowupRow[] = [
 const aiSummaries: Record<string, { points: { icon: string; label: string; detail: string }[] }> = {
   "Apex Roofing": {
     points: [
-      { icon: "📊", label: "Performance Change", detail: "CTR dropped 0.3% MoM — landing page A/B test is live but no winner declared yet. Recommend reviewing test results before the call." },
-      { icon: "⏳", label: "Delayed Tasks", detail: "2 content deliverables originally due May 28 are pending creative approval. Creative team expects delivery by June 6." },
-      { icon: "💳", label: "Billing", detail: "Invoice #4821 is current. Retainer renewal due in 45 days — client has signaled willingness to expand if lead quality improves." },
-      { icon: "⚠️", label: "Client Health Risk", detail: "Lead quality complaints logged twice in the past 60 days. Risk of scope reduction if paid search performance doesn't improve this month." },
-      { icon: "💬", label: "Recommended Talking Points", detail: "1. Share A/B test update and timeline for winner declaration.\n2. Present lead quality breakdown by channel.\n3. Introduce retainer renewal with performance add-on option.\n4. Confirm Q3 campaign strategy direction." },
+      { icon: "", label: "Performance Change", detail: "CTR dropped 0.3% MoM — landing page A/B test is live but no winner declared yet. Recommend reviewing test results before the call."},
+      { icon: "⏳", label: "Delayed Tasks", detail: "2 content deliverables originally due May 28 are pending creative approval. Creative team expects delivery by June 6."},
+      { icon: "", label: "Billing", detail: "Invoice #4821 is current. Retainer renewal due in 45 days — client has signaled willingness to expand if lead quality improves."},
+      { icon: "", label: "Client Health Risk", detail: "Lead quality complaints logged twice in the past 60 days. Risk of scope reduction if paid search performance doesn't improve this month."},
+      { icon: "", label: "Recommended Talking Points", detail: "1. Share A/B test update and timeline for winner declaration.\n2. Present lead quality breakdown by channel.\n3. Introduce retainer renewal with performance add-on option.\n4. Confirm Q3 campaign strategy direction."},
     ],
   },
   "Sunbelt HVAC": {
     points: [
-      { icon: "📊", label: "Performance Change", detail: "Paid traffic down 8% due to budget pause requested by client in May. Organic keywords improving — 6 moved to page 1 this month." },
-      { icon: "⏳", label: "Delayed Tasks", detail: "Seasonal campaign launched 9 days late due to creative bottleneck. Task completion rate this period: 58% (target: 85%)." },
-      { icon: "💳", label: "Billing", detail: "Invoice #4810 is 12 days overdue. Client has not responded to two payment reminders. Payment plan may need to be offered." },
-      { icon: "⚠️", label: "Client Health Risk", detail: "High churn risk. Contract renewal in 30 days. Client expressed dissatisfaction in last two interactions. Senior AM escalation is active." },
-      { icon: "💬", label: "Recommended Talking Points", detail: "1. Acknowledge late campaign launch — take ownership.\n2. Present task completion improvement plan with dates.\n3. Discuss overdue invoice resolution.\n4. Offer retention incentive (e.g., one month fee waiver or free audit).\n5. Reframe organic gains as positive momentum." },
+      { icon: "", label: "Performance Change", detail: "Paid traffic down 8% due to budget pause requested by client in May. Organic keywords improving — 6 moved to page 1 this month."},
+      { icon: "⏳", label: "Delayed Tasks", detail: "Seasonal campaign launched 9 days late due to creative bottleneck. Task completion rate this period: 58% (target: 85%)."},
+      { icon: "", label: "Billing", detail: "Invoice #4810 is 12 days overdue. Client has not responded to two payment reminders. Payment plan may need to be offered."},
+      { icon: "", label: "Client Health Risk", detail: "High churn risk. Contract renewal in 30 days. Client expressed dissatisfaction in last two interactions. Senior AM escalation is active."},
+      { icon: "", label: "Recommended Talking Points", detail: "1. Acknowledge late campaign launch — take ownership.\n2. Present task completion improvement plan with dates.\n3. Discuss overdue invoice resolution.\n4. Offer retention incentive (e.g., one month fee waiver or free audit).\n5. Reframe organic gains as positive momentum."},
     ],
   },
   "Pacific Dental": {
     points: [
-      { icon: "📊", label: "Performance Change", detail: "Strong quarter — website traffic up 24% QoQ, new patient inquiries up 15%. Google Business Profile optimization delivering above-average results." },
-      { icon: "⏳", label: "Delayed Tasks", detail: "No overdue tasks. All content deliverables on schedule. Q2 campaign wrap-up report ready for presentation." },
-      { icon: "💳", label: "Billing", detail: "All invoices paid on time. Auto-pay active. Social media add-on proposal at $1,200/mo is pending client review." },
-      { icon: "⚠️", label: "Client Health Risk", detail: "No active health risks. Client satisfaction is high. Expansion opportunity flagged — social and reputation management." },
-      { icon: "💬", label: "Recommended Talking Points", detail: "1. Present Q2 performance highlights — lead with the wins.\n2. Introduce social media and reputation management proposals.\n3. Preview Q3 content calendar.\n4. Discuss competitor benchmarking report request." },
+      { icon: "", label: "Performance Change", detail: "Strong quarter — website traffic up 24% QoQ, new patient inquiries up 15%. Google Business Profile optimization delivering above-average results."},
+      { icon: "⏳", label: "Delayed Tasks", detail: "No overdue tasks. All content deliverables on schedule. Q2 campaign wrap-up report ready for presentation."},
+      { icon: "", label: "Billing", detail: "All invoices paid on time. Auto-pay active. Social media add-on proposal at $1,200/mo is pending client review."},
+      { icon: "", label: "Client Health Risk", detail: "No active health risks. Client satisfaction is high. Expansion opportunity flagged — social and reputation management."},
+      { icon: "", label: "Recommended Talking Points", detail: "1. Present Q2 performance highlights — lead with the wins.\n2. Introduce social media and reputation management proposals.\n3. Preview Q3 content calendar.\n4. Discuss competitor benchmarking report request."},
     ],
   },
 };
 
-// ── Priority Badge ─────────────────────────────────────────────────────────────
+//  Priority Badge 
 
 const priorityStyles: Record<string, { bg: string; color: string; border: string }> = {
-  High:   { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" },
-  Medium: { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
-  Low:    { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" },
+  High:   { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"},
+  Medium: { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"},
+  Low:    { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0"},
 };
 
-function PriorityBadge({ priority }: { priority: "High" | "Medium" | "Low" }) {
+function PriorityBadge({ priority }: { priority: "High"| "Medium"| "Low"}) {
   const s = priorityStyles[priority];
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border"
-      style={{ background: s.bg, color: s.color, borderColor: s.border }}
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border"style={{ background: s.bg, color: s.color, borderColor: s.border }}
     >
       {priority}
     </span>
   );
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+//  Page 
 
 export default function AccountCheckinsPage() {
   const [selectedClient, setSelectedClient] = useState<string>("Apex Roofing");
@@ -458,113 +457,63 @@ export default function AccountCheckinsPage() {
 
   return (
     <div className="space-y-8">
-      {/* ── Header ── */}
+      {/*  Header  */}
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>
+        <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>
           {workspace.name}
         </p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
           Check-ins
         </h1>
-        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Client communication and follow-up workspace.
         </p>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           1. Check-in KPI Cards
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       {/* Check-in KPI Cards */}
       <section>
-        <h2 className="text-sm font-semibold mb-3" style={{ color: "var(--rtm-text-secondary)" }}>
+        <h2 className="text-sm font-semibold mb-3"style={{ color: "var(--rtm-text-secondary)"}}>
           Check-in KPI Cards
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
           <KpiCard
-            title="Check-ins Due Today"
-            value="3"
-            subtitle="Requires immediate action"
-            trend="neutral"
-            trendValue="1 urgent"
-            trendLabel="flagged high priority"
-            iconBg="#FEF2F2"
-            iconColor="#DC2626"
-            icon={<span className="text-lg">📅</span>}
+            title="Check-ins Due Today"value="3"subtitle="Requires immediate action"trend="neutral"trendValue="1 urgent"trendLabel="flagged high priority"iconBg="#FEF2F2"iconColor="#DC2626"
           />
           <KpiCard
-            title="Upcoming Check-ins"
-            value="8"
-            subtitle="Next 7 days"
-            trend="neutral"
-            trendValue="3 this week"
-            trendLabel="scheduled"
-            iconBg="var(--rtm-blue-xlight)"
-            iconColor="var(--rtm-blue)"
-            icon={<span className="text-lg">🗓️</span>}
+            title="Upcoming Check-ins"value="8"subtitle="Next 7 days"trend="neutral"trendValue="3 this week"trendLabel="scheduled"iconBg="var(--rtm-blue-xlight)"iconColor="var(--rtm-blue)"
           />
           <KpiCard
-            title="Overdue Check-ins"
-            value="2"
-            subtitle="Past scheduled date"
-            trend="down"
-            trendValue="+1"
-            trendLabel="vs last week"
-            iconBg="#FEF2F2"
-            iconColor="#DC2626"
-            icon={<span className="text-lg">⚠️</span>}
+            title="Overdue Check-ins"value="2"subtitle="Past scheduled date"trend="down"trendValue="+1"trendLabel="vs last week"iconBg="#FEF2F2"iconColor="#DC2626"
           />
           <KpiCard
-            title="Completed This Week"
-            value="5"
-            subtitle="Jun 1 – Jun 5"
-            trend="up"
-            trendValue="+2"
-            trendLabel="vs prior week"
-            iconBg="#ECFDF5"
-            iconColor="#059669"
-            icon={<span className="text-lg">✅</span>}
+            title="Completed This Week"value="5"subtitle="Jun 1 – Jun 5"trend="up"trendValue="+2"trendLabel="vs prior week"iconBg="#ECFDF5"iconColor="#059669"
           />
           <KpiCard
-            title="Without Recent Contact"
-            value="4"
-            subtitle="No contact 30+ days"
-            trend="down"
-            trendValue="+1"
-            trendLabel="vs last month"
-            iconBg="#FFFBEB"
-            iconColor="#B45309"
-            icon={<span className="text-lg">🔕</span>}
+            title="Without Recent Contact"value="4"subtitle="No contact 30+ days"trend="down"trendValue="+1"trendLabel="vs last month"iconBg="#FFFBEB"iconColor="#B45309"
           />
           <KpiCard
-            title="At-Risk Needing Check-in"
-            value="3"
-            subtitle="Health score critical/at-risk"
-            trend="down"
-            trendValue="High churn risk"
-            trendLabel="this period"
-            iconBg="#FEF2F2"
-            iconColor="#DC2626"
-            icon={<span className="text-lg">🚨</span>}
+            title="At-Risk Needing Check-in"value="3"subtitle="Health score critical/at-risk"trend="down"trendValue="High churn risk"trendLabel="this period"iconBg="#FEF2F2"iconColor="#DC2626"
           />
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           2. Check-in Schedule Table
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       <SectionWrapper
-        title="Check-in Schedule"
-        description={`${scheduleRows.length} clients · select a row to load notes and AI prep`}
+        title="Check-in Schedule"description={`${scheduleRows.length} clients · select a row to load notes and AI prep`}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+              <tr style={{ borderBottom: "1px solid var(--rtm-border)"}}>
                 {["Client","Account Manager","Last Check-in","Next Check-in","Meeting Type","Status","Client Health","Priority","Action"].map((h) => (
                   <th
                     key={h}
-                    className="text-left text-[11px] font-semibold uppercase tracking-wide pb-2 pr-4 whitespace-nowrap"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-left text-[11px] font-semibold uppercase tracking-wide pb-2 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {h}
                   </th>
@@ -575,44 +524,42 @@ export default function AccountCheckinsPage() {
               {scheduleRows.map((row) => (
                 <tr
                   key={row.id}
-                  className="cursor-pointer transition-colors duration-100"
-                  style={{
+                  className="cursor-pointer transition-colors duration-100"style={{
                     borderBottom: "1px solid var(--rtm-border-light)",
-                    background: selectedClient === row.client ? "var(--rtm-blue-xlight)" : "transparent",
+                    background: selectedClient === row.client ? "var(--rtm-blue-xlight)": "transparent",
                   }}
                   onClick={() => {
                     setSelectedClient(row.client);
                     setActiveNoteTab(0);
                   }}
                 >
-                  <td className="py-3 pr-4 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>
+                  <td className="py-3 pr-4 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>
                     {row.client}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {row.manager}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {row.lastCheckin}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {row.nextCheckin}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {row.meetingType}
                   </td>
                   <td className="py-3 pr-4">
-                    <StatusBadge variant={row.status} label={row.statusLabel} size="sm" />
+                    <StatusBadge variant={row.status} label={row.statusLabel} size="sm"/>
                   </td>
                   <td className="py-3 pr-4">
-                    <StatusBadge variant={row.health} label={row.healthLabel} size="sm" />
+                    <StatusBadge variant={row.health} label={row.healthLabel} size="sm"/>
                   </td>
                   <td className="py-3 pr-4">
                     <PriorityBadge priority={row.priority} />
                   </td>
                   <td className="py-3">
                     <button
-                      className="text-xs font-semibold px-3 py-1 rounded-md border transition-colors"
-                      style={{
+                      className="text-xs font-semibold px-3 py-1 rounded-md border transition-colors"style={{
                         background: "var(--rtm-blue-xlight)",
                         color: "var(--rtm-blue)",
                         borderColor: "var(--rtm-blue-light)",
@@ -633,25 +580,23 @@ export default function AccountCheckinsPage() {
         </div>
       </SectionWrapper>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           3. Check-in Notes Workspace
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       <SectionWrapper
-        title="Check-in Notes Workspace"
-        description={`Viewing: ${selectedClient}`}
+        title="Check-in Notes Workspace"description={`Viewing: ${selectedClient}`}
       >
         {selectedNotes ? (
           <div>
             {/* Tab bar */}
-            <div className="flex flex-wrap gap-1 mb-5 border-b pb-3" style={{ borderColor: "var(--rtm-border)" }}>
+            <div className="flex flex-wrap gap-1 mb-5 border-b pb-3"style={{ borderColor: "var(--rtm-border)"}}>
               {selectedNotes.sections.map((sec, idx) => (
                 <button
                   key={sec.heading}
-                  className="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"
-                  style={
+                  className="px-3 py-1.5 rounded-md text-xs font-semibold transition-colors"style={
                     activeNoteTab === idx
-                      ? { background: workspace.accentColor, color: "#fff" }
-                      : { background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)" }
+                      ? { background: workspace.accentColor, color: "#fff"}
+                      : { background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)"}
                   }
                   onClick={() => setActiveNoteTab(idx)}
                 >
@@ -663,15 +608,13 @@ export default function AccountCheckinsPage() {
             {/* Active note content */}
             {selectedNotes.sections[activeNoteTab] && (
               <div
-                className="rounded-xl p-5 border"
-                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)" }}
+                className="rounded-xl p-5 border"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)"}}
               >
-                <p className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: workspace.accentColor }}>
+                <p className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: workspace.accentColor }}>
                   {selectedNotes.sections[activeNoteTab].heading}
                 </p>
                 <p
-                  className="text-sm whitespace-pre-line leading-relaxed"
-                  style={{ color: "var(--rtm-text-primary)" }}
+                  className="text-sm whitespace-pre-line leading-relaxed"style={{ color: "var(--rtm-text-primary)"}}
                 >
                   {selectedNotes.sections[activeNoteTab].content}
                 </p>
@@ -679,28 +622,26 @@ export default function AccountCheckinsPage() {
             )}
           </div>
         ) : (
-          <div className="text-sm py-6 text-center" style={{ color: "var(--rtm-text-muted)" }}>
+          <div className="text-sm py-6 text-center"style={{ color: "var(--rtm-text-muted)"}}>
             No notes available for <strong>{selectedClient}</strong>. Select a different client from the schedule above.
           </div>
         )}
       </SectionWrapper>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           4. Check-in Action Items
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       <SectionWrapper
-        title="Check-in Action Items"
-        description={`${actionItems.length} open items across ${[...new Set(actionItems.map((a) => a.client))].length} clients`}
+        title="Check-in Action Items"description={`${actionItems.length} open items across ${[...new Set(actionItems.map((a) => a.client))].length} clients`}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+              <tr style={{ borderBottom: "1px solid var(--rtm-border)"}}>
                 {["Action Item","Client","Owner","Department","Due Date","Status"].map((h) => (
                   <th
                     key={h}
-                    className="text-left text-[11px] font-semibold uppercase tracking-wide pb-2 pr-4 whitespace-nowrap"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-left text-[11px] font-semibold uppercase tracking-wide pb-2 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {h}
                   </th>
@@ -709,24 +650,24 @@ export default function AccountCheckinsPage() {
             </thead>
             <tbody>
               {actionItems.map((item) => (
-                <tr key={item.id} style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
-                  <td className="py-3 pr-4 max-w-xs" style={{ color: "var(--rtm-text-primary)" }}>
+                <tr key={item.id} style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
+                  <td className="py-3 pr-4 max-w-xs"style={{ color: "var(--rtm-text-primary)"}}>
                     {item.item}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap font-medium" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap font-medium"style={{ color: "var(--rtm-text-secondary)"}}>
                     {item.client}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {item.owner}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>
                     {item.department}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {item.dueDate}
                   </td>
                   <td className="py-3">
-                    <StatusBadge variant={item.status} label={item.statusLabel} size="sm" />
+                    <StatusBadge variant={item.status} label={item.statusLabel} size="sm"/>
                   </td>
                 </tr>
               ))}
@@ -735,19 +676,17 @@ export default function AccountCheckinsPage() {
         </div>
       </SectionWrapper>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           5. AI Check-in Preparation
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       <SectionWrapper
-        title="AI Check-in Preparation"
-        description={`Smart briefing for ${selectedClient} — generated from account data`}
+        title="AI Check-in Preparation"description={`Smart briefing for ${selectedClient} — generated from account data`}
       >
         <div
-          className="rounded-xl p-4 mb-5 flex items-center gap-3"
-          style={{ background: "var(--rtm-blue-xlight)", borderLeft: `4px solid ${workspace.accentColor}` }}
+          className="rounded-xl p-4 mb-5 flex items-center gap-3"style={{ background: "var(--rtm-blue-xlight)", borderLeft: `4px solid ${workspace.accentColor}` }}
         >
-          <span className="text-xl">🤖</span>
-          <p className="text-xs font-semibold" style={{ color: workspace.accentColor }}>
+          
+          <p className="text-xs font-semibold"style={{ color: workspace.accentColor }}>
             AI Summary for <strong>{selectedClient}</strong> — based on performance data, task history, billing records, and client health signals.
           </p>
         </div>
@@ -756,15 +695,14 @@ export default function AccountCheckinsPage() {
           {aiSummary.points.map((point) => (
             <div
               key={point.label}
-              className="flex gap-4 p-4 rounded-xl border"
-              style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)" }}
+              className="flex gap-4 p-4 rounded-xl border"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)"}}
             >
               <span className="text-2xl flex-shrink-0">{point.icon}</span>
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+                <p className="text-xs font-bold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}>
                   {point.label}
                 </p>
-                <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: "var(--rtm-text-primary)" }}>
+                <p className="text-sm whitespace-pre-line leading-relaxed"style={{ color: "var(--rtm-text-primary)"}}>
                   {point.detail}
                 </p>
               </div>
@@ -772,27 +710,25 @@ export default function AccountCheckinsPage() {
           ))}
         </div>
 
-        <p className="text-[11px] mt-4" style={{ color: "var(--rtm-text-muted)" }}>
-          ⓘ AI summaries are generated from mock data for demonstration purposes. Switch the client context using the schedule table above.
+        <p className="text-[11px] mt-4"style={{ color: "var(--rtm-text-muted)"}}>
+           AI summaries are generated from mock data for demonstration purposes. Switch the client context using the schedule table above.
         </p>
       </SectionWrapper>
 
-      {/* ══════════════════════════════════════════════════════════════════════
+      {/* 
           6. Follow-up Tracker
-      ══════════════════════════════════════════════════════════════════════ */}
+       */}
       <SectionWrapper
-        title="Follow-up Tracker"
-        description={`${followupRows.length} open follow-up items`}
+        title="Follow-up Tracker"description={`${followupRows.length} open follow-up items`}
       >
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+              <tr style={{ borderBottom: "1px solid var(--rtm-border)"}}>
                 {["Client","Follow-up Item","Owner","Due Date","Status","Notes"].map((h) => (
                   <th
                     key={h}
-                    className="text-left text-[11px] font-semibold uppercase tracking-wide pb-2 pr-4 whitespace-nowrap"
-                    style={{ color: "var(--rtm-text-muted)" }}
+                    className="text-left text-[11px] font-semibold uppercase tracking-wide pb-2 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                   >
                     {h}
                   </th>
@@ -801,23 +737,23 @@ export default function AccountCheckinsPage() {
             </thead>
             <tbody>
               {followupRows.map((row) => (
-                <tr key={row.id} style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
-                  <td className="py-3 pr-4 whitespace-nowrap font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                <tr key={row.id} style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
+                  <td className="py-3 pr-4 whitespace-nowrap font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                     {row.client}
                   </td>
-                  <td className="py-3 pr-4 max-w-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 max-w-xs"style={{ color: "var(--rtm-text-secondary)"}}>
                     {row.followupItem}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {row.owner}
                   </td>
-                  <td className="py-3 pr-4 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-3 pr-4 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
                     {row.dueDate}
                   </td>
                   <td className="py-3 pr-4">
-                    <StatusBadge variant={row.status} label={row.statusLabel} size="sm" />
+                    <StatusBadge variant={row.status} label={row.statusLabel} size="sm"/>
                   </td>
-                  <td className="py-3 max-w-xs text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                  <td className="py-3 max-w-xs text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                     {row.notes}
                   </td>
                 </tr>
@@ -827,7 +763,7 @@ export default function AccountCheckinsPage() {
         </div>
       </SectionWrapper>
 
-      {/* ── Footer nav ── */}
+      {/*  Footer nav  */}
       <div className="flex gap-2 pt-2">
         <Link href={workspace.dashboardRoute} className="rtm-btn-secondary text-sm inline-flex items-center gap-1">
           ← Dashboard

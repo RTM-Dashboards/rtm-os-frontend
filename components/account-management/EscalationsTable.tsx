@@ -31,31 +31,28 @@ export function EscalationsTable({ escalations }: EscalationsTableProps) {
     });
   }, [escalations, search, filterStatus, filterPriority]);
 
-  const openCount = escalations.filter((e) => e.status === "Open" || e.status === "Escalated").length;
+  const openCount = escalations.filter((e) => e.status === "Open"|| e.status === "Escalated").length;
 
   return (
     <SectionCard
-      title="Escalations"
-      subtitle="Active client issues requiring attention"
-      badge={openCount > 0 ? `${openCount} open` : "0"}
-      badgeVariant={openCount > 0 ? "danger" : "default"}
+      title="Escalations"subtitle="Active client issues requiring attention"badge={openCount > 0 ? `${openCount} open` : "0"}
+      badgeVariant={openCount > 0 ? "danger": "default"}
     >
       <div className="px-5 py-3 border-b border-slate-100">
         <SearchFilter
           searchValue={search}
           onSearchChange={setSearch}
-          placeholder="Search escalations..."
-          resultCount={filtered.length}
+          placeholder="Search escalations..."resultCount={filtered.length}
           filters={[
             {
               label: "Status",
               value: filterStatus,
               onChange: setFilterStatus,
               options: [
-                { value: "Open", label: "Open" },
-                { value: "In Progress", label: "In Progress" },
-                { value: "Escalated", label: "Escalated" },
-                { value: "Resolved", label: "Resolved" },
+                { value: "Open", label: "Open"},
+                { value: "In Progress", label: "In Progress"},
+                { value: "Escalated", label: "Escalated"},
+                { value: "Resolved", label: "Resolved"},
               ],
             },
             {
@@ -63,10 +60,10 @@ export function EscalationsTable({ escalations }: EscalationsTableProps) {
               value: filterPriority,
               onChange: setFilterPriority,
               options: [
-                { value: "Critical", label: "Critical" },
-                { value: "High", label: "High" },
-                { value: "Medium", label: "Medium" },
-                { value: "Low", label: "Low" },
+                { value: "Critical", label: "Critical"},
+                { value: "High", label: "High"},
+                { value: "Medium", label: "Medium"},
+                { value: "Low", label: "Low"},
               ],
             },
           ]}
@@ -106,7 +103,7 @@ export function EscalationsTable({ escalations }: EscalationsTableProps) {
               </tr>
             )}
             {filtered.map((e) => (
-              <tr key={e.id} className={`hover:bg-slate-50 transition-colors ${e.status === "Open" || e.status === "Escalated" ? "bg-red-50/30" : ""}`}>
+              <tr key={e.id} className={`hover:bg-slate-50 transition-colors ${e.status === "Open"|| e.status === "Escalated"? "bg-red-50/30": ""}`}>
                 <td className="px-5 py-3">
                   <div className="font-medium text-slate-900">{e.issue}</div>
                   <div className="text-xs text-slate-500 mt-0.5 max-w-xs">{e.notes}</div>

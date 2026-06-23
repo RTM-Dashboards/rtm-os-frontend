@@ -3,35 +3,14 @@
 // Route: /operations/workflows
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type WorkflowStatus = "Active" | "Inactive" | "Failed" | "Draft";
+export type WorkflowStatus = "Active"| "Inactive"| "Failed"| "Draft";
 export type WorkflowCategory =
-  | "Activation"
-  | "Project"
-  | "Task"
-  | "Billing"
-  | "Renewal"
-  | "Expansion"
-  | "Cancellation"
-  | "Offboarding"
-  | "Escalation"
-  | "Notification"
-  | "Custom";
+  | "Activation"| "Project"| "Task"| "Billing"| "Renewal"| "Expansion"| "Cancellation"| "Offboarding"| "Escalation"| "Notification"| "Custom";
 
 export type TriggerType =
-  | "Proposal Accepted"
-  | "Contract Signed"
-  | "Invoice Paid"
-  | "Project Created"
-  | "Task Overdue"
-  | "Project Delayed"
-  | "Client Health Changed"
-  | "Renewal Window Reached"
-  | "Cancellation Requested"
-  | "Offboarding Started"
-  | "Manual Trigger"
-  | "Custom Trigger";
+  | "Proposal Accepted"| "Contract Signed"| "Invoice Paid"| "Project Created"| "Task Overdue"| "Project Delayed"| "Client Health Changed"| "Renewal Window Reached"| "Cancellation Requested"| "Offboarding Started"| "Manual Trigger"| "Custom Trigger";
 
-export type ExecutionResult = "Success" | "Failed" | "Partial" | "Skipped";
+export type ExecutionResult = "Success"| "Failed"| "Partial"| "Skipped";
 
 export interface Workflow {
   id: string;
@@ -78,11 +57,11 @@ export interface WorkflowTemplate {
 
 export interface AIRecommendation {
   id: string;
-  type: "Bottleneck" | "Opportunity" | "Improvement" | "Suggestion";
+  type: "Bottleneck"| "Opportunity"| "Improvement"| "Suggestion";
   title: string;
   description: string;
-  impact: "High" | "Medium" | "Low";
-  effort: "High" | "Medium" | "Low";
+  impact: "High"| "Medium"| "Low";
+  effort: "High"| "Medium"| "Low";
   category: WorkflowCategory;
 }
 

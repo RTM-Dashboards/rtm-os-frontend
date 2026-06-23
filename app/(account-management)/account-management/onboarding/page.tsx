@@ -7,7 +7,7 @@ import {
   type OnboardingStatus,
 } from "@/lib/account-management/am-client-success-data";
 
-// ── Badge helpers ─────────────────────────────────────────────────────────────
+//  Badge helpers 
 
 const ONBOARDING_STATUS_COLORS: Record<OnboardingStatus, string> = {
   Pending: "bg-slate-100 text-slate-600 border border-slate-200",
@@ -72,18 +72,15 @@ function PillBadge({ label, color }: { label: string; color?: string }) {
   );
 }
 
-// ── Progress bar ──────────────────────────────────────────────────────────────
+//  Progress bar 
 
 function ProgressBar({ completed, total }: { completed: number; total: number }) {
   const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
   const barColor =
     pct === 100
-      ? "bg-green-500"
-      : pct >= 60
-      ? "bg-blue-500"
-      : pct >= 30
-      ? "bg-amber-400"
-      : "bg-slate-300";
+      ? "bg-green-500": pct >= 60
+      ? "bg-blue-500": pct >= 30
+      ? "bg-amber-400": "bg-slate-300";
 
   return (
     <div className="flex items-center gap-2 min-w-[100px]">
@@ -100,7 +97,7 @@ function ProgressBar({ completed, total }: { completed: number; total: number })
   );
 }
 
-// ── KPI card ──────────────────────────────────────────────────────────────────
+//  KPI card 
 
 function KpiCard({
   label,
@@ -121,7 +118,7 @@ function KpiCard({
   );
 }
 
-// ── All statuses ──────────────────────────────────────────────────────────────
+//  All statuses 
 
 const ALL_STATUSES: OnboardingStatus[] = [
   "Pending",
@@ -131,10 +128,10 @@ const ALL_STATUSES: OnboardingStatus[] = [
   "Completed",
 ];
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+//  Main page 
 
 export default function OnboardingCenterPage() {
-  const [activeFilter, setActiveFilter] = useState<"All" | OnboardingStatus>("All");
+  const [activeFilter, setActiveFilter] = useState<"All"| OnboardingStatus>("All");
 
   const records = ONBOARDING_RECORDS;
 
@@ -153,8 +150,7 @@ export default function OnboardingCenterPage() {
 
   // Filtered table rows
   const filtered =
-    activeFilter === "All"
-      ? records
+    activeFilter === "All"? records
       : records.filter((r) => r.onboardingStatus === activeFilter);
 
   // Blockers summary
@@ -164,7 +160,7 @@ export default function OnboardingCenterPage() {
     <div className="min-h-screen bg-white p-6">
       <div className="max-w-[1400px] mx-auto space-y-6">
 
-        {/* ── Header ── */}
+        {/*  Header  */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Onboarding Center</h1>
@@ -177,36 +173,33 @@ export default function OnboardingCenterPage() {
           </div>
         </div>
 
-        {/* ── KPI Row ── */}
+        {/*  KPI Row  */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <KpiCard label="Total" value={total} accent="text-slate-800" />
-          <KpiCard label="In Progress" value={kpiCounts["In Progress"]} accent="text-blue-600" />
-          <KpiCard label="Waiting On Client" value={kpiCounts["Waiting On Client"]} accent="text-amber-600" />
-          <KpiCard label="Ready To Launch" value={kpiCounts["Ready To Launch"]} accent="text-teal-600" />
-          <KpiCard label="Completed" value={kpiCounts["Completed"]} accent="text-green-600" />
-          <KpiCard label="Pending" value={kpiCounts["Pending"]} accent="text-slate-500" />
+          <KpiCard label="Total"value={total} accent="text-slate-800"/>
+          <KpiCard label="In Progress"value={kpiCounts["In Progress"]} accent="text-blue-600"/>
+          <KpiCard label="Waiting On Client"value={kpiCounts["Waiting On Client"]} accent="text-amber-600"/>
+          <KpiCard label="Ready To Launch"value={kpiCounts["Ready To Launch"]} accent="text-teal-600"/>
+          <KpiCard label="Completed"value={kpiCounts["Completed"]} accent="text-green-600"/>
+          <KpiCard label="Pending"value={kpiCounts["Pending"]} accent="text-slate-500"/>
         </div>
 
-        {/* ── Status Filter Tabs ── */}
+        {/*  Status Filter Tabs  */}
         <div className="flex flex-wrap gap-2">
           {(["All", ...ALL_STATUSES] as const).map((s) => {
             const isActive = activeFilter === s;
-            const count = s === "All" ? total : kpiCounts[s];
+            const count = s === "All"? total : kpiCounts[s];
             return (
               <button
                 key={s}
                 onClick={() => setActiveFilter(s as typeof activeFilter)}
                 className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                   isActive
-                    ? "bg-slate-800 text-white border-slate-800 shadow-sm"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                }`}
+                    ? "bg-slate-800 text-white border-slate-800 shadow-sm": "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"}`}
               >
                 {s}
                 <span
                   className={`text-xs rounded-full px-1.5 py-0.5 font-semibold ${
-                    isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"
-                  }`}
+                    isActive ? "bg-white/20 text-white": "bg-slate-100 text-slate-500"}`}
                 >
                   {count}
                 </span>
@@ -215,7 +208,7 @@ export default function OnboardingCenterPage() {
           })}
         </div>
 
-        {/* ── Main Table ── */}
+        {/*  Main Table  */}
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -264,8 +257,7 @@ export default function OnboardingCenterPage() {
                   filtered.map((record) => (
                     <tr
                       key={record.id}
-                      className="hover:bg-slate-50/60 transition-colors"
-                    >
+                      className="hover:bg-slate-50/60 transition-colors">
                       {/* Client */}
                       <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
                         {record.client}
@@ -283,8 +275,7 @@ export default function OnboardingCenterPage() {
                             <PillBadge
                               key={svc}
                               label={svc}
-                              color="bg-violet-50 text-violet-700 border-violet-200"
-                            />
+                              color="bg-violet-50 text-violet-700 border-violet-200"/>
                           ))}
                         </div>
                       </td>
@@ -296,8 +287,7 @@ export default function OnboardingCenterPage() {
                             <PillBadge
                               key={dept}
                               label={dept}
-                              color="bg-sky-50 text-sky-700 border-sky-200"
-                            />
+                              color="bg-sky-50 text-sky-700 border-sky-200"/>
                           ))}
                         </div>
                       </td>
@@ -322,7 +312,7 @@ export default function OnboardingCenterPage() {
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-semibold flex-shrink-0">
                             {record.assignedAM
-                              .split(" ")
+                              .split("")
                               .map((n) => n[0])
                               .join("")
                               .slice(0, 2)}
@@ -348,8 +338,7 @@ export default function OnboardingCenterPage() {
                             {record.blockers.map((blocker, i) => (
                               <div
                                 key={i}
-                                className="flex items-start gap-1.5 text-xs text-red-600"
-                              >
+                                className="flex items-start gap-1.5 text-xs text-red-600">
                                 <span className="mt-0.5 flex-shrink-0">⚠</span>
                                 <span>{blocker}</span>
                               </div>
@@ -365,7 +354,7 @@ export default function OnboardingCenterPage() {
           </div>
         </div>
 
-        {/* ── Blockers Summary ── */}
+        {/*  Blockers Summary  */}
         {withBlockers.length > 0 && (
           <div className="bg-white border border-red-200 rounded-xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-red-100 bg-red-50 flex items-center gap-3">
@@ -373,7 +362,7 @@ export default function OnboardingCenterPage() {
               <div>
                 <h2 className="text-sm font-semibold text-red-800">Blockers Summary</h2>
                 <p className="text-xs text-red-500 mt-0.5">
-                  {withBlockers.length} onboarding{withBlockers.length !== 1 ? "s" : ""} with active blockers requiring attention
+                  {withBlockers.length} onboarding{withBlockers.length !== 1 ? "s": ""} with active blockers requiring attention
                 </p>
               </div>
             </div>
@@ -397,8 +386,7 @@ export default function OnboardingCenterPage() {
                       {record.blockers.map((blocker, i) => (
                         <li
                           key={i}
-                          className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2"
-                        >
+                          className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                           <span className="flex-shrink-0 mt-0.5 text-red-400">⚠</span>
                           {blocker}
                         </li>

@@ -14,7 +14,7 @@ export default function WorkspaceShell({ workspace, children }: WorkspaceShellPr
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
+    <div className="flex h-screen overflow-hidden"style={{ background: "var(--background)"}}>
       <WorkspaceSidebar
         workspace={workspace}
         open={sidebarOpen}

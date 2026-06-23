@@ -1,36 +1,18 @@
 // ── Activation & Handoff Engine Types ────────────────────────────────────────
 
 export type ActivationStatus =
-  | "Pending Contract"
-  | "Pending Payment"
-  | "Pending Assignment"
-  | "Ready For Launch"
-  | "Launching"
-  | "Active"
-  | "On Hold";
+  | "Pending Contract"| "Pending Payment"| "Pending Assignment"| "Ready For Launch"| "Launching"| "Active"| "On Hold";
 
 export type ServiceType =
-  | "SEO"
-  | "PPC"
-  | "GBP"
-  | "Hosting"
-  | "Web Development"
-  | "AI Automation";
+  | "SEO"| "PPC"| "GBP"| "Hosting"| "Web Development"| "AI Automation";
 
 export type DepartmentType =
-  | "SEO"
-  | "Paid Advertising"
-  | "GBP"
-  | "IT / Hosting"
-  | "Web Development"
-  | "AI Automation"
-  | "Content"
-  | "Account Management";
+  | "SEO"| "Paid Advertising"| "GBP"| "IT / Hosting"| "Web Development"| "AI Automation"| "Content"| "Account Management";
 
-export type ContractStatus = "Pending" | "Signed" | "Expired";
-export type InvoiceStatus = "Not Sent" | "Sent" | "Overdue" | "Paid";
-export type PaymentStatus = "Awaiting" | "Partial" | "Confirmed" | "Failed";
-export type LaunchStatus = "Upcoming" | "Launching" | "Blocked" | "Delayed" | "Onboarding" | "Active";
+export type ContractStatus = "Pending"| "Signed"| "Expired";
+export type InvoiceStatus = "Not Sent"| "Sent"| "Overdue"| "Paid";
+export type PaymentStatus = "Awaiting"| "Partial"| "Confirmed"| "Failed";
+export type LaunchStatus = "Upcoming"| "Launching"| "Blocked"| "Delayed"| "Onboarding"| "Active";
 
 export interface ChecklistItem {
   key: string;

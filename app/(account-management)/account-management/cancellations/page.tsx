@@ -39,63 +39,63 @@ function scoreColor(score: number): string {
 
 function riskStyle(level: RiskLevel) {
   switch (level) {
-    case "Low":      return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
-    case "Medium":   return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" };
-    case "High":     return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" };
-    case "Critical": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
+    case "Low":      return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
+    case "Medium":   return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
+    case "High":     return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
+    case "Critical": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
   }
 }
 
 function statusStyle(status: CancellationStatus) {
   switch (status) {
-    case "Request Received":           return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1" };
-    case "Under Review":               return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
-    case "Retention Attempt":          return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4" };
-    case "Executive Review":           return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" };
-    case "Cancellation Approved":      return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
-    case "Cancellation Withdrawn":     return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
-    case "Converted To Downgrade":     return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE" };
-    case "Converted To Renewal":       return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
-    case "Converted To Change Request":return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
-    case "Moved To Offboarding":       return { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1" };
+    case "Request Received":           return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1"};
+    case "Under Review":               return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"};
+    case "Retention Attempt":          return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4"};
+    case "Executive Review":           return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
+    case "Cancellation Approved":      return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
+    case "Cancellation Withdrawn":     return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
+    case "Converted To Downgrade":     return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE"};
+    case "Converted To Renewal":       return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
+    case "Converted To Change Request":return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"};
+    case "Moved To Offboarding":       return { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1"};
   }
 }
 
 function retentionStatusStyle(status: string) {
   switch (status) {
-    case "Not Started":      return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1" };
-    case "In Progress":      return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
-    case "Client Contacted": return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4" };
-    case "Decision Pending": return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" };
-    case "Saved":            return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
-    case "Lost":             return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
-    default:                 return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1" };
+    case "Not Started":      return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1"};
+    case "In Progress":      return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"};
+    case "Client Contacted": return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4"};
+    case "Decision Pending": return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
+    case "Saved":            return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
+    case "Lost":             return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
+    default:                 return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1"};
   }
 }
 
 function strategyStyle(strategy: RetentionStrategy) {
   switch (strategy) {
-    case "Budget Adjustment":     return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" };
-    case "Service Reduction":     return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" };
-    case "Service Realignment":   return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE" };
-    case "Temporary Pause":       return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4" };
-    case "Additional Support":    return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
-    case "Executive Escalation":  return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
-    case "Custom Retention Plan": return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
+    case "Budget Adjustment":     return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
+    case "Service Reduction":     return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
+    case "Service Realignment":   return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE"};
+    case "Temporary Pause":       return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4"};
+    case "Additional Support":    return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"};
+    case "Executive Escalation":  return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
+    case "Custom Retention Plan": return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
   }
 }
 
 function reasonStyle(reason: CancellationReason) {
   switch (reason) {
-    case "Budget":            return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
-    case "Performance":       return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" };
-    case "Service Quality":   return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" };
-    case "Communication":     return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
-    case "Internal Staffing": return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE" };
-    case "Business Closure":  return { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1" };
-    case "Competitor":        return { bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA" };
-    case "No Longer Needed":  return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4" };
-    default:                  return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1" };
+    case "Budget":            return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
+    case "Performance":       return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
+    case "Service Quality":   return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
+    case "Communication":     return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"};
+    case "Internal Staffing": return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE"};
+    case "Business Closure":  return { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1"};
+    case "Competitor":        return { bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA"};
+    case "No Longer Needed":  return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4"};
+    default:                  return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1"};
   }
 }
 
@@ -128,13 +128,11 @@ function Badge({
 }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border whitespace-nowrap"
-      style={{ background: bg, color, borderColor: border }}
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border whitespace-nowrap"style={{ background: bg, color, borderColor: border }}
     >
       {dot && (
         <span
-          className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-          style={{ background: dot }}
+          className="w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: dot }}
         />
       )}
       {label}
@@ -145,13 +143,7 @@ function Badge({
 function RiskBadge({ level }: { level: RiskLevel }) {
   const s = riskStyle(level);
   const dot =
-    level === "Critical"
-      ? "#DC2626"
-      : level === "High"
-      ? "#EA580C"
-      : level === "Medium"
-      ? "#D97706"
-      : "#059669";
+    level === "Critical"? "#DC2626": level === "High"? "#EA580C": level === "Medium"? "#D97706": "#059669";
   return <Badge label={level} bg={s.bg} color={s.color} border={s.border} dot={dot} />;
 }
 
@@ -181,14 +173,13 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
     <div className="space-y-1">
       <div className="flex justify-between items-center">
         <span className="text-xs text-slate-500">{label}</span>
-        <span className="text-xs font-bold" style={{ color: c }}>
+        <span className="text-xs font-bold"style={{ color: c }}>
           {score}
         </span>
       </div>
       <div className="h-1.5 rounded-full bg-slate-100">
         <div
-          className="h-1.5 rounded-full transition-all duration-500"
-          style={{ width: `${score}%`, background: c }}
+          className="h-1.5 rounded-full transition-all duration-500"style={{ width: `${score}%`, background: c }}
         />
       </div>
     </div>
@@ -213,7 +204,7 @@ function KpiCard({
   return (
     <div className={`rounded-xl border ${borderColor} ${bg} p-5 shadow-sm`}>
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1.5 text-2xl font-bold" style={{ color: accent ?? "#0F172A" }}>
+      <p className="mt-1.5 text-2xl font-bold"style={{ color: accent ?? "#0F172A"}}>
         {value}
       </p>
       {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
@@ -236,8 +227,7 @@ function SectionHeader({
     <div className="border-b border-slate-100 px-6 py-4">
       {eyebrow && (
         <p
-          className="text-xs font-bold uppercase tracking-widest mb-0.5"
-          style={{ color: accentColor }}
+          className="text-xs font-bold uppercase tracking-widest mb-0.5"style={{ color: accentColor }}
         >
           {eyebrow}
         </p>
@@ -271,65 +261,37 @@ function CancellationsDashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <KpiCard
-          label="Open Cancellation Requests"
-          value={open.length}
-          sub="active cases"
-          accent="#1D4ED8"
-          borderColor="border-blue-200"
-          bg="bg-blue-50"
-        />
+          label="Open Cancellation Requests"value={open.length}
+          sub="active cases"accent="#1D4ED8"borderColor="border-blue-200"bg="bg-blue-50"/>
         <KpiCard
-          label="Revenue At Risk"
-          value={fmt$(mrrAtRisk)}
-          sub="monthly recurring"
-          accent="#DC2626"
-          borderColor="border-red-200"
-          bg="bg-red-50"
-        />
+          label="Revenue At Risk"value={fmt$(mrrAtRisk)}
+          sub="monthly recurring"accent="#DC2626"borderColor="border-red-200"bg="bg-red-50"/>
         <KpiCard
-          label="Retention Success Rate"
-          value={`${successRate}%`}
-          sub="saved vs total decided"
-          accent="#059669"
-          borderColor="border-emerald-200"
-          bg="bg-emerald-50"
-        />
+          label="Retention Success Rate"value={`${successRate}%`}
+          sub="saved vs total decided"accent="#059669"borderColor="border-emerald-200"bg="bg-emerald-50"/>
         <KpiCard
-          label="Clients Saved"
-          value={saved.length}
-          sub="cancellations withdrawn"
-          accent="#0F766E"
-        />
+          label="Clients Saved"value={saved.length}
+          sub="cancellations withdrawn"accent="#0F766E"/>
         <KpiCard
-          label="Pending Save Attempts"
-          value={pendingSave.length}
-          sub="active retention work"
-          accent="#B45309"
-          borderColor="border-amber-200"
-          bg="bg-amber-50"
-        />
+          label="Pending Save Attempts"value={pendingSave.length}
+          sub="active retention work"accent="#B45309"borderColor="border-amber-200"bg="bg-amber-50"/>
         <KpiCard
-          label="Cancelled Revenue"
-          value={fmt$(cancelledRevenue)}
-          sub="monthly — confirmed lost"
-          accent="#475569"
-          borderColor="border-slate-300"
-          bg="bg-slate-50"
-        />
+          label="Cancelled Revenue"value={fmt$(cancelledRevenue)}
+          sub="monthly — confirmed lost"accent="#475569"borderColor="border-slate-300"bg="bg-slate-50"/>
       </div>
 
       {/* Revenue At Risk Alert */}
       {mrrAtRisk > 0 && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4">
           <div className="flex items-start gap-3">
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500 mt-1 flex-shrink-0" />
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500 mt-1 flex-shrink-0"/>
             <div>
               <p className="text-sm font-bold text-red-800">
-                {fmt$(mrrAtRisk)}/mo in revenue is at risk from {open.length} open cancellation{open.length !== 1 ? "s" : ""}.
+                {fmt$(mrrAtRisk)}/mo in revenue is at risk from {open.length} open cancellation{open.length !== 1 ? "s": ""}.
                 {fmt$(getARRAtRisk())}/yr total ARR exposure.
               </p>
               <p className="text-xs text-red-600 mt-0.5">
-                {open.filter((r) => r.riskLevel === "Critical" || r.riskLevel === "High").length} accounts rated High or Critical risk require immediate retention action.
+                {open.filter((r) => r.riskLevel === "Critical"|| r.riskLevel === "High").length} accounts rated High or Critical risk require immediate retention action.
               </p>
             </div>
           </div>
@@ -341,10 +303,7 @@ function CancellationsDashboard() {
         {/* Cancellation Reason Breakdown */}
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <SectionHeader
-            eyebrow="Reason Analysis"
-            title="Top Cancellation Reasons"
-            desc="Distribution by primary cancellation driver."
-          />
+            eyebrow="Reason Analysis"title="Top Cancellation Reasons"desc="Distribution by primary cancellation driver."/>
           <div className="p-5 space-y-3">
             {topReasons.map(([reason, count]) => {
               const pct = Math.round((count / CANCELLATION_REQUESTS.length) * 100);
@@ -353,14 +312,13 @@ function CancellationsDashboard() {
                 <div key={reason} className="space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-slate-700">{reason}</span>
-                    <span className="text-xs font-bold" style={{ color: s.color }}>
+                    <span className="text-xs font-bold"style={{ color: s.color }}>
                       {count} ({pct}%)
                     </span>
                   </div>
                   <div className="h-2 rounded-full bg-slate-100">
                     <div
-                      className="h-2 rounded-full transition-all"
-                      style={{ width: `${pct}%`, background: s.color }}
+                      className="h-2 rounded-full transition-all"style={{ width: `${pct}%`, background: s.color }}
                     />
                   </div>
                 </div>
@@ -372,10 +330,7 @@ function CancellationsDashboard() {
         {/* Status Summary */}
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <SectionHeader
-            eyebrow="Status Overview"
-            title="Pipeline Status"
-            desc="Cancellation requests by current stage."
-          />
+            eyebrow="Status Overview"title="Pipeline Status"desc="Cancellation requests by current stage."/>
           <div className="p-5 space-y-2">
             {(
               [
@@ -395,15 +350,13 @@ function CancellationsDashboard() {
               return (
                 <div
                   key={status}
-                  className="flex items-center justify-between rounded-lg border px-4 py-2.5"
-                  style={{ background: s.bg, borderColor: s.border }}
+                  className="flex items-center justify-between rounded-lg border px-4 py-2.5"style={{ background: s.bg, borderColor: s.border }}
                 >
-                  <span className="text-sm font-semibold" style={{ color: s.color }}>
+                  <span className="text-sm font-semibold"style={{ color: s.color }}>
                     {status}
                   </span>
                   <span
-                    className="text-sm font-bold rounded-full px-2.5 py-0.5 border"
-                    style={{ background: s.bg, color: s.color, borderColor: s.border }}
+                    className="text-sm font-bold rounded-full px-2.5 py-0.5 border"style={{ background: s.bg, color: s.color, borderColor: s.border }}
                   >
                     {count}
                   </span>
@@ -429,8 +382,8 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
   const filtered = useMemo(
     () =>
       CANCELLATION_REQUESTS.filter((r) => {
-        if (statusFilter !== "All" && r.status !== statusFilter) return false;
-        if (riskFilter !== "All" && r.riskLevel !== riskFilter) return false;
+        if (statusFilter !== "All"&& r.status !== statusFilter) return false;
+        if (riskFilter !== "All"&& r.riskLevel !== riskFilter) return false;
         if (
           search &&
           !r.client.toLowerCase().includes(search.toLowerCase()) &&
@@ -457,38 +410,31 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <SectionHeader
-        eyebrow="Cancellation Pipeline"
-        title="Cancellation Requests"
-        desc="All cancellation requests with risk level, retention status, and revenue exposure."
-      />
+        eyebrow="Cancellation Pipeline"title="Cancellation Requests"desc="All cancellation requests with risk level, retention status, and revenue exposure."/>
 
       {/* Filters */}
       <div className="px-6 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
         <input
-          placeholder="Search client or AM..."
-          value={search}
+          placeholder="Search client or AM..."value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 w-56 outline-none focus:ring-2 focus:ring-blue-100"
-        />
+          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 w-56 outline-none focus:ring-2 focus:ring-blue-100"/>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value as CancellationStatus | "All")}
-          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 outline-none"
-        >
+          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 outline-none">
           {ALL_STATUSES.map((s) => (
             <option key={s} value={s}>
-              {s === "All" ? "All Statuses" : s}
+              {s === "All"? "All Statuses": s}
             </option>
           ))}
         </select>
         <select
           value={riskFilter}
           onChange={(e) => setRiskFilter(e.target.value as RiskLevel | "All")}
-          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 outline-none"
-        >
+          className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 outline-none">
           {(["All", "Low", "Medium", "High", "Critical"] as const).map((r) => (
             <option key={r} value={r}>
-              {r === "All" ? "All Risk Levels" : r}
+              {r === "All"? "All Risk Levels": r}
             </option>
           ))}
         </select>
@@ -515,8 +461,7 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap"
-                >
+                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
                   {h}
                 </th>
               ))}
@@ -526,8 +471,7 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
             {filtered.map((r) => (
               <tr
                 key={r.id}
-                className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
-                onClick={() => onSelect(r)}
+                className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"onClick={() => onSelect(r)}
               >
                 <td className="px-4 py-3 whitespace-nowrap">
                   <p className="font-semibold text-slate-900">{r.client}</p>
@@ -547,16 +491,14 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
                   <div className="flex items-center gap-2">
                     <div className="w-16 h-1.5 rounded-full bg-slate-100">
                       <div
-                        className="h-1.5 rounded-full"
-                        style={{
+                        className="h-1.5 rounded-full"style={{
                           width: `${r.healthScore}%`,
                           background: scoreColor(r.healthScore),
                         }}
                       />
                     </div>
                     <span
-                      className="text-xs font-bold"
-                      style={{ color: scoreColor(r.healthScore) }}
+                      className="text-xs font-bold"style={{ color: scoreColor(r.healthScore) }}
                     >
                       {r.healthScore}
                     </span>
@@ -565,7 +507,7 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <RetentionStatusBadge status={r.retentionStatus} />
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap font-semibold" style={{ color: "#DC2626" }}>
+                <td className="px-4 py-3 whitespace-nowrap font-semibold"style={{ color: "#DC2626"}}>
                   {fmt$(r.arr)}/yr
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
@@ -573,8 +515,7 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <button
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-800"
-                    onClick={(e) => {
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800"onClick={(e) => {
                       e.stopPropagation();
                       onSelect(r);
                     }}
@@ -588,8 +529,7 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
               <tr>
                 <td
                   colSpan={10}
-                  className="px-4 py-10 text-center text-slate-400"
-                >
+                  className="px-4 py-10 text-center text-slate-400">
                   No cancellation requests match the current filters.
                 </td>
               </tr>
@@ -655,11 +595,7 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
       {/* Active Retention Plans */}
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <SectionHeader
-          eyebrow="Retention Center"
-          title="Active Retention Plans"
-          desc="All clients with a formal retention plan in place."
-          accentColor="#059669"
-        />
+          eyebrow="Retention Center"title="Active Retention Plans"desc="All clients with a formal retention plan in place."accentColor="#059669"/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50">
@@ -676,8 +612,7 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
                 ].map((h) => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap"
-                  >
+                    className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -687,8 +622,7 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
               {withPlans.map((r) => (
                 <tr
                   key={r.id}
-                  className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"
-                  onClick={() => onSelect(r)}
+                  className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer"onClick={() => onSelect(r)}
                 >
                   <td className="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">
                     {r.client}
@@ -700,8 +634,7 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
                     <RiskBadge level={r.riskLevel} />
                   </td>
                   <td
-                    className="px-4 py-3 font-semibold whitespace-nowrap"
-                    style={{ color: "#DC2626" }}
+                    className="px-4 py-3 font-semibold whitespace-nowrap"style={{ color: "#DC2626"}}
                   >
                     {fmt$(r.arr)}/yr
                   </td>
@@ -716,8 +649,7 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <button
-                      className="text-xs font-semibold text-blue-600 hover:text-blue-800"
-                      onClick={(e) => {
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-800"onClick={(e) => {
                         e.stopPropagation();
                         onSelect(r);
                       }}
@@ -738,11 +670,7 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
       {/* Retention Strategy Matrix */}
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <SectionHeader
-          eyebrow="Strategy Matrix"
-          title="Retention Strategies"
-          desc="Available strategies and their optimal deployment conditions."
-          accentColor="#059669"
-        />
+          eyebrow="Strategy Matrix"title="Retention Strategies"desc="Available strategies and their optimal deployment conditions."accentColor="#059669"/>
         <div className="p-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {STRATEGY_DEFINITIONS.map(({ strategy, desc, trigger }) => {
             const s = strategyStyle(strategy);
@@ -752,15 +680,13 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
             return (
               <div
                 key={strategy}
-                className="rounded-xl border p-4 space-y-2"
-                style={{ background: s.bg, borderColor: s.border }}
+                className="rounded-xl border p-4 space-y-2"style={{ background: s.bg, borderColor: s.border }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <StrategyBadge strategy={strategy} />
                   {usageCount > 0 && (
                     <span
-                      className="text-[10px] font-bold rounded-full px-2 py-0.5 border"
-                      style={{ background: s.bg, color: s.color, borderColor: s.border }}
+                      className="text-[10px] font-bold rounded-full px-2 py-0.5 border"style={{ background: s.bg, color: s.color, borderColor: s.border }}
                     >
                       {usageCount} active
                     </span>
@@ -799,7 +725,7 @@ function ClientRiskProfilePanel({ record }: { record: CancellationRequest }) {
     {
       label: "Open Escalations",
       value: rp.openEscalations,
-      accent: rp.openEscalations > 2 ? "#DC2626" : rp.openEscalations > 0 ? "#EA580C" : "#059669",
+      accent: rp.openEscalations > 2 ? "#DC2626": rp.openEscalations > 0 ? "#EA580C": "#059669",
     },
     {
       label: "Renewal Risk",
@@ -809,11 +735,7 @@ function ClientRiskProfilePanel({ record }: { record: CancellationRequest }) {
       label: "Expansion Potential",
       value: rp.expansionPotential,
       accent:
-        rp.expansionPotential === "High"
-          ? "#059669"
-          : rp.expansionPotential === "None"
-          ? "#94A3B8"
-          : "#1D4ED8",
+        rp.expansionPotential === "High"? "#059669": rp.expansionPotential === "None"? "#94A3B8": "#1D4ED8",
     },
     {
       label: "Industry",
@@ -832,11 +754,8 @@ function ClientRiskProfilePanel({ record }: { record: CancellationRequest }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <SectionHeader
-        eyebrow="Client Risk Profile"
-        title={`Risk Profile — ${record.client}`}
-        desc="Health dimensions, escalations, and renewal indicators."
-        accentColor="#EA580C"
-      />
+        eyebrow="Client Risk Profile"title={`Risk Profile — ${record.client}`}
+        desc="Health dimensions, escalations, and renewal indicators."accentColor="#EA580C"/>
       <div className="p-6 space-y-6">
         {/* Header badges */}
         <div className="flex flex-wrap gap-3">
@@ -854,8 +773,7 @@ function ClientRiskProfilePanel({ record }: { record: CancellationRequest }) {
             {record.services.map((s) => (
               <span
                 key={s}
-                className="rounded-full border border-blue-200 bg-blue-50 px-3 py-0.5 text-xs font-semibold text-blue-700"
-              >
+                className="rounded-full border border-blue-200 bg-blue-50 px-3 py-0.5 text-xs font-semibold text-blue-700">
                 {s}
               </span>
             ))}
@@ -879,11 +797,10 @@ function ClientRiskProfilePanel({ record }: { record: CancellationRequest }) {
           {metricItems.map(({ label, value, accent, valueEl }) => (
             <div
               key={label}
-              className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0"
-            >
+              className="flex justify-between items-center py-2 border-b border-slate-100 last:border-0">
               <span className="text-xs text-slate-500">{label}</span>
               {valueEl ?? (
-                <span className="text-xs font-semibold" style={{ color: accent ?? "#0F172A" }}>
+                <span className="text-xs font-semibold"style={{ color: accent ?? "#0F172A"}}>
                   {value}
                 </span>
               )}
@@ -903,14 +820,14 @@ function SaveAttemptWorkflow({ record }: { record: CancellationRequest }) {
   const completedSteps = record.activityTimeline.map((e) => e.step);
 
   const isSaved =
-    record.retentionStatus === "Saved" ||
-    record.status === "Cancellation Withdrawn" ||
-    record.status === "Converted To Change Request" ||
+    record.retentionStatus === "Saved"||
+    record.status === "Cancellation Withdrawn"||
+    record.status === "Converted To Change Request"||
     record.status === "Converted To Renewal";
 
   const isCancelled =
-    record.retentionStatus === "Lost" ||
-    record.status === "Cancellation Approved" ||
+    record.retentionStatus === "Lost"||
+    record.status === "Cancellation Approved"||
     record.status === "Moved To Offboarding";
 
   const stepsToShow = isSaved
@@ -922,11 +839,8 @@ function SaveAttemptWorkflow({ record }: { record: CancellationRequest }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <SectionHeader
-        eyebrow="Save Attempt Workflow"
-        title={`Save Attempt — ${record.client}`}
-        desc="Step-by-step cancellation response and retention workflow."
-        accentColor="#0F766E"
-      />
+        eyebrow="Save Attempt Workflow"title={`Save Attempt — ${record.client}`}
+        desc="Step-by-step cancellation response and retention workflow."accentColor="#0F766E"/>
       <div className="p-6">
         {/* Step flow */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 flex-wrap">
@@ -935,41 +849,33 @@ function SaveAttemptWorkflow({ record }: { record: CancellationRequest }) {
             const isCurrent =
               !isComplete &&
               (idx === 0 || completedSteps.includes(stepsToShow[idx - 1]));
-            const isFinalSaved = step === "Saved" && isSaved;
-            const isFinalCancelled = step === "Cancelled" && isCancelled;
+            const isFinalSaved = step === "Saved"&& isSaved;
+            const isFinalCancelled = step === "Cancelled"&& isCancelled;
 
             const bgColor = isFinalSaved
-              ? "#059669"
-              : isFinalCancelled
-              ? "#DC2626"
-              : isComplete
-              ? "#1D4ED8"
-              : isCurrent
-              ? "#B45309"
-              : "#E2E8F0";
+              ? "#059669": isFinalCancelled
+              ? "#DC2626": isComplete
+              ? "#1D4ED8": isCurrent
+              ? "#B45309": "#E2E8F0";
 
             const textColor = isComplete || isCurrent || isFinalSaved || isFinalCancelled
-              ? "#FFFFFF"
-              : "#94A3B8";
+              ? "#FFFFFF": "#94A3B8";
 
             return (
               <React.Fragment key={step}>
                 <div
-                  className="rounded-xl px-4 py-3 min-w-[120px] text-center"
-                  style={{ background: bgColor }}
+                  className="rounded-xl px-4 py-3 min-w-[120px] text-center"style={{ background: bgColor }}
                 >
                   <p
-                    className="text-[11px] font-bold leading-tight"
-                    style={{ color: textColor }}
+                    className="text-[11px] font-bold leading-tight"style={{ color: textColor }}
                   >
                     {step}
                   </p>
                   {(isComplete || isCurrent) && (
                     <p
-                      className="text-[9px] mt-0.5 font-semibold opacity-80"
-                      style={{ color: textColor }}
+                      className="text-[9px] mt-0.5 font-semibold opacity-80"style={{ color: textColor }}
                     >
-                      {isComplete ? "Complete" : "Active"}
+                      {isComplete ? "Complete": "Active"}
                     </p>
                   )}
                 </div>
@@ -1037,32 +943,25 @@ function AIRetentionAnalysis({ record }: { record: CancellationRequest }) {
 
   const riskColor =
     ai.cancellationRisk >= 80
-      ? "#DC2626"
-      : ai.cancellationRisk >= 60
-      ? "#EA580C"
-      : ai.cancellationRisk >= 40
-      ? "#D97706"
-      : "#059669";
+      ? "#DC2626": ai.cancellationRisk >= 60
+      ? "#EA580C": ai.cancellationRisk >= 40
+      ? "#D97706": "#059669";
 
   const probColor = scoreColor(ai.retentionProbability);
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <SectionHeader
-        eyebrow="AI Retention Analysis"
-        title={`Retention Analysis — ${record.client}`}
-        desc="Signal-driven cancellation risk assessment and retention recommendations."
-        accentColor="#6D28D9"
-      />
+        eyebrow="AI Retention Analysis"title={`Retention Analysis — ${record.client}`}
+        desc="Signal-driven cancellation risk assessment and retention recommendations."accentColor="#6D28D9"/>
       <div className="p-6 space-y-5">
         {/* Dual probability hero */}
         <div className="grid sm:grid-cols-2 gap-4">
-          <div className="rounded-xl border p-5 flex items-center gap-5" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
+          <div className="rounded-xl border p-5 flex items-center gap-5"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
             <div
-              className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 flex-shrink-0 bg-white"
-              style={{ borderColor: riskColor }}
+              className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 flex-shrink-0 bg-white"style={{ borderColor: riskColor }}
             >
-              <span className="text-3xl font-extrabold" style={{ color: riskColor }}>
+              <span className="text-3xl font-extrabold"style={{ color: riskColor }}>
                 {ai.cancellationRisk}%
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mt-0.5">
@@ -1073,22 +972,18 @@ function AIRetentionAnalysis({ record }: { record: CancellationRequest }) {
               <p className="text-sm font-bold text-slate-800">Cancellation Risk</p>
               <p className="text-xs text-slate-500 mt-1">
                 {ai.cancellationRisk >= 80
-                  ? "Critical — immediate executive intervention required."
-                  : ai.cancellationRisk >= 60
-                  ? "High — active retention effort needed this week."
-                  : ai.cancellationRisk >= 40
-                  ? "Moderate — retention plan in motion."
-                  : "Low — monitor and maintain communication."}
+                  ? "Critical — immediate executive intervention required.": ai.cancellationRisk >= 60
+                  ? "High — active retention effort needed this week.": ai.cancellationRisk >= 40
+                  ? "Moderate — retention plan in motion.": "Low — monitor and maintain communication."}
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl border p-5 flex items-center gap-5" style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}>
+          <div className="rounded-xl border p-5 flex items-center gap-5"style={{ background: "#ECFDF5", borderColor: "#A7F3D0"}}>
             <div
-              className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 flex-shrink-0 bg-white"
-              style={{ borderColor: probColor }}
+              className="flex flex-col items-center justify-center w-24 h-24 rounded-2xl border-2 flex-shrink-0 bg-white"style={{ borderColor: probColor }}
             >
-              <span className="text-3xl font-extrabold" style={{ color: probColor }}>
+              <span className="text-3xl font-extrabold"style={{ color: probColor }}>
                 {ai.retentionProbability}%
               </span>
               <span className="text-[10px] font-bold uppercase tracking-wide text-slate-400 mt-0.5">
@@ -1099,12 +994,9 @@ function AIRetentionAnalysis({ record }: { record: CancellationRequest }) {
               <p className="text-sm font-bold text-slate-800">Retention Probability</p>
               <p className="text-xs text-slate-500 mt-1">
                 {ai.retentionProbability >= 70
-                  ? "Strong — execute retention plan promptly."
-                  : ai.retentionProbability >= 50
-                  ? "Moderate — follow the recommended strategy closely."
-                  : ai.retentionProbability >= 30
-                  ? "Low — consider executive involvement."
-                  : "Very low — prepare for clean offboarding."}
+                  ? "Strong — execute retention plan promptly.": ai.retentionProbability >= 50
+                  ? "Moderate — follow the recommended strategy closely.": ai.retentionProbability >= 30
+                  ? "Low — consider executive involvement.": "Very low — prepare for clean offboarding."}
               </p>
             </div>
           </div>
@@ -1141,7 +1033,7 @@ function AIRetentionAnalysis({ record }: { record: CancellationRequest }) {
             <ul className="space-y-1.5">
               {ai.riskFactors.map((f) => (
                 <li key={f} className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1 flex-shrink-0" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1 flex-shrink-0"/>
                   <span className="text-xs text-slate-600 leading-relaxed">{f}</span>
                 </li>
               ))}
@@ -1205,48 +1097,24 @@ function RevenueAtRisk() {
       {/* Top KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiCard
-          label="MRR At Risk"
-          value={fmt$(mrrAtRisk)}
-          sub="open cancellations"
-          accent="#DC2626"
-          borderColor="border-red-200"
-          bg="bg-red-50"
-        />
+          label="MRR At Risk"value={fmt$(mrrAtRisk)}
+          sub="open cancellations"accent="#DC2626"borderColor="border-red-200"bg="bg-red-50"/>
         <KpiCard
-          label="ARR At Risk"
-          value={fmt$(arrAtRisk)}
-          sub="annualized exposure"
-          accent="#DC2626"
-          borderColor="border-red-200"
-          bg="bg-red-50"
-        />
+          label="ARR At Risk"value={fmt$(arrAtRisk)}
+          sub="annualized exposure"accent="#DC2626"borderColor="border-red-200"bg="bg-red-50"/>
         <KpiCard
-          label="Saved Revenue (MRR)"
-          value={fmt$(savedMRR)}
-          sub="retained this cycle"
-          accent="#059669"
-          borderColor="border-emerald-200"
-          bg="bg-emerald-50"
-        />
+          label="Saved Revenue (MRR)"value={fmt$(savedMRR)}
+          sub="retained this cycle"accent="#059669"borderColor="border-emerald-200"bg="bg-emerald-50"/>
         <KpiCard
-          label="Saved Revenue (ARR)"
-          value={fmt$(savedARR)}
-          sub="annualized retained"
-          accent="#059669"
-          borderColor="border-emerald-200"
-          bg="bg-emerald-50"
-        />
+          label="Saved Revenue (ARR)"value={fmt$(savedARR)}
+          sub="annualized retained"accent="#059669"borderColor="border-emerald-200"bg="bg-emerald-50"/>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-5">
         {/* Revenue exposure by client */}
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <SectionHeader
-            eyebrow="Revenue At Risk"
-            title="At-Risk Revenue by Client"
-            desc="Open cancellations ranked by ARR exposure."
-            accentColor="#DC2626"
-          />
+            eyebrow="Revenue At Risk"title="At-Risk Revenue by Client"desc="Open cancellations ranked by ARR exposure."accentColor="#DC2626"/>
           <div className="p-5 space-y-2.5">
             {open
               .sort((a, b) => b.arr - a.arr)
@@ -1266,8 +1134,7 @@ function RevenueAtRisk() {
                     </div>
                     <div className="h-2 rounded-full bg-slate-100">
                       <div
-                        className="h-2 rounded-full"
-                        style={{ width: `${pct}%`, background: s.color }}
+                        className="h-2 rounded-full"style={{ width: `${pct}%`, background: s.color }}
                       />
                     </div>
                   </div>
@@ -1280,11 +1147,7 @@ function RevenueAtRisk() {
         <div className="space-y-5">
           <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <SectionHeader
-              eyebrow="Industry Impact"
-              title="Revenue At Risk by Industry"
-              desc="Cancellation exposure grouped by client industry."
-              accentColor="#EA580C"
-            />
+              eyebrow="Industry Impact"title="Revenue At Risk by Industry"desc="Cancellation exposure grouped by client industry."accentColor="#EA580C"/>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50">
@@ -1292,8 +1155,7 @@ function RevenueAtRisk() {
                     {["Industry", "Clients", "MRR At Risk"].map((h) => (
                       <th
                         key={h}
-                        className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400"
-                      >
+                        className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400">
                         {h}
                       </th>
                     ))}
@@ -1317,10 +1179,7 @@ function RevenueAtRisk() {
           {/* Portfolio impact summary */}
           <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
             <SectionHeader
-              eyebrow="Portfolio Impact"
-              title="Client Portfolio Impact"
-              desc="Cancellation exposure as a percentage of total portfolio."
-            />
+              eyebrow="Portfolio Impact"title="Client Portfolio Impact"desc="Cancellation exposure as a percentage of total portfolio."/>
             <div className="p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-600">Portfolio MRR At Risk</span>
@@ -1328,8 +1187,7 @@ function RevenueAtRisk() {
               </div>
               <div className="h-3 rounded-full bg-slate-100">
                 <div
-                  className="h-3 rounded-full bg-red-500"
-                  style={{ width: `${portfolioImpactPct}%` }}
+                  className="h-3 rounded-full bg-red-500"style={{ width: `${portfolioImpactPct}%` }}
                 />
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
@@ -1372,8 +1230,7 @@ function ExecutiveRetentionDashboard() {
   const reasonBreakdown = getReasonBreakdown();
 
   const criticalClients = CANCELLATION_REQUESTS.filter(
-    (r) => r.riskLevel === "Critical" && r.retentionStatus !== "Saved" && r.retentionStatus !== "Lost"
-  );
+    (r) => r.riskLevel === "Critical"&& r.retentionStatus !== "Saved"&& r.retentionStatus !== "Lost");
 
   const retentionTrend = [
     { month: "Feb", requests: 2, saved: 2, rate: 100 },
@@ -1413,11 +1270,7 @@ function ExecutiveRetentionDashboard() {
         {/* Top cancellation reasons */}
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <SectionHeader
-            eyebrow="Reason Analysis"
-            title="Top Cancellation Reasons"
-            desc="Volume breakdown by primary cancellation driver."
-            accentColor="#1D4ED8"
-          />
+            eyebrow="Reason Analysis"title="Top Cancellation Reasons"desc="Volume breakdown by primary cancellation driver."accentColor="#1D4ED8"/>
           <div className="p-5 space-y-3">
             {Object.entries(reasonBreakdown)
               .sort((a, b) => b[1] - a[1])
@@ -1430,14 +1283,13 @@ function ExecutiveRetentionDashboard() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-semibold text-slate-700">{reason}</span>
                       </div>
-                      <span className="text-xs font-bold" style={{ color: s.color }}>
+                      <span className="text-xs font-bold"style={{ color: s.color }}>
                         {count} ({pct}%)
                       </span>
                     </div>
                     <div className="h-2 rounded-full bg-slate-100">
                       <div
-                        className="h-2 rounded-full"
-                        style={{ width: `${pct}%`, background: s.color }}
+                        className="h-2 rounded-full"style={{ width: `${pct}%`, background: s.color }}
                       />
                     </div>
                   </div>
@@ -1449,11 +1301,7 @@ function ExecutiveRetentionDashboard() {
         {/* Retention trend */}
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <SectionHeader
-            eyebrow="Retention Trends"
-            title="Monthly Retention Performance"
-            desc="Cancellation volume and save rate over the past 5 months."
-            accentColor="#059669"
-          />
+            eyebrow="Retention Trends"title="Monthly Retention Performance"desc="Cancellation volume and save rate over the past 5 months."accentColor="#059669"/>
           <div className="p-5">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -1462,8 +1310,7 @@ function ExecutiveRetentionDashboard() {
                     {["Month", "Requests", "Saved", "Save Rate"].map((h) => (
                       <th
                         key={h}
-                        className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400"
-                      >
+                        className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400">
                         {h}
                       </th>
                     ))}
@@ -1479,16 +1326,14 @@ function ExecutiveRetentionDashboard() {
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-1.5 rounded-full bg-slate-100">
                             <div
-                              className="h-1.5 rounded-full"
-                              style={{
+                              className="h-1.5 rounded-full"style={{
                                 width: `${row.rate}%`,
                                 background: scoreColor(row.rate),
                               }}
                             />
                           </div>
                           <span
-                            className="text-xs font-bold"
-                            style={{ color: scoreColor(row.rate) }}
+                            className="text-xs font-bold"style={{ color: scoreColor(row.rate) }}
                           >
                             {row.rate}%
                           </span>
@@ -1506,11 +1351,7 @@ function ExecutiveRetentionDashboard() {
       {/* Critical at-risk clients */}
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <SectionHeader
-          eyebrow="At-Risk Clients"
-          title="Critical At-Risk Accounts"
-          desc="Clients rated Critical risk requiring immediate executive attention."
-          accentColor="#DC2626"
-        />
+          eyebrow="At-Risk Clients"title="Critical At-Risk Accounts"desc="Clients rated Critical risk requiring immediate executive attention."accentColor="#DC2626"/>
         {criticalClients.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 p-5">
             {criticalClients.map((r) => {
@@ -1518,8 +1359,7 @@ function ExecutiveRetentionDashboard() {
               return (
                 <div
                   key={r.id}
-                  className="rounded-xl border p-4 space-y-3"
-                  style={{ background: s.bg, borderColor: s.border }}
+                  className="rounded-xl border p-4 space-y-3"style={{ background: s.bg, borderColor: s.border }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -1535,15 +1375,14 @@ function ExecutiveRetentionDashboard() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Cancel Risk</span>
-                      <span className="font-bold" style={{ color: riskStyle(r.riskLevel).color }}>
+                      <span className="font-bold"style={{ color: riskStyle(r.riskLevel).color }}>
                         {r.aiInsight.cancellationRisk}%
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-slate-500">Save Probability</span>
                       <span
-                        className="font-bold"
-                        style={{ color: scoreColor(r.aiInsight.retentionProbability) }}
+                        className="font-bold"style={{ color: scoreColor(r.aiInsight.retentionProbability) }}
                       >
                         {r.aiInsight.retentionProbability}%
                       </span>
@@ -1566,11 +1405,7 @@ function ExecutiveRetentionDashboard() {
       <div className="grid sm:grid-cols-2 gap-5">
         <section className="rounded-xl border border-emerald-200 bg-white shadow-sm">
           <SectionHeader
-            eyebrow="Clients Saved"
-            title="Saved Clients"
-            desc="Cancellations successfully reversed this cycle."
-            accentColor="#059669"
-          />
+            eyebrow="Clients Saved"title="Saved Clients"desc="Cancellations successfully reversed this cycle."accentColor="#059669"/>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50">
@@ -1578,8 +1413,7 @@ function ExecutiveRetentionDashboard() {
                   {["Client", "Reason", "ARR Saved", "Strategy"].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400"
-                    >
+                      className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400">
                       {h}
                     </th>
                   ))}
@@ -1609,11 +1443,7 @@ function ExecutiveRetentionDashboard() {
 
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <SectionHeader
-            eyebrow="Confirmed Losses"
-            title="Cancelled Clients"
-            desc="Cancellations confirmed and moved to offboarding."
-            accentColor="#475569"
-          />
+            eyebrow="Confirmed Losses"title="Cancelled Clients"desc="Cancellations confirmed and moved to offboarding."accentColor="#475569"/>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-slate-50">
@@ -1621,8 +1451,7 @@ function ExecutiveRetentionDashboard() {
                   {["Client", "Reason", "ARR Lost", "Status"].map((h) => (
                     <th
                       key={h}
-                      className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400"
-                    >
+                      className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400">
                       {h}
                     </th>
                   ))}
@@ -1660,7 +1489,7 @@ function ActivityTimeline({ record }: { record: CancellationRequest }) {
   const stepColor = (step: string) => {
     if (step === "Saved") return "#059669";
     if (step === "Cancelled") return "#DC2626";
-    if (step === "Executive Review" || step === "Escalated") return "#EA580C";
+    if (step === "Executive Review"|| step === "Escalated") return "#EA580C";
     if (step === "Retention Plan") return "#6D28D9";
     if (step === "Client Discussion") return "#0F766E";
     if (step === "AM Review") return "#1D4ED8";
@@ -1671,14 +1500,12 @@ function ActivityTimeline({ record }: { record: CancellationRequest }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <SectionHeader
-        eyebrow="Activity Timeline"
-        title={`Activity Timeline — ${record.client}`}
-        desc="Chronological history of all cancellation and retention events."
-      />
+        eyebrow="Activity Timeline"title={`Activity Timeline — ${record.client}`}
+        desc="Chronological history of all cancellation and retention events."/>
       <div className="p-6">
         <div className="relative">
           {/* Vertical line */}
-          <div className="absolute left-5 top-0 bottom-0 w-px bg-slate-200" />
+          <div className="absolute left-5 top-0 bottom-0 w-px bg-slate-200"/>
 
           <div className="space-y-6">
             {record.activityTimeline.map((event, idx) => {
@@ -1688,20 +1515,18 @@ function ActivityTimeline({ record }: { record: CancellationRequest }) {
                 <div key={`${event.date}-${idx}`} className="relative flex gap-5">
                   {/* Dot */}
                   <div
-                    className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm"
-                    style={{ background: color }}
+                    className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center flex-shrink-0 z-10 shadow-sm"style={{ background: color }}
                   >
-                    <div className="w-2.5 h-2.5 rounded-full bg-white" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-white"/>
                   </div>
 
                   {/* Content */}
-                  <div className={`flex-1 rounded-xl border p-4 ${isLast ? "" : ""}`}
-                    style={{ borderColor: color + "40", background: color + "08" }}>
+                  <div className={`flex-1 rounded-xl border p-4 ${isLast ? "": ""}`}
+                    style={{ borderColor: color + "40", background: color + "08"}}>
                     <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                       <div>
                         <p
-                          className="text-xs font-bold uppercase tracking-widest"
-                          style={{ color }}
+                          className="text-xs font-bold uppercase tracking-widest"style={{ color }}
                         >
                           {event.step}
                         </p>
@@ -1713,10 +1538,9 @@ function ActivityTimeline({ record }: { record: CancellationRequest }) {
                     {event.outcome && (
                       <div className="mt-2 inline-flex items-center gap-1.5">
                         <div
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ background: color }}
+                          className="w-1.5 h-1.5 rounded-full"style={{ background: color }}
                         />
-                        <p className="text-xs font-semibold" style={{ color }}>
+                        <p className="text-xs font-semibold"style={{ color }}>
                           {event.outcome}
                         </p>
                       </div>
@@ -1737,16 +1561,13 @@ function ActivityTimeline({ record }: { record: CancellationRequest }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 type DetailTab =
-  | "risk-profile"
-  | "save-workflow"
-  | "ai-analysis"
-  | "timeline";
+  | "risk-profile"| "save-workflow"| "ai-analysis"| "timeline";
 
 const DETAIL_TABS: { id: DetailTab; label: string }[] = [
-  { id: "risk-profile",  label: "Risk Profile" },
-  { id: "save-workflow", label: "Save Attempt" },
-  { id: "ai-analysis",  label: "AI Analysis" },
-  { id: "timeline",     label: "Activity Timeline" },
+  { id: "risk-profile",  label: "Risk Profile"},
+  { id: "save-workflow", label: "Save Attempt"},
+  { id: "ai-analysis",  label: "AI Analysis"},
+  { id: "timeline",     label: "Activity Timeline"},
 ];
 
 function ClientDetailPanel({
@@ -1776,8 +1597,7 @@ function ClientDetailPanel({
         </div>
         <button
           onClick={onClose}
-          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-500 hover:bg-slate-50"
-        >
+          className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-500 hover:bg-slate-50">
           Back
         </button>
       </div>
@@ -1795,14 +1615,11 @@ function ClientDetailPanel({
         <div className="rounded-xl border border-slate-200 bg-white p-3 text-center shadow-sm">
           <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">Cancel Risk</p>
           <p
-            className="text-lg font-extrabold mt-0.5"
-            style={{
+            className="text-lg font-extrabold mt-0.5"style={{
               color:
                 record.aiInsight.cancellationRisk >= 80
-                  ? "#DC2626"
-                  : record.aiInsight.cancellationRisk >= 60
-                  ? "#EA580C"
-                  : "#D97706",
+                  ? "#DC2626": record.aiInsight.cancellationRisk >= 60
+                  ? "#EA580C": "#D97706",
             }}
           >
             {record.aiInsight.cancellationRisk}%
@@ -1813,8 +1630,7 @@ function ClientDetailPanel({
             Save Probability
           </p>
           <p
-            className="text-lg font-extrabold mt-0.5"
-            style={{ color: scoreColor(record.aiInsight.retentionProbability) }}
+            className="text-lg font-extrabold mt-0.5"style={{ color: scoreColor(record.aiInsight.retentionProbability) }}
           >
             {record.aiInsight.retentionProbability}%
           </p>
@@ -1837,9 +1653,7 @@ function ClientDetailPanel({
             onClick={() => setTab(t.id)}
             className={`rounded-t-lg border border-b-0 px-4 py-2 text-xs font-semibold transition-colors ${
               tab === t.id
-                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10": "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             {t.label}
           </button>
@@ -1848,10 +1662,10 @@ function ClientDetailPanel({
 
       {/* Tab content */}
       <div>
-        {tab === "risk-profile" && <ClientRiskProfilePanel record={record} />}
-        {tab === "save-workflow" && <SaveAttemptWorkflow record={record} />}
-        {tab === "ai-analysis" && <AIRetentionAnalysis record={record} />}
-        {tab === "timeline" && <ActivityTimeline record={record} />}
+        {tab === "risk-profile"&& <ClientRiskProfilePanel record={record} />}
+        {tab === "save-workflow"&& <SaveAttemptWorkflow record={record} />}
+        {tab === "ai-analysis"&& <AIRetentionAnalysis record={record} />}
+        {tab === "timeline"&& <ActivityTimeline record={record} />}
       </div>
     </div>
   );
@@ -1862,18 +1676,14 @@ function ClientDetailPanel({
 // ══════════════════════════════════════════════════════════════════════════════
 
 type MainTab =
-  | "dashboard"
-  | "cancellations"
-  | "retention"
-  | "revenue"
-  | "executive";
+  | "dashboard"| "cancellations"| "retention"| "revenue"| "executive";
 
 const MAIN_TABS: { id: MainTab; label: string }[] = [
-  { id: "dashboard",     label: "Dashboard" },
-  { id: "cancellations", label: "Cancellations" },
-  { id: "retention",     label: "Retention Center" },
-  { id: "revenue",       label: "Revenue At Risk" },
-  { id: "executive",     label: "Executive Dashboard" },
+  { id: "dashboard",     label: "Dashboard"},
+  { id: "cancellations", label: "Cancellations"},
+  { id: "retention",     label: "Retention Center"},
+  { id: "revenue",       label: "Revenue At Risk"},
+  { id: "executive",     label: "Executive Dashboard"},
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -1954,9 +1764,7 @@ export default function CancellationsPage() {
             onClick={() => setMainTab(t.id)}
             className={`rounded-t-lg border border-b-0 px-4 py-2.5 text-sm font-semibold transition-colors ${
               mainTab === t.id
-                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
+                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10": "border-transparent text-slate-500 hover:text-slate-700"}`}
           >
             {t.label}
           </button>
@@ -1965,11 +1773,11 @@ export default function CancellationsPage() {
 
       {/* Tab content */}
       <div className="min-h-[400px]">
-        {mainTab === "dashboard" && <CancellationsDashboard />}
-        {mainTab === "cancellations" && <CancellationTable onSelect={handleSelect} />}
-        {mainTab === "retention" && <RetentionCenter onSelect={handleSelect} />}
-        {mainTab === "revenue" && <RevenueAtRisk />}
-        {mainTab === "executive" && <ExecutiveRetentionDashboard />}
+        {mainTab === "dashboard"&& <CancellationsDashboard />}
+        {mainTab === "cancellations"&& <CancellationTable onSelect={handleSelect} />}
+        {mainTab === "retention"&& <RetentionCenter onSelect={handleSelect} />}
+        {mainTab === "revenue"&& <RevenueAtRisk />}
+        {mainTab === "executive"&& <ExecutiveRetentionDashboard />}
       </div>
     </div>
   );

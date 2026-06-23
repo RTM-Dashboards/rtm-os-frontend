@@ -5,46 +5,19 @@
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type InvoiceType =
-  | "Setup Fee"
-  | "Monthly Recurring"
-  | "Quarterly"
-  | "Annual"
-  | "One-Time Project"
-  | "Renewal"
-  | "Upsell"
-  | "Cancellation Fee";
+  | "Setup Fee"| "Monthly Recurring"| "Quarterly"| "Annual"| "One-Time Project"| "Renewal"| "Upsell"| "Cancellation Fee";
 
 export type InvoiceStatus =
-  | "Draft"
-  | "Pending Approval"
-  | "Sent"
-  | "Partially Paid"
-  | "Paid"
-  | "Overdue"
-  | "Cancelled"
-  | "Refunded";
+  | "Draft"| "Pending Approval"| "Sent"| "Partially Paid"| "Paid"| "Overdue"| "Cancelled"| "Refunded";
 
 export type ActivationStatus =
-  | "Not Ready"
-  | "Pending Payment"
-  | "Ready For Activation"
-  | "Activated"
-  | "On Hold";
+  | "Not Ready"| "Pending Payment"| "Ready For Activation"| "Activated"| "On Hold";
 
 export type CollectionStatus =
-  | "Pending"
-  | "Reminder Sent"
-  | "Contacted"
-  | "Payment Arrangement"
-  | "Escalated"
-  | "Resolved";
+  | "Pending"| "Reminder Sent"| "Contacted"| "Payment Arrangement"| "Escalated"| "Resolved";
 
 export type HoldReason =
-  | "Payment Issues"
-  | "Missing Contract"
-  | "Missing Approval"
-  | "Client Hold"
-  | "Internal Hold";
+  | "Payment Issues"| "Missing Contract"| "Missing Approval"| "Client Hold"| "Internal Hold";
 
 export interface Invoice {
   id: string;
@@ -75,7 +48,7 @@ export interface RecurringContract {
   annualValue: number;
   noticePeriod: string;
   autoRenew: boolean;
-  status: "Active" | "Paused" | "At Risk" | "Pending Renewal" | "Cancelled";
+  status: "Active"| "Paused"| "At Risk"| "Pending Renewal"| "Cancelled";
   servicesIncluded: string;
   assignedAM: string;
 }
@@ -102,22 +75,16 @@ export interface ActivationQueueItem {
   departments: string[];
   activationStatus: ActivationStatus;
   readyDate: string;
-  contractStatus: "Signed" | "Pending" | "In Review";
+  contractStatus: "Signed"| "Pending"| "In Review";
   invoiceStatus: InvoiceStatus;
-  paymentStatus: "Paid" | "Pending Payment" | "Partial" | "Overdue";
+  paymentStatus: "Paid"| "Pending Payment"| "Partial"| "Overdue";
   notes: string;
 }
 
 export interface ActivityEvent {
   id: string;
   type:
-    | "Invoice Created"
-    | "Invoice Sent"
-    | "Invoice Paid"
-    | "Invoice Overdue"
-    | "Collection Updated"
-    | "Activation Approved"
-    | "Project Activated";
+    | "Invoice Created"| "Invoice Sent"| "Invoice Paid"| "Invoice Overdue"| "Collection Updated"| "Activation Approved"| "Project Activated";
   client: string;
   invoiceNumber?: string;
   amount?: number;
@@ -599,21 +566,21 @@ export const invoices: Invoice[] = [
 // ── 15 Recurring Contracts ────────────────────────────────────────────────────
 
 export const recurringContracts: RecurringContract[] = [
-  { id: "ctr-001", client: "Pacific Dental",        contractName: "SEO + PPC Retainer",       contractTerm: "12 months", contractStart: "2025-01-01", contractEnd: "2025-12-31", monthlyRevenue: 3800, annualValue: 45600,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "SEO, PPC, Reporting",         assignedAM: "Marcus T." },
-  { id: "ctr-002", client: "Harbor Auto Group",      contractName: "Full-Service Digital",      contractTerm: "24 months", contractStart: "2024-07-01", contractEnd: "2026-06-30", monthlyRevenue: 5000, annualValue: 60000,  noticePeriod: "60 days",  autoRenew: true,  status: "Active",          servicesIncluded: "SEO, PPC, Social, Web",       assignedAM: "Jess L." },
-  { id: "ctr-003", client: "Blue Ridge Plumbing",    contractName: "Google Ads Management",     contractTerm: "6 months",  contractStart: "2025-03-01", contractEnd: "2025-08-31", monthlyRevenue: 800,  annualValue: 9600,   noticePeriod: "30 days",  autoRenew: false, status: "Pending Renewal",  servicesIncluded: "Google Ads",                  assignedAM: "Marcus T." },
-  { id: "ctr-004", client: "Lakeside Auto",          contractName: "Google Ads + Social",       contractTerm: "12 months", contractStart: "2025-01-01", contractEnd: "2025-12-31", monthlyRevenue: 2600, annualValue: 31200,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "Google Ads, Social Media",    assignedAM: "Jess L." },
-  { id: "ctr-005", client: "Metro Law Group",        contractName: "PPC Retainer",              contractTerm: "12 months", contractStart: "2025-02-01", contractEnd: "2026-01-31", monthlyRevenue: 3500, annualValue: 42000,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "PPC, Landing Pages",          assignedAM: "Marcus T." },
-  { id: "ctr-006", client: "City Chiropractic",      contractName: "PPC + Local SEO",           contractTerm: "12 months", contractStart: "2025-01-01", contractEnd: "2025-12-31", monthlyRevenue: 1800, annualValue: 21600,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "PPC, Local SEO, GMB",         assignedAM: "Jess L." },
-  { id: "ctr-007", client: "Horizon Dental Group",   contractName: "Premium Multi-Channel",     contractTerm: "24 months", contractStart: "2024-06-01", contractEnd: "2026-05-31", monthlyRevenue: 4200, annualValue: 50400,  noticePeriod: "60 days",  autoRenew: true,  status: "Active",          servicesIncluded: "SEO, PPC, Social, Content",   assignedAM: "Marcus T." },
-  { id: "ctr-008", client: "Green Valley Pools",     contractName: "Social Media Management",   contractTerm: "6 months",  contractStart: "2025-01-01", contractEnd: "2025-06-30", monthlyRevenue: 2200, annualValue: 26400,  noticePeriod: "30 days",  autoRenew: false, status: "At Risk",          servicesIncluded: "Social Media, Content",       assignedAM: "Jess L." },
-  { id: "ctr-009", client: "Prestige Pest Control",  contractName: "SEO Annual Retainer",       contractTerm: "12 months", contractStart: "2024-07-01", contractEnd: "2025-06-30", monthlyRevenue: 1200, annualValue: 14400,  noticePeriod: "30 days",  autoRenew: true,  status: "Pending Renewal",  servicesIncluded: "SEO, Blog Content",           assignedAM: "Marcus T." },
-  { id: "ctr-010", client: "Cornerstone Flooring",   contractName: "SEO + Content Bundle",      contractTerm: "12 months", contractStart: "2024-08-01", contractEnd: "2025-07-31", monthlyRevenue: 3200, annualValue: 38400,  noticePeriod: "30 days",  autoRenew: false, status: "At Risk",          servicesIncluded: "SEO, Content, Reporting",     assignedAM: "Jess L." },
-  { id: "ctr-011", client: "Capital City Plumbing",  contractName: "Local SEO Package",         contractTerm: "6 months",  contractStart: "2025-04-01", contractEnd: "2025-09-30", monthlyRevenue: 900,  annualValue: 10800,  noticePeriod: "30 days",  autoRenew: false, status: "Active",          servicesIncluded: "Local SEO, GMB, Citations",   assignedAM: "Marcus T." },
-  { id: "ctr-012", client: "Sunrise Veterinary",     contractName: "Multi-Channel Quarterly",   contractTerm: "12 months", contractStart: "2025-01-01", contractEnd: "2025-12-31", monthlyRevenue: 2100, annualValue: 25200,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "PPC, Social, Local SEO",      assignedAM: "Jess L." },
-  { id: "ctr-013", client: "Pacific Eye Center",     contractName: "PPC Growth Plan",           contractTerm: "12 months", contractStart: "2025-03-01", contractEnd: "2026-02-28", monthlyRevenue: 2400, annualValue: 28800,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "PPC, Conversion Tracking",    assignedAM: "Marcus T." },
-  { id: "ctr-014", client: "Skyline Landscaping",    contractName: "Content Strategy Retainer", contractTerm: "6 months",  contractStart: "2025-04-01", contractEnd: "2025-09-30", monthlyRevenue: 1500, annualValue: 18000,  noticePeriod: "30 days",  autoRenew: false, status: "Pending Renewal",  servicesIncluded: "Content, Social Media",       assignedAM: "Jess L." },
-  { id: "ctr-015", client: "Rocky Mountain Plumbing", contractName: "Local SEO + Ads",          contractTerm: "12 months", contractStart: "2025-02-01", contractEnd: "2026-01-31", monthlyRevenue: 950,  annualValue: 11400,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "Local SEO, Google Ads",       assignedAM: "Marcus T." },
+  { id: "ctr-001", client: "Pacific Dental",        contractName: "SEO + PPC Retainer",       contractTerm: "12 months", contractStart: "2025-01-01", contractEnd: "2025-12-31", monthlyRevenue: 3800, annualValue: 45600,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "SEO, PPC, Reporting",         assignedAM: "Marcus T."},
+  { id: "ctr-002", client: "Harbor Auto Group",      contractName: "Full-Service Digital",      contractTerm: "24 months", contractStart: "2024-07-01", contractEnd: "2026-06-30", monthlyRevenue: 5000, annualValue: 60000,  noticePeriod: "60 days",  autoRenew: true,  status: "Active",          servicesIncluded: "SEO, PPC, Social, Web",       assignedAM: "Jess L."},
+  { id: "ctr-003", client: "Blue Ridge Plumbing",    contractName: "Google Ads Management",     contractTerm: "6 months",  contractStart: "2025-03-01", contractEnd: "2025-08-31", monthlyRevenue: 800,  annualValue: 9600,   noticePeriod: "30 days",  autoRenew: false, status: "Pending Renewal",  servicesIncluded: "Google Ads",                  assignedAM: "Marcus T."},
+  { id: "ctr-004", client: "Lakeside Auto",          contractName: "Google Ads + Social",       contractTerm: "12 months", contractStart: "2025-01-01", contractEnd: "2025-12-31", monthlyRevenue: 2600, annualValue: 31200,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "Google Ads, Social Media",    assignedAM: "Jess L."},
+  { id: "ctr-005", client: "Metro Law Group",        contractName: "PPC Retainer",              contractTerm: "12 months", contractStart: "2025-02-01", contractEnd: "2026-01-31", monthlyRevenue: 3500, annualValue: 42000,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "PPC, Landing Pages",          assignedAM: "Marcus T."},
+  { id: "ctr-006", client: "City Chiropractic",      contractName: "PPC + Local SEO",           contractTerm: "12 months", contractStart: "2025-01-01", contractEnd: "2025-12-31", monthlyRevenue: 1800, annualValue: 21600,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "PPC, Local SEO, GMB",         assignedAM: "Jess L."},
+  { id: "ctr-007", client: "Horizon Dental Group",   contractName: "Premium Multi-Channel",     contractTerm: "24 months", contractStart: "2024-06-01", contractEnd: "2026-05-31", monthlyRevenue: 4200, annualValue: 50400,  noticePeriod: "60 days",  autoRenew: true,  status: "Active",          servicesIncluded: "SEO, PPC, Social, Content",   assignedAM: "Marcus T."},
+  { id: "ctr-008", client: "Green Valley Pools",     contractName: "Social Media Management",   contractTerm: "6 months",  contractStart: "2025-01-01", contractEnd: "2025-06-30", monthlyRevenue: 2200, annualValue: 26400,  noticePeriod: "30 days",  autoRenew: false, status: "At Risk",          servicesIncluded: "Social Media, Content",       assignedAM: "Jess L."},
+  { id: "ctr-009", client: "Prestige Pest Control",  contractName: "SEO Annual Retainer",       contractTerm: "12 months", contractStart: "2024-07-01", contractEnd: "2025-06-30", monthlyRevenue: 1200, annualValue: 14400,  noticePeriod: "30 days",  autoRenew: true,  status: "Pending Renewal",  servicesIncluded: "SEO, Blog Content",           assignedAM: "Marcus T."},
+  { id: "ctr-010", client: "Cornerstone Flooring",   contractName: "SEO + Content Bundle",      contractTerm: "12 months", contractStart: "2024-08-01", contractEnd: "2025-07-31", monthlyRevenue: 3200, annualValue: 38400,  noticePeriod: "30 days",  autoRenew: false, status: "At Risk",          servicesIncluded: "SEO, Content, Reporting",     assignedAM: "Jess L."},
+  { id: "ctr-011", client: "Capital City Plumbing",  contractName: "Local SEO Package",         contractTerm: "6 months",  contractStart: "2025-04-01", contractEnd: "2025-09-30", monthlyRevenue: 900,  annualValue: 10800,  noticePeriod: "30 days",  autoRenew: false, status: "Active",          servicesIncluded: "Local SEO, GMB, Citations",   assignedAM: "Marcus T."},
+  { id: "ctr-012", client: "Sunrise Veterinary",     contractName: "Multi-Channel Quarterly",   contractTerm: "12 months", contractStart: "2025-01-01", contractEnd: "2025-12-31", monthlyRevenue: 2100, annualValue: 25200,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "PPC, Social, Local SEO",      assignedAM: "Jess L."},
+  { id: "ctr-013", client: "Pacific Eye Center",     contractName: "PPC Growth Plan",           contractTerm: "12 months", contractStart: "2025-03-01", contractEnd: "2026-02-28", monthlyRevenue: 2400, annualValue: 28800,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "PPC, Conversion Tracking",    assignedAM: "Marcus T."},
+  { id: "ctr-014", client: "Skyline Landscaping",    contractName: "Content Strategy Retainer", contractTerm: "6 months",  contractStart: "2025-04-01", contractEnd: "2025-09-30", monthlyRevenue: 1500, annualValue: 18000,  noticePeriod: "30 days",  autoRenew: false, status: "Pending Renewal",  servicesIncluded: "Content, Social Media",       assignedAM: "Jess L."},
+  { id: "ctr-015", client: "Rocky Mountain Plumbing", contractName: "Local SEO + Ads",          contractTerm: "12 months", contractStart: "2025-02-01", contractEnd: "2026-01-31", monthlyRevenue: 950,  annualValue: 11400,  noticePeriod: "30 days",  autoRenew: true,  status: "Active",          servicesIncluded: "Local SEO, Google Ads",       assignedAM: "Marcus T."},
 ];
 
 // ── Collections ───────────────────────────────────────────────────────────────
@@ -829,16 +796,16 @@ export const activationQueue: ActivationQueueItem[] = [
 // ── Activity Timeline ─────────────────────────────────────────────────────────
 
 export const activityTimeline: ActivityEvent[] = [
-  { id: "evt-001", type: "Invoice Paid",       client: "Pacific Dental",        invoiceNumber: "INV-0052", amount: 3800,  description: "Invoice INV-0052 paid via ACH.",                          timestamp: "2025-06-08T14:22:00", actor: "Sarah K." },
-  { id: "evt-002", type: "Activation Approved", client: "Pacific Dental",                                               description: "Client activation approved. Pushed to onboarding.",          timestamp: "2025-06-08T14:35:00", actor: "Lisa P." },
-  { id: "evt-003", type: "Invoice Paid",       client: "Harbor Auto Group",     invoiceNumber: "INV-0054", amount: 60000, description: "Annual invoice INV-0054 paid via wire transfer.",           timestamp: "2025-06-05T10:10:00", actor: "Sarah K." },
-  { id: "evt-004", type: "Project Activated",  client: "Harbor Auto Group",                                             description: "Project activated. AM assigned, task blueprints generated.",  timestamp: "2025-06-05T11:00:00", actor: "Marcus T." },
-  { id: "evt-005", type: "Invoice Overdue",    client: "Green Valley Pools",    invoiceNumber: "INV-0057", amount: 2200,  description: "Invoice INV-0057 is 27 days overdue. Escalated.",           timestamp: "2025-06-06T09:00:00", actor: "System" },
-  { id: "evt-006", type: "Collection Updated", client: "Cornerstone Flooring",  invoiceNumber: "INV-0059",              description: "Payment arrangement agreed: $1,600 + $1,600 split.",         timestamp: "2025-06-06T15:45:00", actor: "Sarah K." },
-  { id: "evt-007", type: "Invoice Created",    client: "Desert Sun Roofing",    invoiceNumber: "INV-0065", amount: 2000,  description: "Setup fee invoice created for new client.",                 timestamp: "2025-06-05T09:30:00", actor: "Lisa P." },
-  { id: "evt-008", type: "Invoice Sent",       client: "Desert Sun Roofing",    invoiceNumber: "INV-0065",              description: "Invoice INV-0065 sent via email.",                           timestamp: "2025-06-05T09:35:00", actor: "Lisa P." },
-  { id: "evt-009", type: "Invoice Paid",       client: "City Chiropractic",     invoiceNumber: "INV-0066", amount: 1800,  description: "Monthly invoice paid on time.",                            timestamp: "2025-06-10T08:55:00", actor: "Sarah K." },
-  { id: "evt-010", type: "Invoice Created",    client: "Coastal Fitness Studio", invoiceNumber: "INV-0080", amount: 3200, description: "Upsell invoice created — pending approval.",               timestamp: "2025-06-05T16:00:00", actor: "Lisa P." },
+  { id: "evt-001", type: "Invoice Paid",       client: "Pacific Dental",        invoiceNumber: "INV-0052", amount: 3800,  description: "Invoice INV-0052 paid via ACH.",                          timestamp: "2025-06-08T14:22:00", actor: "Sarah K."},
+  { id: "evt-002", type: "Activation Approved", client: "Pacific Dental",                                               description: "Client activation approved. Pushed to onboarding.",          timestamp: "2025-06-08T14:35:00", actor: "Lisa P."},
+  { id: "evt-003", type: "Invoice Paid",       client: "Harbor Auto Group",     invoiceNumber: "INV-0054", amount: 60000, description: "Annual invoice INV-0054 paid via wire transfer.",           timestamp: "2025-06-05T10:10:00", actor: "Sarah K."},
+  { id: "evt-004", type: "Project Activated",  client: "Harbor Auto Group",                                             description: "Project activated. AM assigned, task blueprints generated.",  timestamp: "2025-06-05T11:00:00", actor: "Marcus T."},
+  { id: "evt-005", type: "Invoice Overdue",    client: "Green Valley Pools",    invoiceNumber: "INV-0057", amount: 2200,  description: "Invoice INV-0057 is 27 days overdue. Escalated.",           timestamp: "2025-06-06T09:00:00", actor: "System"},
+  { id: "evt-006", type: "Collection Updated", client: "Cornerstone Flooring",  invoiceNumber: "INV-0059",              description: "Payment arrangement agreed: $1,600 + $1,600 split.",         timestamp: "2025-06-06T15:45:00", actor: "Sarah K."},
+  { id: "evt-007", type: "Invoice Created",    client: "Desert Sun Roofing",    invoiceNumber: "INV-0065", amount: 2000,  description: "Setup fee invoice created for new client.",                 timestamp: "2025-06-05T09:30:00", actor: "Lisa P."},
+  { id: "evt-008", type: "Invoice Sent",       client: "Desert Sun Roofing",    invoiceNumber: "INV-0065",              description: "Invoice INV-0065 sent via email.",                           timestamp: "2025-06-05T09:35:00", actor: "Lisa P."},
+  { id: "evt-009", type: "Invoice Paid",       client: "City Chiropractic",     invoiceNumber: "INV-0066", amount: 1800,  description: "Monthly invoice paid on time.",                            timestamp: "2025-06-10T08:55:00", actor: "Sarah K."},
+  { id: "evt-010", type: "Invoice Created",    client: "Coastal Fitness Studio", invoiceNumber: "INV-0080", amount: 3200, description: "Upsell invoice created — pending approval.",               timestamp: "2025-06-05T16:00:00", actor: "Lisa P."},
 ];
 
 // ── Revenue Summary ───────────────────────────────────────────────────────────

@@ -18,22 +18,19 @@ export default function WorkspaceTabBar({ workspace }: WorkspaceTabBarProps) {
 
   return (
     <div
-      className="border-b mb-6"
-      style={{ borderColor: "var(--rtm-border)" }}
+      className="border-b mb-6"style={{ borderColor: "var(--rtm-border)"}}
     >
       {/* Workspace identity strip */}
       <div className="flex items-center gap-3 px-1 pt-4 pb-3">
         <span className="text-2xl">{workspace.icon}</span>
         <div>
           <p
-            className="text-[10px] font-bold uppercase tracking-widest"
-            style={{ color: workspace.accentColor }}
+            className="text-[10px] font-bold uppercase tracking-widest"style={{ color: workspace.accentColor }}
           >
             Workspace
           </p>
           <h1
-            className="text-lg font-bold leading-tight"
-            style={{ color: "var(--rtm-text-primary)" }}
+            className="text-lg font-bold leading-tight"style={{ color: "var(--rtm-text-primary)"}}
           >
             {workspace.name}
           </h1>
@@ -52,8 +49,7 @@ export default function WorkspaceTabBar({ workspace }: WorkspaceTabBarProps) {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-150"
-              style={{
+              className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-150"style={{
                 borderBottomColor: active ? workspace.accentColor : "transparent",
                 color: active ? workspace.accentColor : "var(--rtm-text-secondary)",
               }}

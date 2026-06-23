@@ -15,27 +15,21 @@ export function RoleToggle({ role, onRoleChange }: RoleToggleProps) {
         <button
           onClick={() => onRoleChange("head")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            role === "head"
-              ? "bg-indigo-600 text-white shadow"
-              : "text-slate-500 hover:text-slate-700 bg-transparent"
-          }`}
+            role === "head"? "bg-indigo-600 text-white shadow": "text-slate-500 hover:text-slate-700 bg-transparent"}`}
         >
            Account Management Head View
         </button>
         <button
           onClick={() => onRoleChange("am")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            role === "am"
-              ? "bg-blue-600 text-white shadow"
-              : "text-slate-500 hover:text-slate-700 bg-transparent"
-          }`}
+            role === "am"? "bg-blue-600 text-white shadow": "text-slate-500 hover:text-slate-700 bg-transparent"}`}
         >
            Account Manager View
         </button>
       </div>
 
       {/* Role label banner */}
-      {role === "head" ? (
+      {role === "head"? (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50">
           <span className="text-indigo-600 text-lg"></span>
           <div>

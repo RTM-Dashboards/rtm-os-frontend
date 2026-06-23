@@ -9,7 +9,7 @@ import type { DepartmentReportRef, KpiReportingFrequency } from "@/types/departm
 
 interface ReportStatus {
   reportId: string;
-  status: "delivered" | "in-progress" | "overdue" | "scheduled";
+  status: "delivered"| "in-progress"| "overdue"| "scheduled";
   lastDelivered: string;
   nextDue: string;
   clientCount: number;
@@ -41,10 +41,10 @@ function getReportStatus(reportId: string): ReportStatus {
 }
 
 const STATUS_MAP = {
-  delivered:    { variant: "success" as const,  label: "Delivered"    },
-  "in-progress":{ variant: "info"    as const,  label: "In Progress"  },
-  overdue:      { variant: "error"   as const,  label: "Overdue"      },
-  scheduled:    { variant: "neutral" as const,  label: "Scheduled"    },
+  delivered:    { variant: "success"as const,  label: "Delivered"},
+  "in-progress":{ variant: "info"as const,  label: "In Progress"},
+  overdue:      { variant: "error"as const,  label: "Overdue"},
+  scheduled:    { variant: "neutral"as const,  label: "Scheduled"},
 };
 
 const FREQ_LABEL: Record<KpiReportingFrequency, string> = {
@@ -63,10 +63,9 @@ interface Props {
 export default function DepartmentReportsPanel({ reports, accentColor, disabled }: Props) {
   if (disabled) {
     return (
-      <SectionWrapper title="Reports" description="Department reports from Reporting and Intelligence">
+      <SectionWrapper title="Reports"description="Department reports from Reporting and Intelligence">
         <div
-          className="rounded-lg border p-6 text-center text-sm"
-          style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-muted)", background: "var(--rtm-bg)" }}
+          className="rounded-lg border p-6 text-center text-sm"style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-muted)", background: "var(--rtm-bg)"}}
         >
           Reports module is disabled for this department.
         </div>
@@ -76,8 +75,8 @@ export default function DepartmentReportsPanel({ reports, accentColor, disabled 
 
   if (reports.length === 0) {
     return (
-      <SectionWrapper title="Reports" description="Department reports from Reporting and Intelligence">
-        <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+      <SectionWrapper title="Reports"description="Department reports from Reporting and Intelligence">
+        <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>
           No reports configured. Configure reports in Reporting &amp; Intelligence.
         </p>
       </SectionWrapper>
@@ -88,9 +87,7 @@ export default function DepartmentReportsPanel({ reports, accentColor, disabled 
 
   return (
     <SectionWrapper
-      title="Department Reports"
-      description="Reports from Reporting and Intelligence — no hardcoded report data"
-      noPadding
+      title="Department Reports"description="Reports from Reporting and Intelligence — no hardcoded report data"noPadding
       actions={
         <a className="text-xs font-medium hover:underline" href="/reporting" style={{ color: accentColor }}>
           View in Reporting
@@ -100,12 +97,11 @@ export default function DepartmentReportsPanel({ reports, accentColor, disabled 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+            <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
               {["Report", "Frequency", "Data Source", "Clients", "Status", "Last Delivered", "Next Due"].map((h) => (
                 <th
                   key={h}
-                  className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
-                  style={{ color: "var(--rtm-text-muted)" }}
+                  className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
                 >
                   {h}
                 </th>
@@ -118,35 +114,32 @@ export default function DepartmentReportsPanel({ reports, accentColor, disabled 
               return (
                 <tr
                   key={report.reportId}
-                  className="hover:bg-slate-50/50 transition-colors"
-                  style={{ borderBottom: "1px solid var(--rtm-border-light)" }}
+                  className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}
                 >
-                  <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>
+                  <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>
                     {report.displayName}
                   </td>
                   <td className="py-2.5 px-3 whitespace-nowrap">
                     <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-full"
-                      style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+                      className="text-xs font-medium px-2 py-0.5 rounded-full"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
                     >
                       {FREQ_LABEL[report.frequency]}
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 whitespace-nowrap text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                  <td className="py-2.5 px-3 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                     {report.source}
                   </td>
-                  <td className="py-2.5 px-3 whitespace-nowrap text-center font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <td className="py-2.5 px-3 whitespace-nowrap text-center font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>
                     {report.health.clientCount}
                   </td>
                   <td className="py-2.5 px-3 whitespace-nowrap">
-                    <StatusBadge variant={st.variant} label={st.label} size="sm" />
+                    <StatusBadge variant={st.variant} label={st.label} size="sm"/>
                   </td>
-                  <td className="py-2.5 px-3 whitespace-nowrap text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                  <td className="py-2.5 px-3 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                     {report.health.lastDelivered}
                   </td>
                   <td
-                    className="py-2.5 px-3 whitespace-nowrap font-medium text-xs"
-                    style={{ color: report.health.status === "overdue" ? "#DC2626" : "var(--rtm-text-secondary)" }}
+                    className="py-2.5 px-3 whitespace-nowrap font-medium text-xs"style={{ color: report.health.status === "overdue"? "#DC2626": "var(--rtm-text-secondary)"}}
                   >
                     {report.health.nextDue}
                   </td>
