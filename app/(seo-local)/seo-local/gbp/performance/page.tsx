@@ -380,7 +380,7 @@ const locationColumns: Column<GbpLocationRow>[] = [
   { key: "localVisibilityScore", header: "Visibility", width: "140px",
     render: (v) => {
       const n = Number(v);
-      const color = n >= 80 ? "bg-emerald-500": n >= 60 ? "bg-amber-500": "bg-red-400";
+      const color = n >= 80 ? "bg-emerald-500": n >= 60 ? "0": "bg-red-400";
       return <ProgressBar value={n} max={100} height={5} color={color} showLabel />;
     } },
   { key: "reviewGrowth", header: "New Reviews", width: "105px",
@@ -424,7 +424,7 @@ const profileViewsColumns: Column<ProfileViewsRow>[] = [
   { key: "visibilityScore", header: "Visibility", width: "130px",
     render: (v) => {
       const n = Number(v);
-      const color = n >= 80 ? "bg-emerald-500": n >= 60 ? "bg-amber-500": "bg-red-400";
+      const color = n >= 80 ? "bg-emerald-500": n >= 60 ? "0": "bg-red-400";
       return <ProgressBar value={n} max={100} height={5} color={color} showLabel />;
     } },
   { key: "changeVsPrev", header: "vs Prev Period", width: "110px",
@@ -700,7 +700,7 @@ export default function GbpPerformancePage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <SectionWrapper title="Local Visibility Trend"description="Average visibility score — last 12 months">
-          <MiniSparkline data={visibilityTrend} color="#2563EB"height={80} width={500} />
+          <MiniSparkline data={visibilityTrend}height={80} width={500} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>
@@ -709,7 +709,7 @@ export default function GbpPerformancePage() {
         </SectionWrapper>
 
         <SectionWrapper title="Review Growth Trend"description="New reviews per month — last 12 months">
-          <MiniSparkline data={reviewGrowthTrend} color="#D97706"height={80} width={500} />
+          <MiniSparkline data={reviewGrowthTrend}height={80} width={500} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>
@@ -795,7 +795,7 @@ export default function GbpPerformancePage() {
         {/* Profile View Trend */}
         <div className="mb-5">
           <SectionWrapper title="Profile View Trend"description="Total profile views across all locations — last 12 months">
-            <MiniSparkline data={profileViewsTrend} color="#7C3AED"height={80} width={700} />
+            <MiniSparkline data={profileViewsTrend}height={80} width={700} />
             <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
               {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
                 <span key={m} className="flex-1 text-center">{m}</span>
@@ -890,7 +890,7 @@ export default function GbpPerformancePage() {
         {/* Post Views Trend */}
         <div className="mb-5">
           <SectionWrapper title="Post Views Trend"description="Monthly post views — last 12 months">
-            <MiniSparkline data={postViewsTrend} color="#059669"height={70} width={700} />
+            <MiniSparkline data={postViewsTrend}height={70} width={700} />
             <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
               {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
                 <span key={m} className="flex-1 text-center">{m}</span>
@@ -925,7 +925,7 @@ export default function GbpPerformancePage() {
               <h2 className="text-base font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                 Google Posts &amp; Images Upload
               </h2>
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-700 border border-amber-200">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>
                 Coming Soon
               </span>
             </div>
@@ -939,9 +939,9 @@ export default function GbpPerformancePage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Create Google Post", icon: "", color: "bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100"},
-            { label: "Upload Image",       icon: "", color: "bg-purple-50 text-purple-600 border-purple-100 hover:bg-purple-100"},
+            { label: "Upload Image",       icon: "", color: " text-purple-600 border-purple-100 hover:bg-purple-100"},
             { label: "Schedule Post",      icon: "", color: "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-100"},
-            { label: "Submit for Approval",icon: "", color: "bg-amber-50 text-amber-600 border-amber-100 hover:bg-amber-100"},
+            { label: "Submit for Approval",icon: "", color: " text-amber-600 border-amber-100 hover:bg-amber-100"},
           ].map((action) => (
             <button
               key={action.label}

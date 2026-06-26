@@ -27,10 +27,10 @@ const alerts: AlertItem[] = [
 const quickActions: QuickAction[] = [
   { label: "New Report",   description: "Generate a client report", color: "bg-blue-50 text-blue-700"},
   { label: "Add Client",   description: "Onboard a new account",    icon: "", color: "bg-emerald-50 text-emerald-700"},
-  { label: "New Campaign", description: "Launch paid media",         icon: "", color: "bg-violet-50 text-violet-700"},
+  { label: "New Campaign", description: "Launch paid media",         icon: "", color: "var(--rtm-bg) text-violet-700"},
   { label: "View Tasks",   description: "Open task manager",         icon: "",  color: "bg-blue-50 text-blue-700"},
-  { label: "Send Invoice", description: "Billing & payments",        icon: "", color: "bg-amber-50 text-amber-700"},
-  { label: "Run Audit",    description: "SEO / GBP audit",           icon: "", color: "bg-rose-50 text-rose-700"},
+  { label: "Send Invoice", description: "Billing & payments",        icon: "", color: "var(--rtm-bg) text-amber-700"},
+  { label: "Run Audit",    description: "SEO / GBP audit",           icon: "", color: "var(--rtm-bg) text-rose-700"},
 ];
 
 const team: TeamMember[] = [
@@ -251,7 +251,7 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
-          <MiniSparkline data={sparkData} color="var(--rtm-blue)"height={80} width={600} />
+          <MiniSparkline data={sparkData}height={80} width={600} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>

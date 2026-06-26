@@ -41,7 +41,7 @@ const VIEW_LABELS: Record<ViewMode, { label: string; icon?: string }> = {
   "executive":        { label: "Executive",         icon: ""},
 };
 
-const STATUS_COLORS: Record<TaskStatusUI, { bg: string; color: string }> = {
+const STATUS_COLORS: Record<TaskStatusUI, { bg?: string; color?: string }> = {
   "In Progress": { bg: "#DBEAFE", color: "#1E40AF"},
   "Open":        { bg: "#F3F4F6", color: "#374151"},
   "Waiting":     { bg: "#FEF3C7", color: "#92400E"},

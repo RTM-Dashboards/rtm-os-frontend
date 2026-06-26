@@ -9,7 +9,7 @@ import { DEPARTMENT_CONFIGS } from "@/lib/departments/config";
 import { StatusBadge } from "@/components/ui";
 import type { DepartmentConfig } from "@/types/department";
 
-const TYPE_LABEL: Record<DepartmentConfig["departmentType"], { label: string; color: string; bg: string }> = {
+const TYPE_LABEL: Record<DepartmentConfig["departmentType"], { label: string; color?: string; bg?: string }> = {
   core:      { label: "Core",      color: "#1D4ED8", bg: "#EFF6FF"},
   service:   { label: "Service",   color: "#059669", bg: "#ECFDF5"},
   support:   { label: "Support",   color: "#B45309", bg: "#FFFBEB"},

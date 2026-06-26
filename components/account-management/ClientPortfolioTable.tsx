@@ -199,7 +199,7 @@ export function ClientPortfolioTable({ clients }: ClientPortfolioTableProps) {
                         </div>
                         <div>
                           <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block"/>
+                            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: "var(--rtm-blue)" }}/>
                             AI Notes
                             <span className="text-indigo-400 text-[10px] font-normal normal-case tracking-normal">(placeholder)</span>
                           </span>

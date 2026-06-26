@@ -20,7 +20,7 @@ const DEPARTMENT_THROUGHPUT = [
   { dept: "Billing",            openTasks: 0,   overdueTasks: 0,  avgResponseDays: 0.5, slaCompliance: 100, color: "#475569", bg: "#F8FAFC", border: "#CBD5E1", specialists: 1 },
 ];
 
-function SLABar({ compliance, color }: { compliance: number; color: string }) {
+function SLABar({ compliance, color }: { compliance: number; color?: string }) {
   const barColor = compliance < 80 ? "#DC2626": compliance < 90 ? "#D97706": color;
   return (
     <div className="w-full rounded-full h-2 overflow-hidden"style={{ background: "#E5E7EB"}}>

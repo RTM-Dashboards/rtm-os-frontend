@@ -321,7 +321,7 @@ export default function YelpPerformancePage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <SectionWrapper title="Profile Views Trend"description="Total Yelp profile views — last 12 months">
-          <MiniSparkline data={profileViewsTrend} color="#DC2626"height={80} width={500} />
+          <MiniSparkline data={profileViewsTrend}height={80} width={500} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>
@@ -330,7 +330,7 @@ export default function YelpPerformancePage() {
         </SectionWrapper>
 
         <SectionWrapper title="Leads Trend"description="Total Yelp leads — last 12 months">
-          <MiniSparkline data={leadsTrend} color="#7C3AED"height={80} width={500} />
+          <MiniSparkline data={leadsTrend}height={80} width={500} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>

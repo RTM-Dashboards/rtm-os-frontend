@@ -121,8 +121,8 @@ function Badge({
   dot,
 }: {
   label: string;
-  bg: string;
-  color: string;
+  bg?: string;
+  color?: string;
   border: string;
   dot?: string;
 }) {
@@ -224,7 +224,7 @@ function SectionHeader({
   accentColor?: string;
 }) {
   return (
-    <div className="border-b border-slate-100 px-6 py-4">
+    <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
       {eyebrow && (
         <p
           className="text-xs font-bold uppercase tracking-widest mb-0.5"style={{ color: accentColor }}
@@ -232,7 +232,7 @@ function SectionHeader({
           {eyebrow}
         </p>
       )}
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+      <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
       {desc && <p className="text-sm text-slate-500 mt-0.5">{desc}</p>}
     </div>
   );
@@ -445,7 +445,7 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {[
                 "Client",
@@ -461,7 +461,7 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
+                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>
                   {h}
                 </th>
               ))}
@@ -598,7 +598,7 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
           eyebrow="Retention Center"title="Active Retention Plans"desc="All clients with a formal retention plan in place."accentColor="#059669"/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {[
                   "Client",
@@ -612,7 +612,7 @@ function RetentionCenter({ onSelect }: { onSelect: (r: CancellationRequest) => v
                 ].map((h) => (
                   <th
                     key={h}
-                    className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
+                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>
                     {h}
                   </th>
                 ))}
@@ -920,7 +920,7 @@ function SaveAttemptWorkflow({ record }: { record: CancellationRequest }) {
         )}
 
         {!record.retentionPlan && (
-          <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
+          <div className="p-4 text-center" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", border: "1px solid var(--rtm-border)" }}>
             <p className="text-sm font-semibold text-amber-700">
               No retention plan has been created for this account.
             </p>
@@ -1150,7 +1150,7 @@ function RevenueAtRisk() {
               eyebrow="Industry Impact"title="Revenue At Risk by Industry"desc="Cancellation exposure grouped by client industry."accentColor="#EA580C"/>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50">
+                <thead style={{ background: "var(--rtm-bg)" }}>
                   <tr>
                     {["Industry", "Clients", "MRR At Risk"].map((h) => (
                       <th
@@ -1305,7 +1305,7 @@ function ExecutiveRetentionDashboard() {
           <div className="p-5">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50">
+                <thead style={{ background: "var(--rtm-bg)" }}>
                   <tr>
                     {["Month", "Requests", "Saved", "Save Rate"].map((h) => (
                       <th
@@ -1408,7 +1408,7 @@ function ExecutiveRetentionDashboard() {
             eyebrow="Clients Saved"title="Saved Clients"desc="Cancellations successfully reversed this cycle."accentColor="#059669"/>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead style={{ background: "var(--rtm-bg)" }}>
                 <tr>
                   {["Client", "Reason", "ARR Saved", "Strategy"].map((h) => (
                     <th
@@ -1446,7 +1446,7 @@ function ExecutiveRetentionDashboard() {
             eyebrow="Confirmed Losses"title="Cancelled Clients"desc="Cancellations confirmed and moved to offboarding."accentColor="#475569"/>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead style={{ background: "var(--rtm-bg)" }}>
                 <tr>
                   {["Client", "Reason", "ARR Lost", "Status"].map((h) => (
                     <th
@@ -1638,7 +1638,7 @@ function ClientDetailPanel({
       </div>
 
       {/* Reason detail */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-3">
+      <div className="px-5 py-3" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", border: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-amber-600 mb-1">
           Cancellation Reason
         </p>
@@ -1741,7 +1741,7 @@ export default function CancellationsPage() {
             </p>
             <p className="text-lg font-extrabold text-red-600 mt-0.5">{fmt$(arrAtRisk)}</p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center shadow-sm">
+          <div className="px-4 py-2.5 text-center shadow-sm" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", border: "1px solid var(--rtm-border)" }}>
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">
               MRR At Risk
             </p>

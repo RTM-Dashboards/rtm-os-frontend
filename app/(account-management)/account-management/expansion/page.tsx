@@ -9,27 +9,27 @@ import {
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
-function statusBadge(status: ExpansionStatus): string {
-  const map: Record<ExpansionStatus, string> = {
-    Identified: "bg-blue-100 text-blue-700 border-blue-200",
-    Proposed: "bg-indigo-100 text-indigo-700 border-indigo-200",
-    "In Negotiation": "bg-amber-100 text-amber-700 border-amber-200",
-    "Closed Won": "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Declined: "bg-red-100 text-red-700 border-red-200",
+function statusBadge(status: ExpansionStatus): React.CSSProperties {
+  const map: Record<ExpansionStatus, React.CSSProperties> = {
+    Identified: { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    Proposed: { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    "In Negotiation": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    "Closed Won": { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    Declined: { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
   };
-  return map[status] ?? "bg-slate-100 text-slate-500 border-slate-200";
+  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
 }
 
-function confidenceColor(score: number): string {
-  if (score >= 80) return "bg-emerald-500";
-  if (score >= 60) return "bg-amber-400";
-  return "bg-red-400";
+function confidenceBackground(score: number): string {
+  if (score >= 80) return "#10B981";
+  if (score >= 60) return "#F59E0B";
+  return "#EF4444";
 }
 
-function confidenceTextColor(score: number): string {
-  if (score >= 80) return "text-emerald-700";
-  if (score >= 60) return "text-amber-700";
-  return "text-red-700";
+function confidenceTextColor(score: number): React.CSSProperties {
+  if (score >= 80) return { color: "#059669" };
+  if (score >= 60) return { color: "#B45309" };
+  return { color: "#DC2626" };
 }
 
 // ── KPI Card ──────────────────────────────────────────────────────────────────
@@ -111,11 +111,11 @@ export default function ExpansionPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         <KpiCard label="Total"value={total} />
-        <KpiCard label="Closed Won"value={closedWon} color="text-emerald-600"/>
-        <KpiCard label="In Negotiation"value={inNeg} color="text-amber-600"/>
-        <KpiCard label="Proposed"value={proposed} color="text-indigo-600"/>
-        <KpiCard label="Identified"value={identified} color="text-blue-600"/>
-        <KpiCard label="Declined"value={declined} color="text-red-600"/>
+        <KpiCard label="Closed Won"value={closedWon}/>
+        <KpiCard label="In Negotiation"value={inNeg}/>
+        <KpiCard label="Proposed"value={proposed}/>
+        <KpiCard label="Identified"value={identified}/>
+        <KpiCard label="Declined"value={declined}/>
         <KpiCard
           label="Pipeline / mo"value={`$${totalRevPipeline.toLocaleString()}`}
           sub="excl. declined"color="text-teal-700"/>
@@ -187,7 +187,7 @@ export default function ExpansionPage() {
               <div key={status} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span
-                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusBadge(status)}`}
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold" style={statusBadge(status)}
                   >
                     {status}
                   </span>
@@ -222,7 +222,7 @@ export default function ExpansionPage() {
                   <p className="text-xs text-slate-400 truncate">{opp.opportunity}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className={`text-sm font-bold ${confidenceTextColor(opp.confidenceScore)}`}>
+                  <p className="text-sm font-bold" style={confidenceTextColor(opp.confidenceScore)}>
                     {opp.confidenceScore}%
                   </p>
                   <p className="text-xs text-slate-400">${opp.estimatedRevenue.toLocaleString()}/mo</p>
@@ -246,7 +246,7 @@ function OpportunityRow({ opp }: { opp: ExpansionOpportunity }) {
           {opp.recommendedServices.map((s) => (
             <span
               key={s}
-              className="inline-block rounded-md bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
+              className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)" }}>
               {s}
             </span>
           ))}
@@ -260,18 +260,18 @@ function OpportunityRow({ opp }: { opp: ExpansionOpportunity }) {
         <div className="flex items-center gap-2">
           <div className="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
             <div
-              className={`h-full rounded-full ${confidenceColor(opp.confidenceScore)}`}
-              style={{ width: `${opp.confidenceScore}%` }}
+              className="h-full rounded-full"
+              style={{ width: `${opp.confidenceScore}%`, background: "#3B82F6" }}
             />
           </div>
-          <span className={`text-xs font-semibold ${confidenceTextColor(opp.confidenceScore)}`}>
+          <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
             {opp.confidenceScore}%
           </span>
         </div>
       </td>
       <td className="px-4 py-3">
         <span
-          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusBadge(opp.status)}`}
+          className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold" style={statusBadge(opp.status)}
         >
           {opp.status}
         </span>

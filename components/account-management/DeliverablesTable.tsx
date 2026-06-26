@@ -117,7 +117,7 @@ export function DeliverablesTable({ deliverables }: DeliverablesTableProps) {
                   </td>
                   <td className="px-4 py-3 text-slate-700 whitespace-nowrap">{d.clientName}</td>
                   <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded font-medium">
+                    <span className="px-2 py-0.5 text-xs rounded font-medium" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)" }}>
                       {d.service}
                     </span>
                   </td>

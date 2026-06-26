@@ -15,31 +15,31 @@ type TaskStatusType = "Not Started"| "In Progress"| "Completed"| "Blocked"| "Wai
 
 function statusBadge(s: string) {
   switch (s) {
-    case "Completed": return "bg-emerald-100 text-emerald-700";
-    case "In Progress": return "bg-blue-100 text-blue-700";
-    case "Blocked": return "bg-red-100 text-red-700";
-    case "Waiting For Client": return "bg-amber-100 text-amber-700";
-    case "Review": return "bg-violet-100 text-violet-700";
-    case "Not Started": return "bg-slate-100 text-slate-500";
-    default: return "bg-slate-100 text-slate-500";
+    case "Completed": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "In Progress": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Blocked": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Waiting For Client": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Review": return { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" };
+    case "Not Started": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
 function priorityBadge(p: string) {
   switch (p) {
-    case "High": return "bg-red-100 text-red-700";
-    case "Medium": return "bg-amber-100 text-amber-700";
-    case "Low": return "bg-slate-100 text-slate-500";
-    default: return "bg-slate-100 text-slate-500";
+    case "High": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Medium": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Low": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
 function templateStatusBadge(s: string) {
   switch (s) {
-    case "Active": return "bg-emerald-100 text-emerald-700";
-    case "Draft": return "bg-amber-100 text-amber-700";
-    case "Archived": return "bg-slate-100 text-slate-500";
-    default: return "bg-slate-100 text-slate-500";
+    case "Active": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Draft": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Archived": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
@@ -217,7 +217,7 @@ function HeadView() {
       </div>
 
       {/* Head Actions */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5">
+      <section className="rounded-xl border px-6 py-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">Head Management Actions</p>
         <div className="flex flex-wrap gap-2">
           {[
@@ -234,11 +234,11 @@ function HeadView() {
       </section>
 
       {/* All Tasks Table */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
           <div>
-            <h2 className="text-lg font-bold text-slate-900">All Department / Client Tasks</h2>
-            <p className="text-sm text-slate-500">Full centralized task view across all AMs, clients, and departments.</p>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>All Department / Client Tasks</h2>
+            <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Full centralized task view across all AMs, clients, and departments.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <select value={filterAM} onChange={(e) => setFilterAM(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -257,10 +257,10 @@ function HeadView() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Task", "Client", "Assigned AM", "Department", "Service", "Due Date", "Priority", "Status", "Notes", "Update"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -274,10 +274,10 @@ function HeadView() {
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{t.service}</td>
                   <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{t.dueDate}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${priorityBadge(t.priority)}`}>{t.priority}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={priorityBadge(t.priority)}>{t.priority}</span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <select value={t.status} onChange={(e) => updateStatus(t.id, e.target.value as TaskStatusType)} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none ${statusBadge(t.status)}`}>
+                    <select value={t.status} onChange={(e) => updateStatus(t.id, e.target.value as TaskStatusType)} className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none" style={statusBadge(t.status)}>
                       {ALL_STATUSES.map((s) => <option key={s}>{s}</option>)}
                     </select>
                   </td>
@@ -299,10 +299,10 @@ function HeadView() {
       </section>
 
       {/* Task distribution by AM */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-6 py-4">
-          <h2 className="text-lg font-bold text-slate-900">Task Distribution by AM</h2>
-          <p className="text-sm text-slate-500">Breakdown of task ownership across the AM team.</p>
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Task Distribution by AM</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Breakdown of task ownership across the AM team.</p>
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
           {AM_NAMES.map((am) => {
@@ -361,7 +361,7 @@ function AMView() {
       </div>
 
       {/* AM Actions */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5">
+      <section className="rounded-xl border px-6 py-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <p className="mb-3 text-xs font-bold uppercase tracking-widest text-slate-400">My Task Actions</p>
         <div className="flex flex-wrap gap-2">
           {[
@@ -378,11 +378,11 @@ function AMView() {
       </section>
 
       {/* My Assigned Client Tasks */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
           <div>
-            <h2 className="text-lg font-bold text-slate-900">My Assigned Client Tasks</h2>
-            <p className="text-sm text-slate-500">Tasks assigned to {SARAH} only. Other AM tasks are not visible.</p>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>My Assigned Client Tasks</h2>
+            <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Tasks assigned to {SARAH} only. Other AM tasks are not visible.</p>
           </div>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
             <option value="All">All Statuses</option>
@@ -398,8 +398,8 @@ function AMView() {
                   <p className="text-xs text-slate-500 mt-0.5">{t.client} · {t.department} · Due: {t.dueDate}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${priorityBadge(t.priority)}`}>{t.priority}</span>
-                  <select value={t.status} onChange={(e) => updateStatus(t.id, e.target.value as TaskStatusType)} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer ${statusBadge(t.status)}`}>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={priorityBadge(t.priority)}>{t.priority}</span>
+                  <select value={t.status} onChange={(e) => updateStatus(t.id, e.target.value as TaskStatusType)} className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer" style={statusBadge(t.status)}>
                     {ALL_STATUSES.map((s) => <option key={s}>{s}</option>)}
                   </select>
                 </div>
@@ -426,21 +426,21 @@ function AMView() {
       </section>
 
       {/* My Client Handoffs */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 px-6 py-4">
-          <h2 className="text-lg font-bold text-slate-900">My Client Handoffs</h2>
-          <p className="text-sm text-slate-500">Client tasks I&apos;m handing off or receiving.</p>
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>My Client Handoffs</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Client tasks I&apos;m handing off or receiving.</p>
         </div>
         <div className="p-5">
           {myTasks.filter((t) => t.status === "Waiting For Client").length > 0 ? (
             <div className="space-y-3">
               {myTasks.filter((t) => t.status === "Waiting For Client").map((t) => (
-                <div key={t.id} className="flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <div key={t.id} className="flex items-center justify-between gap-4 rounded-xl border border" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
                   <div>
                     <p className="text-sm font-semibold text-slate-800">{t.task}</p>
                     <p className="text-xs text-slate-500">{t.client} · {t.department}</p>
                   </div>
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusBadge(t.status)}`}>{t.status}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={statusBadge(t.status)}>{t.status}</span>
                 </div>
               ))}
             </div>
@@ -485,12 +485,12 @@ function TaskTemplateLibrary() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="task-template-library">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="task-template-library">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-0.5">Teamwork Foundation</p>
-          <h2 className="text-lg font-bold text-slate-900">Task Template Library</h2>
-          <p className="text-sm text-slate-500">Reusable task templates organized by department and service.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Task Template Library</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Reusable task templates organized by department and service.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -501,28 +501,28 @@ function TaskTemplateLibrary() {
             <option value="All">All Statuses</option>
             {["Active", "Draft", "Archived"].map((s) => <option key={s}>{s}</option>)}
           </select>
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">+ Create Template</button>
+          <button className="text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ Create Template</button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Template Name", "Department", "Service", "No. of Tasks", "Active Clients", "Status", "Last Modified", "Actions"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((t) => (
-              <tr key={t.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={t.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3 font-semibold text-slate-800">{t.name}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{t.department}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{t.service}</td>
                 <td className="px-4 py-3 text-center font-bold text-slate-700">{t.taskCount}</td>
                 <td className="px-4 py-3 text-center font-bold text-blue-700">{t.activeClients}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${templateStatusBadge(t.status)}`}>{t.status}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={templateStatusBadge(t.status)}>{t.status}</span>
                 </td>
                 <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{t.lastModified}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
@@ -560,12 +560,12 @@ function ProjectTemplateLibrary() {
   });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="project-template-library">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="project-template-library">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-teal-600 mb-0.5">Teamwork Foundation</p>
-          <h2 className="text-lg font-bold text-slate-900">Project Template Library</h2>
-          <p className="text-sm text-slate-500">Pre-built project templates for common service launches and onboarding flows.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Project Template Library</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Pre-built project templates for common service launches and onboarding flows.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -576,21 +576,21 @@ function ProjectTemplateLibrary() {
             <option value="All">All Statuses</option>
             {["Active", "Draft", "Archived"].map((s) => <option key={s}>{s}</option>)}
           </select>
-          <button className="bg-teal-600 hover:bg-teal-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">+ New Project Template</button>
+          <button className="text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ New Project Template</button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Project Template", "Department", "Services Included", "Task Count", "Duration", "Status", "Actions"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((p) => (
-              <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={p.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3 font-semibold text-slate-800">{p.name}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{p.department}</td>
                 <td className="px-4 py-3">
@@ -603,7 +603,7 @@ function ProjectTemplateLibrary() {
                 <td className="px-4 py-3 text-center font-bold text-slate-700">{p.taskCount}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{p.duration}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${templateStatusBadge(p.status)}`}>{p.status}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={templateStatusBadge(p.status)}>{p.status}</span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <div className="flex gap-2">
@@ -631,27 +631,27 @@ function ProjectTemplateLibrary() {
 
 function DepartmentTemplateLibrary() {
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-6 py-4">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-violet-600 mb-0.5">Teamwork Foundation</p>
-        <h2 className="text-lg font-bold text-slate-900">Department Template Library</h2>
-        <p className="text-sm text-slate-500">Template ownership and active projects broken down by department.</p>
+        <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Department Template Library</h2>
+        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Template ownership and active projects broken down by department.</p>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Department", "Templates", "Active Projects", "Template Owner", "Actions"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {DEPT_TEMPLATE_ROWS.map((row) => (
-              <tr key={row.department} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={row.department} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3">
                   <span className="inline-flex items-center gap-2 font-semibold text-slate-800">
-                    <span className="w-2 h-2 rounded-full bg-indigo-400 inline-block"/>
+                    <span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--rtm-blue)" }}/>
                     {row.department}
                   </span>
                 </td>
@@ -681,33 +681,33 @@ function ClientTemplateLibrary() {
   const filtered = filterService === "All"? CLIENT_TEMPLATES : CLIENT_TEMPLATES.filter((c) => c.service === filterService);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-amber-600 mb-0.5">Teamwork Foundation</p>
-          <h2 className="text-lg font-bold text-slate-900">Client Template Library</h2>
-          <p className="text-sm text-slate-500">Client-specific templates for customized service packages.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Client Template Library</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Client-specific templates for customized service packages.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterService} onChange={(e) => setFilterService(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
             <option value="All">All Services</option>
             {services.map((s) => <option key={s}>{s}</option>)}
           </select>
-          <button className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">+ Add Client Template</button>
+          <button className="text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ Add Client Template</button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Client", "Template", "Service", "Task Count", "Last Updated", "Actions"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((c) => (
-              <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={c.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3 font-semibold text-slate-800">{c.client}</td>
                 <td className="px-4 py-3 text-slate-600">{c.template}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{c.service}</td>
@@ -776,11 +776,11 @@ function TemplateBuilder() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="template-builder">
-      <div className="border-b border-slate-100 px-6 py-4">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="template-builder">
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-rose-600 mb-0.5">Teamwork Foundation</p>
-        <h2 className="text-lg font-bold text-slate-900">Template Builder</h2>
-        <p className="text-sm text-slate-500">Build reusable task templates from scratch or customize existing ones.</p>
+        <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Template Builder</h2>
+        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Build reusable task templates from scratch or customize existing ones.</p>
       </div>
       <div className="p-6 space-y-6">
         {/* Template Header Fields */}
@@ -822,13 +822,13 @@ function TemplateBuilder() {
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-bold text-slate-700">Task Builder <span className="text-slate-400 font-normal">({builderTasks.length} tasks)</span></p>
-            <button onClick={addTask} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">+ Add Task</button>
+            <button onClick={addTask} className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ Add Task</button>
           </div>
           <div className="space-y-3">
             {builderTasks.map((t, idx) => (
               <div key={t.id} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <span className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center flex-shrink-0">{idx + 1}</span>
+                  <span className="w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center flex-shrink-0" style={{ background: "var(--rtm-blue-xlight)", color: "var(--rtm-blue)" }}>{idx + 1}</span>
                   <input
                     type="text"value={t.name}
                     onChange={(e) => updateTask(t.id, "name", e.target.value)}
@@ -875,7 +875,7 @@ function TemplateBuilder() {
 
         {/* Builder Actions */}
         <div className="flex flex-wrap gap-3 pt-2 border-t border-slate-100">
-          <button onClick={addTask} className="bg-indigo-100 hover:bg-indigo-200 text-indigo-700 text-sm font-semibold px-4 py-2 rounded-lg transition-colors">+ Add Task</button>
+          <button onClick={addTask} className="text-sm font-semibold px-4 py-2 rounded-lg transition-colors border" style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>+ Add Task</button>
           <button onClick={saveTemplate} className={`text-sm font-semibold px-6 py-2 rounded-lg transition-colors text-white ${saved ? "bg-emerald-600": "bg-emerald-600 hover:bg-emerald-700"}`}>
             {saved ? "Saved!": "Save Template"}
           </button>
@@ -907,11 +907,11 @@ function TaskPackageGenerator() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="task-package-generator">
-      <div className="border-b border-slate-100 px-6 py-4">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="task-package-generator">
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-orange-600 mb-0.5">Teamwork Foundation</p>
-        <h2 className="text-lg font-bold text-slate-900">Task Package Generator</h2>
-        <p className="text-sm text-slate-500">Select a client, service, and template — generate and push tasks to the Centralized Task board.</p>
+        <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Task Package Generator</h2>
+        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Select a client, service, and template — generate and push tasks to the Centralized Task board.</p>
       </div>
       <div className="p-6 space-y-6">
         {/* Workflow Indicator */}
@@ -962,7 +962,7 @@ function TaskPackageGenerator() {
             <button
               onClick={generate}
               disabled={!pkg.client || !pkg.service || !pkg.template}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+              className="w-full disabled:opacity-40 disabled:cursor-not-allowed text-sm font-semibold px-4 py-2 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>
               Generate Tasks
             </button>
           </div>
@@ -970,7 +970,7 @@ function TaskPackageGenerator() {
 
         {/* Generated Tasks Preview */}
         {pkg.generated && (
-          <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+          <div className="rounded-xl border p-4" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
             <div className="flex items-center justify-between mb-3">
               <div>
                 <p className="text-sm font-bold text-indigo-800">Generated Task Package</p>
@@ -987,7 +987,7 @@ function TaskPackageGenerator() {
             <div className="space-y-2">
               {MOCK_GENERATED_TASKS.map((t) => (
                 <div key={t.id} className="flex items-center gap-3 rounded-lg bg-white border border-indigo-100 px-3 py-2">
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${priorityBadge(t.priority)}`}>{t.priority}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" style={priorityBadge(t.priority)}>{t.priority}</span>
                   <span className="text-sm font-medium text-slate-800 flex-1">{t.name}</span>
                   <span className="text-xs text-slate-500">{t.department}</span>
                   <span className="text-xs text-slate-400">Due in {t.dueDays}d</span>
@@ -1008,12 +1008,12 @@ function TaskDependencyBuilder() {
   const chain = DEPENDENCY_CHAINS.find((c) => c.id === selected) ?? DEPENDENCY_CHAINS[0];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-cyan-600 mb-0.5">Teamwork Foundation</p>
-          <h2 className="text-lg font-bold text-slate-900">Task Dependency Builder</h2>
-          <p className="text-sm text-slate-500">Visualize and define task dependency chains for templates and projects.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Task Dependency Builder</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Visualize and define task dependency chains for templates and projects.</p>
         </div>
         <select
           value={selected}
@@ -1028,14 +1028,14 @@ function TaskDependencyBuilder() {
           {chain.steps.map((step, idx) => (
             <div key={step} className="flex flex-col items-start">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-indigo-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full text-white text-xs font-bold flex items-center justify-center flex-shrink-0" style={{ background: "var(--rtm-blue)" }}>
                   {idx + 1}
                 </div>
-                <div className="rounded-xl border border-indigo-200 bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-800 min-w-[200px]">
+                <div className="rounded-xl border px-5 py-2.5 text-sm font-semibold min-w-[200px]" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
                   {step}
                 </div>
                 {idx === 0 && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">Start</span>}
-                {idx === chain.steps.length - 1 && <span className="text-xs bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full font-semibold">End</span>}
+                {idx === chain.steps.length - 1 && <span className="text-xs px-2 py-0.5 rounded-full font-semibold border" style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>End</span>}
               </div>
               {idx < chain.steps.length - 1 && (
                 <div className="ml-4 flex items-center">
@@ -1047,7 +1047,7 @@ function TaskDependencyBuilder() {
           ))}
         </div>
         <div className="mt-6 flex flex-wrap gap-2">
-          <button className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">+ Add Step</button>
+          <button className="text-xs font-semibold px-4 py-2 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ Add Step</button>
           <button className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg transition-colors">Reorder Steps</button>
           <button className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 rounded-lg transition-colors">Save Chain</button>
         </div>
@@ -1069,7 +1069,7 @@ function TaskManagementActionCenter() {
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5">
+    <section className="rounded-xl border px-6 py-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <p className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-400">Task Management Action Center</p>
       <p className="text-sm text-slate-500 mb-4">Central controls for template management, task generation, and project operations.</p>
       <div className="flex flex-wrap gap-3">
@@ -1114,13 +1114,13 @@ const PROJECT_STATUSES = ["Planning", "Active", "Waiting For Client", "Blocked",
 
 function projectStatusBadge(s: string) {
   switch (s) {
-    case "Active": return "bg-blue-100 text-blue-700";
-    case "Planning": return "bg-slate-100 text-slate-600";
-    case "Waiting For Client": return "bg-amber-100 text-amber-700";
-    case "Blocked": return "bg-red-100 text-red-700";
-    case "Completed": return "bg-emerald-100 text-emerald-700";
-    case "Delayed": return "bg-orange-100 text-orange-700";
-    default: return "bg-slate-100 text-slate-500";
+    case "Active": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Planning": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    case "Waiting For Client": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Blocked": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Completed": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Delayed": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
@@ -1151,12 +1151,12 @@ const MILESTONE_DATA: Milestone[] = [
 
 function milestoneStatusBadge(s: string) {
   switch (s) {
-    case "Complete": return "bg-emerald-100 text-emerald-700";
-    case "In Progress": return "bg-blue-100 text-blue-700";
-    case "Not Started": return "bg-slate-100 text-slate-500";
-    case "Overdue": return "bg-red-100 text-red-700";
-    case "Blocked": return "bg-orange-100 text-orange-700";
-    default: return "bg-slate-100 text-slate-500";
+    case "Complete": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "In Progress": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Not Started": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    case "Overdue": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Blocked": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
@@ -1247,12 +1247,12 @@ const TASK_DETAIL_MOCK: TaskDetailData = {
 
 function commentTypeBadge(type: string) {
   switch (type) {
-    case "internal": return "bg-slate-100 text-slate-600";
-    case "handoff": return "bg-blue-100 text-blue-700";
-    case "am_note": return "bg-violet-100 text-violet-700";
-    case "activity": return "bg-slate-50 text-slate-400";
-    case "status_change": return "bg-amber-50 text-amber-600";
-    default: return "bg-slate-100 text-slate-500";
+    case "internal": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    case "handoff": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "am_note": return { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" };
+    case "activity": return { background: "#F8FAFC", color: "#94A3B8", borderColor: "#E2E8F0" };
+    case "status_change": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
@@ -1293,12 +1293,12 @@ const APPROVAL_DATA: ApprovalItem[] = [
 
 function approvalStatusBadge(s: string) {
   switch (s) {
-    case "Approved": return "bg-emerald-100 text-emerald-700";
-    case "Pending": return "bg-amber-100 text-amber-700";
-    case "Rejected": return "bg-red-100 text-red-700";
-    case "Revision Requested": return "bg-orange-100 text-orange-700";
-    case "Not Required": return "bg-slate-100 text-slate-400";
-    default: return "bg-slate-100 text-slate-500";
+    case "Approved": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Pending": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Rejected": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Revision Requested": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Not Required": return { background: "#F8FAFC", color: "#94A3B8", borderColor: "#E2E8F0" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
@@ -1329,11 +1329,11 @@ const WORKLOAD_DATA: ThroughputUser[] = [
 
 function workloadStatusBadge(s: string) {
   switch (s) {
-    case "Available": return "bg-emerald-100 text-emerald-700";
-    case "On Track": return "bg-blue-100 text-blue-700";
-    case "At Risk": return "bg-amber-100 text-amber-700";
-    case "Overdue": return "bg-red-100 text-red-700";
-    default: return "bg-slate-100 text-slate-500";
+    case "Available": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "On Track": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "At Risk": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Overdue": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
@@ -1385,10 +1385,10 @@ const AUTOMATION_RULES: AutomationRule[] = [
 
 function automationStatusBadge(s: string) {
   switch (s) {
-    case "Active": return "bg-emerald-100 text-emerald-700";
-    case "Paused": return "bg-amber-100 text-amber-700";
-    case "Draft": return "bg-slate-100 text-slate-500";
-    default: return "bg-slate-100 text-slate-500";
+    case "Active": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Paused": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Draft": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
@@ -1411,12 +1411,12 @@ function ProjectWorkspaceSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="project-workspace">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="project-workspace">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-0.5">Project Workspace</p>
-          <h2 className="text-lg font-bold text-slate-900">Project Workspace</h2>
-          <p className="text-sm text-slate-500">Track all active client projects from launch to completion.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Project Workspace</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Track all active client projects from launch to completion.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -1437,29 +1437,29 @@ function ProjectWorkspaceSection() {
           return (
             <div key={s} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
               <p className="text-xs font-semibold text-slate-500 truncate">{s}</p>
-              <p className={`text-xl font-bold mt-1 ${projectStatusBadge(s).split("")[1]}`}>{count}</p>
+              <p className="text-xl font-bold mt-1" style={{ color: (projectStatusBadge(s) as React.CSSProperties).color }}>{count}</p>
             </div>
           );
         })}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Project", "Client", "Services", "Project Owner", "Start Date", "Due Date", "Progress", "Status"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((p) => (
-              <tr key={p.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={p.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3 font-semibold text-slate-800 min-w-[160px]">{p.project}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{p.client}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {p.services.map((s) => (
-                      <span key={s} className="inline-flex rounded-full bg-indigo-50 text-indigo-700 px-2 py-0.5 text-xs font-medium">{s}</span>
+                      <span key={s} className="inline-flex rounded-full border px-2 py-0.5 text-xs font-medium" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>{s}</span>
                     ))}
                   </div>
                 </td>
@@ -1481,7 +1481,7 @@ function ProjectWorkspaceSection() {
                   <select
                     value={p.status}
                     onChange={(e) => updateProjectStatus(p.id, e.target.value as Project["status"])}
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer ${projectStatusBadge(p.status)}`}
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer" style={projectStatusBadge(p.status)}
                   >
                     {PROJECT_STATUSES.map((s) => <option key={s}>{s}</option>)}
                   </select>
@@ -1520,12 +1520,12 @@ function MilestoneTrackingSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="milestone-tracking">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="milestone-tracking">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-violet-600 mb-0.5">Milestone Tracking</p>
-          <h2 className="text-lg font-bold text-slate-900">Milestone Tracking</h2>
-          <p className="text-sm text-slate-500">Track key project milestones across all clients and services.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Milestone Tracking</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Track key project milestones across all clients and services.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterClient} onChange={(e) => setFilterClient(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -1536,15 +1536,15 @@ function MilestoneTrackingSection() {
             <option value="All">All Statuses</option>
             {["Not Started", "In Progress", "Complete", "Overdue", "Blocked"].map((s) => <option key={s}>{s}</option>)}
           </select>
-          <button className="bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">+ Create Milestone</button>
+          <button className="text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ Create Milestone</button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Milestone", "Client", "Owner", "Due Date", "Status", "Dependency", "Update"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -1559,7 +1559,7 @@ function MilestoneTrackingSection() {
                   <select
                     value={m.status}
                     onChange={(e) => updateMilestoneStatus(m.id, e.target.value as Milestone["status"])}
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer ${milestoneStatusBadge(m.status)}`}
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer" style={milestoneStatusBadge(m.status)}
                   >
                     {["Not Started", "In Progress", "Complete", "Overdue", "Blocked"].map((s) => <option key={s}>{s}</option>)}
                   </select>
@@ -1624,12 +1624,12 @@ function TaskBoardSection() {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="task-board">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="task-board">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Task Board</p>
-          <h2 className="text-lg font-bold text-slate-900">Task Board</h2>
-          <p className="text-sm text-slate-500">Kanban-style view of all tasks across departments and clients.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Task Board</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Kanban-style view of all tasks across departments and clients.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -1662,7 +1662,7 @@ function TaskBoardSection() {
                     <p className="text-xs font-bold text-slate-800 mb-1 leading-snug">{task.name}</p>
                     <p className="text-xs text-slate-500 mb-2">{task.client}</p>
                     <div className="flex flex-wrap gap-1 mb-2">
-                      <span className={`inline-flex rounded-full px-1.5 py-0.5 text-xs font-semibold ${priorityBadge(task.priority)}`}>{task.priority}</span>
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-1.5 py-0.5 text-xs font-semibold" style={priorityBadge(task.priority)}>{task.priority}</span>
                       <span className="inline-flex rounded-full px-1.5 py-0.5 text-xs bg-slate-100 text-slate-600">{task.department.split("")[0]}</span>
                     </div>
                     <p className="text-xs text-slate-400"> {task.owner}</p>
@@ -1686,7 +1686,7 @@ function TaskBoardSection() {
               <button
                 key={col}
                 onClick={() => moveTask(selectedTask.id, col)}
-                className="text-xs font-semibold rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 transition-colors">
+                className="text-xs font-semibold rounded-lg border border-slate-200 bg-white px-3 py-1.5 hover:bg-slate-50 transition-colors">
                 → {col}
               </button>
             ))}
@@ -1724,11 +1724,11 @@ function TaskDetailSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="task-detail">
-      <div className="border-b border-slate-100 px-6 py-4">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="task-detail">
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-0.5">Task Detail</p>
-        <h2 className="text-lg font-bold text-slate-900">Task Detail &amp; Comments</h2>
-        <p className="text-sm text-slate-500">Deep view into a single task with full comment history.</p>
+        <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Task Detail &amp; Comments</h2>
+        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Deep view into a single task with full comment history.</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
         {/* Left: Task Info */}
@@ -1802,7 +1802,7 @@ function TaskDetailSection() {
             {filteredComments.map((c) => (
               <div key={c.id} className={`rounded-xl border px-4 py-3 ${c.type === "activity"|| c.type === "status_change"? "border-slate-100 bg-slate-50": "border-slate-100 bg-white"}`}>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${commentTypeBadge(c.type)}`}>{commentTypeLabel(c.type)}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" style={commentTypeBadge(c.type)}>{commentTypeLabel(c.type)}</span>
                   <span className="text-xs font-semibold text-slate-600">{c.author}</span>
                   <span className="text-xs text-slate-400">{c.date}</span>
                 </div>
@@ -1815,7 +1815,7 @@ function TaskDetailSection() {
           </div>
           {/* Add Comment */}
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Add Comment</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Add Comment</p>
             <select value={newCommentType} onChange={(e) => setNewCommentType(e.target.value as TaskDetailComment["type"])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
               {commentTypes.filter((t) => t !== "activity"&& t !== "status_change").map((t) => (
                 <option key={t} value={t}>{commentTypeLabel(t)}</option>
@@ -1826,7 +1826,7 @@ function TaskDetailSection() {
               onChange={(e) => setNewComment(e.target.value)}
               rows={3}
               placeholder="Add a comment, note, or handoff detail…"className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 resize-none"/>
-            <button onClick={addComment} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">Post Comment</button>
+            <button onClick={addComment} className="text-xs font-semibold px-4 py-2 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>Post Comment</button>
           </div>
         </div>
       </div>
@@ -1854,12 +1854,12 @@ function ApprovalWorkflowSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="approval-workflow">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="approval-workflow">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-amber-600 mb-0.5">Approval Workflow</p>
-          <h2 className="text-lg font-bold text-slate-900">Approval Workflow</h2>
-          <p className="text-sm text-slate-500">Track all pending, approved, and rejected approvals across tasks and clients.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Approval Workflow</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Track all pending, approved, and rejected approvals across tasks and clients.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -1870,7 +1870,7 @@ function ApprovalWorkflowSection() {
             <option value="All">All Statuses</option>
             {approvalStatuses.map((s) => <option key={s}>{s}</option>)}
           </select>
-          <button className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">+ Request Approval</button>
+          <button className="text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ Request Approval</button>
         </div>
       </div>
       {/* KPI strip */}
@@ -1880,25 +1880,25 @@ function ApprovalWorkflowSection() {
           return (
             <div key={s} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
               <p className="text-xs font-semibold text-slate-500 truncate">{s}</p>
-              <p className={`text-xl font-bold mt-1 ${approvalStatusBadge(s).split("")[1]}`}>{count}</p>
+              <p className="text-xl font-bold mt-1" style={{ color: (approvalStatusBadge(s) as React.CSSProperties).color }}>{count}</p>
             </div>
           );
         })}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Type", "Task", "Client", "Assigned To", "Requested", "Status", "Notes", "Action"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filtered.map((a) => (
-              <tr key={a.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={a.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className="inline-flex rounded-full bg-indigo-50 text-indigo-700 px-2.5 py-0.5 text-xs font-semibold">{a.type}</span>
+                  <span className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>{a.type}</span>
                 </td>
                 <td className="px-4 py-3 font-semibold text-slate-800 min-w-[160px]">{a.task}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{a.client}</td>
@@ -1908,7 +1908,7 @@ function ApprovalWorkflowSection() {
                   <select
                     value={a.status}
                     onChange={(e) => updateApprovalStatus(a.id, e.target.value as ApprovalItem["status"])}
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer ${approvalStatusBadge(a.status)}`}
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold rounded-full px-2.5 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer" style={approvalStatusBadge(a.status)}
                   >
                     {approvalStatuses.map((s) => <option key={s}>{s}</option>)}
                   </select>
@@ -1949,12 +1949,12 @@ function WorkloadManagementSection() {
   });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="workload-management">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="workload-management">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-rose-600 mb-0.5">Team Throughput</p>
-          <h2 className="text-lg font-bold text-slate-900">Team Throughput &amp; SLA Status</h2>
-          <p className="text-sm text-slate-500">Monitor open tasks, overdue tasks, and SLA compliance by team member.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Team Throughput &amp; SLA Status</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Monitor open tasks, overdue tasks, and SLA compliance by team member.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
@@ -1974,17 +1974,17 @@ function WorkloadManagementSection() {
           return (
             <div key={s} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-center">
               <p className="text-xs font-semibold text-slate-500 truncate">{s}</p>
-              <p className={`text-xl font-bold mt-1 ${workloadStatusBadge(s).split("")[1]}`}>{count}</p>
+              <p className="text-xl font-bold mt-1" style={{ color: (workloadStatusBadge(s) as React.CSSProperties).color }}>{count}</p>
             </div>
           );
         })}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["User", "Department", "Open Tasks", "Overdue Tasks", "Blocked Tasks", "SLA Compliance", "Queue Status"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -2012,7 +2012,7 @@ function WorkloadManagementSection() {
                   </div>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${workloadStatusBadge(w.queueStatus)}`}>{w.queueStatus}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={workloadStatusBadge(w.queueStatus)}>{w.queueStatus}</span>
                 </td>
               </tr>
             ))}
@@ -2040,14 +2040,14 @@ function TimeTrackingSection() {
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="time-tracking">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="time-tracking">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-cyan-600 mb-0.5">SLA Dashboard</p>
-          <h2 className="text-lg font-bold text-slate-900">SLA Compliance Dashboard</h2>
-          <p className="text-sm text-slate-500">Task completion times, SLA status, and response timestamps. No hours tracked.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>SLA Compliance Dashboard</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Task completion times, SLA status, and response timestamps. No hours tracked.</p>
         </div>
-        <button className="bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">View SLA Report</button>
+        <button className="text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>View SLA Report</button>
       </div>
       {/* Summary strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pt-4 pb-2">
@@ -2065,10 +2065,10 @@ function TimeTrackingSection() {
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Task", "Client", "User", "Estimated", "Logged", "Remaining", "Billable", "Non-Billable", "Notes"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -2076,7 +2076,7 @@ function TimeTrackingSection() {
             {TIME_TRACKING_DATA.map((t) => {
               const remaining = Math.max(0, t.estimated - t.logged);
               return (
-                <tr key={t.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={t.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                   <td className="px-4 py-3 font-semibold text-slate-800 min-w-[160px]">{t.task}</td>
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{t.client}</td>
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{t.user}</td>
@@ -2124,27 +2124,27 @@ function TaskAutomationRulesSection() {
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm"id="automation-rules">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="automation-rules">
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-orange-600 mb-0.5">Automation</p>
-          <h2 className="text-lg font-bold text-slate-900">Task Automation Rules</h2>
-          <p className="text-sm text-slate-500">Mock automation rules that trigger task creation and notifications.</p>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Task Automation Rules</h2>
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Mock automation rules that trigger task creation and notifications.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
             <option value="All">All Statuses</option>
             {["Active", "Paused", "Draft"].map((s) => <option key={s}>{s}</option>)}
           </select>
-          <button className="bg-orange-600 hover:bg-orange-700 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors">+ Add Rule</button>
+          <button className="text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ Add Rule</button>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Trigger", "Action", "Target", "Status", "Last Triggered", "Toggle"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -2167,7 +2167,7 @@ function TaskAutomationRulesSection() {
                   <span className="inline-flex rounded-full bg-slate-100 text-slate-600 px-2.5 py-0.5 text-xs font-medium">{r.target}</span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${automationStatusBadge(r.status)}`}>{r.status}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={automationStatusBadge(r.status)}>{r.status}</span>
                 </td>
                 <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{r.lastTriggered}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
@@ -2210,7 +2210,7 @@ function ProjectExecutionActionCenter() {
   ];
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5">
+    <section className="rounded-xl border px-6 py-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <p className="mb-1 text-xs font-bold uppercase tracking-widest text-slate-400">Action Center</p>
       <p className="text-sm text-slate-500 mb-4">Central controls for project execution, task management, and team coordination.</p>
       <div className="flex flex-wrap gap-3">

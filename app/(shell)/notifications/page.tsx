@@ -188,7 +188,7 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 
 const priorityOrder: NotificationPriority[] = ["Critical", "Urgent", "High", "Medium", "Low"];
 
-const priorityCfg: Record<NotificationPriority, { bg: string; color: string; border: string; dot: string }> = {
+const priorityCfg: Record<NotificationPriority, { bg?: string; color?: string; border: string; dot: string }> = {
   Critical: { bg: "#FFF0F0", color: "#B91C1C", border: "#FECACA", dot: "#B91C1C"},
   Urgent:   { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA", dot: "#C2410C"},
   High:     { bg: "#FEFCE8", color: "#A16207", border: "#FDE68A", dot: "#D97706"},
@@ -196,7 +196,7 @@ const priorityCfg: Record<NotificationPriority, { bg: string; color: string; bor
   Low:      { bg: "#F0FDF4", color: "#166534", border: "#BBF7D0", dot: "#22C55E"},
 };
 
-const statusCfg: Record<NotificationStatus, { bg: string; color: string; border: string }> = {
+const statusCfg: Record<NotificationStatus, { bg?: string; color?: string; border: string }> = {
   Unread:       { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"},
   Read:         { bg: "#F9FAFB", color: "#6B7280", border: "#E5E7EB"},
   Acknowledged: { bg: "#F0FDF4", color: "#166534", border: "#BBF7D0"},
@@ -204,7 +204,7 @@ const statusCfg: Record<NotificationStatus, { bg: string; color: string; border:
   Escalated:    { bg: "#FFF0F0", color: "#B91C1C", border: "#FECACA"},
 };
 
-const typeCfg: Record<NotificationType, { bg: string; color: string }> = {
+const typeCfg: Record<NotificationType, { bg?: string; color?: string }> = {
   "Workflow":          { bg: "#EDE9FE", color: "#6D28D9"},
   "Task":              { bg: "#E0F2FE", color: "#0369A1"},
   "Billing":           { bg: "#ECFDF5", color: "#065F46"},

@@ -20,7 +20,7 @@ interface Dashboard {
   description: string;
 }
 
-const TYPE_CFG: Record<DashboardType, { bg: string; color: string }> = {
+const TYPE_CFG: Record<DashboardType, { bg?: string; color?: string }> = {
   Client:     { bg: "#EFF6FF", color: "#1D4ED8"},
   Department: { bg: "#FAF5FF", color: "#7C3AED"},
   Executive:  { bg: "#FEF3C7", color: "#D97706"},
@@ -28,7 +28,7 @@ const TYPE_CFG: Record<DashboardType, { bg: string; color: string }> = {
   Custom:     { bg: "#F8FAFC", color: "#64748B"},
 };
 
-const STATUS_CFG: Record<DashboardStatus, { bg: string; color: string; border: string }> = {
+const STATUS_CFG: Record<DashboardStatus, { bg?: string; color?: string; border: string }> = {
   Published: { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
   Draft:     { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"},
   Archived:  { bg: "#FEF2F2", color: "#9CA3AF", border: "#FECACA"},
@@ -137,7 +137,7 @@ const DASHBOARDS: Dashboard[] = [
   },
 ];
 
-function KpiCard({ label, value, icon = "", color }: { label: string; value: number | string; icon?: string; color: string }) {
+function KpiCard({ label, value, icon = "", color }: { label: string; value: number | string; icon?: string; color?: string }) {
   return (
     <div className="rounded-xl p-4 flex flex-col gap-2"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
       <div className="flex items-center justify-between">
@@ -199,11 +199,11 @@ export default function DashboardBuilderPage() {
       <div className="flex-1 px-6 py-5 max-w-[1400px] mx-auto w-full">
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
-          <KpiCard label="Total Dashboards"value={kpis.total} color="var(--rtm-blue)"/>
-          <KpiCard label="Published"value={kpis.published} color="#059669"/>
-          <KpiCard label="Draft"value={kpis.draft} color="#D97706"/>
-          <KpiCard label="Total Views"value={kpis.totalViews} color="#7C3AED"/>
-          <KpiCard label="Total Widgets"value={kpis.totalWidgets} color="var(--rtm-blue)"/>
+          <KpiCard label="Total Dashboards"value={kpis.total}/>
+          <KpiCard label="Published"value={kpis.published}/>
+          <KpiCard label="Draft"value={kpis.draft}/>
+          <KpiCard label="Total Views"value={kpis.totalViews}/>
+          <KpiCard label="Total Widgets"value={kpis.totalWidgets}/>
         </div>
 
         {/* Filters */}

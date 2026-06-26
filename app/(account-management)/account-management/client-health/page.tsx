@@ -56,7 +56,7 @@ function fmt$(n: number) {
 // SHARED ATOMS
 // ══════════════════════════════════════════════════════════════════════════════
 
-function Badge({ label, bg, color, border, dot }: { label: string; bg: string; color: string; border: string; dot?: string }) {
+function Badge({ label, bg, color, border, dot }: { label: string; bg?: string; color?: string; border: string; dot?: string }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border whitespace-nowrap"style={{ background: bg, color, borderColor: border }}
@@ -259,7 +259,7 @@ function ProjectHealthPanel({ record }: { record: ClientHealthRecord }) {
       <div className="flex items-center gap-3 flex-wrap">
         <Badge label={s.projectStatus} bg={pStyle.bg} color={pStyle.color} border={pStyle.border} />
         {s.departmentDelays.length > 0 && s.departmentDelays.map(d => (
-          <Badge key={d} label={`${d} delay`} bg="#FEF2F2"color="#DC2626"border="#FECACA"/>
+          <Badge key={d} label={`${d} delay`}color="#DC2626"border="#FECACA"/>
         ))}
         {s.departmentDelays.length === 0 && (
           <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No department delays</span>
@@ -350,7 +350,7 @@ function CallIntelPanel({ record }: { record: ClientHealthRecord }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function ReviewStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { bg: string; color: string; border: string }> = {
+  const map: Record<string, { bg?: string; color?: string; border: string }> = {
     "Reviewed":        { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
     "Pending Review":  { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"},
     "Not Reviewed":    { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
@@ -443,7 +443,7 @@ function EscalationHealthPanel({ record }: { record: ClientHealthRecord }) {
       <div className="flex items-center gap-3 flex-wrap">
         <Badge label={`Severity: ${s.escalationSeverity}`} bg={es.bg} color={es.color} border={es.border} />
         {s.departmentsInvolved.length > 0 ? s.departmentsInvolved.map(d => (
-          <Badge key={d} label={d} bg="var(--rtm-blue-xlight)"color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
+          <Badge key={d} label={d}color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
         )) : (
           <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No departments involved</span>
         )}
@@ -537,7 +537,7 @@ function ExpansionOpportunityPanel({ record }: { record: ClientHealthRecord }) {
             <p className="text-xs font-semibold mb-1.5"style={{ color: "var(--rtm-text-secondary)"}}>Recommended Services</p>
             <div className="flex flex-wrap gap-2">
               {e.recommendedServices.map(s => (
-                <Badge key={s} label={s} bg="var(--rtm-blue-xlight)"color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
+                <Badge key={s} label={s}color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
               ))}
             </div>
           </div>
@@ -734,7 +734,7 @@ function ClientDetailDrawer({
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               {record.services.map(s => (
-                <Badge key={s} label={s} bg="var(--rtm-blue-xlight)"color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
+                <Badge key={s} label={s}color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
               ))}
             </div>
           </div>
@@ -880,7 +880,7 @@ function ClientHealthTable({
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {r.expansionOpportunity.hasOpportunity ? (
-                    <Badge label={`+${fmt$(r.expansionOpportunity.revenuePotential)}`} bg="#ECFDF5"color="#059669"border="#A7F3D0"/>
+                    <Badge label={`+${fmt$(r.expansionOpportunity.revenuePotential)}`}color="#059669"border="#A7F3D0"/>
                   ) : (
                     <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>None</span>
                   )}
@@ -888,13 +888,13 @@ function ClientHealthTable({
                 <td className="px-4 py-3 whitespace-nowrap text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fmt$(r.billingSignals.mrr)}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{fmt$(r.billingSignals.arr)}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{r.projectSignals.blockedTasks > 0 ? (
-                  <Badge label={`${r.projectSignals.blockedTasks} blocked`} bg="#FEF2F2"color="#DC2626"border="#FECACA"/>
+                  <Badge label={`${r.projectSignals.blockedTasks} blocked`}color="#DC2626"border="#FECACA"/>
                 ) : (
                   <Badge label="Clear"bg="#ECFDF5"color="#059669"border="#A7F3D0"/>
                 )}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   {r.escalationSignals.openEscalations > 0 ? (
-                    <Badge label={`${r.escalationSignals.openEscalations} open`} bg="#FEF2F2"color="#DC2626"border="#FECACA"/>
+                    <Badge label={`${r.escalationSignals.openEscalations} open`}color="#DC2626"border="#FECACA"/>
                   ) : (
                     <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>None</span>
                   )}
@@ -1125,7 +1125,7 @@ function ExecutiveDashboard({ records }: { records: ClientHealthRecord[] }) {
                   className="flex items-center gap-2 px-3 py-2 rounded-lg border"style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)"}}
                 >
                   <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{dept}</span>
-                  <Badge label={`${count} client${count > 1 ? "s": ""}`} bg="#FEF2F2"color="#DC2626"border="#FECACA"/>
+                  <Badge label={`${count} client${count > 1 ? "s": ""}`}color="#DC2626"border="#FECACA"/>
                 </div>
               ))}
           </div>

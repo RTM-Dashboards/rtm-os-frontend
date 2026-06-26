@@ -933,14 +933,14 @@ const MOCK_RECOMMENDATIONS: Recommendation[] = [
 // Color + Meta Helpers
 // 
 
-const PRIORITY_COLORS: Record<Priority, { bg: string; text: string; border: string }> = {
+const PRIORITY_COLORS: Record<Priority, { bg?: string; text: string; border: string }> = {
   Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA"},
   High: { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
   Medium: { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
   Low: { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
 };
 
-const STATUS_COLORS: Record<RecStatus, { bg: string; text: string; border: string }> = {
+const STATUS_COLORS: Record<RecStatus, { bg?: string; text: string; border: string }> = {
   New: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
   "In Review": { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
   Accepted: { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
@@ -949,7 +949,7 @@ const STATUS_COLORS: Record<RecStatus, { bg: string; text: string; border: strin
   Won: { bg: "#ECFDF5", text: "#059669", border: "#A7F3D0"},
 };
 
-const REC_TYPE_META: Record<RecommendationType, { icon: string; color: string; bg: string; border: string }> = {
+const REC_TYPE_META: Record<RecommendationType, { icon?: string; color?: string; bg?: string; border: string }> = {
   "Service Recommendation": { icon: "", color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE"},
   "Line Item Recommendation": { icon: "", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
   "Package Recommendation": { icon: "", color: "#059669", bg: "#F0FDF4", border: "#BBF7D0"},
@@ -959,7 +959,7 @@ const REC_TYPE_META: Record<RecommendationType, { icon: string; color: string; b
   "Risk Recommendation": { icon: "", color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
 };
 
-const SOURCE_META: Record<InputSource, { icon: string; color: string }> = {
+const SOURCE_META: Record<InputSource, { icon?: string; color?: string }> = {
   "Audit Findings": { icon: "", color: "#1D4ED8"},
   "Call Summary": { icon: "", color: "#0369A1"},
   "Client Notes": { icon: "", color: "#D97706"},
@@ -993,7 +993,7 @@ function scoreBarColor(score: number): string {
 // Shared UI
 // 
 
-function Badge({ label, bg, text, border }: { label: string; bg: string; text: string; border?: string }) {
+function Badge({ label, bg, text, border }: { label: string; bg?: string; text: string; border?: string }) {
   return (
     <span
       className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: bg, color: text, borderColor: border ?? "transparent"}}

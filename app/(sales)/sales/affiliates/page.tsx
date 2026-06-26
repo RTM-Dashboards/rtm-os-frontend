@@ -419,8 +419,8 @@ function referralStageVariant(s: ReferralPipelineStage): "neutral"| "info"| "pen
   return map[s];
 }
 
-function affiliateTypeColor(t: AffiliateType): { bg: string; text: string; border: string } {
-  const map: Record<AffiliateType, { bg: string; text: string; border: string }> = {
+function affiliateTypeColor(t: AffiliateType): { bg?: string; text: string; border: string } {
+  const map: Record<AffiliateType, { bg?: string; text: string; border: string }> = {
     "Client Referral":  { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
     "Strategic Partner": { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0"},
     "Agency Partner":   { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
@@ -823,7 +823,7 @@ function AffiliateDrawer({ affiliate, onClose }: AffiliateDrawerProps) {
               {affiliateNotes.length > 0 ? (
                 <div className="space-y-3">
                   {affiliateNotes.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)).map((note) => {
-                    const catColors: Record<NoteCategory, { bg: string; text: string }> = {
+                    const catColors: Record<NoteCategory, { bg?: string; text: string }> = {
                       General: { bg: "#F8FAFC", text: "#475569"},
                       Referral: { bg: "#EFF6FF", text: "#1D4ED8"},
                       Commission: { bg: "#FFFBEB", text: "#B45309"},

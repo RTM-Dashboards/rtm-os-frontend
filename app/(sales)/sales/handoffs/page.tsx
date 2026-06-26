@@ -1434,8 +1434,8 @@ function commissionVariant(status: CommissionStatus): StatusVariant {
   return map[status] ?? "neutral";
 }
 
-function priorityColor(p: Priority): { bg: string; color: string; border: string } {
-  const map: Record<Priority, { bg: string; color: string; border: string }> = {
+function priorityColor(p: Priority): { bg?: string; color?: string; border: string } {
+  const map: Record<Priority, { bg?: string; color?: string; border: string }> = {
     Critical: { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"},
     High:     { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
     Medium:   { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"},

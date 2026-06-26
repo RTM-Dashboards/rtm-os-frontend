@@ -952,21 +952,21 @@ const MOCK_AUDITS: Audit[] = [
 // Color Helpers
 // 
 
-const SEVERITY_COLORS: Record<FindingSeverity, { bg: string; text: string; border: string }> = {
+const SEVERITY_COLORS: Record<FindingSeverity, { bg?: string; text: string; border: string }> = {
   Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA"},
   High:     { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
   Medium:   { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
   Low:      { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
 };
 
-const PRIORITY_COLORS: Record<AuditPriority, { bg: string; text: string; border: string }> = {
+const PRIORITY_COLORS: Record<AuditPriority, { bg?: string; text: string; border: string }> = {
   Critical: { bg: "#FEF2F2", text: "#DC2626", border: "#FECACA"},
   High:     { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
   Medium:   { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
   Low:      { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
 };
 
-const AUDIT_STATUS_COLORS: Record<AuditStatus, { bg: string; text: string; border: string }> = {
+const AUDIT_STATUS_COLORS: Record<AuditStatus, { bg?: string; text: string; border: string }> = {
   "Not Started":  { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
   "Pending":      { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
   "In Progress":  { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD"},
@@ -974,7 +974,7 @@ const AUDIT_STATUS_COLORS: Record<AuditStatus, { bg: string; text: string; borde
   "Needs Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
 };
 
-const PROPOSAL_STATUS_COLORS: Record<ProposalStatus, { bg: string; text: string; border: string }> = {
+const PROPOSAL_STATUS_COLORS: Record<ProposalStatus, { bg?: string; text: string; border: string }> = {
   "Not Started": { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
   "Draft":       { bg: "#FFFBEB", text: "#D97706", border: "#FDE68A"},
   "Sent":        { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
@@ -982,7 +982,7 @@ const PROPOSAL_STATUS_COLORS: Record<ProposalStatus, { bg: string; text: string;
   "In Proposal": { bg: "#F5F3FF", text: "#7C3AED", border: "#DDD6FE"},
 };
 
-const AUDIT_TYPE_META: Record<AuditType, { icon: string; color: string; bg: string; border: string }> = {
+const AUDIT_TYPE_META: Record<AuditType, { icon?: string; color?: string; bg?: string; border: string }> = {
   "SEO Technical":          { icon: "",  color: "#1D4ED8", bg: "#EFF6FF",  border: "#BFDBFE"},
   "SEO Content":            { icon: "",  color: "#059669", bg: "#F0FDF4",  border: "#BBF7D0"},
   "GBP":                    { icon: "",  color: "#D97706", bg: "#FFFBEB",  border: "#FDE68A"},
@@ -996,7 +996,7 @@ const AUDIT_TYPE_META: Record<AuditType, { icon: string; color: string; bg: stri
   "Hosting & Infrastructure": { icon: "", color: "#92400E", bg: "#FFFBEB", border: "#FDE68A"},
 };
 
-const COMM_TYPE_META: Record<CommType, { icon: string; color: string; bg: string }> = {
+const COMM_TYPE_META: Record<CommType, { icon?: string; color?: string; bg?: string }> = {
   "Call Summary":  { icon: "", color: "#0369A1", bg: "#F0F9FF"},
   "Meeting Notes": { icon: "", color: "#7C3AED", bg: "#F5F3FF"},
   "Client Notes":  { icon: "", color: "#D97706", bg: "#FFFBEB"},
@@ -1006,7 +1006,7 @@ const COMM_TYPE_META: Record<CommType, { icon: string; color: string; bg: string
   "Action Item":   { icon: "", color: "#15803D", bg: "#F0FDF4"},
 };
 
-const TIMELINE_META: Record<TimelineEvent["type"], { icon: string; color: string }> = {
+const TIMELINE_META: Record<TimelineEvent["type"], { icon?: string; color?: string }> = {
   audit_created:        { icon: "", color: "#1D4ED8"},
   audit_updated:        { icon: "", color: "#D97706"},
   finding_added:        { icon: "", color: "#DC2626"},
@@ -1017,7 +1017,7 @@ const TIMELINE_META: Record<TimelineEvent["type"], { icon: string; color: string
   status_changed:       { icon: "", color: "#6B7280"},
 };
 
-const SENTIMENT_COLORS: Record<Sentiment, { bg: string; text: string }> = {
+const SENTIMENT_COLORS: Record<Sentiment, { bg?: string; text: string }> = {
   Positive: { bg: "#F0FDF4", text: "#15803D"},
   Neutral:  { bg: "#F3F4F6", text: "#6B7280"},
   Negative: { bg: "#FEF2F2", text: "#DC2626"},
@@ -1048,7 +1048,7 @@ function Badge({
   border,
 }: {
   label: string;
-  bg: string;
+  bg?: string;
   text: string;
   border?: string;
 }) {
@@ -1725,8 +1725,7 @@ function AIRecommendationsTab({ audit }: { audit: Audit }) {
                       {s.service}
                     </p>
                     <Badge
-                      label={s.department}
-                      bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
+                      label={s.department}text="#1D4ED8"border="#BFDBFE"/>
                   </div>
                   <div className="flex items-center gap-2">
                     <span
@@ -1833,7 +1832,7 @@ function RecommendedServicesTab({ audit }: { audit: Audit }) {
                     <PriorityBadge priority={s.priority} />
                   </td>
                   <td className="px-3 py-2">
-                    <Badge label={s.department} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
+                    <Badge label={s.department}text="#1D4ED8"border="#BFDBFE"/>
                   </td>
                   <td
                     className="px-3 py-2 font-bold"style={{ color: "#059669"}}
@@ -1930,7 +1929,7 @@ function RecommendedLineItemsTab({ audit }: { audit: Audit }) {
                     {li.lineItem}
                   </td>
                   <td className="px-3 py-2">
-                    <Badge label={li.category} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
+                    <Badge label={li.category}text="#1D4ED8"border="#BFDBFE"/>
                   </td>
                   <td className="px-3 py-2"style={{ color: "var(--rtm-text-secondary)"}}>{li.department}</td>
                   <td className="px-3 py-2 font-bold"style={{ color: li.setupFee > 0 ? "#C2410C": "#9CA3AF"}}>
@@ -2124,7 +2123,7 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
                             <p className="text-[10px] font-bold uppercase mb-1"style={{ color: "var(--rtm-text-muted)"}}>Participants</p>
                             <div className="flex flex-wrap gap-1">
                               {cs.participants.map((p) => (
-                                <Badge key={p} label={p} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
+                                <Badge key={p} label={p}text="#1D4ED8"border="#BFDBFE"/>
                               ))}
                             </div>
                           </div>
@@ -2185,7 +2184,7 @@ function ClientCommunicationsTab({ audit }: { audit: Audit }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <Badge label={comm.type} bg={meta.bg} text={meta.color} />
+                        <Badge label={comm.type} bg={meta.bg ?? "#F8FAFC"} text={meta.color ?? "var(--rtm-text-secondary)"} />
                         <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{comm.date}</span>
                         <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>· {comm.from}</span>
                         {comm.sentiment && (
@@ -2316,7 +2315,7 @@ function ProposalPreviewTab({ audit }: { audit: Audit }) {
             <div key={s.id} className="flex items-center gap-3 px-4 py-3"style={{ background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)"}}>
               <PriorityBadge priority={s.priority} />
               <p className="flex-1 text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{s.service}</p>
-              <Badge label={s.department} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
+              <Badge label={s.department}text="#1D4ED8"border="#BFDBFE"/>
               <span className="text-xs font-bold"style={{ color: "#059669"}}>${s.estimatedRevenue.toLocaleString()}/mo</span>
             </div>
           ))}
@@ -2340,7 +2339,7 @@ function ProposalPreviewTab({ audit }: { audit: Audit }) {
               {audit.recommendedLineItems.map((li, i) => (
                 <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)"}}>
                   <td className="px-3 py-2 font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{li.lineItem}</td>
-                  <td className="px-3 py-2"><Badge label={li.category} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/></td>
+                  <td className="px-3 py-2"><Badge label={li.category}text="#1D4ED8"border="#BFDBFE"/></td>
                   <td className="px-3 py-2 font-bold"style={{ color: li.setupFee > 0 ? "#C2410C": "#9CA3AF"}}>
                     {li.setupFee > 0 ? `$${li.setupFee.toLocaleString()}` : "—"}
                   </td>

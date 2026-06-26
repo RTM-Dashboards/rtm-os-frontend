@@ -23,13 +23,13 @@ export default function NotesTab({ client }: { client: ClientProfile }) {
             <div className="flex items-center gap-2">
               <span className="text-amber-500 text-xs font-bold">INT</span>
               <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Internal Notes</h3>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium">
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)" }}>
                 Internal Only
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">Not visible to clients</p>
           </div>
-          <div className="p-5 bg-amber-50/30 dark:bg-amber-900/5">
+          <div className="p-5" style={{ background: "var(--rtm-bg)" }}>
             <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
               {client.internalNotes}
             </p>

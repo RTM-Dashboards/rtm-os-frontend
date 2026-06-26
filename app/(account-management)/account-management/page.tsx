@@ -40,7 +40,7 @@ const AM_LIFECYCLE_STAGES = [
   { stage: "Renewed",                owner: "Account Management", color: "#059669"},
 ] as const;
 
-const AM_OWNER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+const AM_OWNER_COLORS: Record<string, { bg?: string; text: string; border: string }> = {
   "Sales":              { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
   "Billing":            { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
   "Account Management": { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0"},
@@ -49,9 +49,9 @@ const AM_OWNER_COLORS: Record<string, { bg: string; text: string; border: string
 function AMLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
   const active = activeStages ?? [];
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+    <div className="rounded-xl border p-5 space-y-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="flex items-center justify-between">
-        <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Client Lifecycle Status Engine</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Client Lifecycle Status Engine</p>
         <div className="flex gap-2">
           {Object.entries(AM_OWNER_COLORS).map(([owner, c]) => (
             <span key={owner} className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"style={{ background: c.bg, color: c.text, borderColor: c.border }}>{owner}</span>
@@ -81,7 +81,7 @@ function AMLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
           );
         })}
       </div>
-      <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-2">
+      <div className="rounded-lg border px-4 py-2" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <p className="text-xs font-semibold text-indigo-800">
            Account Management starts only after <strong>Ready For Assignment</strong> (confirmed by Billing).
           AM owns: Assigned → Onboarding → Service Activation → Department Launch → Active → Renewal Triggered → QBR Scheduled → Renewal Negotiation → Renewed.
@@ -93,51 +93,51 @@ function AMLifecycleEngine({ activeStages }: { activeStages?: string[] }) {
 
 //  Badge helpers 
 
-function healthBadge(status: string) {
+function healthBadgeStyle(status: string): React.CSSProperties {
   switch (status) {
-    case "Healthy": return "bg-green-100 text-green-700 border-green-200";
-    case "Needs Attention": return "bg-yellow-100 text-yellow-700 border-yellow-200";
-    case "At Risk": return "bg-orange-100 text-orange-700 border-orange-200";
-    case "Critical": return "bg-red-100 text-red-700 border-red-200";
-    default: return "bg-slate-100 text-slate-500 border-slate-200";
+    case "Healthy":         return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Needs Attention": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "At Risk":         return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Critical":        return { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" };
+    default:                return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function severityBadge(level: string) {
+function severityBadgeStyle(level: string): React.CSSProperties {
   switch (level) {
-    case "Critical": return "bg-red-100 text-red-700";
-    case "High": return "bg-orange-100 text-orange-700";
-    case "Medium": return "bg-yellow-100 text-yellow-700";
-    case "Low": return "bg-blue-100 text-blue-700";
-    default: return "bg-slate-100 text-slate-500";
+    case "Critical": return { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" };
+    case "High":     return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Medium":   return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Low":      return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    default:         return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function priorityBadge(p: string) {
+function priorityBadgeStyle(p: string): React.CSSProperties {
   switch (p) {
-    case "Critical": return "bg-red-100 text-red-700";
-    case "High": return "bg-orange-100 text-orange-700";
-    case "Medium": return "bg-yellow-100 text-yellow-700";
-    case "Low": return "bg-blue-100 text-blue-700";
-    default: return "bg-slate-100 text-slate-500";
+    case "Critical": return { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" };
+    case "High":     return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Medium":   return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Low":      return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    default:         return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
 //  Shared sub-components 
 
-function KpiCard({ label, value, color, bg, border }: { label: string; value: string | number; color: string; bg: string; border: string }) {
+function KpiCard({ label, value }: { label: string; value: string | number; color?: string; bg?: string; border?: string }) {
   return (
-    <div className={`rounded-2xl border ${border} ${bg} p-4 shadow-sm`}>
-      <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{label}</p>
-      <p className={`mt-2 text-2xl font-bold ${color}`}>{value}</p>
+    <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
+      <p className="mt-1.5 text-2xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>{value}</p>
     </div>
   );
 }
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <div className="border-b border-slate-100 px-6 py-4">
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+    <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+      <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
       {subtitle && <p className="text-sm text-slate-500 mt-0.5">{subtitle}</p>}
     </div>
   );
@@ -147,7 +147,7 @@ function ModuleButton({ label, href }: { label: string; href?: string }) {
   return (
     <a
       href={href ?? "#"}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-100 transition-colors">
+      className="inline-flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>
       {label} →
     </a>
   );
@@ -246,14 +246,14 @@ function HeadView() {
       <section>
         <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Portfolio KPI Summary</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <KpiCard label="Active Recurring Clients"value={activeClients} color="text-slate-800"bg="bg-slate-50"border="border-slate-200"/>
-          <KpiCard label="Clients At Risk"value={atRisk} color="text-red-700"bg="bg-red-50"border="border-red-200"/>
-          <KpiCard label="Clients With Late Payments"value={latePayments} color="text-orange-700"bg="bg-orange-50"border="border-orange-200"/>
-          <KpiCard label="Deliverables Delayed"value={delayedDeliverables} color="text-amber-700"bg="bg-amber-50"border="border-amber-200"/>
-          <KpiCard label="Reports Due"value={reportsDue} color="text-indigo-700"bg="bg-indigo-50"border="border-indigo-200"/>
-          <KpiCard label="Check-ins Due"value={checkinsDue} color="text-blue-700"bg="bg-blue-50"border="border-blue-200"/>
-          <KpiCard label="Renewals Due"value={renewalsDue} color="text-violet-700"bg="bg-violet-50"border="border-violet-200"/>
-          <KpiCard label="Revenue At Risk"value={`$${Math.round(revenueAtRisk / 100) * 100 / 1000 < 1 ? Math.round(revenueAtRisk) : (revenueAtRisk / 1000).toFixed(1) + "K"}/mo`} color="text-red-700"bg="bg-red-50"border="border-red-200"/>
+          <KpiCard label="Active Recurring Clients"value={activeClients}bg="bg-slate-50"border="border-slate-200"/>
+          <KpiCard label="Clients At Risk"value={atRisk}bg="bg-red-50"border="border-red-200"/>
+          <KpiCard label="Clients With Late Payments"value={latePayments}bg="bg-orange-50"border="border-orange-200"/>
+          <KpiCard label="Deliverables Delayed"value={delayedDeliverables}bg="bg-amber-50"border="border-amber-200"/>
+          <KpiCard label="Reports Due"value={reportsDue}bg="bg-indigo-50"border="border-indigo-200"/>
+          <KpiCard label="Check-ins Due"value={checkinsDue}bg="bg-blue-50"border="border-blue-200"/>
+          <KpiCard label="Renewals Due"value={renewalsDue}bg="bg-violet-50"border="border-violet-200"/>
+          <KpiCard label="Revenue At Risk"value={`$${Math.round(revenueAtRisk / 100) * 100 / 1000 < 1 ? Math.round(revenueAtRisk) : (revenueAtRisk / 1000).toFixed(1) + "K"}/mo`}bg="bg-red-50"border="border-red-200"/>
         </div>
       </section>
 
@@ -261,11 +261,11 @@ function HeadView() {
       <AMLifecycleEngine activeStages={["Assigned","Onboarding","Service Activation","Department Launch","Active","Renewal Triggered","QBR Scheduled","Renewal Negotiation","Renewed"]} />
 
       {/*  2. AM Portfolio Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="AM Portfolio Summary"subtitle="Client load, task burden, risk, and SLA status across all Account Managers."/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Account Manager", "Assigned Clients", "Onboarding Clients", "Open Tasks", "At-Risk Clients", "Check-ins Due", "Renewals Due", "Queue Status"].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
@@ -274,15 +274,15 @@ function HeadView() {
             </thead>
             <tbody>
               {workloadExtended.map((row) => (
-                <tr key={row.am} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={row.am} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                   <td className="px-5 py-3 font-semibold text-slate-800">{row.am}</td>
                   <td className="px-5 py-3 text-slate-700">{row.clients}</td>
                   <td className="px-5 py-3 text-slate-700">{row.onboarding}</td>
                   <td className="px-5 py-3">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${row.openT > 3 ? "bg-orange-100 text-orange-700": "bg-slate-100 text-slate-600"}`}>{row.openT}</span>
+                    <span className="inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold" style={row.openT > 3 ? { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" } : { background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>{row.openT}</span>
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${row.atRiskC > 0 ? "bg-red-100 text-red-700": "bg-green-100 text-green-700"}`}>{row.atRiskC}</span>
+                    <span className="inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold" style={row.atRiskC > 0 ? { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" } : { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>{row.atRiskC}</span>
                   </td>
                   <td className="px-5 py-3 text-slate-700">{row.checkins}</td>
                   <td className="px-5 py-3 text-slate-700">{row.renewals}</td>
@@ -297,11 +297,11 @@ function HeadView() {
       </section>
 
       {/*  3. Clients Requiring Action  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="Clients Requiring Action"subtitle="Priority clients that need immediate or near-term manager intervention."/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Client", "Assigned AM", "Issue", "Severity", "Related Module", "Due Date", "Recommended Action"].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
@@ -310,12 +310,12 @@ function HeadView() {
             </thead>
             <tbody>
               {actionClients.map((row) => (
-                <tr key={row.client} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={row.client} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                   <td className="px-5 py-3 font-semibold text-slate-800 whitespace-nowrap">{row.client}</td>
                   <td className="px-5 py-3 text-slate-600 whitespace-nowrap">{row.am}</td>
                   <td className="px-5 py-3 text-slate-700 max-w-[220px]">{row.issue}</td>
                   <td className="px-5 py-3 whitespace-nowrap">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${severityBadge(row.severity)}`}>{row.severity}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={severityBadgeStyle(row.severity)}>{row.severity}</span>
                   </td>
                   <td className="px-5 py-3 whitespace-nowrap">
                     <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{row.module}</span>
@@ -330,16 +330,16 @@ function HeadView() {
       </section>
 
       {/*  4. Onboarding Pipeline Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="Onboarding Pipeline Summary"subtitle="High-level onboarding stage counts across all clients and AMs."/>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <PipelineStat label="Awaiting Payment"value={onboardingCounts["Awaiting Payment"] ?? 0} color="text-orange-600"/>
-            <PipelineStat label="Ready To Onboard"value={onboardingCounts["Ready To Onboard"] ?? 0} color="text-blue-600"/>
-            <PipelineStat label="Intake In Progress"value={onboardingCounts["Intake In Progress"] ?? 0} color="text-indigo-600"/>
-            <PipelineStat label="Service Activation"value={onboardingCounts["Service Activation"] ?? 0} color="text-violet-600"/>
-            <PipelineStat label="Department Launch"value={onboardingCounts["Department Launch"] ?? 0} color="text-teal-600"/>
-            <PipelineStat label="Onboarding Complete"value={onboardingCounts["Onboarding Complete"] ?? 0} color="text-green-600"/>
+            <PipelineStat label="Awaiting Payment"value={onboardingCounts["Awaiting Payment"] ?? 0}/>
+            <PipelineStat label="Ready To Onboard"value={onboardingCounts["Ready To Onboard"] ?? 0}/>
+            <PipelineStat label="Intake In Progress"value={onboardingCounts["Intake In Progress"] ?? 0}/>
+            <PipelineStat label="Service Activation"value={onboardingCounts["Service Activation"] ?? 0}/>
+            <PipelineStat label="Department Launch"value={onboardingCounts["Department Launch"] ?? 0}/>
+            <PipelineStat label="Onboarding Complete"value={onboardingCounts["Onboarding Complete"] ?? 0}/>
           </div>
           <div className="flex justify-end">
             <ModuleButton label="View Client Onboarding" href="/account-management/onboarding" />
@@ -348,16 +348,16 @@ function HeadView() {
       </section>
 
       {/*  5. Renewal Pipeline Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="Renewal Pipeline Summary"subtitle="Portfolio renewal health and stage distribution."/>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            <PipelineStat label="Renewals Due 90 Days"value={renewalPipeline.due90} color="text-indigo-600"/>
-            <PipelineStat label="Renewals Due 60 Days"value={renewalPipeline.due60} color="text-violet-600"/>
-            <PipelineStat label="Renewals Due 30 Days"value={renewalPipeline.due30} color="text-orange-600"/>
-            <PipelineStat label="Negotiation"value={renewalPipeline.negotiation} color="text-amber-600"/>
-            <PipelineStat label="Renewed"value={renewalPipeline.renewed} color="text-green-600"/>
-            <PipelineStat label="Lost"value={renewalPipeline.lost} color="text-red-600"/>
+            <PipelineStat label="Renewals Due 90 Days"value={renewalPipeline.due90}/>
+            <PipelineStat label="Renewals Due 60 Days"value={renewalPipeline.due60}/>
+            <PipelineStat label="Renewals Due 30 Days"value={renewalPipeline.due30}/>
+            <PipelineStat label="Negotiation"value={renewalPipeline.negotiation}/>
+            <PipelineStat label="Renewed"value={renewalPipeline.renewed}/>
+            <PipelineStat label="Lost"value={renewalPipeline.lost}/>
           </div>
           <div className="flex justify-end">
             <ModuleButton label="View Renewals" href="/account-management/renewals" />
@@ -366,15 +366,15 @@ function HeadView() {
       </section>
 
       {/*  6. Escalations & Client Health Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="Escalations & Client Health Summary"subtitle="Portfolio-wide health signals, risk counts, and seasonal context."/>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <PipelineStat label="High Risk Clients"value={highRisk} color="text-orange-600"/>
-            <PipelineStat label="Critical Clients"value={critical} color="text-red-600"/>
-            <PipelineStat label="Escalations Open"value={escalations} color="text-red-700"/>
+            <PipelineStat label="High Risk Clients"value={highRisk}/>
+            <PipelineStat label="Critical Clients"value={critical}/>
+            <PipelineStat label="Escalations Open"value={escalations}/>
             <PipelineStat label="Average Health Score"value={`${avgHealth}/100`} color={avgHealth >= 75 ? "text-green-600": avgHealth >= 60 ? "text-yellow-600": "text-red-600"} />
-            <PipelineStat label="Seasonal Opportunities"value={seasonal} color="text-teal-600"/>
+            <PipelineStat label="Seasonal Opportunities"value={seasonal}/>
           </div>
           <div className="flex justify-end">
             <ModuleButton label="View Client Health" href="/account-management/client-health" />
@@ -383,15 +383,15 @@ function HeadView() {
       </section>
 
       {/*  7. Centralized Task Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="Centralized Task Summary"subtitle="Portfolio-wide task status snapshot across all AMs and clients."/>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <PipelineStat label="Open Tasks"value={openTasks} color="text-indigo-600"/>
-            <PipelineStat label="Blocked Tasks"value={blockedTasks} color="text-red-600"/>
-            <PipelineStat label="Waiting For Client"value={waitingClient} color="text-orange-600"/>
-            <PipelineStat label="Waiting For Department"value={waitingDept} color="text-amber-600"/>
-            <PipelineStat label="Completed This Week"value={completedWeek} color="text-green-600"/>
+            <PipelineStat label="Open Tasks"value={openTasks}/>
+            <PipelineStat label="Blocked Tasks"value={blockedTasks}/>
+            <PipelineStat label="Waiting For Client"value={waitingClient}/>
+            <PipelineStat label="Waiting For Department"value={waitingDept}/>
+            <PipelineStat label="Completed This Week"value={completedWeek}/>
           </div>
           <div className="flex justify-end">
             <ModuleButton label="View Centralized Tasks" href="/account-management/tasks-central" />
@@ -407,7 +407,7 @@ function HeadView() {
             <h2 className="text-lg font-bold text-indigo-900">AI Executive Summary</h2>
             <p className="text-sm text-indigo-600 mt-0.5">AI-generated portfolio intelligence · Updated today</p>
           </div>
-          <span className="ml-auto inline-flex rounded-full bg-indigo-100 border border-indigo-200 px-3 py-0.5 text-xs font-bold text-indigo-700">Mock AI</span>
+          <span className="ml-auto inline-flex rounded-full border px-3 py-0.5 text-xs font-bold" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>AI Summary</span>
         </div>
         <div className="p-6 grid gap-4 sm:grid-cols-2">
           {[
@@ -525,14 +525,14 @@ function AMView() {
       <section>
         <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">My KPI Summary</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <KpiCard label="My Assigned Clients"value={myClients.length} color="text-blue-700"bg="bg-blue-50"border="border-blue-200"/>
-          <KpiCard label="My Open Tasks"value={myOpenTasks} color="text-indigo-700"bg="bg-indigo-50"border="border-indigo-200"/>
-          <KpiCard label="My Check-ins Due"value={myCheckinsDue} color="text-violet-700"bg="bg-violet-50"border="border-violet-200"/>
-          <KpiCard label="My At-Risk Clients"value={myAtRisk} color="text-red-700"bg="bg-red-50"border="border-red-200"/>
-          <KpiCard label="My Renewals Due"value={myRenewalsDue} color="text-amber-700"bg="bg-amber-50"border="border-amber-200"/>
-          <KpiCard label="My Reports Due"value={myReportsDue} color="text-orange-700"bg="bg-orange-50"border="border-orange-200"/>
-          <KpiCard label="My Onboarding Clients"value={myOnboardingCount} color="text-teal-700"bg="bg-teal-50"border="border-teal-200"/>
-          <KpiCard label="My Delayed Deliverables"value={myDelayed} color="text-red-700"bg="bg-red-50"border="border-red-200"/>
+          <KpiCard label="My Assigned Clients"value={myClients.length}bg="bg-blue-50"border="border-blue-200"/>
+          <KpiCard label="My Open Tasks"value={myOpenTasks}bg="bg-indigo-50"border="border-indigo-200"/>
+          <KpiCard label="My Check-ins Due"value={myCheckinsDue}bg="bg-violet-50"border="border-violet-200"/>
+          <KpiCard label="My At-Risk Clients"value={myAtRisk}bg="bg-red-50"border="border-red-200"/>
+          <KpiCard label="My Renewals Due"value={myRenewalsDue}bg="bg-amber-50"border="border-amber-200"/>
+          <KpiCard label="My Reports Due"value={myReportsDue}bg="bg-orange-50"border="border-orange-200"/>
+          <KpiCard label="My Onboarding Clients"value={myOnboardingCount}bg="bg-teal-50"border="border-teal-200"/>
+          <KpiCard label="My Delayed Deliverables"value={myDelayed}bg="bg-red-50"border="border-red-200"/>
         </div>
       </section>
 
@@ -540,14 +540,14 @@ function AMView() {
       <AMLifecycleEngine activeStages={["Assigned","Onboarding","Service Activation","Department Launch","Active","Renewal Triggered","QBR Scheduled","Renewal Negotiation","Renewed"]} />
 
       {/*  2. My Client Portfolio  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="My Client Portfolio"subtitle={`All clients assigned to ${SARAH}. Other AM portfolios are not visible in this view.`} />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Client", "Active Services", "Payment Status", "Deliverable Status", "Health Score", "Last Check-in", "Next Check-in", "Renewal Date", "Next Action"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -555,7 +555,7 @@ function AMView() {
               {myClients.map((c) => {
                 const health = myHealth.find((h) => h.client === c.name);
                 return (
-                  <tr key={c.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <tr key={c.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                     <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">{c.name}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -565,10 +565,10 @@ function AMView() {
                       </div>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.paymentStatus === "Current"? "bg-emerald-100 text-emerald-700": c.paymentStatus === "Overdue"? "bg-red-100 text-red-700": "bg-amber-100 text-amber-700"}`}>{c.paymentStatus}</span>
+                      <span className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={c.paymentStatus === "Current" ? { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" } : c.paymentStatus === "Overdue" ? { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" } : { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" }}>{c.paymentStatus}</span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${health?.deliverableStatus === "Completed"? "bg-green-100 text-green-700": health?.deliverableStatus === "Blocked"? "bg-red-100 text-red-700": health?.deliverableStatus === "Delayed"? "bg-orange-100 text-orange-700": "bg-blue-100 text-blue-700"}`}>{health?.deliverableStatus ?? "—"}</span>
+                      <span className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={health?.deliverableStatus === "Completed" ? { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" } : health?.deliverableStatus === "Blocked" ? { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" } : health?.deliverableStatus === "Delayed" ? { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" } : { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>{health?.deliverableStatus ?? "—"}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`font-bold text-sm ${c.healthScore >= 80 ? "text-green-600": c.healthScore >= 60 ? "text-yellow-600": "text-red-600"}`}>{c.healthScore}</span>
@@ -589,11 +589,11 @@ function AMView() {
       </section>
 
       {/*  3. My Priority Actions  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="My Priority Actions"subtitle="Immediate and near-term actions required across my client portfolio."/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Client", "Action Needed", "Related Module", "Priority", "Due Date", "Suggested Action"].map((h) => (
                   <th key={h} className="px-5 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
@@ -602,14 +602,14 @@ function AMView() {
             </thead>
             <tbody>
               {priorityActions.map((row, i) => (
-                <tr key={i} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={i} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                   <td className="px-5 py-3 font-semibold text-slate-800 whitespace-nowrap">{row.client}</td>
                   <td className="px-5 py-3 text-slate-700 max-w-[200px]">{row.action}</td>
                   <td className="px-5 py-3 whitespace-nowrap">
                     <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">{row.module}</span>
                   </td>
                   <td className="px-5 py-3 whitespace-nowrap">
-                    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${priorityBadge(row.priority)}`}>{row.priority}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={priorityBadgeStyle(row.priority)}>{row.priority}</span>
                   </td>
                   <td className="px-5 py-3 text-slate-500 whitespace-nowrap text-xs">{row.due}</td>
                   <td className="px-5 py-3 text-slate-600 text-xs max-w-[200px]">{row.suggested}</td>
@@ -621,14 +621,14 @@ function AMView() {
       </section>
 
       {/*  4. My Onboarding Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="My Onboarding Summary"subtitle="Onboarding status for clients in my queue."/>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <PipelineStat label="Clients Ready To Onboard"value={myReadyToOnboard} color="text-blue-600"/>
-            <PipelineStat label="Intake In Progress"value={myIntakeInProgress} color="text-indigo-600"/>
-            <PipelineStat label="Assets Missing"value={myAssetsMissing} color="text-orange-600"/>
-            <PipelineStat label="Department Launch Pending"value={myDeptLaunch} color="text-teal-600"/>
+            <PipelineStat label="Clients Ready To Onboard"value={myReadyToOnboard}/>
+            <PipelineStat label="Intake In Progress"value={myIntakeInProgress}/>
+            <PipelineStat label="Assets Missing"value={myAssetsMissing}/>
+            <PipelineStat label="Department Launch Pending"value={myDeptLaunch}/>
           </div>
           <div className="flex justify-end">
             <ModuleButton label="Go To My Onboarding" href="/account-management/onboarding" />
@@ -637,15 +637,15 @@ function AMView() {
       </section>
 
       {/*  5. My Task Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="My Task Summary"subtitle="Task status overview for all my assigned work."/>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <PipelineStat label="Assigned Tasks"value={myAssignedTasks} color="text-indigo-600"/>
-            <PipelineStat label="Overdue Tasks"value={myOverdue} color="text-red-600"/>
-            <PipelineStat label="Blocked Tasks"value={myBlocked} color="text-orange-600"/>
-            <PipelineStat label="Waiting For Client"value={myWaitingClient} color="text-amber-600"/>
-            <PipelineStat label="Completed This Week"value={myCompletedWeek} color="text-green-600"/>
+            <PipelineStat label="Assigned Tasks"value={myAssignedTasks}/>
+            <PipelineStat label="Overdue Tasks"value={myOverdue}/>
+            <PipelineStat label="Blocked Tasks"value={myBlocked}/>
+            <PipelineStat label="Waiting For Client"value={myWaitingClient}/>
+            <PipelineStat label="Completed This Week"value={myCompletedWeek}/>
           </div>
           <div className="flex justify-end">
             <ModuleButton label="Go To Centralized Tasks" href="/account-management/tasks-central" />
@@ -654,15 +654,15 @@ function AMView() {
       </section>
 
       {/*  6. My Client Health Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="My Client Health Summary"subtitle="Health distribution and AI recommendations across my portfolio."/>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <PipelineStat label="Healthy Clients"value={myHealthy} color="text-green-600"/>
-            <PipelineStat label="Needs Attention"value={myNeedsAttention} color="text-yellow-600"/>
-            <PipelineStat label="At Risk"value={myAtRiskH} color="text-red-600"/>
-            <PipelineStat label="Seasonal Opportunities"value={mySeasonal} color="text-teal-600"/>
-            <PipelineStat label="AI Recommendations"value={myAIRecs} color="text-indigo-600"/>
+            <PipelineStat label="Healthy Clients"value={myHealthy}/>
+            <PipelineStat label="Needs Attention"value={myNeedsAttention}/>
+            <PipelineStat label="At Risk"value={myAtRiskH}/>
+            <PipelineStat label="Seasonal Opportunities"value={mySeasonal}/>
+            <PipelineStat label="AI Recommendations"value={myAIRecs}/>
           </div>
           <div className="flex justify-end">
             <ModuleButton label="Go To Client Health" href="/account-management/client-health" />
@@ -671,14 +671,14 @@ function AMView() {
       </section>
 
       {/*  7. My Renewals Summary  */}
-      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <SectionHeader title="My Renewals Summary"subtitle="Renewal pipeline and upsell opportunities for my clients."/>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <PipelineStat label="Renewals Due"value={myRenewalsDue90} color="text-indigo-600"/>
-            <PipelineStat label="Upsell Opportunities"value={myUpsell} color="text-teal-600"/>
-            <PipelineStat label="Revenue Opportunity"value={`$${myRevenueOpp}/mo`} color="text-green-600"/>
-            <PipelineStat label="Renewal Risk"value={myRenewalRisk} color="text-red-600"/>
+            <PipelineStat label="Renewals Due"value={myRenewalsDue90}/>
+            <PipelineStat label="Upsell Opportunities"value={myUpsell}/>
+            <PipelineStat label="Revenue Opportunity"value={`$${myRevenueOpp}/mo`}/>
+            <PipelineStat label="Renewal Risk"value={myRenewalRisk}/>
           </div>
           <div className="flex justify-end">
             <ModuleButton label="Go To Renewals" href="/account-management/renewals" />

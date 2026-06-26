@@ -1,3 +1,4 @@
+import React from "react";
 import type {
   HealthScore,
   CampaignStatus,
@@ -17,57 +18,60 @@ type BadgeVariant =
   | OnboardingStatus
   | Priority;
 
-const variantStyles: Record<string, string> = {
+const variantStyles: Record<string, React.CSSProperties> = {
   // Health
-  Healthy: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  "Needs Attention": "bg-amber-100 text-amber-700 border-amber-200",
-  "At-Risk": "bg-[var(--rtm-blue-light)] text-orange-700 border-orange-200",
-  Critical: "bg-red-100 text-red-700 border-red-200",
+  Healthy:           { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+  "Needs Attention": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+  "At-Risk":         { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+  Critical:          { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" },
 
   // Campaign
-  Active: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  Paused: "bg-slate-100 text-slate-600 border-slate-200",
-  "Pending Launch": "bg-blue-100 text-blue-700 border-blue-200",
-  Completed: "bg-indigo-100 text-indigo-700 border-indigo-200",
-  Cancelled: "bg-red-100 text-red-700 border-red-200",
+  Active:           { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+  Paused:           { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+  "Pending Launch": { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+  Completed:        { background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" },
+  Cancelled:        { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
 
   // Deliverable
-  "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-  Overdue: "bg-red-100 text-red-700 border-red-200",
-  "Not Started": "bg-slate-100 text-slate-600 border-slate-200",
-  Blocked: "bg-[var(--rtm-blue-light)] text-orange-700 border-orange-200",
+  "In Progress": { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+  Overdue:       { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
+  "Not Started": { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+  Blocked:       { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
 
   // Escalation
-  Open: "bg-red-100 text-red-700 border-red-200",
-  Resolved: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  Escalated: "bg-purple-100 text-purple-700 border-purple-200",
+  Open:      { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
+  Resolved:  { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+  Escalated: { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" },
 
   // Blocker
-  "In Review": "bg-amber-100 text-amber-700 border-amber-200",
-  "Awaiting Client": "bg-[var(--rtm-blue-light)] text-orange-700 border-orange-200",
+  "In Review":      { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+  "Awaiting Client":{ background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
 
   // Onboarding
-  Stalled: "bg-[var(--rtm-blue-light)] text-orange-700 border-orange-200",
-  "Awaiting Assets": "bg-amber-100 text-amber-700 border-amber-200",
+  Stalled:          { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+  "Awaiting Assets":{ background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
 
   // Priority
-  Low: "bg-slate-100 text-slate-600 border-slate-200",
-  Medium: "bg-blue-100 text-blue-700 border-blue-200",
-  High: "bg-amber-100 text-amber-700 border-amber-200",
+  Low:    { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+  Medium: { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+  High:   { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
   // Critical already handled above
 };
 
+const defaultStyle: React.CSSProperties = { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+
 interface StatusBadgeProps {
   value: BadgeVariant | string;
-  size?: "sm"| "md";
+  size?: "sm" | "md";
 }
 
-export function StatusBadge({ value, size = "sm"}: StatusBadgeProps) {
-  const style = variantStyles[value] ?? "bg-slate-100 text-slate-600 border-slate-200";
-  const sizeClass = size === "md"? "px-3 py-1 text-sm": "px-2.5 py-0.5 text-xs";
+export function StatusBadge({ value, size = "sm" }: StatusBadgeProps) {
+  const style = variantStyles[value] ?? defaultStyle;
+  const sizeClass = size === "md" ? "px-3 py-1 text-sm" : "px-2.5 py-0.5 text-xs";
   return (
     <span
-      className={`inline-flex items-center rounded-full border font-medium whitespace-nowrap ${sizeClass} ${style}`}
+      className={`inline-flex items-center rounded-full border font-medium whitespace-nowrap ${sizeClass}`}
+      style={style}
     >
       {value}
     </span>

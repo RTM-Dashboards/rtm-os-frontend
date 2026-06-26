@@ -54,7 +54,7 @@ const columns: Column<GbpClient>[] = [
   { key: "totalReviews", header: "Reviews",   width: "90px"},
   { key: "monthlyViews", header: "Mo. Views", width: "100px"},
   { key: "completeness", header: "Profile %", width: "150px",
-    render: (value) => <ProgressBar value={Number(value)} max={100} height={5} color="bg-emerald-500"showLabel />,
+    render: (value) => <ProgressBar value={Number(value)} max={100} height={5}showLabel />,
   },
 ];
 

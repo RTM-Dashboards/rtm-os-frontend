@@ -145,8 +145,8 @@ function Badge({
   dot,
 }: {
   label: string;
-  bg: string;
-  color: string;
+  bg?: string;
+  color?: string;
   border: string;
   dot?: string;
 }) {
@@ -240,13 +240,13 @@ function SectionHeader({
   accentColor?: string;
 }) {
   return (
-    <div className="border-b border-slate-100 px-6 py-4">
+    <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
       {eyebrow && (
         <p className="text-xs font-bold uppercase tracking-widest mb-0.5"style={{ color: accentColor }}>
           {eyebrow}
         </p>
       )}
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+      <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
       {desc && <p className="text-sm text-slate-500 mt-0.5">{desc}</p>}
     </div>
   );
@@ -454,10 +454,10 @@ function OffboardingTable({ onSelect }: { onSelect: (r: OffboardingRecord) => vo
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Client", "Account Manager", "Cancellation Date", "Status", "Final Billing", "Asset Transfer", "Access Removal", "Completion", ""].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -586,10 +586,10 @@ function OffboardingChecklist({ record }: { record: OffboardingRecord }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-6 py-4">
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-0.5">Offboarding Checklist</p>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Checklist — {record.client}</h2>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Checklist — {record.client}</h2>
           <span className="text-sm font-bold"style={{ color: completionColor(pct) }}>{pct}% complete</span>
         </div>
         <ProgressBar pct={pct} />
@@ -641,18 +641,18 @@ function DepartmentTasks({ record }: { record: OffboardingRecord }) {
       <SectionHeader eyebrow="Department Tasks"title={`Department Tasks — ${record.client}`} desc="Task assignments by department for this offboarding."accentColor="#6D28D9"/>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Department", "Assigned Task", "Status", "Due Date", "Owner", "Notes"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {record.departmentTasks.map((task) => (
-              <tr key={task.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={task.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">
-                  <span className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-0.5 text-xs font-semibold text-purple-700">{task.department}</span>
+                  <span className="rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>{task.department}</span>
                 </td>
                 <td className="px-4 py-3 text-slate-700 max-w-[260px]">{task.task}</td>
                 <td className="px-4 py-3 whitespace-nowrap"><DeptTaskBadge status={task.status} /></td>
@@ -679,25 +679,25 @@ function AssetTransferCenter({ record }: { record: OffboardingRecord }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-6 py-4">
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-sky-600 mb-0.5">Asset Transfer Center</p>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Asset Transfers — {record.client}</h2>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Asset Transfers — {record.client}</h2>
           <span className="text-sm font-bold"style={{ color: completionColor(pct) }}>{transferred} of {totalAssets} transferred</span>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Asset Type", "Current Owner", "Recipient", "Transfer Status", "Completed Date", "Notes"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {record.assetTransfers.map((asset) => (
-              <tr key={asset.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={asset.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">{asset.assetType}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{asset.currentOwner}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{asset.recipient}</td>
@@ -723,25 +723,25 @@ function AccessRemovalCenter({ record }: { record: OffboardingRecord }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-6 py-4">
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-teal-600 mb-0.5">Access Removal Center</p>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-slate-900">Access Removal — {record.client}</h2>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Access Removal — {record.client}</h2>
           <span className="text-sm font-bold text-emerald-600">{revoked} of {total} revoked</span>
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Tool / Platform", "User", "Access Status", "Removed Date", "Owner", "Notes"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {record.accessRemovals.map((ar) => (
-              <tr key={ar.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={ar.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                 <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">{ar.tool}</td>
                 <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{ar.user}</td>
                 <td className="px-4 py-3 whitespace-nowrap"><AccessStatusBadge status={ar.accessStatus} /></td>
@@ -785,7 +785,7 @@ function FinalBillingCenter({ record }: { record: OffboardingRecord }) {
             <p className="text-xs font-semibold uppercase tracking-wide text-blue-400">Credits Applied</p>
             <p className="text-2xl font-extrabold text-blue-600 mt-1">{fmt$(billing.credits)}</p>
           </div>
-          <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-center">
+          <div className="rounded-xl border p-4 text-center" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Refunds</p>
             <p className="text-2xl font-extrabold text-amber-600 mt-1">{fmt$(billing.refunds)}</p>
           </div>
@@ -879,7 +879,7 @@ function AIOffboardingSummary({ record }: { record: OffboardingRecord }) {
         ))}
 
         {/* Recommended actions */}
-        <div className="rounded-xl border border-purple-200 bg-purple-50 p-4 space-y-2">
+        <div className="rounded-xl border var(--rtm-border) var(--rtm-surface) p-4 space-y-2">
           <p className="text-xs font-bold uppercase tracking-widest text-purple-600">Recommended Actions</p>
           <ul className="space-y-1.5">
             {ai.recommendedActions.map((action, idx) => (
@@ -942,7 +942,7 @@ function ExecutiveOffboardingDashboard() {
           <p className="text-2xl font-extrabold text-red-600 mt-1">{fmt$(arrLost)}</p>
           <p className="text-xs text-slate-400 mt-0.5">ARR across all offboardings</p>
         </div>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-center shadow-sm">
+        <div className="rounded-xl border p-5 text-center shadow-sm" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Active Offboardings</p>
           <p className="text-2xl font-extrabold text-amber-600 mt-1">{active.length}</p>
           <p className="text-xs text-slate-400 mt-0.5">avg {avgCompletion}% complete</p>
@@ -993,7 +993,7 @@ function ExecutiveOffboardingDashboard() {
           <SectionHeader eyebrow="Department Impact"title="Departments Involved"desc="Number of offboardings requiring each department."accentColor="#6D28D9"/>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead style={{ background: "var(--rtm-bg)" }}>
                 <tr>
                   {["Department", "Offboardings", "% of Total"].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400">{h}</th>
@@ -1010,7 +1010,7 @@ function ExecutiveOffboardingDashboard() {
                       <td className="px-4 py-2.5">
                         <div className="flex items-center gap-2">
                           <div className="w-20 h-1.5 rounded-full bg-slate-100">
-                            <div className="h-1.5 rounded-full bg-purple-400"style={{ width: `${pct}%` }} />
+                            <div className="h-1.5 rounded-full bg-blue-400"style={{ width: `${pct}%` }} />
                           </div>
                           <span className="text-xs font-semibold text-slate-500">{pct}%</span>
                         </div>
@@ -1029,7 +1029,7 @@ function ExecutiveOffboardingDashboard() {
         <SectionHeader eyebrow="Offboarding Trends"title="Monthly Offboarding Volume"desc="Number of offboardings and MRR lost per month in 2025."/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Month", "Offboardings", "MRR Lost", "Trend"].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400">{h}</th>
@@ -1063,10 +1063,10 @@ function ExecutiveOffboardingDashboard() {
         <SectionHeader eyebrow="Completed"title="Completed Offboardings"desc="All closed and archived offboarding records."accentColor="#059669"/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Client", "AM", "Reason", "MRR Lost", "Completed Date", "Status"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1091,10 +1091,10 @@ function ExecutiveOffboardingDashboard() {
         <SectionHeader eyebrow="Pending"title="Pending Offboardings"desc="Active offboardings requiring attention."accentColor="#B45309"/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Client", "AM", "Status", "Progress", "Target Date", "MRR"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1319,11 +1319,11 @@ export default function OffboardingPage() {
             <p className="text-xs font-semibold uppercase tracking-wide text-red-500">MRR Lost</p>
             <p className="text-lg font-extrabold text-red-600 mt-0.5">{fmt$(mrrLost)}/mo</p>
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-center shadow-sm">
+          <div className="rounded-xl border px-4 py-2.5 text-center shadow-sm" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
             <p className="text-xs font-semibold uppercase tracking-wide text-amber-600">Active</p>
             <p className="text-lg font-extrabold text-amber-600 mt-0.5">{active.length}</p>
           </div>
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-center shadow-sm">
+          <div className="rounded-xl border px-4 py-2.5 text-center shadow-sm" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Completed</p>
             <p className="text-lg font-extrabold text-emerald-600 mt-0.5">{completed.length}</p>
           </div>

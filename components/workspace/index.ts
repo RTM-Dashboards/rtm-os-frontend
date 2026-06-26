@@ -2,6 +2,8 @@ export { default as WorkspaceHeader }          from "./WorkspaceHeader";
 export { default as WorkspaceQuickLinks }      from "./WorkspaceQuickLinks";
 export { default as WorkspaceTaskPage }        from "./WorkspaceTaskPage";
 export type { WorkspaceTask }                  from "./WorkspaceTaskPage";
+export { default as WorkspaceTaskDrawer }      from "./WorkspaceTaskDrawer";
+export type { WorkspaceUserContext, WorkspaceUserRole } from "./WorkspaceTaskDrawer";
 
 export { default as WorkspaceProfilePage }     from "./WorkspaceProfilePage";
 export { default as TeamMembersTable }         from "./TeamMembersTable";

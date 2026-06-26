@@ -574,60 +574,60 @@ const ACTIVATION_CASES: ActivationCase[] = [
 
 //  Helpers 
 
-function statusColor(status: ActivationStatus): string {
+function statusColor(status: ActivationStatus): React.CSSProperties {
   switch (status) {
-    case "Activated": return "bg-emerald-100 text-emerald-800";
-    case "Ready for Activation": return "bg-blue-100 text-blue-800";
-    case "Rules Matched": return "bg-indigo-100 text-indigo-800";
-    case "Generating Tasks": return "bg-violet-100 text-violet-800";
-    case "Department Activation Pending": return "bg-amber-100 text-amber-800";
-    case "Blocked": return "bg-red-100 text-red-800";
-    case "Failed": return "bg-rose-100 text-rose-800";
-    case "Not Ready": return "bg-gray-100 text-gray-600";
-    default: return "bg-gray-100 text-gray-600";
+    case "Activated": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Ready for Activation": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Rules Matched": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Generating Tasks": return { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" };
+    case "Department Activation Pending": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Blocked": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Failed": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Not Ready": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    default: return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function contractStatusColor(s: ContractStatus): string {
+function contractStatusColor(s: ContractStatus): React.CSSProperties {
   switch (s) {
-    case "Signed": return "bg-emerald-100 text-emerald-700";
-    case "Pending Signature": return "bg-amber-100 text-amber-700";
-    case "Expired": return "bg-red-100 text-red-700";
-    case "Draft": return "bg-gray-100 text-gray-600";
+    case "Signed": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Pending Signature": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Expired": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Draft": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function invoiceStatusColor(s: InvoiceStatus): string {
+function invoiceStatusColor(s: InvoiceStatus): React.CSSProperties {
   switch (s) {
-    case "Paid": return "bg-emerald-100 text-emerald-700";
-    case "Pending Payment": return "bg-amber-100 text-amber-700";
-    case "Overdue": return "bg-red-100 text-red-700";
-    case "Draft": return "bg-gray-100 text-gray-600";
+    case "Paid": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Pending Payment": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Overdue": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Draft": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function priorityColor(p: Priority): string {
+function priorityColor(p: Priority): React.CSSProperties {
   switch (p) {
-    case "High": return "bg-red-100 text-red-700";
-    case "Medium": return "bg-amber-100 text-amber-700";
-    case "Low": return "bg-gray-100 text-gray-600";
+    case "High": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Medium": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Low": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function taskStatusColor(s: GeneratedTask["status"]): string {
+function taskStatusColor(s: GeneratedTask["status"]): React.CSSProperties {
   switch (s) {
-    case "Complete": return "bg-emerald-100 text-emerald-700";
-    case "Active": return "bg-blue-100 text-blue-700";
-    case "Pending": return "bg-gray-100 text-gray-500";
-    case "Blocked": return "bg-red-100 text-red-700";
+    case "Complete": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Active": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Pending": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    case "Blocked": return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
   }
 }
 
-function deptWorkloadStatusColor(s: DepartmentWorkload["status"]): string {
+function deptWorkloadStatusColor(s: DepartmentWorkload["status"]): React.CSSProperties {
   switch (s) {
-    case "Active": return "bg-emerald-100 text-emerald-700";
-    case "Pending": return "bg-amber-100 text-amber-700";
-    case "Not Activated": return "bg-gray-100 text-gray-500";
+    case "Active": return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Pending": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Not Activated": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
@@ -711,15 +711,15 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             <span className="text-xs text-gray-400 uppercase tracking-wide font-medium">Activation Detail</span>
             <h2 className="text-xl font-bold text-gray-900">{item.client}</h2>
             <div className="flex items-center gap-2 flex-wrap mt-1">
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusColor(item.activationStatus)}`}>
+              <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold text-xs font-semibold px-2 py-0.5 rounded-full" style={statusColor(item.activationStatus)}>
                 {item.activationStatus}
               </span>
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${priorityColor(item.priority)}`}>
+              <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold text-xs font-semibold px-2 py-0.5 rounded-full" style={priorityColor(item.priority)}>
                 {item.priority} Priority
               </span>
               {item.blockedReason && (
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700">
-                  ⚠ {item.blockedReason}
+                  ! {item.blockedReason}
                 </span>
               )}
             </div>
@@ -751,12 +751,12 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <span className="text-xs text-gray-400 uppercase tracking-wide">Contract</span>
                   <p className="text-sm font-semibold text-gray-800 mt-1">{item.contractRef}</p>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full mt-1 inline-block ${contractStatusColor(item.contractStatus)}`}>{item.contractStatus}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold text-xs font-medium px-2 py-0.5 rounded-full mt-1 inline-block" style={contractStatusColor(item.contractStatus)}>{item.contractStatus}</span>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <span className="text-xs text-gray-400 uppercase tracking-wide">Invoice</span>
                   <p className="text-sm font-semibold text-gray-800 mt-1">{item.invoiceRef}</p>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full mt-1 inline-block ${invoiceStatusColor(item.invoiceStatus)}`}>{item.invoiceStatus}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold text-xs font-medium px-2 py-0.5 rounded-full mt-1 inline-block" style={invoiceStatusColor(item.invoiceStatus)}>{item.invoiceStatus}</span>
                 </div>
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <span className="text-xs text-gray-400 uppercase tracking-wide">Contract Value</span>
@@ -900,9 +900,9 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
                 <div className="text-sm text-gray-400 bg-gray-50 rounded-lg p-4 border border-gray-200">No rules matched yet. Conditions not satisfied.</div>
               ) : (
                 item.matchedRules.map((r, i) => (
-                  <div key={i} className="flex items-center gap-2 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-3">
+                  <div key={i} className="flex items-center gap-2 rounded border px-2 py-1" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
                     
-                    <span className="text-sm font-medium text-indigo-800">{r}</span>
+                    <span className="text-sm font-medium" style={{ color: "var(--rtm-text-primary)" }}>{r}</span>
                   </div>
                 ))
               )}
@@ -932,10 +932,10 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
                           <td className="px-3 py-2 font-medium text-gray-800 whitespace-nowrap">{t.taskName}</td>
                           <td className="px-3 py-2"><DeptBadge dept={t.department} /></td>
                           <td className="px-3 py-2 text-gray-600">{t.ownerRole}</td>
-                          <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded-full font-medium ${priorityColor(t.priority)}`}>{t.priority}</span></td>
+                          <td className="px-3 py-2"><span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full font-medium" style={priorityColor(t.priority)}>{t.priority}</span></td>
                           <td className="px-3 py-2 text-gray-600">{t.dueOffset}</td>
                           <td className="px-3 py-2 text-gray-600">{t.targetCompletionDays}d</td>
-                          <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded-full font-medium ${taskStatusColor(t.status)}`}>{t.status}</span></td>
+                          <td className="px-3 py-2"><span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full font-medium" style={taskStatusColor(t.status)}>{t.status}</span></td>
                         </tr>
                       ))}
                     </tbody>
@@ -957,7 +957,7 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
                   <div key={i} className="bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                       <DeptBadge dept={dw.department} />
-                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${deptWorkloadStatusColor(dw.status)}`}>{dw.status}</span>
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold text-xs font-semibold px-2 py-0.5 rounded-full" style={deptWorkloadStatusColor(dw.status)}>{dw.status}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
                       <span>Tasks: <b>{dw.taskCount}</b></span>
@@ -1002,7 +1002,7 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
           {activeTab === "notes"&& (
             <div className="flex flex-col gap-3">
               <h3 className="text-sm font-bold text-gray-800">Notes</h3>
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="border rounded-lg p-4" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
                 <p className="text-sm text-amber-900">{item.notes || "No notes."}</p>
               </div>
             </div>
@@ -1015,10 +1015,10 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
             <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700">Run Activation</button>
           )}
           {(item.activationStatus === "Rules Matched"|| item.activationStatus === "Generating Tasks") && (
-            <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700">Generate Tasks</button>
+            <button className="px-3 py-1.5 text-xs font-semibold rounded-lg text-white" style={{ background: "var(--rtm-blue)" }}>Generate Tasks</button>
           )}
           {item.activationStatus === "Department Activation Pending"&& (
-            <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 text-white hover:bg-amber-700">Assign Department Owners</button>
+            <button className="px-3 py-1.5 text-xs font-semibold rounded-lg border" style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>Assign Department Owners</button>
           )}
           {item.activationStatus === "Activated"&& (
             <Link href="/account-management/onboarding" className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">Push to Onboarding →</Link>
@@ -1107,14 +1107,14 @@ export default function ActivationEnginePage() {
 
       {/*  KPI Cards  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-        <KpiCard label="Ready for Activation"value={kpis.ready} color="text-blue-700"sub="contracts + invoices OK"/>
-        <KpiCard label="Pending Signature"value={kpis.pendingSig} color="text-amber-600"sub="awaiting DocuSign"/>
-        <KpiCard label="Pending Payment"value={kpis.pendingPay} color="text-amber-600"sub="invoices outstanding"/>
-        <KpiCard label="Rules Matched"value={kpis.rulesMatched} color="text-indigo-600"sub="awaiting task gen"/>
-        <KpiCard label="Templates Generated"value={kpis.templatesGen} color="text-violet-600"sub="tasks created"/>
-        <KpiCard label="Depts Activated"value={kpis.deptsActivated} color="text-emerald-600"sub="fully activated"/>
-        <KpiCard label="Blocked"value={kpis.blocked} color="text-red-600"sub="needs attention"/>
-        <KpiCard label="Activated This Month"value={kpis.activatedMonth} color="text-emerald-700"sub="July 2025"/>
+        <KpiCard label="Ready for Activation"value={kpis.ready}sub="contracts + invoices OK"/>
+        <KpiCard label="Pending Signature"value={kpis.pendingSig}sub="awaiting DocuSign"/>
+        <KpiCard label="Pending Payment"value={kpis.pendingPay}sub="invoices outstanding"/>
+        <KpiCard label="Rules Matched"value={kpis.rulesMatched}sub="awaiting task gen"/>
+        <KpiCard label="Templates Generated"value={kpis.templatesGen}sub="tasks created"/>
+        <KpiCard label="Depts Activated"value={kpis.deptsActivated}sub="fully activated"/>
+        <KpiCard label="Blocked"value={kpis.blocked}sub="needs attention"/>
+        <KpiCard label="Activated This Month"value={kpis.activatedMonth}sub="July 2025"/>
       </div>
 
         {/*  Activation Queue  */}
@@ -1186,14 +1186,14 @@ export default function ActivationEnginePage() {
 
                     {/* Contract Status */}
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full font-medium ${contractStatusColor(c.contractStatus)}`}>
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full font-medium" style={contractStatusColor(c.contractStatus)}>
                         {c.contractStatus}
                       </span>
                     </td>
 
                     {/* Invoice Status */}
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full font-medium ${invoiceStatusColor(c.invoiceStatus)}`}>
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full font-medium" style={invoiceStatusColor(c.invoiceStatus)}>
                         {c.invoiceStatus}
                       </span>
                     </td>
@@ -1215,7 +1215,7 @@ export default function ActivationEnginePage() {
                     </td>
                     {/* Activation Status */}
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusColor(c.activationStatus)}`}>{c.activationStatus}</span>
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={statusColor(c.activationStatus)}>{c.activationStatus}</span>
                     </td>
                     {/* Blocked Reason */}
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -1231,7 +1231,7 @@ export default function ActivationEnginePage() {
                     </td>
                     {/* Priority */}
                     <td className="px-4 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${priorityColor(c.priority)}`}>{c.priority}</span>
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={priorityColor(c.priority)}>{c.priority}</span>
                     </td>
                     {/* Actions */}
                     <td className="px-4 py-3">
@@ -1268,10 +1268,10 @@ export default function ActivationEnginePage() {
               <div key={c.id} className="rounded-xl p-4 flex flex-col gap-2"style={{ background: "#FEF2F2", border: "1px solid #FECACA"}}>
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{c.client}</span>
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${priorityColor(c.priority)}`}>{c.priority}</span>
+                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold text-xs font-semibold px-2 py-0.5 rounded-full shrink-0" style={priorityColor(c.priority)}>{c.priority}</span>
                 </div>
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full self-start"style={{ background: "#FEE2E2", color: "#DC2626"}}>
-                  ⚠ {c.blockedReason}
+                  ! {c.blockedReason}
                 </span>
                 <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{c.nextAction}</p>
                 <button onClick={() => setSelectedCase(c)} className="text-xs font-semibold hover:underline self-start mt-1"style={{ color: "#DC2626"}}>View Details →</button>

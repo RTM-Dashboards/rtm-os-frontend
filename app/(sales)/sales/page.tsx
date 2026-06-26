@@ -33,7 +33,7 @@ const LIFECYCLE_STAGES = [
   { stage: "Renewed",                owner: "Account Management", color: "#059669"},
 ] as const;
 
-const OWNER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+const OWNER_COLORS: Record<string, { bg?: string; text: string; border: string }> = {
   "Sales":              { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
   "Billing":            { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
   "Account Management": { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0"},
@@ -235,7 +235,7 @@ const HANDOFF_MOCK_DEALS: HandoffDeal[] = [
   },
 ];
 
-function getHandoffReadiness(deal: HandoffDeal): { label: string; bg: string; color: string; border: string } {
+function getHandoffReadiness(deal: HandoffDeal): { label: string; bg?: string; color?: string; border: string } {
   const total = HANDOFF_CHECKLIST_ITEMS.length;
   const done = deal.checkedItems.length;
   if (deal.handoffStage === "Ready for Activation")
@@ -247,8 +247,8 @@ function getHandoffReadiness(deal: HandoffDeal): { label: string; bg: string; co
   return { label: "Missing Requirements", bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"};
 }
 
-function getHandoffStageBadge(stage: HandoffStage): { bg: string; color: string; border: string } {
-  const map: Record<HandoffStage, { bg: string; color: string; border: string }> = {
+function getHandoffStageBadge(stage: HandoffStage): { bg?: string; color?: string; border: string } {
+  const map: Record<HandoffStage, { bg?: string; color?: string; border: string }> = {
     "Proposal Approved":  { bg: "#F5F3FF", color: "#7C3AED", border: "#DDD6FE"},
     "Handoff Incomplete": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"},
     "Ready to Send":      { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
@@ -1186,7 +1186,7 @@ const salesTeamPerformance: SalesRepPerformance[] = [
 
 //  Pipeline Stage Config 
 
-const OPPORTUNITY_STAGES: { stage: OpportunityStage; color: string }[] = [
+const OPPORTUNITY_STAGES: { stage: OpportunityStage; color?: string }[] = [
   { stage: "New Lead",         color: "#94A3B8"},
   { stage: "Discovery",        color: "#2563EB"},
   { stage: "Proposal",         color: "#7C3AED"},
@@ -1986,7 +1986,7 @@ export default function SalesDashboard() {
               <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{note}</p>
               {label === "Revenue Goal Progress"&& (
                 <div className="mt-2">
-                  <ProgressBar value={62} color="bg-amber-500"height={6} />
+                  <ProgressBar value={62}height={6} />
                 </div>
               )}
             </div>

@@ -717,7 +717,7 @@ function statusVariant(status: FollowUpStatus) {
 }
 
 function priorityBadge(priority: Priority) {
-  const styles: Record<Priority, { bg: string; color: string; border: string }> = {
+  const styles: Record<Priority, { bg?: string; color?: string; border: string }> = {
     High:   { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"},
     Medium: { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"},
     Low:    { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0"},
@@ -731,7 +731,7 @@ function priorityBadge(priority: Priority) {
 }
 
 function ghlSyncBadge(syncStatus: GhlSyncStatus) {
-  const styles: Record<GhlSyncStatus, { bg: string; color: string; border: string; dot: string }> = {
+  const styles: Record<GhlSyncStatus, { bg?: string; color?: string; border: string; dot: string }> = {
     "Synced":           { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", dot: "#10B981"},
     "Pending Sync":     { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", dot: "#F59E0B"},
     "Sync Failed":      { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", dot: "#EF4444"},
@@ -748,7 +748,7 @@ function ghlSyncBadge(syncStatus: GhlSyncStatus) {
 }
 
 function relatedTypeBadge(type: RelatedType) {
-  const styles: Record<RelatedType, { bg: string; color: string }> = {
+  const styles: Record<RelatedType, { bg?: string; color?: string }> = {
     "Lead":              { bg: "#EFF6FF", color: "#1D4ED8"},
     "Opportunity":       { bg: "#F0FDF4", color: "#15803D"},
     "Audit":             { bg: "#FFF7ED", color: "#C2410C"},

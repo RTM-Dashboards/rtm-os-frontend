@@ -10,7 +10,7 @@ const workspace = getWorkspace("billing")!;
 
 // ── Revenue Bar ───────────────────────────────────────────────────────────────
 
-function RevenueBar({ label, value, max, color, showValue = true }: { label: string; value: number; max: number; color: string; showValue?: boolean }) {
+function RevenueBar({ label, value, max, color, showValue = true }: { label: string; value: number; max: number; color?: string; showValue?: boolean }) {
   const pct = Math.max(3, Math.round((value / max) * 100));
   return (
     <div className="space-y-1.5">
@@ -29,7 +29,7 @@ function RevenueBar({ label, value, max, color, showValue = true }: { label: str
 
 // ── Revenue Tile ──────────────────────────────────────────────────────────────
 
-function RevTile({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
+function RevTile({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
     <div
       className="flex flex-col gap-1 px-5 py-4 rounded-xl border"style={{ background: `${color}10`, borderColor: `${color}30` }}
@@ -148,14 +148,14 @@ export default function RevenueDashboardPage() {
       {/* Revenue Summary Tiles */}
       <SectionWrapper title="Revenue Breakdown"description="Key revenue components for the current period">
         <div className="flex flex-wrap gap-3">
-          <RevTile label="Recurring Revenue"value={`$${revenueSummary.mrr.toLocaleString()}`}              color="#059669"sub="Active contracts"/>
+          <RevTile label="Recurring Revenue"value={`$${revenueSummary.mrr.toLocaleString()}`}sub="Active contracts"/>
           <RevTile label="Setup Fees"value="$8,200"color="#1B4FD8"sub="New client setup"/>
           <RevTile label="Quarterly Invoices"value="$11,700"color="#7C3AED"sub="Q2 billing"/>
           <RevTile label="Annual Contracts"value="$60,000"color="#0891B2"sub="Harbor Auto Group"/>
           <RevTile label="One-Time Projects"value="$8,500"color="#D97706"sub="Web builds"/>
           <RevTile label="Upsells"value="$7,700"color="#DC2626"sub="Expansion revenue"/>
-          <RevTile label="Outstanding"value={`$${overdueInvoices.reduce((s, i) => s + i.amount, 0).toLocaleString()}`} color="#DC2626"sub="Overdue invoices"/>
-          <RevTile label="Expansion Revenue"value={`$${revenueSummary.expansionRevenue.toLocaleString()}`}  color="#059669"sub="Upsell + upgrades"/>
+          <RevTile label="Outstanding"value={`$${overdueInvoices.reduce((s, i) => s + i.amount, 0).toLocaleString()}`}sub="Overdue invoices"/>
+          <RevTile label="Expansion Revenue"value={`$${revenueSummary.expansionRevenue.toLocaleString()}`}sub="Upsell + upgrades"/>
         </div>
       </SectionWrapper>
 
@@ -166,7 +166,7 @@ export default function RevenueDashboardPage() {
         <SectionWrapper title="Monthly Revenue"description="6-month trend">
           <div className="space-y-3">
             {revenueSummary.monthlyRevenue.map((m) => (
-              <RevenueBar key={m.month} label={m.month} value={m.revenue} max={maxMonthly} color="#059669"/>
+              <RevenueBar key={m.month} label={m.month} value={m.revenue} max={maxMonthly}/>
             ))}
             <div className="pt-2 flex justify-between text-xs"style={{ color: "var(--rtm-text-muted)", borderTop: "1px solid var(--rtm-border-light)"}}>
               <span>6-Month Total</span>
@@ -205,7 +205,7 @@ export default function RevenueDashboardPage() {
         <SectionWrapper title="Revenue By Client"description="Top 8 clients by annual contract value">
           <div className="space-y-3">
             {revenueByClient.map((c) => (
-              <RevenueBar key={c.client} label={c.client} value={c.revenue} max={maxClient} color="#0891B2"/>
+              <RevenueBar key={c.client} label={c.client} value={c.revenue} max={maxClient}/>
             ))}
           </div>
         </SectionWrapper>

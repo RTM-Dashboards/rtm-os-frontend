@@ -23,7 +23,7 @@ interface AutomationRule {
   template: string;
 }
 
-const STATUS_CFG: Record<AutomationStatus, { bg: string; color: string; border: string; dot: string }> = {
+const STATUS_CFG: Record<AutomationStatus, { bg?: string; color?: string; border: string; dot: string }> = {
   Active:  { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", dot: "#10B981"},
   Paused:  { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", dot: "#F59E0B"},
   Draft:   { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0", dot: "#94A3B8"},
@@ -159,7 +159,7 @@ function StatusBadge({ status }: { status: AutomationStatus }) {
   );
 }
 
-function KpiCard({ label, value, icon = "", color, sub }: { label: string; value: number | string; icon?: string; color: string; sub?: string }) {
+function KpiCard({ label, value, icon = "", color, sub }: { label: string; value: number | string; icon?: string; color?: string; sub?: string }) {
   return (
     <div className="rounded-xl p-4 flex flex-col gap-2"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
       <div className="flex items-center justify-between">
@@ -222,12 +222,12 @@ export default function ReportAutomationPage() {
       <div className="flex-1 px-6 py-5 max-w-[1400px] mx-auto w-full">
         {/* KPIs */}
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
-          <KpiCard label="Total Rules"value={kpis.total} color="var(--rtm-blue)"/>
-          <KpiCard label="Active"value={kpis.active} color="#059669"/>
+          <KpiCard label="Total Rules"value={kpis.total}/>
+          <KpiCard label="Active"value={kpis.active}/>
           <KpiCard label="Paused"value={kpis.paused} icon=""color="#D97706"/>
-          <KpiCard label="Errors"value={kpis.errors} color="#DC2626"/>
+          <KpiCard label="Errors"value={kpis.errors}/>
           <KpiCard label="Total Runs"value={kpis.totalRuns} icon=""color="var(--rtm-blue)"/>
-          <KpiCard label="Failed Runs"value={kpis.failedRuns} color="#DC2626"/>
+          <KpiCard label="Failed Runs"value={kpis.failedRuns}/>
         </div>
 
         {/* Filters */}

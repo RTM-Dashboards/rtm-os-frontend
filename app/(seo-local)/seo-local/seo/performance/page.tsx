@@ -649,7 +649,7 @@ export default function SeoPerformancePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionWrapper
           title="Ranking Trend"description="Organic keywords in top 10 — last 12 months"className="lg:col-span-2">
-          <MiniSparkline data={rankingTrendData} color="#2563EB"height={80} width={600} />
+          <MiniSparkline data={rankingTrendData}height={80} width={600} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>
@@ -740,7 +740,7 @@ export default function SeoPerformancePage() {
         {/* Keyword Trend Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
           <SectionWrapper title="Avg Position Trend"description="Lower is better — last 12 months">
-            <MiniSparkline data={avgPositionTrend} color="#7C3AED"height={60} width={300} />
+            <MiniSparkline data={avgPositionTrend}height={60} width={300} />
             <div className="mt-2 flex gap-1 text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>
               {["J","J","A","S","O","N","D","J","F","M","A","M"].map((m, i) => (
                 <span key={i} className="flex-1 text-center">{m}</span>
@@ -748,7 +748,7 @@ export default function SeoPerformancePage() {
             </div>
           </SectionWrapper>
           <SectionWrapper title="Top 10 Keyword Growth"description="Keywords entering top 10 — last 12 months">
-            <MiniSparkline data={top10GrowthTrend} color="#2563EB"height={60} width={300} />
+            <MiniSparkline data={top10GrowthTrend}height={60} width={300} />
             <div className="mt-2 flex gap-1 text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>
               {["J","J","A","S","O","N","D","J","F","M","A","M"].map((m, i) => (
                 <span key={i} className="flex-1 text-center">{m}</span>
@@ -756,7 +756,7 @@ export default function SeoPerformancePage() {
             </div>
           </SectionWrapper>
           <SectionWrapper title="Top 3 Keyword Growth"description="Keywords entering top 3 — last 12 months">
-            <MiniSparkline data={top3GrowthTrend} color="#059669"height={60} width={300} />
+            <MiniSparkline data={top3GrowthTrend}height={60} width={300} />
             <div className="mt-2 flex gap-1 text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>
               {["J","J","A","S","O","N","D","J","F","M","A","M"].map((m, i) => (
                 <span key={i} className="flex-1 text-center">{m}</span>

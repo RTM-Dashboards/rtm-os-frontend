@@ -205,7 +205,7 @@ const statusVariant: Record<ReviewStatus, "success"| "warning"| "error"| "info"|
   "Overdue":            "error",
 };
 
-const deptColors: Record<string, { bg: string; color: string }> = {
+const deptColors: Record<string, { bg?: string; color?: string }> = {
   "SEO":                { bg: "#EFF6FF", color: "#1D4ED8"},
   "Paid Advertising":   { bg: "#FFF7ED", color: "#C2410C"},
   "GBP":                { bg: "#ECFDF5", color: "#065F46"},

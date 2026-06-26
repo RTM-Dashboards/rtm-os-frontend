@@ -745,7 +745,7 @@ const LINE_ITEMS: LineItemCatalog[] = [
 
 //  Design Helpers 
 
-const CATEGORY_COLORS: Record<Category, { bg: string; text: string; border: string }> = {
+const CATEGORY_COLORS: Record<Category, { bg?: string; text: string; border: string }> = {
   SEO:         { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
   GBP:         { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
   PPC:         { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
@@ -760,21 +760,21 @@ const CATEGORY_COLORS: Record<Category, { bg: string; text: string; border: stri
   Maintenance: { bg: "#F8FAFC", text: "#475569", border: "#CBD5E1"},
 };
 
-const SLA_PRIORITY_COLORS: Record<SLAPriority, { bg: string; text: string; border: string }> = {
+const SLA_PRIORITY_COLORS: Record<SLAPriority, { bg?: string; text: string; border: string }> = {
   Standard: { bg: "#F3F4F6", text: "#374151", border: "#D1D5DB"},
   Priority: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
   Rush:     { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
   Custom:   { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
 };
 
-const SLA_STATUS_COLORS: Record<SLAStatus, { bg: string; text: string; border: string }> = {
+const SLA_STATUS_COLORS: Record<SLAStatus, { bg?: string; text: string; border: string }> = {
   Active:           { bg: "#F0FDF4", text: "#15803D", border: "#A7F3D0"},
   "Pending Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
   "Needs Approval": { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
   Inactive:         { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
 };
 
-const FINANCE_STATUS_COLORS: Record<FinanceStatus, { bg: string; text: string; border: string }> = {
+const FINANCE_STATUS_COLORS: Record<FinanceStatus, { bg?: string; text: string; border: string }> = {
   Approved:         { bg: "#F0FDF4", text: "#15803D", border: "#A7F3D0"},
   "Pending Review": { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
   "Needs Pricing":  { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
@@ -788,7 +788,7 @@ const CATEGORIES: Category[] = [
   "Web", "Creative", "Strategy", "Consulting", "Setup", "Maintenance",
 ];
 
-function Badge({ label, bg, text, border }: { label: string; bg: string; text: string; border?: string }) {
+function Badge({ label, bg, text, border }: { label: string; bg?: string; text: string; border?: string }) {
   return (
     <span
       className="text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: bg, color: text, borderColor: border ?? "transparent"}}

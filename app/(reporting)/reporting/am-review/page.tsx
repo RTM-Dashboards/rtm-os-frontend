@@ -252,7 +252,7 @@ const deliveryStatusVariant: Record<DeliveryStatus, "success"| "warning"| "error
   "Follow-Up Needed":  "warning",
 };
 
-const amColors: Record<string, { bg: string; color: string }> = {
+const amColors: Record<string, { bg?: string; color?: string }> = {
   "Sarah M.": { bg: "#F5F3FF", color: "#6D28D9"},
   "Chris L.": { bg: "#EFF6FF", color: "#1D4ED8"},
   "Tom R.":   { bg: "#FFF7ED", color: "#C2410C"},

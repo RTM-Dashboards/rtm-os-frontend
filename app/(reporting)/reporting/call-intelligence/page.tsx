@@ -341,7 +341,7 @@ const CALLS: CallRecord[] = [
 ];
 
 //  Classification config 
-const classificationConfig: Record<CallClassification, { bg: string; color: string; border: string }> = {
+const classificationConfig: Record<CallClassification, { bg?: string; color?: string; border: string }> = {
   "Qualified Lead":      { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
   "Booked Lead":         { bg: "#D1FAE5", color: "#065F46", border: "#6EE7B7"},
   Spam:                  { bg: "#F8FAFC", color: "#94A3B8", border: "#E2E8F0"},

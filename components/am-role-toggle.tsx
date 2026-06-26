@@ -15,7 +15,7 @@ export function RoleToggle({ role, onRoleChange }: RoleToggleProps) {
         <button
           onClick={() => onRoleChange("head")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            role === "head"? "bg-indigo-600 text-white shadow": "text-slate-500 hover:text-slate-700 bg-transparent"}`}
+            role === "head" ? "text-white shadow" : "text-slate-500 hover:text-slate-700 bg-transparent"}`}
         >
            Account Management Head View
         </button>
@@ -30,13 +30,13 @@ export function RoleToggle({ role, onRoleChange }: RoleToggleProps) {
 
       {/* Role label banner */}
       {role === "head"? (
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50">
+        <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl border" style={{ background: "var(--rtm-blue-xlight)", borderColor: "var(--rtm-blue-light)" }}>
           <span className="text-indigo-600 text-lg"></span>
           <div>
             <p className="text-xs font-bold uppercase tracking-widest text-indigo-500">Current View</p>
             <p className="text-sm font-semibold text-indigo-800">Viewing as Account Management Head</p>
           </div>
-          <span className="ml-auto inline-flex rounded-full bg-indigo-100 px-3 py-0.5 text-xs font-bold text-indigo-700 border border-indigo-200">
+          <span className="ml-auto inline-flex rounded-full px-3 py-0.5 text-xs font-bold border" style={{ background: "var(--rtm-blue-xlight)", color: "var(--rtm-blue)", borderColor: "var(--rtm-blue-light)" }}>
             Full Portfolio Access
           </span>
         </div>

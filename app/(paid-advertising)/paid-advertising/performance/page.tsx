@@ -258,7 +258,7 @@ export default function PaidAdPerformancePage() {
       {/* Combined Trends */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <SectionWrapper title="Combined Spend Trend"description="Meta + Google — last 12 months">
-          <MiniSparkline data={combinedSpendTrend} color="#DC2626"height={80} width={500} />
+          <MiniSparkline data={combinedSpendTrend}height={80} width={500} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {trendData.map((d) => (
               <span key={d.month} className="flex-1 text-center">{d.month}</span>
@@ -267,7 +267,7 @@ export default function PaidAdPerformancePage() {
         </SectionWrapper>
 
         <SectionWrapper title="Combined Leads Trend"description="Meta + Google — last 12 months">
-          <MiniSparkline data={combinedLeadsTrend} color="#059669"height={80} width={500} />
+          <MiniSparkline data={combinedLeadsTrend}height={80} width={500} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {trendData.map((d) => (
               <span key={d.month} className="flex-1 text-center">{d.month}</span>

@@ -602,7 +602,7 @@ const MOCK_PROPOSALS: Proposal[] = [
 // Style Maps
 // 
 
-const STATUS_STYLES: Record<ProposalStatus, { bg: string; text: string; border: string }> = {
+const STATUS_STYLES: Record<ProposalStatus, { bg?: string; text: string; border: string }> = {
   "Draft":                 { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
   "Internal Review":       { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
   "Pending Approval":      { bg: "#FFFBEB", text: "#92400E", border: "#FDE68A"},
@@ -614,7 +614,7 @@ const STATUS_STYLES: Record<ProposalStatus, { bg: string; text: string; border: 
   "Converted To Contract": { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0"},
 };
 
-const CATEGORY_STYLES: Record<ServiceCategory, { bg: string; text: string; border: string }> = {
+const CATEGORY_STYLES: Record<ServiceCategory, { bg?: string; text: string; border: string }> = {
   "SEO":          { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
   "GBP":          { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
   "PPC":          { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
@@ -629,7 +629,7 @@ const CATEGORY_STYLES: Record<ServiceCategory, { bg: string; text: string; borde
   "Consulting":   { bg: "#F5F3FF", text: "#4C1D95", border: "#C4B5FD"},
 };
 
-const DELIVERY_STYLES: Record<DeliveryStandard, { bg: string; text: string }> = {
+const DELIVERY_STYLES: Record<DeliveryStandard, { bg?: string; text: string }> = {
   "Standard": { bg: "#F3F4F6", text: "#374151"},
   "Priority": { bg: "#EFF6FF", text: "#1D4ED8"},
   "Rush":     { bg: "#FFF1F2", text: "#BE123C"},
@@ -663,7 +663,7 @@ function termMonths(c: ContractConfig): number {
 // Primitive Components
 // 
 
-function Badge({ label, bg, text, border }: { label: string; bg: string; text: string; border?: string }) {
+function Badge({ label, bg, text, border }: { label: string; bg?: string; text: string; border?: string }) {
   return (
     <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: bg, color: text, borderColor: border ?? "transparent"}}>
       {label}
@@ -1142,7 +1142,7 @@ function BudgetBuilder({ onRecommend }: { onRecommend: (pkg: AIRecommendation) =
               <span className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>
                 AI Recommendations for {fmt(bv)} budget ({mode})
               </span>
-              <Badge label={`${matches.length} packages`} bg="#EFF6FF"text="#1D4ED8"border="#BFDBFE"/>
+              <Badge label={`${matches.length} packages`}text="#1D4ED8"border="#BFDBFE"/>
             </div>
 
             {matches.length === 0 && (

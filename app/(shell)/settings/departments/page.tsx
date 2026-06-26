@@ -1259,7 +1259,7 @@ const MOCK_DEPARTMENTS: Department[] = [
       { id: "int-exec3", name: "GoHighLevel", category: "CRM", role: "Reporting Only", status: "Connected", lastSync: "2024-12-14"},
     ],
     dashboard: {
-      enabled: true, route: "/departments/leadership",
+      enabled: true, route: "/executive",
       widgets: ["Total MRR", "Portfolio Health", "Revenue at Risk", "Client Retention", "Renewals Due", "Bottlenecks"],
       metrics: ["Total MRR", "Client Retention", "Portfolio Health", "Revenue at Risk"],
       filters: ["View: Executive"],
@@ -1301,7 +1301,7 @@ function integrationStatusVariant(s: Integration["status"]): StatusVariant {
 
 const DEPT_TYPE_CONFIG: Record<
   DepartmentType,
-  { color: string; bg: string; border: string; label: string }
+  { color?: string; bg?: string; border: string; label: string }
 > = {
   Core: { color: "#1D4ED8", bg: "#EFF6FF", border: "#BFDBFE", label: "Core"},
   Service: { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", label: "Service"},
@@ -1320,7 +1320,7 @@ function DeptTypeBadge({ type }: { type: DepartmentType }) {
   );
 }
 
-const VISIBILITY_COLORS: Record<ProjectVisibilityLevel, { bg: string; color: string }> = {
+const VISIBILITY_COLORS: Record<ProjectVisibilityLevel, { bg?: string; color?: string }> = {
   1: { bg: "#F8FAFC", color: "#64748B"},
   2: { bg: "#EFF6FF", color: "#1D4ED8"},
   3: { bg: "#ECFDF5", color: "#059669"},
@@ -1586,7 +1586,7 @@ function DrawerIntegrations({ dept }: { dept: Department }) {
     (a, b) => roleOrder.indexOf(a.role) - roleOrder.indexOf(b.role)
   );
 
-  const roleStyle: Record<IntegrationRole, { bg: string; color: string }> = {
+  const roleStyle: Record<IntegrationRole, { bg?: string; color?: string }> = {
     "Primary System": { bg: "#F5F3FF", color: "#7C3AED"},
     Required: { bg: "#EFF6FF", color: "#1D4ED8"},
     Optional: { bg: "#F8FAFC", color: "#64748B"},
@@ -1895,7 +1895,7 @@ function DrawerDeliveryStandards({ dept }: { dept: Department }) {
 
 function DrawerBlueprints({ dept }: { dept: Department }) {
   const types = Array.from(new Set(dept.blueprints.map((b) => b.type)));
-  const typeColors: Record<TaskBlueprintMapping["type"], { bg: string; color: string }> = {
+  const typeColors: Record<TaskBlueprintMapping["type"], { bg?: string; color?: string }> = {
     "Task Blueprint": { bg: "#EFF6FF", color: "#1D4ED8"},
     "Recurring Task Blueprint": { bg: "#ECFDF5", color: "#059669"},
     "Approval Blueprint": { bg: "#FFFBEB", color: "#B45309"},

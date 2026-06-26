@@ -77,7 +77,7 @@ export default function OverviewTab({ client }: { client: ClientProfile }) {
               {client.notes}
             </p>
             {client.internalNotes && (
-              <div className="mt-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40">
+              <div className="mt-4 p-3 rounded-lg border" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
                 <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-1">
                   Internal Note
                 </p>

@@ -187,7 +187,7 @@ const connectors: DataConnector[] = [
   },
 ];
 
-const categoryColors: Record<ConnectorCategory, { bg: string; color: string }> = {
+const categoryColors: Record<ConnectorCategory, { bg?: string; color?: string }> = {
   Analytics:     { bg: "#EFF6FF", color: "#1D4ED8"},
   Advertising:   { bg: "#FFF7ED", color: "#C2410C"},
   CRM:           { bg: "#F5F3FF", color: "#6D28D9"},

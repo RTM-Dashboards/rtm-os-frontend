@@ -150,7 +150,7 @@ export default function GoogleAdsDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionWrapper title="Google Spend Trend"description="Monthly spend — last 12 months"className="lg:col-span-2">
-          <MiniSparkline data={sparkSpend} color="#3b82f6"height={80} width={600} />
+          <MiniSparkline data={sparkSpend}height={80} width={600} />
           <div className="mt-3 flex gap-2 text-xs text-slate-400">
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>

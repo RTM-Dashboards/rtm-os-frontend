@@ -844,7 +844,7 @@ const ACTIVATION_RULES: ActivationRule[] = [
 
 //  Design helpers 
 
-const TRIGGER_CFG: Record<TriggerEvent, { bg: string; color: string; border: string; icon?: string }> = {
+const TRIGGER_CFG: Record<TriggerEvent, { bg?: string; color?: string; border: string; icon?: string }> = {
   "Proposal Approved":      { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"},
   "Contract Signed":        { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", icon: ""},
   "Invoice Paid":           { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
@@ -855,19 +855,19 @@ const TRIGGER_CFG: Record<TriggerEvent, { bg: string; color: string; border: str
   "Offboarding Approved":   { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3"},
 };
 
-const STATUS_CFG: Record<RuleStatus, { bg: string; color: string; border: string; dot: string }> = {
+const STATUS_CFG: Record<RuleStatus, { bg?: string; color?: string; border: string; dot: string }> = {
   "Active":         { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", dot: "#10B981"},
   "Inactive":       { bg: "#F8FAFC", color: "#94A3B8", border: "#CBD5E1", dot: "#CBD5E1"},
   "Pending Review": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", dot: "#F59E0B"},
 };
 
-const CONTRACT_CFG: Record<ContractRequirement, { bg: string; color: string }> = {
+const CONTRACT_CFG: Record<ContractRequirement, { bg?: string; color?: string }> = {
   "Required":     { bg: "#EFF6FF", color: "#1D4ED8"},
   "Optional":     { bg: "#FFFBEB", color: "#D97706"},
   "Not Required": { bg: "#F8FAFC", color: "#94A3B8"},
 };
 
-const BILLING_CFG: Record<BillingRequirement, { bg: string; color: string }> = {
+const BILLING_CFG: Record<BillingRequirement, { bg?: string; color?: string }> = {
   "Setup Invoice":     { bg: "#FFF7ED", color: "#C2410C"},
   "Recurring Invoice": { bg: "#FAF5FF", color: "#7C3AED"},
   "Any Invoice":       { bg: "#ECFDF5", color: "#059669"},
@@ -875,7 +875,7 @@ const BILLING_CFG: Record<BillingRequirement, { bg: string; color: string }> = {
   "None":              { bg: "#F8FAFC", color: "#94A3B8"},
 };
 
-const DEPT_CFG: Record<Department, { bg: string; color: string; border: string }> = {
+const DEPT_CFG: Record<Department, { bg?: string; color?: string; border: string }> = {
   "SEO":                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"},
   "GBP":                { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
   "Paid Advertising":   { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
@@ -888,7 +888,7 @@ const DEPT_CFG: Record<Department, { bg: string; color: string; border: string }
   "Billing":            { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1"},
 };
 
-const DEP_TYPE_CFG: Record<string, { bg: string; color: string }> = {
+const DEP_TYPE_CFG: Record<string, { bg?: string; color?: string }> = {
   "blocks":   { bg: "#FEF2F2", color: "#DC2626"},
   "triggers": { bg: "#ECFDF5", color: "#059669"},
   "requires": { bg: "#EFF6FF", color: "#1D4ED8"},
@@ -1137,8 +1137,8 @@ function RuleDrawer({
                         key={i}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-semibold"style={{ background: "rgba(255,255,255,0.8)", color: "#1D4ED8", border: "1px solid #BFDBFE"}}
                       >
-                        <span>{(step as { label: string; icon: string }).icon}</span>
-                        {(step as { label: string; icon: string }).label}
+                        <span>{(step as { label: string; icon?: string }).icon}</span>
+                        {(step as { label: string; icon?: string }).label}
                       </div>
                     )
                   )}
@@ -1688,8 +1688,8 @@ export default function ActivationRulesPage() {
                 key={i}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"style={{ background: "rgba(255,255,255,0.8)", color: "#1D4ED8", border: "1px solid #BFDBFE"}}
               >
-                <span>{(step as { label: string; icon: string }).icon}</span>
-                {(step as { label: string; icon: string }).label}
+                <span>{(step as { label: string; icon?: string }).icon}</span>
+                {(step as { label: string; icon?: string }).label}
               </span>
             )
           )}

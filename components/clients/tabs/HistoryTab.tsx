@@ -1,13 +1,13 @@
 import type { ClientProfile, ActivityItem } from "@/lib/mock/clients";
 
 const typeConfig: Record<ActivityItem["type"], { icon: string; dot: string }> = {
-  note:       { icon: "N", dot: "bg-slate-400"},
-  task:       { icon: "T", dot: "bg-emerald-500"},
-  billing:    { icon: "B", dot: "bg-indigo-500"},
-  campaign:   { icon: "C", dot: "bg-purple-500"},
-  onboarding: { icon: "O", dot: "bg-blue-500"},
-  system:     { icon: "S", dot: "bg-slate-400"},
-  alert:      { icon: "!", dot: "bg-red-500"},
+  note:       { icon: "N", dot: "#94A3B8" },
+  task:       { icon: "T", dot: "#10B981" },
+  billing:    { icon: "B", dot: "#6366F1" },
+  campaign:   { icon: "C", dot: "#8B5CF6" },
+  onboarding: { icon: "O", dot: "#3B82F6" },
+  system:     { icon: "S", dot: "#94A3B8" },
+  alert:      { icon: "!", dot: "#EF4444" },
 };
 
 export default function HistoryTab({ client }: { client: ClientProfile }) {
@@ -37,7 +37,7 @@ export default function HistoryTab({ client }: { client: ClientProfile }) {
 
                     {/* Dot */}
                     <div className={`relative z-10 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 border-white dark:border-slate-900 shadow-sm ${
-                      item.type === "alert"? "bg-red-100 dark:bg-red-900/20": item.type === "billing"? "bg-indigo-50 dark:bg-indigo-900/20": item.type === "campaign"? "bg-purple-50 dark:bg-purple-900/20": item.type === "onboarding"? "bg-blue-50 dark:bg-blue-900/20": item.type === "task"? "bg-emerald-50 dark:bg-emerald-900/20": "bg-slate-100 dark:bg-slate-800"}`}>
+                      "bg-slate-50 dark:bg-slate-800"}`}>
                       {cfg.icon}
                     </div>
 

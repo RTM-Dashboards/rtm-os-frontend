@@ -22,36 +22,36 @@ const COMMUNICATION_TYPES: CommunicationType[] = [
 
 const TYPE_COLORS: Record<CommunicationType, string> = {
   "Call Summary":   "bg-blue-100 text-blue-800 ring-1 ring-blue-200",
-  "Meeting Notes":  "bg-indigo-100 text-indigo-800 ring-1 ring-indigo-200",
+  "Meeting Notes":  "var(--rtm-bg) var(--rtm-text-secondary) ring-1 ring-indigo-200",
   "Client Notes":   "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
-  "Email":          "bg-violet-100 text-violet-800 ring-1 ring-violet-200",
-  "SMS":            "bg-teal-100 text-teal-800 ring-1 ring-teal-200",
-  "Follow-Up":      "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
-  "Action Item":    "bg-orange-100 text-orange-800 ring-1 ring-orange-200",
+  "Email":          "var(--rtm-surface) var(--rtm-text-secondary) ring-1 ring-violet-200",
+  "SMS":            "var(--rtm-surface) var(--rtm-text-secondary) ring-1 ring-teal-200",
+  "Follow-Up":      "var(--rtm-bg) var(--rtm-text-secondary) ring-1 ring-amber-200",
+  "Action Item":    "var(--rtm-surface) var(--rtm-text-secondary) ring-1 ring-orange-200",
 };
 
 const TYPE_DOT: Record<CommunicationType, string> = {
   "Call Summary":   "bg-blue-500",
-  "Meeting Notes":  "bg-indigo-500",
+  "Meeting Notes":  "var(--rtm-surface)",
   "Client Notes":   "bg-slate-500",
-  "Email":          "bg-violet-500",
-  "SMS":            "bg-teal-500",
-  "Follow-Up":      "bg-amber-500",
-  "Action Item":    "bg-orange-500",
+  "Email":          "var(--rtm-surface)",
+  "SMS":            "var(--rtm-surface)",
+  "Follow-Up":      "var(--rtm-blue)",
+  "Action Item":    "var(--rtm-surface)",
 };
 
 const SENTIMENT_COLORS: Record<SentimentType, string> = {
   Positive: "bg-green-100 text-green-800 ring-1 ring-green-200",
   Neutral:  "bg-slate-100 text-slate-700 ring-1 ring-slate-200",
   Negative: "bg-red-100 text-red-800 ring-1 ring-red-200",
-  Mixed:    "bg-amber-100 text-amber-800 ring-1 ring-amber-200",
+  Mixed:    "var(--rtm-bg) var(--rtm-text-secondary) ring-1 ring-amber-200",
 };
 
 const SENTIMENT_DOT: Record<SentimentType, string> = {
   Positive: "bg-green-500",
   Neutral:  "bg-slate-400",
   Negative: "bg-red-500",
-  Mixed:    "bg-amber-500",
+  Mixed:    "var(--rtm-blue)",
 };
 
 // ── KPI helpers ───────────────────────────────────────────────────────────────
@@ -151,10 +151,10 @@ export default function CommunicationsPage() {
         {/* ── KPI Row ──────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <KPICard label="Total Communications"value={kpis.total} accent="text-gray-900"/>
-          <KPICard label="Follow-Ups Pending"value={kpis.followUpsPending} accent="text-amber-600"/>
-          <KPICard label="Open Concerns"value={kpis.openConcerns} accent="text-orange-600"/>
+          <KPICard label="Follow-Ups Pending"value={kpis.followUpsPending} accent="var(--rtm-text-secondary)"/>
+          <KPICard label="Open Concerns"value={kpis.openConcerns} accent="var(--rtm-text-secondary)"/>
           <KPICard label="Negative Sentiment"value={kpis.negativeSentiment} accent="text-red-600"/>
-          <KPICard label="Action Items"value={kpis.actionItems} accent="text-indigo-600"/>
+          <KPICard label="Action Items"value={kpis.actionItems} accent="var(--rtm-text-secondary)"/>
         </div>
 
         {/* ── Type Filter Tabs ─────────────────────────────────────────────── */}
@@ -215,7 +215,7 @@ export default function CommunicationsPage() {
                       <TypeBadge type={entry.type} />
                       <SentimentBadge sentiment={entry.sentiment} />
                       {entry.followUpRequired && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 ring-1 ring-amber-200">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold var(--rtm-surface) var(--rtm-text-secondary) ring-1 ring-amber-200">
                           <svg className="w-3 h-3"fill="none"viewBox="0 0 24 24"stroke="currentColor"strokeWidth={2.5}>
                             <path strokeLinecap="round"strokeLinejoin="round"d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                           </svg>
@@ -244,13 +244,13 @@ export default function CommunicationsPage() {
                   {/* Action Items */}
                   {entry.actionItems.length > 0 && (
                     <div className="mt-3">
-                      <p className="text-xs font-semibold text-indigo-700 uppercase tracking-wide mb-1.5">
+                      <p className="text-xs font-semibold var(--rtm-text-secondary) uppercase tracking-wide mb-1.5">
                         Action Items
                       </p>
                       <ul className="space-y-1">
                         {entry.actionItems.map((item, idx) => (
                           <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"/>
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full var(--rtm-surface) shrink-0"/>
                             {item}
                           </li>
                         ))}
@@ -289,7 +289,7 @@ export default function CommunicationsPage() {
         <section>
           <div className="flex items-center gap-2 mb-4">
             <svg
-              className="w-4 h-4 text-indigo-500"fill="none"viewBox="0 0 24 24"stroke="currentColor"strokeWidth={2}
+              className="w-4 h-4 var(--rtm-text-secondary)"fill="none"viewBox="0 0 24 24"stroke="currentColor"strokeWidth={2}
             >
               <path
                 strokeLinecap="round"strokeLinejoin="round"d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
@@ -317,13 +317,13 @@ export default function CommunicationsPage() {
 
                 {/* Stats Row */}
                 <div className="flex flex-wrap gap-3 mb-4">
-                  <div className="flex items-center gap-1.5 bg-amber-50 rounded-lg px-3 py-1.5">
+                  <div className="flex items-center gap-1.5 var(--rtm-surface) rounded-lg px-3 py-1.5">
                     <svg
-                      className="w-3.5 h-3.5 text-amber-500"fill="none"viewBox="0 0 24 24"stroke="currentColor"strokeWidth={2}
+                      className="w-3.5 h-3.5 var(--rtm-text-secondary)"fill="none"viewBox="0 0 24 24"stroke="currentColor"strokeWidth={2}
                     >
                       <path strokeLinecap="round"strokeLinejoin="round"d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <span className="text-xs font-semibold text-amber-700">
+                    <span className="text-xs font-semibold var(--rtm-text-secondary)">
                       {intel.pendingFollowUps} follow-up{intel.pendingFollowUps !== 1 ? "s": ""} pending
                     </span>
                   </div>

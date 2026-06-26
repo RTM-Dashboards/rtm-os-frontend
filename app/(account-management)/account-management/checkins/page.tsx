@@ -397,7 +397,7 @@ const followupRows: FollowupRow[] = [
   },
 ];
 
-const aiSummaries: Record<string, { points: { icon: string; label: string; detail: string }[] }> = {
+const aiSummaries: Record<string, { points: { icon?: string; label: string; detail: string }[] }> = {
   "Apex Roofing": {
     points: [
       { icon: "", label: "Performance Change", detail: "CTR dropped 0.3% MoM — landing page A/B test is live but no winner declared yet. Recommend reviewing test results before the call."},
@@ -429,7 +429,7 @@ const aiSummaries: Record<string, { points: { icon: string; label: string; detai
 
 //  Priority Badge 
 
-const priorityStyles: Record<string, { bg: string; color: string; border: string }> = {
+const priorityStyles: Record<string, { bg?: string; color?: string; border: string }> = {
   High:   { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"},
   Medium: { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"},
   Low:    { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0"},

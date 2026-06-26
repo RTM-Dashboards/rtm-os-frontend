@@ -55,7 +55,7 @@ const columns: Column<YelpClient>[] = [
   { key: "reviews",      header: "Reviews",   width: "90px"},
   { key: "monthlyLeads", header: "Mo. Leads", width: "100px"},
   { key: "completeness", header: "Profile %", width: "150px",
-    render: (value) => <ProgressBar value={Number(value)} max={100} height={5} color="bg-red-500"showLabel />,
+    render: (value) => <ProgressBar value={Number(value)} max={100} height={5}showLabel />,
   },
 ];
 

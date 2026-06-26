@@ -1554,8 +1554,8 @@ const OPPORTUNITIES: Opportunity[] = [
 
 interface StageConfig {
   label: PipelineStage;
-  color: string;
-  bg: string;
+  color?: string;
+  bg?: string;
   border: string;
 }
 
@@ -1577,7 +1577,7 @@ const STAGE_CONFIG: StageConfig[] = [
 
 //  GHL Sync Status Config 
 
-const GHL_SYNC_STATUS_CONFIG: Record<GhlSyncStatus, { color: string; bg: string; border: string }> = {
+const GHL_SYNC_STATUS_CONFIG: Record<GhlSyncStatus, { color?: string; bg?: string; border: string }> = {
   "Synced":          { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
   "Pending Sync":    { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
   "Sync Failed":     { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
@@ -1587,7 +1587,7 @@ const GHL_SYNC_STATUS_CONFIG: Record<GhlSyncStatus, { color: string; bg: string;
 
 //  Helpers 
 
-const LEAD_SOURCE_COLORS: Record<LeadSource, { color: string; bg: string; border: string }> = {
+const LEAD_SOURCE_COLORS: Record<LeadSource, { color?: string; bg?: string; border: string }> = {
   "Direct":     { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE"},
   "Affiliate":  { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
   "Partner":    { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
@@ -1597,14 +1597,14 @@ const LEAD_SOURCE_COLORS: Record<LeadSource, { color: string; bg: string; border
   "LSA":        { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
 };
 
-const PRIORITY_CONFIG: Record<Priority, { color: string; bg: string; border: string }> = {
+const PRIORITY_CONFIG: Record<Priority, { color?: string; bg?: string; border: string }> = {
   "Low":    { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0"},
   "Medium": { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
   "High":   { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
   "Urgent": { color: "#BE185D", bg: "#FDF2F8", border: "#F9A8D4"},
 };
 
-const NOTE_CATEGORY_CONFIG: Record<NoteCategory, { color: string; bg: string; border: string }> = {
+const NOTE_CATEGORY_CONFIG: Record<NoteCategory, { color?: string; bg?: string; border: string }> = {
   "Discovery":   { color: "#3B82F6", bg: "#EFF6FF", border: "#BFDBFE"},
   "Audit":       { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
   "Proposal":    { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
@@ -1613,7 +1613,7 @@ const NOTE_CATEGORY_CONFIG: Record<NoteCategory, { color: string; bg: string; bo
   "General":     { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0"},
 };
 
-const AUDIT_STATUS_CONFIG: Record<AuditStatus, { color: string; bg: string; border: string }> = {
+const AUDIT_STATUS_CONFIG: Record<AuditStatus, { color?: string; bg?: string; border: string }> = {
   "Not Started": { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0"},
   "Requested":   { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
   "In Progress": { color: "#6D28D9", bg: "#EDE9FE", border: "#C4B5FD"},
@@ -1621,7 +1621,7 @@ const AUDIT_STATUS_CONFIG: Record<AuditStatus, { color: string; bg: string; bord
   "Reviewed":    { color: "#15803D", bg: "#DCFCE7", border: "#86EFAC"},
 };
 
-const PROPOSAL_STATUS_CONFIG: Record<ProposalStatus, { color: string; bg: string; border: string }> = {
+const PROPOSAL_STATUS_CONFIG: Record<ProposalStatus, { color?: string; bg?: string; border: string }> = {
   "Not Started": { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0"},
   "Drafting":    { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
   "Sent":        { color: "#B45309", bg: "#FEF3C7", border: "#FCD34D"},
@@ -1630,13 +1630,13 @@ const PROPOSAL_STATUS_CONFIG: Record<ProposalStatus, { color: string; bg: string
   "Rejected":    { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
 };
 
-const FOLLOW_UP_STATUS_CONFIG: Record<FollowUpStatus, { color: string; bg: string; border: string }> = {
+const FOLLOW_UP_STATUS_CONFIG: Record<FollowUpStatus, { color?: string; bg?: string; border: string }> = {
   "Upcoming":  { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE"},
   "Overdue":   { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
   "Completed": { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
 };
 
-const HANDOFF_STATUS_CONFIG: Record<HandoffStatus, { color: string; bg: string; border: string }> = {
+const HANDOFF_STATUS_CONFIG: Record<HandoffStatus, { color?: string; bg?: string; border: string }> = {
   "Not Started":     { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0"},
   "Initiated":       { color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC"},
   "Billing Sent":    { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
@@ -1644,7 +1644,7 @@ const HANDOFF_STATUS_CONFIG: Record<HandoffStatus, { color: string; bg: string; 
   "Activated":       { color: "#15803D", bg: "#DCFCE7", border: "#86EFAC"},
 };
 
-const TASK_STATUS_CONFIG: Record<TaskStatus, { color: string; bg: string; border: string }> = {
+const TASK_STATUS_CONFIG: Record<TaskStatus, { color?: string; bg?: string; border: string }> = {
   "Open":        { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE"},
   "In Progress": { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
   "Completed":   { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
@@ -1674,7 +1674,7 @@ const ACTIVITY_ICON: Record<ActivityType, string> = {
   "Stage Changed":         "",
 };
 
-const GHL_SYNC_ISSUE_TYPE_CONFIG: Record<GhlSyncIssueType, { color: string; bg: string; border: string }> = {
+const GHL_SYNC_ISSUE_TYPE_CONFIG: Record<GhlSyncIssueType, { color?: string; bg?: string; border: string }> = {
   "Missing Contact ID":        { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
   "Stage Mapping Missing":     { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
   "Assigned User Not Matched": { color: "#EA580C", bg: "#FFF7ED", border: "#FED7AA"},
@@ -1721,7 +1721,7 @@ function calcKPIs(ops: Opportunity[]) {
 
 //  Badges 
 
-function StatusBadge({ label, cfg }: { label: string; cfg: { color: string; bg: string; border: string } }) {
+function StatusBadge({ label, cfg }: { label: string; cfg: { color?: string; bg?: string; border: string } }) {
   return (
     <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}>
       {label}
@@ -1965,7 +1965,7 @@ function IntegrationCard({
   href: string;
   hrefLabel: string;
   status: string;
-  statusCfg: { color: string; bg: string; border: string };
+  statusCfg: { color?: string; bg?: string; border: string };
   actions?: { label: string; href: string }[];
   children: React.ReactNode;
 }) {

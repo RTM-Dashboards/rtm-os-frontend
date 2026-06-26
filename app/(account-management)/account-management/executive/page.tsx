@@ -15,24 +15,24 @@ function fmt(n: number): string {
   return `$${n.toLocaleString()}`;
 }
 
-function healthStatusBadge(status: HealthStatus): string {
-  const map: Record<HealthStatus, string> = {
-    Healthy: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Monitor: "bg-amber-100 text-amber-700 border-amber-200",
-    "At Risk": "bg-orange-100 text-orange-700 border-orange-200",
-    Critical: "bg-red-100 text-red-700 border-red-200",
+function healthStatusBadge(status: HealthStatus): React.CSSProperties {
+  const map: Record<HealthStatus, React.CSSProperties> = {
+    Healthy: { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    Monitor: { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    "At Risk": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    Critical: { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" },
   };
-  return map[status] ?? "bg-slate-100 text-slate-500";
+  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
 }
 
-function renewalRiskBadge(risk: string): string {
-  const map: Record<string, string> = {
-    Low: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Medium: "bg-amber-100 text-amber-700 border-amber-200",
-    High: "bg-orange-100 text-orange-700 border-orange-200",
-    Critical: "bg-red-100 text-red-700 border-red-200",
+function renewalRiskBadge(risk: string): React.CSSProperties {
+  const map: Record<string, React.CSSProperties> = {
+    Low: { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    Medium: { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    High: { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    Critical: { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" },
   };
-  return map[risk] ?? "bg-slate-100 text-slate-500";
+  return map[risk] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
 }
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
@@ -126,12 +126,10 @@ export default function ExecutivePage() {
           sub="annual recurring revenue"color="text-indigo-700"bgColor="bg-indigo-50"borderColor="border-indigo-200"/>
         <KpiCard
           label="Active Clients"value={activeClients}
-          sub={`of ${PORTFOLIO_CLIENTS.length} total`}
-          color="text-emerald-700"bgColor="bg-emerald-50"borderColor="border-emerald-200"/>
+          sub={`of ${PORTFOLIO_CLIENTS.length} total`}bgColor="bg-emerald-50"borderColor="border-emerald-200"/>
         <KpiCard
           label="Revenue At Risk"value={fmt(revenueAtRisk)}
-          sub={`${revenueAtRiskClients.length} clients`}
-          color="text-red-700"bgColor="bg-red-50"borderColor="border-red-200"/>
+          sub={`${revenueAtRiskClients.length} clients`}bgColor="bg-red-50"borderColor="border-red-200"/>
       </div>
 
       {/* Section nav */}
@@ -199,14 +197,14 @@ export default function ExecutivePage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {c.services.map((s) => (
-                        <span key={s} className="inline-block rounded-md bg-blue-50 border border-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">{s}</span>
+                        <span key={s} className="inline-block rounded px-1.5 py-0.5 text-[10px] font-medium" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)" }}>{s}</span>
                       ))}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-right font-bold text-slate-800">{fmt(c.mrr)}</td>
                   <td className="px-4 py-3 text-right text-slate-600">{fmt(c.arr)}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${healthStatusBadge(c.healthStatus)}`}>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold" style={healthStatusBadge(c.healthStatus)}>
                       {c.healthStatus}
                     </span>
                   </td>
@@ -247,7 +245,7 @@ export default function ExecutivePage() {
                     <span className={`text-lg font-bold ${c.healthScore >= 60 ? "text-amber-600": "text-red-600"}`}>{c.healthScore}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${healthStatusBadge(c.healthStatus)}`}>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold" style={healthStatusBadge(c.healthStatus)}>
                       {c.healthStatus}
                     </span>
                   </td>
@@ -255,7 +253,7 @@ export default function ExecutivePage() {
                   <td className="px-4 py-3 text-right font-bold text-red-600">{fmt(c.mrr)}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${
-                      c.status === "Cancellation Requested"? "bg-red-100 text-red-700 border-red-200": "bg-orange-100 text-orange-700 border-orange-200"}`}>
+                      c.status === "Cancellation Requested"? { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" }: "bg-orange-100 text-orange-700 border-orange-200"}`}>
                       {c.status}
                     </span>
                   </td>
@@ -295,7 +293,7 @@ export default function ExecutivePage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${renewalRiskBadge(r.renewalRisk)}`}>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold" style={renewalRiskBadge(r.renewalRisk)}>
                       {r.renewalRisk}
                     </span>
                   </td>
@@ -344,7 +342,7 @@ export default function ExecutivePage() {
                     <td className="px-4 py-3 font-semibold text-slate-900">{c.name}</td>
                     <td className="px-4 py-3 text-slate-700">{c.accountManager}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${healthStatusBadge(c.healthStatus)}`}>
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold" style={healthStatusBadge(c.healthStatus)}>
                         {c.healthStatus}
                       </span>
                     </td>
@@ -367,7 +365,7 @@ export default function ExecutivePage() {
       {activeSection === "expansion"&& (
         <div className="space-y-4">
           <div className="grid sm:grid-cols-3 gap-4">
-            <div className="rounded-xl border border-teal-200 bg-teal-50 p-4 shadow-sm">
+            <div className="rounded-xl border p-4 shadow-sm" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
               <p className="text-xs font-semibold uppercase tracking-widest text-teal-500">Total Pipeline</p>
               <p className="text-2xl font-bold text-teal-700 mt-1">{fmt(expansionPipeline)}/mo</p>
               <p className="text-xs text-teal-500 mt-0.5">Excluding declined opportunities</p>
@@ -377,7 +375,7 @@ export default function ExecutivePage() {
               <p className="text-2xl font-bold text-emerald-700 mt-1">{fmt(closedWonRevenue)}/mo</p>
               <p className="text-xs text-emerald-500 mt-0.5">Revenue already confirmed</p>
             </div>
-            <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
+            <div className="rounded-xl border p-4 shadow-sm" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
               <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500">Opportunities</p>
               <p className="text-2xl font-bold text-indigo-700 mt-1">{EXPANSION_OPPORTUNITIES.filter((o) => o.status !== "Declined").length}</p>
               <p className="text-xs text-indigo-500 mt-0.5">Active in pipeline</p>
@@ -451,7 +449,7 @@ export default function ExecutivePage() {
                   </td>
                   <td className="px-4 py-3 text-center">
                     {dept.escalations > 0 ? (
-                      <span className="inline-flex items-center rounded-full border border-orange-200 bg-orange-100 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold text-orange-700">
                         {dept.escalations}
                       </span>
                     ) : (
@@ -469,7 +467,7 @@ export default function ExecutivePage() {
                     {dept.dependencies.length > 0 ? (
                       <ul className="space-y-0.5">
                         {dept.dependencies.map((d) => (
-                          <li key={d} className="text-xs text-amber-700">⚠ {d}</li>
+                          <li key={d} className="text-xs text-amber-700"><span style={{ fontWeight: "bold" }}>!</span> {d}</li>
                         ))}
                       </ul>
                     ) : (

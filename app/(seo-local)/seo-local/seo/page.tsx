@@ -42,7 +42,7 @@ const columns: Column<SeoClient>[] = [
   { key: "monthlyImpressions", header: "Impressions", width: "120px"},
   {
     key: "domainAuthority", header: "DA", width: "140px",
-    render: (value) => <ProgressBar value={Number(value)} max={100} height={5} color="bg-blue-500"showLabel />,
+    render: (value) => <ProgressBar value={Number(value)} max={100} height={5}showLabel />,
   },
   { key: "backlinks", header: "Backlinks", width: "100px"},
   {
@@ -110,7 +110,7 @@ export default function SeoPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionWrapper title="Impressions Trend"description="Organic search impressions — last 12 months"className="lg:col-span-2">
-          <MiniSparkline data={sparkImpressions} color="#3b82f6"height={80} width={600} />
+          <MiniSparkline data={sparkImpressions}height={80} width={600} />
           <div className="mt-3 flex gap-2 text-xs text-slate-400">
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>

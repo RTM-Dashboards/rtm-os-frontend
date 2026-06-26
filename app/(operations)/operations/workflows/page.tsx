@@ -148,7 +148,7 @@ function IconSettings({ className }: { className?: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: WorkflowStatus }) {
-  const map: Record<WorkflowStatus, { bg: string; color: string; dot: string; label: string }> = {
+  const map: Record<WorkflowStatus, { bg?: string; color?: string; dot: string; label: string }> = {
     Active:   { bg: "#ECFDF5", color: "#059669", dot: "#10B981", label: "Active"},
     Inactive: { bg: "#F4F7FF", color: "#5A6A85", dot: "#9AAABB", label: "Inactive"},
     Failed:   { bg: "#FEF2F2", color: "#DC2626", dot: "#EF4444", label: "Failed"},
@@ -166,7 +166,7 @@ function StatusBadge({ status }: { status: WorkflowStatus }) {
 }
 
 function ResultBadge({ result }: { result: ExecutionRecord["result"] }) {
-  const map: Record<string, { bg: string; color: string }> = {
+  const map: Record<string, { bg?: string; color?: string }> = {
     Success: { bg: "#ECFDF5", color: "#059669"},
     Failed:  { bg: "#FEF2F2", color: "#DC2626"},
     Partial: { bg: "#FFFBEB", color: "#D97706"},
@@ -183,7 +183,7 @@ function ResultBadge({ result }: { result: ExecutionRecord["result"] }) {
 }
 
 function ImpactBadge({ impact }: { impact: "High"| "Medium"| "Low"}) {
-  const map: Record<string, { bg: string; color: string }> = {
+  const map: Record<string, { bg?: string; color?: string }> = {
     High:   { bg: "#FEF2F2", color: "#DC2626"},
     Medium: { bg: "#FFFBEB", color: "#D97706"},
     Low:    { bg: "#ECFDF5", color: "#059669"},
@@ -230,8 +230,8 @@ interface KpiProps {
   label: string;
   value: number | string;
   sub?: string;
-  color: string;
-  bg: string;
+  color?: string;
+  bg?: string;
   icon: React.ReactNode;
 }
 
@@ -835,7 +835,7 @@ function TemplateCard({ tpl, onUse }: { tpl: WorkflowTemplate; onUse: () => void
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AIRecommendationCard({ rec }: { rec: AIRecommendation }) {
-  const typeColors: Record<string, { bg: string; color: string }> = {
+  const typeColors: Record<string, { bg?: string; color?: string }> = {
     Bottleneck:   { bg: "#FEF2F2", color: "#DC2626"},
     Opportunity:  { bg: "#ECFDF5", color: "#059669"},
     Improvement:  { bg: "var(--rtm-blue-light)", color: "var(--rtm-blue)"},

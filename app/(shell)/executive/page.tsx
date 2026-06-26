@@ -92,7 +92,7 @@ function healthLabel(h: "healthy" | "warning" | "critical") {
 }
 
 function kpiStatusBadge(s: "on-track" | "behind" | "at-risk" | "critical") {
-  const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
+  const map: Record<string, { bg?: string; color?: string; border: string; label: string }> = {
     "on-track": { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", label: "On Track" },
     behind:     { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", label: "Behind" },
     "at-risk":  { bg: "#FFF7ED", color: "#C2410C", border: "#FDBA74", label: "At Risk" },
@@ -110,7 +110,7 @@ function kpiStatusBadge(s: "on-track" | "behind" | "at-risk" | "critical") {
 }
 
 function riskChip(risk: "low" | "medium" | "high" | "critical" | "at-risk" | "warning") {
-  const map: Record<string, { bg: string; color: string; border: string; label: string }> = {
+  const map: Record<string, { bg?: string; color?: string; border: string; label: string }> = {
     low:      { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", label: "Low Risk" },
     medium:   { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", label: "Medium Risk" },
     warning:  { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", label: "Warning" },

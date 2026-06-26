@@ -877,7 +877,7 @@ const PROJECTS: Project[] = [
 
 //  STYLE CONFIGS 
 
-const PROJECT_STATUS_CFG: Record<ProjectStatus, { bg: string; color: string; border: string; dot: string }> = {
+const PROJECT_STATUS_CFG: Record<ProjectStatus, { bg?: string; color?: string; border: string; dot: string }> = {
   "Draft":               { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0", dot: "#CBD5E1"},
   "Ready to Launch":     { bg: "#ECFEFF", color: "#0E7490", border: "#A5F3FC", dot: "#06B6D4"},
   "Launched":            { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE", dot: "#3B82F6"},
@@ -889,14 +889,14 @@ const PROJECT_STATUS_CFG: Record<ProjectStatus, { bg: string; color: string; bor
   "Cancelled":           { bg: "#F8FAFC", color: "#9AAABB", border: "#E4E8F0", dot: "#CBD5E1"},
 };
 
-const MILESTONE_STATUS_CFG: Record<MilestoneStatus, { bg: string; color: string; border: string }> = {
+const MILESTONE_STATUS_CFG: Record<MilestoneStatus, { bg?: string; color?: string; border: string }> = {
   "Not Started": { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"},
   "In Progress": { bg: "#FEF9C3", color: "#A16207", border: "#FDE68A"},
   "Blocked":     { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"},
   "Completed":   { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
 };
 
-const TASK_STATUS_CFG: Record<TaskStatus, { bg: string; color: string; border: string; dot: string }> = {
+const TASK_STATUS_CFG: Record<TaskStatus, { bg?: string; color?: string; border: string; dot: string }> = {
   "Open":        { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE", dot: "#3B82F6"},
   "In Progress": { bg: "#FEF9C3", color: "#A16207", border: "#FDE68A", dot: "#EAB308"},
   "Waiting":     { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0", dot: "#94A3B8"},
@@ -918,7 +918,7 @@ const RISK_CFG = {
   "High": { bg: "#FEF2F2", color: "#DC2626"},
 };
 
-const PRIORITY_CFG: Record<TaskPriority, { bg: string; color: string; border: string; icon?: string }> = {
+const PRIORITY_CFG: Record<TaskPriority, { bg?: string; color?: string; border: string; icon?: string }> = {
   "Low":    { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0", icon: "↓"},
   "Medium": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", icon: "→"},
   "High":   { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", icon: "↑"},
@@ -1004,7 +1004,7 @@ function Avatar({ name }: { name: string }) {
 
 //  KPI CARD 
 
-function KpiCard({ label, value, sub, color, icon }: { label: string; value: number | string; sub?: string; color: string; icon?: string }) {
+function KpiCard({ label, value, sub, color, icon }: { label: string; value: number | string; sub?: string; color?: string; icon?: string }) {
   return (
     <div className="rounded-xl p-4 flex flex-col gap-2"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
       <div className="flex items-center justify-between">
@@ -1570,14 +1570,14 @@ export default function ProjectsDeliveryEngine() {
 
         {/*  KPI CARDS  */}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 mb-6">
-          <KpiCard label="Total Projects"value={kpis.totalProjects} color="var(--rtm-blue)"sub="All projects"/>
-          <KpiCard label="Active"value={kpis.activeProjects} color="#D97706"sub="In Progress / Launched"/>
-          <KpiCard label="Blocked / Pending"value={kpis.blockedProjects} color="#DC2626"sub="Needs attention"/>
-          <KpiCard label="Completed"value={kpis.completedProjects} color="#059669"sub="Delivered"/>
-          <KpiCard label="Total Tasks"value={kpis.totalTasks} color="var(--rtm-blue)"sub="Across all projects"/>
-          <KpiCard label="Open Tasks"value={kpis.openTasks} color="#D97706"sub="Active work"/>
-          <KpiCard label="Blocked Tasks"value={kpis.blockedTasks} color="#DC2626"sub="Need unblocking"/>
-          <KpiCard label="Open Blockers"value={kpis.totalBlockers} color="#7C3AED"sub="Project blockers"/>
+          <KpiCard label="Total Projects"value={kpis.totalProjects}sub="All projects"/>
+          <KpiCard label="Active"value={kpis.activeProjects}sub="In Progress / Launched"/>
+          <KpiCard label="Blocked / Pending"value={kpis.blockedProjects}sub="Needs attention"/>
+          <KpiCard label="Completed"value={kpis.completedProjects}sub="Delivered"/>
+          <KpiCard label="Total Tasks"value={kpis.totalTasks}sub="Across all projects"/>
+          <KpiCard label="Open Tasks"value={kpis.openTasks}sub="Active work"/>
+          <KpiCard label="Blocked Tasks"value={kpis.blockedTasks}sub="Need unblocking"/>
+          <KpiCard label="Open Blockers"value={kpis.totalBlockers}sub="Project blockers"/>
         </div>
 
         {/*  PROJECT PORTFOLIO  */}
@@ -1721,7 +1721,7 @@ export default function ProjectsDeliveryEngine() {
                   { role: "Department Heads"as VisibilityRole, color: "#7C3AED", bg: "#FAF5FF", border: "#DDD6FE", items: ["Full project overview", "Delay reasons", "Cross-dept dependencies", "Blockers & escalations", "Executive summary", "Department work"] },
                   { role: "Department Specialists"as VisibilityRole, color: "#059669", bg: "#ECFDF5", border: "#A7F3D0", items: ["Assigned task lists", "Assigned tasks", "Own deliverables", "Blockers on own tasks"] },
                   { role: "Executives"as VisibilityRole, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A", items: ["Portfolio status", "Risks & delays", "Dept bottlenecks", "Revenue impact", "Client impact"] },
-                ] as Array<{ role: VisibilityRole; icon?: string; color: string; bg: string; border: string; items: string[] }>).map(v => (
+                ] as Array<{ role: VisibilityRole; icon?: string; color?: string; bg?: string; border: string; items: string[] }>).map(v => (
                   <div key={v.role} className="rounded-xl p-4"style={{ background: v.bg, border: `1px solid ${v.border}` }}>
                     <div className="flex items-center gap-2 mb-3">
                       <span className="text-xl">{v.icon}</span>

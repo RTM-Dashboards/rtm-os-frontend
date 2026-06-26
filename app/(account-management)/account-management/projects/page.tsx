@@ -138,7 +138,7 @@ function ProjectCard({ project }: { project: ActiveProject }) {
         {project.departments.map((d) => (
           <span
             key={d}
-            className="bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs px-2 py-0.5 rounded-full font-medium">
+            className="text-xs px-2 py-0.5 rounded font-medium" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)" }}>
             {d}
           </span>
         ))}
@@ -192,9 +192,9 @@ function ProjectCard({ project }: { project: ActiveProject }) {
 
       {/* Dependencies */}
       {hasDeps && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+        <div className="border rounded-lg px-3 py-2" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
           <div className="flex items-start gap-1.5">
-            <span className="text-amber-500 text-sm mt-px">⚠</span>
+            <span className="text-amber-500 text-sm mt-px">!</span>
             <div>
               <p className="text-xs font-semibold text-amber-800 mb-0.5">
                 Dependencies
@@ -462,7 +462,7 @@ export default function ProjectsPage() {
                             <li
                               key={dep}
                               className="flex items-start gap-1.5 text-xs text-amber-700">
-                              <span className="text-amber-400 mt-px">⚠</span>
+                              <span className="text-amber-400 mt-px">!</span>
                               {dep}
                             </li>
                           ))}

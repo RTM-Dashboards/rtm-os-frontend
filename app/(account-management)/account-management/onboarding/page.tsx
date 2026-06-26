@@ -274,8 +274,7 @@ export default function OnboardingCenterPage() {
                           {record.servicesPurchased.map((svc) => (
                             <PillBadge
                               key={svc}
-                              label={svc}
-                              color="bg-violet-50 text-violet-700 border-violet-200"/>
+                              label={svc}/>
                           ))}
                         </div>
                       </td>
@@ -286,8 +285,7 @@ export default function OnboardingCenterPage() {
                           {record.assignedDepartments.map((dept) => (
                             <PillBadge
                               key={dept}
-                              label={dept}
-                              color="bg-sky-50 text-sky-700 border-sky-200"/>
+                              label={dept}/>
                           ))}
                         </div>
                       </td>
@@ -339,7 +337,7 @@ export default function OnboardingCenterPage() {
                               <div
                                 key={i}
                                 className="flex items-start gap-1.5 text-xs text-red-600">
-                                <span className="mt-0.5 flex-shrink-0">⚠</span>
+                                <span className="mt-0.5 flex-shrink-0">!</span>
                                 <span>{blocker}</span>
                               </div>
                             ))}
@@ -358,7 +356,7 @@ export default function OnboardingCenterPage() {
         {withBlockers.length > 0 && (
           <div className="bg-white border border-red-200 rounded-xl shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-red-100 bg-red-50 flex items-center gap-3">
-              <span className="text-red-500 text-lg">⚠</span>
+              <span className="text-red-500 text-lg">!</span>
               <div>
                 <h2 className="text-sm font-semibold text-red-800">Blockers Summary</h2>
                 <p className="text-xs text-red-500 mt-0.5">
@@ -387,7 +385,7 @@ export default function OnboardingCenterPage() {
                         <li
                           key={i}
                           className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                          <span className="flex-shrink-0 mt-0.5 text-red-400">⚠</span>
+                          <span className="flex-shrink-0 mt-0.5 text-red-400">!</span>
                           {blocker}
                         </li>
                       ))}

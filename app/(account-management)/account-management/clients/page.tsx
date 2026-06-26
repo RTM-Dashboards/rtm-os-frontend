@@ -85,7 +85,7 @@ const CLC_STAGES = [
   { stage: "Renewed",                owner: "Account Management", color: "#059669"},
 ] as const;
 
-const CLC_OWNER_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+const CLC_OWNER_COLORS: Record<string, { bg?: string; text: string; border: string }> = {
   "Sales":              { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
   "Billing":            { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
   "Account Management": { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0"},
@@ -197,11 +197,11 @@ const clientReportDetails = {
   ],
 };
 
-const reportDeptStatusStyle = (s: string) => {
-  if (s === "Done")        return "bg-green-100 text-green-700";
-  if (s === "In Progress") return "bg-blue-100 text-blue-700";
-  if (s === "Overdue")     return "bg-red-100 text-red-700";
-  return "bg-amber-100 text-amber-700";
+const reportDeptStatusStyle = (s: string): React.CSSProperties => {
+  if (s === "Done")        return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+  if (s === "In Progress") return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+  if (s === "Overdue")     return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+  return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
 };
 
 const renewalData = {
@@ -707,7 +707,7 @@ export default function AccountClientsPage() {
                             <td className="px-3 py-2 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{d.owner}</td>
                             <td className="px-3 py-2 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{d.due}</td>
                             <td className="px-3 py-2 whitespace-nowrap">
-                              <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${reportDeptStatusStyle(d.status)}`}>{d.status}</span>
+                              <span className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={reportDeptStatusStyle(d.status)}>{d.status}</span>
                             </td>
                           </tr>
                         ))}

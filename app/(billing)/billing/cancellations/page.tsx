@@ -447,7 +447,7 @@ function ActionBtn({
 }
 
 function LifecycleFlow() {
-  const steps: { label: string; color: string; bg: string; border: string }[] = [
+  const steps: { label: string; color?: string; bg?: string; border: string }[] = [
     { label: "Cancellation Requested",   color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
     { label: "Billing Review",           color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE"},
     { label: "Final Invoice Needed",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},

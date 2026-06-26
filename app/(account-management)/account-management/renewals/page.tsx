@@ -85,7 +85,7 @@ function daysUrgencyColor(days: number): string {
 // SHARED ATOMS
 // ══════════════════════════════════════════════════════════════════════════════
 
-function Badge({ label, bg, color, border, dot }: { label: string; bg: string; color: string; border: string; dot?: string }) {
+function Badge({ label, bg, color, border, dot }: { label: string; bg?: string; color?: string; border: string; dot?: string }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border whitespace-nowrap"style={{ background: bg, color, borderColor: border }}
@@ -139,9 +139,9 @@ function KpiCard({ label, value, sub, accent }: { label: string; value: string |
 
 function SectionHeader({ eyebrow, title, desc, accentColor = "#1B4FD8"}: { eyebrow?: string; title: string; desc?: string; accentColor?: string }) {
   return (
-    <div className="border-b border-slate-100 px-6 py-4">
+    <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
       {eyebrow && <p className="text-xs font-bold uppercase tracking-widest mb-0.5"style={{ color: accentColor }}>{eyebrow}</p>}
-      <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+      <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
       {desc && <p className="text-sm text-slate-500 mt-0.5">{desc}</p>}
     </div>
   );
@@ -243,10 +243,10 @@ function RenewalTable({ onSelect }: { onSelect: (r: RenewalRecord) => void }) {
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Client", "Account Manager", "Contract", "MRR", "ARR", "Renewal Date", "Score", "Risk", "Strategy", "Status", ""].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -330,7 +330,7 @@ function RenewalScoreModel({ record }: { record: RenewalRecord }) {
         {/* Factor Table */}
         <div className="overflow-x-auto rounded-xl border border-slate-100">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead style={{ background: "var(--rtm-bg)" }}>
               <tr>
                 {["Signal", "Weight", "Score", "Description"].map((h) => (
                   <th key={h} className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
@@ -783,7 +783,7 @@ function RenewalProposalPreview({ record }: { record: RenewalRecord }) {
         {/* Package comparison */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Current Package</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Current Package</p>
             <p className="text-base font-bold text-slate-800">{record.currentPackage}</p>
             <div className="space-y-1">
               <div className="flex justify-between text-xs">
@@ -819,7 +819,7 @@ function RenewalProposalPreview({ record }: { record: RenewalRecord }) {
             borderColor: diffZero ? "#E2E8F0": diffPositive ? "#A7F3D0": "#FECACA",
           }}>
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Revenue Difference</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Revenue Difference</p>
             <p className="text-2xl font-extrabold mt-0.5"style={{ color: diffZero ? "#64748B": diffPositive ? "#059669": "#DC2626"}}>
               {diffZero ? "No Change": `${diffPositive ? "+": "-"}${fmt$(Math.abs(record.revenueDifference))}/yr`}
             </p>
@@ -836,7 +836,7 @@ function RenewalProposalPreview({ record }: { record: RenewalRecord }) {
             <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Service Changes</p>
             <div className="flex flex-wrap gap-2">
               {record.serviceChanges.map((sc) => (
-                <span key={sc} className="rounded-full border border-violet-200 bg-violet-50 px-3 py-0.5 text-xs font-semibold text-violet-700">{sc}</span>
+                <span key={sc} className="rounded-full border px-3 py-0.5 text-xs font-semibold" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>{sc}</span>
               ))}
             </div>
           </div>
@@ -872,10 +872,10 @@ function AtRiskAccounts() {
       <SectionHeader eyebrow="At-Risk Accounts"title="At-Risk Accounts"desc="High Risk and Critical accounts requiring immediate attention."accentColor="#DC2626"/>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {["Client", "Risk Level", "Reason", "Health Score", "Revenue At Risk", "Assigned Owner", "Intervention Status"].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
               ))}
             </tr>
           </thead>
@@ -884,7 +884,7 @@ function AtRiskAccounts() {
               const intv = interventionStatus(r);
               const primaryReason = r.riskFactors[0] ?? "Multiple risk signals";
               return (
-                <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50">
+                <tr key={r.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                   <td className="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">{r.client}</td>
                   <td className="px-4 py-3 whitespace-nowrap"><RiskBadge risk={r.risk} /></td>
                   <td className="px-4 py-3 text-xs text-slate-600 max-w-[220px]">{primaryReason}</td>
@@ -977,7 +977,7 @@ function ExecutiveRenewalsDashboard() {
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Largest Accounts Up For Renewal</p>
           <div className="overflow-x-auto rounded-xl border border-slate-100">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead style={{ background: "var(--rtm-bg)" }}>
                 <tr>
                   {["Client", "ARR", "Score", "Risk", "Status", "AM"].map((h) => (
                     <th key={h} className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
@@ -986,7 +986,7 @@ function ExecutiveRenewalsDashboard() {
               </thead>
               <tbody>
                 {largestAccounts.map((r) => (
-                  <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <tr key={r.id} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                     <td className="px-4 py-2.5 font-semibold text-slate-900 whitespace-nowrap">{r.client}</td>
                     <td className="px-4 py-2.5 font-semibold text-slate-700 whitespace-nowrap">{fmt$(r.arr)}/yr</td>
                     <td className="px-4 py-2.5 whitespace-nowrap">
@@ -1045,7 +1045,7 @@ function ExecutiveRenewalsDashboard() {
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">Department Issues Affecting Renewals</p>
           <div className="overflow-x-auto rounded-xl border border-slate-100">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50">
+              <thead style={{ background: "var(--rtm-bg)" }}>
                 <tr>
                   {["Department", "Issue", "Impact", "Accounts Affected"].map((h) => (
                     <th key={h} className="px-4 py-2.5 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">{h}</th>
@@ -1054,7 +1054,7 @@ function ExecutiveRenewalsDashboard() {
               </thead>
               <tbody>
                 {deptIssues.map((d) => (
-                  <tr key={d.dept} className="border-t border-slate-100 hover:bg-slate-50">
+                  <tr key={d.dept} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                     <td className="px-4 py-2.5 font-semibold text-slate-800 whitespace-nowrap">{d.dept}</td>
                     <td className="px-4 py-2.5 text-xs text-slate-600">{d.issue}</td>
                     <td className="px-4 py-2.5 whitespace-nowrap">

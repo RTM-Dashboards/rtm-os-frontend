@@ -76,7 +76,7 @@ function Td({ children, muted }: { children: React.ReactNode; muted?: boolean })
   );
 }
 
-function KpiPill({ label, value, color }: { label: string; value: string | number; color: string }) {
+function KpiPill({ label, value, color }: { label: string; value: string | number; color?: string }) {
   return (
     <div
       className="flex flex-col gap-1 px-4 py-3 rounded-xl border min-w-[120px]"style={{ background: `${color}12`, borderColor: `${color}30` }}
@@ -182,9 +182,9 @@ export default function BillingDashboard() {
           <KpiPill label="Recurring Revenue"value="$68,400"color="#059669"/>
           <KpiPill label="Discounts Applied"value="-$1,200"color="#D97706"/>
           <KpiPill label="Promo Codes"value="-$400"color="#D97706"/>
-          <KpiPill label="Outstanding Balance"value={`$${outstandingBalance.toLocaleString()}`} color="#DC2626"/>
-          <KpiPill label="Collected Revenue"value={`$${collectedThisMonth.toLocaleString()}`} color="#059669"/>
-          <KpiPill label="Projected Revenue"value={`$${revenueSummary.projectedRevenue.toLocaleString()}`} color="#0891B2"/>
+          <KpiPill label="Outstanding Balance"value={`$${outstandingBalance.toLocaleString()}`}/>
+          <KpiPill label="Collected Revenue"value={`$${collectedThisMonth.toLocaleString()}`}/>
+          <KpiPill label="Projected Revenue"value={`$${revenueSummary.projectedRevenue.toLocaleString()}`}/>
         </div>
       </SectionWrapper>
 
@@ -336,12 +336,12 @@ export default function BillingDashboard() {
         }
       >
         <div className="flex flex-wrap gap-3 mb-5">
-          <KpiPill label="MRR"value={`$${revenueSummary.mrr.toLocaleString()}`}  color="#059669"/>
-          <KpiPill label="ARR"value={`$${(revenueSummary.arr / 1000).toFixed(0)}k`} color="#1B4FD8"/>
-          <KpiPill label="Active Contracts"value={String(recurringContracts.filter((c) => c.status === "Active").length)} color="#0891B2"/>
-          <KpiPill label="Upcoming Renewals"value={String(recurringContracts.filter((c) => c.status === "Pending Renewal").length)} color="#D97706"/>
-          <KpiPill label="Revenue At Risk"value={`$${revenueSummary.revenueAtRisk.toLocaleString()}`} color="#DC2626"/>
-          <KpiPill label="Projected Revenue"value={`$${revenueSummary.projectedRevenue.toLocaleString()}`} color="#7C3AED"/>
+          <KpiPill label="MRR"value={`$${revenueSummary.mrr.toLocaleString()}`}/>
+          <KpiPill label="ARR"value={`$${(revenueSummary.arr / 1000).toFixed(0)}k`}/>
+          <KpiPill label="Active Contracts"value={String(recurringContracts.filter((c) => c.status === "Active").length)}/>
+          <KpiPill label="Upcoming Renewals"value={String(recurringContracts.filter((c) => c.status === "Pending Renewal").length)}/>
+          <KpiPill label="Revenue At Risk"value={`$${revenueSummary.revenueAtRisk.toLocaleString()}`}/>
+          <KpiPill label="Projected Revenue"value={`$${revenueSummary.projectedRevenue.toLocaleString()}`}/>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full">
@@ -443,7 +443,7 @@ export default function BillingDashboard() {
       <SectionWrapper title="Activity Timeline"description="Recent billing events and actions">
         <div className="space-y-3">
           {activityTimeline.map((evt) => {
-            const colors: Record<string, { color: string; bg: string }> = {
+            const colors: Record<string, { color?: string; bg?: string }> = {
               "Invoice Created":     { color: "#1B4FD8", bg: "#EFF6FF"},
               "Invoice Sent":        { color: "#0891B2", bg: "#F0F9FF"},
               "Invoice Paid":        { color: "#059669", bg: "#ECFDF5"},

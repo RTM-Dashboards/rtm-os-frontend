@@ -85,7 +85,7 @@ export default function AdminSettingsPage() {
     maintenanceMode:  false,
   });
 
-  const tabs: { id: Tab; label: string; icon: string }[] = [
+  const tabs: { id: Tab; label: string; icon?: string }[] = [
     { id: "system",      label: "System Settings",    icon: ""},
     { id: "roles",       label: "Role Architecture",  icon: ""},
     { id: "permissions", label: "Permission Matrix",  icon: ""},

@@ -228,7 +228,7 @@ const priorityColor: Record<string, string> = {
   Low:    "#64748B",
 };
 
-const reportTypeColor: Record<ReportType, { bg: string; color: string }> = {
+const reportTypeColor: Record<ReportType, { bg?: string; color?: string }> = {
   "Client Report":       { bg: "#EFF6FF", color: "#1D4ED8"},
   "Department Report":   { bg: "#F5F3FF", color: "#6D28D9"},
   "Executive Report":    { bg: "#FFF7ED", color: "#C2410C"},

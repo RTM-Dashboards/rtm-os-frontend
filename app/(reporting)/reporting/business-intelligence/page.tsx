@@ -163,7 +163,7 @@ const deptTrends: DeptPerformanceTrend[] = [
   { department: "Web Development",  onTimeRate: "94%", inputCompletionRate: "96%", avgDelay: "0.6d", reportQuality: "A+", callVolume: 42, trend: "up"},
 ];
 
-const insightCategoryConfig: Record<InsightCategory, { bg: string; color: string }> = {
+const insightCategoryConfig: Record<InsightCategory, { bg?: string; color?: string }> = {
   Performance: { bg: "#EFF6FF", color: "#1D4ED8"},
   Growth:      { bg: "#ECFDF5", color: "#065F46"},
   Risk:        { bg: "#FEF2F2", color: "#B91C1C"},

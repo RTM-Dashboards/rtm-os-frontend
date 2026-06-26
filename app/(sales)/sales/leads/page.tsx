@@ -640,7 +640,7 @@ const LEADS: Lead[] = [
 
 //  Stage Config 
 
-const STAGE_CONFIG: Record<LeadStage, { color: string; bg: string; border: string; order: number }> = {
+const STAGE_CONFIG: Record<LeadStage, { color?: string; bg?: string; border: string; order: number }> = {
   "New Lead":            { color: "#6366F1", bg: "#EEF2FF", border: "#C7D2FE", order: 0 },
   "Contact Attempted":   { color: "#8B5CF6", bg: "#F5F3FF", border: "#DDD6FE", order: 1 },
   "Contacted":           { color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC", order: 2 },
@@ -650,14 +650,14 @@ const STAGE_CONFIG: Record<LeadStage, { color: string; bg: string; border: strin
   "Disqualified":        { color: "#94A3B8", bg: "#F1F5F9", border: "#CBD5E1", order: 6 },
 };
 
-const GHL_SYNC_CONFIG: Record<GHLSyncStatus, { color: string; bg: string; icon?: string }> = {
+const GHL_SYNC_CONFIG: Record<GHLSyncStatus, { color?: string; bg?: string; icon?: string }> = {
   "Synced":          { color: "#059669", bg: "#ECFDF5", icon: ""},
   "Pending Sync":    { color: "#D97706", bg: "#FFFBEB"},
   "Sync Failed":     { color: "#DC2626", bg: "#FEF2F2", icon: ""},
   "Manual Override": { color: "#7C3AED", bg: "#F5F3FF"},
 };
 
-const READINESS_CONFIG: Record<OpportunityReadiness, { color: string; bg: string; order: number }> = {
+const READINESS_CONFIG: Record<OpportunityReadiness, { color?: string; bg?: string; order: number }> = {
   "Not Ready":                { color: "#94A3B8", bg: "#F1F5F9", order: 0 },
   "Discovery Complete":       { color: "#0284C7", bg: "#F0F9FF", order: 1 },
   "Budget Discussed":         { color: "#0891B2", bg: "#ECFEFF", order: 2 },

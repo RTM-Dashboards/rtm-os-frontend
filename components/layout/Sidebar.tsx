@@ -90,20 +90,19 @@ const navItems: NavItem[] = [
     icon: IconCheckSquare,
     section: "operations",
     children: [
-      { label: "Workflow Engine",       href: "/operations/workflows"},
-      { label: "Projects",              href: "/tasks"},
-      { label: "Activation & Handoff",  href: "/activation"},
-      { label: "Escalations",           href: "/operations/workflows"},
+      { label: "Workflow Engine",          href: "/operations/workflows"},
+      { label: "Projects & Tasks",         href: "/tasks"},
+      { label: "Activation & Handoff",     href: "/activation"},
       { label: "Reporting & Intelligence", href: "/reporting"},
-      { label: "Notifications",         href: "/notifications"},
     ],
   },
 
   // ── Admin section ─────────────────────────────────────────────
   { label: "Users",               href: "/admin/users",        icon: IconUsers,        section: "admin"},
   { label: "Workspaces",          href: "/admin/workspaces",   icon: IconBuilding,     section: "admin"},
-  { label: "Workflow Engine",     href: "/admin/workflows",    icon: IconCheckSquare,  section: "admin"},
-  { label: "Admin Settings",      href: "/admin/settings",     icon: IconSettings,     section: "admin"},
+  { label: "Workflow Engine",         href: "/admin/workflows",            icon: IconCheckSquare,  section: "admin"},
+  { label: "Platform Operations",    href: "/admin/platform-operations",  icon: IconShield,       section: "admin"},
+  { label: "Admin Settings",          href: "/admin/settings",             icon: IconSettings,     section: "admin"},
 
   // ── Departments ───────────────────────────────────────────────
   { label: "Sales",               href: "/sales",              icon: IconTrending,  section: "departments", badge: "24"},
@@ -159,23 +158,9 @@ const navItems: NavItem[] = [
   { label: "IT & Security",     href: "/it-security",        icon: IconShield,    section: "departments"},
 
   // ── Settings ──────────────────────────────────────────────────
-  {
-    label: "Settings",
-    href: "/settings",
-    icon: IconSettings,
-    section: "settings",
-    children: [
-      { label: "Organization",        href: "/settings"},
-      { label: "Departments",         href: "/settings/departments"},
-      { label: "Roles",               href: "/settings/roles"},
-      { label: "Service Catalog",     href: "/settings/service-catalog"},
-      { label: "Line Items",          href: "/settings/line-items"},
-      { label: "Task Blueprints",     href: "/settings/task-blueprints"},
-      { label: "Notifications",       href: "/settings/notifications"},
-      { label: "Escalations",         href: "/settings/escalations"},
-      { label: "Integrations",        href: "/settings/integrations"},
-    ],
-  },
+  // Settings child navigation is handled by the settings layout sidebar.
+  // Keep only the top-level entry here.
+  { label: "Settings", href: "/settings", icon: IconSettings, section: "settings" },
 ];
 
 const sectionLabels: Record<string, string> = {
@@ -204,7 +189,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     "/paid-advertising":         true,
     "/web-development-design":   true,
     "/tasks":                    true,
-    "/settings":                 true,
     "/reporting":                true,
     "/operations/workflows":     true,
   }));

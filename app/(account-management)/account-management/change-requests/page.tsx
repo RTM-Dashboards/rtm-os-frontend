@@ -12,39 +12,39 @@ import type {
 // Badge helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function statusBadge(status: ChangeRequestStatus): string {
-  const map: Record<ChangeRequestStatus, string> = {
-    Draft: "bg-slate-100 text-slate-500 border-slate-200",
-    Submitted: "bg-blue-100 text-blue-700 border-blue-200",
-    "Under Review": "bg-amber-100 text-amber-700 border-amber-200",
-    "Pending Approval": "bg-violet-100 text-violet-700 border-violet-200",
-    Approved: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Rejected: "bg-red-100 text-red-700 border-red-200",
-    Implemented: "bg-teal-100 text-teal-700 border-teal-200",
-    Cancelled: "bg-slate-200 text-slate-500 border-slate-300",
+function statusBadge(status: ChangeRequestStatus): React.CSSProperties {
+  const map: Record<ChangeRequestStatus, React.CSSProperties> = {
+    Draft: { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+    Submitted: { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    "Under Review": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    "Pending Approval": { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" },
+    Approved: { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    Rejected: { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
+    Implemented: { background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" },
+    Cancelled: { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
   };
   return map[status];
 }
 
-function typeBadge(type: ChangeRequestType): string {
-  const map: Record<ChangeRequestType, string> = {
-    "Budget Reallocation": "bg-indigo-100 text-indigo-700 border-indigo-200",
-    "Service Upgrade": "bg-emerald-100 text-emerald-700 border-emerald-200",
-    "Service Downgrade": "bg-orange-100 text-orange-700 border-orange-200",
-    "Service Addition": "bg-cyan-100 text-cyan-700 border-cyan-200",
-    "Service Removal": "bg-red-100 text-red-700 border-red-200",
-    Pause: "bg-slate-200 text-slate-600 border-slate-300",
-    Reactivation: "bg-teal-100 text-teal-700 border-teal-200",
-    "Contract Amendment": "bg-violet-100 text-violet-700 border-violet-200",
-    "Custom Scope Change": "bg-amber-100 text-amber-700 border-amber-200",
+function typeBadge(type: ChangeRequestType): React.CSSProperties {
+  const map: Record<ChangeRequestType, React.CSSProperties> = {
+    "Budget Reallocation": { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    "Service Upgrade": { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    "Service Downgrade": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    "Service Addition": { background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" },
+    "Service Removal": { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
+    Pause: { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+    Reactivation: { background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" },
+    "Contract Amendment": { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" },
+    "Custom Scope Change": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
   };
   return map[type];
 }
 
-function revenueColor(impact: number): string {
-  if (impact > 0) return "text-emerald-700 font-bold";
-  if (impact < 0) return "text-red-700 font-bold";
-  return "text-slate-500";
+function revenueColor(impact: number): React.CSSProperties {
+  if (impact > 0) return { color: "#059669", fontWeight: "700" };
+  if (impact < 0) return { color: "#DC2626", fontWeight: "700" };
+  return { color: "#64748B" };
 }
 
 function formatRevenue(impact: number): string {
@@ -207,13 +207,13 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
   });
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="border-b border-slate-100 px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <div>
-          <h2 className="text-lg font-bold text-slate-900">
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
             Change Requests
           </h2>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
             All client scope change requests across all types and statuses.
           </p>
         </div>
@@ -245,7 +245,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50">
+          <thead style={{ background: "var(--rtm-bg)" }}>
             <tr>
               {[
                 "Request ID",
@@ -261,7 +261,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-4 py-3 text-left text-xs font-bold uppercase tracking-widest text-slate-400 whitespace-nowrap">
+                  className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>
                   {h}
                 </th>
               ))}
@@ -287,7 +287,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span
-                    className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${typeBadge(r.requestType)}`}
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold" style={typeBadge(r.requestType)}
                   >
                     {r.requestType}
                   </span>
@@ -296,7 +296,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
                   {r.requestedBy}
                 </td>
                 <td
-                  className={`px-4 py-3 whitespace-nowrap ${revenueColor(r.revenueImpact)}`}
+                  className="px-4 py-3 whitespace-nowrap font-semibold" style={revenueColor(r.revenueImpact)}
                 >
                   {formatRevenue(r.revenueImpact)}
                 </td>
@@ -318,7 +318,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span
-                    className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold ${statusBadge(r.status)}`}
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={statusBadge(r.status)}
                   >
                     {r.status}
                   </span>
@@ -364,28 +364,28 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ClientContextPanel({ cr }: { cr: ChangeRequest }) {
-  function healthColor(s: string) {
-    const m: Record<string, string> = {
-      Healthy: "text-emerald-700 bg-emerald-50 border-emerald-200",
-      "Needs Attention": "text-amber-700 bg-amber-50 border-amber-200",
-      "At-Risk": "text-orange-700 bg-orange-50 border-orange-200",
-      Critical: "text-red-700 bg-red-50 border-red-200",
+  function healthColor(s: string): React.CSSProperties {
+    const m: Record<string, React.CSSProperties> = {
+      Healthy:           { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+      "Needs Attention": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+      "At-Risk":         { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+      Critical:          { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" },
     };
-    return m[s] ?? "text-slate-500 bg-slate-50 border-slate-200";
+    return m[s] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 
-  function riskColor(r: string) {
-    const m: Record<string, string> = {
-      Low: "text-emerald-700 bg-emerald-50 border-emerald-200",
-      Medium: "text-amber-700 bg-amber-50 border-amber-200",
-      High: "text-orange-700 bg-orange-50 border-orange-200",
-      Critical: "text-red-700 bg-red-50 border-red-200",
+  function riskColor(r: string): React.CSSProperties {
+    const m: Record<string, React.CSSProperties> = {
+      Low:      { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+      Medium:   { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+      High:     { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+      Critical: { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" },
     };
-    return m[r] ?? "text-slate-500 bg-slate-50 border-slate-200";
+    return m[r] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="border-b border-slate-100 px-5 py-3">
         <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600">
           Client Context
@@ -416,7 +416,7 @@ function ClientContextPanel({ cr }: { cr: ChangeRequest }) {
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500">Health Status</span>
             <span
-              className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${healthColor(cr.clientHealthStatus)}`}
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold" style={healthColor(cr.clientHealthStatus)}
             >
               {cr.clientHealthStatus}
             </span>
@@ -424,7 +424,7 @@ function ClientContextPanel({ cr }: { cr: ChangeRequest }) {
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500">Renewal Risk</span>
             <span
-              className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${riskColor(cr.renewalRisk)}`}
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold" style={riskColor(cr.renewalRisk)}
             >
               {cr.renewalRisk}
             </span>
@@ -432,7 +432,7 @@ function ClientContextPanel({ cr }: { cr: ChangeRequest }) {
           <div className="flex items-center justify-between">
             <span className="text-xs text-slate-500">Expansion</span>
             <span
-              className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${riskColor(cr.expansionOpportunity)}`}
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold" style={riskColor(cr.expansionOpportunity)}
             >
               {cr.expansionOpportunity}
             </span>
@@ -528,9 +528,9 @@ function ImpactAnalysis({ cr }: { cr: ChangeRequest }) {
   ];
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="border-b border-slate-100 px-5 py-3">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
           Impact Analysis
         </p>
         <h3 className="text-sm font-bold text-slate-900">Impact Analysis</h3>
@@ -556,9 +556,9 @@ function ImpactAnalysis({ cr }: { cr: ChangeRequest }) {
 function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
   if (cr.requestType === "Budget Reallocation"&& cr.budgetLines) {
     return (
-      <div className="rounded-2xl border border-indigo-200 bg-indigo-50 shadow-sm">
-        <div className="border-b border-indigo-100 px-5 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600">
+      <div className="rounded-xl border shadow-sm" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="px-5 py-3" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
             Budget Reallocation
           </p>
           <h3 className="text-sm font-bold text-slate-900">
@@ -588,7 +588,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
                 {cr.budgetLines.map((line) => (
                   <tr
                     key={line.service}
-                    className="border-t border-indigo-100">
+                    className="" style={{ borderTop: "1px solid var(--rtm-border)" }}>
                     <td className="py-2 font-semibold text-slate-700">
                       {line.service}
                     </td>
@@ -818,7 +818,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
             </span>
           </div>
           {cr.reactivationPlan && (
-            <div className="rounded-xl border border-teal-200 bg-teal-50 p-3 mt-2">
+            <div className="rounded-xl border p-3 mt-2" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
               <p className="text-[10px] font-bold uppercase tracking-widest text-teal-600 mb-1">
                 Reactivation Plan
               </p>
@@ -834,9 +834,9 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
 
   if (cr.requestType === "Contract Amendment") {
     return (
-      <div className="rounded-2xl border border-violet-200 bg-violet-50 shadow-sm">
-        <div className="border-b border-violet-100 px-5 py-3">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-violet-600">
+      <div className="rounded-xl border shadow-sm" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <div className="border-b border-slate-100 px-5 py-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
             Contract Amendment
           </p>
           <h3 className="text-sm font-bold text-slate-900">
@@ -866,14 +866,14 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
           )}
           <div className="flex justify-between">
             <span className="text-xs text-slate-500">Revenue Change</span>
-            <span className={`text-xs font-bold ${revenueColor(cr.revenueImpact)}`}>
+            <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold text-xs font-bold" style={revenueColor(cr.revenueImpact)}>
               {formatRevenue(cr.revenueImpact)}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-xs text-slate-500">Approval Status</span>
             <span
-              className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusBadge(cr.status)}`}
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold" style={statusBadge(cr.status)}
             >
               {cr.status}
             </span>
@@ -885,7 +885,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
 
   // Custom Scope Change
   return (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm">
+    <div className="rounded-xl border shadow-sm" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
       <div className="border-b border-amber-100 px-5 py-3">
         <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600">
           Custom Scope Change
@@ -896,7 +896,7 @@ function TypeSpecificCard({ cr }: { cr: ChangeRequest }) {
         <p className="text-xs text-slate-700 leading-relaxed">{cr.description}</p>
         <div className="flex justify-between pt-1">
           <span className="text-xs text-slate-500">Revenue Impact</span>
-          <span className={`text-xs font-bold ${revenueColor(cr.revenueImpact)}`}>
+          <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold text-xs font-bold" style={revenueColor(cr.revenueImpact)}>
             {formatRevenue(cr.revenueImpact)}
           </span>
         </div>
@@ -963,7 +963,7 @@ function BillingImpact({ cr }: { cr: ChangeRequest }) {
   ];
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="border-b border-slate-100 px-5 py-3">
         <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600">
           Billing Impact
@@ -988,7 +988,7 @@ function BillingImpact({ cr }: { cr: ChangeRequest }) {
 
 function ProjectImpact({ cr }: { cr: ChangeRequest }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="border-b border-slate-100 px-5 py-3">
         <p className="text-[10px] font-bold uppercase tracking-widest text-cyan-600">
           Project Impact
@@ -1004,7 +1004,7 @@ function ProjectImpact({ cr }: { cr: ChangeRequest }) {
             {cr.projectsImpacted.map((p) => (
               <span
                 key={p}
-                className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-2.5 py-0.5 text-[10px] font-semibold text-cyan-700">
+                className="inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-semibold text-cyan-700">
                 {p}
               </span>
             ))}
@@ -1059,28 +1059,28 @@ function ProjectImpact({ cr }: { cr: ChangeRequest }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ApprovalWorkflow({ cr }: { cr: ChangeRequest }) {
-  function approvalBadge(status: string) {
-    const m: Record<string, string> = {
-      Pending: "bg-slate-100 text-slate-500 border-slate-200",
-      "In Progress": "bg-amber-100 text-amber-700 border-amber-200",
-      Approved: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      Rejected: "bg-red-100 text-red-700 border-red-200",
-      "Not Required": "bg-slate-50 text-slate-400 border-slate-100",
+  function approvalBadge(status: string): React.CSSProperties {
+    const m: Record<string, React.CSSProperties> = {
+      Pending:        { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+      "In Progress":  { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+      Approved:       { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+      Rejected:       { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
+      "Not Required": { background: "#F8FAFC", color: "#94A3B8", borderColor: "#E2E8F0" },
     };
-    return m[status] ?? "bg-slate-100 text-slate-500 border-slate-200";
+    return m[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 
-  function stepDot(status: string) {
-    if (status === "Approved") return "bg-emerald-500";
-    if (status === "Rejected") return "bg-red-500";
-    if (status === "In Progress") return "bg-amber-500";
-    return "bg-slate-300";
+  function stepDotColor(status: string): string {
+    if (status === "Approved") return "#10B981";
+    if (status === "Rejected") return "#EF4444";
+    if (status === "In Progress") return "#F59E0B";
+    return "#CBD5E1";
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="border-b border-slate-100 px-5 py-4">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-violet-600">
+        <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
           Approval Workflow
         </p>
         <h3 className="text-base font-bold text-slate-900">
@@ -1094,7 +1094,7 @@ function ApprovalWorkflow({ cr }: { cr: ChangeRequest }) {
               {/* Dot + line */}
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-3 h-3 rounded-full mt-0.5 ${stepDot(step.status)}`}
+                  className="w-3 h-3 rounded-full mt-0.5 flex-shrink-0" style={{ background: stepDotColor(step.status) }}
                 />
                 {i < cr.approvalWorkflow.length - 1 && (
                   <div className="w-px flex-1 bg-slate-200 mt-1"/>
@@ -1122,7 +1122,7 @@ function ApprovalWorkflow({ cr }: { cr: ChangeRequest }) {
                     )}
                   </div>
                   <span
-                    className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold whitespace-nowrap ${approvalBadge(step.status)}`}
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold whitespace-nowrap" style={approvalBadge(step.status)}
                   >
                     {step.status}
                   </span>
@@ -1141,31 +1141,31 @@ function ApprovalWorkflow({ cr }: { cr: ChangeRequest }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ImplementationCenter({ cr }: { cr: ChangeRequest }) {
-  function implBadge(status: string) {
-    const m: Record<string, string> = {
-      Pending: "bg-slate-100 text-slate-500 border-slate-200",
-      "In Progress": "bg-amber-100 text-amber-700 border-amber-200",
-      Completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      "Not Required": "bg-slate-50 text-slate-400 border-slate-100",
+  function implBadge(status: string): React.CSSProperties {
+    const m: Record<string, React.CSSProperties> = {
+      Pending:        { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+      "In Progress":  { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+      Completed:      { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+      "Not Required": { background: "#F8FAFC", color: "#94A3B8", borderColor: "#E2E8F0" },
     };
-    return m[status] ?? "bg-slate-100 text-slate-500 border-slate-200";
+    return m[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 
-  function implDot(status: string) {
-    if (status === "Completed") return "bg-emerald-500";
-    if (status === "In Progress") return "bg-amber-500";
-    if (status === "Not Required") return "bg-slate-200";
-    return "bg-slate-300";
+  function implDotColor(status: string): string {
+    if (status === "Completed") return "#10B981";
+    if (status === "In Progress") return "#F59E0B";
+    if (status === "Not Required") return "#E2E8F0";
+    return "#CBD5E1";
   }
 
-  const overallBadge = {
-    "Not Started": "bg-slate-100 text-slate-500 border-slate-200",
-    "In Progress": "bg-amber-100 text-amber-700 border-amber-200",
-    Completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  }[cr.implementationStatus];
+  const overallBadge: React.CSSProperties = ({
+    "Not Started": { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+    "In Progress": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    Completed: { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+  } as Record<string, React.CSSProperties>)[cr.implementationStatus] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="border-b border-slate-100 px-5 py-4 flex items-center justify-between">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest text-teal-600">
@@ -1188,19 +1188,19 @@ function ImplementationCenter({ cr }: { cr: ChangeRequest }) {
             className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <div
-                className={`w-2.5 h-2.5 rounded-full ${implDot(item.status)}`}
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: implDotColor(item.status) }}
               />
               <span className="text-sm text-slate-700">{item.area}</span>
             </div>
             <span
-              className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${implBadge(item.status)}`}
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-bold" style={implBadge(item.status)}
             >
               {item.status}
             </span>
           </div>
         ))}
         {cr.implementationCompletedDate && (
-          <div className="rounded-xl border border-teal-100 bg-teal-50 p-3 mt-2">
+          <div className="rounded-xl border p-3 mt-2" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
             <p className="text-xs font-semibold text-teal-700">
               Completed: {cr.implementationCompletedDate}
             </p>
@@ -1261,8 +1261,8 @@ function AIChangeAnalysis({ cr }: { cr: ChangeRequest }) {
           </ul>
         </div>
 
-        <div className="rounded-xl border border-violet-200 bg-white p-4">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-violet-600 mb-2">
+        <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>
             Implementation Plan
           </p>
           <p className="text-xs text-slate-700 leading-relaxed">
@@ -1279,32 +1279,32 @@ function AIChangeAnalysis({ cr }: { cr: ChangeRequest }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ActivityTimeline({ cr }: { cr: ChangeRequest }) {
-  const eventColors: Record<string, string> = {
-    "Request Created": "bg-blue-500",
-    "Request Created (Draft)": "bg-slate-400",
-    "Review Started": "bg-amber-500",
-    "Department Approval": "bg-indigo-500",
-    "Approval Requested": "bg-violet-500",
-    "Billing Approval Requested": "bg-violet-500",
-    "Billing Approval": "bg-violet-500",
-    "Final Approval": "bg-emerald-500",
-    "Executive Approval": "bg-teal-500",
-    "Billing Updated": "bg-emerald-600",
-    "Contract Updated": "bg-violet-600",
-    "Projects Updated": "bg-cyan-500",
-    "Request Implemented": "bg-teal-600",
-    "Request Rejected": "bg-red-500",
+  const eventDotColors: Record<string, string> = {
+    "Request Created":            "#3B82F6",
+    "Request Created (Draft)":    "#94A3B8",
+    "Review Started":             "#F59E0B",
+    "Department Approval":        "#6366F1",
+    "Approval Requested":         "#8B5CF6",
+    "Billing Approval Requested": "#8B5CF6",
+    "Billing Approval":           "#8B5CF6",
+    "Final Approval":             "#10B981",
+    "Executive Approval":         "#0EA5E9",
+    "Billing Updated":            "#059669",
+    "Contract Updated":           "#7C3AED",
+    "Projects Updated":           "#06B6D4",
+    "Request Implemented":        "#0D9488",
+    "Request Rejected":           "#EF4444",
   };
 
   function dotColor(event: string): string {
-    for (const [key, color] of Object.entries(eventColors)) {
+    for (const [key, color] of Object.entries(eventDotColors)) {
       if (event.includes(key)) return color;
     }
-    return "bg-slate-400";
+    return "#94A3B8";
   }
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="border-b border-slate-100 px-5 py-4">
         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
           Activity
@@ -1319,7 +1319,7 @@ function ActivityTimeline({ cr }: { cr: ChangeRequest }) {
             <div key={i} className="flex gap-4">
               <div className="flex flex-col items-center">
                 <div
-                  className={`w-2.5 h-2.5 rounded-full mt-1 ${dotColor(evt.event)}`}
+                  className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0" style={{ background: dotColor(evt.event) }}
                 />
                 {i < cr.activityTimeline.length - 1 && (
                   <div className="w-px flex-1 bg-slate-200 mt-1"/>
@@ -1370,7 +1370,7 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-4">
+      <div className="rounded-xl border px-6 py-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="font-mono text-xs font-bold text-blue-600">{cr.id}</p>
@@ -1385,12 +1385,12 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
           </div>
           <div className="flex flex-wrap gap-2 items-start">
             <span
-              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${typeBadge(cr.requestType)}`}
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-3 py-1 text-xs font-bold" style={typeBadge(cr.requestType)}
             >
               {cr.requestType}
             </span>
             <span
-              className={`inline-flex rounded-full border px-3 py-1 text-xs font-bold ${statusBadge(cr.status)}`}
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full border px-3 py-1 text-xs font-bold" style={statusBadge(cr.status)}
             >
               {cr.status}
             </span>
@@ -1426,7 +1426,7 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
         <div className="lg:col-span-2 space-y-4">
           {tab === "overview"&& (
             <>
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-5">
+              <div className="rounded-xl border p-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
                   Description
                 </p>

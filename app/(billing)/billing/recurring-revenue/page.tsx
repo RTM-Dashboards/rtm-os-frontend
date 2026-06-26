@@ -52,7 +52,7 @@ function ActionBtn({ label, onClick, variant = "secondary"}: { label: string; on
 }
 
 // Revenue bar chart component
-function RevenueBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+function RevenueBar({ label, value, max, color }: { label: string; value: number; max: number; color?: string }) {
   const pct = Math.round((value / max) * 100);
   return (
     <div className="space-y-1">
@@ -146,7 +146,7 @@ export default function RecurringRevenuePage() {
         <SectionWrapper title="Monthly Revenue Trend"description="Last 6 months">
           <div className="space-y-3">
             {revenueSummary.monthlyRevenue.map((m) => (
-              <RevenueBar key={m.month} label={m.month} value={m.revenue} max={maxMonthlyRevenue} color="#059669"/>
+              <RevenueBar key={m.month} label={m.month} value={m.revenue} max={maxMonthlyRevenue}/>
             ))}
           </div>
         </SectionWrapper>
@@ -155,7 +155,7 @@ export default function RecurringRevenuePage() {
         <SectionWrapper title="Revenue By Department"description="Current month">
           <div className="space-y-3">
             {revenueSummary.revenueByDepartment.map((d) => (
-              <RevenueBar key={d.department} label={d.department} value={d.revenue} max={maxDeptRevenue} color="#1B4FD8"/>
+              <RevenueBar key={d.department} label={d.department} value={d.revenue} max={maxDeptRevenue}/>
             ))}
           </div>
         </SectionWrapper>
@@ -164,7 +164,7 @@ export default function RecurringRevenuePage() {
         <SectionWrapper title="Revenue By Service"description="Current month">
           <div className="space-y-3">
             {revenueSummary.revenueByService.map((s) => (
-              <RevenueBar key={s.service} label={s.service} value={s.revenue} max={maxServiceRevenue} color="#7C3AED"/>
+              <RevenueBar key={s.service} label={s.service} value={s.revenue} max={maxServiceRevenue}/>
             ))}
           </div>
         </SectionWrapper>

@@ -535,58 +535,58 @@ const DEPT_ACTIVATION_CASES: DeptActivationCase[] = [
 
 //  Status color helpers 
 
-function statusColor(status: DeptActivationStatus): string {
+function statusColor(status: DeptActivationStatus): React.CSSProperties {
   switch (status) {
-    case "Activated":              return "bg-emerald-100 text-emerald-800";
-    case "Department Queue Created": return "bg-blue-100 text-blue-800";
-    case "Tasks Generated":        return "bg-indigo-100 text-indigo-800";
-    case "Owner Assignment Needed": return "bg-amber-100 text-amber-800";
-    case "Ready":                  return "bg-cyan-100 text-cyan-800";
-    case "Blocked":                return "bg-red-100 text-red-800";
-    case "Failed":                 return "bg-rose-100 text-rose-800";
-    case "Pending":                return "bg-gray-100 text-gray-600";
-    default:                       return "bg-gray-100 text-gray-600";
+    case "Activated":              return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Department Queue Created": return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Tasks Generated":        return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Owner Assignment Needed": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Ready":                  return { background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" };
+    case "Blocked":                return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Failed":                 return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Pending":                return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    default:                       return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function priorityColor(p: Priority): string {
+function priorityColor(p: Priority): React.CSSProperties {
   switch (p) {
-    case "High":   return "bg-red-100 text-red-700";
-    case "Medium": return "bg-amber-100 text-amber-700";
-    case "Low":    return "bg-gray-100 text-gray-500";
+    case "High":   return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Medium": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Low":    return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function ownerStatusColor(s: OwnerAssignmentStatus): string {
+function ownerStatusColor(s: OwnerAssignmentStatus): React.CSSProperties {
   switch (s) {
-    case "Confirmed":    return "bg-emerald-100 text-emerald-700";
-    case "Assigned":     return "bg-blue-100 text-blue-700";
-    case "Needs Review": return "bg-amber-100 text-amber-700";
-    case "Unavailable":  return "bg-red-100 text-red-700";
-    case "Unassigned":   return "bg-gray-100 text-gray-500";
+    case "Confirmed":    return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Assigned":     return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Needs Review": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Unavailable":  return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Unassigned":   return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function depStatusColor(s: DependencyStatus): string {
+function depStatusColor(s: DependencyStatus): React.CSSProperties {
   switch (s) {
-    case "Satisfied":    return "bg-emerald-100 text-emerald-700";
-    case "Missing":      return "bg-red-100 text-red-700";
-    case "Blocked":      return "bg-orange-100 text-orange-700";
-    case "Not Required": return "bg-gray-100 text-gray-500";
+    case "Satisfied":    return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Missing":      return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
+    case "Blocked":      return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Not Required": return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
   }
 }
 
-function queueStatusColor(s: QueueStatus): string {
+function queueStatusColor(s: QueueStatus): React.CSSProperties {
   switch (s) {
-    case "Active":     return "bg-emerald-100 text-emerald-700";
-    case "Created":    return "bg-blue-100 text-blue-700";
-    case "Completed":  return "bg-gray-100 text-gray-600";
-    case "On Hold":    return "bg-amber-100 text-amber-700";
-    case "Not Created": return "bg-gray-100 text-gray-400";
+    case "Active":     return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
+    case "Created":    return { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" };
+    case "Completed":  return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+    case "On Hold":    return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
+    case "Not Created": return { background: "#F8FAFC", color: "#94A3B8", borderColor: "#E2E8F0" };
   }
 }
 
-const DEPT_COLORS: Record<string, { bg: string; color: string; border: string }> = {
+const DEPT_COLORS: Record<string, { bg?: string; color?: string; border: string }> = {
   "SEO":                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"},
   "GBP":                { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
   "Paid Advertising":   { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
@@ -653,10 +653,10 @@ function DetailDrawer({ selected, onClose }: { selected: DeptActivationCase; onC
               <div className="mt-1 flex items-center gap-2 flex-wrap">
                 <span className="font-mono text-xs"style={{ color: "var(--rtm-text-muted)"}}>{selected.contractRef}</span>
                 <span style={{ color: "var(--rtm-text-muted)"}}>·</span>
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusColor(selected.activationStatus)}`}>{selected.activationStatus}</span>
-                <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${priorityColor(selected.priority)}`}>{selected.priority}</span>
+                <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={statusColor(selected.activationStatus)}>{selected.activationStatus}</span>
+                <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={priorityColor(selected.priority)}>{selected.priority}</span>
                 {selected.blockedReason && (
-                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700">⚠ {selected.blockedReason}</span>
+                  <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-red-100 text-red-700"><span style={{ fontWeight: "bold" }}>!</span> {selected.blockedReason}</span>
                 )}
               </div>
             </div>
@@ -725,7 +725,7 @@ function DetailDrawer({ selected, onClose }: { selected: DeptActivationCase; onC
               {selected.blockedReason && (
                 <div className="rounded-xl p-4"style={{ background: "#FEF2F2", border: "1px solid #FECACA"}}>
                   <div className="text-xs font-bold mb-1"style={{ color: "#DC2626"}}>Blocked Reason</div>
-                  <p className="text-sm font-semibold"style={{ color: "#DC2626"}}>⚠ {selected.blockedReason}</p>
+                  <p className="text-sm font-semibold"style={{ color: "#DC2626"}}><span style={{ fontWeight: "bold" }}>!</span> {selected.blockedReason}</p>
                   <p className="text-xs mt-1"style={{ color: "var(--rtm-text-secondary)"}}>{selected.nextAction}</p>
                 </div>
               )}
@@ -760,7 +760,7 @@ function DetailDrawer({ selected, onClose }: { selected: DeptActivationCase; onC
                 <div key={dr.department} className="rounded-xl p-4"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
                   <div className="flex items-center justify-between mb-3">
                     <DeptBadge dept={dr.department} />
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusColor(dr.activationStatus)}`}>{dr.activationStatus}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={statusColor(dr.activationStatus)}>{dr.activationStatus}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-3 mb-3">
                     {[
@@ -824,7 +824,7 @@ function DetailDrawer({ selected, onClose }: { selected: DeptActivationCase; onC
                 <div key={oa.department} className="rounded-xl p-4"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
                   <div className="flex items-center justify-between mb-3">
                     <DeptBadge dept={oa.department} />
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${ownerStatusColor(oa.assignmentStatus)}`}>{oa.assignmentStatus}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={ownerStatusColor(oa.assignmentStatus)}>{oa.assignmentStatus}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-lg px-3 py-2"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border-light)"}}>
@@ -866,7 +866,7 @@ function DetailDrawer({ selected, onClose }: { selected: DeptActivationCase; onC
                   </div>
                   <div className="flex items-center gap-2">
                     <DeptBadge dept={dep.department} />
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${depStatusColor(dep.status)}`}>{dep.status}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={depStatusColor(dep.status)}>{dep.status}</span>
                   </div>
                 </div>
               ))}
@@ -886,7 +886,7 @@ function DetailDrawer({ selected, onClose }: { selected: DeptActivationCase; onC
                 <div key={q.department} className="rounded-xl p-4"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
                   <div className="flex items-center justify-between mb-3">
                     <DeptBadge dept={q.department} />
-                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${queueStatusColor(q.queueStatus)}`}>{q.queueStatus}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={queueStatusColor(q.queueStatus)}>{q.queueStatus}</span>
                   </div>
                   <div className="grid grid-cols-4 gap-2">
                     {[
@@ -1144,7 +1144,7 @@ export default function DepartmentActivationPage() {
                     </td>
                     {/* Activation Status */}
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusColor(c.activationStatus)}`}>{c.activationStatus}</span>
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold px-2 py-0.5 rounded-full text-[11px] font-semibold" style={statusColor(c.activationStatus)}>{c.activationStatus}</span>
                     </td>
                     {/* Actions */}
                     <td className="px-4 py-3"onClick={(e) => e.stopPropagation()}>

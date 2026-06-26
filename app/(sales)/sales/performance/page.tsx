@@ -246,7 +246,7 @@ function ActionBar() {
   );
 }
 
-function ForecastCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
+function ForecastCard({ label, value, sub, color }: { label: string; value: string; sub?: string; color?: string }) {
   return (
     <div
       className="rounded-xl border p-4 flex flex-col gap-1"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}

@@ -213,7 +213,7 @@ const columns: Column<MetaCampaignRow>[] = [
 
 //  Funnel row component 
 
-function FunnelBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+function FunnelBar({ label, value, max, color }: { label: string; value: number; max: number; color?: string }) {
   const pct = Math.round((value / max) * 100);
   return (
     <div className="space-y-1">
@@ -391,7 +391,7 @@ export default function MetaAdsPerformancePage() {
         <KpiCard
           title="Avg Ad Frequency"value={totals.avgFreq.toFixed(1)}
           trend={totals.avgFreq >= 3 ? "up": "neutral"}
-          trendValue={totals.avgFreq >= 3 ? "⚠ High": "Normal"}
+          trendValue={totals.avgFreq >= 3 ? "High Freq": "Normal"}
           trendLabel="fatigue risk"iconBg={totals.avgFreq >= 3 ? "#FEF2F2": "#FFFBEB"}
           iconColor={totals.avgFreq >= 3 ? "#DC2626": "#D97706"}
           icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>}
@@ -407,7 +407,7 @@ export default function MetaAdsPerformancePage() {
       {/* Charts + Creative Fatigue */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <SectionWrapper title="Spend Trend"description="Total Meta Ads spend — last 12 months"className="lg:col-span-2">
-          <MiniSparkline data={spendTrend} color="#DC2626"height={80} width={500} />
+          <MiniSparkline data={spendTrend}height={80} width={500} />
           <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
             {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
               <span key={m} className="flex-1 text-center">{m}</span>
@@ -445,10 +445,10 @@ export default function MetaAdsPerformancePage() {
       {/* Lead Funnel Summary */}
       <SectionWrapper title="Lead Funnel Summary"description={`${DATE_RANGE_LABELS[filters.dateRange]} — all filtered campaigns`}>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-          <FunnelBar label="Leads"value={totals.leads}     max={totals.leads} color="bg-blue-500"/>
-          <FunnelBar label="Calls"value={totals.calls}     max={totals.leads} color="bg-emerald-500"/>
-          <FunnelBar label="Form Submissions"value={totals.forms}     max={totals.leads} color="bg-purple-500"/>
-          <FunnelBar label="Booked Leads"value={totals.booked}    max={totals.leads} color="bg-amber-500"/>
+          <FunnelBar label="Leads"value={totals.leads}     max={totals.leads}/>
+          <FunnelBar label="Calls"value={totals.calls}     max={totals.leads}/>
+          <FunnelBar label="Form Submissions"value={totals.forms}     max={totals.leads}/>
+          <FunnelBar label="Booked Leads"value={totals.booked}    max={totals.leads}/>
         </div>
       </SectionWrapper>
 
@@ -465,8 +465,7 @@ export default function MetaAdsPerformancePage() {
             <ProgressBar
               value={totals.leads > 0 ? Math.round((totals.qualified / totals.leads) * 100) : 0}
               max={100}
-              height={8}
-              color="bg-blue-500"/>
+              height={8}/>
           </div>
           <div>
             <div className="flex justify-between mb-1">
@@ -478,15 +477,14 @@ export default function MetaAdsPerformancePage() {
             <ProgressBar
               value={totals.qualified > 0 ? Math.round((totals.booked / totals.qualified) * 100) : 0}
               max={100}
-              height={8}
-              color="bg-emerald-500"/>
+              height={8}/>
           </div>
         </div>
       </SectionWrapper>
 
       {/* Leads Trend */}
       <SectionWrapper title="Leads Trend"description="Total Meta leads — last 12 months">
-        <MiniSparkline data={leadsTrend} color="#059669"height={80} width={800} />
+        <MiniSparkline data={leadsTrend}height={80} width={800} />
         <div className="mt-3 flex gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
           {["Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan","Feb","Mar","Apr","May"].map((m) => (
             <span key={m} className="flex-1 text-center">{m}</span>

@@ -631,7 +631,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
 // BADGE CONFIGS
 // 
 
-const CLIENT_STATUS_STYLES: Record<ClientStatus, { bg: string; text: string; dot: string; border: string }> = {
+const CLIENT_STATUS_STYLES: Record<ClientStatus, { bg?: string; text: string; dot: string; border: string }> = {
   "Lead":                          { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0"},
   "Proposal Sent":                 { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe"},
   "Invoice Sent":                  { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a"},
@@ -646,7 +646,7 @@ const CLIENT_STATUS_STYLES: Record<ClientStatus, { bg: string; text: string; dot
   "Offboarding":                   { bg: "#f8fafc", text: "#475569", dot: "#64748b", border: "#cbd5e1"},
 };
 
-const WORKFLOW_STATUS_STYLES: Record<WorkflowStatus, { bg: string; text: string; dot: string; border: string }> = {
+const WORKFLOW_STATUS_STYLES: Record<WorkflowStatus, { bg?: string; text: string; dot: string; border: string }> = {
   "Not Started":    { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0"},
   "Pending Review": { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a"},
   "In Progress":    { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe"},
@@ -655,7 +655,7 @@ const WORKFLOW_STATUS_STYLES: Record<WorkflowStatus, { bg: string; text: string;
   "Complete":       { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
 };
 
-const BILLING_STATUS_STYLES: Record<BillingStatus, { bg: string; text: string; dot: string; border: string }> = {
+const BILLING_STATUS_STYLES: Record<BillingStatus, { bg?: string; text: string; dot: string; border: string }> = {
   "Pending": { bg: "#fefce8", text: "#a16207", dot: "#eab308", border: "#fef08a"},
   "Paid":    { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
   "Overdue": { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca"},
@@ -663,7 +663,7 @@ const BILLING_STATUS_STYLES: Record<BillingStatus, { bg: string; text: string; d
   "Closed":  { bg: "#f8fafc", text: "#475569", dot: "#64748b", border: "#cbd5e1"},
 };
 
-const ACTIVATION_STATUS_STYLES: Record<ActivationStatus, { bg: string; text: string; dot: string; border: string }> = {
+const ACTIVATION_STATUS_STYLES: Record<ActivationStatus, { bg?: string; text: string; dot: string; border: string }> = {
   "Not Started":                   { bg: "#f8fafc", text: "#64748b", dot: "#94a3b8", border: "#e2e8f0"},
   "Ready for Onboarding":          { bg: "#f0fdf4", text: "#15803d", dot: "#16a34a", border: "#86efac"},
   "AM Assignment Needed":          { bg: "#fff7ed", text: "#c2410c", dot: "#f97316", border: "#fed7aa"},
@@ -672,14 +672,14 @@ const ACTIVATION_STATUS_STYLES: Record<ActivationStatus, { bg: string; text: str
   "Active":                        { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
 };
 
-const HEALTH_STATUS_STYLES: Record<HealthStatus, { bg: string; text: string; dot: string; border: string }> = {
+const HEALTH_STATUS_STYLES: Record<HealthStatus, { bg?: string; text: string; dot: string; border: string }> = {
   "Excellent": { bg: "#ecfdf5", text: "#059669", dot: "#10b981", border: "#a7f3d0"},
   "Good":      { bg: "#eff6ff", text: "#1d4ed8", dot: "#3b82f6", border: "#bfdbfe"},
   "At Risk":   { bg: "#fffbeb", text: "#b45309", dot: "#f59e0b", border: "#fde68a"},
   "Critical":  { bg: "#fef2f2", text: "#b91c1c", dot: "#ef4444", border: "#fecaca"},
 };
 
-const PRIORITY_STYLES: Record<Priority, { bg: string; text: string; border: string }> = {
+const PRIORITY_STYLES: Record<Priority, { bg?: string; text: string; border: string }> = {
   "High":   { bg: "#fef2f2", text: "#b91c1c", border: "#fecaca"},
   "Medium": { bg: "#fffbeb", text: "#b45309", border: "#fde68a"},
   "Low":    { bg: "#f8fafc", text: "#64748b", border: "#e2e8f0"},
@@ -695,7 +695,7 @@ function StatusPill({
   size = "sm",
 }: {
   label: string;
-  styles: { bg: string; text: string; dot?: string; border: string };
+  styles: { bg?: string; text: string; dot?: string; border: string };
   size?: "xs"| "sm";
 }) {
   const padding = size === "xs"? "px-2 py-0.5 text-[10px]": "px-2.5 py-1 text-xs";
@@ -726,8 +726,8 @@ function KpiCard({
   label: string;
   value: string | number;
   sub?: string;
-  color: string;
-  bg: string;
+  color?: string;
+  bg?: string;
 }) {
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex flex-col gap-1">
@@ -945,7 +945,7 @@ function ClientDrawer({
               <CheckRow label="Activation tasks created"done={cl.activationTasksCreated} />
               <CheckRow label="Kickoff needed"done={!cl.kickoffNeeded} />
             </div>
-            <div className="mt-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+            <div className="mt-2 p-3 rounded-lg var(--rtm-bg)/20 border border-amber-200 dark:border-amber-800">
               <p className="text-xs font-semibold text-amber-800 dark:text-amber-300 mb-0.5">Next Required Action</p>
               <p className="text-sm text-amber-700 dark:text-amber-400">{client.nextRequiredAction}</p>
             </div>
@@ -1215,17 +1215,16 @@ export default function ClientPortfolioPage() {
 
       {/*  KPI cards  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-        <KpiCard label="Total Clients"value={totalClients}           color="#1d4ed8"bg="#bfdbfe"/>
-        <KpiCard label="Active Clients"value={activeClients}          color="#059669"bg="#a7f3d0"/>
-        <KpiCard label="Ready for Onboarding"value={readyForOnboarding}     color="#15803d"bg="#86efac"/>
-        <KpiCard label="Dept Activation"value={inDeptActivation}       color="#7e22ce"bg="#e9d5ff"/>
-        <KpiCard label="Renewal Due"value={renewalDue}             color="#b45309"bg="#fde68a"/>
-        <KpiCard label="Cancellation Requested"value={cancellationRequested}  color="#b91c1c"bg="#fecaca"/>
-        <KpiCard label="Offboarding"value={offboarding}            color="#475569"bg="#cbd5e1"/>
+        <KpiCard label="Total Clients"value={totalClients}bg="#bfdbfe"/>
+        <KpiCard label="Active Clients"value={activeClients}bg="#a7f3d0"/>
+        <KpiCard label="Ready for Onboarding"value={readyForOnboarding}bg="#86efac"/>
+        <KpiCard label="Dept Activation"value={inDeptActivation}bg="#e9d5ff"/>
+        <KpiCard label="Renewal Due"value={renewalDue}bg="#fde68a"/>
+        <KpiCard label="Cancellation Requested"value={cancellationRequested}bg="#fecaca"/>
+        <KpiCard label="Offboarding"value={offboarding}bg="#cbd5e1"/>
         <KpiCard
           label="Monthly Recurring Revenue"value={`$${(totalMRR / 1000).toFixed(0)}k`}
-          sub={`$${totalMRR.toLocaleString()}/mo`}
-          color="#1d4ed8"bg="#bfdbfe"/>
+          sub={`$${totalMRR.toLocaleString()}/mo`}bg="#bfdbfe"/>
       </div>
 
       {/*  Search + Filters  */}

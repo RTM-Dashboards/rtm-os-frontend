@@ -97,7 +97,7 @@ export function OnboardingTable({ items }: OnboardingTableProps) {
               const pct = o.totalSteps > 0 ? Math.round((o.completedSteps / o.totalSteps) * 100) : 0;
               const isStalled = o.status === "Stalled";
               return (
-                <tr key={o.id} className={`hover:bg-slate-50 transition-colors ${isStalled ? "bg-amber-50/30": ""}`}>
+                <tr key={o.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-5 py-3">
                     <div className="font-medium text-slate-900">{o.clientName}</div>
                     {o.pendingItems.length > 0 && (
@@ -135,8 +135,8 @@ export function OnboardingTable({ items }: OnboardingTableProps) {
                     <div className="flex items-center gap-2 min-w-[100px]">
                       <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${isStalled ? "bg-amber-400": "bg-indigo-500"}`}
-                          style={{ width: `${pct}%` }}
+                          className="h-full rounded-full"
+                          style={{ width: `${pct}%`, background: isStalled ? "#F59E0B" : "var(--rtm-blue)" }}
                         />
                       </div>
                       <span className="text-xs text-slate-500 whitespace-nowrap">

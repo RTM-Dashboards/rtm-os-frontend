@@ -11,46 +11,46 @@ import {
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
-function statusBadge(status: ClientStatus): string {
-  const map: Record<ClientStatus, string> = {
-    Active: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Onboarding: "bg-blue-100 text-blue-700 border-blue-200",
-    Expansion: "bg-teal-100 text-teal-700 border-teal-200",
-    Renewal: "bg-indigo-100 text-indigo-700 border-indigo-200",
-    "At Risk": "bg-orange-100 text-orange-700 border-orange-200",
-    "Cancellation Requested": "bg-red-100 text-red-700 border-red-200",
-    Offboarding: "bg-amber-100 text-amber-700 border-amber-200",
-    Archived: "bg-slate-100 text-slate-500 border-slate-200",
-    Prospect: "bg-purple-100 text-purple-700 border-purple-200",
+function statusBadgeStyle(status: ClientStatus): React.CSSProperties {
+  const map: Record<string, React.CSSProperties> = {
+    Active:                 { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    Onboarding:             { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    Expansion:              { background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" },
+    Renewal:                { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" },
+    "At Risk":              { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    "Cancellation Requested":{ background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
+    Offboarding:            { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
+    Archived:               { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+    Prospect:               { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" },
   };
-  return map[status] ?? "bg-slate-100 text-slate-500 border-slate-200";
+  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
 }
 
-function renewalBadge(status: RenewalStatus): string {
-  const map: Record<RenewalStatus, string> = {
-    "Not Started": "bg-slate-100 text-slate-500 border-slate-200",
-    "In Progress": "bg-blue-100 text-blue-700 border-blue-200",
-    Renewed: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    "At Risk": "bg-orange-100 text-orange-700 border-orange-200",
-    Declined: "bg-red-100 text-red-700 border-red-200",
+function renewalBadgeStyle(status: RenewalStatus): React.CSSProperties {
+  const map: Record<string, React.CSSProperties> = {
+    "Not Started": { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+    "In Progress": { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    Renewed:       { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    "At Risk":     { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    Declined:      { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
   };
-  return map[status] ?? "bg-slate-100 text-slate-500 border-slate-200";
+  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
 }
 
 function healthColor(score: number): string {
-  if (score >= 80) return "text-emerald-600";
-  if (score >= 60) return "text-amber-600";
-  return "text-red-600";
+  if (score >= 80) return "#059669";
+  if (score >= 60) return "#B45309";
+  return "#DC2626";
 }
 
-function healthStatusBadge(status: HealthStatus): string {
-  const map: Record<HealthStatus, string> = {
-    Healthy: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    Monitor: "bg-amber-100 text-amber-700 border-amber-200",
-    "At Risk": "bg-orange-100 text-orange-700 border-orange-200",
-    Critical: "bg-red-100 text-red-700 border-red-200",
+function healthStatusBadgeStyle(status: HealthStatus): React.CSSProperties {
+  const map: Record<string, React.CSSProperties> = {
+    Healthy:   { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    Monitor:   { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    "At Risk": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    Critical:  { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" },
   };
-  return map[status] ?? "bg-slate-100 text-slate-500";
+  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
 }
 
 function fmt(n: number, prefix = "$"): string {
@@ -63,7 +63,6 @@ function KpiCard({
   label,
   value,
   sub,
-  color = "text-slate-800",
 }: {
   label: string;
   value: string | number;
@@ -71,10 +70,10 @@ function KpiCard({
   color?: string;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">{label}</p>
-      <p className={`mt-1.5 text-2xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-400 mt-0.5">{sub}</p>}
+    <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
+      <p className="mt-1.5 text-2xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>{value}</p>
+      {sub && <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{sub}</p>}
     </div>
   );
 }
@@ -138,15 +137,12 @@ export default function ClientPortfolioPage() {
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         <KpiCard label="Total Clients"value={total} />
-        <KpiCard label="Active"value={active} color="text-emerald-600"/>
-        <KpiCard label="At Risk"value={atRisk} color="text-orange-600"/>
-        <KpiCard label="Critical"value={critical} color="text-red-600"/>
-        <KpiCard
-          label="Avg Health Score"value={`${avgHealth}%`}
-          color={healthColor(avgHealth)}
-        />
-        <KpiCard label="Total MRR"value={fmt(totalMrr)} color="text-blue-700"/>
-        <KpiCard label="Total ARR"value={fmt(totalArr)} color="text-indigo-700"/>
+        <KpiCard label="Active" value={active} />
+        <KpiCard label="At Risk" value={atRisk} />
+        <KpiCard label="Critical" value={critical} />
+        <KpiCard label="Avg Health Score" value={`${avgHealth}%`} />
+        <KpiCard label="Total MRR" value={fmt(totalMrr)} />
+        <KpiCard label="Total ARR" value={fmt(totalArr)} />
       </div>
 
       {/* Search */}
@@ -242,11 +238,12 @@ function ClientRow({ client }: { client: PortfolioClient }) {
       <td className="px-4 py-3 text-center text-slate-700">{client.projectCount}</td>
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className={`text-lg font-bold ${healthColor(client.healthScore)}`}>
+          <span className="text-lg font-bold" style={{ color: healthColor(client.healthScore) }}>
             {client.healthScore}
           </span>
           <span
-            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${healthStatusBadge(client.healthStatus)}`}
+            className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+            style={healthStatusBadgeStyle(client.healthStatus)}
           >
             {client.healthStatus}
           </span>
@@ -254,7 +251,8 @@ function ClientRow({ client }: { client: PortfolioClient }) {
       </td>
       <td className="px-4 py-3">
         <span
-          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${renewalBadge(client.renewalStatus)}`}
+          className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+          style={renewalBadgeStyle(client.renewalStatus)}
         >
           {client.renewalStatus}
         </span>
@@ -263,7 +261,8 @@ function ClientRow({ client }: { client: PortfolioClient }) {
       <td className="px-4 py-3 text-right text-slate-600">{fmt(client.arr)}</td>
       <td className="px-4 py-3">
         <span
-          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusBadge(client.status)}`}
+          className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold"
+          style={statusBadgeStyle(client.status)}
         >
           {client.status}
         </span>

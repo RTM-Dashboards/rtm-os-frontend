@@ -19,7 +19,7 @@ interface ReportTemplate {
   description: string;
 }
 
-const CAT_CFG: Record<TemplateCategory, { bg: string; color: string }> = {
+const CAT_CFG: Record<TemplateCategory, { bg?: string; color?: string }> = {
   SEO:          { bg: "#EFF6FF", color: "#1D4ED8"},
   PPC:          { bg: "#FEF3C7", color: "#D97706"},
   "Meta Ads":   { bg: "#FEF2F2", color: "#DC2626"},
@@ -32,7 +32,7 @@ const CAT_CFG: Record<TemplateCategory, { bg: string; color: string }> = {
   QBR:          { bg: "#FDF4FF", color: "#7E22CE"},
 };
 
-const STATUS_CFG: Record<TemplateStatus, { bg: string; color: string; border: string }> = {
+const STATUS_CFG: Record<TemplateStatus, { bg?: string; color?: string; border: string }> = {
   Active:     { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
   Deprecated: { bg: "#FEF2F2", color: "#9CA3AF", border: "#FECACA"},
   Draft:      { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"},
@@ -158,7 +158,7 @@ const TEMPLATES: ReportTemplate[] = [
   },
 ];
 
-function KpiCard({ label, value, icon, color }: { label: string; value: number | string; icon?: string; color: string }) {
+function KpiCard({ label, value, icon, color }: { label: string; value: number | string; icon?: string; color?: string }) {
   return (
     <div className="rounded-xl p-4 flex flex-col gap-2"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
       <div className="flex items-center justify-between">
@@ -216,10 +216,10 @@ export default function ReportTemplatesPage() {
 
       <div className="flex-1 px-6 py-5 max-w-[1400px] mx-auto w-full">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          <KpiCard label="Templates"value={kpis.total} color="var(--rtm-blue)"/>
-          <KpiCard label="Active"value={kpis.active} color="#059669"/>
-          <KpiCard label="Draft"value={kpis.draft} color="#D97706"/>
-          <KpiCard label="Total Uses"value={kpis.totalUses} color="#7C3AED"/>
+          <KpiCard label="Templates"value={kpis.total}/>
+          <KpiCard label="Active"value={kpis.active}/>
+          <KpiCard label="Draft"value={kpis.draft}/>
+          <KpiCard label="Total Uses"value={kpis.totalUses}/>
         </div>
 
         <div className="flex flex-wrap gap-3 items-center p-4 rounded-xl mb-4"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>

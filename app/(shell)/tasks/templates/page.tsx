@@ -641,7 +641,7 @@ const TASK_TEMPLATES: TaskTemplate[] = [
 
 //  Design helpers 
 
-const DEPT_COLORS: Record<Department, { bg: string; color: string; border: string }> = {
+const DEPT_COLORS: Record<Department, { bg?: string; color?: string; border: string }> = {
   "SEO":                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"},
   "GBP":                { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
   "Paid Advertising":   { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
@@ -653,7 +653,7 @@ const DEPT_COLORS: Record<Department, { bg: string; color: string; border: strin
   "Billing":            { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1"},
 };
 
-const TYPE_COLORS: Record<TemplateType, { bg: string; color: string }> = {
+const TYPE_COLORS: Record<TemplateType, { bg?: string; color?: string }> = {
   "Setup":               { bg: "#EFF6FF", color: "#1D4ED8"},
   "Onboarding":          { bg: "#ECFDF5", color: "#059669"},
   "Launch":              { bg: "#FFF7ED", color: "#C2410C"},
@@ -666,7 +666,7 @@ const TYPE_COLORS: Record<TemplateType, { bg: string; color: string }> = {
   "Budget Reallocation": { bg: "#F8FAFC", color: "#475569"},
 };
 
-const TRIGGER_COLORS: Record<ActivationTrigger, { bg: string; color: string }> = {
+const TRIGGER_COLORS: Record<ActivationTrigger, { bg?: string; color?: string }> = {
   "Proposal Approved":      { bg: "#EFF6FF", color: "#1D4ED8"},
   "Contract Signed":        { bg: "#ECFDF5", color: "#059669"},
   "Invoice Paid":           { bg: "#FFF7ED", color: "#C2410C"},
@@ -677,13 +677,13 @@ const TRIGGER_COLORS: Record<ActivationTrigger, { bg: string; color: string }> =
   "Offboarding Approved":   { bg: "#FEF2F2", color: "#DC2626"},
 };
 
-const STATUS_COLORS: Record<TemplateStatus, { bg: string; color: string; border: string }> = {
+const STATUS_COLORS: Record<TemplateStatus, { bg?: string; color?: string; border: string }> = {
   "Active":   { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
   "Inactive": { bg: "#F8FAFC", color: "#94A3B8", border: "#CBD5E1"},
   "Draft":    { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"},
 };
 
-const DEP_STATUS_COLORS: Record<DependencyStatus, { bg: string; color: string }> = {
+const DEP_STATUS_COLORS: Record<DependencyStatus, { bg?: string; color?: string }> = {
   "Required": { bg: "#EFF6FF", color: "#1D4ED8"},
   "Optional": { bg: "#F0FDF4", color: "#16A34A"},
   "Blocked":  { bg: "#FEF2F2", color: "#DC2626"},
@@ -691,7 +691,7 @@ const DEP_STATUS_COLORS: Record<DependencyStatus, { bg: string; color: string }>
   "Ready":    { bg: "#ECFDF5", color: "#059669"},
 };
 
-const PRIORITY_COLORS: Record<TaskPriority, { bg: string; color: string }> = {
+const PRIORITY_COLORS: Record<TaskPriority, { bg?: string; color?: string }> = {
   "High":   { bg: "#FEF2F2", color: "#DC2626"},
   "Medium": { bg: "#FFFBEB", color: "#D97706"},
   "Low":    { bg: "#F8FAFC", color: "#94A3B8"},
@@ -1600,7 +1600,7 @@ export default function TaskTemplatesPage() {
               <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>
                 Activation Rules Engine
               </h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-200 text-amber-800">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500r-800">
                 {totalTemplates} rules configured
               </span>
             </div>
