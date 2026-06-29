@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { StatusBadge, SectionWrapper } from "@/components/ui";
 import type { StatusVariant } from "@/components/ui";
-import type { ClientHealthRow, ClientHealthStatus } from "@/lib/am-data";
+import type { ClientHealthRow, ClientHealthStatus } from "@/lib/account-management/dashboard-data";
 
 interface Props {
   rows: ClientHealthRow[];

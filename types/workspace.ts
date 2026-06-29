@@ -6,6 +6,7 @@ export interface WorkspaceNavItem {
   href: string;
   icon?: string;
   badge?: string;
+  group?: string;  // Optional section divider label rendered above this item
   children?: { label: string; href: string }[];
 }
 

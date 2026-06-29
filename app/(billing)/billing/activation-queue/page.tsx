@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
-import { activationQueue } from "@/lib/billing-mock-data";
-import type { ActivationStatus, InvoiceStatus } from "@/lib/billing-mock-data";
+import { activationQueue } from "@/lib/billing/action-center-data";
+import type { ActivationStatus, InvoiceStatus } from "@/lib/billing/action-center-data";
 
 const workspace = getWorkspace("billing")!;
 

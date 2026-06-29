@@ -1317,13 +1317,13 @@ function AuditTable({
                     <span
                       className="text-xs font-bold px-2 py-0.5 rounded-full"style={{ background: "#FEF2F2", color: "#DC2626"}}
                     >
-                       {a.issuesFound}
+                      {a.issuesFound}
                     </span>
                   ) : (
                     <span
                       className="text-xs"style={{ color: "#15803D"}}
                     >
-                       None
+                      None
                     </span>
                   )}
                 </td>
@@ -2599,43 +2599,72 @@ export default function AuditIntelligenceCenterPage() {
           <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "#1D4ED8"}}>
             Sales
           </p>
-          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-            Audit Intelligence Center
+          <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
+            Audits
           </h1>
-          <p className="text-sm mt-1 max-w-2xl"style={{ color: "var(--rtm-text-secondary)"}}>
-            Analyze client opportunities, identify gaps, generate recommendations, identify risks, and prepare proposal-ready service packages.
+          <p className="text-sm mt-1 max-w-2xl"style={{ color: "var(--rtm-text-muted)"}}>
+            Review client audits, identify issues, generate recommendations, and build proposals.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             className="text-sm px-3 py-2 rounded-lg font-bold border"style={{ background: "#1D4ED8", color: "#fff", borderColor: "#1D4ED8"}}
-            onClick={() => alert("[Mock] New Audit — select client and audit type.")}
+            onClick={() => { window.location.href = "/sales/intake?source=new-audit"; }}
           >
-             New Audit
+            New Audit
           </button>
           <button
             className="text-sm px-3 py-2 rounded-lg font-semibold border"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)"}}
-            onClick={() => alert("[Mock] Generating AI Recommendations...")}
+            onClick={() => alert("[Mock] Generating Recommendations...")}
           >
-             Generate Recommendations
+            Generate Recommendations
           </button>
           <button
             className="text-sm px-3 py-2 rounded-lg font-semibold border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}
             onClick={() => alert("[Mock] Generating Proposal Package...")}
           >
-             Generate Proposal
+            Generate Proposal
           </button>
           <button
             className="text-sm px-3 py-2 rounded-lg font-semibold border"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)"}}
             onClick={() => alert("[Mock] Exporting Audits...")}
           >
-            ↓ Export
+            Export
           </button>
         </div>
       </div>
 
-      {/* Sales Flow Banner */}
-      <SalesFlowBanner />
+      {/* Workflow Breadcrumb */}
+      <div className="rounded-xl border p-4 overflow-x-auto"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <div className="flex items-center justify-between mb-2">
+          <a href="/sales/intake" className="text-xs font-semibold"style={{ color: "var(--rtm-text-muted)"}}>← Sales Intake</a>
+          <a href="/sales/recommendations" className="text-xs font-semibold"style={{ color: "#059669"}}>Continue to Recommendations →</a>
+        </div>
+        <div className="flex items-center gap-1 flex-wrap">
+          {[
+            { label: "Sales Intake",    href: "/sales/intake",          active: false },
+            { label: "Goal Audit",       href: "/sales/audits",          active: true  },
+            { label: "Recommendations", href: "/sales/recommendations", active: false },
+            { label: "Budget Optimizer",href: "/sales/budget-optimizer",active: false },
+            { label: "Proposal Builder",href: "/sales/proposals",       active: false },
+            { label: "Contract Builder",href: "/sales/contracts",       active: false },
+            { label: "Billing Handoff", href: "/sales/handoffs",        active: false },
+          ].map((step, i, arr) => (
+            <React.Fragment key={step.label}>
+              <a href={step.href}
+                className="text-[10px] font-bold px-2.5 py-1 rounded-lg border transition-all"
+                style={{
+                  background: step.active ? "#1D4ED8" : "var(--rtm-bg)",
+                  color: step.active ? "#fff" : "var(--rtm-text-muted)",
+                  borderColor: step.active ? "#1D4ED8" : "var(--rtm-border)",
+                }}>
+                {step.label}
+              </a>
+              {i < arr.length - 1 && <span className="text-xs" style={{ color: "var(--rtm-border)" }}>→</span>}
+            </React.Fragment>
+          ))}
+        </div>
+      </div>
 
       {/* KPI Cards */}
       <KPICards audits={MOCK_AUDITS} />
@@ -2675,7 +2704,7 @@ export default function AuditIntelligenceCenterPage() {
           >
             All Types
           </button>
-          {(Object.keys(AUDIT_TYPE_META) as AuditType[]).map((type) => {
+          {(Object.keys(AUDIT_TYPE_META) as AuditType[]).filter(t => t !== "AI Automation").map((type) => {
             const m = AUDIT_TYPE_META[type];
             return (
               <button
@@ -2687,8 +2716,7 @@ export default function AuditIntelligenceCenterPage() {
                   borderColor: typeFilter === type ? m.border : "var(--rtm-border)",
                 }}
               >
-                <span>{m.icon}</span>
-                <span>{type}</span>
+                {type}
               </button>
             );
           })}

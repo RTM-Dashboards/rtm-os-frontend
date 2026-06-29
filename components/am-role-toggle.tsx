@@ -1,6 +1,6 @@
 "use client";
 
-import { type AMRole, SARAH } from "@/lib/am-role-mock-data";
+import { type AMRole, SARAH } from "@/lib/account-management/role-data";
 
 interface RoleToggleProps {
   role: AMRole;

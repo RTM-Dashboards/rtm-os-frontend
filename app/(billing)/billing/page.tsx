@@ -12,8 +12,8 @@ import {
   revenueSummary,
   aiBillingSummary,
   activityTimeline,
-} from "@/lib/billing-mock-data";
-import type { InvoiceStatus, ActivationStatus, CollectionStatus } from "@/lib/billing-mock-data";
+} from "@/lib/billing/action-center-data";
+import type { InvoiceStatus, ActivationStatus, CollectionStatus } from "@/lib/billing/action-center-data";
 
 const workspace = getWorkspace("billing")!;
 

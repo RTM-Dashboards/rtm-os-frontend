@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import type { ProjectRecord } from "@/lib/sales/project-config";
 import {
   getProjects,
   getProjectKPIs,
@@ -148,6 +149,70 @@ function RowActions({ project }: { project: Project }) {
 }
 
 // ---------------------------------------------------------------------------
+// Mock onboarding projects (created from billing handoff)
+// ---------------------------------------------------------------------------
+
+const MOCK_ONBOARDING_PROJECTS: ProjectRecord[] = [
+  {
+    id: "prj-onb-001",
+    projectNumber: "PRJ-2025-4821",
+    clientName: "Summit Landscaping",
+    contractNumber: "CTR-2025-0041",
+    handoffId: "hof-001",
+    proposalId: "",
+    status: "not-started",
+    priority: "high",
+    phase: "onboarding",
+    services: [],
+    totalMonthlyValue: 2400,
+    totalSetupFees: 0,
+    assignedAM: "Jake Monroe",
+    createdAt: new Date().toISOString(),
+    startDate: new Date().toISOString().split("T")[0],
+    estimatedLaunchDate: "",
+    notes: "",
+  },
+  {
+    id: "prj-onb-002",
+    projectNumber: "PRJ-2025-3317",
+    clientName: "Apex Roofing LLC",
+    contractNumber: "CTR-2025-0038",
+    handoffId: "hof-002",
+    proposalId: "",
+    status: "not-started",
+    priority: "high",
+    phase: "onboarding",
+    services: [],
+    totalMonthlyValue: 3800,
+    totalSetupFees: 500,
+    assignedAM: null,
+    createdAt: new Date().toISOString(),
+    startDate: new Date().toISOString().split("T")[0],
+    estimatedLaunchDate: "",
+    notes: "",
+  },
+  {
+    id: "prj-onb-003",
+    projectNumber: "PRJ-2025-2094",
+    clientName: "Greenleaf Dental",
+    contractNumber: "CTR-2025-0035",
+    handoffId: "hof-003",
+    proposalId: "",
+    status: "not-started",
+    priority: "medium",
+    phase: "onboarding",
+    services: [],
+    totalMonthlyValue: 1900,
+    totalSetupFees: 0,
+    assignedAM: "Dana W.",
+    createdAt: new Date().toISOString(),
+    startDate: new Date().toISOString().split("T")[0],
+    estimatedLaunchDate: "",
+    notes: "",
+  },
+];
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -281,6 +346,43 @@ export default function GlobalProjectsPage() {
 
       {/* ── CONTENT ── */}
       <div className="flex-1 px-6 py-5 max-w-[1600px] mx-auto w-full">
+
+        {/* ── New projects onboarding alert banner ── */}
+        {MOCK_ONBOARDING_PROJECTS.length > 0 && (
+          <div
+            className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 border mb-5"
+            style={{
+              background: "#FFFBEB",
+              borderColor: "#FDE68A",
+            }}
+          >
+            <div className="flex items-center gap-2.5">
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ background: "#D97706" }}
+              />
+              <p
+                className="text-xs font-semibold"
+                style={{ color: "#92400E" }}
+              >
+                {MOCK_ONBOARDING_PROJECTS.length} new project
+                {MOCK_ONBOARDING_PROJECTS.length !== 1 ? "s" : ""} awaiting
+                onboarding kickoff.
+              </p>
+            </div>
+            <Link
+              href="#new-projects"
+              className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg border hover:opacity-80 transition-opacity"
+              style={{
+                background: "#D97706",
+                color: "#fff",
+                borderColor: "#D97706",
+              }}
+            >
+              View New Projects
+            </Link>
+          </div>
+        )}
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 mb-6">

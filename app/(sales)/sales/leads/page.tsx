@@ -1195,6 +1195,299 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
 
 //  Main Page 
 
+// ─── Add Lead Modal ───────────────────────────────────────────────────────────
+
+const MODAL_INDUSTRY_OPTIONS = [
+  "Home Services", "Healthcare", "Legal", "Automotive",
+  "Fitness", "Dental", "Real Estate", "Restaurant",
+  "Retail", "Technology", "Financial Services", "Other",
+];
+
+const MODAL_SOURCE_OPTIONS = [
+  "Affiliate", "Referral", "Partner", "Website",
+  "Google Ads", "Meta Ads", "Outbound", "Direct",
+];
+
+const MODAL_ASSIGNED_REPS = [
+  "Jordan M.", "Sarah K.", "Mike T.", "Alex R.",
+];
+
+interface AddLeadFormState {
+  businessName: string;
+  contactName: string;
+  industry: string;
+  location: string;
+  leadSource: string;
+  assignedRep: string;
+  contactEmail: string;
+  contactPhone: string;
+  notes: string;
+}
+
+const EMPTY_ADD_LEAD_FORM: AddLeadFormState = {
+  businessName: "",
+  contactName: "",
+  industry: MODAL_INDUSTRY_OPTIONS[0],
+  location: "",
+  leadSource: MODAL_SOURCE_OPTIONS[0],
+  assignedRep: MODAL_ASSIGNED_REPS[0],
+  contactEmail: "",
+  contactPhone: "",
+  notes: "",
+};
+
+function AddLeadModal({ onClose, onAdd }: {
+  onClose: () => void;
+  onAdd: (lead: Lead) => void;
+}) {
+  const [form, setForm] = useState<AddLeadFormState>({ ...EMPTY_ADD_LEAD_FORM });
+  const [errors, setErrors] = useState<Partial<Record<keyof AddLeadFormState, string>>>({});
+
+  function set<K extends keyof AddLeadFormState>(key: K, value: AddLeadFormState[K]) {
+    setForm(prev => ({ ...prev, [key]: value }));
+    if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }));
+  }
+
+  function validate(): boolean {
+    const newErrors: Partial<Record<keyof AddLeadFormState, string>> = {};
+    if (!form.businessName.trim()) newErrors.businessName = "Required";
+    if (!form.contactName.trim()) newErrors.contactName = "Required";
+    return Object.keys(newErrors).length === 0 ? true : (setErrors(newErrors), false);
+  }
+
+  function handleSubmit() {
+    if (!validate()) return;
+    const newLead: Lead = {
+      id: `L${String(Date.now()).slice(-6)}`,
+      name: form.contactName,
+      businessName: form.businessName,
+      industry: form.industry,
+      website: "",
+      email: form.contactEmail,
+      phone: form.contactPhone,
+      location: form.location,
+      ghlContactId: "—",
+      ghlAssignedUser: form.assignedRep,
+      ghlSource: form.leadSource,
+      ghlCreatedDate: new Date().toISOString().split("T")[0],
+      ghlLastActivityDate: new Date().toISOString().split("T")[0],
+      ghlContactTags: [],
+      ghlContactStatus: "New",
+      ghlSyncStatus: "Pending Sync",
+      leadSource: form.leadSource as LeadSource,
+      assignedRep: form.assignedRep,
+      stage: "New Lead",
+      opportunityReadiness: "Not Ready",
+      discoveryScheduled: false,
+      discoveryDate: "",
+      discoveryNotes: "",
+      businessGoals: [],
+      painPoints: [],
+      requestedServices: [],
+      budget: "Unknown",
+      authority: "Unknown",
+      need: "Low",
+      timeline: "6+ months",
+      estimatedValue: 0,
+      affiliateName: "—",
+      createdDate: new Date().toISOString().split("T")[0],
+      lastActivity: "Just now",
+      notes: form.notes,
+    };
+    onAdd(newLead);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
+      <div className="w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
+
+        {/* Modal Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Add Lead</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Create a new lead manually</p>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>✕</button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
+
+          {/* Business Name */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+              style={{ color: "var(--rtm-text-muted)" }}>Business Name <span style={{ color: "#DC2626" }}>*</span></label>
+            <input
+              value={form.businessName}
+              onChange={e => set("businessName", e.target.value)}
+              placeholder="e.g. Summit Landscaping"
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{ background: "var(--rtm-surface)", borderColor: errors.businessName ? "#DC2626" : "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            />
+            {errors.businessName && <p className="text-[10px] mt-0.5" style={{ color: "#DC2626" }}>{errors.businessName}</p>}
+          </div>
+
+          {/* Contact Name */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+              style={{ color: "var(--rtm-text-muted)" }}>Contact Name <span style={{ color: "#DC2626" }}>*</span></label>
+            <input
+              value={form.contactName}
+              onChange={e => set("contactName", e.target.value)}
+              placeholder="e.g. Marcus Webb"
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{ background: "var(--rtm-surface)", borderColor: errors.contactName ? "#DC2626" : "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            />
+            {errors.contactName && <p className="text-[10px] mt-0.5" style={{ color: "#DC2626" }}>{errors.contactName}</p>}
+          </div>
+
+          {/* Industry + Location */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+                style={{ color: "var(--rtm-text-muted)" }}>Industry</label>
+              <select
+                value={form.industry}
+                onChange={e => set("industry", e.target.value)}
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                {MODAL_INDUSTRY_OPTIONS.map(o => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+                style={{ color: "var(--rtm-text-muted)" }}>Location — City, State</label>
+              <input
+                value={form.location}
+                onChange={e => set("location", e.target.value)}
+                placeholder="e.g. Austin, TX"
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+              />
+            </div>
+          </div>
+
+          {/* Lead Source + Assigned Rep */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+                style={{ color: "var(--rtm-text-muted)" }}>Lead Source</label>
+              <select
+                value={form.leadSource}
+                onChange={e => set("leadSource", e.target.value)}
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                {MODAL_SOURCE_OPTIONS.map(o => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+                style={{ color: "var(--rtm-text-muted)" }}>Assigned Rep</label>
+              <select
+                value={form.assignedRep}
+                onChange={e => set("assignedRep", e.target.value)}
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                {MODAL_ASSIGNED_REPS.map(o => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Contact Email + Phone */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+                style={{ color: "var(--rtm-text-muted)" }}>Contact Email</label>
+              <input
+                type="email"
+                value={form.contactEmail}
+                onChange={e => set("contactEmail", e.target.value)}
+                placeholder="contact@business.com"
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+              />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+                style={{ color: "var(--rtm-text-muted)" }}>Contact Phone</label>
+              <input
+                value={form.contactPhone}
+                onChange={e => set("contactPhone", e.target.value)}
+                placeholder="(555) 555-5555"
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+              style={{ color: "var(--rtm-text-muted)" }}>Notes <span style={{ color: "var(--rtm-text-muted)", fontWeight: 400 }}>(optional)</span></label>
+            <textarea
+              value={form.notes}
+              onChange={e => set("notes", e.target.value)}
+              placeholder="Any additional notes about this lead..."
+              rows={3}
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none resize-none"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            />
+          </div>
+
+          {/* Sync to GHL Toggle Row */}
+          <div className="rounded-xl border p-4"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>Sync to GHL</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                    style={{ background: "#F1F5F9", color: "#94A3B8", border: "1px solid #CBD5E1" }}>Coming Soon</span>
+                </div>
+                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                  Syncs this lead to GoHighLevel on creation. Requires GHL integration.
+                </p>
+              </div>
+              {/* Disabled toggle */}
+              <div className="flex-shrink-0">
+                <div
+                  className="relative w-10 h-6 rounded-full cursor-not-allowed"
+                  style={{ background: "#CBD5E1" }}
+                  title="Coming Soon">
+                  <div className="absolute top-1 left-1 w-4 h-4 rounded-full"
+                    style={{ background: "#fff" }} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <button onClick={onClose}
+            className="text-sm px-4 py-2 rounded-lg font-semibold border"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
+            Cancel
+          </button>
+          <button onClick={handleSubmit}
+            className="rtm-btn-primary text-sm px-4 py-2">
+            Add Lead
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
+
 export default function SalesLeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [stageFilter, setStageFilter]   = useState<LeadStage | "All">("All");
@@ -1202,11 +1495,13 @@ export default function SalesLeadsPage() {
   const [syncFilter, setSyncFilter]     = useState<GHLSyncStatus | "All">("All");
   const [searchQuery, setSearchQuery]   = useState("");
   const [showSyncPanel, setShowSyncPanel] = useState(false);
+  const [showAddLeadModal, setShowAddLeadModal] = useState(false);
+  const [leads, setLeads] = useState<Lead[]>(LEADS);
 
-  const filtered = LEADS.filter(l => {
-    if (stageFilter !== "All"&& l.stage !== stageFilter) return false;
-    if (sourceFilter !== "All"&& l.leadSource !== sourceFilter) return false;
-    if (syncFilter !== "All"&& l.ghlSyncStatus !== syncFilter) return false;
+  const filtered = leads.filter(l => {
+    if (stageFilter !== "All" && l.stage !== stageFilter) return false;
+    if (sourceFilter !== "All" && l.leadSource !== sourceFilter) return false;
+    if (syncFilter !== "All" && l.ghlSyncStatus !== syncFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -1220,56 +1515,62 @@ export default function SalesLeadsPage() {
   });
 
   //  KPI calcs 
-  const newLeads            = LEADS.filter(l => l.stage === "New Lead").length;
-  const contactAttempted    = LEADS.filter(l => l.stage === "Contact Attempted").length;
-  const discoveryScheduled  = LEADS.filter(l => l.stage === "Discovery Scheduled").length;
-  const discoveryComplete   = LEADS.filter(l => l.stage === "Discovery Complete").length;
-  const qualifiedLeads      = LEADS.filter(l => l.stage === "Qualified").length;
-  const disqualifiedLeads   = LEADS.filter(l => l.stage === "Disqualified").length;
-  const readyForOpp         = LEADS.filter(l => l.opportunityReadiness === "Ready For Opportunity").length;
-  const ghlSynced           = LEADS.filter(l => l.ghlSyncStatus === "Synced").length;
-  const ghlPending          = LEADS.filter(l => l.ghlSyncStatus === "Pending Sync").length;
-  const ghlFailed           = LEADS.filter(l => l.ghlSyncStatus === "Sync Failed").length;
-  const conversionRate      = Math.round((qualifiedLeads / LEADS.length) * 100);
+  const newLeads            = leads.filter(l => l.stage === "New Lead").length;
+  const contactAttempted    = leads.filter(l => l.stage === "Contact Attempted").length;
+  const discoveryScheduled  = leads.filter(l => l.stage === "Discovery Scheduled").length;
+  const discoveryComplete   = leads.filter(l => l.stage === "Discovery Complete").length;
+  const qualifiedLeads      = leads.filter(l => l.stage === "Qualified").length;
+  const disqualifiedLeads   = leads.filter(l => l.stage === "Disqualified").length;
+  const readyForOpp         = leads.filter(l => l.opportunityReadiness === "Ready For Opportunity").length;
+  const ghlSynced           = leads.filter(l => l.ghlSyncStatus === "Synced").length;
+  const ghlPending          = leads.filter(l => l.ghlSyncStatus === "Pending Sync").length;
+  const ghlFailed           = leads.filter(l => l.ghlSyncStatus === "Sync Failed").length;
+  const conversionRate      = leads.length > 0 ? Math.round((qualifiedLeads / leads.length) * 100) : 0;
 
-  const stageCounts = Object.fromEntries(LEAD_STAGES.map(s => [s, LEADS.filter(l => l.stage === s).length]));
-  const sources     = Array.from(new Set(LEADS.map(l => l.leadSource)));
-  const sourceCounts= Object.fromEntries(sources.map(s => [s, LEADS.filter(l => l.leadSource === s).length]));
+  const stageCounts = Object.fromEntries(LEAD_STAGES.map(s => [s, leads.filter(l => l.stage === s).length]));
+  const sources     = Array.from(new Set(leads.map(l => l.leadSource)));
+  const sourceCounts= Object.fromEntries(sources.map(s => [s, leads.filter(l => l.leadSource === s).length]));
 
   return (
     <div className="space-y-6">
       {selectedLead && <LeadDrawer lead={selectedLead} onClose={() => setSelectedLead(null)} />}
+      {showAddLeadModal && (
+        <AddLeadModal
+          onClose={() => setShowAddLeadModal(false)}
+          onAdd={(newLead) => {
+            setLeads(prev => [newLead, ...prev]);
+            setShowAddLeadModal(false);
+          }}
+        />
+      )}
 
       {/*  Page Header  */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>Sales</p>
-          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-            Lead Management Center
+          <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
+            Leads
           </h1>
-          <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
-            GHL contact intake · Lead qualification · Discovery management · Opportunity readiness
+          <p className="text-sm mt-1"style={{ color: "var(--rtm-text-muted)"}}>
+            Lead qualification, discovery management, and opportunity readiness.
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-[11px] px-2 py-0.5 rounded font-semibold"style={{ background: "#ECFDF5", color: "#059669"}}>
-              Lead Management
-            </span>
-            <span className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>·</span>
             <Link href="/sales/pipeline" className="text-[11px] px-2 py-0.5 rounded font-semibold"style={{ background: "#EEF2FF", color: "#6366F1"}}>
-              Opportunity Management → /sales/pipeline
+              Opportunity Management → Pipeline
             </Link>
           </div>
         </div>
 
         {/* Top Action Bar */}
         <div className="flex flex-wrap gap-2 flex-shrink-0">
-          <button className="rtm-btn-primary text-sm flex items-center gap-1.5 px-3 py-2">
-            <span></span> Add Lead
+          <button
+            onClick={() => setShowAddLeadModal(true)}
+            className="rtm-btn-primary text-sm flex items-center gap-1.5 px-3 py-2">
+            Add Lead
           </button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2">↑ Import Leads</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2"> Assign Leads</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2">↓ Export Leads</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2"> Lead Sources Report</button>
+          <button className="rtm-btn-secondary text-sm px-3 py-2">Import Leads</button>
+          <button className="rtm-btn-secondary text-sm px-3 py-2">Assign Leads</button>
+          <button className="rtm-btn-secondary text-sm px-3 py-2">Export Leads</button>
           <button
             onClick={() => setShowSyncPanel(v => !v)}
             className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"style={{
@@ -1277,16 +1578,7 @@ export default function SalesLeadsPage() {
               color: showSyncPanel ? "#059669": "var(--rtm-text-primary)",
               borderColor: showSyncPanel ? "#A7F3D0": "var(--rtm-border)",
             }}>
-             Sync GHL Contacts
-          </button>
-          <button
-            onClick={() => setShowSyncPanel(v => !v)}
-            className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"style={{
-              background: ghlFailed > 0 ? "#FEF2F2": "var(--rtm-surface)",
-              color: ghlFailed > 0 ? "#DC2626": "var(--rtm-text-primary)",
-              borderColor: ghlFailed > 0 ? "#FECACA": "var(--rtm-border)",
-            }}>
-            {ghlFailed > 0 ? ` ${ghlFailed} Sync Issues` : "GHL Sync Status"}
+            Sync Status
           </button>
         </div>
       </div>
@@ -1312,7 +1604,7 @@ export default function SalesLeadsPage() {
               { label: "Synced Contacts",  value: ghlSynced,  color: "#059669", bg: "#ECFDF5"},
               { label: "Pending Sync",     value: ghlPending, color: "#D97706", bg: "#FFFBEB"},
               { label: "Sync Failed",      value: ghlFailed,  color: "#DC2626", bg: "#FEF2F2"},
-              { label: "Manual Override",  value: LEADS.filter(l => l.ghlSyncStatus === "Manual Override").length, color: "#7C3AED", bg: "#F5F3FF"},
+              { label: "Manual Override",  value: leads.filter(l => l.ghlSyncStatus === "Manual Override").length, color: "#7C3AED", bg: "#F5F3FF"},
             ].map(item => (
               <div key={item.label} className="rounded-lg p-4 border"style={{ background: item.bg, borderColor: `${item.color}30` }}>
                 <p className="text-2xl font-bold"style={{ color: item.color }}>{item.value}</p>
@@ -1325,7 +1617,7 @@ export default function SalesLeadsPage() {
             <div className="rounded-lg p-4 border mb-4"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
               <p className="text-sm font-bold mb-2"style={{ color: "#DC2626"}}> Sync Issues Detected</p>
               <div className="space-y-2">
-                {LEADS.filter(l => l.ghlSyncStatus === "Sync Failed").map(l => (
+                {leads.filter(l => l.ghlSyncStatus === "Sync Failed").map(l => (
                   <div key={l.id} className="flex items-center justify-between text-xs"style={{ color: "#B91C1C"}}>
                     <span>{l.businessName} ({l.ghlContactId})</span>
                     <button className="px-2 py-0.5 rounded font-bold"style={{ background: "#DC2626", color: "#fff"}}>Retry</button>
@@ -1500,7 +1792,7 @@ export default function SalesLeadsPage() {
               <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
                 {[
                   "Lead Name", "Business Name", "Lead Source", "Assigned Rep",
-                  "Lead Stage", "Opp Readiness", "GHL Sync Status",
+                  "Lead Stage", "Opp Readiness",
                   "Created Date", "Last Activity", "Actions",
                 ].map(h => (
                   <th key={h}
@@ -1558,9 +1850,6 @@ export default function SalesLeadsPage() {
                       </div>
                     </td>
 
-                    {/* GHL Sync Status */}
-                    <td className="px-4 py-3 whitespace-nowrap">{ghlSyncBadge(lead.ghlSyncStatus)}</td>
-
                     {/* Created Date */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{lead.createdDate}</p>
@@ -1590,10 +1879,15 @@ export default function SalesLeadsPage() {
                               </button>
                             ))}
                             {isReady && (
-                              <Link href="/sales/pipeline"className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"style={{ color: "#059669", background: "#ECFDF5"}}>
-                                 Create Opportunity →
+                              <Link href="/sales/pipeline"className="block w-full text-left px-3 py-2 text-xs font-bold"style={{ color: "#059669", background: "#ECFDF5"}}>
+                                Create Opportunity →
                               </Link>
                             )}
+                            <Link href={`/sales/intake?leadId=${lead.id}`}
+                              className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"style={{ color: "#2563EB", background: "#EFF6FF"}}
+                              onClick={e => e.stopPropagation()}>
+                              Start Intake
+                            </Link>
                           </div>
                         </div>
                       </div>
@@ -1607,7 +1901,6 @@ export default function SalesLeadsPage() {
 
         {filtered.length === 0 && (
           <div className="py-16 text-center">
-            <p className="text-3xl mb-2"></p>
             <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}>No leads match your filters.</p>
             <button
               onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
@@ -1621,18 +1914,15 @@ export default function SalesLeadsPage() {
       {/*  Bottom Navigation  */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Sales Pipeline",  href: "/sales/pipeline",  icon: "", desc: "Opportunity management · deal stages · close tracking", color: "#6366F1"},
-          { label: "Tasks Center",    href: "/tasks",            icon: "", desc: "Follow-ups · discovery reminders · lead tasks",          color: "#0284C7"},
-          { label: "Workflows",       href: "/admin/workflows",  icon: "", desc: "Lead → discovery → qualification automation",          color: "#7C3AED"},
+          { label: "Sales Pipeline",  href: "/sales/pipeline",  desc: "Opportunity management · deal stages · close tracking", color: "#6366F1"},
+          { label: "Tasks",           href: "/sales/tasks",      desc: "Follow-ups · discovery reminders · lead tasks",          color: "#0284C7"},
+          { label: "Follow Ups",      href: "/sales/followups",  desc: "Manage overdue and upcoming follow-ups.",               color: "#7C3AED"},
           { label: "Affiliates",      href: "/sales/affiliates", desc: "Affiliate attribution · commission tracking",            color: "#D97706"},
         ].map(item => (
           <Link key={item.label} href={item.href}
-            className="rounded-xl border p-4 flex items-start gap-3 transition-all hover:shadow-md"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0"style={{ background: `${item.color}15` }}>{item.icon}</div>
-            <div className="min-w-0">
-              <p className="text-sm font-bold"style={{ color: item.color }}>{item.label} →</p>
-              <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{item.desc}</p>
-            </div>
+            className="rounded-xl border p-4 block transition-all hover:shadow-md"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+            <p className="text-sm font-bold"style={{ color: item.color }}>{item.label} →</p>
+            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{item.desc}</p>
           </Link>
         ))}
       </div>

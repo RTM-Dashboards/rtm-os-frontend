@@ -985,18 +985,16 @@ export default function SalesFollowupsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>Sales</p>
-          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Follow-Up Command Center</h1>
-          <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
-            Manage calls, emails, SMS, meetings, reminders, proposal follow-ups, and stalled opportunities.
+          <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Follow Ups</h1>
+          <p className="text-sm mt-1"style={{ color: "var(--rtm-text-muted)"}}>
+            Manage calls, emails, meetings, reminders, and stalled opportunities.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button className="rtm-btn-primary text-sm px-3 py-1.5 inline-flex items-center gap-1.5"> New Follow-Up</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-1.5 inline-flex items-center gap-1.5"> Log Call</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-1.5 inline-flex items-center gap-1.5"> Schedule Meeting</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-1.5 inline-flex items-center gap-1.5"> Create Task</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-1.5 inline-flex items-center gap-1.5"> Sync GHL</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-1.5 inline-flex items-center gap-1.5"> Export</button>
+          <button className="rtm-btn-primary text-sm px-3 py-1.5">New Follow-Up</button>
+          <button className="rtm-btn-secondary text-sm px-3 py-1.5">Log Call</button>
+          <button className="rtm-btn-secondary text-sm px-3 py-1.5">Schedule Meeting</button>
+          <button className="rtm-btn-secondary text-sm px-3 py-1.5">Export</button>
         </div>
       </div>
 
@@ -1317,118 +1315,12 @@ export default function SalesFollowupsPage() {
         </SectionWrapper>
       )}
 
-      {/*  Integration Callouts  */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {/* Pipeline */}
-        <SectionWrapper
-          title="Pipeline Integration"description="View stalled and active opportunities"actions={<Link href="/sales/pipeline" className="text-xs font-semibold" style={{ color: workspace.accentColor }}>Open Pipeline →</Link>}
-        >
-          <div className="space-y-2">
-            {[
-              { label: "Negotiation",     value: "$4,800/mo", prob: "75%", close: "Jan 20"},
-              { label: "Proposal Sent",   value: "$3,400/mo", prob: "55%", close: "Jan 15"},
-              { label: "Discovery",       value: "$2,900/mo", prob: "30%", close: "Feb 1"},
-            ].map((row) => (
-              <div key={row.label} className="flex items-center justify-between p-2.5 rounded-lg border"style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)"}}>
-                <div>
-                  <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{row.label}</p>
-                  <p className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>Close: {row.close} · {row.prob}</p>
-                </div>
-                <span className="text-xs font-bold"style={{ color: workspace.accentColor }}>{row.value}</span>
-              </div>
-            ))}
-          </div>
-        </SectionWrapper>
-
-        {/* Leads */}
-        <SectionWrapper
-          title="Leads Integration"description="Uncontacted and active leads"actions={<Link href="/sales/leads" className="text-xs font-semibold" style={{ color: workspace.accentColor }}>View Leads →</Link>}
-        >
-          <div className="space-y-2">
-            {[
-              { label: "Green Valley Pools",   stage: "New Lead",  source: "Google Ads",    qual: "Unqualified"},
-              { label: "Bloom Floral Studio",  stage: "New Lead",  source: "Facebook",      qual: "Unqualified"},
-              { label: "Marks Spa & Wellness", stage: "Discovery", source: "Referral",      qual: "Qualified"},
-            ].map((row) => (
-              <div key={row.label} className="flex items-center justify-between p-2.5 rounded-lg border"style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)"}}>
-                <div>
-                  <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{row.label}</p>
-                  <p className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>{row.stage} · {row.source}</p>
-                </div>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"style={{ background: row.qual === "Qualified"? "#ECFDF5": "#FEF2F2", color: row.qual === "Qualified"? "#059669": "#DC2626"}}>{row.qual}</span>
-              </div>
-            ))}
-          </div>
-        </SectionWrapper>
-
-        {/* Proposals */}
-        <SectionWrapper
-          title="Proposals Integration"description="Proposal status and follow-up needs"actions={<Link href="/sales/proposals" className="text-xs font-semibold" style={{ color: workspace.accentColor }}>View Proposals →</Link>}
-        >
-          <div className="space-y-2">
-            {[
-              { label: "Summit Landscaping SEO",     stage: "Proposal Sent", value: "$2,400/mo", viewed: true  },
-              { label: "Skyline Roofing — Full",     stage: "Proposal Sent", value: "$6,200/mo", viewed: true  },
-              { label: "Coastal Kitchen & Bath",     stage: "Proposal Sent", value: "$3,400/mo", viewed: false },
-            ].map((row) => (
-              <div key={row.label} className="flex items-center justify-between p-2.5 rounded-lg border"style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)"}}>
-                <div>
-                  <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{row.label}</p>
-                  <p className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>{row.stage} · {row.viewed ? "Viewed": "Not viewed"}</p>
-                </div>
-                <span className="text-xs font-bold"style={{ color: workspace.accentColor }}>{row.value}</span>
-              </div>
-            ))}
-          </div>
-        </SectionWrapper>
-      </div>
-
-      {/*  Task & Notification Callouts  */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <SectionWrapper
-          title="Task Integration"description="Follow-up tasks linked to this queue"actions={<Link href="/tasks" className="text-xs font-semibold" style={{ color: workspace.accentColor }}>View All Tasks →</Link>}
-        >
-          <div className="space-y-2">
-            {[
-              "Call lead — Summit Landscaping (Due Today)",
-              "Send proposal follow-up — Skyline Roofing (Overdue)",
-              "Schedule discovery — Metro Dental Group (Overdue)",
-              "Follow up on negotiation — Harbor Auto Group (Due Today)",
-              "Verify affiliate referral — Pacific Realty (Due Today)",
-            ].map((task) => (
-              <div key={task} className="flex items-center gap-2.5 p-2.5 rounded-lg border"style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)"}}>
-                
-                <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{task}</p>
-              </div>
-            ))}
-          </div>
-        </SectionWrapper>
-
-        <SectionWrapper
-          title="Notification Center"description="Recent follow-up alerts and reminders"actions={<Link href="/notifications" className="text-xs font-semibold" style={{ color: workspace.accentColor }}>View All →</Link>}
-        >
-          <div className="space-y-2">
-            {[
-              { icon: "", text: "Follow-up overdue — Metro Dental Group (13d)",       variant: "error"as const },
-              { icon: "", text: "Proposal follow-up needed — Skyline Roofing",        variant: "warning"as const },
-              { icon: "", text: "Follow-up due today — Harbor Auto Group",             variant: "warning"as const },
-              { icon: "", text: "Lead uncontacted 7+ days — Simmons Catering",        variant: "error"as const },
-              { icon: "", text: "Opportunity stalled — Precision Auto Repair (9d)",   variant: "warning"as const },
-            ].map((n, i) => (
-              <div key={i} className="flex items-center gap-2.5 p-2.5 rounded-lg border"style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)"}}>
-                <span className="text-base flex-shrink-0">{n.icon}</span>
-                <p className="text-xs flex-1"style={{ color: "var(--rtm-text-secondary)"}}>{n.text}</p>
-                <StatusBadge variant={n.variant} label={n.variant === "error"? "Urgent": "Alert"} size="sm"/>
-              </div>
-            ))}
-          </div>
-        </SectionWrapper>
-      </div>
-
       {/* Drawer */}
       {selectedFollowUp && (
         <FollowUpDrawer fu={selectedFollowUp} onClose={() => setSelectedFollowUp(null)} />
       )}
+
+
     </div>
   );
 }

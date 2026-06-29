@@ -2,7 +2,7 @@
 
 import { StatusBadge, SectionWrapper } from "@/components/ui";
 import type { StatusVariant } from "@/components/ui";
-import type { RenewalItem, ClientHealthStatus } from "@/lib/am-data";
+import type { RenewalItem, ClientHealthStatus } from "@/lib/account-management/dashboard-data";
 
 interface Props {
   renewals: RenewalItem[];

@@ -13,7 +13,7 @@ import {
   type ExecutionRecord,
   type WorkflowTemplate,
   type AIRecommendation,
-} from "@/lib/workflow-data";
+} from "@/lib/workflow/mock-data";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Icons

@@ -1,6 +1,6 @@
 "use client";
 
-import { ACTIVATION_ANALYTICS, ACTIVATION_RECORDS } from "@/lib/activation-data";
+import { ACTIVATION_ANALYTICS, ACTIVATION_RECORDS } from "@/lib/activation/mock-data";
 
 function formatCurrency(n: number) {
   return "$"+ n.toLocaleString("en-US");

@@ -331,11 +331,11 @@ export default function SalesPerformancePage() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>
           Sales
         </p>
-        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-          Sales Performance &amp; Revenue Forecasting
+        <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
+          Performance
         </h1>
-        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
-          Track sales performance, GHL opportunity revenue, lead source conversion, affiliate contribution, and forecasted revenue.
+        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-muted)"}}>
+          Track sales KPIs, rep performance, lead source conversion, affiliate contribution, and revenue forecasting.
         </p>
       </div>
 
@@ -862,158 +862,7 @@ export default function SalesPerformancePage() {
         </div>
       </div>
 
-      {/*  GHL Sync Health  */}
-      <div>
-        <SectionHeader
-          title="GHL Sync Health"description="GoHighLevel data sync status, quality metrics, and manual override tracking."/>
-        <div
-          className="rounded-xl border p-5"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
-        >
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-            {[
-              { label: "Last Sync Date",     value: GHL_SYNC_HEALTH.lastSyncDate,                   color: "var(--rtm-text-primary)"},
-              { label: "Contacts Synced",    value: GHL_SYNC_HEALTH.contactsSynced.toString(),        color: "#059669"},
-              { label: "Opportunities Synced", value: GHL_SYNC_HEALTH.opportunitiesSynced.toString(), color: "#059669"},
-              { label: "Activities Synced",  value: GHL_SYNC_HEALTH.activitiesSynced.toLocaleString(), color: "#059669"},
-            ].map(({ label, value, color }) => (
-              <div key={label}>
-                <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "var(--rtm-text-muted)"}}>{label}</p>
-                <p className="text-lg font-bold"style={{ color }}>{value}</p>
-              </div>
-            ))}
-          </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-5">
-            {[
-              { label: "Sync Failed",         value: GHL_SYNC_HEALTH.syncFailed,         color: "#DC2626", bg: "#FEF2F2"},
-              { label: "Manual Overrides",    value: GHL_SYNC_HEALTH.manualOverrides,    color: "#D97706", bg: "#FFFBEB"},
-              { label: "Data Quality Issues", value: GHL_SYNC_HEALTH.dataQualityIssues,  color: "#D97706", bg: "#FFFBEB"},
-            ].map(({ label, value, color, bg }) => (
-              <div
-                key={label}
-                className="rounded-lg px-4 py-3 flex items-center justify-between"style={{ background: bg }}
-              >
-                <span className="text-xs font-semibold"style={{ color }}>{label}</span>
-                <span className="text-xl font-bold"style={{ color }}>{value}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-2">
-            <button className="rtm-btn-primary text-sm inline-flex items-center gap-1.5">
-               Sync Now
-            </button>
-            <button className="rtm-btn-secondary text-sm inline-flex items-center gap-1.5">
-               View Sync Issues ({GHL_SYNC_HEALTH.syncFailed + GHL_SYNC_HEALTH.dataQualityIssues})
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/*  Task Integration + Notification Integration (side by side)  */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Tasks */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <SectionHeader title="Sales Tasks"description="Recent and overdue tasks requiring attention."/>
-            <Link
-              href="/tasks"className="text-xs font-semibold inline-flex items-center gap-1"style={{ color: workspace.accentColor }}
-            >
-              View All Tasks →
-            </Link>
-          </div>
-          <div
-            className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
-          >
-            {TASK_EXAMPLES.map((task, i) => (
-              <div
-                key={task.id}
-                className="flex items-center justify-between px-4 py-3"style={{ borderBottom: i < TASK_EXAMPLES.length - 1 ? "1px solid var(--rtm-border)": "none"}}
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="w-2 h-2 rounded-full flex-shrink-0"style={{ background: task.status === "Overdue"? "#DC2626": "#059669"}}
-                  />
-                  <div>
-                    <p className="text-sm font-medium"style={{ color: "var(--rtm-text-primary)"}}>{task.title}</p>
-                    <p className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>{task.owner} · Due {task.dueDate}</p>
-                  </div>
-                </div>
-                <span
-                  className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={{
-                    background: task.status === "Overdue"? "#FEF2F2": "#ECFDF5",
-                    color: task.status === "Overdue"? "#DC2626": "#059669",
-                  }}
-                >
-                  {task.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Notifications */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <SectionHeader title="Sales Notifications"description="Alerts, risks, and action items for sales leadership."/>
-            <Link
-              href="/notifications"className="text-xs font-semibold inline-flex items-center gap-1"style={{ color: workspace.accentColor }}
-            >
-              View All →
-            </Link>
-          </div>
-          <div
-            className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
-          >
-            {NOTIFICATION_EXAMPLES.map((notif, i) => (
-              <div
-                key={notif.id}
-                className="flex items-start gap-3 px-4 py-3"style={{
-                  borderBottom: i < NOTIFICATION_EXAMPLES.length - 1 ? "1px solid var(--rtm-border)": "none",
-                  opacity: notif.read ? 0.65 : 1,
-                }}
-              >
-                <span
-                  className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5"style={{
-                    background: notif.type === "Risk"|| notif.type === "Alert"|| notif.type === "Blocked"|| notif.type === "Sync"? "#DC2626": "#D97706",
-                  }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span
-                      className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-widest"style={{
-                        background: notif.type === "Commission"? "#FFFBEB": "#FEF2F2",
-                        color: notif.type === "Commission"? "#D97706": "#DC2626",
-                      }}
-                    >
-                      {notif.type}
-                    </span>
-                    {!notif.read && (
-                      <span className="text-[10px] font-bold"style={{ color: "#2563EB"}}>NEW</span>
-                    )}
-                  </div>
-                  <p className="text-xs"style={{ color: "var(--rtm-text-primary)"}}>{notif.message}</p>
-                  <p className="text-[11px] mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{notif.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/*  Footer Nav  */}
-      <div
-        className="flex flex-wrap gap-2 pt-4"style={{ borderTop: "1px solid var(--rtm-border)"}}
-      >
-        <Link href="/sales/leads"className="rtm-btn-secondary text-sm">GHL Contacts →</Link>
-        <Link href="/sales/pipeline"className="rtm-btn-secondary text-sm">GHL Pipeline →</Link>
-        <Link href="/sales/affiliates"className="rtm-btn-secondary text-sm">Affiliates →</Link>
-        <Link href="/sales/followups"className="rtm-btn-secondary text-sm">Follow-Ups →</Link>
-        <Link href="/sales/proposals"className="rtm-btn-secondary text-sm">Proposals →</Link>
-        <Link href="/sales/handoffs"className="rtm-btn-secondary text-sm">Handoffs →</Link>
-        <Link href="/tasks"className="rtm-btn-secondary text-sm">Tasks →</Link>
-        <Link href="/notifications"className="rtm-btn-secondary text-sm">Notifications →</Link>
-      </div>
     </div>
   );
 }

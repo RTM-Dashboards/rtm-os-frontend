@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ACTIVATION_RECORDS } from "@/lib/activation-data";
+import { ACTIVATION_RECORDS } from "@/lib/activation/mock-data";
 import type { ActivationRecord } from "@/types/activation";
 import ActivationStatusBadge from "./ActivationStatusBadge";
 

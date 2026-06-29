@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -199,19 +200,19 @@ function resolveIconName(label: string, iconStr?: string): string {
 // ── Workspace nav overrides (clean, no emoji, no duplicates) ──────────────────
 const WORKSPACE_NAV_OVERRIDES: Record<string, WorkspaceNavItem[]> = {
   sales: [
-    { label: "Dashboard",       href: "/sales"},
-    { label: "Leads",           href: "/sales/leads"},
-    { label: "Audits",          href: "/sales/audits"},
-    { label: "Pipeline",        href: "/sales/pipeline"},
-    { label: "Proposals",       href: "/sales/proposals"},
-    { label: "Follow Ups",      href: "/sales/followups"},
-    { label: "Affiliates",      href: "/sales/affiliates"},
-    { label: "Handoffs",        href: "/sales/handoffs"},
-    { label: "Recommendations", href: "/sales/recommendations"},
-    { label: "Tasks",           href: "/sales/tasks"},
-    { label: "Performance",     href: "/sales/performance"},
-    { label: "Team Members",    href: "/sales/team-members"},
-    { label: "Settings",        href: "/sales/settings"},
+    { label: 'Dashboard',    href: '/sales' },
+    { label: 'Leads',        href: '/sales/leads',      group: 'PIPELINE' },
+    { label: 'Pipeline',     href: '/sales/pipeline',   group: 'PIPELINE' },
+    { label: 'Follow Ups',   href: '/sales/followups',  group: 'PIPELINE' },
+    { label: 'Audits',       href: '/sales/audits',     group: 'PIPELINE' },
+    { label: 'Proposals',    href: '/sales/proposals',  group: 'PIPELINE' },
+    { label: 'Contracts',    href: '/sales/contracts',  group: 'PIPELINE' },
+    { label: 'Handoffs',     href: '/sales/handoffs',   group: 'PIPELINE' },
+    { label: 'Affiliates',   href: '/sales/affiliates', group: 'TEAM' },
+    { label: 'Tasks',        href: '/sales/tasks',      group: 'TEAM' },
+    { label: 'Performance',  href: '/sales/performance',group: 'TEAM' },
+    { label: 'Team Members', href: '/sales/team-members',group: 'TEAM' },
+    { label: 'Settings',     href: '/sales/settings',   group: 'TEAM' },
   ],
   billing: [
     { label: "Dashboard",        href: "/billing"},
@@ -364,6 +365,16 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
           <ul className="space-y-0.5">
             {dedupedNavItems.map((item, idx) => {
               const hasChildren = item.children && item.children.length > 0;
+              // Render group divider above this item only when group changes
+              const prevGroup = idx > 0 ? dedupedNavItems[idx - 1].group : null;
+              const groupDivider = item.group && item.group !== prevGroup ? (
+                <li key={`group-${item.group}-${idx}`}>
+                  <p className="px-3 pt-3 pb-1 text-[9px] font-bold uppercase tracking-widest"
+                    style={{ color: "rgba(200,213,238,0.35)" }}>
+                    {item.group}
+                  </p>
+                </li>
+              ) : null;
               const expanded = expandedItems[item.href] ?? false;
               const active = hasChildren
                 ? isActive(item.href)
@@ -371,7 +382,9 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
               const iconName = resolveIconName(item.label, item.icon);
 
               return (
-                <li key={`${item.href}--${idx}`}>
+                <React.Fragment key={`${item.href}--${idx}`}>
+                {groupDivider}
+                <li>
                   {hasChildren ? (
                     <div>
                       <button
@@ -470,6 +483,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
                     </Link>
                   )}
                 </li>
+                </React.Fragment>
               );
             })}
           </ul>

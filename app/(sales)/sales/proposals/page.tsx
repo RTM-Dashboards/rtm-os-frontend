@@ -1,7 +1,15 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
+const ProposalWizard = dynamic(
+  () => import("@/components/sales/proposal-wizard/ProposalWizard").then(m => ({ default: m.ProposalWizard })),
+  { ssr: false }
+);
+import type { ProposalWizardState } from "@/components/sales/proposal-wizard/ProposalWizard";
+import ProposalBuilderShell from "@/components/sales/proposal-builder/ProposalBuilderShell";
 
 // 
 // Types
@@ -801,10 +809,11 @@ function DashboardKPIs({ proposals }: { proposals: Proposal[] }) {
 // Proposal Table
 // 
 
-function ProposalTable({ proposals, onSelect, onBuild }: {
+function ProposalTable({ proposals, onSelect, onBuild, onResume }: {
   proposals: Proposal[];
   onSelect: (p: Proposal) => void;
   onBuild: (p: Proposal) => void;
+  onResume?: (p: Proposal) => void;
 }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<ProposalStatus | "All">("All");
@@ -866,6 +875,9 @@ function ProposalTable({ proposals, onSelect, onBuild }: {
                 <td className="px-4 py-3"onClick={e => e.stopPropagation()}>
                   <div className="flex gap-1.5">
                     <Btn size="xs"variant="primary"onClick={() => onSelect(p)}>View</Btn>
+                    {p.status === "Draft" && onResume && (
+                      <Btn size="xs"variant="warning"onClick={() => onResume(p)}>Resume</Btn>
+                    )}
                     <Btn size="xs"variant="default"onClick={() => onBuild(p)}>Edit</Btn>
                     {p.status === "Accepted"&& (
                       <Btn size="xs"variant="success"onClick={() => alert(`[Mock] Generating contract for ${p.name}`)}>Contract</Btn>
@@ -2034,13 +2046,42 @@ function ProposalBuilderView({ initial, onBack }: {
 // Main Page
 // 
 
-type PageView = "dashboard"| "builder"| "detail";
+type PageView = "dashboard"| "builder"| "detail"| "proposal-builder"| "wizard";
 
-export default function ProposalsPage() {
+function ProposalsPageInner() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [view, setView] = useState<PageView>("dashboard");
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [editingProposal, setEditingProposal] = useState<Proposal | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [wizardInitialState, setWizardInitialState] = useState<Partial<ProposalWizardState> | undefined>(undefined);
+
+  // Read URL params to determine wizard mode
+  useEffect(() => {
+    const isNew = searchParams.get("new") === "true";
+    const resumeId = searchParams.get("resume");
+    if (isNew) {
+      setView("wizard");
+      setWizardInitialState(undefined);
+    } else if (resumeId) {
+      // Load draft from localStorage
+      let initial: Partial<ProposalWizardState> | undefined;
+      try {
+        const saved = localStorage.getItem(`rtm-proposal-draft-${resumeId}`);
+        if (saved) {
+          initial = JSON.parse(saved);
+        } else {
+          initial = { wizardId: resumeId };
+        }
+      } catch {
+        initial = { wizardId: resumeId };
+      }
+      setWizardInitialState(initial);
+      setView("wizard");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function openDetail(p: Proposal) {
     setSelectedProposal(p);
@@ -2053,9 +2094,39 @@ export default function ProposalsPage() {
     setView("builder");
   }
 
+  function openProposalBuilder() {
+    setDrawerOpen(false);
+    setView("proposal-builder");
+  }
+
+  function resumeWizardDraft(p: Proposal) {
+    setDrawerOpen(false);
+    // Use the proposal id as the wizard id for resuming
+    router.push(`/sales/proposals?resume=${p.id}`);
+  }
+
   function backToDashboard() {
     setView("dashboard");
     setEditingProposal(null);
+  }
+
+  // Show wizard full-screen when in wizard mode
+  if (view === "wizard") {
+    return (
+      <ProposalWizard
+        initialState={wizardInitialState}
+        onComplete={() => {
+          router.push("/sales/proposals");
+        }}
+        onSaveDraft={(s) => {
+          // Draft auto-saved by wizard; optionally show feedback
+          void s;
+        }}
+        onExit={() => {
+          router.push("/sales/proposals");
+        }}
+      />
+    );
   }
 
   return (
@@ -2064,18 +2135,20 @@ export default function ProposalsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "#059669"}}>
-            Sales · Proposal Builder v2
+            Sales
           </p>
-          <h1 className="text-xl font-bold"style={{ color: "var(--rtm-text-primary)"}}>
+          <h1 className="text-xl font-medium"style={{ color: "var(--rtm-text-primary)"}}>
             {view === "builder"? (editingProposal ? `Edit: ${editingProposal.name}` : "New Proposal") : "Proposals"}
           </h1>
-          <p className="mt-1 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
-            Build proposals, generate contracts, and activate billing — all in one flow.
+          <p className="mt-1 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
+            Build and send client proposals.
           </p>
         </div>
         {view === "dashboard"&& (
           <div className="flex gap-2">
-            <Btn variant="primary"onClick={() => openBuilder(null)}>+ New Proposal</Btn>
+            <Btn variant="primary"onClick={() => router.push("/sales/proposals?new=true")}>+ New Proposal</Btn>
+            <Btn variant="default"onClick={() => openProposalBuilder()}>Proposal Builder</Btn>
+            <Btn variant="default"onClick={() => openBuilder(null)}>Legacy Builder</Btn>
             <Link href="/sales">
               <Btn variant="default">← Sales Dashboard</Btn>
             </Link>
@@ -2108,7 +2181,79 @@ export default function ProposalsPage() {
         </div>
       )}
 
-      {/*  Builder View  */}
+      {/*  Proposal Builder (EPIC 08.5)  */}
+      {view === "proposal-builder"&& (
+        <div className="space-y-6">
+          {/* Back navigation */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "#059669"}}>
+                Sales · Proposal Builder
+              </p>
+              <h1 className="text-xl font-bold"style={{ color: "var(--rtm-text-primary)"}}>New Proposal</h1>
+              <p className="mt-1 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
+                Assemble a structured client-facing proposal from Budget Optimizer output.
+              </p>
+            </div>
+            <Btn variant="default"onClick={backToDashboard}>← Back to Proposals</Btn>
+          </div>
+
+          {/* Workflow continuity breadcrumb */}
+          <div className="rounded-xl border px-5 py-3 flex items-center gap-2 flex-wrap"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+            <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>Workflow:</p>
+            {[
+              { label: "Sales Intake",          href: "/sales/intake" },
+              { label: "Goal-Based Audit",       href: "/sales/audits" },
+              { label: "Recommendation Engine",  href: "/sales/recommendations" },
+              { label: "Budget Optimizer",       href: "/sales/pipeline" },
+              { label: "Proposal Builder",       href: "/sales/proposals", active: true },
+              { label: "Contract Builder",       href: "/sales/contracts" },
+            ].map((step, i, arr) => (
+              <React.Fragment key={step.label}>
+                <Link href={step.href}>
+                  <span
+                    className="text-[10px] font-semibold px-2 py-1 rounded border transition-all"
+                    style={{
+                      background: step.active ? "#059669" : "var(--rtm-bg)",
+                      color: step.active ? "#fff" : "var(--rtm-text-muted)",
+                      borderColor: step.active ? "#059669" : "var(--rtm-border)",
+                    }}
+                  >
+                    {step.label}
+                  </span>
+                </Link>
+                {i < arr.length - 1 && (
+                  <span style={{ color: "var(--rtm-text-muted)" }}>→</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Proposal Builder Shell */}
+          <ProposalBuilderShell
+            clientName="New Client"
+            preparedBy="Sales Representative"
+            templateId="standard"
+            context={{}}
+          />
+
+          {/* CTA: Continue to Contract Builder */}
+          <div
+            className="rounded-xl border px-6 py-5 flex items-center justify-between gap-4 flex-wrap"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
+          >
+            <div>
+              <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>Ready to proceed?</p>
+              <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>Once your proposal is complete, continue to the Contract Builder.</p>
+            </div>
+            <Link href="/sales/contracts">
+              <Btn variant="success">Continue to Contract Builder →</Btn>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/*  Legacy Builder View  */}
       {view === "builder"&& (
         <ProposalBuilderView initial={editingProposal} onBack={backToDashboard} />
       )}
@@ -2124,28 +2269,14 @@ export default function ProposalsPage() {
             proposals={MOCK_PROPOSALS}
             onSelect={openDetail}
             onBuild={openBuilder}
+            onResume={resumeWizardDraft}
           />
 
-          {/* AI Package showcase */}
-          <Card>
-            <CardHeader title="AI Package Recommendations"subtitle="Quick-add recommended packages to new proposals"actions={<Btn variant="primary"onClick={() => openBuilder(null)}>+ New Proposal with AI</Btn>}
-            />
-            <div className="p-5 space-y-3">
-              {AI_PACKAGES.map(pkg => (
-                <AIPackageCard key={pkg.packageName} pkg={pkg}
-                  onAdd={() => {
-                    openBuilder(null);
-                    alert(`[Mock] "${pkg.packageName}"package pre-loaded into new proposal.`);
-                  }} />
-              ))}
-            </div>
-          </Card>
-
-          {/* Budget Builder Preview */}
-          <BudgetBuilder onRecommend={(pkg) => {
-            openBuilder(null);
-            alert(`[Mock] "${pkg.packageName}"loaded from budget recommendation.`);
-          }} />
+          {/* Back/Forward navigation */}
+          <div className="flex items-center justify-between">
+            <a href="/sales/budget-optimizer" className="text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}>← Budget Optimizer</a>
+            <a href="/sales/contracts" className="text-sm font-semibold"style={{ color: "#059669"}}>Continue to Contracts →</a>
+          </div>
         </>
       )}
 
@@ -2161,5 +2292,21 @@ export default function ProposalsPage() {
         />
       )}
     </div>
+  );
+}
+
+// 
+// Root export with Suspense boundary (required for useSearchParams)
+// 
+
+export default function ProposalsPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 text-center">
+        <p style={{ color: "var(--rtm-text-muted)" }}>Loading proposals…</p>
+      </div>
+    }>
+      <ProposalsPageInner />
+    </Suspense>
   );
 }

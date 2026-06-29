@@ -2917,8 +2917,7 @@ export default function SalesPipelinePage() {
   const [filterSync, setFilterSync] = useState<GhlSyncStatus | "All">("All");
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [drawerOpp, setDrawerOpp] = useState<Opportunity | null>(null);
-  const [showMapping, setShowMapping] = useState(false);
-  const [showSyncIssues, setShowSyncIssues] = useState(false);
+
 
   const allReps = Array.from(new Set(OPPORTUNITIES.map((o) => o.assignedRep))).sort();
   const allSources: LeadSource[] = ["Direct", "Affiliate", "Partner", "Website", "Google Ads", "Meta Ads", "LSA"];
@@ -2947,46 +2946,32 @@ export default function SalesPipelinePage() {
       {drawerOpp && <OpportunityDrawer opp={drawerOpp} onClose={() => setDrawerOpp(null)} />}
       <div>
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>Sales</p>
-        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Revenue Pipeline Center</h1>
-        <p className="text-sm mt-1 max-w-2xl"style={{ color: "var(--rtm-text-secondary)"}}>
-          GHL-connected pipeline. Opportunities sync from GoHighLevel — manage leads through audits, proposals, negotiations, approvals, and billing handoff.
+        <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Pipeline</h1>
+        <p className="text-sm mt-1 max-w-2xl"style={{ color: "var(--rtm-text-muted)"}}>
+          Manage open opportunities through audit, proposal, negotiation, and billing handoff.
         </p>
-        <div className="mt-3 flex items-center gap-2 p-2.5 rounded-xl border w-fit"style={{ background: "#ECFEFF", borderColor: "#A5F3FC"}}>
-          
-          <span className="text-[11px] font-bold"style={{ color: "#0891B2"}}>Connected to GoHighLevel</span>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>Active Sync</span>
-          <span className="text-[10px]"style={{ color: "#0E7490"}}>Pipeline: {GHL_PIPELINE_NAME}</span>
-        </div>
       </div>
       <div className="flex flex-wrap gap-2">
         {[
           { label: "New Opportunity", primary: true },
-          { label: "Sync GHL Pipeline", ghl: true },
-          { label: "View GHL Mapping", ghl: true, action: () => setShowMapping((v) => !v) },
-          { label: "Import GHL Opportunities", ghl: true },
-          { label: "Resolve Sync Issues", warn: true, action: () => setShowSyncIssues((v) => !v) },
           { label: "Export Pipeline", primary: false },
           { label: "Create Audit", primary: false },
           { label: "Create Proposal", primary: false },
           { label: "Create Follow Up", primary: false },
-        ].map(({ label, primary, ghl, warn, action }) => (
-          <button key={label} onClick={action}
+        ].map(({ label, primary }) => (
+          <button key={label}
             className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"style={
               primary ? { background: workspace.accentColor, color: "#fff", borderColor: workspace.accentColor }
-              : ghl ? { background: "#ECFEFF", color: "#0891B2", borderColor: "#A5F3FC"}
-              : warn ? { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA"}
               : { background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)"}
             }>
             {label}
           </button>
         ))}
       </div>
-      {showMapping && <GhlPipelineMapping />}
-      {showSyncIssues && <GhlSyncIssuesPanel />}
+
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Unread Notifications", value: unreadCount, color: unreadCount > 0 ? "#DC2626": "#059669", href: "/notifications"},
-          { label: "Overdue Tasks", value: overdueTasks, color: overdueTasks > 0 ? "#DC2626": "#059669", href: "/tasks"},
+          { label: "Overdue Tasks", value: overdueTasks, color: overdueTasks > 0 ? "#DC2626": "#059669", href: "/sales/tasks"},
           { label: "Overdue Follow Ups", value: overdueFollowUps, color: overdueFollowUps > 0 ? "#DC2626": "#059669", href: "/sales/followups"},
           { label: "Active Handoffs", value: handoffsInProgress, color: "#0891B2", href: "/sales/handoffs"},
         ].map((item) => (
@@ -3123,41 +3108,7 @@ export default function SalesPipelinePage() {
           })}
         </div>
       </div>
-      <GhlSyncIssuesPanel />
-      <GhlPipelineMapping />
-      <div className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-        <h3 className="text-xs font-bold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-text-muted)"}}>RTM OS Ecosystem — GHL as Source</h3>
-        <p className="text-[11px] mb-4"style={{ color: "var(--rtm-text-secondary)"}}>All pipeline data originates from GoHighLevel. RTM OS integrations layer on top of GHL opportunities.</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: "Audits", href: "/sales/audits", desc: "View all audits"},
-            { label: "Proposals", href: "/sales/proposals", desc: "Manage proposals"},
-            { label: "Follow Ups", href: "/sales/followups", desc: "Follow up queue"},
-            { label: "Handoffs", href: "/sales/handoffs", desc: "Sales handoffs"},
-            { label: "Affiliates", href: "/sales/affiliates", desc: "Affiliate attribution"},
-            { label: "Tasks", href: "/tasks", desc: "All tasks"},
-            { label: "Notifications", href: "/notifications", desc: "All notifications"},
-            { label: "Workflows", href: "/admin/workflows", desc: "Workflow builder"},
-            { label: "GHL CRM", href: "#", desc: "Open GoHighLevel"},
-            { label: "GHL Pipeline", href: "#", desc: "View GHL pipeline"},
-            { label: "GHL Contacts", href: "#", desc: "Browse GHL contacts"},
-            { label: "GHL Automations", href: "#", desc: "GHL automation rules"},
-          ].map((link) => (
-            <a key={link.label} href={link.href}
-              className="flex items-center gap-3 p-3 rounded-xl border hover:opacity-80 transition-opacity"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)"}}>
-              <span
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
-              >
-                {link.label.slice(0, 2).toUpperCase()}
-              </span>
-              <div>
-                <p className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{link.label}</p>
-                <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{link.desc}</p>
-              </div>
-            </a>
-          ))}
-        </div>
-      </div>
+
     </div>
   );
 }

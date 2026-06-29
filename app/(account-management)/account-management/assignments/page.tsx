@@ -9,7 +9,7 @@ import {
   getClientsByAM,
   getWorkloadSummary,
   type AMRole,
-} from "@/lib/am-role-mock-data";
+} from "@/lib/account-management/role-data";
 
 //  Helpers 
 

@@ -2,7 +2,7 @@
 
 import { StatusBadge, SectionWrapper } from "@/components/ui";
 import type { StatusVariant } from "@/components/ui";
-import type { CrossDeptTask, CrossDeptTaskStatus } from "@/lib/am-data";
+import type { CrossDeptTask, CrossDeptTaskStatus } from "@/lib/account-management/dashboard-data";
 
 interface Props {
   tasks: CrossDeptTask[];

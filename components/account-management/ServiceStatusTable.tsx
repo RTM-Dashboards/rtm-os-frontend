@@ -2,7 +2,7 @@
 
 import { StatusBadge, SectionWrapper } from "@/components/ui";
 import type { StatusVariant } from "@/components/ui";
-import type { ServiceStatusRow, ServiceStatusLevel } from "@/lib/am-data";
+import type { ServiceStatusRow, ServiceStatusLevel } from "@/lib/account-management/dashboard-data";
 
 interface Props {
   rows: ServiceStatusRow[];

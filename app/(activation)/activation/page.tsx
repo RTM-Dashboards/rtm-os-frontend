@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { ACTIVATION_RECORDS, ACTIVATION_ANALYTICS, LAUNCH_RECORDS } from "@/lib/activation-data";
+import { ACTIVATION_RECORDS, ACTIVATION_ANALYTICS, LAUNCH_RECORDS } from "@/lib/activation/mock-data";
 import ActivationQueue from "@/components/activation/ActivationQueue";
 import HandoffCenter from "@/components/activation/HandoffCenter";
 import LaunchCenter from "@/components/activation/LaunchCenter";

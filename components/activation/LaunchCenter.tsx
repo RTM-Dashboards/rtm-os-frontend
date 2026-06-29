@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { LAUNCH_RECORDS, AI_LAUNCH_SUMMARY } from "@/lib/activation-data";
+import { LAUNCH_RECORDS, AI_LAUNCH_SUMMARY } from "@/lib/activation/mock-data";
 import type { LaunchRecord, LaunchStatus } from "@/types/activation";
 import LaunchStatusBadge from "./LaunchStatusBadge";
 

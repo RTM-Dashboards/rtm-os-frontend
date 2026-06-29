@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
-import { recurringContracts, revenueSummary } from "@/lib/billing-mock-data";
+import { recurringContracts, revenueSummary } from "@/lib/billing/action-center-data";
 
 const workspace = getWorkspace("billing")!;
 

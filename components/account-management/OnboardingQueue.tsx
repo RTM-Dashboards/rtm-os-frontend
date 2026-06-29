@@ -2,7 +2,7 @@
 
 import { StatusBadge, ProgressBar, SectionWrapper } from "@/components/ui";
 import type { StatusVariant } from "@/components/ui";
-import type { OnboardingQueueItem, LaunchReadiness } from "@/lib/am-data";
+import type { OnboardingQueueItem, LaunchReadiness } from "@/lib/account-management/dashboard-data";
 
 interface Props {
   items: OnboardingQueueItem[];

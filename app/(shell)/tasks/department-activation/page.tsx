@@ -2,6 +2,12 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import type { GeneratedTask, BlueprintTaskPriority, BlueprintTaskStatus } from "@/lib/sales/blueprint-config";
+import {
+  BLUEPRINT_TASK_STATUS_LABELS,
+  BLUEPRINT_TASK_STATUS_COLORS,
+  BLUEPRINT_PRIORITY_COLORS,
+} from "@/lib/sales/blueprint-config";
 
 // 
 // Department Activation Engine
@@ -1170,6 +1176,390 @@ export default function DepartmentActivationPage() {
       {selected && (
         <DetailDrawer selected={selected} onClose={() => setSelected(null)} />
       )}
+
+      {/* ── Blueprint-Originated Tasks ── */}
+      <BlueprintTasksSection />
+
+      {/* ── Footer Note ── */}
+      <div
+        className="rounded-xl px-5 py-4 text-xs"
+        style={{
+          background: "var(--rtm-bg)",
+          border: "1px solid var(--rtm-border)",
+          color: "var(--rtm-text-muted)",
+        }}
+      >
+        Tasks shown here originated from project task blueprints. All task
+        ownership and lifecycle management is handled through{" "}
+        <Link
+          href="/tasks"
+          className="font-semibold hover:underline"
+          style={{ color: "var(--rtm-blue)" }}
+        >
+          Global Tasks
+        </Link>
+        .
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// Blueprint Task Section — activated tasks from project blueprints
+// =============================================================================
+
+// ─── Mock GeneratedTask Data ──────────────────────────────────────────────────
+
+const BLUEPRINT_ACTIVATED_TASKS: GeneratedTask[] = [
+  {
+    id: "btask-001",
+    blueprintTaskId: "seo-001",
+    projectId: "proj-001",
+    clientName: "Apex Dental Studio",
+    serviceId: "seo",
+    serviceName: "SEO",
+    department: "SEO",
+    name: "Technical SEO Audit",
+    description: "Comprehensive audit of site structure, crawlability, and technical health.",
+    type: "setup",
+    priority: "high" as BlueprintTaskPriority,
+    status: "active" as BlueprintTaskStatus,
+    assignedTo: "Sarah K.",
+    assignedRole: "SEO Specialist",
+    estimatedHours: 4,
+    dueDate: "2025-08-04",
+    recurring: false,
+    createdAt: "2025-07-28",
+  },
+  {
+    id: "btask-002",
+    blueprintTaskId: "seo-002",
+    projectId: "proj-001",
+    clientName: "Apex Dental Studio",
+    serviceId: "seo",
+    serviceName: "SEO",
+    department: "SEO",
+    name: "Keyword Research and Mapping",
+    description: "Identify target keywords and map to site pages.",
+    type: "setup",
+    priority: "high" as BlueprintTaskPriority,
+    status: "pending" as BlueprintTaskStatus,
+    assignedTo: "Sarah K.",
+    assignedRole: "SEO Specialist",
+    estimatedHours: 6,
+    dueDate: "2025-08-08",
+    recurring: false,
+    createdAt: "2025-07-28",
+  },
+  {
+    id: "btask-003",
+    blueprintTaskId: "gbp-001",
+    projectId: "proj-001",
+    clientName: "Apex Dental Studio",
+    serviceId: "gbp",
+    serviceName: "Google Business Profile",
+    department: "GBP",
+    name: "GBP Profile Verification",
+    description: "Verify ownership of the GBP listing.",
+    type: "setup",
+    priority: "critical" as BlueprintTaskPriority,
+    status: "active" as BlueprintTaskStatus,
+    assignedTo: "Marcus L.",
+    assignedRole: "GBP Specialist",
+    estimatedHours: 2,
+    dueDate: "2025-08-03",
+    recurring: false,
+    createdAt: "2025-07-28",
+  },
+  {
+    id: "btask-004",
+    blueprintTaskId: "ppc-001",
+    projectId: "proj-002",
+    clientName: "Summit Sports Medicine",
+    serviceId: "ppc",
+    serviceName: "Google Ads / PPC",
+    department: "PPC",
+    name: "Campaign Structure Setup",
+    description: "Build campaign and ad group structure aligned to client services.",
+    type: "setup",
+    priority: "critical" as BlueprintTaskPriority,
+    status: "active" as BlueprintTaskStatus,
+    assignedTo: "Derek M.",
+    assignedRole: "PPC Specialist",
+    estimatedHours: 6,
+    dueDate: "2025-08-08",
+    recurring: false,
+    createdAt: "2025-07-28",
+  },
+  {
+    id: "btask-005",
+    blueprintTaskId: "ppc-003",
+    projectId: "proj-002",
+    clientName: "Summit Sports Medicine",
+    serviceId: "ppc",
+    serviceName: "Google Ads / PPC",
+    department: "PPC",
+    name: "Conversion Tracking Setup",
+    description: "Implement and verify conversion tracking via GTM and Google Ads.",
+    type: "setup",
+    priority: "critical" as BlueprintTaskPriority,
+    status: "pending" as BlueprintTaskStatus,
+    assignedTo: "Derek M.",
+    assignedRole: "PPC Specialist",
+    estimatedHours: 2,
+    dueDate: "2025-08-08",
+    recurring: false,
+    createdAt: "2025-07-28",
+  },
+  {
+    id: "btask-006",
+    blueprintTaskId: "meta-001",
+    projectId: "proj-002",
+    clientName: "Summit Sports Medicine",
+    serviceId: "meta-ads",
+    serviceName: "Meta Ads",
+    department: "Meta Ads",
+    name: "Ad Account Setup",
+    description: "Create and configure the Meta Business Manager and ad account.",
+    type: "setup",
+    priority: "critical" as BlueprintTaskPriority,
+    status: "active" as BlueprintTaskStatus,
+    assignedTo: "Priya N.",
+    assignedRole: "Meta Ads Specialist",
+    estimatedHours: 2,
+    dueDate: "2025-08-07",
+    recurring: false,
+    createdAt: "2025-07-28",
+  },
+  {
+    id: "btask-007",
+    blueprintTaskId: "web-001",
+    projectId: "proj-003",
+    clientName: "Coastal Dermatology Group",
+    serviceId: "website",
+    serviceName: "Website",
+    department: "Web Development",
+    name: "Discovery and Requirements",
+    description: "Conduct discovery call and document site structure and requirements.",
+    type: "setup",
+    priority: "critical" as BlueprintTaskPriority,
+    status: "active" as BlueprintTaskStatus,
+    assignedTo: "Aaron P.",
+    assignedRole: "Lead Developer",
+    estimatedHours: 4,
+    dueDate: "2025-08-13",
+    recurring: false,
+    createdAt: "2025-07-28",
+  },
+  {
+    id: "btask-008",
+    blueprintTaskId: "seo-004",
+    projectId: "proj-001",
+    clientName: "Apex Dental Studio",
+    serviceId: "seo",
+    serviceName: "SEO",
+    department: "SEO",
+    name: "Monthly SEO Report",
+    description: "Monthly report covering rankings, traffic, and key SEO metrics.",
+    type: "reporting",
+    priority: "medium" as BlueprintTaskPriority,
+    status: "pending" as BlueprintTaskStatus,
+    assignedTo: "Sarah K.",
+    assignedRole: "SEO Specialist",
+    estimatedHours: 2,
+    dueDate: "2025-09-01",
+    recurring: true,
+    recurringInterval: "month",
+    createdAt: "2025-07-28",
+  },
+];
+
+// ─── Blueprint Tasks Section Component ───────────────────────────────────────
+
+function BlueprintTasksSection() {
+  // Group tasks by department
+  const byDepartment = useMemo(() => {
+    const groups: Record<string, GeneratedTask[]> = {};
+    for (const task of BLUEPRINT_ACTIVATED_TASKS) {
+      if (!groups[task.department]) groups[task.department] = [];
+      groups[task.department].push(task);
+    }
+    return groups;
+  }, []);
+
+  return (
+    <div className="space-y-4">
+      {/* Section header */}
+      <div>
+        <h2
+          className="text-base font-extrabold"
+          style={{ color: "var(--rtm-text-primary)" }}
+        >
+          Blueprint-Activated Tasks
+        </h2>
+        <p
+          className="text-xs mt-0.5"
+          style={{ color: "var(--rtm-text-secondary)" }}
+        >
+          Activated tasks ready for department execution, generated from project
+          task blueprints.
+        </p>
+      </div>
+
+      {/* Department sections */}
+      {Object.entries(byDepartment).map(([department, tasks]) => (
+        <div
+          key={department}
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: "var(--rtm-surface)",
+            border: "1px solid var(--rtm-border)",
+          }}
+        >
+          {/* Dept header */}
+          <div
+            className="flex items-center justify-between px-5 py-3"
+            style={{ borderBottom: "1px solid var(--rtm-border)" }}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className="font-bold text-sm"
+                style={{ color: "var(--rtm-text-primary)" }}
+              >
+                {department}
+              </span>
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                style={{
+                  background: "var(--rtm-blue-xlight)",
+                  color: "var(--rtm-blue)",
+                  border: "1px solid #BFDBFE",
+                }}
+              >
+                {tasks.length} task{tasks.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
+
+          {/* Task table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
+              <thead
+                style={{
+                  background: "var(--rtm-bg)",
+                  borderBottom: "2px solid var(--rtm-border)",
+                }}
+              >
+                <tr>
+                  {["Task", "Client", "Service", "Priority", "Due Date", "Assigned To", "Status"].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-2.5 text-left text-[11px] font-black uppercase tracking-wide whitespace-nowrap"
+                        style={{ color: "var(--rtm-text-secondary)" }}
+                      >
+                        {h}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((task, idx) => {
+                  const priorityColors = BLUEPRINT_PRIORITY_COLORS[task.priority];
+                  const statusColors = BLUEPRINT_TASK_STATUS_COLORS[task.status];
+                  return (
+                    <tr
+                      key={task.id}
+                      style={{
+                        borderBottom:
+                          idx < tasks.length - 1
+                            ? "1px solid var(--rtm-border-light)"
+                            : undefined,
+                      }}
+                    >
+                      {/* Task name */}
+                      <td className="px-4 py-2.5">
+                        <div
+                          className="font-semibold text-sm"
+                          style={{ color: "var(--rtm-text-primary)" }}
+                        >
+                          {task.name}
+                        </div>
+                      </td>
+                      {/* Client */}
+                      <td
+                        className="px-4 py-2.5 text-sm whitespace-nowrap"
+                        style={{ color: "var(--rtm-text-secondary)" }}
+                      >
+                        {task.clientName}
+                      </td>
+                      {/* Service */}
+                      <td className="px-4 py-2.5 whitespace-nowrap">
+                        <span
+                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                          style={{
+                            background: "var(--rtm-bg)",
+                            color: "var(--rtm-text-secondary)",
+                            border: "1px solid var(--rtm-border)",
+                          }}
+                        >
+                          {task.serviceName}
+                        </span>
+                      </td>
+                      {/* Priority */}
+                      <td className="px-4 py-2.5 whitespace-nowrap">
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold"
+                          style={{
+                            background: priorityColors.bg,
+                            color: priorityColors.color,
+                            border: `1px solid ${priorityColors.border}`,
+                          }}
+                        >
+                          {task.priority.charAt(0).toUpperCase() +
+                            task.priority.slice(1)}
+                        </span>
+                      </td>
+                      {/* Due Date */}
+                      <td
+                        className="px-4 py-2.5 text-sm whitespace-nowrap"
+                        style={{ color: "var(--rtm-text-secondary)" }}
+                      >
+                        {task.dueDate}
+                      </td>
+                      {/* Assigned To */}
+                      <td
+                        className="px-4 py-2.5 text-sm whitespace-nowrap"
+                        style={{
+                          color: task.assignedTo
+                            ? "var(--rtm-text-primary)"
+                            : "var(--rtm-text-muted)",
+                        }}
+                      >
+                        {task.assignedTo ?? "Unassigned"}
+                      </td>
+                      {/* Status */}
+                      <td className="px-4 py-2.5 whitespace-nowrap">
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold"
+                          style={{
+                            background: statusColors.bg,
+                            color: statusColors.color,
+                            border: `1px solid ${statusColors.border}`,
+                          }}
+                        >
+                          {BLUEPRINT_TASK_STATUS_LABELS[task.status]}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

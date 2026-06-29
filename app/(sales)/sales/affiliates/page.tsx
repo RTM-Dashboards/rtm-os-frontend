@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge, DataTable, ProgressBar } from "@/components/ui";
 import type { Column } from "@/components/ui";
 
@@ -991,9 +992,9 @@ export default function AffiliatesPage() {
         
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-widest mb-0.5"style={{ color: "#059669"}}>Sales</p>
-          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Affiliate Management</h1>
-          <p className="text-sm mt-0.5"style={{ color: "var(--rtm-text-secondary)"}}>
-            Manage affiliates, referral performance, commissions, payouts, and affiliate portal access.
+          <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Affiliates</h1>
+          <p className="text-sm mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
+            Manage affiliates, referral performance, commissions, and payouts.
           </p>
         </div>
       </div>
@@ -1446,6 +1447,8 @@ export default function AffiliatesPage() {
         affiliate={selectedAffiliate}
         onClose={() => setSelectedAffiliate(null)}
       />
+
+
     </div>
   );
 }
