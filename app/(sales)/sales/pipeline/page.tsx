@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { KpiCard } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
+import { CreateOpportunityModal } from "@/components/sales/opportunity/CreateOpportunityModal";
+import { OpportunityCard as NewOpportunityCard } from "@/components/sales/opportunity/OpportunityCard";
+import { updateOpportunityStage, addLogEntryToOpportunity } from "@/lib/sales/opportunity-engine";
+import type { OpportunityRecord, CommunicationLog, CommunicationLogEntry } from "@/lib/sales/types";
+import { CommunicationLogPanel } from "@/components/sales/communication-log/CommunicationLogPanel";
 
 const workspace = getWorkspace("sales")!;
 
@@ -1761,21 +1767,215 @@ function GhlSyncBadge({ status }: { status: GhlSyncStatus }) {
   );
 }
 
+//  Toast (pipeline-local) 
+
+interface PipelineToast {
+  id: number;
+  text: string;
+  variant: "success" | "info" | "danger";
+}
+
+let _pipelineToastCounter = 0;
+
+function PipelineToastContainer({ toasts, dismiss }: { toasts: PipelineToast[]; dismiss: (id: number) => void }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+      {toasts.map(t => {
+        const bg = t.variant === "success" ? "#F0FDF4" : t.variant === "danger" ? "#FEF2F2" : "#EFF6FF";
+        const color = t.variant === "success" ? "#15803D" : t.variant === "danger" ? "#DC2626" : "#1D4ED8";
+        const border = t.variant === "success" ? "#A7F3D0" : t.variant === "danger" ? "#FECACA" : "#BFDBFE";
+        return (
+          <div key={t.id} className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-lg" style={{ background: bg, borderColor: border, minWidth: 280, maxWidth: 400 }}>
+            <p className="text-sm font-semibold" style={{ color }}>{t.text}</p>
+            <button onClick={() => dismiss(t.id)} className="font-bold text-lg" style={{ color }}>x</button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+//  Create Follow Up Modal 
+
+const FOLLOW_UP_TYPES = ["Call", "Email", "Meeting", "SMS", "Discovery Reminder", "Proposal Follow-Up"] as const;
+const FOLLOW_UP_PRIORITIES: Priority[] = ["High", "Medium", "Low"];
+
+interface CreateFollowUpForm {
+  type: string;
+  dueDate: string;
+  priority: Priority;
+  notes: string;
+  opportunityId: string;
+}
+
+function CreateFollowUpModal({
+  opportunities,
+  initialOpportunityId,
+  onClose,
+  onSubmit,
+}: {
+  opportunities: Opportunity[];
+  initialOpportunityId?: string;
+  onClose: () => void;
+  onSubmit: (form: CreateFollowUpForm) => void;
+}) {
+  const [form, setForm] = useState<CreateFollowUpForm>({
+    type: FOLLOW_UP_TYPES[0],
+    dueDate: "",
+    priority: "Medium",
+    notes: "",
+    opportunityId: initialOpportunityId ?? (opportunities[0]?.id ?? ""),
+  });
+
+  const selectedOpp = opportunities.find(o => o.id === form.opportunityId);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
+      <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              Create Follow Up{selectedOpp ? ` — ${selectedOpp.businessName}` : ""}
+            </h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Schedule a follow-up action</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>x</button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {!initialOpportunityId && (
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Opportunity</label>
+              <select value={form.opportunityId} onChange={e => setForm(f => ({ ...f, opportunityId: e.target.value }))}
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                {opportunities.filter(o => o.stage !== "Closed Won" && o.stage !== "Closed Lost").map(o => (
+                  <option key={o.id} value={o.id}>{o.businessName}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Follow-up Type</label>
+            <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+              {FOLLOW_UP_TYPES.map(t => <option key={t}>{t}</option>)}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Due Date</label>
+              <input type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Priority</label>
+              <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value as Priority }))}
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                {FOLLOW_UP_PRIORITIES.map(p => <option key={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Notes (optional)</label>
+            <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              rows={3} placeholder="Any notes for this follow-up..."
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none resize-none"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+          <button onClick={() => onSubmit(form)} disabled={!form.dueDate}
+            className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40"
+            style={{ background: "#1D4ED8", color: "#fff" }}>Create Follow Up</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+//  Select Opportunity Modal (for Create Audit / Create Proposal) 
+
+function SelectOpportunityModal({
+  title,
+  description,
+  opportunities,
+  onClose,
+  onConfirm,
+}: {
+  title: string;
+  description: string;
+  opportunities: Opportunity[];
+  onClose: () => void;
+  onConfirm: (oppId: string) => void;
+}) {
+  const [oppId, setOppId] = useState(opportunities[0]?.id ?? "");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
+      <div className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{description}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>x</button>
+        </div>
+        <div className="px-6 py-5">
+          <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Select Opportunity</label>
+          <select value={oppId} onChange={e => setOppId(e.target.value)}
+            className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+            {opportunities.filter(o => o.stage !== "Closed Won" && o.stage !== "Closed Lost").map(o => (
+              <option key={o.id} value={o.id}>{o.businessName}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+          <button onClick={() => onConfirm(oppId)}
+            className="text-sm px-4 py-2 rounded-lg font-bold" style={{ background: "#059669", color: "#fff" }}>Confirm</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 //  Row Actions Dropdown 
 
-const ROW_ACTIONS = [
-  "View Opportunity", "Edit Opportunity", "Move Stage", "Schedule Discovery",
-  "Create Audit", "Create Proposal", "Create Follow Up", "Mark Won", "Mark Lost", "Add Note",
-  "Open in GHL", "Resync Opportunity", "Manual Override",
-] as const;
-
-function RowActionsMenu({ opp, onView }: { opp: Opportunity; onView: (opp: Opportunity) => void }) {
+function RowActionsMenu({
+  opp,
+  allStages,
+  onView,
+  onChangeStage,
+  onCreateFollowUp,
+}: {
+  opp: Opportunity;
+  allStages: PipelineStage[];
+  onView: (opp: Opportunity) => void;
+  onChangeStage: (oppId: string, stage: PipelineStage) => void;
+  onCreateFollowUp: (oppId: string) => void;
+}) {
   const [open, setOpen] = useState(false);
+  const [showStageSubmenu, setShowStageSubmenu] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        setShowStageSubmenu(false);
+      }
     }
     if (open) document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -1783,29 +1983,67 @@ function RowActionsMenu({ opp, onView }: { opp: Opportunity; onView: (opp: Oppor
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen((v) => !v)}
+      <button onClick={() => { setOpen((v) => !v); setShowStageSubmenu(false); }}
         className="text-[11px] font-semibold px-2 py-1 rounded-lg border transition-colors"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}
       >
-        ···
+        ...
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 rounded-xl border shadow-lg py-1 min-w-[200px]"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-          {ROW_ACTIONS.map((action) => {
-            const isDestructive = action === "Mark Lost";
-            const isPositive = action === "Mark Won";
-            const isPrimary = action === "View Opportunity";
-            const isGhl = action === "Open in GHL"|| action === "Resync Opportunity"|| action === "Manual Override";
-            return (
-              <button key={action}
-                onClick={() => { if (action === "View Opportunity") onView(opp); setOpen(false); }}
-                className="w-full text-left text-xs px-4 py-2 hover:opacity-80 transition-opacity"style={{
-                  color: isDestructive ? "#DC2626": isPositive ? "#059669": isPrimary ? workspace.accentColor : isGhl ? "#0891B2": "var(--rtm-text-primary)",
-                  fontWeight: isPrimary ? 600 : 400,
-                }}>
-                {isGhl && <span className="mr-1"></span>}{action}
-              </button>
-            );
-          })}
+        <div className="absolute right-0 top-full mt-1 z-50 rounded-xl border shadow-lg py-1 min-w-[210px]"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+          <button onClick={() => { onView(opp); setOpen(false); }}
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80 font-semibold" style={{ color: workspace.accentColor }}>
+            View Opportunity
+          </button>
+          <button
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80 flex items-center justify-between"
+            style={{ color: "var(--rtm-text-primary)" }}
+            onMouseEnter={() => setShowStageSubmenu(true)}
+            onMouseLeave={() => {}}
+            onClick={() => setShowStageSubmenu(v => !v)}>
+            <span>Change Stage</span>
+            <span style={{ color: "var(--rtm-text-muted)" }}>›</span>
+          </button>
+          {showStageSubmenu && (
+            <div className="absolute left-full top-7 ml-1 rounded-xl border shadow-lg py-1 min-w-[200px] z-50"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+              onMouseEnter={() => setShowStageSubmenu(true)}
+              onMouseLeave={() => setShowStageSubmenu(false)}>
+              {allStages.map(stage => {
+                const cfg = STAGE_CONFIG.find(s => s.label === stage);
+                const isCurrent = opp.stage === stage;
+                return (
+                  <button key={stage}
+                    onClick={() => { onChangeStage(opp.id, stage); setOpen(false); setShowStageSubmenu(false); }}
+                    className="w-full text-left text-xs px-4 py-2 hover:opacity-80"
+                    style={{ color: isCurrent ? cfg?.color ?? "var(--rtm-text-primary)" : "var(--rtm-text-primary)", fontWeight: isCurrent ? 700 : 400 }}>
+                    {isCurrent ? "(current) " : ""}{stage}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          <button onClick={() => { onCreateFollowUp(opp.id); setOpen(false); }}
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "var(--rtm-text-primary)" }}>
+            Create Follow Up
+          </button>
+          <div style={{ height: 1, background: "var(--rtm-border)", margin: "2px 0" }} />
+          {["Edit Opportunity", "Schedule Discovery", "Create Audit", "Create Proposal", "Mark Won", "Mark Lost", "Add Note"].map((action) => (
+            <button key={action}
+              onClick={() => setOpen(false)}
+              className="w-full text-left text-xs px-4 py-2 hover:opacity-80"style={{
+                color: action === "Mark Lost" ? "#DC2626" : action === "Mark Won" ? "#059669" : "var(--rtm-text-primary)",
+              }}>
+              {action}
+            </button>
+          ))}
+          <div style={{ height: 1, background: "var(--rtm-border)", margin: "2px 0" }} />
+          {["Open in GHL", "Resync Opportunity", "Manual Override"].map((action) => (
+            <button key={action}
+              onClick={() => setOpen(false)}
+              className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "#0891B2" }}>
+              {action}
+            </button>
+          ))}
         </div>
       )}
     </div>
@@ -1922,14 +2160,168 @@ function GhlSyncIssuesPanel() {
   );
 }
 
+//  Opportunity Detail Drawer (View Opportunity) 
+
+const MOCK_ACTIVITY_LOG = [
+  { date: "Jan 8, 2025", event: "Stage updated to current stage", user: "System" },
+  { date: "Jan 6, 2025", event: "Follow-up completed", user: "Assigned Rep" },
+  { date: "Jan 4, 2025", event: "Note added", user: "Assigned Rep" },
+];
+
+function OpportunityDetailDrawer({
+  opp,
+  followUps,
+  onClose,
+  onStartProposal,
+  onChangeStage,
+  onCreateFollowUp,
+  addNote,
+  commLog,
+  onAddCommLogEntry,
+}: {
+  opp: Opportunity;
+  followUps: FollowUp[];
+  onClose: () => void;
+  onStartProposal: (opp: Opportunity) => void;
+  onChangeStage: (oppId: string, stage: PipelineStage) => void;
+  onCreateFollowUp: (oppId: string) => void;
+  addNote: (oppId: string, text: string) => void;
+  commLog?: CommunicationLog;
+  onAddCommLogEntry?: (opportunityId: string, entry: CommunicationLogEntry) => void;
+}) {
+  const [activityLog] = useState([
+    ...MOCK_ACTIVITY_LOG,
+    ...opp.recentActivities.map(a => ({ date: a.date, event: a.notes || a.type, user: a.user })),
+  ]);
+  const hasWizard = !!(opp as Opportunity & { activeWizardId?: string }).activeWizardId;
+  const wizardId = (opp as Opportunity & { activeWizardId?: string }).activeWizardId;
+  const stageCfg = getStageCfg(opp.stage);
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40 bg-black/30" onClick={onClose} />
+      <div className="fixed right-0 top-0 h-full z-50 flex flex-col shadow-2xl overflow-hidden" style={{ width: "min(640px, 97vw)", background: "var(--rtm-bg)", borderLeft: "1px solid var(--rtm-border)" }}>
+        {/* Header */}
+        <div className="flex items-start justify-between px-5 py-4 border-b flex-shrink-0" style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <StageBadge stage={opp.stage} />
+              <PriorityBadge priority={opp.priority} />
+              <span className="text-[10px] font-mono" style={{ color: "var(--rtm-text-muted)" }}>{opp.id}</span>
+            </div>
+            <h2 className="text-base font-bold truncate" style={{ color: "var(--rtm-text-primary)" }}>{opp.businessName}</h2>
+            <p className="text-sm mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>{opp.clientName} · {opp.industry}</p>
+          </div>
+          <button onClick={onClose} className="ml-3 flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-bold" style={{ background: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>x</button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Core info */}
+          <div className="rounded-xl border p-4 grid grid-cols-2 gap-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+            {[
+              ["Contact", opp.clientName],
+              ["Phone", opp.phone],
+              ["Email", opp.email],
+              ["Assigned Rep", opp.assignedRep],
+              ["Est. Monthly Value", fmtCurrency(opp.estimatedValue) + "/mo"],
+              ["Expected Close", opp.expectedCloseDate],
+              ["Contract Length", opp.contractLength],
+              ["GHL Sync", opp.ghl.ghlSyncStatus],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
+                <p className="text-xs font-semibold mt-0.5" style={{ color: "var(--rtm-text-primary)" }}>{v}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Services */}
+          {opp.audit.findingsSummary && opp.audit.findingsSummary !== "—" && (
+            <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--rtm-text-muted)" }}>Audit Findings</p>
+              <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{opp.audit.findingsSummary}</p>
+            </div>
+          )}
+
+          {/* Follow Ups */}
+          {followUps.length > 0 && (
+            <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--rtm-text-muted)" }}>Follow Ups ({followUps.length})</p>
+              <div className="space-y-2">
+                {followUps.slice(0, 4).map(fu => (
+                  <div key={fu.id} className="flex items-center justify-between text-xs">
+                    <span style={{ color: "var(--rtm-text-secondary)" }}>{fu.subject}</span>
+                    <StatusBadge label={fu.status} cfg={FOLLOW_UP_STATUS_CONFIG[fu.status]} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* System Activity log — stage changes, system events */}
+          <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide mb-3" style={{ color: "var(--rtm-text-muted)" }}>System Activity</p>
+            <div className="space-y-3">
+              {activityLog.map((entry, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: stageCfg.color }} />
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{entry.event}</p>
+                    <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{entry.user} · {entry.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Communication Log — calls, emails, transcripts, meeting notes */}
+          <CommunicationLogPanel
+            opportunityId={opp.id}
+            log={commLog ?? { opportunityId: opp.id, entries: [] }}
+            onAddEntry={(entry) => onAddCommLogEntry?.(opp.id, entry)}
+            compact={true}
+          />
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center gap-2 px-4 py-3 border-t flex-shrink-0 flex-wrap" style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}>
+          {hasWizard ? (
+            <a href={`/sales/proposals?resume=${wizardId}`}
+              className="text-xs font-bold px-4 py-2 rounded-lg border"
+              style={{ background: "#FFFBEB", color: "#C2410C", borderColor: "#FED7AA" }}>
+              Resume Proposal Draft
+            </a>
+          ) : (
+            <button
+              onClick={() => onStartProposal(opp)}
+              className="text-xs font-bold px-4 py-2 rounded-lg border"
+              style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>
+              Start Proposal
+            </button>
+          )}
+          <button onClick={() => onCreateFollowUp(opp.id)}
+            className="text-xs font-semibold px-3 py-2 rounded-lg border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Create Follow Up</button>
+          <button className="text-xs font-semibold px-3 py-2 rounded-lg border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+            onClick={() => {
+              const stage = prompt("Enter stage:") as PipelineStage | null;
+              if (stage) onChangeStage(opp.id, stage);
+            }}>Change Stage</button>
+          <button onClick={onClose} className="ml-auto text-xs font-semibold px-3 py-2 rounded-lg border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>Close</button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 //  Drawer 
 
 type DrawerTab =
-  | "Client Overview"| "Opportunity Overview"| "Revenue Forecast"| "Sales Activity"| "Next Steps"| "Notes"| "Audit"| "Proposal"| "Follow Ups"| "Handoff"| "Affiliate"| "Tasks"| "Notifications"| "Workflow"| "GHL Sync";
+  | "Client Overview"| "Opportunity Overview"| "Revenue Forecast"| "Sales Activity"| "Next Steps"| "Notes"| "Communication Log"| "Audit"| "Proposal"| "Follow Ups"| "Handoff"| "Affiliate"| "Tasks"| "Notifications"| "Workflow"| "GHL Sync";
 
 const DRAWER_TABS: DrawerTab[] = [
   "Client Overview", "Opportunity Overview", "Revenue Forecast",
-  "Sales Activity", "Next Steps", "Notes",
+  "Sales Activity", "Next Steps", "Notes", "Communication Log",
   "Audit", "Proposal", "Follow Ups", "Handoff", "Affiliate", "Tasks", "Notifications", "Workflow",
   "GHL Sync",
 ];
@@ -1996,7 +2388,7 @@ function IntegrationCard({
   );
 }
 
-function OpportunityDrawer({ opp, onClose }: { opp: Opportunity; onClose: () => void }) {
+function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry }: { opp: Opportunity; onClose: () => void; commLog?: CommunicationLog; onAddCommLogEntry?: (opportunityId: string, entry: CommunicationLogEntry) => void; }) {
   const [activeTab, setActiveTab] = useState<DrawerTab>("Client Overview");
   const stageCfg = getStageCfg(opp.stage);
   const weightedRevenue = Math.round((opp.estimatedValue * opp.probability) / 100);
@@ -2230,6 +2622,16 @@ function OpportunityDrawer({ opp, onClose }: { opp: Opportunity; onClose: () => 
                 </div>
               )}
             </DrawerSection>
+          )}
+
+          {/* COMMUNICATION LOG */}
+          {activeTab === "Communication Log" && (
+            <CommunicationLogPanel
+              opportunityId={opp.id}
+              log={commLog ?? { opportunityId: opp.id, entries: [] }}
+              onAddEntry={(entry) => onAddCommLogEntry?.(opp.id, entry)}
+              compact={false}
+            />
           )}
 
           {/* AUDIT INTEGRATION */}
@@ -2580,16 +2982,34 @@ function OpportunityDrawer({ opp, onClose }: { opp: Opportunity; onClose: () => 
 
 //  Opportunity Card (Kanban) 
 
-function OpportunityCard({ opp, stageCfg, onView }: { opp: Opportunity; stageCfg: StageConfig; onView: (opp: Opportunity) => void }) {
+function OpportunityCard({
+  opp,
+  stageCfg,
+  onView,
+  onOpenDetail,
+  onChangeStage,
+  onCreateFollowUp,
+}: {
+  opp: Opportunity & { activeWizardId?: string };
+  stageCfg: StageConfig;
+  onView: (opp: Opportunity) => void;
+  onOpenDetail: (opp: Opportunity) => void;
+  onChangeStage: (oppId: string, stage: PipelineStage) => void;
+  onCreateFollowUp: (oppId: string) => void;
+}) {
+  const hasWizard = !!opp.activeWizardId;
   return (
     <div className="p-3 rounded-xl border flex flex-col gap-2 transition-shadow hover:shadow-md cursor-pointer group"style={{ background: "var(--rtm-surface)", borderColor: stageCfg.border, boxShadow: "0 1px 3px rgba(15,28,56,0.05)"}}
-      onClick={() => onView(opp)}>
+      onClick={() => onOpenDetail(opp)}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-xs font-bold leading-tight truncate"style={{ color: "var(--rtm-text-primary)"}}>{opp.businessName}</p>
           <p className="text-[11px] mt-0.5 truncate"style={{ color: "var(--rtm-text-muted)"}}>{opp.clientName}</p>
         </div>
-        <PriorityBadge priority={opp.priority} />
+        <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
+          <PriorityBadge priority={opp.priority} />
+          <RowActionsMenu opp={opp} allStages={ALL_PIPELINE_STAGES} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} />
+        </div>
       </div>
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold"style={{ color: stageCfg.color }}>
@@ -2617,15 +3037,37 @@ function OpportunityCard({ opp, stageCfg, onView }: { opp: Opportunity; stageCfg
         </span>
       </div>
       <div className="text-[10px] rounded-lg px-2 py-1.5 leading-snug"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)"}}>→ {opp.nextAction}</div>
-      <button onClick={(e) => { e.stopPropagation(); onView(opp); }}
-        className="w-full text-[10px] font-semibold py-1 rounded-lg border opacity-0 group-hover:opacity-100 transition-opacity"style={{ background: "var(--rtm-bg)", borderColor: stageCfg.border, color: stageCfg.color }}>View Opportunity</button>
+      <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+        <button onClick={() => onOpenDetail(opp)}
+          className="flex-1 text-[10px] font-semibold py-1 rounded-lg border opacity-0 group-hover:opacity-100 transition-opacity"style={{ background: "var(--rtm-bg)", borderColor: stageCfg.border, color: stageCfg.color }}>View</button>
+        {hasWizard ? (
+          <a href={`/sales/proposals?resume=${opp.activeWizardId}`}
+            className="flex-1 text-[10px] font-semibold py-1 rounded-lg border text-center opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: "#FFFBEB", borderColor: "#FED7AA", color: "#C2410C" }}>Resume Draft</a>
+        ) : (
+          <button onClick={() => { const wid = `wizard-opp-${opp.id}-${Date.now()}`; window.location.href = `/sales/proposals?new=true&opportunityId=${opp.id}`; void wid; }}
+            className="flex-1 text-[10px] font-semibold py-1 rounded-lg border opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8" }}>Start Proposal</button>
+        )}
+      </div>
     </div>
   );
 }
 
 //  Pipeline Table View 
 
-function PipelineTable({ opportunities, onView }: { opportunities: Opportunity[]; onView: (opp: Opportunity) => void }) {
+const ALL_PIPELINE_STAGES: PipelineStage[] = [
+  "Lead", "Discovery", "Qualified", "Audit Requested", "Audit In Progress",
+  "Proposal Draft", "Proposal Sent", "Negotiation", "Verbal Approval",
+  "Proposal Approved", "Sales Handoff", "Closed Won", "Closed Lost",
+];
+
+function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp }: {
+  opportunities: Opportunity[];
+  onView: (opp: Opportunity) => void;
+  onChangeStage: (oppId: string, stage: PipelineStage) => void;
+  onCreateFollowUp: (oppId: string) => void;
+}) {
   return (
     <div className="overflow-x-auto rounded-xl border"style={{ borderColor: "var(--rtm-border)"}}>
       <table className="w-full text-xs border-collapse"style={{ minWidth: 2200 }}>
@@ -2687,7 +3129,7 @@ function PipelineTable({ opportunities, onView }: { opportunities: Opportunity[]
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}><PriorityBadge priority={opp.priority} /></td>
                 <td className="px-3 py-2.5 whitespace-nowrap"onClick={(e) => e.stopPropagation()}>
-                  <RowActionsMenu opp={opp} onView={onView} />
+                  <RowActionsMenu opp={opp} allStages={ALL_PIPELINE_STAGES} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} />
                 </td>
               </tr>
             );
@@ -2910,13 +3352,380 @@ function PipelineAnalytics({ opportunities }: { opportunities: Opportunity[] }) 
 
 type ViewMode = "kanban"| "table"| "analytics";
 
-export default function SalesPipelinePage() {
+const MOCK_OPPORTUNITY_RECORDS: OpportunityRecord[] = [
+  {
+    id: "opp-mock-001",
+    opportunityNumber: "OPP-2025-1001",
+    leadId: "L001",
+    clientName: "Marcus Webb",
+    businessName: "Summit Landscaping",
+    tradeType: "Landscaping / Lawn Care",
+    contactName: "Marcus Webb",
+    contactPhone: "(512) 555-0101",
+    contactEmail: "marcus@summitlandscaping.com",
+    leadSource: "Affiliate",
+    assignedRep: "Jordan M.",
+    stage: "Discovery Complete",
+    priority: "High",
+    estimatedMonthlyValue: 2400,
+    expectedCloseDate: "2025-02-14",
+    serviceInterest: ["SEO", "GBP"],
+    discoveryNotes: "Owner is motivated, has budget, wants full SEO + GBP package.",
+    ghlContactId: "GHL-CON-0001",
+    ghlSynced: true,
+    createdAt: "2025-01-10T09:00:00Z",
+    updatedAt: "2025-01-10T09:00:00Z",
+    communicationLog: {
+      opportunityId: "opp-mock-001",
+      entries: [
+        {
+          id: "log-001-a",
+          opportunityId: "opp-mock-001",
+          type: "call" as const,
+          title: "Initial discovery call — Jan 10",
+          summary: "Spoke with Marcus Webb about SEO and GBP goals. He wants to rank top 3 for landscaping in his area. Budget confirmed at $2,400/mo. Very motivated.",
+          fullContent: "",
+          loggedBy: "Jordan M.",
+          loggedAt: "2025-01-10T09:30:00Z",
+          participants: ["Marcus Webb", "Jordan M."],
+          durationMinutes: 38,
+          attachmentNote: "",
+        },
+        {
+          id: "log-001-b",
+          opportunityId: "opp-mock-001",
+          type: "call-transcript" as const,
+          title: "Follow-up call transcript — Jan 14",
+          summary: "Reviewed proposal pricing. Marcus asked about setup fees. Agreed to waive if contract signed by Jan 20.",
+          fullContent: "Jordan M.: Hey Marcus, thanks for jumping on a call today.\nMarcus Webb: Of course, I looked over the proposal — looks solid.\nJordan M.: Great. Did you have any questions on the pricing?\nMarcus Webb: Yeah, the setup fee. Is that negotiable?\nJordan M.: For a 12-month commitment we can waive it if you sign by Jan 20.\nMarcus Webb: That works for me. Let me review with my wife and I'll get back to you.\nJordan M.: Sounds great. I'll follow up Friday.",
+          loggedBy: "Jordan M.",
+          loggedAt: "2025-01-14T14:00:00Z",
+          participants: ["Marcus Webb", "Jordan M."],
+          durationMinutes: 22,
+          attachmentNote: "Zoom recording: zoom.us/rec/summit-jan14",
+        },
+      ],
+    },
+    activeWizardId: null,
+    intakeRecord: null,
+  },
+  {
+    id: "opp-mock-002",
+    opportunityNumber: "OPP-2025-1002",
+    leadId: "L002",
+    clientName: "Priya Sharma",
+    businessName: "Blue Ridge Plumbing",
+    tradeType: "Plumbing",
+    contactName: "Priya Sharma",
+    contactPhone: "(303) 555-0202",
+    contactEmail: "priya@blueridgeplumbing.com",
+    leadSource: "Website",
+    assignedRep: "Sarah K.",
+    stage: "New Opportunity",
+    priority: "Medium",
+    estimatedMonthlyValue: 1800,
+    expectedCloseDate: "2025-02-28",
+    serviceInterest: ["SEO", "PPC", "GBP"],
+    discoveryNotes: "Wants to rank #1 for Denver plumber.",
+    ghlContactId: "GHL-CON-0002",
+    ghlSynced: true,
+    createdAt: "2025-01-11T10:00:00Z",
+    updatedAt: "2025-01-11T10:00:00Z",
+    communicationLog: {
+      opportunityId: "opp-mock-002",
+      entries: [
+        {
+          id: "log-002-a",
+          opportunityId: "opp-mock-002",
+          type: "email" as const,
+          title: "Intro email sent — Jan 11",
+          summary: "Sent intro email introducing RTM OS services, included case study PDF for home services SEO.",
+          fullContent: "",
+          loggedBy: "Sarah K.",
+          loggedAt: "2025-01-11T11:00:00Z",
+          participants: ["Priya Sharma"],
+          durationMinutes: null,
+          attachmentNote: "Case study PDF: rtm-home-services-case-study.pdf",
+        },
+      ],
+    },
+    activeWizardId: null,
+    intakeRecord: null,
+  },
+  {
+    id: "opp-mock-003",
+    opportunityNumber: "OPP-2025-1003",
+    leadId: "L014",
+    clientName: "Rachel Torres",
+    businessName: "Horizon Roofing Solutions",
+    tradeType: "Roofing",
+    contactName: "Rachel Torres",
+    contactPhone: "(214) 555-1414",
+    contactEmail: "rtorres@horizonroofing.com",
+    leadSource: "Google Ads",
+    assignedRep: "Sarah K.",
+    stage: "Audit Requested",
+    priority: "High",
+    estimatedMonthlyValue: 3600,
+    expectedCloseDate: "2025-02-07",
+    serviceInterest: ["LSA", "PPC", "GBP", "SEO"],
+    discoveryNotes: "Storm damage roofing. Seasonal spikes.",
+    ghlContactId: "GHL-CON-0014",
+    ghlSynced: false,
+    createdAt: "2025-01-09T11:00:00Z",
+    updatedAt: "2025-01-09T11:00:00Z",
+    communicationLog: {
+      opportunityId: "opp-mock-003",
+      entries: [],
+    },
+    activeWizardId: null,
+    intakeRecord: null,
+  },
+  {
+    id: "opp-mock-004",
+    opportunityNumber: "OPP-2025-1004",
+    leadId: "L015",
+    clientName: "Jake Morrison",
+    businessName: "Morrison HVAC & Cooling",
+    tradeType: "HVAC",
+    contactName: "Jake Morrison",
+    contactPhone: "(602) 555-1515",
+    contactEmail: "jake@morrisonhvac.com",
+    leadSource: "Referral",
+    assignedRep: "Alex R.",
+    stage: "Proposal Sent",
+    priority: "Medium",
+    estimatedMonthlyValue: 2800,
+    expectedCloseDate: "2025-01-31",
+    serviceInterest: ["SEO", "GBP", "PPC"],
+    discoveryNotes: "Family-owned HVAC. Ready to scale.",
+    ghlContactId: "GHL-CON-0015",
+    ghlSynced: true,
+    createdAt: "2025-01-08T14:00:00Z",
+    updatedAt: "2025-01-08T14:00:00Z",
+    communicationLog: {
+      opportunityId: "opp-mock-004",
+      entries: [],
+    },
+    activeWizardId: null,
+    intakeRecord: null,
+  },
+  {
+    id: "opp-mock-005",
+    opportunityNumber: "OPP-2025-1005",
+    leadId: "L023",
+    clientName: "Bradley Scott",
+    businessName: "Atlas Electrical Services",
+    tradeType: "Electrical",
+    contactName: "Bradley Scott",
+    contactPhone: "(801) 555-2323",
+    contactEmail: "brad@atlaselectric.com",
+    leadSource: "LSA",
+    assignedRep: "Mike T.",
+    stage: "Negotiation",
+    priority: "High",
+    estimatedMonthlyValue: 2700,
+    expectedCloseDate: "2025-01-24",
+    serviceInterest: ["LSA", "PPC", "GBP"],
+    discoveryNotes: "Master electrician. Competitor already running LSA.",
+    ghlContactId: "GHL-CON-0023",
+    ghlSynced: true,
+    createdAt: "2025-01-07T09:00:00Z",
+    updatedAt: "2025-01-07T09:00:00Z",
+    communicationLog: {
+      opportunityId: "opp-mock-005",
+      entries: [],
+    },
+    activeWizardId: null,
+    intakeRecord: null,
+  },
+  {
+    id: "opp-mock-006",
+    opportunityNumber: "OPP-2025-1006",
+    leadId: null,
+    clientName: "Stephanie Lane",
+    businessName: "GreenWave Lawn Care",
+    tradeType: "Landscaping / Lawn Care",
+    contactName: "Stephanie Lane",
+    contactPhone: "(615) 555-4040",
+    contactEmail: "slane@greenwave.com",
+    leadSource: "Google Ads",
+    assignedRep: "Alex R.",
+    stage: "Audit Requested",
+    priority: "Low",
+    estimatedMonthlyValue: 2400,
+    expectedCloseDate: "2025-03-01",
+    serviceInterest: ["LSA", "SEO", "GBP"],
+    discoveryNotes: "Regional lawn care company expanding into new markets.",
+    ghlContactId: "",
+    ghlSynced: false,
+    createdAt: "2025-01-06T08:00:00Z",
+    updatedAt: "2025-01-06T08:00:00Z",
+    communicationLog: {
+      opportunityId: "opp-mock-006",
+      entries: [],
+    },
+    activeWizardId: null,
+    intakeRecord: null,
+  },
+];
+
+// ── Stalled Deals mock data ───────────────────────────────────────────────────
+interface StalledDeal {
+  id: string;
+  client: string;
+  stage: string;
+  lastActivity: string;
+  daysStalled: number;
+  assignedRep: string;
+}
+
+const STALLED_DEALS: StalledDeal[] = [
+  { id: "SD-001", client: "Harbor Auto Group",        stage: "Negotiation",    lastActivity: "Jan 4, 2025",  daysStalled: 14, assignedRep: "Mike T." },
+  { id: "SD-002", client: "Precision Auto Repair",    stage: "Negotiation",    lastActivity: "Jan 2, 2025",  daysStalled: 16, assignedRep: "Sarah K." },
+  { id: "SD-003", client: "Cascade Flooring",         stage: "Audit Requested",lastActivity: "Jan 2, 2025",  daysStalled: 12, assignedRep: "Alex R." },
+  { id: "SD-004", client: "Metro Dental Group",       stage: "Discovery",      lastActivity: "Dec 29, 2024", daysStalled: 20, assignedRep: "Jordan M." },
+  { id: "SD-005", client: "DeLuca Gutters & Siding",  stage: "Proposal Sent",  lastActivity: "Jan 2, 2025",  daysStalled: 9,  assignedRep: "Mike T." },
+];
+
+// ── Follow Ups data pulled from opportunity followUps arrays ─────────────────
+interface PipelineFollowUp {
+  id: string;
+  contact: string;
+  relatedRecord: string;
+  followUpType: string;
+  assignedRep: string;
+  priority: Priority;
+  dueDate: string;
+  lastContact: string;
+  stage: string;
+  status: FollowUpStatus;
+}
+
+function buildFollowUpQueue(opps: Opportunity[]): PipelineFollowUp[] {
+  const items: PipelineFollowUp[] = [];
+  for (const opp of opps) {
+    for (const fu of opp.followUps) {
+      items.push({
+        id: fu.id,
+        contact: opp.clientName,
+        relatedRecord: opp.businessName,
+        followUpType: "Follow-Up",
+        assignedRep: opp.assignedRep,
+        priority: opp.priority,
+        dueDate: fu.dueDate,
+        lastContact: opp.recentActivities.length > 0
+          ? opp.recentActivities[opp.recentActivities.length - 1].date
+          : "—",
+        stage: opp.stage,
+        status: fu.status as FollowUpStatus,
+      });
+    }
+  }
+  return items;
+}
+
+function SalesPipelinePageInner() {
+  const searchParams = useSearchParams();
+  const initialMainTab = searchParams.get("tab") === "followups" ? "followups"
+    : searchParams.get("tab") === "stalled" ? "stalled"
+    : "kanban";
+
+  const [mainTab, setMainTab] = useState<"kanban" | "followups" | "stalled">(initialMainTab);
   const [filterSource, setFilterSource] = useState<LeadSource | "All">("All");
   const [filterRep, setFilterRep] = useState<string>("All");
   const [filterPriority, setFilterPriority] = useState<Priority | "All">("All");
   const [filterSync, setFilterSync] = useState<GhlSyncStatus | "All">("All");
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [drawerOpp, setDrawerOpp] = useState<Opportunity | null>(null);
+  const [detailOpp, setDetailOpp] = useState<Opportunity | null>(null);
+  const [pipelineTab, setPipelineTab] = useState<"opportunities" | "pipeline">("opportunities");
+  const [opportunityRecords, setOpportunityRecords] = useState<OpportunityRecord[]>(MOCK_OPPORTUNITY_RECORDS);
+  const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
+  const [showFollowUpModal, setShowFollowUpModal] = useState<{ oppId?: string } | null>(null);
+  const [showAuditPicker, setShowAuditPicker] = useState(false);
+  const [pipelineToasts, setPipelineToasts] = useState<PipelineToast[]>([]);
+  const pipelineToastCounter = useRef(0);
+  // Local mutable stage overrides for pipeline opportunities
+  const [stageOverrides, setStageOverrides] = useState<Record<string, PipelineStage>>({});
+  // Local follow-up additions keyed by opp id
+  const [extraFollowUps, setExtraFollowUps] = useState<Record<string, FollowUp[]>>({});
+  // Track activeWizardId per opportunity
+  const [wizardIds, setWizardIds] = useState<Record<string, string>>({});
+
+  // followUpQueue is built after mergedOpportunities is computed below
+  // Placeholder — real queue built after mergedOpportunities
+
+  function addPipelineToast(text: string, variant: PipelineToast["variant"] = "success") {
+    _pipelineToastCounter += 1;
+    const id = _pipelineToastCounter;
+    setPipelineToasts(prev => [...prev, { id, text, variant }]);
+    setTimeout(() => setPipelineToasts(prev => prev.filter(t => t.id !== id)), 4500);
+  }
+
+  function handleChangeStage(oppId: string, stage: PipelineStage) {
+    setStageOverrides(prev => ({ ...prev, [oppId]: stage }));
+    addPipelineToast(`Stage updated to ${stage}`, "success");
+  }
+
+  function handleCreateFollowUpSubmit(form: CreateFollowUpForm) {
+    const newFu: FollowUp = {
+      id: `FU-NEW-${Date.now()}`,
+      subject: `${form.type} Follow-Up`,
+      dueDate: form.dueDate || "TBD",
+      status: "Upcoming",
+      owner: OPPORTUNITIES.find(o => o.id === form.opportunityId)?.assignedRep ?? "Sales Rep",
+    };
+    setExtraFollowUps(prev => ({
+      ...prev,
+      [form.opportunityId]: [...(prev[form.opportunityId] ?? []), newFu],
+    }));
+    setShowFollowUpModal(null);
+    addPipelineToast("Follow-up created successfully", "success");
+  }
+
+  function handleStartProposal(opp: Opportunity) {
+    // Generate a wizard id for this opportunity and navigate to wizard
+    const wizardId = `wizard-opp-${opp.id}-${Date.now()}`;
+    setWizardIds(prev => ({ ...prev, [opp.id]: wizardId }));
+    window.location.href = `/sales/proposals?new=true&opportunityId=${opp.id}`;
+  }
+
+  function handleAddNote(oppId: string, _text: string) {
+    // Note is already appended in the drawer component's local state; nothing extra needed here
+    void oppId;
+  }
+
+  // Communication log state: keyed by OpportunityRecord id for the OpportunityRecord list
+  const [commLogs, setCommLogs] = useState<Record<string, CommunicationLog>>(
+    Object.fromEntries(
+      MOCK_OPPORTUNITY_RECORDS.map((r) => [
+        r.id,
+        r.communicationLog ?? { opportunityId: r.id, entries: [] },
+      ])
+    )
+  );
+
+  function handleAddCommLogEntry(opportunityId: string, entry: CommunicationLogEntry) {
+    setCommLogs((prev) => {
+      const existing = prev[opportunityId] ?? { opportunityId, entries: [] };
+      return {
+        ...prev,
+        [opportunityId]: {
+          ...existing,
+          entries: [entry, ...existing.entries],
+        },
+      };
+    });
+  }
+
+  // Merge stage overrides into opportunities list
+  const mergedOpportunities = OPPORTUNITIES.map(o => ({
+    ...o,
+    stage: stageOverrides[o.id] ?? o.stage,
+    activeWizardId: wizardIds[o.id],
+    followUps: [...o.followUps, ...(extraFollowUps[o.id] ?? [])],
+  })) as (Opportunity & { activeWizardId?: string })[];
 
 
   const allReps = Array.from(new Set(OPPORTUNITIES.map((o) => o.assignedRep))).sort();
@@ -2924,7 +3733,9 @@ export default function SalesPipelinePage() {
   const allPriorities: Priority[] = ["Low", "Medium", "High", "Urgent"];
   const allSyncStatuses: GhlSyncStatus[] = ["Synced", "Pending Sync", "Sync Failed", "Manual Override", "Not Connected"];
 
-  const filtered = OPPORTUNITIES.filter((o) => {
+  const followUpQueue = buildFollowUpQueue(mergedOpportunities);
+
+  const filtered = mergedOpportunities.filter((o) => {
     const src = filterSource === "All"|| o.leadSource === filterSource;
     const rep = filterRep === "All"|| o.assignedRep === filterRep;
     const pri = filterPriority === "All"|| o.priority === filterPriority;
@@ -2935,44 +3746,310 @@ export default function SalesPipelinePage() {
   const kpis = calcKPIs(filtered);
   const hasFilters = filterSource !== "All"|| filterRep !== "All"|| filterPriority !== "All"|| filterSync !== "All";
 
-  const allNotifications = OPPORTUNITIES.flatMap((o) => o.notifications);
+  const allNotifications = mergedOpportunities.flatMap((o) => o.notifications);
   const unreadCount = allNotifications.filter((n) => !n.read).length;
-  const overdueTasks = OPPORTUNITIES.flatMap((o) => o.tasks).filter((t) => t.status === "Overdue").length;
-  const overdueFollowUps = OPPORTUNITIES.flatMap((o) => o.followUps).filter((f) => f.status === "Overdue").length;
-  const handoffsInProgress = OPPORTUNITIES.filter((o) => o.handoff.status !== "Not Started").length;
+  const overdueTasks = mergedOpportunities.flatMap((o) => o.tasks).filter((t) => t.status === "Overdue").length;
+  const overdueFollowUps = mergedOpportunities.flatMap((o) => o.followUps).filter((f) => f.status === "Overdue").length;
+  const handoffsInProgress = mergedOpportunities.filter((o) => o.handoff.status !== "Not Started").length;
 
   return (
     <div className="space-y-7">
-      {drawerOpp && <OpportunityDrawer opp={drawerOpp} onClose={() => setDrawerOpp(null)} />}
+      <PipelineToastContainer toasts={pipelineToasts} dismiss={(id) => setPipelineToasts(prev => prev.filter(t => t.id !== id))} />
+      {drawerOpp && <OpportunityDrawer opp={drawerOpp} onClose={() => setDrawerOpp(null)} commLog={commLogs[drawerOpp.id] ?? { opportunityId: drawerOpp.id, entries: [] }} onAddCommLogEntry={handleAddCommLogEntry} />}
+      {detailOpp && (
+        <OpportunityDetailDrawer
+          opp={detailOpp}
+          followUps={detailOpp.followUps}
+          onClose={() => setDetailOpp(null)}
+          onStartProposal={handleStartProposal}
+          onChangeStage={handleChangeStage}
+          onCreateFollowUp={(oppId) => { setDetailOpp(null); setShowFollowUpModal({ oppId }); }}
+          addNote={handleAddNote}
+          commLog={commLogs[detailOpp.id] ?? { opportunityId: detailOpp.id, entries: [] }}
+          onAddCommLogEntry={handleAddCommLogEntry}
+        />
+      )}
+      {showFollowUpModal && (
+        <CreateFollowUpModal
+          opportunities={mergedOpportunities}
+          initialOpportunityId={showFollowUpModal.oppId}
+          onClose={() => setShowFollowUpModal(null)}
+          onSubmit={handleCreateFollowUpSubmit}
+        />
+      )}
+      {showAuditPicker && (
+        <SelectOpportunityModal
+          title="Create Audit"
+          description="Select an opportunity to run an audit for"
+          opportunities={mergedOpportunities}
+          onClose={() => setShowAuditPicker(false)}
+          onConfirm={(oppId) => { setShowAuditPicker(false); window.location.href = `/sales/proposals?new=true&opportunityId=${oppId}`; }}
+        />
+      )}
+      {showCreateOpportunityModal && (
+        <CreateOpportunityModal
+          onCreated={(opp) => {
+            setOpportunityRecords((prev) => [opp, ...prev]);
+            setShowCreateOpportunityModal(false);
+          }}
+          onClose={() => setShowCreateOpportunityModal(false)}
+        />
+      )}
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>Sales</p>
-        <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Pipeline</h1>
-        <p className="text-sm mt-1 max-w-2xl"style={{ color: "var(--rtm-text-muted)"}}>
+        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>Sales</p>
+        <h1 className="text-2xl font-medium tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Pipeline</h1>
+        <p className="text-sm mt-1 max-w-2xl" style={{ color: "var(--rtm-text-muted)" }}>
           Manage open opportunities through audit, proposal, negotiation, and billing handoff.
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        {[
-          { label: "New Opportunity", primary: true },
-          { label: "Export Pipeline", primary: false },
-          { label: "Create Audit", primary: false },
-          { label: "Create Proposal", primary: false },
-          { label: "Create Follow Up", primary: false },
-        ].map(({ label, primary }) => (
-          <button key={label}
-            className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"style={
-              primary ? { background: workspace.accentColor, color: "#fff", borderColor: workspace.accentColor }
-              : { background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)"}
-            }>
-            {label}
+        <button
+          onClick={() => setShowCreateOpportunityModal(true)}
+          className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"
+          style={{ background: workspace.accentColor, color: "#fff", borderColor: workspace.accentColor }}>
+          New Opportunity
+        </button>
+        <button
+          onClick={() => { addPipelineToast("Exporting pipeline data...", "info"); setTimeout(() => addPipelineToast("Pipeline exported successfully", "success"), 1200); }}
+          className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"
+          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>
+          Export Pipeline
+        </button>
+        <button
+          onClick={() => setShowAuditPicker(true)}
+          className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"
+          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>
+          Create Audit
+        </button>
+        <button
+          onClick={() => { window.location.href = "/sales/proposals?new=true"; }}
+          className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"
+          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>
+          Create Proposal
+        </button>
+        <button
+          onClick={() => setShowFollowUpModal({})}
+          className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"
+          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>
+          Create Follow Up
+        </button>
+      </div>
+
+      {/* ── Top-level view tabs: Kanban | Follow Ups | Stalled Deals ── */}
+      <div className="flex gap-0 border-b" style={{ borderColor: "var(--rtm-border)" }}>
+        {([
+          { key: "kanban",    label: "Kanban" },
+          { key: "followups", label: "Follow Ups" },
+          { key: "stalled",   label: "Stalled Deals" },
+        ] as const).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setMainTab(tab.key)}
+            className="px-5 py-3 text-sm font-semibold border-b-2 transition-colors"
+            style={{
+              borderBottomColor: mainTab === tab.key ? workspace.accentColor : "transparent",
+              color: mainTab === tab.key ? workspace.accentColor : "var(--rtm-text-muted)",
+              background: "transparent",
+            }}>
+            {tab.label}
           </button>
         ))}
       </div>
 
+      {/* ── Follow Ups tab ── */}
+      {mainTab === "followups" && (
+        <div className="space-y-6">
+          {/* Compact KPI row */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Due Today",          value: followUpQueue.filter(f => f.dueDate.toLowerCase() === "today").length, bg: "#FFFBEB", text: "#B45309", border: "#FDE68A" },
+              { label: "Overdue",            value: followUpQueue.filter(f => f.status === "Overdue").length,   bg: "#FEF2F2", text: "#DC2626", border: "#FECACA" },
+              { label: "Uncontacted Leads",  value: followUpQueue.filter(f => f.stage === "Lead").length,       bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
+              { label: "Proposal Follow-Ups",value: followUpQueue.filter(f => f.stage === "Proposal Sent" || f.stage === "Proposal Draft").length, bg: "#FDF4FF", text: "#7E22CE", border: "#E9D5FF" },
+            ].map(card => (
+              <div key={card.label} className="rounded-xl border p-4 text-center" style={{ background: card.bg, borderColor: card.border }}>
+                <p className="text-2xl font-bold" style={{ color: card.text }}>{card.value}</p>
+                <p className="text-[10px] font-semibold mt-0.5 leading-tight" style={{ color: card.text }}>{card.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Follow Ups table */}
+          <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+            <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <div>
+                <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Follow-Up Queue</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{followUpQueue.length} follow-ups from pipeline opportunities</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "900px" }}>
+                <thead>
+                  <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
+                    {["Contact / Client", "Related Record", "Type", "Rep", "Priority", "Due Date", "Last Contact", "Stage", "Status", "Actions"].map(h => (
+                      <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {followUpQueue.map((fu, i) => {
+                    const statusColor = fu.status === "Overdue" ? "#DC2626" : fu.status === "Upcoming" ? "#D97706" : fu.status === "Completed" ? "#059669" : "#6B7280";
+                    const statusBg   = fu.status === "Overdue" ? "#FEF2F2" : fu.status === "Upcoming" ? "#FFFBEB" : fu.status === "Completed" ? "#F0FDF4" : "#F3F4F6";
+                    const priorityColor = fu.priority === "Urgent" ? "#BE185D" : fu.priority === "High" ? "#DC2626" : fu.priority === "Medium" ? "#D97706" : "#64748B";
+                    const priorityBg    = fu.priority === "Urgent" ? "#FDF2F8" : fu.priority === "High" ? "#FEF2F2" : fu.priority === "Medium" ? "#FFFBEB" : "#F8FAFC";
+                    return (
+                      <tr key={fu.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "transparent" : "var(--rtm-surface)" }}>
+                        <td className="px-4 py-3 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fu.contact}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{fu.relatedRecord}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--rtm-text-muted)" }}>{fu.followUpType}</td>
+                        <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{fu.assignedRep}</td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ background: priorityBg, color: priorityColor, borderColor: priorityColor + "40" }}>{fu.priority}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{fu.dueDate}</td>
+                        <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{fu.lastContact}</td>
+                        <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{fu.stage}</td>
+                        <td className="px-4 py-3">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ background: statusBg, color: statusColor, borderColor: statusColor + "40" }}>{fu.status}</span>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <button className="text-[10px] font-semibold px-2 py-1 rounded border" style={{ background: "var(--rtm-bg)", color: workspace.accentColor, borderColor: workspace.accentColor + "50" }}>Follow Up</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {followUpQueue.length === 0 && (
+                <div className="py-12 text-center">
+                  <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>No follow-ups found in pipeline.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Stalled Deals tab ── */}
+      {mainTab === "stalled" && (
+        <div className="space-y-6">
+          <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+            <div className="px-5 py-4 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Stalled Deals</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Deals with no activity in 7 or more days</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "700px" }}>
+                <thead>
+                  <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
+                    {["Client", "Stage", "Last Activity", "Days Stalled", "Assigned Rep", "Actions"].map(h => (
+                      <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {STALLED_DEALS.map((deal, i) => (
+                    <tr key={deal.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "transparent" : "var(--rtm-surface)" }}>
+                      <td className="px-4 py-3 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{deal.client}</td>
+                      <td className="px-4 py-3">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ background: "#FFF7ED", color: "#C2410C" }}>{deal.stage}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{deal.lastActivity}</td>
+                      <td className="px-4 py-3">
+                        <span className="font-bold text-sm" style={{ color: deal.daysStalled > 14 ? "#DC2626" : "#D97706" }}>{deal.daysStalled}d</span>
+                      </td>
+                      <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{deal.assignedRep}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1.5">
+                          <button className="text-[10px] font-semibold px-2 py-1 rounded border" style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>Follow Up Now</button>
+                          <button className="text-[10px] font-semibold px-2 py-1 rounded border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>Reassign</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Kanban (original pipeline content) ── */}
+      {mainTab === "kanban" && (<>
+
+      {/* Tab toggle: Opportunities | Pipeline */}
+      <div className="flex gap-0 border-b" style={{ borderColor: "var(--rtm-border)" }}>
+        {(["opportunities", "pipeline"] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setPipelineTab(tab)}
+            className="px-5 py-3 text-sm font-semibold border-b-2 transition-colors"
+            style={{
+              borderBottomColor: pipelineTab === tab ? workspace.accentColor : "transparent",
+              color: pipelineTab === tab ? workspace.accentColor : "var(--rtm-text-muted)",
+              background: "transparent",
+            }}>
+            {tab === "opportunities" ? "Opportunities" : "Pipeline"}
+          </button>
+        ))}
+      </div>
+
+      {/* Opportunities Section */}
+      {pipelineTab === "opportunities" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Opportunities</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                {opportunityRecords.length} opportunities · converted from leads or created manually
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCreateOpportunityModal(true)}
+              className="text-xs px-3 py-1.5 rounded-lg font-bold"
+              style={{ background: "#2563EB", color: "#fff" }}>
+              New Opportunity
+            </button>
+          </div>
+          {opportunityRecords.length === 0 ? (
+            <div
+              className="rounded-xl border p-12 text-center"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No opportunities yet.</p>
+              <button
+                onClick={() => setShowCreateOpportunityModal(true)}
+                className="mt-3 text-xs px-4 py-2 rounded-lg font-bold"
+                style={{ background: "#2563EB", color: "#fff" }}>
+                Create First Opportunity
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {opportunityRecords.map((opp) => (
+                <NewOpportunityCard
+                  key={opp.id}
+                  opportunity={opp}
+                  onStageChange={(id, stage) => {
+                    setOpportunityRecords((prev) =>
+                      prev.map((o) => o.id === id ? updateOpportunityStage(o, stage) : o)
+                    );
+                  }}
+                  onStartProposal={(id) => {
+                    window.location.href = `/sales/proposals?new=true&opportunityId=${id}`;
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Pipeline Tab Content */}
+      {pipelineTab === "pipeline" && (<>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Overdue Tasks", value: overdueTasks, color: overdueTasks > 0 ? "#DC2626": "#059669", href: "/sales/tasks"},
-          { label: "Overdue Follow Ups", value: overdueFollowUps, color: overdueFollowUps > 0 ? "#DC2626": "#059669", href: "/sales/followups"},
+          { label: "Overdue Follow Ups", value: overdueFollowUps, color: overdueFollowUps > 0 ? "#DC2626": "#059669", href: "/sales/pipeline?tab=followups"},
           { label: "Active Handoffs", value: handoffsInProgress, color: "#0891B2", href: "/sales/handoffs"},
         ].map((item) => (
           <a key={item.label} href={item.href}
@@ -3072,7 +4149,7 @@ export default function SalesPipelinePage() {
                         <div className="flex items-center justify-center py-6 rounded-lg border border-dashed"style={{ borderColor: stageCfg.border }}>
                           <p className="text-[11px]"style={{ color: stageCfg.color, opacity: 0.5 }}>No opportunities</p>
                         </div>
-                      ) : cards.map((opp) => <OpportunityCard key={opp.id} opp={opp} stageCfg={stageCfg} onView={setDrawerOpp} />)}
+                      ) : cards.map((opp) => <OpportunityCard key={opp.id} opp={opp as Opportunity & { activeWizardId?: string }} stageCfg={stageCfg} onView={setDrawerOpp} onOpenDetail={setDetailOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} />)}
                     </div>
                   </div>
                 );
@@ -3089,7 +4166,7 @@ export default function SalesPipelinePage() {
               {filtered.length} {filtered.length === 1 ? "opportunity": "opportunities"}
             </span>
           </div>
-          <PipelineTable opportunities={filtered} onView={setDrawerOpp} />
+          <PipelineTable opportunities={filtered} onView={setDrawerOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} />
         </div>
       )}
       {viewMode === "analytics"&& <PipelineAnalytics opportunities={filtered} />}
@@ -3108,7 +4185,23 @@ export default function SalesPipelinePage() {
           })}
         </div>
       </div>
+      </>)}
+
+      {/* Close the kanban main tab wrapper */}
+      </>)}
 
     </div>
+  );
+}
+
+export default function SalesPipelinePage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 text-center">
+        <p style={{ color: "var(--rtm-text-muted)" }}>Loading pipeline...</p>
+      </div>
+    }>
+      <SalesPipelinePageInner />
+    </Suspense>
   );
 }

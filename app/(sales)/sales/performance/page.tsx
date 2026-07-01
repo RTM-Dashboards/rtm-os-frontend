@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import Link from "next/link";
+import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
+import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
 
 const workspace = getWorkspace("sales")!;
 
@@ -315,6 +317,8 @@ function WinRateBadge({ rate }: { rate: number }) {
 
 export default function SalesPerformancePage() {
   const [dateRange, setDateRange] = useState<DateRange>("month");
+  const [showCustomize, setShowCustomize] = useState(false);
+  const { widgetOrder, isVisible } = useWidgetPreferences("performance");
 
   // Computed KPI aggregates from mock data
   const totalClosedWon = SALES_REPS.reduce((s, r) => s + r.closedWon, 0);
@@ -340,7 +344,19 @@ export default function SalesPerformancePage() {
       </div>
 
       {/*  Top Action Bar  */}
-      <ActionBar />
+      <div className="flex flex-wrap items-center gap-2">
+        <ActionBar />
+        <button
+          onClick={() => setShowCustomize(true)}
+          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+        >
+          Customize View
+        </button>
+      </div>
+      {showCustomize && (
+        <CustomizeViewModal pageId="performance" onClose={() => setShowCustomize(false)} />
+      )}
 
       {/*  Date Range Toggle  */}
       <div className="flex items-center gap-2">
@@ -361,41 +377,87 @@ export default function SalesPerformancePage() {
       </div>
 
       {/*  KPI Cards  */}
-      <div>
-        <SectionHeader title="Key Performance Indicators"/>
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <KpiCard
-            title="GHL Contacts Synced"value={GHL_SYNC_HEALTH.contactsSynced.toString()}
-            trend="up"trendValue="14%"iconBg="#EFF6FF"iconColor="#2563EB"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>}
-          />
-          <KpiCard
-            title="Open Opportunities"value="38"trend="up"trendValue="6"iconBg="#F5F3FF"iconColor="#7C3AED"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>}
-          />
-          <KpiCard
-            title="Pipeline Value"value={fmt$(totalPipelineValue)}
-            trend="up"trendValue="9%"iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>}
-          />
-          <KpiCard
-            title="Weighted Forecast"value={fmt$(totalWeighted)}
-            trend="up"trendValue="7%"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
-          />
-          <KpiCard
-            title="Closed Won Revenue"value={fmt$(closedWonRevenue)}
-            trend="up"trendValue="18%"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-          />
-          <KpiCard
-            title="Closed Lost Revenue"value={fmt$(totalClosedLost * 2100)}
-            trend="down"trendValue="3%"iconBg="#FEF2F2"iconColor="#DC2626"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-          />
-          <KpiCard
-            title="Win Rate"value={`${overallWinRate}%`}
-            trend="up"trendValue="4%"iconBg="#F0FDF4"iconColor="#16A34A"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>}
-          />
-          <KpiCard
-            title="Avg Sales Cycle"value="42 days"trend="down"trendValue="3 days"iconBg="#F5F3FF"iconColor="#7C3AED"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-          />
-        </div>
-      </div>
+      {(() => {
+        // Map widget id -> KpiCard element (no calculation logic changes)
+        const kpiCards: Record<string, React.ReactElement> = {
+          "perf-ghl-contacts": (
+            <KpiCard
+              key="perf-ghl-contacts"
+              title="GHL Contacts Synced" value={GHL_SYNC_HEALTH.contactsSynced.toString()}
+              trend="up" trendValue="14%" iconBg="#EFF6FF" iconColor="#2563EB"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>}
+            />
+          ),
+          "perf-open-opportunities": (
+            <KpiCard
+              key="perf-open-opportunities"
+              title="Open Opportunities" value="38" trend="up" trendValue="6"
+              iconBg="#F5F3FF" iconColor="#7C3AED"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>}
+            />
+          ),
+          "perf-pipeline-value": (
+            <KpiCard
+              key="perf-pipeline-value"
+              title="Pipeline Value" value={fmt$(totalPipelineValue)}
+              trend="up" trendValue="9%" iconBg="#FFFBEB" iconColor="#D97706"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>}
+            />
+          ),
+          "perf-weighted-forecast": (
+            <KpiCard
+              key="perf-weighted-forecast"
+              title="Weighted Forecast" value={fmt$(totalWeighted)}
+              trend="up" trendValue="7%" iconBg="#ECFDF5" iconColor="#059669"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
+            />
+          ),
+          "perf-closed-won-revenue": (
+            <KpiCard
+              key="perf-closed-won-revenue"
+              title="Closed Won Revenue" value={fmt$(closedWonRevenue)}
+              trend="up" trendValue="18%" iconBg="#ECFDF5" iconColor="#059669"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+            />
+          ),
+          "perf-closed-lost-revenue": (
+            <KpiCard
+              key="perf-closed-lost-revenue"
+              title="Closed Lost Revenue" value={fmt$(totalClosedLost * 2100)}
+              trend="down" trendValue="3%" iconBg="#FEF2F2" iconColor="#DC2626"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+            />
+          ),
+          "perf-win-rate": (
+            <KpiCard
+              key="perf-win-rate"
+              title="Win Rate" value={`${overallWinRate}%`}
+              trend="up" trendValue="4%" iconBg="#F0FDF4" iconColor="#16A34A"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>}
+            />
+          ),
+          "perf-avg-sales-cycle": (
+            <KpiCard
+              key="perf-avg-sales-cycle"
+              title="Avg Sales Cycle" value="42 days" trend="down" trendValue="3 days"
+              iconBg="#F5F3FF" iconColor="#7C3AED"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+            />
+          ),
+        };
+        const visibleCards = widgetOrder
+          .filter((id) => isVisible(id) && kpiCards[id])
+          .map((id) => kpiCards[id]);
+        if (visibleCards.length === 0) return null;
+        return (
+          <div>
+            <SectionHeader title="Key Performance Indicators" />
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+              {visibleCards}
+            </div>
+          </div>
+        );
+      })()}
 
       {/*  Revenue Forecasting  */}
       <div>

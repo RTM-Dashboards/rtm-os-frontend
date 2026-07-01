@@ -65,7 +65,7 @@ export default function SalesDashboard() {
           </p>
         </div>
         <div className="flex gap-2 flex-shrink-0 flex-wrap">
-          <Link href="/sales/intake?source=new-lead"
+          <Link href="/sales/leads?action=add-lead"
             className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
             style={{ background: "#059669", color: "#fff", borderColor: "#059669" }}>
             Add Lead

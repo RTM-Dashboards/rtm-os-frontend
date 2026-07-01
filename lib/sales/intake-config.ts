@@ -699,6 +699,757 @@ export const MOCK_INTAKE_RECORDS: IntakeRecord[] = [
   },
 ];
 
+// ─── Home Services Trade Types ───────────────────────────────────────────────
+
+export const TRADE_TYPES: string[] = [
+  "Plumbing",
+  "HVAC",
+  "Electrical",
+  "Roofing",
+  "Landscaping / Lawn Care",
+  "Pest Control",
+  "Cleaning Services",
+  "Painting",
+  "Flooring",
+  "General Contracting",
+  "Remodeling / Renovation",
+  "Pool and Spa",
+  "Garage Door",
+  "Gutters",
+  "Windows and Doors",
+  "Foundation / Waterproofing",
+  "Tree Service",
+  "Junk Removal",
+  "Moving Services",
+  "Other Home Services",
+];
+
+export const BUSINESS_STRUCTURES: string[] = [
+  "Owner-Operator (solo)",
+  "Small Team (2-10 employees)",
+  "Mid-Size (11-50 employees)",
+  "Large Contractor (50+ employees)",
+  "Franchise Location",
+];
+
+export const LISTING_PLATFORMS: string[] = [
+  "Google Business Profile",
+  "Yelp",
+  "Apple Maps",
+  "Bing Places",
+  "Angi / HomeAdvisor",
+  "Thumbtack",
+  "NextDoor",
+  "BBB (Better Business Bureau)",
+  "Facebook Business Page",
+  "Instagram Business",
+];
+
+export const WEBSITE_PLATFORMS: string[] = [
+  "WordPress",
+  "Wix",
+  "Squarespace",
+  "GoDaddy",
+  "Webflow",
+  "Shopify",
+  "Custom Built",
+  "Unknown",
+];
+
+// ─── IntakeFieldDefinition ─────────────────────────────────────────────────
+
+export interface IntakeFieldDefinition {
+  id: string;
+  sectionId: string;
+  label: string;
+  description: string;
+  fieldType:
+    | "text"
+    | "url"
+    | "number"
+    | "date"
+    | "select"
+    | "multiselect"
+    | "textarea"
+    | "address"
+    | "repeating"
+    | "platform-block";
+  required: boolean;
+  placeholder: string;
+  helpText: string;
+  auditUse: string[];
+  onboardingInherited: boolean;
+  clientVisible: boolean;
+  editableBy: "sales" | "am" | "both" | "client";
+  order: number;
+  conditionalOn?: {
+    fieldId: string;
+    operator: "has-value" | "equals" | "not-equals";
+    value?: string;
+  };
+}
+
+// ─── Platform Field Definition ────────────────────────────────────────────
+
+export interface PlatformFieldDefinition {
+  id: string;
+  label: string;
+  fieldType: "url" | "text" | "number" | "select" | "textarea";
+  required: boolean;
+  placeholder: string;
+  helpText: string;
+  auditUse: string[];
+  options?: string[];
+}
+
+export interface ListingPlatformDefinition {
+  id: string;
+  label: string;
+  fields: PlatformFieldDefinition[];
+}
+
+// ─── Listing Platform Definitions ──────────────────────────────────────────
+
+export const LISTING_PLATFORM_DEFINITIONS: ListingPlatformDefinition[] = [
+  {
+    id: "gbp",
+    label: "Google Business Profile",
+    fields: [
+      {
+        id: "gbp-url",
+        label: "Google Business Profile URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://maps.google.com/...",
+        helpText: "Paste the link to your GBP listing",
+        auditUse: ["citation-audit", "gbp-audit"],
+      },
+      {
+        id: "gbp-name",
+        label: "Business Name on GBP",
+        fieldType: "text",
+        required: false,
+        placeholder: "Exact name as shown on Google",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "gbp-address",
+        label: "Address on GBP",
+        fieldType: "text",
+        required: false,
+        placeholder: "Full address as shown on Google",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "gbp-phone",
+        label: "Phone on GBP",
+        fieldType: "text",
+        required: false,
+        placeholder: "Phone number as shown on Google",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "gbp-rating",
+        label: "Current Star Rating",
+        fieldType: "number",
+        required: false,
+        placeholder: "e.g. 4.2",
+        helpText: "",
+        auditUse: ["reputation-audit"],
+      },
+      {
+        id: "gbp-reviews",
+        label: "Number of Reviews",
+        fieldType: "number",
+        required: false,
+        placeholder: "e.g. 47",
+        helpText: "",
+        auditUse: ["reputation-audit"],
+      },
+      {
+        id: "gbp-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "yelp",
+    label: "Yelp",
+    fields: [
+      {
+        id: "yelp-url",
+        label: "Yelp Profile URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://www.yelp.com/biz/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "yelp-name",
+        label: "Business Name on Yelp",
+        fieldType: "text",
+        required: false,
+        placeholder: "Exact name as shown on Yelp",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "yelp-address",
+        label: "Address on Yelp",
+        fieldType: "text",
+        required: false,
+        placeholder: "Full address as shown on Yelp",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "yelp-phone",
+        label: "Phone on Yelp",
+        fieldType: "text",
+        required: false,
+        placeholder: "Phone number as shown on Yelp",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "yelp-rating",
+        label: "Star Rating",
+        fieldType: "number",
+        required: false,
+        placeholder: "e.g. 4.0",
+        helpText: "",
+        auditUse: ["reputation-audit"],
+      },
+      {
+        id: "yelp-reviews",
+        label: "Number of Reviews",
+        fieldType: "number",
+        required: false,
+        placeholder: "e.g. 23",
+        helpText: "",
+        auditUse: ["reputation-audit"],
+      },
+      {
+        id: "yelp-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "apple-maps",
+    label: "Apple Maps",
+    fields: [
+      {
+        id: "apple-url",
+        label: "Apple Maps URL or Search Link",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://maps.apple.com/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "apple-name",
+        label: "Business Name on Apple Maps",
+        fieldType: "text",
+        required: false,
+        placeholder: "Exact name as shown on Apple Maps",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "apple-address",
+        label: "Address on Apple Maps",
+        fieldType: "text",
+        required: false,
+        placeholder: "Full address as shown on Apple Maps",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "apple-phone",
+        label: "Phone on Apple Maps",
+        fieldType: "text",
+        required: false,
+        placeholder: "Phone number as shown on Apple Maps",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "apple-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "bing-places",
+    label: "Bing Places",
+    fields: [
+      {
+        id: "bing-url",
+        label: "Bing Places URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://www.bingplaces.com/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "bing-name",
+        label: "Business Name on Bing",
+        fieldType: "text",
+        required: false,
+        placeholder: "Exact name as shown on Bing",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "bing-address",
+        label: "Address on Bing",
+        fieldType: "text",
+        required: false,
+        placeholder: "Full address as shown on Bing",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "bing-phone",
+        label: "Phone on Bing",
+        fieldType: "text",
+        required: false,
+        placeholder: "Phone number as shown on Bing",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "bing-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "angi",
+    label: "Angi / HomeAdvisor",
+    fields: [
+      {
+        id: "angi-url",
+        label: "Angi Profile URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://www.angi.com/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "angi-name",
+        label: "Business Name on Angi",
+        fieldType: "text",
+        required: false,
+        placeholder: "Exact name as shown on Angi",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "angi-services",
+        label: "Services Listed on Angi",
+        fieldType: "text",
+        required: false,
+        placeholder: "e.g. Plumbing, Drain Cleaning",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "angi-spend",
+        label: "Monthly Lead Gen Spend",
+        fieldType: "number",
+        required: false,
+        placeholder: "e.g. 250",
+        helpText: "",
+        auditUse: ["budget-audit"],
+      },
+      {
+        id: "angi-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "thumbtack",
+    label: "Thumbtack",
+    fields: [
+      {
+        id: "thumbtack-url",
+        label: "Thumbtack Profile URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://www.thumbtack.com/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "thumbtack-name",
+        label: "Business Name on Thumbtack",
+        fieldType: "text",
+        required: false,
+        placeholder: "Exact name as shown on Thumbtack",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "thumbtack-services",
+        label: "Services Listed",
+        fieldType: "text",
+        required: false,
+        placeholder: "e.g. Plumbing, Drain Cleaning",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "thumbtack-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "facebook",
+    label: "Facebook",
+    fields: [
+      {
+        id: "facebook-url",
+        label: "Facebook Page URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://www.facebook.com/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "facebook-name",
+        label: "Page Name",
+        fieldType: "text",
+        required: false,
+        placeholder: "Exact page name",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "facebook-followers",
+        label: "Follower Count",
+        fieldType: "number",
+        required: false,
+        placeholder: "e.g. 1200",
+        helpText: "Optional",
+        auditUse: ["reputation-audit"],
+      },
+      {
+        id: "facebook-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "instagram",
+    label: "Instagram",
+    fields: [
+      {
+        id: "instagram-url",
+        label: "Instagram Profile URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://www.instagram.com/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "instagram-handle",
+        label: "Handle (@username)",
+        fieldType: "text",
+        required: false,
+        placeholder: "@yourbusiness",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "instagram-followers",
+        label: "Follower Count",
+        fieldType: "number",
+        required: false,
+        placeholder: "e.g. 850",
+        helpText: "Optional",
+        auditUse: ["reputation-audit"],
+      },
+      {
+        id: "instagram-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "bbb",
+    label: "Better Business Bureau (BBB)",
+    fields: [
+      {
+        id: "bbb-url",
+        label: "BBB Profile URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://www.bbb.org/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "bbb-name",
+        label: "Business Name on BBB",
+        fieldType: "text",
+        required: false,
+        placeholder: "Exact name as shown on BBB",
+        helpText: "",
+        auditUse: ["citation-audit", "nap-consistency"],
+      },
+      {
+        id: "bbb-rating",
+        label: "BBB Rating",
+        fieldType: "select",
+        required: false,
+        placeholder: "Select rating",
+        helpText: "",
+        auditUse: ["reputation-audit"],
+        options: ["A+", "A", "B", "C", "Not Rated"],
+      },
+      {
+        id: "bbb-reviews",
+        label: "Number of BBB Reviews",
+        fieldType: "number",
+        required: false,
+        placeholder: "e.g. 12",
+        helpText: "",
+        auditUse: ["reputation-audit"],
+      },
+      {
+        id: "bbb-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+  {
+    id: "nextdoor",
+    label: "NextDoor",
+    fields: [
+      {
+        id: "nextdoor-url",
+        label: "NextDoor Business URL",
+        fieldType: "url",
+        required: false,
+        placeholder: "https://nextdoor.com/...",
+        helpText: "",
+        auditUse: ["citation-audit"],
+      },
+      {
+        id: "nextdoor-notes",
+        label: "Notes",
+        fieldType: "textarea",
+        required: false,
+        placeholder: "Any issues or observations",
+        helpText: "",
+        auditUse: [],
+      },
+    ],
+  },
+];
+
+// ─── Website / Hosting Option Lists ────────────────────────────────────────
+
+export const WEBSITE_STATUS_OPTIONS: string[] = ["Yes", "No", "In Progress"];
+
+export const WEBSITE_LAST_UPDATED_OPTIONS: string[] = [
+  "Within 6 months",
+  "6 to 12 months",
+  "1 to 2 years",
+  "2 or more years",
+  "Not sure",
+];
+
+export const WEBSITE_BUILDER_OPTIONS: string[] = [
+  "We will build it",
+  "Another agency is building it",
+  "Building it ourselves",
+];
+
+export const HOSTING_SITUATION_OPTIONS: string[] = [
+  "Currently managed by RTM",
+  "Self-managed",
+  "Managed by another agency",
+  "No hosting yet",
+  "Will be part of website package",
+];
+
+export const ACCESS_STATUS_OPTIONS: string[] = ["Yes", "No", "Not Sure"];
+
+export const REDESIGN_INTEREST_OPTIONS: string[] = [
+  "Yes \u2014 ready for a new design",
+  "Maybe \u2014 open to discussing",
+  "No \u2014 happy with current site",
+];
+
+export const NEW_BUILD_INTEREST_OPTIONS: string[] = [
+  "Yes \u2014 want a new website",
+  "Maybe \u2014 still deciding",
+  "No \u2014 not right now",
+];
+
+export const MANAGED_HOSTING_INTEREST_OPTIONS: string[] = [
+  "Yes \u2014 interested",
+  "Maybe \u2014 tell me more",
+  "No \u2014 will self-manage",
+];
+
+export const HOME_SERVICE_GOALS: string[] = [
+  "More inbound calls",
+  "More online booking requests",
+  "More Google reviews",
+  "Rank higher on Google Maps",
+  "Beat specific local competitors",
+  "Expand service area",
+  "Launch or rebuild website",
+  "Stop relying on Angi / HomeAdvisor",
+  "Reduce cost per lead",
+  "Increase average job value",
+  "Grow into new trade services",
+  "Build brand in local market",
+  "Other",
+];
+
+export const BUDGET_RANGES: string[] = [
+  "Under $1,000",
+  "$1,000 - $1,500",
+  "$1,500 - $2,000",
+  "$2,000 - $3,000",
+  "$3,000 - $5,000",
+  "$5,000+",
+  "Not sure yet",
+];
+
+export const TIMELINE_OPTIONS: string[] = [
+  "Ready now",
+  "Within 30 days",
+  "1 to 3 months",
+  "Just exploring options",
+];
+
+export const SEASONAL_OPTIONS: string[] = [
+  "Business is year-round",
+  "Peak season: Spring / Summer",
+  "Peak season: Fall / Winter",
+  "Weather-dependent (storm, freeze, heat wave)",
+];
+
+export const CUSTOMER_TYPES: string[] = [
+  "Residential only",
+  "Commercial only",
+  "Both residential and commercial",
+  "New construction",
+  "Emergency / 24-hour service",
+];
+
+export const JOB_VALUE_RANGES: string[] = [
+  "Under $500",
+  "$500 - $2,000",
+  "$2,000 - $5,000",
+  "$5,000+",
+];
+
+export const CONTACT_ROLES: string[] = [
+  "Owner",
+  "Office Manager",
+  "Marketing Manager",
+  "Operations Manager",
+  "Other",
+];
+
+export const PREFERRED_CONTACT_METHODS: string[] = [
+  "Phone Call",
+  "Text Message",
+  "Email",
+  "Slack",
+];
+
+export const PRIMARY_LEAD_SOURCES: string[] = [
+  "Google Organic",
+  "Google Ads",
+  "Local Service Ads",
+  "Facebook / Meta Ads",
+  "Referral from customer",
+  "Word of mouth",
+  "Angi / HomeAdvisor",
+  "Door to door",
+  "Other",
+];
+
+export const BBB_RATINGS: string[] = ["A+", "A", "B", "C", "Not Rated"];
+
+export const OPPORTUNITY_STAGES: string[] = [
+  "New Opportunity",
+  "Discovery Scheduled",
+  "Discovery Complete",
+  "Audit Requested",
+  "Audit Complete",
+  "Proposal Sent",
+  "Negotiation",
+  "Won",
+  "Lost",
+];
+
+export const OPPORTUNITY_PRIORITIES: string[] = ["High", "Medium", "Low"];
+
 // ─── Helper: derive status metadata ───────────────────────────────────────────
 
 export function getIntakeStatusMeta(status: IntakeStatus): {

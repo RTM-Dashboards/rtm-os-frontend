@@ -1,12 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
-  DISCOUNT_TIERS,
   BUDGET_VIEW_LABELS,
+  DISCOUNT_TYPE_OPTIONS,
+  DISCOUNT_SUGGESTIONS,
+  MAX_DISCOUNT_PERCENTAGE,
+  MAX_FLAT_DISCOUNT_MONTHLY,
+  MAX_FLAT_DISCOUNT_SETUP,
   type BudgetView,
 } from "@/lib/sales/budget-config";
-import type { BudgetResult } from "@/lib/sales/budget-engine";
+import { computeDiscountedSummary, type BudgetResult } from "@/lib/sales/budget-engine";
+import type { ProposalDiscount, DiscountType } from "@/lib/sales/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -19,13 +24,329 @@ function formatUSD(value: number): string {
   }).format(value);
 }
 
+function isPercentageType(type: DiscountType): boolean {
+  return type === "percentage-monthly" || type === "percentage-setup";
+}
+
+function isFlatType(type: DiscountType): boolean {
+  return type === "flat-monthly" || type === "flat-setup" || type === "custom";
+}
+
+function maxForType(type: DiscountType): number {
+  if (type === "flat-monthly") return MAX_FLAT_DISCOUNT_MONTHLY;
+  if (type === "flat-setup") return MAX_FLAT_DISCOUNT_SETUP;
+  if (type === "custom") return MAX_FLAT_DISCOUNT_MONTHLY;
+  return MAX_DISCOUNT_PERCENTAGE;
+}
+
+function discountTypeLabel(type: DiscountType): string {
+  return DISCOUNT_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
+}
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface BudgetSummaryPanelProps {
   budgetResult: BudgetResult;
   activeView: BudgetView;
-  discountPercentage: number;
-  onDiscountChange: (percentage: number) => void;
+  discount: ProposalDiscount;
+  onDiscountChange: (discount: ProposalDiscount) => void;
+}
+
+// ─── Discount Section ─────────────────────────────────────────────────────────
+
+interface DiscountSectionProps {
+  discount: ProposalDiscount;
+  onChange: (discount: ProposalDiscount) => void;
+  totalMonthlyRecurring: number;
+  totalSetupFees: number;
+}
+
+function DiscountSection({
+  discount,
+  onChange,
+  totalMonthlyRecurring,
+  totalSetupFees,
+}: DiscountSectionProps) {
+  const hasDiscount = discount.type !== "none" && discount.value > 0;
+  const [open, setOpen] = useState<boolean>(hasDiscount);
+
+  function patch(partial: Partial<ProposalDiscount>) {
+    onChange({ ...discount, ...partial });
+  }
+
+  const isPercentage = isPercentageType(discount.type);
+  const isFlat = isFlatType(discount.type);
+  const valueMax = maxForType(discount.type);
+  const showValue = discount.type !== "none";
+
+  // Recomputed live summary for the preview row
+  const summary =
+    discount.type !== "none" && discount.value > 0
+      ? computeDiscountedSummary(totalMonthlyRecurring, totalSetupFees, discount)
+      : null;
+
+  return (
+    <div
+      className="rounded-lg border overflow-hidden"
+      style={{ borderColor: "var(--rtm-border)" }}
+    >
+      {/* Header / toggle */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-5 py-3 text-left transition-colors hover:opacity-80"
+        style={{
+          background: "var(--rtm-bg)",
+          borderBottom: open ? "1px solid var(--rtm-border)" : undefined,
+        }}
+      >
+        <span
+          className="text-xs font-bold uppercase tracking-wider"
+          style={{ color: "var(--rtm-text-muted)" }}
+        >
+          Discount
+          {hasDiscount && discount.label && (
+            <span
+              className="ml-2 normal-case font-semibold"
+              style={{ color: "#059669" }}
+            >
+              — {discount.label}
+            </span>
+          )}
+        </span>
+        <span
+          className="text-xs font-semibold"
+          style={{ color: "var(--rtm-text-muted)" }}
+        >
+          {open ? "Hide" : "Show"}
+        </span>
+      </button>
+
+      {open && (
+        <div className="p-5 space-y-4" style={{ background: "var(--rtm-surface)" }}>
+          {/* Discount Type */}
+          <div>
+            <label
+              className="block text-xs font-semibold mb-1.5"
+              style={{ color: "var(--rtm-text-secondary)" }}
+            >
+              Discount Type
+            </label>
+            <select
+              value={discount.type}
+              onChange={(e) =>
+                patch({ type: e.target.value as DiscountType, value: 0, label: "" })
+              }
+              className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+              style={{
+                background: "var(--rtm-bg)",
+                borderColor: "var(--rtm-border)",
+                color: "var(--rtm-text-primary)",
+              }}
+            >
+              {DISCOUNT_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            {discount.type !== "none" && (
+              <p
+                className="text-[11px] mt-1"
+                style={{ color: "var(--rtm-text-muted)" }}
+              >
+                {DISCOUNT_TYPE_OPTIONS.find((o) => o.value === discount.type)?.description}
+              </p>
+            )}
+          </div>
+
+          {showValue && (
+            <>
+              {/* Discount Value */}
+              <div>
+                <label
+                  className="block text-xs font-semibold mb-1.5"
+                  style={{ color: "var(--rtm-text-secondary)" }}
+                >
+                  Discount Value
+                </label>
+                <div className="flex items-center gap-0">
+                  {isFlat && (
+                    <span
+                      className="px-3 py-2 rounded-l-lg border border-r-0 text-sm font-semibold"
+                      style={{
+                        background: "var(--rtm-bg)",
+                        borderColor: "var(--rtm-border)",
+                        color: "var(--rtm-text-muted)",
+                      }}
+                    >
+                      $
+                    </span>
+                  )}
+                  <input
+                    type="number"
+                    min={0}
+                    max={valueMax}
+                    step={isPercentage ? 1 : 10}
+                    value={discount.value === 0 ? "" : discount.value}
+                    placeholder={isPercentage ? "e.g. 10" : "e.g. 200"}
+                    onChange={(e) => {
+                      const raw = parseFloat(e.target.value);
+                      patch({ value: isNaN(raw) ? 0 : Math.max(0, raw) });
+                    }}
+                    className="flex-1 px-3 py-2 border text-sm outline-none"
+                    style={{
+                      background: "var(--rtm-bg)",
+                      borderColor: "var(--rtm-border)",
+                      color: "var(--rtm-text-primary)",
+                      borderRadius: isFlat
+                        ? isPercentage
+                          ? "0.5rem"
+                          : "0 0.5rem 0.5rem 0"
+                        : isPercentage
+                        ? "0.5rem 0 0 0.5rem"
+                        : "0.5rem",
+                    }}
+                  />
+                  {isPercentage && (
+                    <span
+                      className="px-3 py-2 rounded-r-lg border border-l-0 text-sm font-semibold"
+                      style={{
+                        background: "var(--rtm-bg)",
+                        borderColor: "var(--rtm-border)",
+                        color: "var(--rtm-text-muted)",
+                      }}
+                    >
+                      %
+                    </span>
+                  )}
+                </div>
+                <p
+                  className="text-[11px] mt-1"
+                  style={{ color: "var(--rtm-text-muted)" }}
+                >
+                  {isPercentage
+                    ? `Max ${MAX_DISCOUNT_PERCENTAGE}%`
+                    : discount.type === "flat-setup"
+                    ? `Max ${formatUSD(MAX_FLAT_DISCOUNT_SETUP)}`
+                    : `Max ${formatUSD(MAX_FLAT_DISCOUNT_MONTHLY)}`}
+                </p>
+              </div>
+
+              {/* Discount Label */}
+              <div>
+                <label
+                  className="block text-xs font-semibold mb-1.5"
+                  style={{ color: "var(--rtm-text-secondary)" }}
+                >
+                  Discount Label{" "}
+                  <span style={{ color: "var(--rtm-text-muted)", fontWeight: 400 }}>
+                    — shown on proposal
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={discount.label}
+                  placeholder="e.g. New Client Discount"
+                  onChange={(e) => patch({ label: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+                  style={{
+                    background: "var(--rtm-bg)",
+                    borderColor: "var(--rtm-border)",
+                    color: "var(--rtm-text-primary)",
+                  }}
+                />
+                {/* Suggestion chips */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {DISCOUNT_SUGGESTIONS.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => patch({ label: suggestion })}
+                      className="px-2 py-0.5 rounded-md border text-[11px] font-medium transition-all hover:opacity-80"
+                      style={{
+                        background:
+                          discount.label === suggestion
+                            ? "#DCFCE7"
+                            : "var(--rtm-bg)",
+                        borderColor:
+                          discount.label === suggestion
+                            ? "#86EFAC"
+                            : "var(--rtm-border)",
+                        color:
+                          discount.label === suggestion
+                            ? "#15803D"
+                            : "var(--rtm-text-muted)",
+                      }}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Authorization Note */}
+              <div>
+                <label
+                  className="block text-xs font-semibold mb-1.5"
+                  style={{ color: "var(--rtm-text-secondary)" }}
+                >
+                  Authorization Note{" "}
+                  <span
+                    className="font-normal text-[10px]"
+                    style={{ color: "var(--rtm-text-muted)" }}
+                  >
+                    Internal only — not shown on proposal
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  value={discount.authorizationNote}
+                  placeholder="e.g. Approved by Jordan M."
+                  onChange={(e) => patch({ authorizationNote: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+                  style={{
+                    background: "var(--rtm-bg)",
+                    borderColor: "var(--rtm-border)",
+                    color: "var(--rtm-text-primary)",
+                  }}
+                />
+              </div>
+            </>
+          )}
+
+          {/* Live discount preview line */}
+          {summary && (summary.discountAmountMonthly > 0 || summary.discountAmountSetup > 0) && (
+            <div
+              className="rounded-lg border px-4 py-3 space-y-1"
+              style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
+            >
+              {summary.discountAmountMonthly > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold" style={{ color: "#15803D" }}>
+                    Monthly savings ({discount.label || discountTypeLabel(discount.type)})
+                  </span>
+                  <span className="text-sm font-bold" style={{ color: "#15803D" }}>
+                    -{formatUSD(summary.discountAmountMonthly)}/mo
+                  </span>
+                </div>
+              )}
+              {summary.discountAmountSetup > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold" style={{ color: "#15803D" }}>
+                    Setup savings ({discount.label || discountTypeLabel(discount.type)})
+                  </span>
+                  <span className="text-sm font-bold" style={{ color: "#15803D" }}>
+                    -{formatUSD(summary.discountAmountSetup)}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -33,7 +354,7 @@ interface BudgetSummaryPanelProps {
 export function BudgetSummaryPanel({
   budgetResult,
   activeView,
-  discountPercentage,
+  discount,
   onDiscountChange,
 }: BudgetSummaryPanelProps) {
   const {
@@ -41,12 +362,23 @@ export function BudgetSummaryPanel({
     totalMonthlyRecurring,
     totalSetupFees,
     totalOneTimeProjects,
-    grandTotalFirstMonth,
-    grandTotalMonthly,
-    discountAmount,
-    discountedFirstMonth,
-    discountedMonthly,
   } = budgetResult;
+
+  // Compute discounted summary live
+  const discounted = computeDiscountedSummary(
+    totalMonthlyRecurring,
+    totalSetupFees,
+    discount
+  );
+
+  const hasDiscount =
+    discount.type !== "none" &&
+    discount.value > 0 &&
+    (discounted.discountAmountMonthly > 0 || discounted.discountAmountSetup > 0);
+
+  // Grand totals (discount applied to recurring + setup; one-time projects not discounted)
+  const grandTotalFirstMonth = discounted.discountedMonthly + discounted.discountedSetup + totalOneTimeProjects;
+  const grandTotalMonthly = discounted.discountedMonthly;
 
   // ─── By Service View ───────────────────────────────────────────────────────
 
@@ -147,7 +479,7 @@ export function BudgetSummaryPanel({
               ))}
             </div>
 
-            {/* Summary totals */}
+            {/* Budget Summary */}
             <div
               className="rounded-lg border"
               style={{
@@ -160,66 +492,133 @@ export function BudgetSummaryPanel({
                   Budget Summary
                 </h3>
               </div>
+
               <div className="divide-y" style={{ borderColor: "var(--rtm-border)" }}>
-                {[
-                  {
-                    label: "Total Monthly Recurring",
-                    value: formatUSD(totalMonthlyRecurring),
-                    bold: false,
-                  },
-                  {
-                    label: "Total Setup Fees",
-                    value: formatUSD(totalSetupFees),
-                    bold: false,
-                  },
-                  ...(totalOneTimeProjects > 0
-                    ? [
-                        {
-                          label: "Total One-Time Projects",
-                          value: formatUSD(totalOneTimeProjects),
-                          bold: false,
-                        },
-                      ]
-                    : []),
-                  {
-                    label: "Grand Total — First Month",
-                    value: formatUSD(grandTotalFirstMonth),
-                    bold: true,
-                  },
-                  {
-                    label: "Grand Total — Monthly (Month 2+)",
-                    value: formatUSD(grandTotalMonthly),
-                    bold: false,
-                  },
-                ].map((row) => (
-                  <div
-                    key={row.label}
-                    className="flex justify-between items-center px-5 py-3"
-                  >
-                    <span
-                      className="text-sm"
-                      style={{
-                        color: row.bold
-                          ? "var(--rtm-text-primary)"
-                          : "var(--rtm-text-secondary)",
-                        fontWeight: row.bold ? 700 : 500,
-                      }}
-                    >
-                      {row.label}
+                {/* Base totals */}
+                <div className="flex justify-between items-center px-5 py-3">
+                  <span className="text-sm" style={{ color: "var(--rtm-text-secondary)", fontWeight: 500 }}>
+                    Total Monthly Recurring
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {formatUSD(totalMonthlyRecurring)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center px-5 py-3">
+                  <span className="text-sm" style={{ color: "var(--rtm-text-secondary)", fontWeight: 500 }}>
+                    Total Setup Fees
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {formatUSD(totalSetupFees)}
+                  </span>
+                </div>
+
+                {totalOneTimeProjects > 0 && (
+                  <div className="flex justify-between items-center px-5 py-3">
+                    <span className="text-sm" style={{ color: "var(--rtm-text-secondary)", fontWeight: 500 }}>
+                      Total One-Time Projects
                     </span>
-                    <span
-                      className="text-sm"
-                      style={{
-                        color: "var(--rtm-text-primary)",
-                        fontWeight: row.bold ? 800 : 600,
-                      }}
-                    >
-                      {row.value}
+                    <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                      {formatUSD(totalOneTimeProjects)}
                     </span>
                   </div>
-                ))}
+                )}
+
+                {/* Discount row */}
+                {hasDiscount && discounted.discountAmountMonthly > 0 && (
+                  <div className="flex justify-between items-center px-5 py-3">
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: "#059669" }}
+                    >
+                      Discount
+                      {discount.label && (
+                        <span className="font-normal"> — {discount.label}</span>
+                      )}
+                      <span className="ml-1 text-xs font-normal" style={{ color: "#16A34A" }}>
+                        ({discountTypeLabel(discount.type)})
+                      </span>
+                    </span>
+                    <span className="text-sm font-bold" style={{ color: "#059669" }}>
+                      -{formatUSD(discounted.discountAmountMonthly)}/mo
+                    </span>
+                  </div>
+                )}
+
+                {hasDiscount && discounted.discountAmountSetup > 0 && (
+                  <div className="flex justify-between items-center px-5 py-3">
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: "#059669" }}
+                    >
+                      Setup Discount
+                      {discount.label && (
+                        <span className="font-normal"> — {discount.label}</span>
+                      )}
+                      <span className="ml-1 text-xs font-normal" style={{ color: "#16A34A" }}>
+                        ({discountTypeLabel(discount.type)})
+                      </span>
+                    </span>
+                    <span className="text-sm font-bold" style={{ color: "#059669" }}>
+                      -{formatUSD(discounted.discountAmountSetup)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Divider before final totals */}
+                {hasDiscount && (
+                  <>
+                    {discounted.discountAmountMonthly > 0 && (
+                      <div className="flex justify-between items-center px-5 py-3">
+                        <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                          Discounted Monthly
+                        </span>
+                        <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                          {formatUSD(discounted.discountedMonthly)}
+                        </span>
+                      </div>
+                    )}
+                    {discounted.discountAmountSetup > 0 && (
+                      <div className="flex justify-between items-center px-5 py-3">
+                        <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                          Discounted Setup
+                        </span>
+                        <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                          {formatUSD(discounted.discountedSetup)}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Grand totals */}
+                <div className="flex justify-between items-center px-5 py-3">
+                  <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                    Grand Total — First Month
+                  </span>
+                  <span className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {formatUSD(grandTotalFirstMonth)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center px-5 py-3">
+                  <span className="text-sm" style={{ color: "var(--rtm-text-secondary)", fontWeight: 500 }}>
+                    Grand Total — Monthly (Month 2+)
+                  </span>
+                  <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {formatUSD(grandTotalMonthly)}
+                  </span>
+                </div>
               </div>
             </div>
+
+            {/* Discount section */}
+            <DiscountSection
+              discount={discount}
+              onChange={onDiscountChange}
+              totalMonthlyRecurring={totalMonthlyRecurring}
+              totalSetupFees={totalSetupFees}
+            />
           </>
         )}
       </div>
@@ -255,32 +654,6 @@ export function BudgetSummaryPanel({
             </p>
           </div>
           <div className="p-5 space-y-4">
-            {/* Discount selector */}
-            <div>
-              <label
-                className="block text-xs font-semibold mb-1.5"
-                style={{ color: "var(--rtm-text-secondary)" }}
-              >
-                Discount
-              </label>
-              <select
-                value={discountPercentage}
-                onChange={(e) => onDiscountChange(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg border text-sm outline-none"
-                style={{
-                  background: "var(--rtm-bg)",
-                  borderColor: "var(--rtm-border)",
-                  color: "var(--rtm-text-primary)",
-                }}
-              >
-                {DISCOUNT_TIERS.map((tier) => (
-                  <option key={tier.percentage} value={tier.percentage}>
-                    {tier.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             {/* Recurring breakdown */}
             <div className="space-y-2">
               <div className="flex justify-between items-center">
@@ -292,13 +665,13 @@ export function BudgetSummaryPanel({
                 </span>
               </div>
 
-              {discountAmount > 0 && (
+              {hasDiscount && discounted.discountAmountMonthly > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm" style={{ color: "var(--color-success, #059669)" }}>
-                    Discount ({discountPercentage}%)
+                  <span className="text-sm" style={{ color: "#059669" }}>
+                    {discount.label || discountTypeLabel(discount.type)}
                   </span>
-                  <span className="text-sm font-semibold" style={{ color: "var(--color-success, #059669)" }}>
-                    -{formatUSD(discountAmount)}
+                  <span className="text-sm font-semibold" style={{ color: "#059669" }}>
+                    -{formatUSD(discounted.discountAmountMonthly)}
                   </span>
                 </div>
               )}
@@ -311,7 +684,7 @@ export function BudgetSummaryPanel({
                   Discounted Monthly
                 </span>
                 <span className="text-lg font-black" style={{ color: "var(--rtm-text-primary)" }}>
-                  {formatUSD(discountedMonthly)}
+                  {formatUSD(discounted.discountedMonthly)}
                 </span>
               </div>
             </div>
@@ -336,9 +709,6 @@ export function BudgetSummaryPanel({
             <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>
               Setup and One-Time Fees
             </p>
-            <p className="text-[10px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-              Not subject to discount
-            </p>
           </div>
           <div className="p-5 space-y-2">
             {totalSetupFees > 0 && (
@@ -351,6 +721,32 @@ export function BudgetSummaryPanel({
                 </span>
               </div>
             )}
+
+            {hasDiscount && discounted.discountAmountSetup > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm" style={{ color: "#059669" }}>
+                  {discount.label || discountTypeLabel(discount.type)}
+                </span>
+                <span className="text-sm font-semibold" style={{ color: "#059669" }}>
+                  -{formatUSD(discounted.discountAmountSetup)}
+                </span>
+              </div>
+            )}
+
+            {hasDiscount && discounted.discountAmountSetup > 0 && (
+              <div
+                className="flex justify-between items-center pt-2 border-t"
+                style={{ borderColor: "var(--rtm-border)" }}
+              >
+                <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                  Discounted Setup
+                </span>
+                <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                  {formatUSD(discounted.discountedSetup)}
+                </span>
+              </div>
+            )}
+
             {totalOneTimeProjects > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
@@ -361,6 +757,7 @@ export function BudgetSummaryPanel({
                 </span>
               </div>
             )}
+
             {totalSetupFees === 0 && totalOneTimeProjects === 0 && (
               <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
                 No setup or one-time fees.
@@ -394,27 +791,35 @@ export function BudgetSummaryPanel({
             className="text-3xl font-black"
             style={{ color: "var(--rtm-text-primary)" }}
           >
-            {formatUSD(discountedFirstMonth)}
+            {formatUSD(grandTotalFirstMonth)}
           </p>
         </div>
 
-        {discountAmount > 0 && (
+        {hasDiscount && (discounted.discountAmountMonthly > 0 || discounted.discountAmountSetup > 0) && (
           <div
             className="mt-3 pt-3 border-t flex items-center justify-between"
             style={{ borderColor: "var(--rtm-border)" }}
           >
             <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-              Without discount
+              Before discount
             </span>
             <span
               className="text-sm font-semibold line-through"
               style={{ color: "var(--rtm-text-muted)" }}
             >
-              {formatUSD(grandTotalFirstMonth)}
+              {formatUSD(totalMonthlyRecurring + totalSetupFees + totalOneTimeProjects)}
             </span>
           </div>
         )}
       </div>
+
+      {/* Discount section */}
+      <DiscountSection
+        discount={discount}
+        onChange={onDiscountChange}
+        totalMonthlyRecurring={totalMonthlyRecurring}
+        totalSetupFees={totalSetupFees}
+      />
     </div>
   );
 }

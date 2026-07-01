@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import { salesTasks } from "@/lib/mock/workspace-tasks";
 import type { WorkspaceTask, WorkspaceTaskStatus, WorkspaceTaskPriority } from "@/components/workspace/WorkspaceTaskPage";
+import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
+import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
 
 // ─── Role mock (no toggle buttons in production) ─────────────────────────────
 // In production this comes from auth context.
@@ -44,7 +46,51 @@ const EMPTY_FORM = {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SalesTasksPage() {
-  const [tasks, setTasks] = useState<WorkspaceTask[]>(salesTasks);
+  const AUDIT_REVIEW_TASKS: WorkspaceTask[] = [
+    {
+      id: "ar-1",
+      title: "Review SEO audit findings — Coastal Wellness Spa",
+      client: "Coastal Wellness Spa",
+      project: "Hybrid Audit HYB-2025-3391",
+      department: "SEO",
+      service: "SEO",
+      source: "Manual Task" as WorkspaceTask["source"],
+      assignee: "Alex K.",
+      priority: "High" as WorkspaceTask["priority"],
+      status: "In Progress" as WorkspaceTask["status"],
+      dueDate: new Date(Date.now() + 4 * 3600 * 1000).toLocaleDateString(),
+      blocker: null,
+    },
+    {
+      id: "ar-2",
+      title: "Complete GBP manual audit scorecard — Harbor Auto Group",
+      client: "Harbor Auto Group",
+      project: "Manual Audit AUD-2025-1842",
+      department: "GBP",
+      service: "Google Business Profile",
+      source: "Manual Task" as WorkspaceTask["source"],
+      assignee: "Marcus T.",
+      priority: "High" as WorkspaceTask["priority"],
+      status: "Pending" as WorkspaceTask["status"],
+      dueDate: new Date(Date.now() + 18 * 3600 * 1000).toLocaleDateString(),
+      blocker: null,
+    },
+    {
+      id: "ar-3",
+      title: "Review Paid Advertising AI findings — Metro Dental Group",
+      client: "Metro Dental Group",
+      project: "Hybrid Audit HYB-2025-4102",
+      department: "Paid Advertising",
+      service: "PPC / Google Ads",
+      source: "Manual Task" as WorkspaceTask["source"],
+      assignee: "Casey R.",
+      priority: "Critical" as WorkspaceTask["priority"],
+      status: "Blocked" as WorkspaceTask["status"],
+      dueDate: new Date(Date.now() - 6 * 3600 * 1000).toLocaleDateString(),
+      blocker: "Overdue — SLA deadline passed",
+    },
+  ];
+  const [tasks, setTasks] = useState<WorkspaceTask[]>([...salesTasks, ...AUDIT_REVIEW_TASKS]);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<WorkspaceTaskStatus | "All">("All");
   const [filterPriority, setFilterPriority] = useState<WorkspaceTaskPriority | "All">("All");
@@ -62,6 +108,10 @@ export default function SalesTasksPage() {
 
   // Three-dot action menu state
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+
+  // Widget preferences
+  const [showCustomize, setShowCustomize] = useState(false);
+  const { widgetOrder, isVisible } = useWidgetPreferences("tasks");
 
   // Unique clients / assignees for dropdowns
   const clients   = Array.from(new Set(tasks.map(t => t.client))).sort();
@@ -146,6 +196,12 @@ export default function SalesTasksPage() {
             style={{ background: "#059669", color: "#fff", borderColor: "#059669" }}>
             New Task
           </button>
+          <button
+            onClick={() => setShowCustomize(true)}
+            className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+            style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
+            Customize View
+          </button>
           {CAN_SEE_GLOBAL && (
             <a href="/tasks"
               className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
@@ -157,22 +213,35 @@ export default function SalesTasksPage() {
       </div>
 
       {/* KPI Bar */}
-      <div className="grid grid-cols-5 gap-3">
-        {[
-          { label: "Total Tasks",  value: kpis.total      },
-          { label: "In Progress",  value: kpis.inProgress, meta: STATUS_META["In Progress"] },
-          { label: "In Review",    value: kpis.inReview,   meta: STATUS_META["In Review"]   },
-          { label: "Blocked",      value: kpis.blocked,    meta: STATUS_META["Blocked"]     },
-          { label: "Done",         value: kpis.done,       meta: STATUS_META["Done"]        },
-        ].map(({ label, value, meta }) => (
-          <div key={label}
-            className="rounded-xl border p-4 text-center"
-            style={{ background: meta?.bg ?? "var(--rtm-surface)", borderColor: meta?.border ?? "var(--rtm-border)" }}>
-            <p className="text-2xl font-bold" style={{ color: meta?.color ?? "var(--rtm-text-primary)" }}>{value}</p>
-            <p className="text-xs font-semibold mt-1" style={{ color: meta?.color ?? "var(--rtm-text-muted)" }}>{label}</p>
+      {showCustomize && (
+        <CustomizeViewModal pageId="tasks" onClose={() => setShowCustomize(false)} />
+      )}
+      {(() => {
+        // Map widget id -> KPI card definition (values unchanged)
+        const kpiDefs: Record<string, { label: string; value: number; meta?: { bg: string; color: string; border: string } }> = {
+          "tasks-total":       { label: "Total Tasks",  value: kpis.total },
+          "tasks-in-progress": { label: "In Progress",  value: kpis.inProgress, meta: STATUS_META["In Progress"] },
+          "tasks-in-review":   { label: "In Review",    value: kpis.inReview,   meta: STATUS_META["In Review"] },
+          "tasks-blocked":     { label: "Blocked",      value: kpis.blocked,    meta: STATUS_META["Blocked"] },
+          "tasks-done":        { label: "Done",         value: kpis.done,       meta: STATUS_META["Done"] },
+        };
+        const visibleDefs = widgetOrder
+          .filter((id) => isVisible(id) && kpiDefs[id])
+          .map((id) => ({ id, ...kpiDefs[id] }));
+        if (visibleDefs.length === 0) return null;
+        return (
+          <div className={`grid gap-3`} style={{ gridTemplateColumns: `repeat(${visibleDefs.length}, minmax(0, 1fr))` }}>
+            {visibleDefs.map(({ id, label, value, meta }) => (
+              <div key={id}
+                className="rounded-xl border p-4 text-center"
+                style={{ background: meta?.bg ?? "var(--rtm-surface)", borderColor: meta?.border ?? "var(--rtm-border)" }}>
+                <p className="text-2xl font-bold" style={{ color: meta?.color ?? "var(--rtm-text-primary)" }}>{value}</p>
+                <p className="text-xs font-semibold mt-1" style={{ color: meta?.color ?? "var(--rtm-text-muted)" }}>{label}</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* Filters Row */}
       <div className="flex flex-wrap gap-2">

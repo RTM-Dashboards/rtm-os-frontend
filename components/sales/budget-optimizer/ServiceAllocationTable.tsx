@@ -1,12 +1,17 @@
 "use client";
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   getBudgetServiceById,
   type BudgetServiceId,
   type BudgetServiceDefinition,
 } from "@/lib/sales/budget-config";
-import type { BudgetLineItem } from "@/lib/sales/budget-engine";
+import { getServiceLineItems } from "@/lib/sales/recommendation-config";
+import {
+  computeLineItemSubtotal,
+  type BudgetLineItem,
+} from "@/lib/sales/budget-engine";
+import type { ServiceLineItem } from "@/lib/sales/types";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -19,10 +24,16 @@ function formatUSD(value: number): string {
   }).format(value);
 }
 
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+/** Per-service map of lineItemId → selected quantity. */
+export type LineItemQuantities = Record<string, Record<string, number>>;
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface ServiceAllocationTableProps {
   lineItems: BudgetLineItem[];
+  lineItemQuantities: LineItemQuantities;
   onUpdate: (
     serviceId: BudgetServiceId,
     changes: Partial<
@@ -31,52 +42,470 @@ interface ServiceAllocationTableProps {
   ) => void;
   onRemove: (serviceId: BudgetServiceId) => void;
   onAdd: (serviceId: BudgetServiceId) => void;
+  onLineItemQuantityChange: (
+    serviceId: BudgetServiceId,
+    lineItemId: string,
+    quantity: number
+  ) => void;
   availableServices: BudgetServiceDefinition[];
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Chevron icon ─────────────────────────────────────────────────────────────
+
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill="none"
+      style={{
+        transform: open ? "rotate(90deg)" : "rotate(0deg)",
+        transition: "transform 150ms ease",
+        flexShrink: 0,
+      }}
+    >
+      <path
+        d="M5 3l4 4-4 4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ─── Line Item Sub-Row ────────────────────────────────────────────────────────
+
+interface LineItemRowProps {
+  lineItem: ServiceLineItem;
+  quantity: number;
+  onChange: (lineItemId: string, quantity: number) => void;
+}
+
+function LineItemRow({ lineItem, quantity, onChange }: LineItemRowProps) {
+  const subtotal = computeLineItemSubtotal(lineItem, quantity);
+  const isLocked = lineItem.isIncludedFlat;
+
+  return (
+    <tr
+      style={{
+        background: "var(--rtm-bg)",
+        borderBottom: "1px solid var(--rtm-border)",
+      }}
+    >
+      {/* Indent + name */}
+      <td className="pl-10 pr-4 py-2.5" colSpan={1}>
+        <div>
+          <p
+            className="text-xs font-medium"
+            style={{ color: "var(--rtm-text-primary)" }}
+          >
+            {lineItem.name}
+          </p>
+          {lineItem.description && (
+            <p
+              className="text-[10px] mt-0.5"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              {lineItem.description}
+            </p>
+          )}
+        </div>
+      </td>
+
+      {/* Unit label */}
+      <td className="px-4 py-2.5">
+        <span
+          className="text-[10px] font-semibold px-2 py-0.5 rounded"
+          style={{
+            background: "var(--rtm-surface)",
+            color: "var(--rtm-text-muted)",
+            border: "1px solid var(--rtm-border)",
+          }}
+        >
+          {isLocked ? "included" : lineItem.unitLabel}
+        </span>
+      </td>
+
+      {/* Quantity input */}
+      <td className="px-4 py-2.5">
+        {isLocked ? (
+          <input
+            type="number"
+            value={1}
+            disabled
+            className="px-2 py-1 rounded border text-xs outline-none w-16 opacity-50 cursor-not-allowed"
+            style={{
+              background: "var(--rtm-bg)",
+              borderColor: "var(--rtm-border)",
+              color: "var(--rtm-text-muted)",
+            }}
+          />
+        ) : (
+          <input
+            type="number"
+            value={quantity}
+            min={lineItem.minQuantity}
+            max={lineItem.maxQuantity}
+            step={1}
+            onChange={(e) => {
+              const raw = parseInt(e.target.value, 10);
+              if (isNaN(raw)) return;
+              const clamped = Math.max(
+                lineItem.minQuantity,
+                Math.min(lineItem.maxQuantity, raw)
+              );
+              onChange(lineItem.id, clamped);
+            }}
+            className="px-2 py-1 rounded border text-xs outline-none w-16"
+            style={{
+              background: "var(--rtm-bg)",
+              borderColor: "var(--rtm-accent)",
+              color: "var(--rtm-text-primary)",
+            }}
+          />
+        )}
+      </td>
+
+      {/* Unit price */}
+      <td className="px-4 py-2.5">
+        <span
+          className="text-xs"
+          style={{ color: "var(--rtm-text-secondary)" }}
+        >
+          {isLocked ? "flat" : formatUSD(lineItem.unitPrice)}
+        </span>
+      </td>
+
+      {/* Line item subtotal */}
+      <td className="px-4 py-2.5">
+        <span
+          className="text-xs font-semibold"
+          style={{ color: "var(--rtm-text-primary)" }}
+        >
+          {formatUSD(subtotal)}
+        </span>
+      </td>
+
+      {/* Empty actions col */}
+      <td className="px-4 py-2.5" />
+    </tr>
+  );
+}
+
+// ─── Service Row (collapsible) ────────────────────────────────────────────────
+
+interface ServiceRowProps {
+  item: BudgetLineItem;
+  lineItemQuantities: Record<string, number>;
+  onUpdate: (
+    serviceId: BudgetServiceId,
+    changes: Partial<Pick<BudgetLineItem, "quantity" | "unitMonthlyPrice" | "setupFee">>
+  ) => void;
+  onRemove: (serviceId: BudgetServiceId) => void;
+  onLineItemQuantityChange: (lineItemId: string, quantity: number) => void;
+}
+
+function ServiceRow({
+  item,
+  lineItemQuantities,
+  onUpdate,
+  onRemove,
+  onLineItemQuantityChange,
+}: ServiceRowProps) {
+  const [expanded, setExpanded] = useState(false);
+  const def = getBudgetServiceById(item.serviceId);
+  const catalogId = def?.catalogId ?? "";
+  const lineItemDefs: ServiceLineItem[] = getServiceLineItems(catalogId);
+
+  // Compute monthly subtotal from line items if available,
+  // otherwise fall back to the BudgetLineItem's existing monthlySubtotal.
+  const computedMonthlySubtotal =
+    lineItemDefs.length > 0
+      ? lineItemDefs.reduce((sum, li) => {
+          const qty = lineItemQuantities[li.id] ?? li.defaultQuantity;
+          const clamped = Math.max(li.minQuantity, Math.min(li.maxQuantity, qty));
+          return sum + computeLineItemSubtotal(li, clamped);
+        }, 0)
+      : item.monthlySubtotal;
+
+  const lineItemCount = lineItemDefs.length;
+  const hasLineItems = lineItemCount > 0;
+
+  function handleRemoveClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    onRemove(item.serviceId);
+  }
+
+  return (
+    <>
+      {/* ── Collapsed service row ─────────────────────────────────────────── */}
+      <tr
+        style={{
+          background: "var(--rtm-surface)",
+          borderBottom: expanded ? "none" : "1px solid var(--rtm-border)",
+          cursor: hasLineItems ? "pointer" : "default",
+        }}
+        onClick={() => hasLineItems && setExpanded((prev) => !prev)}
+      >
+        {/* Service name */}
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-2">
+            {hasLineItems && (
+              <span style={{ color: "var(--rtm-text-muted)" }}>
+                <ChevronIcon open={expanded} />
+              </span>
+            )}
+            <div>
+              <p
+                className="text-sm font-semibold"
+                style={{ color: "var(--rtm-text-primary)" }}
+              >
+                {item.label}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                {!item.isRecurring && (
+                  <span
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded inline-block"
+                    style={{
+                      background: "var(--rtm-bg)",
+                      color: "var(--rtm-text-muted)",
+                      border: "1px solid var(--rtm-border)",
+                    }}
+                  >
+                    One-Time
+                  </span>
+                )}
+                {hasLineItems && (
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded inline-block"
+                    style={{
+                      background: "var(--rtm-accent)",
+                      color: "#fff",
+                      opacity: 0.85,
+                    }}
+                  >
+                    {lineItemCount} line item{lineItemCount !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </td>
+
+        {/* Department */}
+        <td className="px-4 py-3">
+          <span
+            className="text-xs font-medium"
+            style={{ color: "var(--rtm-text-secondary)" }}
+          >
+            {item.department}
+          </span>
+        </td>
+
+        {/* Qty (kept for backward compat display) */}
+        <td className="px-4 py-3">
+          <span
+            className="text-xs"
+            style={{ color: "var(--rtm-text-muted)" }}
+          >
+            {item.quantity}
+          </span>
+        </td>
+
+        {/* Monthly Subtotal — computed from line items */}
+        <td className="px-4 py-3">
+          {item.isRecurring ? (
+            <div>
+              <span
+                className="text-sm font-bold"
+                style={{ color: "var(--rtm-text-primary)" }}
+              >
+                {formatUSD(computedMonthlySubtotal)}
+              </span>
+              <p
+                className="text-[10px] mt-0.5"
+                style={{ color: "var(--rtm-text-muted)" }}
+              >
+                computed
+              </p>
+            </div>
+          ) : (
+            <span
+              className="text-sm"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              {formatUSD(0)}
+            </span>
+          )}
+        </td>
+
+        {/* Setup Fee */}
+        <td className="px-4 py-3">
+          {def?.setupFeeEditable ? (
+            <input
+              type="number"
+              value={item.setupFee}
+              min={0}
+              step={50}
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => {
+                e.stopPropagation();
+                const fee = parseFloat(e.target.value);
+                if (!isNaN(fee) && fee >= 0) {
+                  onUpdate(item.serviceId, { setupFee: fee });
+                }
+              }}
+              className="px-2 py-1.5 rounded border text-sm outline-none w-28"
+              style={{
+                background: "var(--rtm-bg)",
+                borderColor: "var(--rtm-border)",
+                color: "var(--rtm-text-primary)",
+              }}
+            />
+          ) : (
+            <span
+              className="text-sm"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              {formatUSD(item.setupFee)}
+            </span>
+          )}
+        </td>
+
+        {/* Monthly Subtotal col (was "Monthly Subtotal" — now shows line-item computed total) */}
+        <td className="px-4 py-3">
+          <span
+            className="text-sm font-bold"
+            style={{ color: "var(--rtm-text-primary)" }}
+          >
+            {item.isRecurring
+              ? formatUSD(computedMonthlySubtotal)
+              : formatUSD(item.setupSubtotal)}
+          </span>
+          {item.monthlySubtotal === 0 && item.setupSubtotal > 0 && !item.isRecurring && (
+            <p
+              className="text-[10px]"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              {formatUSD(item.setupSubtotal)} one-time
+            </p>
+          )}
+        </td>
+
+        {/* Remove */}
+        <td className="px-4 py-3">
+          <button
+            onClick={handleRemoveClick}
+            className="px-3 py-1.5 rounded border text-xs font-semibold transition-all hover:opacity-80"
+            style={{
+              background: "var(--rtm-bg)",
+              color: "var(--rtm-text-muted)",
+              borderColor: "var(--rtm-border)",
+            }}
+            title="Remove service"
+          >
+            Remove
+          </button>
+        </td>
+      </tr>
+
+      {/* ── Expanded line items sub-table ─────────────────────────────────── */}
+      {expanded && hasLineItems && (
+        <>
+          {/* Sub-header row */}
+          <tr
+            style={{
+              background: "var(--rtm-bg)",
+              borderBottom: "1px solid var(--rtm-border)",
+            }}
+          >
+            <th
+              className="pl-10 pr-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-left"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Line Item
+            </th>
+            <th
+              className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-left"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Unit
+            </th>
+            <th
+              className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-left"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Qty
+            </th>
+            <th
+              className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-left"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Unit Price
+            </th>
+            <th
+              className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-left"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Subtotal
+            </th>
+            <th className="px-4 py-1.5" />
+          </tr>
+          {lineItemDefs.map((li) => {
+            const qty = lineItemQuantities[li.id] ?? li.defaultQuantity;
+            return (
+              <LineItemRow
+                key={li.id}
+                lineItem={li}
+                quantity={qty}
+                onChange={onLineItemQuantityChange}
+              />
+            );
+          })}
+          {/* Subtotal footer for expanded section */}
+          <tr
+            style={{
+              background: "var(--rtm-surface)",
+              borderBottom: "1px solid var(--rtm-border)",
+            }}
+          >
+            <td
+              className="pl-10 pr-4 py-2 text-xs font-bold text-right"
+              colSpan={4}
+              style={{ color: "var(--rtm-text-secondary)" }}
+            >
+              Monthly Subtotal for {item.label}
+            </td>
+            <td className="px-4 py-2">
+              <span
+                className="text-sm font-black"
+                style={{ color: "var(--rtm-accent)" }}
+              >
+                {formatUSD(computedMonthlySubtotal)}
+              </span>
+            </td>
+            <td className="px-4 py-2" />
+          </tr>
+        </>
+      )}
+    </>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ServiceAllocationTable({
   lineItems,
+  lineItemQuantities,
   onUpdate,
   onRemove,
   onAdd,
+  onLineItemQuantityChange,
   availableServices,
 }: ServiceAllocationTableProps) {
-  // ─── Handlers ────────────────────────────────────────────────────────────
-
-  function handleQuantityChange(
-    serviceId: BudgetServiceId,
-    value: string
-  ) {
-    const qty = parseInt(value, 10);
-    if (!isNaN(qty) && qty > 0) {
-      onUpdate(serviceId, { quantity: qty });
-    }
-  }
-
-  function handleMonthlyPriceChange(
-    serviceId: BudgetServiceId,
-    value: string,
-    min: number,
-    max: number
-  ) {
-    let price = parseFloat(value);
-    if (isNaN(price)) return;
-    price = Math.max(min, Math.min(max > 0 ? max : price, price));
-    onUpdate(serviceId, { unitMonthlyPrice: price });
-  }
-
-  function handleSetupFeeChange(
-    serviceId: BudgetServiceId,
-    value: string
-  ) {
-    const fee = parseFloat(value);
-    if (!isNaN(fee) && fee >= 0) {
-      onUpdate(serviceId, { setupFee: fee });
-    }
-  }
-
   function handleAddServiceSelect(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value as BudgetServiceId;
     if (id) {
@@ -85,7 +514,7 @@ export function ServiceAllocationTable({
     }
   }
 
-  // ─── Empty State ─────────────────────────────────────────────────────────
+  // ─── Empty State ───────────────────────────────────────────────────────────
 
   if (lineItems.length === 0) {
     return (
@@ -96,21 +525,36 @@ export function ServiceAllocationTable({
           borderColor: "var(--rtm-border)",
         }}
       >
-        <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: "var(--rtm-border)" }}>
+        <div
+          className="p-5 border-b flex items-center justify-between"
+          style={{ borderColor: "var(--rtm-border)" }}
+        >
           <div>
-            <h2 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+            <h2
+              className="text-sm font-bold"
+              style={{ color: "var(--rtm-text-primary)" }}
+            >
               Service Allocation
             </h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+            <p
+              className="text-xs mt-0.5"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
               Add services to build the budget
             </p>
           </div>
         </div>
         <div className="p-10 text-center">
-          <p className="text-sm font-semibold mb-1" style={{ color: "var(--rtm-text-secondary)" }}>
+          <p
+            className="text-sm font-semibold mb-1"
+            style={{ color: "var(--rtm-text-secondary)" }}
+          >
             No services added yet
           </p>
-          <p className="text-xs mb-4" style={{ color: "var(--rtm-text-muted)" }}>
+          <p
+            className="text-xs mb-4"
+            style={{ color: "var(--rtm-text-muted)" }}
+          >
             Select a service from the catalog to begin building the budget.
           </p>
           {availableServices.length > 0 && (
@@ -139,7 +583,7 @@ export function ServiceAllocationTable({
     );
   }
 
-  // ─── Table ────────────────────────────────────────────────────────────────
+  // ─── Table ─────────────────────────────────────────────────────────────────
 
   return (
     <div
@@ -150,14 +594,23 @@ export function ServiceAllocationTable({
       }}
     >
       {/* Header */}
-      <div className="px-5 py-4 border-b flex items-center justify-between gap-4"
-        style={{ borderColor: "var(--rtm-border)" }}>
+      <div
+        className="px-5 py-4 border-b flex items-center justify-between gap-4"
+        style={{ borderColor: "var(--rtm-border)" }}
+      >
         <div>
-          <h2 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+          <h2
+            className="text-sm font-bold"
+            style={{ color: "var(--rtm-text-primary)" }}
+          >
             Service Allocation
           </h2>
-          <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-            {lineItems.length} service{lineItems.length !== 1 ? "s" : ""} · Adjust quantity and pricing per line
+          <p
+            className="text-xs mt-0.5"
+            style={{ color: "var(--rtm-text-muted)" }}
+          >
+            {lineItems.length} service{lineItems.length !== 1 ? "s" : ""} ·
+            Click a row to expand line items and adjust quantities
           </p>
         </div>
       </div>
@@ -193,179 +646,19 @@ export function ServiceAllocationTable({
             </tr>
           </thead>
           <tbody>
-            {lineItems.map((item, idx) => {
-              const def = getBudgetServiceById(item.serviceId);
-
+            {lineItems.map((item) => {
+              const perServiceQtys = lineItemQuantities[item.serviceId] ?? {};
               return (
-                <tr
+                <ServiceRow
                   key={item.serviceId}
-                  style={{
-                    background:
-                      idx % 2 === 0
-                        ? "var(--rtm-surface)"
-                        : "var(--rtm-bg)",
-                    borderBottom: "1px solid var(--rtm-border)",
-                  }}
-                >
-                  {/* Service */}
-                  <td className="px-4 py-3">
-                    <div>
-                      <p
-                        className="text-sm font-semibold"
-                        style={{ color: "var(--rtm-text-primary)" }}
-                      >
-                        {item.label}
-                      </p>
-                      {!item.isRecurring && (
-                        <span
-                          className="text-[10px] font-bold px-1.5 py-0.5 rounded mt-0.5 inline-block"
-                          style={{
-                            background: "var(--rtm-bg)",
-                            color: "var(--rtm-text-muted)",
-                            border: "1px solid var(--rtm-border)",
-                          }}
-                        >
-                          One-Time
-                        </span>
-                      )}
-                    </div>
-                  </td>
-
-                  {/* Department */}
-                  <td className="px-4 py-3">
-                    <span
-                      className="text-xs font-medium"
-                      style={{ color: "var(--rtm-text-secondary)" }}
-                    >
-                      {item.department}
-                    </span>
-                  </td>
-
-                  {/* Quantity */}
-                  <td className="px-4 py-3">
-                    {def ? (
-                      <select
-                        value={item.quantity}
-                        onChange={(e) =>
-                          handleQuantityChange(item.serviceId, e.target.value)
-                        }
-                        className="px-2 py-1.5 rounded border text-sm outline-none w-20"
-                        style={{
-                          background: "var(--rtm-bg)",
-                          borderColor: "var(--rtm-border)",
-                          color: "var(--rtm-text-primary)",
-                        }}
-                      >
-                        {def.quantityOptions.map((qty) => (
-                          <option key={qty} value={qty}>
-                            {qty} {def.quantityUnit}
-                            {qty !== 1 ? "s" : ""}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span style={{ color: "var(--rtm-text-secondary)" }}>
-                        {item.quantity}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Monthly Price */}
-                  <td className="px-4 py-3">
-                    {item.isRecurring && def ? (
-                      <input
-                        type="number"
-                        value={item.unitMonthlyPrice}
-                        min={def.minMonthlyPrice}
-                        max={def.maxMonthlyPrice > 0 ? def.maxMonthlyPrice : undefined}
-                        step={50}
-                        onChange={(e) =>
-                          handleMonthlyPriceChange(
-                            item.serviceId,
-                            e.target.value,
-                            def.minMonthlyPrice,
-                            def.maxMonthlyPrice
-                          )
-                        }
-                        className="px-2 py-1.5 rounded border text-sm outline-none w-28"
-                        style={{
-                          background: "var(--rtm-bg)",
-                          borderColor: "var(--rtm-border)",
-                          color: "var(--rtm-text-primary)",
-                        }}
-                      />
-                    ) : (
-                      <span
-                        className="text-sm"
-                        style={{ color: "var(--rtm-text-muted)" }}
-                      >
-                        {formatUSD(0)}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Setup Fee */}
-                  <td className="px-4 py-3">
-                    {def?.setupFeeEditable ? (
-                      <input
-                        type="number"
-                        value={item.setupFee}
-                        min={0}
-                        step={50}
-                        onChange={(e) =>
-                          handleSetupFeeChange(item.serviceId, e.target.value)
-                        }
-                        className="px-2 py-1.5 rounded border text-sm outline-none w-28"
-                        style={{
-                          background: "var(--rtm-bg)",
-                          borderColor: "var(--rtm-border)",
-                          color: "var(--rtm-text-primary)",
-                        }}
-                      />
-                    ) : (
-                      <span
-                        className="text-sm"
-                        style={{ color: "var(--rtm-text-muted)" }}
-                      >
-                        {formatUSD(item.setupFee)}
-                      </span>
-                    )}
-                  </td>
-
-                  {/* Monthly Subtotal */}
-                  <td className="px-4 py-3">
-                    <span
-                      className="text-sm font-bold"
-                      style={{ color: "var(--rtm-text-primary)" }}
-                    >
-                      {formatUSD(item.monthlySubtotal)}
-                    </span>
-                    {item.monthlySubtotal === 0 && item.setupSubtotal > 0 && (
-                      <p
-                        className="text-[10px]"
-                        style={{ color: "var(--rtm-text-muted)" }}
-                      >
-                        {formatUSD(item.setupSubtotal)} setup
-                      </p>
-                    )}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => onRemove(item.serviceId)}
-                      className="px-3 py-1.5 rounded border text-xs font-semibold transition-all hover:opacity-80"
-                      style={{
-                        background: "var(--rtm-bg)",
-                        color: "var(--rtm-text-muted)",
-                        borderColor: "var(--rtm-border)",
-                      }}
-                      title="Remove service"
-                    >
-                      Remove
-                    </button>
-                  </td>
-                </tr>
+                  item={item}
+                  lineItemQuantities={perServiceQtys}
+                  onUpdate={onUpdate}
+                  onRemove={onRemove}
+                  onLineItemQuantityChange={(lineItemId, qty) =>
+                    onLineItemQuantityChange(item.serviceId, lineItemId, qty)
+                  }
+                />
               );
             })}
           </tbody>
@@ -410,10 +703,7 @@ export function ServiceAllocationTable({
           className="px-5 py-3 border-t"
           style={{ borderColor: "var(--rtm-border)" }}
         >
-          <p
-            className="text-xs"
-            style={{ color: "var(--rtm-text-muted)" }}
-          >
+          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
             All available services have been added.
           </p>
         </div>

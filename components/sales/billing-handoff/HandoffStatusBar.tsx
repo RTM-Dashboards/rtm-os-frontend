@@ -166,7 +166,7 @@ export default function HandoffStatusBar({ record, onSubmit }: HandoffStatusBarP
               opacity: record.readyToSubmit ? 1 : 0.7,
             }}
           >
-            Submit to Billing Team
+            Request Invoice — Submit to Billing Team
           </button>
 
           <Link

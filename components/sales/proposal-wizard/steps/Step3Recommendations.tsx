@@ -15,7 +15,7 @@ interface Step3RecommendationsProps {
 
 // ─── Recommendation status for the wizard ─────────────────────────────────────
 
-type WizardRecStatus = "pending" | "approved" | "future-phase" | "optional" | "removed";
+type WizardRecStatus = "approved" | "future-phase" | "optional" | "removed";
 
 // ─── Priority badge ───────────────────────────────────────────────────────────
 
@@ -42,14 +42,12 @@ function PriorityBadge({ priority }: { priority: string }) {
 function RecommendationCard({
   rec,
   status,
-  onApprove,
   onFuturePhase,
   onOptional,
   onRemove,
 }: {
   rec: RecommendationItem;
   status: WizardRecStatus;
-  onApprove: () => void;
   onFuturePhase: () => void;
   onOptional: () => void;
   onRemove: () => void;
@@ -69,16 +67,20 @@ function RecommendationCard({
 
   const isApproved = status === "approved";
   const isRemoved = status === "removed";
+  const isDimmed = status === "future-phase" || status === "optional";
 
   const statusStyles: Record<WizardRecStatus, { bg: string; color: string; border: string }> = {
     approved: { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" },
     "future-phase": { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
     optional: { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE" },
     removed: { bg: "#F9FAFB", color: "#9CA3AF", border: "#E5E7EB" },
-    pending: { bg: "var(--rtm-surface)", color: "var(--rtm-text-primary)", border: "var(--rtm-border)" },
   };
 
   const ss = statusStyles[status];
+
+  if (isRemoved) {
+    return null;
+  }
 
   return (
     <div
@@ -86,7 +88,7 @@ function RecommendationCard({
       style={{
         background: ss.bg,
         borderColor: ss.border,
-        opacity: isRemoved ? 0.5 : 1,
+        opacity: isDimmed ? 0.65 : 1,
       }}
     >
       <div className="p-4">
@@ -95,7 +97,7 @@ function RecommendationCard({
             <div className="flex items-center flex-wrap gap-2 mb-2">
               <p
                 className="text-sm font-bold"
-                style={{ color: isRemoved ? "#9CA3AF" : ss.color }}
+                style={{ color: ss.color }}
               >
                 {rec.serviceName}
               </p>
@@ -209,7 +211,6 @@ function RecommendationCard({
                 style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
               >
                 {[
-                  { label: "Approve for Proposal", action: onApprove, color: "#15803D" },
                   { label: "Mark as Future Phase", action: onFuturePhase, color: "#1D4ED8" },
                   { label: "Mark as Optional", action: onOptional, color: "#6D28D9" },
                   { label: "Remove", action: onRemove, color: "#DC2626" },
@@ -244,29 +245,60 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
   const [recStatuses, setRecStatuses] = useState<Record<string, WizardRecStatus>>({});
   const generated = useRef(false);
 
-  // Generate recommendations when audit result is available
+  // Hybrid audit notification state
+  const [hybridBannerDismissed, setHybridBannerDismissed] = useState(false);
+  const [hybridResyncDismissed, setHybridResyncDismissed] = useState(false);
+
+  // Generate recommendations when audit result is available.
+  // Main recommendation groups (Critical Fixes, Quick Wins, Required Foundation,
+  // Revenue Opportunities, Recommended Growth) start as approved by default.
+  // Optional Future Phase recommendations start as future-phase.
+  // The rep can change any status via the Actions menu.
   useEffect(() => {
     if (state.auditResult && !generated.current) {
       generated.current = true;
       setLoading(true);
-      // Slight delay for UX
       setTimeout(() => {
         const r = generateRecommendationsFromAudit(state.auditResult!);
         setResult(r);
 
-        // Initialize statuses: pre-approve "Ready for Proposal" items
+        // Restore statuses from wizard state when the rep has already made
+        // selections (resuming a draft or navigating back then forward).
+        // On the very first visit (no previously saved IDs), auto-approve ALL.
+        const previouslyApproved = new Set(state.approvedRecommendations);
+        const hasExistingSelections = previouslyApproved.size > 0;
+
         const statuses: Record<string, WizardRecStatus> = {};
         r.recommendations.forEach((rec) => {
-          statuses[rec.id] =
-            rec.proposalReadiness === "Ready for Proposal" ? "approved" : "pending";
+          if (hasExistingSelections) {
+            // Restore from saved state: approved if it was previously approved,
+            // otherwise treat as future-phase (was de-prioritized).
+            statuses[rec.id] = previouslyApproved.has(rec.id)
+              ? "approved"
+              : "future-phase";
+          } else {
+            // First visit: auto-approve main recommendation groups.
+            // Optional Future Phase recommendations start as future-phase —
+            // they are not included in the default approved set.
+            const defaultStatus: WizardRecStatus =
+              rec.group === "Optional Future Phase" ? "future-phase" : "approved";
+            statuses[rec.id] = defaultStatus;
+          }
         });
         setRecStatuses(statuses);
 
-        // Sync approved recommendations to wizard state
-        const approved = r.recommendations
-          .filter((rec) => statuses[rec.id] === "approved")
-          .map((rec) => rec.id);
-        onUpdate({ approvedRecommendations: approved });
+        // Write approved service names to wizard state immediately on
+        // generation so Step 4 has the data even if the rep navigates
+        // forward without interacting with Step 3.
+        const approvedRecs = r.recommendations.filter(
+          (rec) => statuses[rec.id] === "approved"
+        );
+        onUpdate({
+          approvedRecommendations: approvedRecs.map((rec) => rec.id),
+          approvedRecommendationServiceNames: approvedRecs.map(
+            (rec) => rec.serviceName
+          ),
+        });
 
         setLoading(false);
       }, 600);
@@ -279,10 +311,15 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
     setRecStatuses(updated);
 
     if (!result) return;
-    const approved = result.recommendations
-      .filter((r) => updated[r.id] === "approved")
-      .map((r) => r.id);
-    onUpdate({ approvedRecommendations: approved });
+    const approvedRecs = result.recommendations.filter(
+      (r) => updated[r.id] === "approved"
+    );
+    onUpdate({
+      approvedRecommendations: approvedRecs.map((r) => r.id),
+      approvedRecommendationServiceNames: approvedRecs.map(
+        (r) => r.serviceName
+      ),
+    });
   }
 
   if (!state.auditResult) {
@@ -329,17 +366,82 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
   const totalMonthly = approvedRecs.reduce((s, r) => s + r.estimatedMonthlyFee, 0);
   const totalSetup = approvedRecs.reduce((s, r) => s + r.estimatedSetupFee, 0);
 
-  // Group recommendations
+  // Group recommendations — exclude removed items from display
   const activeGroups = RECOMMENDATION_GROUP_CONFIG
     .sort((a, b) => a.order - b.order)
     .map((gc) => ({
       ...gc,
-      items: result.recommendations.filter((r) => r.group === gc.key),
+      items: result.recommendations.filter(
+        (r) => r.group === gc.key && recStatuses[r.id] !== "removed"
+      ),
     }))
     .filter((g) => g.items.length > 0);
 
   return (
     <div className="space-y-6">
+      {/* Instruction banner */}
+      <div
+        className="rounded-xl border px-5 py-4"
+        style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
+      >
+        <p className="text-sm font-semibold" style={{ color: "#15803D" }}>
+          Main recommendation groups are approved by default.
+        </p>
+        <p className="text-xs mt-0.5" style={{ color: "#166534" }}>
+          Optional Future Phase recommendations start as Future Phase and are not included in the budget by default. Use the Actions menu on any card to change status, remove items, or promote future-phase items to approved. Only approved items flow into the Budget Optimizer.
+        </p>
+      </div>
+
+      {/* Hybrid audit pending-review banner */}
+      {!hybridBannerDismissed && state.auditMode === "existing" && (
+        <div
+          className="rounded-xl border px-5 py-4 flex items-start justify-between gap-4"
+          style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}
+        >
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "#D97706" }}>
+              Some department reviews may still be pending.
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "#92400E" }}>
+              Recommendations are based on the AI baseline. Finalized department findings will be applied automatically. Return to Step 2 to review department findings.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setHybridBannerDismissed(true)}
+            className="flex-shrink-0 text-xs font-bold px-2 py-1 rounded border"
+            style={{ background: "#FFFBEB", color: "#D97706", borderColor: "#FDE68A" }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Hybrid resync notification */}
+      {!hybridResyncDismissed && state.auditMode === "existing" && (
+        <div
+          className="rounded-xl border px-5 py-4 flex items-start justify-between gap-4"
+          style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
+        >
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "#15803D" }}>
+              Department review finalized. Recommendations may be affected.
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "#166534" }}>
+              Return to Step 2 to view updated findings and re-proceed to apply the latest results.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setHybridResyncDismissed(true)}
+            className="flex-shrink-0 text-xs font-bold px-2 py-1 rounded border"
+            style={{ background: "#F0FDF4", color: "#15803D", borderColor: "#BBF7D0" }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Audit context bar */}
       <div
         className="rounded-xl border p-4 flex flex-wrap items-center gap-4"
@@ -398,8 +500,7 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
               <RecommendationCard
                 key={rec.id}
                 rec={rec}
-                status={recStatuses[rec.id] ?? "pending"}
-                onApprove={() => setRecStatus(rec.id, "approved")}
+                status={recStatuses[rec.id] ?? "approved"}
                 onFuturePhase={() => setRecStatus(rec.id, "future-phase")}
                 onOptional={() => setRecStatus(rec.id, "optional")}
                 onRemove={() => setRecStatus(rec.id, "removed")}
@@ -449,7 +550,7 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
           </div>
           {approvedIds.length === 0 && (
             <p className="text-xs font-semibold" style={{ color: "#C2410C" }}>
-              At least one approved recommendation is required to continue.
+              All recommendations have been removed or de-prioritized. At least one approved recommendation is required to continue.
             </p>
           )}
         </div>

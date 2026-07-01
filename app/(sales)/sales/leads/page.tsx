@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { KpiCard } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import Link from "next/link";
+import { CreateOpportunityModal } from "@/components/sales/opportunity/CreateOpportunityModal";
+import type { OpportunityRecord } from "@/lib/sales/types";
 
 const workspace = getWorkspace("sales")!;
 
@@ -1486,9 +1489,198 @@ function AddLeadModal({ onClose, onAdd }: {
   );
 }
 
+// ─── Toast ─────────────────────────────────────────────────────────────────────
+
+interface ToastMsg {
+  id: number;
+  text: string;
+  variant: "success" | "info" | "danger";
+}
+
+function Toast({ msg, onDismiss }: { msg: ToastMsg; onDismiss: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  const bg = msg.variant === "success" ? "#F0FDF4" : msg.variant === "danger" ? "#FEF2F2" : "#EFF6FF";
+  const text = msg.variant === "success" ? "#15803D" : msg.variant === "danger" ? "#DC2626" : "#1D4ED8";
+  const border = msg.variant === "success" ? "#A7F3D0" : msg.variant === "danger" ? "#FECACA" : "#BFDBFE";
+
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-lg" style={{ background: bg, borderColor: border, minWidth: 280, maxWidth: 400 }}>
+      <p className="text-sm font-semibold" style={{ color: text }}>{msg.text}</p>
+      <button onClick={onDismiss} className="font-bold text-lg" style={{ color: text }}>x</button>
+    </div>
+  );
+}
+
+function ToastContainer({ toasts, dismiss }: { toasts: ToastMsg[]; dismiss: (id: number) => void }) {
+  if (toasts.length === 0) return null;
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+      {toasts.map(t => <Toast key={t.id} msg={t} onDismiss={() => dismiss(t.id)} />)}
+    </div>
+  );
+}
+
+// ─── Import Leads Modal ──────────────────────────────────────────────────────
+
+function ImportLeadsModal({ onClose, onImport }: {
+  onClose: () => void;
+  onImport: (mockCount: number) => void;
+}) {
+  const [dragging, setDragging] = useState(false);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f) setFileName(f.name);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (f) setFileName(f.name);
+  }
+
+  function handleImport() {
+    const count = Math.floor(Math.random() * 8) + 3; // 3–10 mock leads
+    onImport(count);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
+      <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Import Leads</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Upload a CSV file to import leads in bulk</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>x</button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div
+            className="rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-colors"
+            style={{ borderColor: dragging ? "#2563EB" : "var(--rtm-border)", background: dragging ? "#EFF6FF" : "var(--rtm-surface)" }}
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileRef.current?.click()}>
+            <p className="text-sm font-semibold" style={{ color: dragging ? "#1D4ED8" : "var(--rtm-text-secondary)" }}>
+              {fileName ? fileName : "Drop a CSV file here or click to browse"}
+            </p>
+            <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>Accepted format: .csv</p>
+            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
+          </div>
+
+          <div className="rounded-lg border px-4 py-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--rtm-text-muted)" }}>Expected CSV Columns</p>
+            <div className="flex flex-wrap gap-2">
+              {["Business Name", "Contact Name", "Email", "Phone", "Lead Source"].map(col => (
+                <span key={col} className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                  style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>{col}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+          <button onClick={handleImport} className="text-sm px-4 py-2 rounded-lg font-bold"
+            style={{ background: "#2563EB", color: "#fff" }}>Import</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Assign Leads Modal ──────────────────────────────────────────────────────
+
+const ASSIGN_REPS = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
+
+function AssignLeadsModal({ leads, onClose, onAssign }: {
+  leads: Lead[];
+  onClose: () => void;
+  onAssign: (leadIds: string[], rep: string) => void;
+}) {
+  const unassigned = leads.filter(l => !l.assignedRep || l.assignedRep === "—");
+  const candidates = unassigned.length > 0 ? unassigned : leads.slice(0, 5);
+  const [selectedIds, setSelectedIds] = useState<string[]>(candidates.map(l => l.id));
+  const [rep, setRep] = useState(ASSIGN_REPS[0]);
+
+  function toggleLead(id: string) {
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
+      <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Assign Leads</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Bulk-assign leads to a sales rep</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>x</button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Assign To Rep</label>
+            <select value={rep} onChange={e => setRep(e.target.value)}
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+              {ASSIGN_REPS.map(r => <option key={r}>{r}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-2" style={{ color: "var(--rtm-text-muted)" }}>Select Leads ({selectedIds.length} selected)</label>
+            <div className="space-y-1 max-h-52 overflow-y-auto rounded-lg border" style={{ borderColor: "var(--rtm-border)" }}>
+              {candidates.map(l => (
+                <label key={l.id} className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:opacity-80"
+                  style={{ background: selectedIds.includes(l.id) ? "#EFF6FF" : "var(--rtm-surface)" }}>
+                  <input type="checkbox" checked={selectedIds.includes(l.id)} onChange={() => toggleLead(l.id)} />
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{l.businessName}</p>
+                    <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{l.name} · {l.stage}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+          <button onClick={() => onAssign(selectedIds, rep)} disabled={selectedIds.length === 0}
+            className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40"
+            style={{ background: "#059669", color: "#fff" }}>Assign</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
-export default function SalesLeadsPage() {
+function SalesLeadsPageInner() {
+  const searchParams = useSearchParams();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [stageFilter, setStageFilter]   = useState<LeadStage | "All">("All");
   const [sourceFilter, setSourceFilter] = useState<string>("All");
@@ -1496,7 +1688,103 @@ export default function SalesLeadsPage() {
   const [searchQuery, setSearchQuery]   = useState("");
   const [showSyncPanel, setShowSyncPanel] = useState(false);
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const toastCounter = useRef(0);
   const [leads, setLeads] = useState<Lead[]>(LEADS);
+  const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
+  const [selectedLeadForOpportunity, setSelectedLeadForOpportunity] = useState<{
+    id: string;
+    clientName: string;
+    businessName: string;
+    contactName: string;
+    contactPhone: string;
+    contactEmail: string;
+    leadSource: string;
+    assignedRep: string;
+    notes: string;
+  } | null>(null);
+  const [opportunities, setOpportunities] = useState<OpportunityRecord[]>([]);
+  const [opportunityCreatedLeadIds, setOpportunityCreatedLeadIds] = useState<Set<string>>(new Set());
+
+  // Auto-open Add Lead modal when ?action=add-lead is in the URL
+  useEffect(() => {
+    if (searchParams.get("action") === "add-lead") {
+      setShowAddLeadModal(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function addToast(text: string, variant: ToastMsg["variant"] = "success") {
+    toastCounter.current += 1;
+    const id = toastCounter.current;
+    setToasts(prev => [...prev, { id, text, variant }]);
+  }
+
+  function dismissToast(id: number) {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }
+
+  function handleImportLeads(mockCount: number) {
+    // Build mock leads from imported batch
+    const mockBatch: Lead[] = Array.from({ length: mockCount }, (_, i) => ({
+      id: `LIMP${Date.now()}${i}`,
+      name: `Imported Contact ${i + 1}`,
+      businessName: `Imported Business ${i + 1}`,
+      industry: "Home Services",
+      website: "",
+      email: `contact${i + 1}@imported.com`,
+      phone: "",
+      location: "—",
+      ghlContactId: "—",
+      ghlAssignedUser: ASSIGN_REPS[0],
+      ghlSource: "Website",
+      ghlCreatedDate: new Date().toISOString().split("T")[0],
+      ghlLastActivityDate: new Date().toISOString().split("T")[0],
+      ghlContactTags: [],
+      ghlContactStatus: "New",
+      ghlSyncStatus: "Pending Sync" as GHLSyncStatus,
+      leadSource: "Website" as LeadSource,
+      assignedRep: ASSIGN_REPS[0],
+      stage: "New Lead" as LeadStage,
+      opportunityReadiness: "Not Ready" as OpportunityReadiness,
+      discoveryScheduled: false,
+      discoveryDate: "",
+      discoveryNotes: "",
+      businessGoals: [],
+      painPoints: [],
+      requestedServices: [],
+      budget: "Unknown" as const,
+      authority: "Unknown" as const,
+      need: "Low" as const,
+      timeline: "6+ months" as const,
+      estimatedValue: 0,
+      affiliateName: "—",
+      createdDate: new Date().toISOString().split("T")[0],
+      lastActivity: "Just now",
+      notes: "Imported via CSV",
+    }));
+    setLeads(prev => [...mockBatch, ...prev]);
+    setShowImportModal(false);
+    addToast(`${mockCount} leads imported successfully`, "success");
+  }
+
+  function handleAssignLeads(leadIds: string[], rep: string) {
+    setLeads(prev => prev.map(l => leadIds.includes(l.id) ? { ...l, assignedRep: rep, ghlAssignedUser: rep } : l));
+    setShowAssignModal(false);
+    addToast(`${leadIds.length} lead${leadIds.length !== 1 ? "s" : ""} assigned to ${rep}`, "success");
+  }
+
+  function handleExportLeads() {
+    addToast("Exporting leads...", "info");
+    setTimeout(() => addToast(`${leads.length} leads exported successfully`, "success"), 1000);
+  }
+
+  function handleRetrySync(leadId: string) {
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ghlSyncStatus: "Synced" as GHLSyncStatus } : l));
+    addToast("GHL sync resolved successfully", "success");
+  }
 
   const filtered = leads.filter(l => {
     if (stageFilter !== "All" && l.stage !== stageFilter) return false;
@@ -1531,8 +1819,24 @@ export default function SalesLeadsPage() {
   const sources     = Array.from(new Set(leads.map(l => l.leadSource)));
   const sourceCounts= Object.fromEntries(sources.map(s => [s, leads.filter(l => l.leadSource === s).length]));
 
+  function handleCreateOpportunityFromLead(lead: Lead) {
+    setSelectedLeadForOpportunity({
+      id: lead.id,
+      clientName: lead.name,
+      businessName: lead.businessName,
+      contactName: lead.name,
+      contactPhone: lead.phone,
+      contactEmail: lead.email,
+      leadSource: lead.leadSource,
+      assignedRep: lead.assignedRep,
+      notes: lead.discoveryNotes,
+    });
+    setShowCreateOpportunityModal(true);
+  }
+
   return (
     <div className="space-y-6">
+      <ToastContainer toasts={toasts} dismiss={dismissToast} />
       {selectedLead && <LeadDrawer lead={selectedLead} onClose={() => setSelectedLead(null)} />}
       {showAddLeadModal && (
         <AddLeadModal
@@ -1540,6 +1844,37 @@ export default function SalesLeadsPage() {
           onAdd={(newLead) => {
             setLeads(prev => [newLead, ...prev]);
             setShowAddLeadModal(false);
+            addToast("Lead added successfully", "success");
+          }}
+        />
+      )}
+      {showImportModal && (
+        <ImportLeadsModal
+          onClose={() => setShowImportModal(false)}
+          onImport={handleImportLeads}
+        />
+      )}
+      {showAssignModal && (
+        <AssignLeadsModal
+          leads={leads}
+          onClose={() => setShowAssignModal(false)}
+          onAssign={handleAssignLeads}
+        />
+      )}
+      {showCreateOpportunityModal && (
+        <CreateOpportunityModal
+          leadData={selectedLeadForOpportunity ?? undefined}
+          onCreated={(opp) => {
+            setOpportunities((prev) => [opp, ...prev]);
+            if (opp.leadId) {
+              setOpportunityCreatedLeadIds((prev) => new Set([...prev, opp.leadId as string]));
+            }
+            setShowCreateOpportunityModal(false);
+            setSelectedLeadForOpportunity(null);
+          }}
+          onClose={() => {
+            setShowCreateOpportunityModal(false);
+            setSelectedLeadForOpportunity(null);
           }}
         />
       )}
@@ -1568,9 +1903,9 @@ export default function SalesLeadsPage() {
             className="rtm-btn-primary text-sm flex items-center gap-1.5 px-3 py-2">
             Add Lead
           </button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2">Import Leads</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2">Assign Leads</button>
-          <button className="rtm-btn-secondary text-sm px-3 py-2">Export Leads</button>
+          <button onClick={() => setShowImportModal(true)} className="rtm-btn-secondary text-sm px-3 py-2">Import Leads</button>
+          <button onClick={() => setShowAssignModal(true)} className="rtm-btn-secondary text-sm px-3 py-2">Assign Leads</button>
+          <button onClick={handleExportLeads} className="rtm-btn-secondary text-sm px-3 py-2">Export Leads</button>
           <button
             onClick={() => setShowSyncPanel(v => !v)}
             className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"style={{
@@ -1601,14 +1936,14 @@ export default function SalesLeadsPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {[
-              { label: "Synced Contacts",  value: ghlSynced,  color: "#059669", bg: "#ECFDF5"},
-              { label: "Pending Sync",     value: ghlPending, color: "#D97706", bg: "#FFFBEB"},
-              { label: "Sync Failed",      value: ghlFailed,  color: "#DC2626", bg: "#FEF2F2"},
-              { label: "Manual Override",  value: leads.filter(l => l.ghlSyncStatus === "Manual Override").length, color: "#7C3AED", bg: "#F5F3FF"},
+              { label: "Synced Contacts",  value: ghlSynced,  color: "#059669"},
+              { label: "Pending Sync",     value: ghlPending, color: "#D97706"},
+              { label: "Sync Failed",      value: ghlFailed,  color: "#DC2626"},
+              { label: "Manual Override",  value: leads.filter(l => l.ghlSyncStatus === "Manual Override").length, color: "#7C3AED"},
             ].map(item => (
-              <div key={item.label} className="rounded-lg p-4 border"style={{ background: item.bg, borderColor: `${item.color}30` }}>
-                <p className="text-2xl font-bold"style={{ color: item.color }}>{item.value}</p>
-                <p className="text-[10px] font-bold mt-0.5 uppercase tracking-wide"style={{ color: item.color }}>{item.label}</p>
+              <div key={item.label} className="rounded-lg p-4 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                <p className="text-2xl font-bold" style={{ color: item.color }}>{item.value}</p>
+                <p className="text-[10px] font-bold mt-0.5 uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{item.label}</p>
               </div>
             ))}
           </div>
@@ -1620,7 +1955,7 @@ export default function SalesLeadsPage() {
                 {leads.filter(l => l.ghlSyncStatus === "Sync Failed").map(l => (
                   <div key={l.id} className="flex items-center justify-between text-xs"style={{ color: "#B91C1C"}}>
                     <span>{l.businessName} ({l.ghlContactId})</span>
-                    <button className="px-2 py-0.5 rounded font-bold"style={{ background: "#DC2626", color: "#fff"}}>Retry</button>
+                    <button onClick={() => handleRetrySync(l.id)} className="px-2 py-0.5 rounded font-bold"style={{ background: "#DC2626", color: "#fff"}}>Retry</button>
                   </div>
                 ))}
               </div>
@@ -1837,12 +2172,20 @@ export default function SalesLeadsPage() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="space-y-1">
                         {readinessBadge(lead.opportunityReadiness)}
-                        {isReady && (
-                          <div className="flex gap-1"onClick={e => e.stopPropagation()}>
-                            <Link href="/sales/pipeline"className="text-[10px] px-1.5 py-0.5 rounded font-bold inline-block"style={{ background: "#059669", color: "#fff"}}>
+                        {opportunityCreatedLeadIds.has(lead.id) && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
+                            Opportunity Created
+                          </span>
+                        )}
+                        {isReady && !opportunityCreatedLeadIds.has(lead.id) && (
+                          <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                            <button
+                              className="text-[10px] px-1.5 py-0.5 rounded font-bold"
+                              style={{ background: "#059669", color: "#fff" }}
+                              onClick={(e) => { e.stopPropagation(); handleCreateOpportunityFromLead(lead); }}>
                               Create Opp
-                            </Link>
-                            <Link href="/sales/pipeline"className="text-[10px] px-1.5 py-0.5 rounded font-semibold border inline-block"style={{ color: "#059669", borderColor: "#A7F3D0", background: "#F0FDF4"}}>
+                            </button>
+                            <Link href="/sales/pipeline" className="text-[10px] px-1.5 py-0.5 rounded font-semibold border inline-block" style={{ color: "#059669", borderColor: "#A7F3D0", background: "#F0FDF4" }}>
                               Pipeline →
                             </Link>
                           </div>
@@ -1878,11 +2221,12 @@ export default function SalesLeadsPage() {
                                 {action}
                               </button>
                             ))}
-                            {isReady && (
-                              <Link href="/sales/pipeline"className="block w-full text-left px-3 py-2 text-xs font-bold"style={{ color: "#059669", background: "#ECFDF5"}}>
-                                Create Opportunity →
-                              </Link>
-                            )}
+                            <button
+                              className="block w-full text-left px-3 py-2 text-xs font-bold"
+                              style={{ color: "#059669", background: opportunityCreatedLeadIds.has(lead.id) ? "#F0FDF4" : "#ECFDF5" }}
+                              onClick={(e) => { e.stopPropagation(); handleCreateOpportunityFromLead(lead); }}>
+                              {opportunityCreatedLeadIds.has(lead.id) ? "Create Another Opportunity" : "Create Opportunity"}
+                            </button>
                             <Link href={`/sales/intake?leadId=${lead.id}`}
                               className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"style={{ color: "#2563EB", background: "#EFF6FF"}}
                               onClick={e => e.stopPropagation()}>
@@ -1927,5 +2271,18 @@ export default function SalesLeadsPage() {
         ))}
       </div>
     </div>
+  );
+}
+
+// Root export with Suspense boundary (required for useSearchParams)
+export default function SalesLeadsPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 text-center">
+        <p style={{ color: "var(--rtm-text-muted)" }}>Loading leads...</p>
+      </div>
+    }>
+      <SalesLeadsPageInner />
+    </Suspense>
   );
 }

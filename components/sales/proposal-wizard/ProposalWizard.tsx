@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import type { AuditResult } from "@/lib/sales/audit-engine";
 import type { BudgetLineItem, BudgetResult } from "@/lib/sales/budget-engine";
 import type { ProposalDocument } from "@/lib/sales/proposal-engine";
+import type { HomeServicesIntakeRecord, AiAuditResult, ProposalDiscount } from "@/lib/sales/types";
 import { WizardStepIndicator } from "./WizardStepIndicator";
 import { Step1ClientGoals } from "./steps/Step1ClientGoals";
 import { Step2Audit } from "./steps/Step2Audit";
@@ -31,15 +32,22 @@ export interface ProposalWizardState {
     notes: string;
   };
   selectedGoals: string[];
-  auditMode: "existing" | "quick" | null;
+  auditMode: "existing" | "quick" | "ai" | null;
   selectedAuditId: string | null;
   auditResult: AuditResult | null;
   approvedRecommendations: string[];
+  approvedRecommendationServiceNames: string[];
   lineItems: BudgetLineItem[];
   discountPercentage: number;
+  discount: ProposalDiscount;
   budgetResult: BudgetResult | null;
   proposalDocument: ProposalDocument | null;
   lastSavedAt: string | null;
+  // Home Services intake
+  intakeRecord: Partial<HomeServicesIntakeRecord> | null;
+  opportunityId: string | null;
+  // AI Audit result (persisted in wizard state so revisiting Step 2 shows completed audit)
+  aiAuditResult: AiAuditResult | null;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -97,11 +105,21 @@ function createDefaultState(wizardId: string): ProposalWizardState {
     selectedAuditId: null,
     auditResult: null,
     approvedRecommendations: [],
+    approvedRecommendationServiceNames: [],
     lineItems: [],
     discountPercentage: 0,
+    discount: {
+      type: "none",
+      value: 0,
+      label: "",
+      authorizationNote: "",
+    },
     budgetResult: null,
     proposalDocument: null,
     lastSavedAt: null,
+    intakeRecord: null,
+    opportunityId: null,
+    aiAuditResult: null,
   };
 }
 
@@ -109,12 +127,16 @@ function createDefaultState(wizardId: string): ProposalWizardState {
 
 function validateStep(step: number, state: ProposalWizardState): boolean {
   switch (step) {
-    case 1:
+    case 1: {
+      const intakeRecord = state.intakeRecord as HomeServicesIntakeRecord | null;
+      const flagged = intakeRecord?.flaggedForFollowUp === true;
       return (
+        !flagged &&
         state.clientInfo.name.trim().length > 0 &&
         state.clientInfo.businessName.trim().length > 0 &&
         state.selectedGoals.length > 0
       );
+    }
     case 2:
       return state.auditResult !== null;
     case 3:
@@ -153,20 +175,39 @@ export function ProposalWizard({
   const [state, setState] = useState<ProposalWizardState>(() => {
     const id = initialState?.wizardId ?? generateWizardId();
 
+    // Read opportunityId from URL if present
+    let urlOpportunityId: string | null = null;
+    if (typeof window !== "undefined") {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        urlOpportunityId = params.get("opportunityId");
+      } catch {
+        // Ignore
+      }
+    }
+
     // Attempt to load from localStorage
     if (typeof window !== "undefined") {
       try {
         const saved = localStorage.getItem(`${STORAGE_PREFIX}${id}`);
         if (saved) {
           const parsed = JSON.parse(saved) as ProposalWizardState;
-          return { ...createDefaultState(id), ...parsed };
+          return {
+            ...createDefaultState(id),
+            ...parsed,
+            opportunityId: urlOpportunityId ?? parsed.opportunityId ?? null,
+          };
         }
       } catch {
         // Ignore parse errors
       }
     }
 
-    return { ...createDefaultState(id), ...initialState };
+    return {
+      ...createDefaultState(id),
+      ...initialState,
+      opportunityId: urlOpportunityId ?? initialState?.opportunityId ?? null,
+    };
   });
 
   // ── Draft persistence ──────────────────────────────────────────────────────
@@ -417,7 +458,11 @@ export function ProposalWizard({
             <Step3Recommendations state={state} onUpdate={updateState} />
           )}
           {state.currentStep === 4 && (
-            <Step4Budget state={state} onUpdate={updateState} />
+            <Step4Budget
+              state={state}
+              onUpdate={updateState}
+              approvedServiceNames={state.approvedRecommendationServiceNames}
+            />
           )}
           {state.currentStep === 5 && (
             <Step5ProposalDraft
@@ -473,7 +518,9 @@ export function ProposalWizard({
             {!currentStepValid && state.currentStep < 5 && (
               <p className="text-xs" style={{ color: "#C2410C" }}>
                 {state.currentStep === 1
-                  ? "Complete client info and select at least one goal."
+                  ? (state.intakeRecord as HomeServicesIntakeRecord | null)?.flaggedForFollowUp
+                    ? "This intake is flagged for follow-up. Complete additional information before proceeding."
+                    : "Complete client info and select at least one goal."
                   : state.currentStep === 2
                   ? "Complete the audit to continue."
                   : state.currentStep === 3

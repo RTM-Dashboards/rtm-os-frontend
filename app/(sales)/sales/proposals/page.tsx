@@ -11,17 +11,17 @@ const ProposalWizard = dynamic(
 import type { ProposalWizardState } from "@/components/sales/proposal-wizard/ProposalWizard";
 import ProposalBuilderShell from "@/components/sales/proposal-builder/ProposalBuilderShell";
 
-// 
+//
 // Types
-// 
+//
 
 type ServiceCategory =
-  | "SEO"| "GBP"| "PPC"| "Meta"| "Website"| "Hosting"| "AI Automation"| "Reporting"| "Creative"| "Strategy"| "LSA"| "Consulting";
+  | "SEO"| "GBP"| "PPC"| "Meta Ads"| "Website"| "Content"| "Reporting"| "LSA";
 
 type BillingCycle = "One-Time"| "Monthly"| "Quarterly"| "Annual";
 
 type Department =
-  | "SEO"| "GBP"| "Paid Advertising"| "Web"| "Creative"| "Strategy"| "Reporting"| "LSA"| "AI & Automation";
+  | "SEO"| "GBP"| "Paid Advertising"| "Web"| "Content"| "Reporting"| "LSA";
 
 type DeliveryStandard = "Standard"| "Priority"| "Rush"| "Custom";
 
@@ -120,9 +120,9 @@ interface Proposal {
   activityTimeline: { date: string; event: string; user: string }[];
 }
 
-// 
+//
 // Line Item Catalog
-// 
+//
 
 const LINE_ITEM_CATALOG: LineItem[] = [
   {
@@ -169,7 +169,7 @@ const LINE_ITEM_CATALOG: LineItem[] = [
     generatedTasks: 18, generatedMilestones: 2, generatedDeliverables: 3,
   },
   {
-    id: "li-meta-001", name: "Meta Ads Setup", department: "Paid Advertising", category: "Meta",
+    id: "li-meta-001", name: "Meta Ads Setup", department: "Paid Advertising", category: "Meta Ads",
     setupFee: 900, recurringFee: 0, quantity: 1, deliveryStandard: "Standard",
     taskBlueprint: "Meta Ads Launch Blueprint", dependencies: ["Meta Business Manager", "Pixel"],
     status: "Active", firstResponse: "1 business day", targetDays: 10,
@@ -177,7 +177,7 @@ const LINE_ITEM_CATALOG: LineItem[] = [
     recurringTasks: [], generatedTasks: 16, generatedMilestones: 4, generatedDeliverables: 5,
   },
   {
-    id: "li-meta-002", name: "Meta Ads Management", department: "Paid Advertising", category: "Meta",
+    id: "li-meta-002", name: "Meta Ads Management", department: "Paid Advertising", category: "Meta Ads",
     setupFee: 0, recurringFee: 1200, quantity: 1, deliveryStandard: "Standard",
     taskBlueprint: "Meta Monthly Blueprint", dependencies: ["Meta Ads Setup"],
     status: "Active", firstResponse: "1 business day", targetDays: 10,
@@ -188,7 +188,7 @@ const LINE_ITEM_CATALOG: LineItem[] = [
   {
     id: "li-web-001", name: "Website Redesign", department: "Web", category: "Website",
     setupFee: 5000, recurringFee: 0, quantity: 1, deliveryStandard: "Standard",
-    taskBlueprint: "Website Redesign Blueprint", dependencies: ["Brand Kit", "Content", "Hosting"],
+    taskBlueprint: "Website Redesign Blueprint", dependencies: ["Brand Kit", "Content", "Domain Access"],
     status: "Active", firstResponse: "1 business day", targetDays: 45,
     clientUpdateFreq: "Every 3 days", escalationDays: 50,
     recurringTasks: [], generatedTasks: 40, generatedMilestones: 8, generatedDeliverables: 12,
@@ -203,22 +203,13 @@ const LINE_ITEM_CATALOG: LineItem[] = [
     generatedTasks: 5, generatedMilestones: 1, generatedDeliverables: 1,
   },
   {
-    id: "li-host-001", name: "Managed Hosting", department: "Web", category: "Hosting",
-    setupFee: 0, recurringFee: 150, quantity: 1, deliveryStandard: "Standard",
-    taskBlueprint: "Hosting Onboarding Blueprint", dependencies: ["Domain Access"],
-    status: "Active", firstResponse: "4 hours", targetDays: 1,
-    clientUpdateFreq: "Monthly", escalationDays: 2,
-    recurringTasks: ["Server monitoring", "Backup verification", "SSL renewal", "Performance checks"],
-    generatedTasks: 4, generatedMilestones: 1, generatedDeliverables: 1,
-  },
-  {
-    id: "li-ai-001", name: "AI Automation Setup", department: "AI & Automation", category: "AI Automation",
-    setupFee: 2500, recurringFee: 800, quantity: 1, deliveryStandard: "Priority",
-    taskBlueprint: "AI Automation Blueprint", dependencies: ["CRM Access", "API Keys"],
-    status: "Active", firstResponse: "Same day", targetDays: 14,
-    clientUpdateFreq: "Every 3 days", escalationDays: 10,
-    recurringTasks: ["Workflow monitoring", "AI model tuning", "Integration checks"],
-    generatedTasks: 30, generatedMilestones: 6, generatedDeliverables: 8,
+    id: "li-content-001", name: "Content Marketing Setup", department: "Content", category: "Content",
+    setupFee: 500, recurringFee: 800, quantity: 1, deliveryStandard: "Standard",
+    taskBlueprint: "Content Marketing Blueprint", dependencies: ["Brand Voice Guide", "CMS Access"],
+    status: "Active", firstResponse: "1 business day", targetDays: 7,
+    clientUpdateFreq: "Weekly", escalationDays: 10,
+    recurringTasks: ["Blog posts", "Social copy", "Email newsletters", "Content calendar"],
+    generatedTasks: 14, generatedMilestones: 3, generatedDeliverables: 4,
   },
   {
     id: "li-report-001", name: "Reporting Dashboard Setup", department: "Reporting", category: "Reporting",
@@ -238,63 +229,54 @@ const LINE_ITEM_CATALOG: LineItem[] = [
     recurringTasks: ["Lead dispute management", "Bid adjustments", "Review strategy", "Monthly report"],
     generatedTasks: 10, generatedMilestones: 3, generatedDeliverables: 3,
   },
-  {
-    id: "li-strategy-001", name: "Digital Strategy Consulting", department: "Strategy", category: "Strategy",
-    setupFee: 0, recurringFee: 600, quantity: 1, deliveryStandard: "Priority",
-    taskBlueprint: "Strategy Blueprint", dependencies: ["Business Goals Defined"],
-    status: "Active", firstResponse: "1 business day", targetDays: 5,
-    clientUpdateFreq: "Bi-weekly", escalationDays: 8,
-    recurringTasks: ["Monthly strategy call", "Market analysis", "Competitor monitoring"],
-    generatedTasks: 6, generatedMilestones: 1, generatedDeliverables: 2,
-  },
 ];
 
-// 
+//
 // AI Package Recommendations
-// 
+//
 
 const AI_PACKAGES: AIRecommendation[] = [
   {
     packageName: "Local Domination Package",
     services: ["SEO", "GBP", "LSA"],
     lineItems: ["SEO Setup & Onboarding", "SEO Monthly Management", "GBP Optimization", "LSA Account Setup"],
-    expectedImpact: "40–60% increase in local search visibility within 90 days",
+    expectedImpact: "40-60% increase in local search visibility within 90 days",
     estimatedRevenue: 3350,
     confidenceScore: 94,
     reasoning: "Client has strong local presence signals but weak GBP and missing LSA. High-intent local traffic opportunity.",
   },
   {
     packageName: "Full Digital Growth Stack",
-    services: ["SEO", "GBP", "PPC", "Meta", "Reporting"],
-    lineItems: ["SEO Setup", "SEO Monthly", "GBP Optimization", "PPC Setup", "PPC Monthly", "Meta Ads Setup", "Meta Monthly", "Reporting Dashboard"],
-    expectedImpact: "3–5x increase in qualified leads within 6 months",
+    services: ["SEO", "GBP", "PPC", "Meta Ads", "Reporting"],
+    lineItems: ["SEO Setup", "SEO Monthly", "GBP Optimization", "PPC Setup", "PPC Monthly", "Meta Ads Setup", "Meta Ads Management", "Reporting Dashboard"],
+    expectedImpact: "3-5x increase in qualified leads within 6 months",
     estimatedRevenue: 6250,
     confidenceScore: 87,
     reasoning: "Multi-channel approach recommended given competitive market and client budget flexibility.",
   },
   {
-    packageName: "AI-Powered Marketing Suite",
-    services: ["AI Automation", "SEO", "Reporting"],
-    lineItems: ["AI Automation Setup", "SEO Monthly Management", "Reporting Dashboard Setup"],
-    expectedImpact: "60% reduction in manual marketing tasks, 25% improvement in conversion rates",
+    packageName: "Content & SEO Bundle",
+    services: ["SEO", "Content", "Reporting"],
+    lineItems: ["SEO Monthly Management", "Content Marketing Setup", "Reporting Dashboard Setup"],
+    expectedImpact: "25% increase in organic traffic within 90 days",
     estimatedRevenue: 2300,
     confidenceScore: 91,
-    reasoning: "Client expressed interest in automation. AI workflows can amplify existing team capacity.",
+    reasoning: "Clients with thin online presence benefit from combined SEO and content to build authority and capture local search.",
   },
   {
     packageName: "Paid Media Accelerator",
-    services: ["PPC", "Meta"],
+    services: ["PPC", "Meta Ads"],
     lineItems: ["PPC Campaign Setup", "PPC Monthly Management", "Meta Ads Setup", "Meta Ads Management"],
-    expectedImpact: "2–4x ROAS improvement within 60 days",
+    expectedImpact: "2-4x ROAS improvement within 60 days",
     estimatedRevenue: 4800,
     confidenceScore: 88,
     reasoning: "Audit reveals significant PPC waste. Restructured campaigns with Meta retargeting will maximize ad spend.",
   },
 ];
 
-// 
-// Mock Proposals — 20 proposals
-// 
+//
+// Mock Proposals - 12 Home Services proposals
+//
 
 function makeLI(id: string, qty = 1): LineItem {
   const base = LINE_ITEM_CATALOG.find((l) => l.id === id)!;
@@ -302,313 +284,193 @@ function makeLI(id: string, qty = 1): LineItem {
 }
 
 const MOCK_PROPOSALS: Proposal[] = [
-  // 1 — SEO + GBP
+  // 1 - Summit Landscaping - SEO + GBP (Negotiation)
   {
-    id: "prop-001", name: "Summit Landscaping — SEO + GBP", client: "Summit Landscaping", owner: "Jordan M.",
+    id: "prop-001", name: "Summit Landscaping - SEO + GBP", client: "Summit Landscaping", owner: "Jordan M.",
     services: ["SEO", "GBP"], status: "Negotiation", createdDate: "May 24, 2025",
     lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-gbp-001")],
     setupTotal: 1850, recurringTotal: 1700, totalValue: 22250,
     discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-08-01", endDate: "2026-07-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice required"},
-    info: { client: "Summit Landscaping", opportunity: "OPP-001", owner: "Jordan M.", proposalDate: "May 24, 2025", expirationDate: "Jun 24, 2025"},
-    aiSummary: { recommendedPackage: "Local Domination Package", revenueOpportunity: "$22,250 ARR", riskFactors: ["GBP access pending", "Seasonal business"], complexity: "Medium", resourceRequirements: "SEO team + GBP specialist", expectedImpact: "40–60% local visibility lift"},
+    contract: { term: "12 Month", customMonths: 12, startDate: "2025-08-01", endDate: "2026-07-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice required" },
+    info: { client: "Summit Landscaping", opportunity: "OPP-001", owner: "Jordan M.", proposalDate: "May 24, 2025", expirationDate: "Jun 24, 2025" },
+    aiSummary: { recommendedPackage: "Local Domination Package", revenueOpportunity: "$22,250 ARR", riskFactors: ["GBP access pending", "Seasonal business"], complexity: "Medium", resourceRequirements: "SEO team + GBP specialist", expectedImpact: "40-60% local visibility lift" },
     activityTimeline: [
-      { date: "May 24, 2025", event: "Proposal created", user: "Jordan M."},
-      { date: "May 30, 2025", event: "Sent to client", user: "Jordan M."},
-      { date: "Jun 8, 2025", event: "Client requested discount", user: "Marcus Webb"},
+      { date: "May 24, 2025", event: "Proposal created", user: "Jordan M." },
+      { date: "May 30, 2025", event: "Sent to client", user: "Jordan M." },
+      { date: "Jun 8, 2025", event: "Client requested discount", user: "Marcus Webb" },
     ],
   },
-  // 2 — Full Service
+  // 2 - Blue Ridge Plumbing - Full Service Package (Accepted)
   {
-    id: "prop-002", name: "Metro Dental — Full Service Package", client: "Metro Dental Group", owner: "Jordan M.",
-    services: ["SEO", "GBP", "LSA", "Reporting"], status: "Accepted", createdDate: "May 18, 2025",
-    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-gbp-001"), makeLI("li-lsa-001"), makeLI("li-report-001")],
+    id: "prop-002", name: "Blue Ridge Plumbing - Full Service Package", client: "Blue Ridge Plumbing", owner: "Sarah K.",
+    services: ["SEO", "GBP", "LSA"], status: "Accepted", createdDate: "May 18, 2025",
+    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-gbp-001"), makeLI("li-lsa-001")],
     setupTotal: 2850, recurringTotal: 3300, totalValue: 42450,
-    discount: { type: "Percentage", value: 10, promoCode: "DENTAL10", managerApproval: true, approved: true },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-01", endDate: "2026-06-30", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "60-day written notice required"},
-    info: { client: "Metro Dental Group", opportunity: "OPP-002", owner: "Jordan M.", proposalDate: "May 18, 2025", expirationDate: "Jun 18, 2025"},
-    aiSummary: { recommendedPackage: "Full Digital Growth Stack", revenueOpportunity: "$42,450 ARR", riskFactors: ["HIPAA compliance considerations"], complexity: "High", resourceRequirements: "SEO + GBP + LSA + Reporting teams", expectedImpact: "3–5x qualified leads in 6 months"},
+    discount: { type: "Percentage", value: 5, promoCode: "", managerApproval: false, approved: true },
+    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-01", endDate: "2026-06-30", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "60-day written notice required" },
+    info: { client: "Blue Ridge Plumbing", opportunity: "OPP-002", owner: "Sarah K.", proposalDate: "May 18, 2025", expirationDate: "Jun 18, 2025" },
+    aiSummary: { recommendedPackage: "Local Domination Package", revenueOpportunity: "$42,450 ARR", riskFactors: ["LSA verification delays", "Seasonal plumbing demand"], complexity: "Medium", resourceRequirements: "SEO + GBP + LSA teams", expectedImpact: "3-5x qualified leads in 6 months" },
     activityTimeline: [
-      { date: "May 18, 2025", event: "Proposal created", user: "Jordan M."},
-      { date: "May 25, 2025", event: "Internal review approved", user: "Sarah K."},
-      { date: "Jun 1, 2025", event: "Sent to client", user: "Jordan M."},
-      { date: "Jun 9, 2025", event: "Client accepted", user: "Dr. Amanda Torres"},
+      { date: "May 18, 2025", event: "Proposal created", user: "Sarah K." },
+      { date: "May 25, 2025", event: "Internal review approved", user: "Jordan M." },
+      { date: "Jun 1, 2025", event: "Sent to client", user: "Sarah K." },
+      { date: "Jun 9, 2025", event: "Client accepted", user: "Tom Ridge" },
     ],
   },
-  // 3 — PPC + Landing Page
+  // 3 - Apex Roofing - PPC Package (Sent)
   {
-    id: "prop-003", name: "Sunstate Solar — PPC Package", client: "Sunstate Solar", owner: "Sarah K.",
-    services: ["PPC", "Website", "Reporting"], status: "Sent", createdDate: "May 30, 2025",
-    lineItems: [makeLI("li-ppc-001"), makeLI("li-ppc-002"), makeLI("li-web-001"), makeLI("li-report-001")],
-    setupTotal: 6600, recurringTotal: 1800, totalValue: 28200,
+    id: "prop-003", name: "Apex Roofing - PPC Package", client: "Apex Roofing", owner: "Mike T.",
+    services: ["PPC", "Reporting"], status: "Sent", createdDate: "May 30, 2025",
+    lineItems: [makeLI("li-ppc-001"), makeLI("li-ppc-002"), makeLI("li-report-001")],
+    setupTotal: 1800, recurringTotal: 2400, totalValue: 30600,
     discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "6 Month", customMonths: 6, startDate: "2025-07-15", endDate: "2026-01-14", noticePeriod: "30 days", autoRenew: false, cancellationTerms: "30-day written notice required"},
-    info: { client: "Sunstate Solar", opportunity: "OPP-003", owner: "Sarah K.", proposalDate: "May 30, 2025", expirationDate: "Jun 30, 2025"},
-    aiSummary: { recommendedPackage: "Paid Media Accelerator", revenueOpportunity: "$28,200 contract value", riskFactors: ["Competitive solar market", "Landing page dependency"], complexity: "Medium", resourceRequirements: "PPC specialist + Web team", expectedImpact: "2–4x ROAS improvement"},
+    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-15", endDate: "2026-07-14", noticePeriod: "30 days", autoRenew: false, cancellationTerms: "30-day written notice required" },
+    info: { client: "Apex Roofing", opportunity: "OPP-003", owner: "Mike T.", proposalDate: "May 30, 2025", expirationDate: "Jun 30, 2025" },
+    aiSummary: { recommendedPackage: "Paid Media Accelerator", revenueOpportunity: "$30,600 ARR", riskFactors: ["Seasonal roofing market", "PPC account access pending"], complexity: "Medium", resourceRequirements: "PPC specialist + Reporting team", expectedImpact: "2-4x ROAS improvement" },
     activityTimeline: [
-      { date: "May 30, 2025", event: "Proposal created", user: "Sarah K."},
-      { date: "Jun 7, 2025", event: "Sent to client", user: "Sarah K."},
+      { date: "May 30, 2025", event: "Proposal created", user: "Mike T." },
+      { date: "Jun 7, 2025", event: "Sent to client", user: "Mike T." },
     ],
   },
-  // 4 — SEO + GBP + PPC (Converted)
+  // 4 - Pinnacle HVAC - Full Digital (Converted To Contract)
   {
-    id: "prop-004", name: "Coastal Wellness — SEO + GBP + PPC", client: "Coastal Wellness Spa", owner: "Sarah K.",
+    id: "prop-004", name: "Pinnacle HVAC - Full Digital", client: "Pinnacle HVAC", owner: "Sarah K.",
     services: ["SEO", "GBP", "PPC"], status: "Converted To Contract", createdDate: "May 7, 2025",
     lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-gbp-001"), makeLI("li-ppc-001"), makeLI("li-ppc-002")],
     setupTotal: 2700, recurringTotal: 3200, totalValue: 41100,
     discount: { type: "Package", value: 5, promoCode: "", managerApproval: false, approved: true },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-06-01", endDate: "2026-05-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Coastal Wellness Spa", opportunity: "OPP-004", owner: "Sarah K.", proposalDate: "May 7, 2025", expirationDate: "Jun 7, 2025"},
-    aiSummary: { recommendedPackage: "Full Digital Growth Stack", revenueOpportunity: "$41,100 ARR", riskFactors: ["Seasonal spa traffic patterns"], complexity: "High", resourceRequirements: "SEO + GBP + PPC teams", expectedImpact: "3–5x qualified leads"},
+    contract: { term: "12 Month", customMonths: 12, startDate: "2025-06-01", endDate: "2026-05-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice" },
+    info: { client: "Pinnacle HVAC", opportunity: "OPP-004", owner: "Sarah K.", proposalDate: "May 7, 2025", expirationDate: "Jun 7, 2025" },
+    aiSummary: { recommendedPackage: "Full Digital Growth Stack", revenueOpportunity: "$41,100 ARR", riskFactors: ["Seasonal HVAC demand"], complexity: "High", resourceRequirements: "SEO + GBP + PPC teams", expectedImpact: "3-5x qualified leads" },
     activityTimeline: [
-      { date: "May 7, 2025", event: "Proposal created", user: "Sarah K."},
-      { date: "May 15, 2025", event: "Client approved", user: "Maria Chen"},
-      { date: "May 20, 2025", event: "Contract generated", user: "Sarah K."},
-      { date: "Jun 1, 2025", event: "Contract signed", user: "Maria Chen"},
+      { date: "May 7, 2025", event: "Proposal created", user: "Sarah K." },
+      { date: "May 15, 2025", event: "Client approved", user: "Dana Pinnacle" },
+      { date: "May 20, 2025", event: "Contract generated", user: "Sarah K." },
+      { date: "Jun 1, 2025", event: "Contract signed", user: "Dana Pinnacle" },
     ],
   },
-  // 5 — LSA Starter
+  // 5 - Morrison HVAC - LSA Starter (Draft)
   {
-    id: "prop-005", name: "Blue Ridge Plumbing — LSA Starter", client: "Blue Ridge Plumbing", owner: "Sarah K.",
+    id: "prop-005", name: "Morrison HVAC - LSA Starter", client: "Morrison HVAC and Cooling", owner: "Sarah K.",
     services: ["GBP", "LSA"], status: "Draft", createdDate: "Jun 7, 2025",
     lineItems: [makeLI("li-gbp-001"), makeLI("li-lsa-001")],
     setupTotal: 950, recurringTotal: 1300, totalValue: 16550,
     discount: { type: "Fixed", value: 200, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "Month-to-Month", customMonths: 1, startDate: "2025-07-01", endDate: "", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Blue Ridge Plumbing", opportunity: "OPP-005", owner: "Sarah K.", proposalDate: "Jun 7, 2025", expirationDate: "Jul 7, 2025"},
-    aiSummary: { recommendedPackage: "Local Domination Package", revenueOpportunity: "$16,550 annual", riskFactors: ["LSA verification delays", "Seasonal plumbing demand"], complexity: "Low", resourceRequirements: "GBP + LSA specialists", expectedImpact: "50% increase in local call volume"},
+    contract: { term: "Month-to-Month", customMonths: 1, startDate: "2025-07-01", endDate: "", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice" },
+    info: { client: "Morrison HVAC and Cooling", opportunity: "OPP-005", owner: "Sarah K.", proposalDate: "Jun 7, 2025", expirationDate: "Jul 7, 2025" },
+    aiSummary: { recommendedPackage: "Local Domination Package", revenueOpportunity: "$16,550 annual", riskFactors: ["LSA verification delays", "Seasonal HVAC demand"], complexity: "Low", resourceRequirements: "GBP + LSA specialists", expectedImpact: "50% increase in local call volume" },
     activityTimeline: [
-      { date: "Jun 7, 2025", event: "Proposal created", user: "Sarah K."},
+      { date: "Jun 7, 2025", event: "Proposal created", user: "Sarah K." },
     ],
   },
-  // 6 — Reporting Only
+  // 6 - GreenWave Lawn Care - Reporting Package (Internal Review)
   {
-    id: "prop-006", name: "Ridgeline Dentistry — Reporting Package", client: "Ridgeline Dentistry", owner: "Mike T.",
+    id: "prop-006", name: "GreenWave Lawn Care - Reporting Package", client: "GreenWave Lawn Care", owner: "Mike T.",
     services: ["Reporting"], status: "Internal Review", createdDate: "Jun 5, 2025",
     lineItems: [makeLI("li-report-001")],
     setupTotal: 400, recurringTotal: 300, totalValue: 4000,
     discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "6 Month", customMonths: 6, startDate: "2025-07-01", endDate: "2025-12-31", noticePeriod: "30 days", autoRenew: false, cancellationTerms: "30-day written notice"},
-    info: { client: "Ridgeline Dentistry", opportunity: "OPP-006", owner: "Mike T.", proposalDate: "Jun 5, 2025", expirationDate: "Jul 5, 2025"},
-    aiSummary: { recommendedPackage: "Reporting Starter", revenueOpportunity: "$4,000 contract", riskFactors: ["Limited data sources"], complexity: "Low", resourceRequirements: "Reporting team", expectedImpact: "Unified dashboard visibility"},
+    contract: { term: "6 Month", customMonths: 6, startDate: "2025-07-01", endDate: "2025-12-31", noticePeriod: "30 days", autoRenew: false, cancellationTerms: "30-day written notice" },
+    info: { client: "GreenWave Lawn Care", opportunity: "OPP-006", owner: "Mike T.", proposalDate: "Jun 5, 2025", expirationDate: "Jul 5, 2025" },
+    aiSummary: { recommendedPackage: "Reporting Starter", revenueOpportunity: "$4,000 contract", riskFactors: ["Limited data sources"], complexity: "Low", resourceRequirements: "Reporting team", expectedImpact: "Unified dashboard visibility" },
     activityTimeline: [
-      { date: "Jun 5, 2025", event: "Proposal created", user: "Mike T."},
-      { date: "Jun 9, 2025", event: "In internal review", user: "Jordan M."},
+      { date: "Jun 5, 2025", event: "Proposal created", user: "Mike T." },
+      { date: "Jun 9, 2025", event: "In internal review", user: "Jordan M." },
     ],
   },
-  // 7 — Meta + Creative (Discount)
+  // 7 - Coastal Plumbing Co. - Meta + Creative (Accepted)
   {
-    id: "prop-007", name: "Iron Mark Fitness — Meta + Creative", client: "Iron Mark Fitness", owner: "Mike T.",
-    services: ["Meta", "Reporting"], status: "Accepted", createdDate: "May 18, 2025",
+    id: "prop-007", name: "Coastal Plumbing Co. - Meta + Creative", client: "Coastal Plumbing Co.", owner: "Mike T.",
+    services: ["Meta Ads", "Reporting"], status: "Accepted", createdDate: "May 18, 2025",
     lineItems: [makeLI("li-meta-001"), makeLI("li-meta-002"), makeLI("li-report-001")],
     setupTotal: 1300, recurringTotal: 1500, totalValue: 19300,
-    discount: { type: "Promo Code", value: 15, promoCode: "FITNESSLAUNCH", managerApproval: true, approved: true },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-01", endDate: "2026-06-30", noticePeriod: "30 days", autoRenew: false, cancellationTerms: "60-day written notice"},
-    info: { client: "Iron Mark Fitness", opportunity: "OPP-007", owner: "Mike T.", proposalDate: "May 18, 2025", expirationDate: "Jun 18, 2025"},
-    aiSummary: { recommendedPackage: "Paid Media Accelerator", revenueOpportunity: "$19,300 ARR", riskFactors: ["Creative fatigue risk", "Audience saturation"], complexity: "Medium", resourceRequirements: "Meta Ads + Reporting", expectedImpact: "2–4x ROAS improvement"},
+    discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
+    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-01", endDate: "2026-06-30", noticePeriod: "30 days", autoRenew: false, cancellationTerms: "60-day written notice" },
+    info: { client: "Coastal Plumbing Co.", opportunity: "OPP-007", owner: "Mike T.", proposalDate: "May 18, 2025", expirationDate: "Jun 18, 2025" },
+    aiSummary: { recommendedPackage: "Paid Media Accelerator", revenueOpportunity: "$19,300 ARR", riskFactors: ["Creative fatigue risk", "Audience saturation"], complexity: "Medium", resourceRequirements: "Meta Ads + Reporting", expectedImpact: "2-4x ROAS improvement" },
     activityTimeline: [
-      { date: "May 18, 2025", event: "Proposal created", user: "Mike T."},
-      { date: "Jun 5, 2025", event: "Client accepted with promo", user: "Jake Morris"},
+      { date: "May 18, 2025", event: "Proposal created", user: "Mike T." },
+      { date: "Jun 5, 2025", event: "Client accepted", user: "Carlos Vega" },
     ],
   },
-  // 8 — Large Multi-Service (Draft)
+  // 8 - Elite Electrical - Full Digital (Draft)
   {
-    id: "prop-008", name: "Harbor Auto Group — Full Digital", client: "Harbor Auto Group", owner: "Mike T.",
-    services: ["SEO", "PPC", "Website", "Reporting"], status: "Draft", createdDate: "Jun 6, 2025",
-    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-ppc-001"), makeLI("li-ppc-002"), makeLI("li-web-001"), makeLI("li-report-001")],
+    id: "prop-008", name: "Elite Electrical - Full Digital", client: "Elite Electrical Services", owner: "Alex R.",
+    services: ["SEO", "PPC", "Website"], status: "Draft", createdDate: "Jun 6, 2025",
+    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-ppc-001"), makeLI("li-ppc-002"), makeLI("li-web-001")],
     setupTotal: 8500, recurringTotal: 3300, totalValue: 48100,
     discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "24 Month", customMonths: 24, startDate: "2025-08-01", endDate: "2027-07-31", noticePeriod: "60 days", autoRenew: false, cancellationTerms: "60-day written notice required"},
-    info: { client: "Harbor Auto Group", opportunity: "OPP-008", owner: "Mike T.", proposalDate: "Jun 6, 2025", expirationDate: "Jul 6, 2025"},
-    aiSummary: { recommendedPackage: "Full Digital Growth Stack", revenueOpportunity: "$48,100 ARR", riskFactors: ["Website dependency", "PPC access not confirmed"], complexity: "High", resourceRequirements: "SEO + PPC + Web + Reporting", expectedImpact: "3–5x qualified leads"},
+    contract: { term: "24 Month", customMonths: 24, startDate: "2025-08-01", endDate: "2027-07-31", noticePeriod: "60 days", autoRenew: false, cancellationTerms: "60-day written notice required" },
+    info: { client: "Elite Electrical Services", opportunity: "OPP-008", owner: "Alex R.", proposalDate: "Jun 6, 2025", expirationDate: "Jul 6, 2025" },
+    aiSummary: { recommendedPackage: "Full Digital Growth Stack", revenueOpportunity: "$48,100 ARR", riskFactors: ["Website dependency", "PPC access not confirmed"], complexity: "High", resourceRequirements: "SEO + PPC + Web teams", expectedImpact: "3-5x qualified leads" },
     activityTimeline: [
-      { date: "Jun 6, 2025", event: "Proposal created", user: "Mike T."},
+      { date: "Jun 6, 2025", event: "Proposal created", user: "Alex R." },
     ],
   },
-  // 9 — AI Automation
+  // 9 - Morrison HVAC - SEO + AI Search (Draft)
   {
-    id: "prop-009", name: "TechNova SaaS — AI Automation Suite", client: "TechNova SaaS", owner: "Jordan M.",
-    services: ["AI Automation", "SEO", "Reporting"], status: "Pending Approval", createdDate: "Jun 2, 2025",
-    lineItems: [makeLI("li-ai-001"), makeLI("li-seo-002"), makeLI("li-report-001")],
-    setupTotal: 2900, recurringTotal: 2300, totalValue: 30500,
-    discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-01", endDate: "2026-06-30", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "TechNova SaaS", opportunity: "OPP-009", owner: "Jordan M.", proposalDate: "Jun 2, 2025", expirationDate: "Jul 2, 2025"},
-    aiSummary: { recommendedPackage: "AI-Powered Marketing Suite", revenueOpportunity: "$30,500 ARR", riskFactors: ["API integration complexity", "Data privacy requirements"], complexity: "High", resourceRequirements: "AI & Automation + SEO + Reporting", expectedImpact: "60% reduction in manual tasks"},
-    activityTimeline: [
-      { date: "Jun 2, 2025", event: "Proposal created", user: "Jordan M."},
-      { date: "Jun 8, 2025", event: "Submitted for manager approval", user: "Jordan M."},
-    ],
-  },
-  // 10 — Hosting + Maintenance
-  {
-    id: "prop-010", name: "Valley Creek Bakery — Web + Hosting", client: "Valley Creek Bakery", owner: "Sarah K.",
-    services: ["Website", "Hosting"], status: "Sent", createdDate: "Jun 1, 2025",
-    lineItems: [makeLI("li-web-002"), makeLI("li-host-001")],
-    setupTotal: 0, recurringTotal: 400, totalValue: 4800,
-    discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "Month-to-Month", customMonths: 1, startDate: "2025-07-01", endDate: "", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Valley Creek Bakery", opportunity: "OPP-010", owner: "Sarah K.", proposalDate: "Jun 1, 2025", expirationDate: "Jul 1, 2025"},
-    aiSummary: { recommendedPackage: "Website Care Package", revenueOpportunity: "$4,800 annual", riskFactors: ["Small ticket — low priority risk"], complexity: "Low", resourceRequirements: "Web team", expectedImpact: "100% uptime SLA, monthly health reports"},
-    activityTimeline: [
-      { date: "Jun 1, 2025", event: "Proposal created", user: "Sarah K."},
-      { date: "Jun 5, 2025", event: "Sent to client", user: "Sarah K."},
-    ],
-  },
-  // 11 — Renewal Proposal
-  {
-    id: "prop-011", name: "Summit Landscaping — 2026 Renewal", client: "Summit Landscaping", owner: "Jordan M.",
+    id: "prop-009", name: "Morrison HVAC - SEO + AI Search", client: "Morrison HVAC and Cooling", owner: "Jordan M.",
     services: ["SEO", "GBP"], status: "Draft", createdDate: "Jun 10, 2025",
     lineItems: [makeLI("li-seo-002"), makeLI("li-gbp-001")],
     setupTotal: 0, recurringTotal: 1700, totalValue: 20400,
-    discount: { type: "Percentage", value: 5, promoCode: "", managerApproval: false, approved: true },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2026-08-01", endDate: "2027-07-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Summit Landscaping", opportunity: "OPP-011", owner: "Jordan M.", proposalDate: "Jun 10, 2025", expirationDate: "Jul 10, 2025"},
-    aiSummary: { recommendedPackage: "Renewal — Local Domination", revenueOpportunity: "$20,400 ARR renewal", riskFactors: ["Competitor entering market"], complexity: "Low", resourceRequirements: "SEO + GBP teams", expectedImpact: "Retain 40–60% local visibility gains"},
+    discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
+    contract: { term: "12 Month", customMonths: 12, startDate: "2025-08-01", endDate: "2026-07-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice" },
+    info: { client: "Morrison HVAC and Cooling", opportunity: "OPP-009", owner: "Jordan M.", proposalDate: "Jun 10, 2025", expirationDate: "Jul 10, 2025" },
+    aiSummary: { recommendedPackage: "Local Domination Package", revenueOpportunity: "$20,400 ARR", riskFactors: ["Competitor entering market"], complexity: "Low", resourceRequirements: "SEO + GBP teams", expectedImpact: "Retain and grow 40-60% local visibility" },
     activityTimeline: [
-      { date: "Jun 10, 2025", event: "Renewal proposal created", user: "Jordan M."},
+      { date: "Jun 10, 2025", event: "Proposal created", user: "Jordan M." },
     ],
   },
-  // 12 — Upsell Proposal
+  // 10 - Apex Roofing - GBP Management (Accepted)
   {
-    id: "prop-012", name: "Metro Dental — Upsell: AI Automation", client: "Metro Dental Group", owner: "Jordan M.",
-    services: ["AI Automation"], status: "Negotiation", createdDate: "Jun 8, 2025",
-    lineItems: [makeLI("li-ai-001")],
-    setupTotal: 2500, recurringTotal: 800, totalValue: 12100,
-    discount: { type: "Percentage", value: 10, promoCode: "UPSELL10", managerApproval: true, approved: true },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-08-01", endDate: "2026-07-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Metro Dental Group", opportunity: "OPP-012", owner: "Jordan M.", proposalDate: "Jun 8, 2025", expirationDate: "Jul 8, 2025"},
-    aiSummary: { recommendedPackage: "AI-Powered Marketing Suite", revenueOpportunity: "$12,100 ARR upsell", riskFactors: ["HIPAA AI compliance", "Integration complexity"], complexity: "High", resourceRequirements: "AI & Automation team", expectedImpact: "60% reduction in manual intake tasks"},
-    activityTimeline: [
-      { date: "Jun 8, 2025", event: "Upsell proposal created", user: "Jordan M."},
-    ],
-  },
-  // 13 — GBP Only
-  {
-    id: "prop-013", name: "Rosewood Florist — GBP Management", client: "Rosewood Florist", owner: "Mike T.",
+    id: "prop-010", name: "Apex Roofing - GBP Management", client: "Apex Roofing", owner: "Jordan M.",
     services: ["GBP"], status: "Accepted", createdDate: "May 28, 2025",
     lineItems: [makeLI("li-gbp-001")],
     setupTotal: 350, recurringTotal: 500, totalValue: 6350,
     discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-01", endDate: "2026-06-30", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Rosewood Florist", opportunity: "OPP-013", owner: "Mike T.", proposalDate: "May 28, 2025", expirationDate: "Jun 28, 2025"},
-    aiSummary: { recommendedPackage: "GBP Starter", revenueOpportunity: "$6,350 ARR", riskFactors: ["Single-service risk"], complexity: "Low", resourceRequirements: "GBP specialist", expectedImpact: "30% increase in GBP profile views"},
+    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-01", endDate: "2026-06-30", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice" },
+    info: { client: "Apex Roofing", opportunity: "OPP-010", owner: "Jordan M.", proposalDate: "May 28, 2025", expirationDate: "Jun 28, 2025" },
+    aiSummary: { recommendedPackage: "GBP Starter", revenueOpportunity: "$6,350 ARR", riskFactors: ["Single-service risk"], complexity: "Low", resourceRequirements: "GBP specialist", expectedImpact: "30% increase in GBP profile views" },
     activityTimeline: [
-      { date: "May 28, 2025", event: "Proposal created", user: "Mike T."},
-      { date: "Jun 5, 2025", event: "Client accepted", user: "Rose Parker"},
+      { date: "May 28, 2025", event: "Proposal created", user: "Jordan M." },
+      { date: "Jun 5, 2025", event: "Client accepted", user: "Tom Apex" },
     ],
   },
-  // 14 — Full Service (Rejected)
+  // 11 - Summit Landscaping - Full Service (Rejected)
   {
-    id: "prop-014", name: "Apex Roofing — Full Service", client: "Apex Roofing", owner: "Sarah K.",
-    services: ["SEO", "GBP", "PPC", "LSA", "Reporting"], status: "Rejected", createdDate: "May 10, 2025",
-    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-gbp-001"), makeLI("li-ppc-001"), makeLI("li-ppc-002"), makeLI("li-lsa-001"), makeLI("li-report-001")],
+    id: "prop-011", name: "Summit Landscaping - Full Service", client: "Summit Landscaping", owner: "Sarah K.",
+    services: ["SEO", "GBP", "PPC"], status: "Rejected", createdDate: "May 10, 2025",
+    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-gbp-001"), makeLI("li-ppc-001"), makeLI("li-ppc-002")],
     setupTotal: 4100, recurringTotal: 4900, totalValue: 62900,
     discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "24 Month", customMonths: 24, startDate: "2025-07-01", endDate: "2027-06-30", noticePeriod: "60 days", autoRenew: false, cancellationTerms: "60-day written notice"},
-    info: { client: "Apex Roofing", opportunity: "OPP-014", owner: "Sarah K.", proposalDate: "May 10, 2025", expirationDate: "Jun 10, 2025"},
-    aiSummary: { recommendedPackage: "Full Digital Growth Stack", revenueOpportunity: "$62,900 ARR", riskFactors: ["Budget too large for client stage", "Seasonal roofing market"], complexity: "High", resourceRequirements: "All departments", expectedImpact: "Rejected — budget mismatch"},
+    contract: { term: "24 Month", customMonths: 24, startDate: "2025-07-01", endDate: "2027-06-30", noticePeriod: "60 days", autoRenew: false, cancellationTerms: "60-day written notice" },
+    info: { client: "Summit Landscaping", opportunity: "OPP-011", owner: "Sarah K.", proposalDate: "May 10, 2025", expirationDate: "Jun 10, 2025" },
+    aiSummary: { recommendedPackage: "Full Digital Growth Stack", revenueOpportunity: "$62,900 ARR", riskFactors: ["Budget too large for client stage", "Seasonal landscaping market"], complexity: "High", resourceRequirements: "All departments", expectedImpact: "Rejected - budget mismatch" },
     activityTimeline: [
-      { date: "May 10, 2025", event: "Proposal created", user: "Sarah K."},
-      { date: "May 25, 2025", event: "Sent to client", user: "Sarah K."},
-      { date: "Jun 3, 2025", event: "Client rejected — budget concern", user: "Tom Apex"},
+      { date: "May 10, 2025", event: "Proposal created", user: "Sarah K." },
+      { date: "May 25, 2025", event: "Sent to client", user: "Sarah K." },
+      { date: "Jun 3, 2025", event: "Client rejected - budget concern", user: "Marcus Webb" },
     ],
   },
-  // 15 — SEO + AI Automation
+  // 12 - Pinnacle HVAC - 2026 Renewal (Draft)
   {
-    id: "prop-015", name: "GreenLeaf HVAC — SEO + AI", client: "GreenLeaf HVAC", owner: "Jordan M.",
-    services: ["SEO", "AI Automation", "Reporting"], status: "Sent", createdDate: "Jun 3, 2025",
-    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-ai-001"), makeLI("li-report-001")],
-    setupTotal: 4400, recurringTotal: 2300, totalValue: 31600,
-    discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-07-15", endDate: "2026-07-14", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "GreenLeaf HVAC", opportunity: "OPP-015", owner: "Jordan M.", proposalDate: "Jun 3, 2025", expirationDate: "Jul 3, 2025"},
-    aiSummary: { recommendedPackage: "AI-Powered Marketing Suite", revenueOpportunity: "$31,600 ARR", riskFactors: ["AI integration complexity"], complexity: "High", resourceRequirements: "SEO + AI & Automation + Reporting", expectedImpact: "25% conversion rate improvement"},
-    activityTimeline: [
-      { date: "Jun 3, 2025", event: "Proposal created", user: "Jordan M."},
-      { date: "Jun 9, 2025", event: "Sent to client", user: "Jordan M."},
-    ],
-  },
-  // 16 — Expired
-  {
-    id: "prop-016", name: "Clearwater Legal — SEO", client: "Clearwater Legal", owner: "Mike T.",
-    services: ["SEO"], status: "Expired", createdDate: "Apr 15, 2025",
-    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002")],
-    setupTotal: 1500, recurringTotal: 1200, totalValue: 15900,
-    discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-06-01", endDate: "2026-05-31", noticePeriod: "30 days", autoRenew: false, cancellationTerms: "30-day written notice"},
-    info: { client: "Clearwater Legal", opportunity: "OPP-016", owner: "Mike T.", proposalDate: "Apr 15, 2025", expirationDate: "May 15, 2025"},
-    aiSummary: { recommendedPackage: "SEO Starter", revenueOpportunity: "$15,900 ARR (expired)", riskFactors: ["No response from client"], complexity: "Low", resourceRequirements: "SEO team", expectedImpact: "Proposal expired — follow-up needed"},
-    activityTimeline: [
-      { date: "Apr 15, 2025", event: "Proposal created", user: "Mike T."},
-      { date: "Apr 20, 2025", event: "Sent to client", user: "Mike T."},
-      { date: "May 16, 2025", event: "Proposal expired", user: "System"},
-    ],
-  },
-  // 17 — Meta Ads Only
-  {
-    id: "prop-017", name: "Bella Boutique — Meta Ads", client: "Bella Boutique", owner: "Sarah K.",
-    services: ["Meta", "Reporting"], status: "Accepted", createdDate: "May 20, 2025",
-    lineItems: [makeLI("li-meta-001"), makeLI("li-meta-002"), makeLI("li-report-001")],
-    setupTotal: 1300, recurringTotal: 1500, totalValue: 19300,
-    discount: { type: "Percentage", value: 5, promoCode: "", managerApproval: false, approved: true },
-    contract: { term: "6 Month", customMonths: 6, startDate: "2025-07-01", endDate: "2025-12-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Bella Boutique", opportunity: "OPP-017", owner: "Sarah K.", proposalDate: "May 20, 2025", expirationDate: "Jun 20, 2025"},
-    aiSummary: { recommendedPackage: "Paid Media Accelerator", revenueOpportunity: "$19,300 ARR", riskFactors: ["Creative fatigue", "Seasonal product demand"], complexity: "Medium", resourceRequirements: "Meta Ads + Reporting", expectedImpact: "2–4x ROAS improvement"},
-    activityTimeline: [
-      { date: "May 20, 2025", event: "Proposal created", user: "Sarah K."},
-      { date: "May 28, 2025", event: "Client accepted", user: "Isabella Kwan"},
-    ],
-  },
-  // 18 — Strategy Consulting
-  {
-    id: "prop-018", name: "PeakPath Consulting — Digital Strategy", client: "PeakPath Consulting", owner: "Jordan M.",
-    services: ["Strategy", "Reporting"], status: "Internal Review", createdDate: "Jun 7, 2025",
-    lineItems: [makeLI("li-strategy-001"), makeLI("li-report-001")],
-    setupTotal: 400, recurringTotal: 900, totalValue: 11200,
-    discount: { type: "None", value: 0, promoCode: "", managerApproval: false, approved: false },
-    contract: { term: "6 Month", customMonths: 6, startDate: "2025-07-01", endDate: "2025-12-31", noticePeriod: "30 days", autoRenew: false, cancellationTerms: "30-day written notice"},
-    info: { client: "PeakPath Consulting", opportunity: "OPP-018", owner: "Jordan M.", proposalDate: "Jun 7, 2025", expirationDate: "Jul 7, 2025"},
-    aiSummary: { recommendedPackage: "Strategy + Analytics", revenueOpportunity: "$11,200 contract", riskFactors: ["Low recurring commitment"], complexity: "Medium", resourceRequirements: "Strategy + Reporting teams", expectedImpact: "Clear digital roadmap + monthly insights"},
-    activityTimeline: [
-      { date: "Jun 7, 2025", event: "Proposal created", user: "Jordan M."},
-      { date: "Jun 9, 2025", event: "In internal review", user: "Sarah K."},
-    ],
-  },
-  // 19 — Renewal Proposal (Large)
-  {
-    id: "prop-019", name: "Coastal Wellness — 2026 Renewal + Upsell", client: "Coastal Wellness Spa", owner: "Sarah K.",
-    services: ["SEO", "GBP", "PPC", "AI Automation"], status: "Draft", createdDate: "Jun 10, 2025",
-    lineItems: [makeLI("li-seo-002"), makeLI("li-gbp-001"), makeLI("li-ppc-002"), makeLI("li-ai-001")],
+    id: "prop-012", name: "Pinnacle HVAC - 2026 Renewal", client: "Pinnacle HVAC", owner: "Jordan M.",
+    services: ["SEO", "Meta Ads", "Reporting"], status: "Draft", createdDate: "Jun 10, 2025",
+    lineItems: [makeLI("li-seo-002"), makeLI("li-meta-001"), makeLI("li-meta-002"), makeLI("li-report-001")],
     setupTotal: 2500, recurringTotal: 4000, totalValue: 50500,
     discount: { type: "Percentage", value: 8, promoCode: "RENEWAL8", managerApproval: true, approved: false },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2026-06-01", endDate: "2027-05-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Coastal Wellness Spa", opportunity: "OPP-019", owner: "Sarah K.", proposalDate: "Jun 10, 2025", expirationDate: "Jul 10, 2025"},
-    aiSummary: { recommendedPackage: "Full Digital Growth Stack + AI", revenueOpportunity: "$50,500 ARR", riskFactors: ["Promo approval pending", "AI integration complexity"], complexity: "High", resourceRequirements: "SEO + GBP + PPC + AI teams", expectedImpact: "Maintain 3–5x leads + AI efficiency gains"},
+    contract: { term: "12 Month", customMonths: 12, startDate: "2026-06-01", endDate: "2027-05-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice" },
+    info: { client: "Pinnacle HVAC", opportunity: "OPP-012", owner: "Jordan M.", proposalDate: "Jun 10, 2025", expirationDate: "Jul 10, 2025" },
+    aiSummary: { recommendedPackage: "Full Digital Growth Stack", revenueOpportunity: "$50,500 ARR", riskFactors: ["Promo approval pending", "Competitor pricing pressure"], complexity: "High", resourceRequirements: "SEO + Meta Ads + Reporting teams", expectedImpact: "Maintain 3-5x leads with expanded reach" },
     activityTimeline: [
-      { date: "Jun 10, 2025", event: "Renewal + upsell proposal created", user: "Sarah K."},
-    ],
-  },
-  // 20 — Upsell Hosting + AI
-  {
-    id: "prop-020", name: "Valley Creek Bakery — Upsell: SEO + AI", client: "Valley Creek Bakery", owner: "Sarah K.",
-    services: ["SEO", "AI Automation"], status: "Sent", createdDate: "Jun 9, 2025",
-    lineItems: [makeLI("li-seo-001"), makeLI("li-seo-002"), makeLI("li-ai-001")],
-    setupTotal: 4000, recurringTotal: 2000, totalValue: 28000,
-    discount: { type: "Fixed", value: 500, promoCode: "", managerApproval: false, approved: true },
-    contract: { term: "12 Month", customMonths: 12, startDate: "2025-08-01", endDate: "2026-07-31", noticePeriod: "30 days", autoRenew: true, cancellationTerms: "30-day written notice"},
-    info: { client: "Valley Creek Bakery", opportunity: "OPP-020", owner: "Sarah K.", proposalDate: "Jun 9, 2025", expirationDate: "Jul 9, 2025"},
-    aiSummary: { recommendedPackage: "AI-Powered Marketing Suite", revenueOpportunity: "$28,000 ARR upsell", riskFactors: ["Small business capacity constraints"], complexity: "High", resourceRequirements: "SEO + AI & Automation", expectedImpact: "25% conversion improvement + automated customer journeys"},
-    activityTimeline: [
-      { date: "Jun 9, 2025", event: "Upsell proposal created", user: "Sarah K."},
-      { date: "Jun 10, 2025", event: "Sent to client", user: "Sarah K."},
+      { date: "Jun 10, 2025", event: "Renewal proposal created", user: "Jordan M." },
     ],
   },
 ];
 
-// 
+//
 // Style Maps
-// 
+//
 
 const STATUS_STYLES: Record<ProposalStatus, { bg?: string; text: string; border: string }> = {
   "Draft":                 { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
@@ -623,18 +485,14 @@ const STATUS_STYLES: Record<ProposalStatus, { bg?: string; text: string; border:
 };
 
 const CATEGORY_STYLES: Record<ServiceCategory, { bg?: string; text: string; border: string }> = {
-  "SEO":          { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
-  "GBP":          { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
-  "PPC":          { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
-  "Meta":         { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
-  "Website":      { bg: "#FEFCE8", text: "#A16207", border: "#FDE68A"},
-  "Hosting":      { bg: "#F0F9FF", text: "#0369A1", border: "#BAE6FD"},
-  "AI Automation":{ bg: "#FDF4FF", text: "#7E22CE", border: "#E9D5FF"},
-  "Reporting":    { bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0"},
-  "Creative":     { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
-  "Strategy":     { bg: "#F8FAFC", text: "#334155", border: "#CBD5E1"},
-  "LSA":          { bg: "#FFFBEB", text: "#92400E", border: "#FDE68A"},
-  "Consulting":   { bg: "#F5F3FF", text: "#4C1D95", border: "#C4B5FD"},
+  "SEO":      { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
+  "GBP":      { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
+  "PPC":      { bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
+  "Meta Ads": { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE" },
+  "Website":  { bg: "#FEFCE8", text: "#A16207", border: "#FDE68A" },
+  "Content":  { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
+  "Reporting":{ bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0" },
+  "LSA":      { bg: "#FFFBEB", text: "#92400E", border: "#FDE68A" },
 };
 
 const DELIVERY_STYLES: Record<DeliveryStandard, { bg?: string; text: string }> = {
@@ -644,9 +502,9 @@ const DELIVERY_STYLES: Record<DeliveryStandard, { bg?: string; text: string }> =
   "Custom":   { bg: "#F5F3FF", text: "#6D28D9"},
 };
 
-// 
+//
 // Helpers
-// 
+//
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString()}`;
 const fmtK = (n: number) => n >= 1000 ? `$${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : `$${n}`;
@@ -667,9 +525,9 @@ function termMonths(c: ContractConfig): number {
   return 12;
 }
 
-// 
+//
 // Primitive Components
-// 
+//
 
 function Badge({ label, bg, text, border }: { label: string; bg?: string; text: string; border?: string }) {
   return (
@@ -728,7 +586,7 @@ function Btn({
   const s = styles[variant];
   const pad = size === "xs"? "px-2 py-0.5 text-[10px]": "px-3 py-1.5 text-xs";
   return (
-    <button onClick={onClick} className={`${pad} font-semibold rounded-lg border transition-all hover:opacity-90`}
+    <button type="button" onClick={onClick} className={`${pad} font-semibold rounded-lg border transition-all hover:opacity-90`}
       style={{ background: s.bg, color: s.text, borderColor: s.border }}>
       {children}
     </button>
@@ -767,19 +625,19 @@ function Select({ label, value, onChange, options }: {
   );
 }
 
-// 
+//
 // KPI Cards
-// 
+//
 
 function DashboardKPIs({ proposals }: { proposals: Proposal[] }) {
   const draft     = proposals.filter(p => p.status === "Draft").length;
-  const pending   = proposals.filter(p => p.status === "Pending Approval"|| p.status === "Internal Review").length;
-  const sent      = proposals.filter(p => p.status === "Sent"|| p.status === "Negotiation").length;
-  const accepted  = proposals.filter(p => p.status === "Accepted"|| p.status === "Converted To Contract").length;
-  const rejected  = proposals.filter(p => p.status === "Rejected"|| p.status === "Expired").length;
-  const estRev    = proposals.filter(p => ["Accepted","Converted To Contract","Negotiation","Sent"].includes(p.status))
+  const pending   = proposals.filter(p => p.status === "Pending Approval" || p.status === "Internal Review" || p.status === "Negotiation").length;
+  const sent      = proposals.filter(p => p.status === "Sent").length;
+  const accepted  = proposals.filter(p => p.status === "Accepted" || p.status === "Converted To Contract").length;
+  const rejected  = proposals.filter(p => p.status === "Rejected" || p.status === "Expired").length;
+  const estRev    = proposals.filter(p => ["Accepted"].includes(p.status))
                     .reduce((s, p) => s + p.recurringTotal, 0);
-  const pipeline  = proposals.filter(p => !["Rejected","Expired"].includes(p.status))
+  const pipeline  = proposals.filter(p => !["Rejected", "Expired"].includes(p.status))
                     .reduce((s, p) => s + p.totalValue, 0);
 
   const cards = [
@@ -805,18 +663,46 @@ function DashboardKPIs({ proposals }: { proposals: Proposal[] }) {
   );
 }
 
-// 
+//
 // Proposal Table
-// 
+//
 
-function ProposalTable({ proposals, onSelect, onBuild, onResume }: {
+function useProposalToast() {
+  const [toast, setToast] = useState<string | null>(null);
+  function showToast(msg: string, duration = 2500) {
+    setToast(msg);
+    setTimeout(() => setToast(null), duration);
+  }
+  return { toast, showToast };
+}
+
+function ProposalToastBanner({ message }: { message: string }) {
+  return (
+    <div
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold"
+      style={{ background: "#059669", color: "#fff", minWidth: 280, textAlign: "center" }}
+    >
+      {message}
+    </div>
+  );
+}
+
+function ProposalTable({ proposals, onSelect, onEdit, onResume }: {
   proposals: Proposal[];
   onSelect: (p: Proposal) => void;
-  onBuild: (p: Proposal) => void;
+  onEdit: (p: Proposal) => void;
   onResume?: (p: Proposal) => void;
 }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<ProposalStatus | "All">("All");
+  const { toast, showToast } = useProposalToast();
+
+  function handleDownloadPdf(p: Proposal) {
+    showToast("Preparing proposal PDF...");
+    setTimeout(() => {
+      showToast(`Proposal PDF downloaded — ${p.name}.pdf`);
+    }, 1500);
+  }
 
   const filtered = useMemo(() => proposals.filter(p => {
     const q = search.toLowerCase();
@@ -828,12 +714,14 @@ function ProposalTable({ proposals, onSelect, onBuild, onResume }: {
   const statusOptions: Array<ProposalStatus | "All"> = ["All","Draft","Internal Review","Pending Approval","Sent","Negotiation","Accepted","Rejected","Expired","Converted To Contract"];
 
   return (
+    <>
+      {toast && <ProposalToastBanner message={toast} />}
     <Card>
       <CardHeader title="All Proposals"subtitle={`${filtered.length} of ${proposals.length} proposals`}
         actions={
           <>
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search proposals…"className="text-xs rounded-lg border px-3 py-1.5 focus:outline-none w-44"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}} />
+              placeholder="Search proposals..."className="text-xs rounded-lg border px-3 py-1.5 focus:outline-none w-44"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}} />
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value as ProposalStatus | "All")}
               className="text-xs rounded-lg border px-3 py-1.5 focus:outline-none"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}>
               {statusOptions.map(s => <option key={s}>{s}</option>)}
@@ -845,7 +733,7 @@ function ProposalTable({ proposals, onSelect, onBuild, onResume }: {
         <table className="w-full text-xs"style={{ borderCollapse: "collapse", minWidth: "1100px"}}>
           <thead>
             <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)"}}>
-              {["Proposal Name","Client","Owner","Services","Setup Fees","Recurring Fees","Total Value","Status","Created","Actions"].map(h => (
+              {["Proposal Name","Client","Owner","Services","Setup Fees","Recurring Fees","Total Value","Status","Created","Actions",""].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
               ))}
             </tr>
@@ -878,11 +766,14 @@ function ProposalTable({ proposals, onSelect, onBuild, onResume }: {
                     {p.status === "Draft" && onResume && (
                       <Btn size="xs"variant="warning"onClick={() => onResume(p)}>Resume</Btn>
                     )}
-                    <Btn size="xs"variant="default"onClick={() => onBuild(p)}>Edit</Btn>
+                    <Btn size="xs"variant="default"onClick={() => onEdit(p)}>Edit</Btn>
                     {p.status === "Accepted"&& (
                       <Btn size="xs"variant="success"onClick={() => alert(`[Mock] Generating contract for ${p.name}`)}>Contract</Btn>
                     )}
                   </div>
+                </td>
+                <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
+                  <Btn size="xs" variant="default" onClick={() => handleDownloadPdf(p)}>Download PDF</Btn>
                 </td>
               </tr>
             ))}
@@ -894,13 +785,19 @@ function ProposalTable({ proposals, onSelect, onBuild, onResume }: {
           </div>
         )}
       </div>
+      <div className="px-5 py-3 border-t" style={{ borderColor: "var(--rtm-border)" }}>
+        <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+          Proposals can be downloaded as PDF and sent manually to prospects. Client portal coming in a future release.
+        </p>
+      </div>
     </Card>
+    </>
   );
 }
 
-// 
-// Proposal Builder — Info Panel
-// 
+//
+// Proposal Builder - Info Panel
+//
 
 function ProposalInfoForm({ info, onChange }: {
   info: ProposalInfo;
@@ -920,9 +817,9 @@ function ProposalInfoForm({ info, onChange }: {
   );
 }
 
-// 
+//
 // Service Selection
-// 
+//
 
 function ServiceSelection({ selectedLineItems, onAdd, onRemove }: {
   selectedLineItems: LineItem[];
@@ -938,8 +835,8 @@ function ServiceSelection({ selectedLineItems, onAdd, onRemove }: {
       <CardHeader title="Service Selection"subtitle="Add services, AI recommendations, or audit findings"actions={
           <>
             <Btn variant="primary"onClick={() => setShowCatalog(!showCatalog)}>+ Add Service</Btn>
-            <Btn variant="warning"onClick={() => alert("[Mock] AI Recommendation mode — analyzing audit findings…")}>+ AI Recommendation</Btn>
-            <Btn variant="default"onClick={() => alert("[Mock] Add from audit findings…")}>+ Audit Finding</Btn>
+            <Btn variant="warning"onClick={() => alert("[Mock] AI Recommendation mode - analyzing audit findings...")}>+ AI Recommendation</Btn>
+            <Btn variant="default"onClick={() => alert("[Mock] Add from audit findings...")}>+ Audit Finding</Btn>
           </>
         }
       />
@@ -995,9 +892,9 @@ function ServiceSelection({ selectedLineItems, onAdd, onRemove }: {
   );
 }
 
-// 
+//
 // Line Item Builder
-// 
+//
 
 function LineItemBuilder({ lineItems, onUpdate, onRemove, onClone }: {
   lineItems: LineItem[];
@@ -1037,10 +934,10 @@ function LineItemBuilder({ lineItems, onUpdate, onRemove, onClone }: {
                 <td className="px-4 py-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{li.department}</td>
                 <td className="px-4 py-3"><CategoryBadge cat={li.category} /></td>
                 <td className="px-4 py-3 font-semibold whitespace-nowrap"style={{ color: "#C2410C"}}>
-                  {li.setupFee > 0 ? fmt(li.setupFee) : "—"}
+                  {li.setupFee > 0 ? fmt(li.setupFee) : "-"}
                 </td>
                 <td className="px-4 py-3 font-semibold whitespace-nowrap"style={{ color: "#1D4ED8"}}>
-                  {li.recurringFee > 0 ? `${fmt(li.recurringFee)}/mo` : "—"}
+                  {li.recurringFee > 0 ? `${fmt(li.recurringFee)}/mo` : "-"}
                 </td>
                 <td className="px-4 py-3">
                   <input type="number"min={1} max={10} value={li.quantity}
@@ -1060,7 +957,7 @@ function LineItemBuilder({ lineItems, onUpdate, onRemove, onClone }: {
                     {li.dependencies.map(d => (
                       <span key={d} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"style={{ background: "#FFF7ED", color: "#C2410C"}}>{d}</span>
                     ))}
-                    {li.dependencies.length === 0 && <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
+                    {li.dependencies.length === 0 && <span style={{ color: "var(--rtm-text-muted)"}}>-</span>}
                   </div>
                 </td>
                 <td className="px-4 py-3">
@@ -1087,9 +984,9 @@ function LineItemBuilder({ lineItems, onUpdate, onRemove, onClone }: {
   );
 }
 
-// 
+//
 // Budget Builder
-// 
+//
 
 function BudgetBuilder({ onRecommend }: { onRecommend: (pkg: AIRecommendation) => void }) {
   const [budget, setBudget] = useState("3500");
@@ -1173,9 +1070,9 @@ function BudgetBuilder({ onRecommend }: { onRecommend: (pkg: AIRecommendation) =
   );
 }
 
-// 
+//
 // AI Package Recommendation Card
-// 
+//
 
 function AIPackageCard({ pkg, onAdd }: { pkg: AIRecommendation; onAdd: () => void }) {
   const conf = pkg.confidenceScore;
@@ -1235,9 +1132,9 @@ function AIPackageCard({ pkg, onAdd }: { pkg: AIRecommendation; onAdd: () => voi
   );
 }
 
-// 
+//
 // Discount Panel
-// 
+//
 
 function DiscountPanel({ discount, onUpdate, setupTotal, recurringTotal }: {
   discount: Discount;
@@ -1288,7 +1185,7 @@ function DiscountPanel({ discount, onUpdate, setupTotal, recurringTotal }: {
         <div className="grid grid-cols-3 gap-3 mt-2">
           {[
             { label: "Original Price", value: fmt(base), bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB"},
-            { label: "Discount", value: discountAmt > 0 ? `-${fmt(discountAmt)}` : "—", bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
+            { label: "Discount", value: discountAmt > 0 ? `-${fmt(discountAmt)}` : "-", bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
             { label: "Final Price", value: fmt(finalPrice), bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
           ].map(r => (
             <div key={r.label} className="rounded-xl border p-4 text-center"style={{ background: r.bg, borderColor: r.border }}>
@@ -1300,7 +1197,7 @@ function DiscountPanel({ discount, onUpdate, setupTotal, recurringTotal }: {
 
         {discount.promoCode && (
           <div className="rounded-lg border px-4 py-3 flex items-center gap-2"style={{ background: "#F0FDF4", borderColor: "#BBF7D0"}}>
-            
+
             <p className="text-xs font-semibold"style={{ color: "#047857"}}>
               Promo code <strong>{discount.promoCode}</strong> applied.
               {!discount.approved && "Pending manager approval."}
@@ -1312,9 +1209,9 @@ function DiscountPanel({ discount, onUpdate, setupTotal, recurringTotal }: {
   );
 }
 
-// 
+//
 // Pricing Summary
-// 
+//
 
 function PricingSummary({ lineItems, discount }: { lineItems: LineItem[]; discount: Discount }) {
   const setupFees = lineItems.reduce((s, l) => s + l.setupFee * l.quantity, 0);
@@ -1332,8 +1229,8 @@ function PricingSummary({ lineItems, discount }: { lineItems: LineItem[]; discou
           {[
             { label: "One-Time Setup Fees", value: fmt(setupFees), color: "#C2410C", bold: false },
             { label: "Monthly Recurring Fees", value: `${fmt(monthlyFees)}/mo`, color: "#1D4ED8", bold: false },
-            { label: "Discounts", value: discountAmt > 0 ? `-${fmt(discountAmt)}` : "—", color: "#DC2626", bold: false },
-            { label: "Promo Codes", value: discount.promoCode || "—", color: "#92400E", bold: false },
+            { label: "Discounts", value: discountAmt > 0 ? `-${fmt(discountAmt)}` : "-", color: "#DC2626", bold: false },
+            { label: "Promo Codes", value: discount.promoCode || "-", color: "#92400E", bold: false },
           ].map(r => (
             <div key={r.label} className="flex items-center justify-between text-xs px-3 py-2 rounded-lg"style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)"}}>
               <span style={{ color: "var(--rtm-text-muted)"}}>{r.label}</span>
@@ -1361,9 +1258,9 @@ function PricingSummary({ lineItems, discount }: { lineItems: LineItem[]; discou
   );
 }
 
-// 
+//
 // Delivery Standards
-// 
+//
 
 function DeliveryStandards({ lineItems }: { lineItems: LineItem[] }) {
   if (lineItems.length === 0) return null;
@@ -1406,9 +1303,9 @@ function DeliveryStandards({ lineItems }: { lineItems: LineItem[] }) {
   );
 }
 
-// 
+//
 // Task Blueprint Mapping
-// 
+//
 
 function TaskBlueprintMapping({ lineItems }: { lineItems: LineItem[] }) {
   if (lineItems.length === 0) return null;
@@ -1472,7 +1369,7 @@ function TaskBlueprintMapping({ lineItems }: { lineItems: LineItem[] }) {
                       {li.dependencies.map(d => (
                         <span key={d} className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full"style={{ background: "#FFF7ED", color: "#C2410C"}}>{d}</span>
                       ))}
-                      {li.dependencies.length === 0 && <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
+                      {li.dependencies.length === 0 && <span style={{ color: "var(--rtm-text-muted)"}}>-</span>}
                     </div>
                   </td>
                 </tr>
@@ -1485,9 +1382,9 @@ function TaskBlueprintMapping({ lineItems }: { lineItems: LineItem[] }) {
   );
 }
 
-// 
+//
 // Contract Builder
-// 
+//
 
 function ContractBuilder({ config, onChange }: {
   config: ContractConfig;
@@ -1552,8 +1449,8 @@ function ContractBuilder({ config, onChange }: {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Term Length", value: `${termMonthCount} month${termMonthCount !== 1 ? "s": ""}`, bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
-            { label: "Start Date", value: config.startDate || "—", bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
-            { label: "End Date", value: config.endDate || "—", bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
+            { label: "Start Date", value: config.startDate || "-", bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
+            { label: "End Date", value: config.endDate || "-", bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
             { label: "Auto Renew", value: config.autoRenew ? "Yes": "No", bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE"},
           ].map(r => (
             <div key={r.label} className="rounded-lg border p-3 text-center"style={{ background: r.bg, borderColor: r.border }}>
@@ -1567,9 +1464,9 @@ function ContractBuilder({ config, onChange }: {
   );
 }
 
-// 
+//
 // Proposal → Contract Flow
-// 
+//
 
 function ProposalContractFlow({ status }: { status: ProposalStatus }) {
   const steps = [
@@ -1624,9 +1521,9 @@ function ProposalContractFlow({ status }: { status: ProposalStatus }) {
   );
 }
 
-// 
+//
 // AI Executive Summary
-// 
+//
 
 function AIExecutiveSummary({ proposal }: { proposal: Proposal }) {
   const s = proposal.aiSummary;
@@ -1675,28 +1572,174 @@ function AIExecutiveSummary({ proposal }: { proposal: Proposal }) {
   );
 }
 
-// 
-// Proposal Detail Drawer
-// 
+//
+// Sales Intelligence section for the drawer Overview tab
+//
 
-type DrawerTab = "overview"| "services"| "lineitems"| "pricing"| "delivery"| "blueprints"| "contract"| "activity";
+function closeProbability(status: ProposalStatus): string {
+  const map: Partial<Record<ProposalStatus, string>> = {
+    Negotiation: "60%",
+    Accepted: "90%",
+    Sent: "40%",
+    Draft: "20%",
+    "Internal Review": "30%",
+    "Pending Approval": "35%",
+    "Converted To Contract": "100%",
+    Rejected: "0%",
+    Expired: "5%",
+  };
+  return map[status] ?? "25%";
+}
+
+function suggestedNextAction(status: ProposalStatus): string {
+  const map: Partial<Record<ProposalStatus, string>> = {
+    Negotiation: "Follow up on pricing objections and confirm decision timeline.",
+    Accepted: "Send contract for signature and schedule onboarding call.",
+    Sent: "Check if proposal was received — follow up if no response after 3 days.",
+    Draft: "Complete and send proposal to the client.",
+    "Internal Review": "Await internal approval before sending to client.",
+    "Pending Approval": "Obtain manager sign-off on pricing or discount.",
+    "Converted To Contract": "Coordinate with operations to begin onboarding.",
+    Rejected: "Request feedback and determine if a revised proposal is appropriate.",
+    Expired: "Re-engage client and send an updated proposal.",
+  };
+  return map[status] ?? "Review proposal status and determine next steps.";
+}
+
+function SalesIntelligence({ proposal }: { proposal: Proposal }) {
+  const s = proposal.aiSummary;
+  const riskNote = s.riskFactors.length > 0 ? s.riskFactors[0] : null;
+
+  return (
+    <Card>
+      <CardHeader
+        title="Sales Intelligence"
+        subtitle="AI-generated sales context for this proposal (internal)"
+      />
+      <div className="p-5 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="rounded-xl border p-4" style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#1D4ED8" }}>Package Name</p>
+            <p className="text-sm font-bold" style={{ color: "#1E40AF" }}>{s.recommendedPackage}</p>
+          </div>
+          <div className="rounded-xl border p-4" style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#15803D" }}>Contract Value</p>
+            <p className="text-sm font-bold" style={{ color: "#166534" }}>{s.revenueOpportunity}</p>
+          </div>
+          <div className="rounded-xl border p-4" style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#6D28D9" }}>Expected Impact</p>
+            <p className="text-xs font-semibold" style={{ color: "#4C1D95" }}>{s.expectedImpact}</p>
+          </div>
+          <div className="rounded-xl border p-4" style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "#D97706" }}>Estimated Close Probability</p>
+            <p className="text-xl font-black" style={{ color: "#92400E" }}>{closeProbability(proposal.status)}</p>
+          </div>
+          <div className="rounded-xl border p-4 sm:col-span-2" style={{ background: "#F8FAFC", borderColor: "#E2E8F0" }}>
+            <p className="text-[10px] font-bold mb-1" style={{ color: "var(--rtm-text-muted)" }}>Suggested Next Action</p>
+            <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{suggestedNextAction(proposal.status)}</p>
+          </div>
+        </div>
+        {riskNote && (
+          <div className="rounded-lg border px-4 py-3" style={{ background: "#FFF7ED", borderColor: "#FED7AA" }}>
+            <p className="text-[10px] font-bold mb-0.5" style={{ color: "#C2410C" }}>Watch for</p>
+            <p className="text-xs font-semibold" style={{ color: "#92400E" }}>{riskNote}</p>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+//
+// Budget summary for the drawer Pricing tab
+//
+
+function DrawerPricingSummary({ proposal }: { proposal: Proposal }) {
+  const lineItems = proposal.lineItems;
+  const setupFees = lineItems.reduce((s, l) => s + l.setupFee * l.quantity, 0);
+  const monthlyRecurring = lineItems.reduce((s, l) => s + l.recurringFee * l.quantity, 0);
+  const base = setupFees + monthlyRecurring * 12;
+  const discountAmt = calcDiscount(base, proposal.discount);
+  const hasDiscount = discountAmt > 0;
+  const discountedMonthly = hasDiscount
+    ? monthlyRecurring * (1 - (proposal.discount.value / 100))
+    : monthlyRecurring;
+  const grandTotalFirstMonth = setupFees + (hasDiscount ? discountedMonthly : monthlyRecurring);
+  const grandTotalMonthly = hasDiscount ? discountedMonthly : monthlyRecurring;
+
+  const rows = [
+    { label: "Total Monthly Recurring", value: `${fmt(monthlyRecurring)}/mo`, color: "#1D4ED8" },
+    { label: "Total Setup Fees", value: fmt(setupFees), color: "#C2410C" },
+    ...(hasDiscount
+      ? [
+          { label: `Discount (${proposal.discount.type === "Fixed" ? fmt(discountAmt) : `${proposal.discount.value}%`})`, value: `-${fmt(discountAmt)}`, color: "#DC2626" },
+          { label: "Discounted Monthly", value: `${fmt(discountedMonthly)}/mo`, color: "#059669" },
+        ]
+      : []),
+    { label: "Grand Total — First Month", value: fmt(grandTotalFirstMonth), color: "#047857" },
+    { label: "Grand Total — Monthly (M2+)", value: `${fmt(grandTotalMonthly)}/mo`, color: "#047857" },
+  ];
+
+  return (
+    <Card>
+      <CardHeader title="Budget Summary" />
+      <div className="p-5 space-y-2">
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            className="flex items-center justify-between px-4 py-3 rounded-lg"
+            style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)" }}
+          >
+            <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{r.label}</span>
+            <span className="text-sm font-bold" style={{ color: r.color }}>{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+//
+// Proposal Detail Drawer
+//
+
+type DrawerTab = "overview" | "services" | "lineitems" | "pricing" | "activity";
 
 function ProposalDetailDrawer({ proposal, onClose, onEdit }: {
   proposal: Proposal;
   onClose: () => void;
-  onEdit: () => void;
+  onEdit: (p: Proposal) => void;
 }) {
   const [tab, setTab] = useState<DrawerTab>("overview");
+  const [activityNote, setActivityNote] = useState("");
+  const [activityLog, setActivityLog] = useState<{ date: string; event: string; user: string }[]>(
+    proposal.activityTimeline
+  );
+  const { toast, showToast } = useProposalToast();
+
+  function handleDownloadPdf() {
+    showToast("Preparing proposal PDF...");
+    setTimeout(() => {
+      showToast(`Proposal PDF downloaded - ${proposal.name}.pdf`);
+    }, 1500);
+  }
+
+  function handleAddNote() {
+    const note = activityNote.trim();
+    if (!note) return;
+    setActivityLog((prev) => [
+      ...prev,
+      { date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), event: note, user: proposal.owner },
+    ]);
+    setActivityNote("");
+  }
 
   const TABS: { key: DrawerTab; label: string }[] = [
-    { key: "overview",   label: "Overview"},
-    { key: "services",   label: "Services"},
-    { key: "lineitems",  label: "Line Items"},
-    { key: "pricing",    label: "Pricing"},
-    { key: "delivery",   label: "Delivery Standards"},
-    { key: "blueprints", label: "Task Blueprints"},
-    { key: "contract",   label: "Contract"},
-    { key: "activity",   label: "Activity"},
+    { key: "overview",  label: "Overview" },
+    { key: "services",  label: "Services" },
+    { key: "lineitems", label: "Line Items" },
+    { key: "pricing",   label: "Pricing" },
+    { key: "activity",  label: "Activity" },
   ];
 
   const setupTotal = proposal.lineItems.reduce((s, l) => s + l.setupFee * l.quantity, 0);
@@ -1704,173 +1747,202 @@ function ProposalDetailDrawer({ proposal, onClose, onEdit }: {
   const discountAmt = calcDiscount(setupTotal + recurringTotal * 12, proposal.discount);
 
   return (
-    <div className="fixed inset-0 z-50 flex"style={{ backdropFilter: "blur(2px)", background: "rgba(0,0,0,0.4)"}}>
-      <div className="ml-auto w-full max-w-3xl h-full overflow-y-auto shadow-2xl flex flex-col"style={{ background: "var(--rtm-surface)"}}>
-        {/* Header */}
-        <div className="px-6 py-4 border-b flex items-start justify-between gap-4 sticky top-0 z-10"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <StatusBadge status={proposal.status} />
-              <span className="text-[10px] font-semibold"style={{ color: "var(--rtm-text-muted)"}}>{proposal.id}</span>
+    <>
+      {toast && <ProposalToastBanner message={toast} />}
+      <div className="fixed inset-0 z-50 flex" style={{ backdropFilter: "blur(2px)", background: "rgba(0,0,0,0.4)" }}>
+        <div className="ml-auto w-full max-w-3xl h-full overflow-y-auto shadow-2xl flex flex-col" style={{ background: "var(--rtm-surface)" }}>
+
+          {/* Header */}
+          <div className="px-6 py-4 border-b flex items-start justify-between gap-4 sticky top-0 z-10" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <StatusBadge status={proposal.status} />
+                <span className="text-[10px] font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{proposal.id}</span>
+              </div>
+              <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{proposal.name}</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                {proposal.client} · {proposal.owner} · Created {proposal.createdDate}
+              </p>
             </div>
-            <h2 className="text-base font-bold"style={{ color: "var(--rtm-text-primary)"}}>{proposal.name}</h2>
-            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
-              {proposal.client} · {proposal.owner} · Created {proposal.createdDate}
-            </p>
+            <div className="flex gap-2 flex-shrink-0">
+              <Btn variant="default" onClick={handleDownloadPdf}>Download PDF</Btn>
+              <Btn variant="primary" onClick={() => onEdit(proposal)}>Edit Proposal</Btn>
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-sm font-bold px-3 py-1.5 rounded-lg border transition-all"
+                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+              >
+                Close
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
-            <Btn variant="primary"onClick={onEdit}>Edit Proposal</Btn>
-            <button onClick={onClose} className="text-sm font-bold px-3 py-1.5 rounded-lg border transition-all"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}>
-               Close
-            </button>
+
+          {/* Stats row */}
+          <div className="px-6 py-4 border-b grid grid-cols-2 sm:grid-cols-4 gap-3" style={{ borderColor: "var(--rtm-border)" }}>
+            {[
+              { label: "Setup Fees", value: fmt(setupTotal), bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA" },
+              { label: "Monthly Recurring", value: `${fmt(recurringTotal)}/mo`, bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
+              { label: "Discount", value: discountAmt > 0 ? `-${fmt(discountAmt)}` : "—", bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
+              { label: "Total Value", value: fmt(proposal.totalValue), bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
+            ].map((r) => (
+              <div key={r.label} className="rounded-xl border p-3 text-center" style={{ background: r.bg, borderColor: r.border }}>
+                <p className="text-[10px] font-bold" style={{ color: r.text }}>{r.label}</p>
+                <p className="text-base font-black mt-0.5" style={{ color: r.text }}>{r.value}</p>
+              </div>
+            ))}
           </div>
-        </div>
 
-        {/* Tabs */}
-        <div className="flex overflow-x-auto border-b"style={{ borderColor: "var(--rtm-border)"}}>
-          {TABS.map(t => (
-            <button key={t.key} onClick={() => setTab(t.key)}
-              className="px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors"style={{
-                color: tab === t.key ? "#1D4ED8": "var(--rtm-text-muted)",
-                borderBottom: tab === t.key ? "2px solid #1D4ED8": "2px solid transparent",
-              }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+          {/* Tabs */}
+          <div className="flex overflow-x-auto border-b" style={{ borderColor: "var(--rtm-border)" }}>
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className="px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors"
+                style={{
+                  color: tab === t.key ? "#1D4ED8" : "var(--rtm-text-muted)",
+                  borderBottom: tab === t.key ? "2px solid #1D4ED8" : "2px solid transparent",
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
 
-        {/* Content */}
-        <div className="flex-1 p-6 space-y-4">
-          {tab === "overview"&& (
-            <>
-              <AIExecutiveSummary proposal={proposal} />
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {[
-                  { label: "Setup Fees", value: fmt(setupTotal), bg: "#FFF7ED", text: "#C2410C", border: "#FED7AA"},
-                  { label: "Monthly Recurring", value: `${fmt(recurringTotal)}/mo`, bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE"},
-                  { label: "Discount", value: discountAmt > 0 ? `-${fmt(discountAmt)}` : "—", bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3"},
-                  { label: "Total Value", value: fmt(proposal.totalValue), bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0"},
-                ].map(r => (
-                  <div key={r.label} className="rounded-xl border p-4 text-center"style={{ background: r.bg, borderColor: r.border }}>
-                    <p className="text-[10px] font-bold"style={{ color: r.text }}>{r.label}</p>
-                    <p className="text-lg font-black mt-1"style={{ color: r.text }}>{r.value}</p>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+          {/* Tab Content */}
+          <div className="flex-1 p-6 space-y-4">
 
-          {tab === "services"&& (
-            <Card>
-              <CardHeader title="Services"/>
-              <div className="p-4 space-y-2">
-                {proposal.services.map(s => (
-                  <div key={s} className="flex items-center gap-3 px-3 py-2 rounded-lg border"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)"}}>
-                    <CategoryBadge cat={s} />
-                    <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{s}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
-          )}
+            {/* Overview */}
+            {tab === "overview" && (
+              <SalesIntelligence proposal={proposal} />
+            )}
 
-          {tab === "lineitems"&& (
-            <Card>
-              <CardHeader title="Line Items"/>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs"style={{ borderCollapse: "collapse", minWidth: "700px"}}>
-                  <thead>
-                    <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)"}}>
-                      {["Service","Dept","Setup Fee","Recurring Fee","Qty","Blueprint","Status"].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {proposal.lineItems.map((li, i) => (
-                      <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "transparent": "var(--rtm-surface)"}}>
-                        <td className="px-4 py-3 font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
-                          <div className="flex items-center gap-2">
-                            <CategoryBadge cat={li.category} />
-                            <span>{li.name}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3"style={{ color: "var(--rtm-text-secondary)"}}>{li.department}</td>
-                        <td className="px-4 py-3 font-semibold"style={{ color: "#C2410C"}}>{li.setupFee > 0 ? fmt(li.setupFee) : "—"}</td>
-                        <td className="px-4 py-3 font-semibold"style={{ color: "#1D4ED8"}}>{li.recurringFee > 0 ? `${fmt(li.recurringFee)}/mo` : "—"}</td>
-                        <td className="px-4 py-3 text-center"style={{ color: "var(--rtm-text-secondary)"}}>{li.quantity}</td>
-                        <td className="px-4 py-3">
-                          <span className="text-[10px] px-2 py-0.5 rounded"style={{ background: "#F5F3FF", color: "#6D28D9"}}>{li.taskBlueprint}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge label={li.status}
-                            bg={li.status === "Active"? "#F0FDF4": "#FFF7ED"}
-                            text={li.status === "Active"? "#15803D": "#C2410C"}
-                            border={li.status === "Active"? "#BBF7D0": "#FED7AA"} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          )}
-
-          {tab === "pricing"&& <PricingSummary lineItems={proposal.lineItems} discount={proposal.discount} />}
-
-          {tab === "delivery"&& <DeliveryStandards lineItems={proposal.lineItems} />}
-
-          {tab === "blueprints"&& <TaskBlueprintMapping lineItems={proposal.lineItems} />}
-
-          {tab === "contract"&& (
-            <>
+            {/* Services */}
+            {tab === "services" && (
               <Card>
-                <CardHeader title="Contract Details"/>
-                <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {[
-                    { label: "Term", value: proposal.contract.term },
-                    { label: "Start Date", value: proposal.contract.startDate || "—"},
-                    { label: "End Date", value: proposal.contract.endDate || "—"},
-                    { label: "Notice Period", value: proposal.contract.noticePeriod },
-                    { label: "Auto Renew", value: proposal.contract.autoRenew ? "Yes": "No"},
-                    { label: "Cancellation Terms", value: proposal.contract.cancellationTerms },
-                  ].map(r => (
-                    <div key={r.label} className="rounded-lg border p-3"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)"}}>
-                      <p className="text-[10px] font-bold"style={{ color: "var(--rtm-text-muted)"}}>{r.label}</p>
-                      <p className="text-xs font-semibold mt-0.5"style={{ color: "var(--rtm-text-primary)"}}>{r.value}</p>
-                    </div>
-                  ))}
+                <CardHeader title="Services" subtitle={`${proposal.services.length} service${proposal.services.length !== 1 ? "s" : ""} included`} />
+                <div className="p-4 space-y-2">
+                  {proposal.services.map((s) => {
+                    const deptMap: Partial<Record<ServiceCategory, string>> = {
+                      SEO: "SEO", GBP: "GBP", PPC: "Paid Advertising",
+                      "Meta Ads": "Paid Advertising", Website: "Web",
+                      Content: "Content", Reporting: "Reporting", LSA: "LSA",
+                    };
+                    return (
+                      <div
+                        key={s}
+                        className="flex items-center justify-between px-4 py-3 rounded-lg border"
+                        style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}
+                      >
+                        <div className="flex items-center gap-3">
+                          <CategoryBadge cat={s} />
+                          <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{s}</span>
+                        </div>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}
+                        >
+                          {deptMap[s] ?? s}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </Card>
-              <ProposalContractFlow status={proposal.status} />
-            </>
-          )}
+            )}
 
-          {tab === "activity"&& (
-            <Card>
-              <CardHeader title="Activity Timeline"/>
-              <div className="p-5 space-y-3">
-                {proposal.activityTimeline.map((e, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"style={{ background: "#1D4ED8"}} />
-                    <div>
-                      <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{e.event}</p>
-                      <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{e.user} · {e.date}</p>
+            {/* Line Items */}
+            {tab === "lineitems" && (
+              <Card>
+                <CardHeader title="Line Items" subtitle={`${proposal.lineItems.length} line item${proposal.lineItems.length !== 1 ? "s" : ""}`} />
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "640px" }}>
+                    <thead>
+                      <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
+                        {["Service", "Line Item", "Qty", "Unit Price", "Subtotal"].map((h) => (
+                          <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {proposal.lineItems.map((li, i) => {
+                        const unitPrice = li.recurringFee > 0 ? li.recurringFee : li.setupFee;
+                        const subtotal = unitPrice * li.quantity;
+                        return (
+                          <tr key={li.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "transparent" : "var(--rtm-surface)" }}>
+                            <td className="px-4 py-3">
+                              <CategoryBadge cat={li.category} />
+                            </td>
+                            <td className="px-4 py-3 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{li.name}</td>
+                            <td className="px-4 py-3 text-center" style={{ color: "var(--rtm-text-secondary)" }}>{li.quantity}</td>
+                            <td className="px-4 py-3 font-semibold" style={{ color: li.recurringFee > 0 ? "#1D4ED8" : "#C2410C" }}>
+                              {li.recurringFee > 0 ? `${fmt(li.recurringFee)}/mo` : fmt(li.setupFee)}
+                            </td>
+                            <td className="px-4 py-3 font-bold" style={{ color: "#047857" }}>
+                              {li.recurringFee > 0 ? `${fmt(subtotal)}/mo` : fmt(subtotal)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+
+            {/* Pricing */}
+            {tab === "pricing" && <DrawerPricingSummary proposal={proposal} />}
+
+            {/* Activity */}
+            {tab === "activity" && (
+              <Card>
+                <CardHeader title="Activity" />
+                <div className="p-5 space-y-3">
+                  {activityLog.map((e, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: "#1D4ED8" }} />
+                      <div>
+                        <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{e.event}</p>
+                        <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{e.user} · {e.date}</p>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="pt-3 border-t" style={{ borderColor: "var(--rtm-border)" }}>
+                    <p className="text-[10px] font-bold mb-2" style={{ color: "var(--rtm-text-muted)" }}>ADD NOTE</p>
+                    <div className="flex gap-2">
+                      <textarea
+                        value={activityNote}
+                        onChange={(e) => setActivityNote(e.target.value)}
+                        placeholder="Add a note..."
+                        rows={2}
+                        className="flex-1 text-xs rounded-lg border px-3 py-2 focus:outline-none resize-none"
+                        style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddNote}
+                        className="px-3 py-2 text-xs font-semibold rounded-lg border self-end"
+                        style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}
+                      >
+                        Save
+                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-          )}
+                </div>
+              </Card>
+            )}
+
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
-// 
+//
 // Full Proposal Builder (Create / Edit Mode)
-// 
+//
 
 function ProposalBuilderView({ initial, onBack }: {
   initial: Proposal | null;
@@ -2005,7 +2077,7 @@ function ProposalBuilderView({ initial, onBack }: {
         {builderTab === "ai"&& (
           <div className="space-y-4">
             <Card>
-              <CardHeader title="AI Package Recommendations"subtitle="All available packages — add to your proposal"/>
+              <CardHeader title="AI Package Recommendations"subtitle="All available packages - add to your proposal"/>
               <div className="p-5 space-y-3">
                 {AI_PACKAGES.map(pkg => (
                   <AIPackageCard key={pkg.packageName} pkg={pkg} onAdd={() => acceptAIPackage(pkg)} />
@@ -2042,9 +2114,9 @@ function ProposalBuilderView({ initial, onBack }: {
   );
 }
 
-// 
+//
 // Main Page
-// 
+//
 
 type PageView = "dashboard"| "builder"| "detail"| "proposal-builder"| "wizard";
 
@@ -2079,6 +2151,9 @@ function ProposalsPageInner() {
       }
       setWizardInitialState(initial);
       setView("wizard");
+    } else {
+      // No wizard params — ensure we are in list view
+      setView("dashboard");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -2088,10 +2163,10 @@ function ProposalsPageInner() {
     setDrawerOpen(true);
   }
 
-  function openBuilder(p: Proposal | null) {
-    setEditingProposal(p);
+  function openBuilder(_p: Proposal | null) {
+    // Legacy builder - now unreachable; all edits route through wizard resume
     setDrawerOpen(false);
-    setView("builder");
+    setView("proposal-builder");
   }
 
   function openProposalBuilder() {
@@ -2101,8 +2176,62 @@ function ProposalsPageInner() {
 
   function resumeWizardDraft(p: Proposal) {
     setDrawerOpen(false);
-    // Use the proposal id as the wizard id for resuming
-    router.push(`/sales/proposals?resume=${p.id}`);
+    // Pre-populate wizard state from flat proposal record so the wizard opens
+    // with as much context as possible rather than blank.
+    const wizardId = `wizard-prop-${p.id}`;
+    const prefilledState = {
+      wizardId,
+      status: "draft" as const,
+      currentStep: 1 as const,
+      completedSteps: [] as number[],
+      clientInfo: {
+        name: p.info.client,
+        businessName: p.client,
+        industry: "",
+        location: "",
+        website: "",
+        leadSource: "",
+        contactName: p.info.owner,
+        contactEmail: "",
+        contactPhone: "",
+        notes: p.activityTimeline.map(e => `${e.date}: ${e.event}`).join(" | "),
+      },
+      selectedGoals: p.services as string[],
+      auditMode: null,
+      selectedAuditId: null,
+      auditResult: null,
+      approvedRecommendations: p.services as string[],
+      lineItems: p.lineItems.map(li => ({
+        id: li.id,
+        name: li.name,
+        department: li.department,
+        category: li.category,
+        basePrice: li.recurringFee,
+        setupFee: li.setupFee,
+        quantity: li.quantity,
+        billingCycle: "Monthly" as const,
+        adjustedPrice: li.recurringFee,
+        margin: 0.4,
+        type: "service" as const,
+      })),
+      discountPercentage: p.discount.type === "Percentage" || p.discount.type === "Promo Code" ? p.discount.value : 0,
+      budgetResult: null,
+      proposalDocument: null,
+      lastSavedAt: new Date().toISOString(),
+      intakeRecord: null,
+      opportunityId: p.info.opportunity,
+    };
+    try {
+      localStorage.setItem(`rtm-proposal-draft-${wizardId}`, JSON.stringify(prefilledState));
+    } catch {
+      // ignore storage errors
+    }
+    router.push(`/sales/proposals?resume=${wizardId}`);
+  }
+
+  // editProposal - routes Edit button through wizard resume for every proposal
+  function editProposal(p: Proposal) {
+    resumeWizardDraft(p);
   }
 
   function backToDashboard() {
@@ -2116,13 +2245,24 @@ function ProposalsPageInner() {
       <ProposalWizard
         initialState={wizardInitialState}
         onComplete={() => {
+          setView("dashboard");
           router.push("/sales/proposals");
         }}
         onSaveDraft={(s) => {
-          // Draft auto-saved by wizard; optionally show feedback
-          void s;
+          // Persist the draft so resume works; save before navigating away
+          try {
+            const id = s?.wizardId ?? wizardInitialState?.wizardId;
+            if (id) {
+              localStorage.setItem(`rtm-proposal-draft-${id}`, JSON.stringify(s));
+            }
+          } catch {
+            // ignore storage errors
+          }
+          setView("dashboard");
+          router.push("/sales/proposals");
         }}
         onExit={() => {
+          setView("dashboard");
           router.push("/sales/proposals");
         }}
       />
@@ -2147,8 +2287,6 @@ function ProposalsPageInner() {
         {view === "dashboard"&& (
           <div className="flex gap-2">
             <Btn variant="primary"onClick={() => router.push("/sales/proposals?new=true")}>+ New Proposal</Btn>
-            <Btn variant="default"onClick={() => openProposalBuilder()}>Proposal Builder</Btn>
-            <Btn variant="default"onClick={() => openBuilder(null)}>Legacy Builder</Btn>
             <Link href="/sales">
               <Btn variant="default">← Sales Dashboard</Btn>
             </Link>
@@ -2156,30 +2294,7 @@ function ProposalsPageInner() {
         )}
       </div>
 
-      {/* Navigation reminder — proposals always visible */}
-      {view === "dashboard"&& (
-        <div className="flex flex-wrap gap-2">
-          {[
-            { label: "Dashboard", href: "/sales"},
-            { label: "Leads", href: "/sales/leads"},
-            { label: "Audits", href: "/sales/audits"},
-            { label: "Recommendations", href: "/sales/recommendations"},
-            { label: "Pipeline", href: "/sales/pipeline"},
-            { label: "Proposals", href: "/sales/proposals", active: true },
-            { label: "Contracts", href: "/sales/proposals", icon: ""},
-          ].map(n => (
-            <Link key={n.label} href={n.href}>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all"style={{
-                  background: n.active ? "#059669": "var(--rtm-surface)",
-                  color: n.active ? "#fff": "var(--rtm-text-secondary)",
-                  borderColor: n.active ? "#059669": "var(--rtm-border)",
-                }}>
-                {n.icon} {n.label}
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
+
 
       {/*  Proposal Builder (EPIC 08.5)  */}
       {view === "proposal-builder"&& (
@@ -2253,8 +2368,13 @@ function ProposalsPageInner() {
         </div>
       )}
 
-      {/*  Legacy Builder View  */}
-      {view === "builder"&& (
+      {/* DEPRECATED - legacy proposal editor, retired.
+           Superseded by ProposalWizard resume mode.
+           Safe to delete in a future cleanup pass.
+           This branch is permanently unreachable: the Edit button and all
+           drawer actions now route through editProposal() → resumeWizardDraft()
+           which navigates to ?resume= and never sets view to "builder". */}
+      {view === "builder" && false && (
         <ProposalBuilderView initial={editingProposal} onBack={backToDashboard} />
       )}
 
@@ -2268,15 +2388,11 @@ function ProposalsPageInner() {
           <ProposalTable
             proposals={MOCK_PROPOSALS}
             onSelect={openDetail}
-            onBuild={openBuilder}
+            onEdit={editProposal}
             onResume={resumeWizardDraft}
           />
 
-          {/* Back/Forward navigation */}
-          <div className="flex items-center justify-between">
-            <a href="/sales/budget-optimizer" className="text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}>← Budget Optimizer</a>
-            <a href="/sales/contracts" className="text-sm font-semibold"style={{ color: "#059669"}}>Continue to Contracts →</a>
-          </div>
+
         </>
       )}
 
@@ -2285,9 +2401,9 @@ function ProposalsPageInner() {
         <ProposalDetailDrawer
           proposal={selectedProposal}
           onClose={() => setDrawerOpen(false)}
-          onEdit={() => {
+          onEdit={(p) => {
             setDrawerOpen(false);
-            openBuilder(selectedProposal);
+            editProposal(p);
           }}
         />
       )}
@@ -2295,15 +2411,15 @@ function ProposalsPageInner() {
   );
 }
 
-// 
+//
 // Root export with Suspense boundary (required for useSearchParams)
-// 
+//
 
 export default function ProposalsPage() {
   return (
     <Suspense fallback={
       <div className="p-8 text-center">
-        <p style={{ color: "var(--rtm-text-muted)" }}>Loading proposals…</p>
+        <p style={{ color: "var(--rtm-text-muted)" }}>Loading proposals...</p>
       </div>
     }>
       <ProposalsPageInner />

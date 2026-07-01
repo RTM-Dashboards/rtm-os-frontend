@@ -10,9 +10,23 @@ import {
   BUDGET_SERVICE_CATALOG,
   RECOMMENDATION_TO_BUDGET_MAP,
   getBudgetServiceById,
+  MAX_DISCOUNT_PERCENTAGE,
+  MAX_FLAT_DISCOUNT_MONTHLY,
+  MAX_FLAT_DISCOUNT_SETUP,
   type BudgetServiceId,
   type BudgetServiceDefinition,
 } from "./budget-config";
+import {
+  getServiceLineItems,
+  getServiceById,
+} from "./recommendation-config";
+import type {
+  ServiceLineItem,
+  LineItemSelection,
+  ServiceBudgetBreakdown,
+  ProposalDiscount,
+  DiscountedBudgetSummary,
+} from "./types";
 
 // ─── Line Item ────────────────────────────────────────────────────────────────
 
@@ -181,4 +195,177 @@ export function getAvailableServices(
 ): BudgetServiceDefinition[] {
   const existingSet = new Set(existingIds);
   return BUDGET_SERVICE_CATALOG.filter((s) => !existingSet.has(s.id));
+}
+
+// ─── Line Item Engine (pure functions) ────────────────────────────────────────────────
+
+/**
+ * Computes the subtotal for a single line item given a chosen quantity.
+ * Flat-included items always return their unitPrice regardless of quantity.
+ */
+export function computeLineItemSubtotal(
+  lineItem: ServiceLineItem,
+  quantity: number
+): number {
+  if (lineItem.isIncludedFlat) {
+    return lineItem.unitPrice;
+  }
+  return lineItem.unitPrice * quantity;
+}
+
+/**
+ * Computes the full budget breakdown for one service given a map of line item
+ * quantity overrides. Any line item not in the map defaults to its
+ * defaultQuantity. Quantities are clamped to [minQuantity, maxQuantity].
+ *
+ * The service's existing setupFee from SERVICE_CATALOG is preserved unchanged.
+ * Falls back to a single implicit line item using monthlyFee when no line items
+ * are defined (defensive — should not occur after full catalog population).
+ */
+export function computeServiceBudgetBreakdown(
+  serviceId: string,
+  quantities: Record<string, number>
+): ServiceBudgetBreakdown {
+  const catalogEntry = getServiceById(serviceId);
+  const lineItemDefs = getServiceLineItems(serviceId);
+  const serviceName = catalogEntry?.name ?? serviceId;
+  const setupFee = catalogEntry?.setupFee ?? 0;
+
+  // Defensive fallback: if no line items defined, treat flat monthlyFee as one item.
+  if (lineItemDefs.length === 0) {
+    const monthlyFee = catalogEntry?.monthlyFee ?? 0;
+    const fallbackSelection: LineItemSelection = {
+      lineItemId: `${serviceId}-flat`,
+      quantity: 1,
+      subtotal: monthlyFee,
+    };
+    return {
+      serviceId,
+      serviceName,
+      lineItemSelections: [fallbackSelection],
+      computedMonthlySubtotal: monthlyFee,
+      setupFee,
+    };
+  }
+
+  const lineItemSelections: LineItemSelection[] = lineItemDefs.map((li) => {
+    const rawQty = quantities[li.id] ?? li.defaultQuantity;
+    const quantity = Math.max(li.minQuantity, Math.min(li.maxQuantity, rawQty));
+    const subtotal = computeLineItemSubtotal(li, quantity);
+    return { lineItemId: li.id, quantity, subtotal };
+  });
+
+  const computedMonthlySubtotal = lineItemSelections.reduce(
+    (sum, sel) => sum + sel.subtotal,
+    0
+  );
+
+  return {
+    serviceId,
+    serviceName,
+    lineItemSelections,
+    computedMonthlySubtotal,
+    setupFee,
+  };
+}
+
+/**
+ * Sums all service breakdowns into overall monthly, setup, and grand totals.
+ * Grand total formula matches the existing Budget Summary:
+ *   grandTotal = totalMonthly + totalSetup
+ * (equivalent to grandTotalFirstMonth in computeBudget for the recurring+setup case)
+ */
+export function recomputeBudgetTotals(
+  serviceBreakdowns: ServiceBudgetBreakdown[]
+): { totalMonthly: number; totalSetup: number; grandTotal: number } {
+  const totalMonthly = serviceBreakdowns.reduce(
+    (sum, b) => sum + b.computedMonthlySubtotal,
+    0
+  );
+  const totalSetup = serviceBreakdowns.reduce(
+    (sum, b) => sum + b.setupFee,
+    0
+  );
+  const grandTotal = totalMonthly + totalSetup;
+  return { totalMonthly, totalSetup, grandTotal };
+}
+
+// ─── computeDiscountedSummary ──────────────────────────────────────────────────────────
+
+/**
+ * Applies a ProposalDiscount to pre-computed totals and returns a fully
+ * resolved DiscountedBudgetSummary. Pure function — never mutates inputs.
+ * All monetary values are rounded to 2 decimal places.
+ *
+ * Clamping rules:
+ *   percentage types: discount.value capped at MAX_DISCOUNT_PERCENTAGE
+ *   flat-monthly: capped at MAX_FLAT_DISCOUNT_MONTHLY AND totalMonthlyRecurring
+ *   flat-setup:   capped at MAX_FLAT_DISCOUNT_SETUP AND totalSetupFees
+ *   custom:       capped at totalMonthlyRecurring (no negative totals)
+ */
+export function computeDiscountedSummary(
+  totalMonthlyRecurring: number,
+  totalSetupFees: number,
+  discount: ProposalDiscount
+): DiscountedBudgetSummary {
+  const round2 = (n: number) => parseFloat(n.toFixed(2));
+
+  let discountAmountMonthly = 0;
+  let discountAmountSetup = 0;
+
+  switch (discount.type) {
+    case "none":
+      break;
+
+    case "percentage-monthly": {
+      const pct = Math.min(discount.value, MAX_DISCOUNT_PERCENTAGE);
+      discountAmountMonthly = totalMonthlyRecurring * (pct / 100);
+      break;
+    }
+
+    case "flat-monthly": {
+      const raw = Math.min(discount.value, MAX_FLAT_DISCOUNT_MONTHLY);
+      discountAmountMonthly = Math.min(raw, totalMonthlyRecurring);
+      break;
+    }
+
+    case "percentage-setup": {
+      const pct = Math.min(discount.value, MAX_DISCOUNT_PERCENTAGE);
+      discountAmountSetup = totalSetupFees * (pct / 100);
+      break;
+    }
+
+    case "flat-setup": {
+      const raw = Math.min(discount.value, MAX_FLAT_DISCOUNT_SETUP);
+      discountAmountSetup = Math.min(raw, totalSetupFees);
+      break;
+    }
+
+    case "custom": {
+      discountAmountMonthly = Math.min(discount.value, totalMonthlyRecurring);
+      break;
+    }
+  }
+
+  discountAmountMonthly = round2(discountAmountMonthly);
+  discountAmountSetup = round2(discountAmountSetup);
+
+  const discountedMonthly = round2(totalMonthlyRecurring - discountAmountMonthly);
+  const discountedSetup = round2(totalSetupFees - discountAmountSetup);
+  const grandTotalFirstMonth = round2(discountedMonthly + discountedSetup);
+  const grandTotalMonthlyOngoing = discountedMonthly;
+
+  return {
+    totalMonthlyRecurring: round2(totalMonthlyRecurring),
+    totalSetupFees: round2(totalSetupFees),
+    discountType: discount.type,
+    discountValue: discount.value,
+    discountLabel: discount.label,
+    discountAmountMonthly,
+    discountAmountSetup,
+    discountedMonthly,
+    discountedSetup,
+    grandTotalFirstMonth,
+    grandTotalMonthlyOngoing,
+  };
 }

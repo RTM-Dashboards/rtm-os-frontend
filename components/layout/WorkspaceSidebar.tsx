@@ -139,6 +139,90 @@ const NavIcon = ({ name, className = "w-4 h-4"}: { name?: string; className?: st
           <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
         </svg>
       );
+    case "contracts":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      );
+    case "handoffs":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        </svg>
+      );
+    case "audit":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+        </svg>
+      );
+    case "renewals":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+      );
+    case "cancellations":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      );
+    case "offboarding":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        </svg>
+      );
+    case "activation":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      );
+    case "expansion":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M7 11l5-5m0 0l5 5m-5-5v12"/>
+        </svg>
+      );
+    case "communications":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+        </svg>
+      );
+    case "changerequests":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+        </svg>
+      );
+    case "local":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+      );
+    case "seo":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      );
+    case "lsa":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+        </svg>
+      );
+    case "ads":
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/>
+        </svg>
+      );
     case "ai":
       return (
         <svg className={className} fill="none"stroke="currentColor"viewBox="0 0 24 24">
@@ -182,7 +266,10 @@ function resolveIconName(label: string, iconStr?: string): string {
   if (l.includes("collection")) return "collections";
   if (l.includes("lead")) return "leads";
   if (l.includes("pipeline")) return "pipeline";
-  if (l.includes("proposal")) return "proposals";
+  if (l.includes("proposal") || l.includes("proposal builder")) return "proposals";
+  if (l.includes("contract")) return "contracts";
+  if (l.includes("handoff")) return "handoffs";
+  if (l.includes("audit")) return "audit";
   if (l.includes("setting")) return "settings";
   if (l.includes("team") || l.includes("member") || l.includes("role")) return "team";
   if (l.includes("health")) return "health";
@@ -193,6 +280,20 @@ function resolveIconName(label: string, iconStr?: string): string {
   if (l.includes("affiliate")) return "affiliates";
   if (l.includes("ai") || l.includes("automation") || l.includes("intelligence")) return "ai";
   if (l.includes("notification")) return "notifications";
+  if (l.includes("renewal")) return "renewals";
+  if (l.includes("cancel")) return "cancellations";
+  if (l.includes("offboard")) return "offboarding";
+  if (l.includes("activation") || l.includes("active service")) return "activation";
+  if (l.includes("expansion") || l.includes("opportunit")) return "expansion";
+  if (l.includes("communication") || l.includes("check-in") || l.includes("checkin")) return "communications";
+  if (l.includes("change request")) return "changerequests";
+  if (l.includes("assignment")) return "team";
+  if (l.includes("local") || l.includes("gbp") || l.includes("yelp")) return "local";
+  if (l.includes("seo")) return "seo";
+  if (l.includes("lsa")) return "lsa";
+  if (l.includes("google ads") || l.includes("meta ads") || l.includes("paid")) return "ads";
+  if (l.includes("collection")) return "collections";
+  if (l.includes("invoice")) return "invoices";
   // fallback
   return "default";
 }
@@ -201,18 +302,17 @@ function resolveIconName(label: string, iconStr?: string): string {
 const WORKSPACE_NAV_OVERRIDES: Record<string, WorkspaceNavItem[]> = {
   sales: [
     { label: 'Dashboard',    href: '/sales' },
-    { label: 'Leads',        href: '/sales/leads',      group: 'PIPELINE' },
-    { label: 'Pipeline',     href: '/sales/pipeline',   group: 'PIPELINE' },
-    { label: 'Follow Ups',   href: '/sales/followups',  group: 'PIPELINE' },
-    { label: 'Audits',       href: '/sales/audits',     group: 'PIPELINE' },
-    { label: 'Proposals',    href: '/sales/proposals',  group: 'PIPELINE' },
-    { label: 'Contracts',    href: '/sales/contracts',  group: 'PIPELINE' },
-    { label: 'Handoffs',     href: '/sales/handoffs',   group: 'PIPELINE' },
-    { label: 'Affiliates',   href: '/sales/affiliates', group: 'TEAM' },
-    { label: 'Tasks',        href: '/sales/tasks',      group: 'TEAM' },
-    { label: 'Performance',  href: '/sales/performance',group: 'TEAM' },
+    { label: 'Leads',        href: '/sales/leads',       group: 'PIPELINE' },
+    { label: 'Pipeline',     href: '/sales/pipeline',    group: 'PIPELINE' },
+    { label: 'Audits',       href: '/sales/audits',      group: 'PIPELINE' },
+    { label: 'Proposals',    href: '/sales/proposals',   group: 'PIPELINE' },
+    { label: 'Contracts',    href: '/sales/contracts',   group: 'PIPELINE' },
+    { label: 'Handoffs',     href: '/sales/handoffs',    group: 'PIPELINE' },
+    { label: 'Affiliates',   href: '/sales/affiliates',  group: 'TEAM' },
+    { label: 'Tasks',        href: '/sales/tasks',       group: 'TEAM' },
+    { label: 'Performance',  href: '/sales/performance', group: 'TEAM' },
     { label: 'Team Members', href: '/sales/team-members',group: 'TEAM' },
-    { label: 'Settings',     href: '/sales/settings',   group: 'TEAM' },
+    { label: 'Settings',     href: '/sales/settings',    group: 'TEAM' },
   ],
   billing: [
     { label: "Dashboard",        href: "/billing"},

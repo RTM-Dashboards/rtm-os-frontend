@@ -29,6 +29,11 @@ import {
   STEP1_BUSINESS_INFO_FIELDS,
   AUDIT_GOAL_CONFIG,
 } from "@/lib/sales/intake-config";
+import {
+  PERFORMANCE_WIDGETS,
+  TASKS_WIDGETS,
+  AFFILIATES_WIDGETS,
+} from "@/lib/sales/widget-config";
 
 // ─── Role mock (from auth context in production) ─────────────────────────────
 // In production this value comes from auth context and varies at runtime.
@@ -362,7 +367,65 @@ export default function SalesSettingsPage() {
         <Row label="Gold commission rate" value="15% of Month 1 MRR" />
       </Section>
 
-      {/* Section 7 — Integrations (Sales-specific) */}
+      {/* Section 7 — Dashboard & Reporting Views */}
+      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+        <div className="px-5 py-4 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <h2 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Dashboard &amp; Reporting Views</h2>
+          <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+            Performance, Tasks, and Affiliates dashboards support per-user widget customization.
+            Each team member can choose which KPI cards to display and in what order via the
+            Customize View button on each page.
+          </p>
+        </div>
+        <div className="p-5" style={{ background: "var(--rtm-bg)" }}>
+          <div className="space-y-3">
+            {[
+              {
+                page: "Performance Dashboard",
+                href: "/sales/performance",
+                count: PERFORMANCE_WIDGETS.length,
+              },
+              {
+                page: "Tasks Dashboard",
+                href: "/sales/tasks",
+                count: TASKS_WIDGETS.length,
+              },
+              {
+                page: "Affiliates Dashboard",
+                href: "/sales/affiliates",
+                count: AFFILIATES_WIDGETS.length,
+              },
+            ].map(({ page, href, count }) => (
+              <div
+                key={page}
+                className="flex items-center justify-between py-2.5 border-b last:border-b-0"
+                style={{ borderColor: "var(--rtm-border)" }}
+              >
+                <div>
+                  <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{page}</p>
+                  <p className="text-[11px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                    {count} widget{count !== 1 ? "s" : ""} available
+                  </p>
+                </div>
+                <a
+                  href={href}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+                  style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}
+                >
+                  Open Page
+                </a>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] mt-4 pt-3 border-t" style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>
+            Customization is managed per-page, not centrally. Use the Customize View button on
+            each dashboard page to show, hide, or reorder KPI cards. Preferences are saved
+            per-user in your browser.
+          </p>
+        </div>
+      </div>
+
+      {/* Section 8 — Integrations (Sales-specific) */}
       <Section title="Integrations" description="Sales-specific integration statuses and field mapping summary.">
         <div className="space-y-3">
           <Row label="GoHighLevel CRM" value="Connected — Active Sync" />

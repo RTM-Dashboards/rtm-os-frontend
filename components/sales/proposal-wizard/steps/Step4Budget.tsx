@@ -2,11 +2,11 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import {
-  buildLineItemsFromRecommendations,
   computeBudget,
   type BudgetLineItem,
   type BudgetResult,
 } from "@/lib/sales/budget-engine";
+import type { ProposalDiscount } from "@/lib/sales/types";
 import { BudgetOptimizerShell } from "@/components/sales/budget-optimizer/BudgetOptimizerShell";
 import type { ProposalWizardState } from "../ProposalWizard";
 
@@ -15,50 +15,38 @@ import type { ProposalWizardState } from "../ProposalWizard";
 interface Step4BudgetProps {
   state: ProposalWizardState;
   onUpdate: (updates: Partial<ProposalWizardState>) => void;
+  /** Approved service names passed directly from ProposalWizard at render time,
+   *  bypassing the React setState batching race between Step 3's onUpdate and
+   *  handleNext. This prop is always current because ProposalWizard reads
+   *  wizardState.approvedRecommendationServiceNames at render time. */
+  approvedServiceNames?: string[];
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function Step4Budget({ state, onUpdate }: Step4BudgetProps) {
+export function Step4Budget({ state, onUpdate, approvedServiceNames }: Step4BudgetProps) {
   const initialized = useRef(false);
   const [lineItems, setLineItems] = useState<BudgetLineItem[]>(state.lineItems);
   const [discountPercentage, setDiscountPercentage] = useState<number>(
     state.discountPercentage
   );
+  const [discount, setDiscount] = useState<ProposalDiscount>(
+    state.discount ?? { type: "none", value: 0, label: "", authorizationNote: "" }
+  );
 
-  // Get approved recommendation service names from recommendation result
-  // The approvedRecommendations are IDs; we need service names for budget engine
-  // We'll derive them from the audit result's recommendations array if available
-  const approvedServiceNames: string[] = React.useMemo(() => {
-    if (!state.auditResult) return [];
-    // We need to get service names from the approved recommendation IDs
-    // Since we don't have the full recommendation result stored in state,
-    // we derive service names from the lineItems that were built
-    return state.lineItems.map((li) => li.label);
-  }, [state.auditResult, state.lineItems]);
-
-  // Bootstrap line items from approved recommendations on first render
+  // Bootstrap budget result when line items already exist (resuming a saved draft).
+  // This is a one-time setup on mount; ongoing changes are handled by handleLineItemsChange.
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
 
     if (state.lineItems.length > 0) {
-      // Already have line items (resuming draft)
       const result = computeBudget(state.lineItems, state.discountPercentage);
       onUpdate({ budgetResult: result });
-      return;
     }
-
-    if (state.approvedRecommendations.length === 0) return;
-
-    // We need service names to build line items
-    // The approved recommendation IDs don't directly map to service names
-    // We fall back to using the BudgetOptimizerShell's built-in initialization
-    // by passing the approved recommendation service labels
-    // For this, we'll need to get service names from somewhere
-    // The recommendation result isn't stored in wizard state, but we can
-    // derive it from the audit result + engine
-    // For simplicity, we initialize with empty and let BudgetOptimizerShell handle it
+    // First-visit service bootstrapping is handled inside BudgetOptimizerShellWrapper
+    // via the recommendedServiceLabels prop derived from state.approvedRecommendationServiceNames.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync line items and budget result whenever they change
@@ -68,10 +56,15 @@ export function Step4Budget({ state, onUpdate }: Step4BudgetProps) {
     onUpdate({ lineItems: items, budgetResult: result });
   }
 
-  function handleDiscountChange(discount: number) {
-    setDiscountPercentage(discount);
-    const result = computeBudget(lineItems, discount);
-    onUpdate({ discountPercentage: discount, budgetResult: result });
+  function handleDiscountChange(pct: number) {
+    setDiscountPercentage(pct);
+    const result = computeBudget(lineItems, pct);
+    onUpdate({ discountPercentage: pct, budgetResult: result });
+  }
+
+  function handleProposalDiscountChange(updated: ProposalDiscount) {
+    setDiscount(updated);
+    onUpdate({ discount: updated });
   }
 
   if (state.approvedRecommendations.length === 0) {
@@ -103,8 +96,11 @@ export function Step4Budget({ state, onUpdate }: Step4BudgetProps) {
 
       <BudgetOptimizerShellWrapper
         state={state}
+        approvedServiceNames={approvedServiceNames}
         onLineItemsChange={handleLineItemsChange}
         onDiscountChange={handleDiscountChange}
+        discount={discount}
+        onProposalDiscountChange={handleProposalDiscountChange}
       />
 
       {state.budgetResult && (
@@ -156,32 +152,65 @@ export function Step4Budget({ state, onUpdate }: Step4BudgetProps) {
 
 function BudgetOptimizerShellWrapper({
   state,
+  approvedServiceNames,
   onLineItemsChange,
   onDiscountChange,
+  discount,
+  onProposalDiscountChange,
 }: {
   state: ProposalWizardState;
+  /** Direct prop from ProposalWizard (render-time value) — takes priority over
+   *  state.approvedRecommendationServiceNames to avoid the setState batching
+   *  race where Step 4 mounts before Step 3's onUpdate has been processed. */
+  approvedServiceNames?: string[];
   onLineItemsChange: (items: BudgetLineItem[]) => void;
   onDiscountChange: (discount: number) => void;
+  discount: ProposalDiscount;
+  onProposalDiscountChange: (discount: ProposalDiscount) => void;
 }) {
-  // Build recommended service labels from approved recommendations
-  // We derive this from the audit result's recommendation mappings
-  // The recommendation engine maps findings to services; we use the
-  // RECOMMENDATION_TO_BUDGET_MAP compatible labels
+  // Derive the service label list that BudgetOptimizerShell uses to bootstrap
+  // its Service Allocation table.
+  //
+  // Priority order:
+  //   1. approvedServiceNames prop — passed directly from ProposalWizard at
+  //      render time, always current regardless of React setState batching.
+  //      This fixes the race where Step 3 calls onUpdate({ approvedRecommendationServiceNames })
+  //      and then handleNext fires before that setState is processed.
+  //   2. state.approvedRecommendationServiceNames — fallback when prop not provided.
+  //   3. Existing lineItems labels — covers older drafts saved before
+  //      approvedRecommendationServiceNames was introduced.
+  //
+  // The key prop on BudgetOptimizerShell forces a remount when the approved
+  // set changes (e.g. rep navigated Back to Step 3, changed approvals, then
+  // returned Forward to Step 4). Without the key, the shell would remain
+  // mounted with stale initial labels.
   const recommendedLabels = React.useMemo(() => {
-    // If we have existing line items, extract their labels
+    if (approvedServiceNames && approvedServiceNames.length > 0) {
+      return approvedServiceNames;
+    }
+    if (
+      state.approvedRecommendationServiceNames &&
+      state.approvedRecommendationServiceNames.length > 0
+    ) {
+      return state.approvedRecommendationServiceNames;
+    }
     if (state.lineItems.length > 0) {
       return state.lineItems.map((li) => li.label);
     }
-    // Otherwise derive from approved recommendation IDs
-    // Since the rec engine result isn't in wizard state, we return empty
-    // and let the shell initialize empty (rep can add services manually)
     return [];
-  }, [state.lineItems]);
+  }, [approvedServiceNames, state.approvedRecommendationServiceNames, state.lineItems]);
+
+  // Use the sorted label list as a stable key so the shell remounts only
+  // when the approved service set actually changes, not on every render.
+  const shellKey = recommendedLabels.slice().sort().join("|");
 
   return (
     <BudgetOptimizerShell
+      key={shellKey}
       recommendedServiceLabels={recommendedLabels}
       clientName={state.clientInfo.businessName || state.clientInfo.name}
+      discount={discount}
+      onDiscountChange={onProposalDiscountChange}
     />
   );
 }

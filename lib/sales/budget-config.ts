@@ -1,4 +1,5 @@
 // RTM OS — Sales Budget Optimizer Configuration
+import type { DiscountType } from "./types";
 // ─────────────────────────────────────────────────────────────────────────────
 // All pricing, service definitions, quantity options, discount tiers, and
 // constraints live here. Zero business literals belong in any .tsx file.
@@ -23,6 +24,8 @@ export type QuantityUnit = "location" | "campaign" | "flat" | "page";
 
 export interface BudgetServiceDefinition {
   id: BudgetServiceId;
+  /** Primary ServiceCatalogEntry.id in recommendation-config to use for line items. */
+  catalogId: string;
   label: string;
   description: string;
   quantityUnit: QuantityUnit;
@@ -42,6 +45,7 @@ export interface BudgetServiceDefinition {
 export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
   {
     id: "seo",
+    catalogId: "svc-seo-monthly",
     label: "SEO Management",
     description:
       "Full monthly SEO including technical audits, content optimization, and link building.",
@@ -58,6 +62,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
   },
   {
     id: "seo-ai-search",
+    catalogId: "svc-ai-search",
     label: "SEO AI Search Visibility",
     description:
       "AI-powered search visibility optimization for modern search engines and LLM-integrated results.",
@@ -74,6 +79,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
   },
   {
     id: "gbp",
+    catalogId: "svc-gbp-monthly",
     label: "Google Business Profile",
     description:
       "Google Business Profile optimization, weekly posting, and review management.",
@@ -90,6 +96,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
   },
   {
     id: "ppc",
+    catalogId: "svc-ppc-monthly",
     label: "Google Ads / PPC",
     description:
       "Paid search campaign management including restructure, ongoing optimization, and bi-weekly reporting.",
@@ -106,6 +113,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
   },
   {
     id: "lsa",
+    catalogId: "svc-lsa",
     label: "Local Service Ads",
     description:
       "Local Service Ads profile management, lead verification, and budget optimization.",
@@ -122,6 +130,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
   },
   {
     id: "meta-ads",
+    catalogId: "svc-meta-monthly",
     label: "Meta Ads",
     description:
       "Facebook and Instagram ad campaign management for lead generation and brand awareness.",
@@ -138,6 +147,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
   },
   {
     id: "website",
+    catalogId: "svc-web-redesign",
     label: "Website",
     description:
       "Full website build or redesign with mobile-first, conversion-optimized design and CMS setup.",
@@ -191,7 +201,67 @@ export const DISCOUNT_TIERS: DiscountTier[] = [
   { label: "20% — Strategic Account", percentage: 20 },
 ];
 
-// ─── View Labels ──────────────────────────────────────────────────────────────
+// ─── Discount Configuration ────────────────────────────────────────────────────────
+
+export interface DiscountTypeOption {
+  value: DiscountType;
+  label: string;
+  description: string;
+}
+
+export const DISCOUNT_TYPE_OPTIONS: DiscountTypeOption[] = [
+  {
+    value: "none",
+    label: "No Discount",
+    description: "Full price — no discount applied",
+  },
+  {
+    value: "percentage-monthly",
+    label: "Percentage Off Monthly",
+    description: "Reduces monthly recurring fee by a percentage (e.g. 10% off/mo)",
+  },
+  {
+    value: "flat-monthly",
+    label: "Flat Amount Off Monthly",
+    description: "Reduces monthly recurring fee by a fixed dollar amount (e.g. $200/mo off)",
+  },
+  {
+    value: "percentage-setup",
+    label: "Percentage Off Setup Fees",
+    description: "Reduces total setup fees by a percentage (e.g. 15% off setup)",
+  },
+  {
+    value: "flat-setup",
+    label: "Flat Amount Off Setup",
+    description: "Reduces total setup fees by a fixed dollar amount (e.g. $500 off)",
+  },
+  {
+    value: "custom",
+    label: "Custom Discount",
+    description: "Enter a custom label and amount applied to the monthly recurring total",
+  },
+];
+
+/** Common discount label suggestions for the label input autocomplete/placeholder. */
+export const DISCOUNT_SUGGESTIONS: string[] = [
+  "New Client Discount",
+  "Partner Referral Discount",
+  "Seasonal Promotion",
+  "Annual Commitment Discount",
+  "Multi-Service Bundle Discount",
+  "Early Adopter Discount",
+];
+
+/** Maximum allowed discount percentage. Prevents accidental oversized discounts. */
+export const MAX_DISCOUNT_PERCENTAGE: number = 40;
+
+/** Maximum allowed flat monthly discount in USD. */
+export const MAX_FLAT_DISCOUNT_MONTHLY: number = 2000;
+
+/** Maximum allowed flat setup discount in USD. */
+export const MAX_FLAT_DISCOUNT_SETUP: number = 5000;
+
+// ─── View Labels ──────────────────────────────────────────────────────────────────────
 
 export const BUDGET_VIEW_LABELS = {
   byService: "By Service",

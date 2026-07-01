@@ -559,9 +559,564 @@ export const DEFAULT_AUDIT_TEMPLATE: AuditTemplateConfig = {
   ],
 };
 
+// ─── AI Audit Configuration ─────────────────────────────────────────────────────────────────────────────────────
+
+export const AI_AUDIT_SYSTEM_PROMPT = `You are a professional digital marketing auditor specializing in home services businesses. A sales representative is building a proposal for a prospect and needs you to analyze the prospect website for marketing issues.
+
+You will receive website HTML content plus business context including trade type, city, goals, and current marketing spend data.
+
+Analyze the website for marketing signals relevant to home service businesses. Return ONLY valid JSON with no markdown fences, no preamble, and no explanation outside the JSON. Your entire response must be parseable JSON.
+
+The exact JSON schema to follow:
+{
+  "serviceResults": [
+    {
+      "serviceId": "<one of: seo, gbp, ppc, lsa, meta-ads, website>",
+      "serviceLabel": "<human-readable label>",
+      "findings": [
+        {
+          "id": "<unique string>",
+          "category": "<one of the exact category strings listed below>",
+          "severity": "<Critical|High|Medium|Low>",
+          "title": "<concise finding title>",
+          "description": "<specific description of the issue found in the HTML>",
+          "recommendation": "<specific actionable recommendation>",
+          "source": "ai"
+        }
+      ],
+      "summary": "<one to two sentence summary of this service area>",
+      "score": <integer 0-100>,
+      "scoreLabel": "<short label>"
+    }
+  ],
+  "overallScore": <integer 0-100>
+}
+
+The category field MUST use one of these exact strings only:
+Tracking, PPC Tracking, Conversion, Meta Tracking, Website Performance, Website, Technical SEO, SEO, Content, Local SEO, AI Search, Emerging, GBP, Local, GBP Reviews, PPC, Paid Media, Meta Ads
+
+The serviceId field MUST be one of: seo, gbp, ppc, lsa, meta-ads, website
+
+Generate findings only where real issues are visible or inferable from the HTML provided. Do not invent problems that cannot be inferred from the content. Each finding must have a specific actionable recommendation, not generic advice. Only include serviceResults entries where at least one genuine finding exists.`;
+
+export const AI_AUDIT_USER_PROMPT_TEMPLATE = `Analyze the following home services business website for digital marketing issues and opportunities.
+
+Business Context:
+- Business Name: {{BUSINESS_NAME}}
+- Trade Type: {{TRADE_TYPE}}
+- City: {{CITY}}
+- State: {{STATE}}
+- Primary Goals: {{GOALS}}
+- Website URL: {{WEBSITE_URL}}
+
+Current Marketing Context:
+{{CURRENT_MARKETING_CONTEXT}}
+
+Website HTML Content:
+{{WEBSITE_CONTENT}}
+
+Analyze the following HTML signals:
+
+SEO Signals:
+- Page title tag (present, contains relevant keywords, includes location?)
+- Meta description (present, compelling, includes service and location?)
+- H1 tag (present, only one, relevant to trade type?)
+- H2/H3 heading structure (logical hierarchy?)
+- Schema markup (LocalBusiness, Service, Review schemas present?)
+- NAP consistency (Name, Address, Phone visible in footer or contact section?)
+- City/state mentioned in page content?
+- Service area pages or location-specific pages present?
+- Internal linking structure (navigation links to key service pages?)
+- Image alt text coverage (images have descriptive alt attributes?)
+- Blog or content section present?
+
+Tracking and Conversion Signals:
+- Google Tag Manager or GA4 script present?
+- Meta Pixel script present (facebook.net, fbevents.js)?
+- Google Ads conversion tag present (googleadservices.com, gtag conversion)?
+- Contact form or booking or scheduling widget present?
+- Phone number visible above the fold?
+- Clear call-to-action buttons on key pages?
+
+Performance Signals:
+- Mobile viewport meta tag present?
+- Render-blocking scripts (excessive inline scripts, synchronous script tags before content)?
+- Large inline styles that may slow rendering?
+- Image format signals (non-WebP images visible in HTML)?
+
+Trust and Authority Signals:
+- Reviews widget or review count visible?
+- Trust badges, certifications, or license numbers shown?
+- Years in business mentioned?
+- Team photos or about section present?
+
+Content Relevance:
+- Content relevance to trade type {{TRADE_TYPE}} and service area {{CITY}}, {{STATE}}
+- Emergency or urgent service CTAs (critical for plumbing, HVAC, electrical)?
+- Seasonal content relevant to the trade?
+- Competitor differentiators or unique value propositions present?
+
+Business Context Factors:
+- For the trade type {{TRADE_TYPE}}, consider typical customer expectations and urgency patterns
+- For {{CITY}}, {{STATE}}, assess whether local SEO signals adequately target this market
+- The prospect primary goals are: {{GOALS}} -- prioritize findings most relevant to these goals
+- Current marketing: {{CURRENT_MARKETING_CONTEXT}}
+  - If running Google Ads: assess optimization needs rather than setup needs
+  - If not running Google Ads: assess the opportunity cost and setup readiness
+  - Apply same logic for LSA and Meta Ads
+
+Return only the JSON object described in your instructions. No markdown, no explanation.`;
+
+export const PAGESPEED_API_BASE_URL =
+  "https://www.googleapis.com/pagespeedonline/v5/runPagespeed";
+
+export const AI_AUDIT_SCORE_THRESHOLDS: Record<string, { min: number; max: number; label: string }> = {
+  critical:  { min: 0,  max: 30,  label: "Critical — Immediate Action Required" },
+  poor:      { min: 31, max: 50,  label: "Poor — Significant Issues Found" },
+  fair:      { min: 51, max: 70,  label: "Fair — Improvements Needed" },
+  good:      { min: 71, max: 85,  label: "Good — Minor Optimizations Available" },
+  excellent: { min: 86, max: 100, label: "Excellent — Well Optimized" },
+};
+
+export function getAuditScoreLabel(score: number): string {
+  for (const threshold of Object.values(AI_AUDIT_SCORE_THRESHOLDS)) {
+    if (score >= threshold.min && score <= threshold.max) {
+      return threshold.label;
+    }
+  }
+  return AI_AUDIT_SCORE_THRESHOLDS.critical.label;
+}
+
+// ─── Audit Request System Configuration ─────────────────────────────────────────
+
+import type { AuditRequestMode, AuditRequestStatus } from "./types";
+
+export const AUDIT_REQUEST_MODE_LABELS: Record<AuditRequestMode, string> = {
+  ai: "AI Audit",
+  manual: "Manual Audit",
+  hybrid: "Hybrid Audit",
+};
+
+export const AUDIT_REQUEST_STATUS_LABELS: Record<AuditRequestStatus, string> = {
+  "pending-assignment":         "Pending Assignment",
+  "in-progress":                "In Progress",
+  "ai-complete-pending-review": "AI Complete — Pending Review",
+  "finalized":                  "Finalized",
+  "overdue":                    "Overdue",
+  "cancelled":                  "Cancelled",
+};
+
+export const AUDIT_REQUEST_STATUS_COLORS: Record<AuditRequestStatus, { bg: string; color: string; border: string }> = {
+  "pending-assignment":         { bg: "#F3F4F6", color: "#6B7280", border: "#D1D5DB" },
+  "in-progress":                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+  "ai-complete-pending-review": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
+  "finalized":                  { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" },
+  "overdue":                    { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" },
+  "cancelled":                  { bg: "#F9FAFB", color: "#9CA3AF", border: "#E5E7EB" },
+};
+
+export const SERVICE_TO_DEPARTMENT_MAP: Record<string, string> = {
+  "svc-seo-onboarding":       "SEO",
+  "svc-seo-monthly":          "SEO",
+  "svc-technical-seo":        "SEO",
+  "svc-local-seo":            "SEO",
+  "svc-ai-search":            "SEO",
+  "SEO":                      "SEO",
+  "SEO AI Search Visibility": "SEO",
+  "svc-gbp-optimization":     "GBP",
+  "svc-gbp-monthly":          "GBP",
+  "svc-review-gen":           "GBP",
+  "GBP":                      "GBP",
+  "Google Business Profile":  "GBP",
+  "svc-ppc-setup":            "Paid Advertising",
+  "svc-ppc-monthly":          "Paid Advertising",
+  "svc-lsa":                  "Paid Advertising",
+  "PPC / Google Ads":         "Paid Advertising",
+  "Local Service Ads":        "Paid Advertising",
+  "svc-meta-setup":           "Meta Ads",
+  "svc-meta-monthly":         "Meta Ads",
+  "Meta Ads":                 "Meta Ads",
+  "svc-web-redesign":         "Web Development",
+  "svc-web-maintenance":      "Web Development",
+  "Website":                  "Web Development",
+  "svc-tracking":             "Analytics",
+  "svc-pixel":                "Analytics",
+};
+
+export const AUDIT_REQUEST_SLA_HOURS: number = 24;
+
+export interface ScorecardCategory {
+  id: string;
+  label: string;
+  description: string;
+  maxScore: number;
+}
+
+export const MANUAL_SCORECARD_CATEGORIES: Record<string, ScorecardCategory[]> = {
+  "SEO": [
+    { id: "technical-seo",         label: "Technical SEO Health",          description: "Site crawlability, indexation, robots.txt, sitemaps, and technical errors.",      maxScore: 100 },
+    { id: "on-page-optimization",  label: "On-Page Optimization",          description: "Title tags, meta descriptions, H1s, schema markup, and internal linking.",        maxScore: 100 },
+    { id: "backlink-profile",      label: "Backlink Profile Strength",     description: "Quality and quantity of inbound links; authority and relevance.",                maxScore: 100 },
+    { id: "content-quality",       label: "Content Quality",               description: "Depth, uniqueness, and topical relevance of service and location pages.",          maxScore: 100 },
+    { id: "local-seo",             label: "Local SEO Presence",            description: "Citation consistency, NAP accuracy, and local keyword targeting.",                maxScore: 100 },
+  ],
+  "GBP": [
+    { id: "gbp-completeness",      label: "Profile Completeness",          description: "Categories, business description, services, hours, and attributes.",              maxScore: 100 },
+    { id: "review-health",         label: "Review Health",                 description: "Volume, recency, rating average, and response rate.",                             maxScore: 100 },
+    { id: "posting-activity",      label: "Posting Activity",              description: "Frequency and quality of GBP posts in the last 30 days.",                         maxScore: 100 },
+    { id: "photo-quality",         label: "Photo Quality and Volume",      description: "Number of high-quality photos across interior, exterior, and team.",              maxScore: 100 },
+  ],
+  "Paid Advertising": [
+    { id: "campaign-structure",    label: "Campaign Structure",            description: "Segmentation by intent, service, and match type quality.",                        maxScore: 100 },
+    { id: "conversion-tracking",   label: "Conversion Tracking",           description: "Accuracy and completeness of conversion events and attribution.",                 maxScore: 100 },
+    { id: "keyword-strategy",      label: "Keyword Strategy",              description: "Relevance, coverage, and negative keyword management.",                           maxScore: 100 },
+    { id: "ad-creative",           label: "Ad Creative Quality",           description: "CTR, Quality Score, and ad copy relevance.",                                      maxScore: 100 },
+    { id: "landing-pages",         label: "Landing Page Alignment",        description: "Dedicated pages, CTA clarity, and relevance to ad groups.",                      maxScore: 100 },
+  ],
+  "Meta Ads": [
+    { id: "pixel-setup",           label: "Pixel and Event Setup",         description: "Pixel installation completeness and standard/custom event configuration.",       maxScore: 100 },
+    { id: "audience-strategy",     label: "Audience Strategy",             description: "Custom audiences, lookalikes, and retargeting segment quality.",                 maxScore: 100 },
+    { id: "creative-performance",  label: "Creative Performance",          description: "Ad creative quality, variety, and estimated engagement.",                        maxScore: 100 },
+    { id: "campaign-objectives",   label: "Campaign Objective Alignment",  description: "Campaigns matched to awareness, consideration, or conversion goals.",           maxScore: 100 },
+  ],
+  "Web Development": [
+    { id: "pagespeed",             label: "Page Speed and Core Web Vitals", description: "Desktop and mobile PageSpeed scores and LCP/CLS/FID metrics.",              maxScore: 100 },
+    { id: "mobile-responsiveness", label: "Mobile Responsiveness",         description: "Layout, tap targets, and content rendering on mobile devices.",                maxScore: 100 },
+    { id: "ux-design",             label: "UX and Navigation",             description: "Navigation hierarchy, CTA placement, and overall conversion usability.",         maxScore: 100 },
+    { id: "security",              label: "Security and SSL",              description: "SSL validity, CMS updates, and known vulnerability status.",                     maxScore: 100 },
+  ],
+  "Analytics": [
+    { id: "tracking-completeness", label: "Tracking Completeness",         description: "GTM, GA4, conversion events, and call tracking coverage.",                      maxScore: 100 },
+    { id: "attribution",           label: "Attribution Accuracy",          description: "Consistency of attribution model across all advertising platforms.",             maxScore: 100 },
+    { id: "reporting",             label: "Reporting and Dashboards",       description: "Availability and accuracy of monthly performance reporting.",                    maxScore: 100 },
+  ],
+  "CRO": [
+    { id: "cta-clarity",           label: "CTA Clarity and Placement",     description: "Visibility and clarity of calls-to-action across key pages.",                  maxScore: 100 },
+    { id: "form-optimization",     label: "Form Optimization",             description: "Form presence, field count, and submission tracking.",                           maxScore: 100 },
+    { id: "trust-signals",         label: "Trust Signals",                 description: "Reviews, certifications, guarantees, and social proof placement.",              maxScore: 100 },
+  ],
+  "Content": [
+    { id: "content-depth",         label: "Content Depth",                 description: "Word count, topical coverage, and uniqueness of service pages.",                 maxScore: 100 },
+    { id: "freshness",             label: "Content Freshness",             description: "Recency of page updates and blog publishing cadence.",                           maxScore: 100 },
+    { id: "location-content",      label: "Location Page Quality",         description: "Presence and quality of city/service-area specific landing pages.",             maxScore: 100 },
+  ],
+};
+
+export const MOCK_DEPARTMENT_REVIEWERS: Record<string, string[]> = {
+  "SEO":              ["Alex K.", "Dana W."],
+  "GBP":              ["Marcus T.", "Priya S."],
+  "Paid Advertising": ["Jordan L.", "Casey R."],
+  "Meta Ads":         ["Sam P.", "Taylor M."],
+  "Web Development":  ["Riley O.", "Quinn B."],
+  "Analytics":        ["Morgan F.", "Blake N."],
+  "CRO":              ["Drew C.", "Harper G."],
+  "Content":          ["Avery J.", "Skyler K."],
+};
+
 // ─── Goal → Section Mapping Helper ───────────────────────────────────────────
 // Given a set of selected goal IDs, returns the sections that should be active.
 
+// ─── Citation Platform Category Map ─────────────────────────────────────────────
+// Maps listing platform IDs to the rule-matching category strings they should
+// produce AuditFindings under. Values must exactly match triggerCategories
+// entries in RECOMMENDATION_RULES. Multiple categories per platform mean a
+// finding will be generated for each category so all relevant rules can match.
+
+export const CITATION_PLATFORM_CATEGORY_MAP: Record<string, string[]> = {
+  "gbp":          ["GBP", "Local SEO"],
+  "yelp":         ["Local SEO"],
+  "apple-maps":   ["Local SEO"],
+  "bing-places":  ["Local SEO"],
+  "angi":         ["Local SEO"],
+  "thumbtack":    ["Local SEO"],
+  "facebook":     ["Meta Ads"],
+  "instagram":    ["Meta Ads"],
+  "bbb":          ["Local SEO"],
+  "nextdoor":     ["Local SEO"],
+};
+
+// ─── Citation Scoring Weights ────────────────────────────────────────────────────
+// Platform id -> weight in citation score. Sum = 100.
+
+export const CITATION_SCORING_WEIGHTS: Record<string, number> = {
+  "gbp":          30,
+  "yelp":         15,
+  "apple-maps":   10,
+  "bing-places":   8,
+  "facebook":      8,
+  "instagram":     5,
+  "bbb":           8,
+  "angi":          8,
+  "thumbtack":     5,
+  "nextdoor":      3,
+};
+
+// ─── NAP Comparison Rules ─────────────────────────────────────────────────────────
+
+export const NAP_COMPARISON_RULES = {
+  minorVariationPatterns: [
+    "street/st",
+    "avenue/ave",
+    "boulevard/blvd",
+    "drive/dr",
+    "road/rd",
+    "court/ct",
+    "suite/ste",
+    "llc",
+    "inc",
+    "phone-formatting",
+  ],
+  majorMismatchThreshold: 3,
+};
+
+// ─── Keyword Templates ───────────────────────────────────────────────────────────────
+// Maps trade type -> keyword templates with {city} placeholder.
+
+export const KEYWORD_TEMPLATES: Record<string, string[]> = {
+  "Plumbing": [
+    "plumber in {city}",
+    "plumbing company {city}",
+    "emergency plumber {city}",
+    "{city} drain cleaning",
+    "water heater repair {city}",
+    "plumbing repair near me",
+    "24 hour plumber {city}",
+  ],
+  "HVAC": [
+    "HVAC company {city}",
+    "AC repair {city}",
+    "heating and cooling {city}",
+    "furnace repair {city}",
+    "air conditioning installation {city}",
+    "HVAC contractor near me",
+    "emergency AC repair {city}",
+  ],
+  "Electrical": [
+    "electrician {city}",
+    "electrical contractor {city}",
+    "emergency electrician {city}",
+    "electrical repair {city}",
+    "licensed electrician near me",
+    "panel upgrade {city}",
+  ],
+  "Roofing": [
+    "roofing company {city}",
+    "roof repair {city}",
+    "roof replacement {city}",
+    "storm damage roof repair {city}",
+    "roofer near me",
+    "roofing contractor {city}",
+  ],
+  "Landscaping / Lawn Care": [
+    "landscaping company {city}",
+    "lawn care {city}",
+    "lawn mowing service {city}",
+    "landscape design {city}",
+    "yard maintenance {city}",
+    "landscaper near me",
+  ],
+  "Pest Control": [
+    "pest control {city}",
+    "exterminator {city}",
+    "pest removal {city}",
+    "rodent control {city}",
+    "termite treatment {city}",
+    "pest control near me",
+  ],
+  "Cleaning Services": [
+    "house cleaning {city}",
+    "cleaning service {city}",
+    "maid service {city}",
+    "commercial cleaning {city}",
+    "deep cleaning near me",
+  ],
+  "Painting": [
+    "painter {city}",
+    "interior painting {city}",
+    "exterior painting {city}",
+    "house painter near me",
+    "commercial painter {city}",
+  ],
+  "Flooring": [
+    "flooring company {city}",
+    "hardwood flooring {city}",
+    "flooring installation {city}",
+    "tile installer {city}",
+    "flooring contractor near me",
+  ],
+  "General Contracting": [
+    "general contractor {city}",
+    "home renovation {city}",
+    "construction company {city}",
+    "contractor near me",
+    "remodeling contractor {city}",
+  ],
+  "Remodeling / Renovation": [
+    "home remodeling {city}",
+    "kitchen remodel {city}",
+    "bathroom renovation {city}",
+    "home renovation contractor {city}",
+    "remodeling company near me",
+  ],
+  "Pool and Spa": [
+    "pool company {city}",
+    "pool installation {city}",
+    "pool repair {city}",
+    "spa installation {city}",
+    "pool contractor near me",
+  ],
+  "Garage Door": [
+    "garage door repair {city}",
+    "garage door installation {city}",
+    "garage door company {city}",
+    "garage door opener repair near me",
+  ],
+  "Gutters": [
+    "gutter installation {city}",
+    "gutter cleaning {city}",
+    "gutter repair {city}",
+    "gutter company near me",
+  ],
+  "Windows and Doors": [
+    "window replacement {city}",
+    "door installation {city}",
+    "window company {city}",
+    "window contractor near me",
+  ],
+  "Foundation / Waterproofing": [
+    "foundation repair {city}",
+    "basement waterproofing {city}",
+    "foundation company {city}",
+    "waterproofing contractor near me",
+  ],
+  "Tree Service": [
+    "tree service {city}",
+    "tree removal {city}",
+    "tree trimming {city}",
+    "arborist {city}",
+    "tree company near me",
+  ],
+  "Junk Removal": [
+    "junk removal {city}",
+    "junk hauling {city}",
+    "debris removal {city}",
+    "junk pickup near me",
+  ],
+  "Moving Services": [
+    "moving company {city}",
+    "movers {city}",
+    "local movers {city}",
+    "moving service near me",
+  ],
+  "Other Home Services": [
+    "home services {city}",
+    "handyman {city}",
+    "home repair {city}",
+    "home contractor near me",
+  ],
+};
+
+// ─── Seasonal Keyword Modifiers ─────────────────────────────────────────────────────
+
+export const SEASONAL_KEYWORD_MODIFIERS: Record<string, string[]> = {
+  "spring-summer": [
+    "spring cleanup",
+    "summer maintenance",
+    "storm damage",
+  ],
+  "fall-winter": [
+    "winter preparation",
+    "freeze protection",
+    "holiday lighting",
+  ],
+  "weather-dependent": [
+    "emergency service",
+    "storm damage repair",
+    "24 hour service",
+  ],
+};
+
+// ─── Marketing Channel Assessments ─────────────────────────────────────────────────
+
+export interface MarketingChannelAssessmentConfig {
+  channelLabel: string;
+  active: {
+    assessment: string;
+    recommendation: string;
+  };
+  inactive: {
+    assessment: string;
+    recommendation: string;
+  };
+}
+
+export const MARKETING_CHANNEL_ASSESSMENTS: Record<string, MarketingChannelAssessmentConfig> = {
+  "google-ads": {
+    channelLabel: "Google Ads",
+    active: {
+      assessment: "Currently running Google Ads. Recommend account audit and optimization rather than new setup.",
+      recommendation: "Audit existing campaigns for wasted spend, improve Quality Scores, add negative keywords, and align landing pages to ad groups.",
+    },
+    inactive: {
+      assessment: "Not running Google Ads. High-intent search traffic opportunity.",
+      recommendation: "Recommend Google Search campaigns targeting service and city keywords to capture bottom-of-funnel demand.",
+    },
+  },
+  "lsa": {
+    channelLabel: "Local Service Ads",
+    active: {
+      assessment: "Local Service Ads active. Review budget, lead quality, and verification status.",
+      recommendation: "Audit LSA budget, review lead quality scoring, confirm Google Guarantee verification is current, and dispute invalid leads.",
+    },
+    inactive: {
+      assessment: "Not running Local Service Ads. LSA is the highest-intent paid channel for home services.",
+      recommendation: "Activate LSA immediately. It is the highest-intent paid channel for home services and offers pay-per-lead pricing with Google Guarantee badge.",
+    },
+  },
+  "meta-ads": {
+    channelLabel: "Meta Ads",
+    active: {
+      assessment: "Running Meta Ads. Recommend creative refresh and audience optimization.",
+      recommendation: "Refresh ad creative, build lookalike audiences from customer list, and set up retargeting for website visitors.",
+    },
+    inactive: {
+      assessment: "Not running Meta Ads. Good for brand awareness and retargeting.",
+      recommendation: "Consider Meta Ads after LSA and Google Ads are established. Best used for brand awareness, seasonal promotions, and retargeting website visitors.",
+    },
+  },
+};
+
+// ─── Website Assessment Rules ─────────────────────────────────────────────────────────
+
+export interface WebsiteAssessmentRule {
+  severity: "critical" | "high" | "medium" | "low";
+  recommendation: string;
+}
+
+export const WEBSITE_ASSESSMENT_RULES: Record<string, WebsiteAssessmentRule> = {
+  noWebsite: {
+    severity: "critical",
+    recommendation: "Building a professional website is a critical first step. Clients cannot find or trust a business without an online presence.",
+  },
+  interestedInRedesign: {
+    severity: "high",
+    recommendation: "Current website redesign requested. A new site will improve conversion rate and SEO performance.",
+  },
+  oldWebsite: {
+    severity: "high",
+    recommendation: "Website not updated in 2 or more years. Outdated sites hurt SEO and conversion. Redesign recommended.",
+  },
+  noHostingAccess: {
+    severity: "medium",
+    recommendation: "Client does not have hosting access. Obtain access or migrate to managed hosting.",
+  },
+  noDomainAccess: {
+    severity: "medium",
+    recommendation: "Client does not have domain access. Critical for long-term control of their online presence.",
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────────────
 export function getSectionsForGoals(
   template: AuditTemplateConfig,
   goalIds: string[]

@@ -379,6 +379,69 @@ export interface HandoffChecklistItem {
   required: boolean;
 }
 
+// ─── Line Item System Types ──────────────────────────────────────────────────
+
+export interface ServiceLineItem {
+  id: string;
+  serviceId: string;
+  name: string;
+  unitLabel: string;
+  unitPrice: number;
+  defaultQuantity: number;
+  minQuantity: number;
+  maxQuantity: number;
+  isIncludedFlat: boolean;
+  description: string;
+}
+
+export interface LineItemSelection {
+  lineItemId: string;
+  quantity: number;
+  subtotal: number;
+}
+
+export interface ServiceBudgetBreakdown {
+  serviceId: string;
+  serviceName: string;
+  lineItemSelections: LineItemSelection[];
+  computedMonthlySubtotal: number;
+  setupFee: number;
+}
+
+// ─── Discount Types ──────────────────────────────────────────────────────────
+
+export type DiscountType =
+  | "none"
+  | "percentage-monthly"
+  | "flat-monthly"
+  | "percentage-setup"
+  | "flat-setup"
+  | "custom";
+
+export interface ProposalDiscount {
+  type: DiscountType;
+  /** Percentage as 0-100, or flat dollar amount depending on type */
+  value: number;
+  /** Shown on proposal PDF, e.g. "New Client Discount" */
+  label: string;
+  /** Internal only — not shown on PDF, e.g. "Approved by Jordan M." */
+  authorizationNote: string;
+}
+
+export interface DiscountedBudgetSummary {
+  totalMonthlyRecurring: number;
+  totalSetupFees: number;
+  discountType: DiscountType;
+  discountValue: number;
+  discountLabel: string;
+  discountAmountMonthly: number;
+  discountAmountSetup: number;
+  discountedMonthly: number;
+  discountedSetup: number;
+  grandTotalFirstMonth: number;
+  grandTotalMonthlyOngoing: number;
+}
+
 // ─── Sales Dashboard Widget Types ────────────────────────────────────────────
 
 export interface SalesPipelineWidget {
@@ -400,4 +463,400 @@ export interface SalesDashboardMetrics {
   forecastRevenue: number;
   averageDealSize: number;
   winRate: number;
+}
+
+// ─── Home Services Intake Types ────────────────────────────────────────────────
+
+export interface CompetitorEntry {
+  name: string;
+  city: string;
+  website?: string;
+}
+
+export interface GBPListing {
+  url?: string;
+  rating?: number;
+  reviewCount?: number;
+}
+
+export interface MasterAddress {
+  street: string;
+  suite: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+}
+
+export interface AdditionalLocation {
+  locationName: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: string;
+  gbpUrl: string;
+}
+
+export interface ListingPlatformData {
+  platformId: string;
+  url: string;
+  nameAsListed: string;
+  addressAsListed: string;
+  phoneAsListed: string;
+  rating: number | null;
+  reviewCount: number | null;
+  notes: string;
+}
+
+export interface WebsiteData {
+  hasWebsite: "yes" | "no" | "in-progress";
+  url: string;
+  platform: string;
+  hostingProvider: string;
+  domainRegistrar: string;
+  hasHostingAccess: "yes" | "no" | "not-sure";
+  hasDomainAccess: "yes" | "no" | "not-sure";
+  interestedInRedesign: "yes" | "no" | "maybe";
+  lastUpdated: string;
+  interestedInNewBuild: "yes" | "no" | "maybe";
+  hasDomain: boolean;
+  domainName: string;
+  preferredPlatform: string;
+  inProgressDomain: string;
+  inProgressBuilder: "us" | "other-agency" | "diy";
+  inProgressETA: string;
+}
+
+export interface HostingData {
+  currentSituation: "managed-by-us" | "self-managed" | "other-agency" | "no-hosting" | "part-of-package";
+  providerName: string;
+  monthlyCost: number | null;
+  interestedInManagedHosting: "yes" | "no" | "maybe";
+}
+
+export interface SectionNote {
+  sectionId: string;
+  note: string;
+  flagForFollowUp: boolean;
+}
+
+export interface HomeServicesIntakeRecord {
+  // Section 1 — Business
+  businessName: string;
+  tradeType: string;
+  businessStructure: string;
+  locationCount: number;
+  serviceArea: string[];
+  yearsInBusiness: number;
+  licensed: boolean;
+  bonded: boolean;
+  phone: string;
+  email: string;
+  website: string;
+  masterAddress: MasterAddress;
+  additionalLocations: AdditionalLocation[];
+  // Section 2 — Contact
+  contactName: string;
+  contactRole: string;
+  contactPhone: string;
+  contactEmail: string;
+  preferredContact: string;
+  bestTimeToReach: string;
+  // Section 3 — Online Presence
+  gbpListings: GBPListing[];
+  gbpListingCount: number;
+  listingPlatforms: ListingPlatformData[];
+  website2: WebsiteData;
+  hosting: HostingData;
+  currentlyMarketing: boolean;
+  currentProvider: string;
+  monthlyMarketingSpend: number;
+  googleAdsActive: boolean;
+  googleAdsSpend: number;
+  lsaActive: boolean;
+  lsaSpend: number;
+  lsaCostPerLead: number;
+  metaAdsActive: boolean;
+  metaAdsSpend: number;
+  monthlyLeads: number;
+  primaryLeadSource: string;
+  // Section 4 — Goals
+  primaryGoals: string[];
+  targetBudget: string;
+  timeline: string;
+  seasonalConsiderations: string;
+  targetCustomerType: string;
+  averageJobValue: string;
+  competitors: CompetitorEntry[];
+  // Section 5 — Sales Context
+  leadSource: string;
+  assignedRep: string;
+  referralSource: string;
+  affiliatePartner: string;
+  howHeardAboutUs: string;
+  discoveryNotes: string;
+  painPoints: string;
+  objections: string;
+  specialRequirements: string;
+  internalNotes: string;
+  ghlContactId: string;
+  // Section Notes
+  sectionNotes: SectionNote[];
+  globalCustomNote: string;
+  flaggedForFollowUp: boolean;
+}
+
+// ─── Intake-Based Audit Types ─────────────────────────────────────────────────
+
+export interface NAPComparison {
+  field: "name" | "address" | "phone";
+  masterValue: string;
+  listedValue: string;
+  status: "exact" | "minor-variation" | "major-mismatch" | "not-listed";
+  notes: string;
+}
+
+export interface CitationAuditResult {
+  platformId: string;
+  platformLabel: string;
+  url: string;
+  isListed: boolean;
+  napComparisons: NAPComparison[];
+  overallStatus: "consistent" | "inconsistent" | "not-listed" | "needs-verification";
+  score: number;
+  recommendations: string[];
+}
+
+export interface KeywordSuggestion {
+  keyword: string;
+  type: "primary" | "local" | "long-tail" | "seasonal" | "competitor";
+  priority: "high" | "medium" | "low";
+  rationale: string;
+}
+
+export interface CompetitorAnalysis {
+  competitorName: string;
+  competitorCity: string;
+  competitorWebsite: string;
+  notes: string;
+}
+
+export interface CurrentMarketingAssessment {
+  channelId: string;
+  channelLabel: string;
+  isActive: boolean;
+  currentSpend: number;
+  assessment: string;
+  recommendation: string;
+  priority: "high" | "medium" | "low";
+}
+
+export interface WebsiteAssessment {
+  hasWebsite: boolean;
+  url: string;
+  platform: string;
+  lastUpdated: string;
+  hasHostingAccess: boolean;
+  hasDomainAccess: boolean;
+  interestedInRedesign: boolean;
+  interestedInNewBuild: boolean;
+  recommendations: string[];
+  priority: "critical" | "high" | "medium" | "low";
+}
+
+export interface IntakeFinding {
+  id: string;
+  category: string;
+  severity: "critical" | "high" | "medium" | "low";
+  title: string;
+  description: string;
+  recommendation: string;
+  source: "intake" | "manual" | "system" | "ai";
+}
+
+export interface IntakeAuditResult {
+  intakeId: string;
+  clientName: string;
+  tradeType: string;
+  masterAddress: MasterAddress;
+  citationAudit: CitationAuditResult[];
+  citationScore: number;
+  keywordSuggestions: KeywordSuggestion[];
+  competitorAnalysis: CompetitorAnalysis[];
+  currentMarketingAssessment: CurrentMarketingAssessment[];
+  websiteAssessment: WebsiteAssessment;
+  overallFindings: IntakeFinding[];
+  generatedAt: string;
+}
+
+// ─── AI Audit Types ──────────────────────────────────────────────────────────────
+
+export type AiAuditStatus = "idle" | "running" | "complete" | "error";
+
+export interface PageSpeedResult {
+  url: string;
+  performanceScore: number;
+  mobileScore: number;
+  desktopScore: number;
+  lcp: string;
+  cls: string;
+  fid: string;
+  opportunities: string[];
+  fetchedAt: string;
+}
+
+export interface AiAuditServiceResult {
+  serviceId: string;
+  serviceLabel: string;
+  findings: IntakeFinding[];
+  summary: string;
+  score: number;
+  scoreLabel: string;
+}
+
+export interface AiAuditResult {
+  websiteUrl: string;
+  pageSpeed: PageSpeedResult | null;
+  serviceResults: AiAuditServiceResult[];
+  allFindings: IntakeFinding[];
+  overallScore: number;
+  generatedAt: string;
+  aiModel: string;
+}
+
+// ─── Audit Request System Types ─────────────────────────────────────────────────
+
+export type AuditRequestMode = "ai" | "manual" | "hybrid";
+
+export type AuditRequestStatus =
+  | "pending-assignment"
+  | "in-progress"
+  | "ai-complete-pending-review"
+  | "finalized"
+  | "overdue"
+  | "cancelled";
+
+export type ReviewerFindingActionType =
+  | "accepted"
+  | "modified"
+  | "overridden"
+  | "added";
+
+export interface ReviewerFindingAction {
+  findingId: string;
+  actionType: ReviewerFindingActionType;
+  reviewerNote: string;
+  updatedSeverity: "critical" | "high" | "medium" | "low" | null;
+  updatedDescription: string | null;
+  updatedRecommendation: string | null;
+  actionedAt: string;
+  actionedBy: string;
+}
+
+export interface DepartmentReview {
+  department: string;
+  assignedReviewer: string | null;
+  status: AuditRequestStatus;
+  slaDeadline: string;
+  aiFindings: IntakeFinding[];
+  reviewerActions: ReviewerFindingAction[];
+  addedFindings: IntakeFinding[];
+  finalizedFindings: IntakeFinding[] | null;
+  finalizedAt: string | null;
+  finalizedBy: string | null;
+}
+
+export interface ManualAuditRequest {
+  id: string;
+  opportunityId: string;
+  clientName: string;
+  requestedServices: string[];
+  assignedReviewer: string | null;
+  department: string;
+  status: AuditRequestStatus;
+  scorecard: Record<string, number>;
+  scorecardNotes: Record<string, string>;
+  submittedFindings: IntakeFinding[] | null;
+  requestedBy: string;
+  requestedAt: string;
+  dueAt: string;
+  completedAt: string | null;
+}
+
+export interface HybridAuditRequest {
+  id: string;
+  opportunityId: string;
+  clientName: string;
+  intakeAuditResult: IntakeAuditResult;
+  departmentReviews: DepartmentReview[];
+  requestedBy: string;
+  requestedAt: string;
+}
+
+export interface HybridReadinessSummary {
+  totalDepartments: number;
+  finalizedCount: number;
+  pendingCount: number;
+  overdueCount: number;
+  statusLabel: string;
+  isFullyReviewed: boolean;
+}
+
+// ─── Communication Log Types ─────────────────────────────────────────────────
+
+export type CommunicationLogEntryType =
+  | "call"
+  | "call-transcript"
+  | "email"
+  | "meeting-notes"
+  | "sms"
+  | "note";
+
+export interface CommunicationLogEntry {
+  id: string;
+  opportunityId: string;
+  type: CommunicationLogEntryType;
+  title: string;
+  summary: string;
+  fullContent: string;
+  loggedBy: string;
+  loggedAt: string;
+  participants: string[];
+  durationMinutes: number | null;
+  attachmentNote: string;
+}
+
+export interface CommunicationLog {
+  opportunityId: string;
+  entries: CommunicationLogEntry[];
+}
+
+// ─── Opportunity Record ───────────────────────────────────────────────────────
+
+export interface OpportunityRecord {
+  id: string;
+  opportunityNumber: string;
+  leadId: string | null;
+  clientName: string;
+  businessName: string;
+  tradeType: string;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string;
+  leadSource: string;
+  assignedRep: string;
+  stage: string;
+  priority: string;
+  estimatedMonthlyValue: number;
+  expectedCloseDate: string;
+  serviceInterest: string[];
+  discoveryNotes: string;
+  ghlContactId: string;
+  ghlSynced: boolean;
+  createdAt: string;
+  updatedAt: string;
+  intakeRecord: Partial<HomeServicesIntakeRecord> | null;
+  communicationLog: CommunicationLog;
+  activeWizardId: string | null;
 }

@@ -4,6 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge, DataTable, ProgressBar } from "@/components/ui";
 import type { Column } from "@/components/ui";
+import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
+import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
 
 //  Types 
 
@@ -548,9 +550,10 @@ const portalUsersColumns: Column<PortalUser>[] = [
 interface AffiliateDrawerProps {
   affiliate: Affiliate | null;
   onClose: () => void;
+  onGenerateLink: (link: string) => void;
 }
 
-function AffiliateDrawer({ affiliate, onClose }: AffiliateDrawerProps) {
+function AffiliateDrawer({ affiliate, onClose, onGenerateLink }: AffiliateDrawerProps) {
   const [activeTab, setActiveTab] = useState<"overview"| "referrals"| "commissions"| "links"| "portal"| "notes">("overview");
 
   if (!affiliate) return null;
@@ -860,9 +863,15 @@ function AffiliateDrawer({ affiliate, onClose }: AffiliateDrawerProps) {
 
         {/* Drawer Footer Actions */}
         <div className="px-6 py-4 flex flex-wrap gap-2"style={{ background: "var(--rtm-surface)", borderTop: "1px solid var(--rtm-border)"}}>
+          <button
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90"
+            style={{ background: "#2563EB10", color: "#2563EB", borderColor: "#2563EB35" }}
+            onClick={() => { onClose(); onGenerateLink(affiliate.referralLink); }}
+          >
+            Generate Referral Link
+          </button>
           {[
             { label: "Edit Affiliate", color: "#7C3AED"},
-            { label: "Generate Referral Link", color: "#2563EB"},
             { label: "Record Payment", color: "#059669"},
             { label: "Create Task", color: "#D97706"},
             { label: "Add Note", color: "#0891B2"},
@@ -870,7 +879,7 @@ function AffiliateDrawer({ affiliate, onClose }: AffiliateDrawerProps) {
             <button
               key={label}
               className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90"style={{ background: `${color}10`, color, borderColor: `${color}35` }}
-              onClick={() => alert(`[Mock] ${label}: ${affiliate.name}`)}
+              onClick={() => {}}
             >
               {label}
             </button>
@@ -886,20 +895,17 @@ function AffiliateDrawer({ affiliate, onClose }: AffiliateDrawerProps) {
 interface RowActionsProps {
   affiliate: Affiliate;
   onView: () => void;
+  onGenerateLink: (link: string) => void;
 }
 
-function RowActions({ affiliate, onView }: RowActionsProps) {
+function RowActions({ affiliate, onView, onGenerateLink }: RowActionsProps) {
   const [open, setOpen] = useState(false);
 
   const actions = [
-    { label: "View Affiliate",         action: onView },
-    { label: "Edit Affiliate",         action: () => alert(`[Mock] Edit: ${affiliate.name}`) },
-    { label: "View Referrals",         action: () => alert(`[Mock] View Referrals: ${affiliate.name}`) },
-    { label: "Generate Referral Link", action: () => alert(`[Mock] Generate Link: ${affiliate.referralCode}`) },
-    { label: "View Commissions",       action: () => alert(`[Mock] View Commissions: ${affiliate.name}`) },
-    { label: "Record Payment",         action: () => alert(`[Mock] Record Payment: ${affiliate.name}`) },
-    { label: affiliate.portalStatus === "Disabled"? "Enable Portal": "Disable Portal", action: () => alert(`[Mock] Toggle Portal: ${affiliate.name}`) },
-    { label: "Add Note",               action: () => alert(`[Mock] Add Note: ${affiliate.name}`) },
+    { label: "View Details",           action: onView },
+    { label: "Edit",                   action: onView }, // opens detail for now
+    { label: "Generate Referral Link", action: () => onGenerateLink(affiliate.referralLink) },
+    { label: "Deactivate",             action: () => {} },
   ];
 
   return (
@@ -946,16 +952,322 @@ const WORKFLOW_STEPS = [
 
 //  Main Page Component 
 
+// ── Add Affiliate Modal ────────────────────────────────────────────────────
+
+interface AddAffiliateForm {
+  name: string;
+  type: AffiliateType;
+  email: string;
+  phone: string;
+  commissionStructure: CommissionModel;
+  commissionRate: string;
+  notes: string;
+}
+
+const EMPTY_ADD_FORM: AddAffiliateForm = {
+  name: "",
+  type: "Client Referral",
+  email: "",
+  phone: "",
+  commissionStructure: "Percentage",
+  commissionRate: "",
+  notes: "",
+};
+
+interface AddAffiliateModalProps {
+  onClose: () => void;
+  onAdd: (aff: Affiliate) => void;
+}
+
+function AddAffiliateModal({ onClose, onAdd }: AddAffiliateModalProps) {
+  const [form, setForm] = useState<AddAffiliateForm>(EMPTY_ADD_FORM);
+  const [errors, setErrors] = useState<Partial<AddAffiliateForm>>({});
+
+  function validate() {
+    const e: Partial<AddAffiliateForm> = {};
+    if (!form.name.trim())  e.name  = "Name is required.";
+    if (!form.email.trim()) e.email = "Email is required.";
+    return e;
+  }
+
+  function handleSubmit() {
+    const e = validate();
+    if (Object.keys(e).length > 0) { setErrors(e); return; }
+    const code = form.name.toUpperCase().replace(/\s+/g, "-").slice(0, 8) + "-RTM";
+    const newAff: Affiliate = {
+      id: `aff-new-${Date.now()}`,
+      name: form.name,
+      company: form.name,
+      type: form.type,
+      status: "Pending",
+      contactName: form.name,
+      email: form.email,
+      phone: form.phone,
+      joinDate: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      portalStatus: "Pending Setup",
+      referralCode: code,
+      referralLink: `https://app.rtmagency.com/ref/${code}`,
+      assignedManager: "—",
+      referralLeads: 0,
+      qualifiedLeads: 0,
+      wonDeals: 0,
+      revenueGenerated: "$0",
+      commissionOwed: "$0",
+      commissionPaid: "$0",
+      lastReferral: "—",
+      commissionModel: form.commissionStructure,
+    };
+    onAdd(newAff);
+    onClose();
+  }
+
+  const rateLabel = form.commissionStructure === "Percentage" ? "Rate (%)"
+    : form.commissionStructure === "Flat Fee" ? "Amount ($)"
+    : "Base Rate (%)";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(15,28,56,0.45)" }} onClick={onClose}>
+      <div
+        className="relative w-full max-w-md rounded-2xl border shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Add Affiliate</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Register a new affiliate partner.</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 text-lg font-bold" style={{ color: "var(--rtm-text-muted)" }}>&#x2715;</button>
+        </div>
+        <div className="px-6 py-5 space-y-4 overflow-y-auto" style={{ maxHeight: "65vh" }}>
+          {/* Name */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Affiliate Name <span style={{ color: "#DC2626" }}>*</span></label>
+            <input
+              className="w-full rtm-input text-sm"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="Full name or company name"
+            />
+            {errors.name && <p className="text-[10px] mt-0.5" style={{ color: "#DC2626" }}>{errors.name}</p>}
+          </div>
+          {/* Type */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Affiliate Type</label>
+            <select className="w-full rtm-input text-sm" value={form.type} onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as AffiliateType }))}>
+              {(["Client Referral","Strategic Partner","Agency Partner","Influencer","Employee","Vendor"] as AffiliateType[]).map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+          {/* Email */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Contact Email <span style={{ color: "#DC2626" }}>*</span></label>
+            <input
+              className="w-full rtm-input text-sm"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+              placeholder="email@example.com"
+            />
+            {errors.email && <p className="text-[10px] mt-0.5" style={{ color: "#DC2626" }}>{errors.email}</p>}
+          </div>
+          {/* Phone */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Contact Phone</label>
+            <input
+              className="w-full rtm-input text-sm"
+              value={form.phone}
+              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              placeholder="(555) 000-0000"
+            />
+          </div>
+          {/* Commission Structure */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Commission Structure</label>
+              <select className="w-full rtm-input text-sm" value={form.commissionStructure} onChange={(e) => setForm((f) => ({ ...f, commissionStructure: e.target.value as CommissionModel }))}>
+                {(["Percentage","Flat Fee","Tiered"] as CommissionModel[]).map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>{rateLabel}</label>
+              <input
+                className="w-full rtm-input text-sm"
+                type="number"
+                min="0"
+                value={form.commissionRate}
+                onChange={(e) => setForm((f) => ({ ...f, commissionRate: e.target.value }))}
+                placeholder={form.commissionStructure === "Percentage" ? "e.g. 20" : "e.g. 500"}
+              />
+            </div>
+          </div>
+          {/* Notes */}
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Notes</label>
+            <textarea
+              className="w-full rtm-input text-sm"
+              rows={3}
+              value={form.notes}
+              onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+              placeholder="Optional notes about this affiliate..."
+            />
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t flex items-center justify-end gap-3" style={{ borderColor: "var(--rtm-border)" }}>
+          <button onClick={onClose} className="text-sm font-semibold px-4 py-2 rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>Cancel</button>
+          <button onClick={handleSubmit} className="text-sm font-bold px-4 py-2 rounded-lg" style={{ background: "#059669", color: "#fff" }}>Add Affiliate</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Referral Link Modal ──────────────────────────────────────────────────────
+
+interface ReferralLinkModalProps {
+  link: string;
+  onClose: () => void;
+}
+
+function ReferralLinkModal({ link, onClose }: ReferralLinkModalProps) {
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    // Mock copy — navigator.clipboard may not be available in all envs
+    try { navigator.clipboard.writeText(link); } catch {}
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(15,28,56,0.45)" }} onClick={onClose}>
+      <div
+        className="relative w-full max-w-sm rounded-2xl border shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: "var(--rtm-border)" }}>
+          <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Referral Link Generated</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 text-lg font-bold" style={{ color: "var(--rtm-text-muted)" }}>&#x2715;</button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Share this link with the affiliate to track their referrals.</p>
+          <div className="rounded-lg border px-3 py-2.5" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
+            <p className="text-xs font-mono break-all" style={{ color: "#2563EB" }}>{link}</p>
+          </div>
+          <button
+            onClick={handleCopy}
+            className="w-full text-sm font-bold px-4 py-2.5 rounded-lg border transition-all"
+            style={{
+              background: copied ? "#059669" : "#EFF6FF",
+              color: copied ? "#fff" : "#1D4ED8",
+              borderColor: copied ? "#059669" : "#BFDBFE",
+            }}
+          >
+            {copied ? "Copied to Clipboard" : "Copy Link"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Commission Report Modal ───────────────────────────────────────────────────
+
+interface CommissionReportModalProps {
+  onClose: () => void;
+}
+
+function CommissionReportModal({ onClose }: CommissionReportModalProps) {
+  const pending = AFFILIATES.filter((a) => parseFloat(String(a.commissionOwed).replace(/[^0-9.]/g, "")) > 0);
+  const totalPending = pending.reduce((s, a) => s + parseFloat(String(a.commissionOwed).replace(/[^0-9.]/g, "") || "0"), 0);
+  const totalPaid    = AFFILIATES.reduce((s, a) => s + parseFloat(String(a.commissionPaid).replace(/[^0-9.]/g, "") || "0"), 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(15,28,56,0.45)" }} onClick={onClose}>
+      <div
+        className="relative w-full max-w-2xl rounded-2xl border shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Commission Report</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Summary of all affiliate commissions.</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 text-lg font-bold" style={{ color: "var(--rtm-text-muted)" }}>&#x2715;</button>
+        </div>
+        <div className="px-6 py-5 space-y-5" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+          {/* Totals */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-xl border p-4" style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}>
+              <p className="text-2xl font-bold" style={{ color: "#D97706" }}>${Math.round(totalPending).toLocaleString()}</p>
+              <p className="text-xs font-semibold mt-0.5" style={{ color: "#92400E" }}>Total Pending Commissions</p>
+            </div>
+            <div className="rounded-xl border p-4" style={{ background: "#F0FDF4", borderColor: "#A7F3D0" }}>
+              <p className="text-2xl font-bold" style={{ color: "#059669" }}>${Math.round(totalPaid).toLocaleString()}</p>
+              <p className="text-xs font-semibold mt-0.5" style={{ color: "#065F46" }}>Total Paid Commissions</p>
+            </div>
+          </div>
+          {/* Breakdown table */}
+          <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+            <table className="w-full text-xs" style={{ borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
+                  {["Affiliate","Type","Model","Pending","Paid"].map((h) => (
+                    <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {AFFILIATES.filter((a) => a.status !== "Archived").map((aff, i) => (
+                  <tr key={aff.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "transparent" : "var(--rtm-surface)" }}>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{aff.name}</td>
+                    <td className="px-4 py-2.5" style={{ color: "var(--rtm-text-secondary)" }}>{aff.type}</td>
+                    <td className="px-4 py-2.5" style={{ color: "var(--rtm-text-muted)" }}>{aff.commissionModel}</td>
+                    <td className="px-4 py-2.5 font-bold" style={{ color: "#D97706" }}>{aff.commissionOwed}</td>
+                    <td className="px-4 py-2.5 font-semibold" style={{ color: "#059669" }}>{aff.commissionPaid}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t flex justify-end" style={{ borderColor: "var(--rtm-border)" }}>
+          <button onClick={onClose} className="text-sm font-semibold px-4 py-2 rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
 export default function AffiliatesPage() {
   const [selectedAffiliate, setSelectedAffiliate] = useState<Affiliate | null>(null);
   const [statusFilter, setStatusFilter] = useState<AffiliateStatus | "All">("All");
   const [typeFilter, setTypeFilter] = useState<AffiliateType | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [affiliateList, setAffiliateList] = useState<Affiliate[]>(AFFILIATES);
+
+  // Modal state
+  const [showAddModal,        setShowAddModal]        = useState(false);
+  const [referralLinkUrl,     setReferralLinkUrl]     = useState<string | null>(null);
+  const [showCommReport,      setShowCommReport]      = useState(false);
+  const [exportBanner,        setExportBanner]        = useState(false);
+  const [showPortalMsg,       setShowPortalMsg]       = useState(false);
+  const [showCustomize,       setShowCustomize]       = useState(false);
+
+  // Widget preferences for KPI cards
+  const { widgetOrder, isVisible } = useWidgetPreferences("affiliates");
 
   const toggle = (s: string) => setActiveSection((p) => (p === s ? null : s));
 
-  const filteredAffiliates = AFFILIATES.filter((a) => {
+  const filteredAffiliates = affiliateList.filter((a) => {
     const matchStatus = statusFilter === "All"|| a.status === statusFilter;
     const matchType = typeFilter === "All"|| a.type === typeFilter;
     const matchSearch = !searchQuery ||
@@ -970,7 +1282,7 @@ export default function AffiliatesPage() {
     "Client Referral": 0, "Strategic Partner": 0, "Agency Partner": 0,
     "Influencer": 0, "Employee": 0, "Vendor": 0,
   };
-  AFFILIATES.forEach((a) => { typeCounts[a.type]++; });
+  affiliateList.forEach((a) => { typeCounts[a.type]++; });
 
   // Workflow revenue attribution
   const workflowStats = {
@@ -982,6 +1294,20 @@ export default function AffiliatesPage() {
   return (
     <div className="space-y-6">
 
+      {/* Modals */}
+      {showAddModal && (
+        <AddAffiliateModal
+          onClose={() => setShowAddModal(false)}
+          onAdd={(aff) => setAffiliateList((prev) => [aff, ...prev])}
+        />
+      )}
+      {referralLinkUrl && (
+        <ReferralLinkModal link={referralLinkUrl} onClose={() => setReferralLinkUrl(null)} />
+      )}
+      {showCommReport && (
+        <CommissionReportModal onClose={() => setShowCommReport(false)} />
+      )}
+
       {/*  Page Header  */}
       <div
         className="rounded-xl px-6 py-5 flex items-center gap-4"style={{
@@ -989,7 +1315,6 @@ export default function AffiliatesPage() {
           border: "1px solid #05966930",
         }}
       >
-        
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-widest mb-0.5"style={{ color: "#059669"}}>Sales</p>
           <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Affiliates</h1>
@@ -999,60 +1324,153 @@ export default function AffiliatesPage() {
         </div>
       </div>
 
+      {/* Export banner */}
+      {exportBanner && (
+        <div
+          className="rounded-xl border px-4 py-3 flex items-center justify-between"
+          style={{ background: "#F5F3FF", borderColor: "#DDD6FE" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "#6D28D9" }}>Exporting affiliate data...</p>
+          <button onClick={() => setExportBanner(false)} className="text-xs" style={{ color: "#94A3B8" }}>Dismiss</button>
+        </div>
+      )}
+
+      {/* Portal coming-soon message */}
+      {showPortalMsg && (
+        <div
+          className="rounded-xl border px-4 py-3 flex items-center justify-between"
+          style={{ background: "#F0F9FF", borderColor: "#BAE6FD" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "#0369A1" }}>
+            Affiliate self-service portal is in development.
+          </p>
+          <button onClick={() => setShowPortalMsg(false)} className="text-xs" style={{ color: "#94A3B8" }}>Dismiss</button>
+        </div>
+      )}
+
       {/*  Top Action Bar  */}
+      {showCustomize && (
+        <CustomizeViewModal pageId="affiliates" onClose={() => setShowCustomize(false)} />
+      )}
       <div className="flex flex-wrap gap-2">
-        {[
-          { label: "Add Affiliate",        color: "#059669"},
-          { label: "Generate Referral Link", color: "#2563EB"},
-          { label: "Export Affiliates",     color: "#7C3AED"},
-          { label: "Commission Report",    color: "#D97706"},
-          { label: "Affiliate Portal Access", color: "#0891B2"},
-        ].map(({ label, color }) => (
-          <button
-            key={label}
-            className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"style={{ background: `${color}12`, color, borderColor: `${color}40` }}
-            onClick={() => alert(`[Mock] ${label}`)}
-          >
-            {label}
-          </button>
-        ))}
+        <button
+          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "#05966912", color: "#059669", borderColor: "#05966940" }}
+          onClick={() => setShowAddModal(true)}
+        >
+          Add Affiliate
+        </button>
+        <button
+          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "#2563EB12", color: "#2563EB", borderColor: "#2563EB40" }}
+          onClick={() => {
+            const id = Math.random().toString(36).slice(2, 9).toUpperCase();
+            setReferralLinkUrl(`https://app.rtmagency.com/ref/${id}`);
+          }}
+        >
+          Generate Referral Link
+        </button>
+        <button
+          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "#7C3AED12", color: "#7C3AED", borderColor: "#7C3AED40" }}
+          onClick={() => { setExportBanner(true); setTimeout(() => setExportBanner(false), 4000); }}
+        >
+          Export Affiliates
+        </button>
+        <button
+          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "#D97706" + "12", color: "#D97706", borderColor: "#D97706" + "40" }}
+          onClick={() => setShowCommReport(true)}
+        >
+          Commission Report
+        </button>
+        <button
+          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "#0891B212", color: "#0891B2", borderColor: "#0891B240" }}
+          onClick={() => setShowPortalMsg(true)}
+        >
+          Affiliate Portal Access
+        </button>
+        <button
+          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+          onClick={() => setShowCustomize(true)}
+        >
+          Customize View
+        </button>
       </div>
 
       {/*  KPI Cards  */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KpiCard
-          title="Active Affiliates"value={String(activeAffiliates)}
-          trend="up"trendValue="3"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>}
-        />
-        <KpiCard
-          title="Referral Leads"value={String(referralLeadsTotal)}
-          trend="up"trendValue="12"iconBg="#EFF6FF"iconColor="#2563EB"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
-        />
-        <KpiCard
-          title="Qualified Referrals"value={String(qualifiedReferralsTotal)}
-          trend="up"trendValue="8"iconBg="#F5F3FF"iconColor="#7C3AED"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-        />
-        <KpiCard
-          title="Closed Won Deals"value={String(closedWonTotal)}
-          trend="up"trendValue="4"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>}
-        />
-        <KpiCard
-          title="Referral Revenue"value={`$${Math.round(referralRevenueTotal / 1000)}k/mo`}
-          trend="up"trendValue="18%"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-        />
-        <KpiCard
-          title="Pending Commissions"value={`$${Math.round(pendingCommissionsTotal).toLocaleString()}`}
-          iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-        />
-        <KpiCard
-          title="Paid Commissions"value={`$${Math.round(paidCommissionsTotal).toLocaleString()}`}
-          trend="up"trendValue="22%"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>}
-        />
-        <KpiCard
-          title="Avg. Affiliate Value"value={`$${Math.round(avgAffiliateValue / 100) * 100}/mo`}
-          iconBg="#EFF6FF"iconColor="#2563EB"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
-        />
-      </div>
+      {(() => {
+        // Map widget id -> KpiCard element (no calculation logic changes)
+        const kpiCards: Record<string, React.ReactElement> = {
+          "aff-active-affiliates": (
+            <KpiCard key="aff-active-affiliates"
+              title="Active Affiliates" value={String(activeAffiliates)}
+              trend="up" trendValue="3" iconBg="#ECFDF5" iconColor="#059669"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>}
+            />
+          ),
+          "aff-referral-leads": (
+            <KpiCard key="aff-referral-leads"
+              title="Referral Leads" value={String(referralLeadsTotal)}
+              trend="up" trendValue="12" iconBg="#EFF6FF" iconColor="#2563EB"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
+            />
+          ),
+          "aff-qualified-referrals": (
+            <KpiCard key="aff-qualified-referrals"
+              title="Qualified Referrals" value={String(qualifiedReferralsTotal)}
+              trend="up" trendValue="8" iconBg="#F5F3FF" iconColor="#7C3AED"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+            />
+          ),
+          "aff-closed-won-deals": (
+            <KpiCard key="aff-closed-won-deals"
+              title="Closed Won Deals" value={String(closedWonTotal)}
+              trend="up" trendValue="4" iconBg="#ECFDF5" iconColor="#059669"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>}
+            />
+          ),
+          "aff-referral-revenue": (
+            <KpiCard key="aff-referral-revenue"
+              title="Referral Revenue" value={`$${Math.round(referralRevenueTotal / 1000)}k/mo`}
+              trend="up" trendValue="18%" iconBg="#ECFDF5" iconColor="#059669"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+            />
+          ),
+          "aff-pending-commissions": (
+            <KpiCard key="aff-pending-commissions"
+              title="Pending Commissions" value={`$${Math.round(pendingCommissionsTotal).toLocaleString()}`}
+              iconBg="#FFFBEB" iconColor="#D97706"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+            />
+          ),
+          "aff-paid-commissions": (
+            <KpiCard key="aff-paid-commissions"
+              title="Paid Commissions" value={`$${Math.round(paidCommissionsTotal).toLocaleString()}`}
+              trend="up" trendValue="22%" iconBg="#ECFDF5" iconColor="#059669"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>}
+            />
+          ),
+          "aff-avg-affiliate-value": (
+            <KpiCard key="aff-avg-affiliate-value"
+              title="Avg. Affiliate Value" value={`$${Math.round(avgAffiliateValue / 100) * 100}/mo`}
+              iconBg="#EFF6FF" iconColor="#2563EB"
+              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
+            />
+          ),
+        };
+        const visibleCards = widgetOrder
+          .filter((id) => isVisible(id) && kpiCards[id])
+          .map((id) => kpiCards[id]);
+        if (visibleCards.length === 0) return null;
+        return (
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+            {visibleCards}
+          </div>
+        );
+      })()}
 
       {/*  Affiliate Type Breakdown  */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
@@ -1103,7 +1521,7 @@ export default function AffiliatesPage() {
       <SectionWrapper
         title="Affiliate Directory"description="All affiliate partners with performance metrics, commission status, and portal access"actions={
           <div className="flex gap-2">
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}} onClick={() => alert("[Mock] Add Affiliate")}> Add Affiliate</button>
+            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}} onClick={() => setShowAddModal(true)}> Add Affiliate</button>
           </div>
         }
       >
@@ -1174,7 +1592,7 @@ export default function AffiliatesPage() {
                     </td>
                   ))}
                   <td className="px-4 py-3 align-middle">
-                    <RowActions affiliate={aff} onView={() => setSelectedAffiliate(aff)} />
+                    <RowActions affiliate={aff} onView={() => setSelectedAffiliate(aff)} onGenerateLink={(link) => setReferralLinkUrl(link)} />
                   </td>
                 </tr>
               ))}
@@ -1446,6 +1864,7 @@ export default function AffiliatesPage() {
       <AffiliateDrawer
         affiliate={selectedAffiliate}
         onClose={() => setSelectedAffiliate(null)}
+        onGenerateLink={(link) => { setSelectedAffiliate(null); setReferralLinkUrl(link); }}
       />
 
 

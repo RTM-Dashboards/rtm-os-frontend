@@ -1,30 +1,86 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   BUDGET_VIEW_LABELS,
+  getBudgetServiceById,
   type BudgetView,
   type BudgetServiceId,
   type BudgetServiceDefinition,
 } from "@/lib/sales/budget-config";
+import { getServiceLineItems } from "@/lib/sales/recommendation-config";
 import {
   buildLineItemsFromRecommendations,
   buildLineItemFromService,
   computeBudget,
   getAvailableServices,
+  computeLineItemSubtotal,
   type BudgetLineItem,
   type BudgetResult,
 } from "@/lib/sales/budget-engine";
-import { ServiceAllocationTable } from "./ServiceAllocationTable";
+import type { ProposalDiscount } from "@/lib/sales/types";
+import { ServiceAllocationTable, type LineItemQuantities } from "./ServiceAllocationTable";
 import { BudgetSummaryPanel } from "./BudgetSummaryPanel";
 import { BudgetTotalsBar } from "./BudgetTotalsBar";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
+const DEFAULT_DISCOUNT: ProposalDiscount = {
+  type: "none",
+  value: 0,
+  label: "",
+  authorizationNote: "",
+};
+
 export interface BudgetOptimizerShellProps {
   recommendedServiceLabels?: string[];
   clientName?: string;
+  discount?: ProposalDiscount;
+  onDiscountChange?: (discount: ProposalDiscount) => void;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Builds a default LineItemQuantities map for a single service using each
+ * line item's defaultQuantity. Used when a service is first added.
+ */
+function buildDefaultLineItemQuantities(
+  catalogId: string
+): Record<string, number> {
+  const lineItems = getServiceLineItems(catalogId);
+  const result: Record<string, number> = {};
+  for (const li of lineItems) {
+    result[li.id] = li.defaultQuantity;
+  }
+  return result;
+}
+
+/**
+ * Recomputes BudgetLineItem.monthlySubtotal for a service based on its current
+ * line item quantities so the existing computeBudget engine sees up-to-date values.
+ */
+function applyLineItemSubtotalToBudgetItem(
+  item: BudgetLineItem,
+  lineItemQtys: Record<string, number>
+): BudgetLineItem {
+  const def = getBudgetServiceById(item.serviceId);
+  const catalogId = def?.catalogId ?? "";
+  const lineItemDefs = getServiceLineItems(catalogId);
+
+  if (lineItemDefs.length === 0) return item;
+
+  const computedMonthly = lineItemDefs.reduce((sum, li) => {
+    const qty = lineItemQtys[li.id] ?? li.defaultQuantity;
+    const clamped = Math.max(li.minQuantity, Math.min(li.maxQuantity, qty));
+    return sum + computeLineItemSubtotal(li, clamped);
+  }, 0);
+
+  return {
+    ...item,
+    unitMonthlyPrice: computedMonthly,
+    monthlySubtotal: computedMonthly,
+  };
 }
 
 // ─── Shell ────────────────────────────────────────────────────────────────────
@@ -32,23 +88,63 @@ export interface BudgetOptimizerShellProps {
 export function BudgetOptimizerShell({
   recommendedServiceLabels,
   clientName,
+  discount: discountProp,
+  onDiscountChange,
 }: BudgetOptimizerShellProps) {
   // ─── State ─────────────────────────────────────────────────────────────────
   const [lineItems, setLineItems] = useState<BudgetLineItem[]>([]);
   const [activeView, setActiveView] = useState<BudgetView>("byService");
-  const [discountPercentage, setDiscountPercentage] = useState<number>(0);
+  // Discount: controlled when discountProp + onDiscountChange provided; internal otherwise
+  const [internalDiscount, setInternalDiscount] = useState<ProposalDiscount>(
+    discountProp ?? DEFAULT_DISCOUNT
+  );
+  const discount = discountProp ?? internalDiscount;
+
+  /**
+   * Per-service line item quantities: { [budgetServiceId]: { [lineItemId]: qty } }
+   * Initialized to each line item's defaultQuantity when a service is added.
+   */
+  const [lineItemQuantities, setLineItemQuantities] = useState<LineItemQuantities>({});
+
+  // Track whether the initial bootstrap from recommendations has run so we
+  // do not overwrite manual edits the rep makes after the table is populated.
+  const bootstrapped = useRef(false);
 
   // ─── Bootstrap from recommendations ───────────────────────────────────────
+  // Run whenever recommendedServiceLabels becomes non-empty for the first time.
+  // The empty-dep form was a bug: if the prop arrived as [] on mount (because
+  // wizard state hadn't propagated yet) and then changed to a real list, the
+  // table stayed permanently empty.
   useEffect(() => {
-    if (recommendedServiceLabels && recommendedServiceLabels.length > 0) {
-      setLineItems(buildLineItemsFromRecommendations(recommendedServiceLabels));
-    }
-  }, []);
+    if (bootstrapped.current) return;
+    if (!recommendedServiceLabels || recommendedServiceLabels.length === 0) return;
 
-  // ─── Derived values ─────────────────────────────────────────────────────────
+    bootstrapped.current = true;
+    const items = buildLineItemsFromRecommendations(recommendedServiceLabels);
+    setLineItems(items);
+
+    const qtys: LineItemQuantities = {};
+    for (const item of items) {
+      const def = getBudgetServiceById(item.serviceId);
+      if (def?.catalogId) {
+        qtys[item.serviceId] = buildDefaultLineItemQuantities(def.catalogId);
+      }
+    }
+    setLineItemQuantities(qtys);
+  }, [recommendedServiceLabels]);
+
+  // ─── Effective line items with line-item-based subtotals ───────────────────
+  const effectiveLineItems = useMemo<BudgetLineItem[]>(() => {
+    return lineItems.map((item) => {
+      const qtys = lineItemQuantities[item.serviceId] ?? {};
+      return applyLineItemSubtotalToBudgetItem(item, qtys);
+    });
+  }, [lineItems, lineItemQuantities]);
+
+  // ─── Derived budget result ──────────────────────────────────────────────────
   const budgetResult: BudgetResult = useMemo(
-    () => computeBudget(lineItems, discountPercentage),
-    [lineItems, discountPercentage]
+    () => computeBudget(effectiveLineItems, 0),
+    [effectiveLineItems]
   );
 
   const availableServices: BudgetServiceDefinition[] = useMemo(
@@ -61,10 +157,24 @@ export function BudgetOptimizerShell({
   function handleAddService(serviceId: BudgetServiceId) {
     const newItem = buildLineItemFromService(serviceId);
     setLineItems((prev) => [...prev, newItem]);
+
+    const def = getBudgetServiceById(serviceId);
+    if (def?.catalogId) {
+      const defaults = buildDefaultLineItemQuantities(def.catalogId);
+      setLineItemQuantities((prev) => ({
+        ...prev,
+        [serviceId]: defaults,
+      }));
+    }
   }
 
   function handleRemoveService(serviceId: BudgetServiceId) {
     setLineItems((prev) => prev.filter((i) => i.serviceId !== serviceId));
+    setLineItemQuantities((prev) => {
+      const next = { ...prev };
+      delete next[serviceId];
+      return next;
+    });
   }
 
   function handleUpdateLineItem(
@@ -79,8 +189,22 @@ export function BudgetOptimizerShell({
     );
   }
 
-  function handleDiscountChange(percentage: number) {
-    setDiscountPercentage(percentage);
+  const handleLineItemQuantityChange = useCallback(
+    (serviceId: BudgetServiceId, lineItemId: string, quantity: number) => {
+      setLineItemQuantities((prev) => ({
+        ...prev,
+        [serviceId]: {
+          ...(prev[serviceId] ?? {}),
+          [lineItemId]: quantity,
+        },
+      }));
+    },
+    []
+  );
+
+  function handleDiscountChange(updatedDiscount: ProposalDiscount) {
+    setInternalDiscount(updatedDiscount);
+    onDiscountChange?.(updatedDiscount);
   }
 
   function handleViewToggle(view: BudgetView) {
@@ -118,97 +242,24 @@ export function BudgetOptimizerShell({
             className="text-sm mt-1"
             style={{ color: "var(--rtm-text-secondary)" }}
           >
-            Build and refine the service budget. Adjust services, quantities,
-            and pricing before generating a proposal.
+            Build and refine the service budget. Click any service row to expand
+            and adjust individual line item quantities.
           </p>
         </div>
 
-        <div className="flex gap-2 flex-wrap">
-          <Link
-            href="/sales/recommendations"
-            className="px-4 py-2 rounded-lg font-semibold text-sm border"
-            style={{
-              background: "var(--rtm-surface)",
-              color: "var(--rtm-text-secondary)",
-              borderColor: "var(--rtm-border)",
-            }}
-          >
-            Recommendations
-          </Link>
-          <Link
-            href="/sales/proposals"
-            className="px-4 py-2 rounded-lg font-bold text-sm"
-            style={{ background: "var(--rtm-accent)", color: "#fff" }}
-          >
-            Continue to Proposal Builder
-          </Link>
-        </div>
+
       </div>
 
-      {/* ── Workflow Breadcrumb ───────────────────────────────────────────── */}
+
+
+      {/* ── View Toggle ──────────────────────────────────────────────────── */}
       <div
-        className="rounded-lg border p-3"
+        className="flex items-center gap-1 border rounded-lg p-1 w-fit"
         style={{
           background: "var(--rtm-surface)",
           borderColor: "var(--rtm-border)",
         }}
       >
-        <p
-          className="text-[10px] font-bold uppercase tracking-widest mb-2"
-          style={{ color: "var(--rtm-text-muted)" }}
-        >
-          Sales Workflow
-        </p>
-        <div className="flex items-center gap-1 flex-wrap">
-          {[
-            { label: "Sales Intake", href: "/sales/intake" },
-            { label: "Goal Selection", href: "/sales/goal-selection" },
-            { label: "Audit", href: "/sales/audits" },
-            { label: "Audit Report", href: "/sales/audit-report" },
-            { label: "Recommendations", href: "/sales/recommendations" },
-            { label: "Budget Optimizer", href: "/sales/budget-optimizer" },
-            { label: "Proposal Builder", href: "/sales/proposals" },
-          ].map((step, i, arr) => {
-            const isCurrent = step.label === "Budget Optimizer";
-            const isDone = i < 5;
-            return (
-              <React.Fragment key={step.label}>
-                <Link
-                  href={step.href}
-                  className="text-[10px] font-semibold px-2 py-0.5 rounded"
-                  style={{
-                    background: isCurrent
-                      ? "var(--rtm-accent)"
-                      : isDone
-                      ? "var(--rtm-bg)"
-                      : "transparent",
-                    color: isCurrent
-                      ? "#fff"
-                      : isDone
-                      ? "var(--rtm-text-secondary)"
-                      : "var(--rtm-text-muted)",
-                    textDecoration: "none",
-                  }}
-                >
-                  {step.label}
-                </Link>
-                {i < arr.length - 1 && (
-                  <span
-                    className="text-xs"
-                    style={{ color: "var(--rtm-text-muted)" }}
-                  >
-                    /
-                  </span>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── View Toggle ──────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1 border rounded-lg p-1 w-fit"
-        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         {(Object.keys(BUDGET_VIEW_LABELS) as BudgetView[]).map((view) => (
           <button
             key={view}
@@ -228,10 +279,12 @@ export function BudgetOptimizerShell({
 
       {/* ── Service Allocation Table ──────────────────────────────────────── */}
       <ServiceAllocationTable
-        lineItems={lineItems}
+        lineItems={effectiveLineItems}
+        lineItemQuantities={lineItemQuantities}
         onUpdate={handleUpdateLineItem}
         onRemove={handleRemoveService}
         onAdd={handleAddService}
+        onLineItemQuantityChange={handleLineItemQuantityChange}
         availableServices={availableServices}
       />
 
@@ -239,41 +292,9 @@ export function BudgetOptimizerShell({
       <BudgetSummaryPanel
         budgetResult={budgetResult}
         activeView={activeView}
-        discountPercentage={discountPercentage}
+        discount={discount}
         onDiscountChange={handleDiscountChange}
       />
-
-      {/* ── CTA ───────────────────────────────────────────────────────────── */}
-      <div
-        className="rounded-lg border p-5 flex items-center justify-between gap-4 flex-wrap"
-        style={{
-          background: "var(--rtm-surface)",
-          borderColor: "var(--rtm-border)",
-        }}
-      >
-        <div>
-          <p
-            className="text-sm font-bold"
-            style={{ color: "var(--rtm-text-primary)" }}
-          >
-            Ready to build the proposal?
-          </p>
-          <p
-            className="text-xs mt-0.5"
-            style={{ color: "var(--rtm-text-secondary)" }}
-          >
-            The services and pricing configured here will carry forward into the
-            Proposal Builder.
-          </p>
-        </div>
-        <Link
-          href="/sales/proposals"
-          className="px-5 py-2.5 rounded-lg font-bold text-sm whitespace-nowrap"
-          style={{ background: "var(--rtm-accent)", color: "#fff" }}
-        >
-          Continue to Proposal Builder
-        </Link>
-      </div>
 
       {/* ── Sticky Totals Bar ─────────────────────────────────────────────── */}
       <BudgetTotalsBar budgetResult={budgetResult} />
