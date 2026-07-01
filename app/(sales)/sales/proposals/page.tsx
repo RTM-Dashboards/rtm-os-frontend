@@ -2155,8 +2155,7 @@ function ProposalsPageInner() {
       // No wizard params — ensure we are in list view
       setView("dashboard");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   function openDetail(p: Proposal) {
     setSelectedProposal(p);
