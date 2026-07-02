@@ -48,6 +48,11 @@ export interface ProposalWizardState {
   opportunityId: string | null;
   // AI Audit result (persisted in wizard state so revisiting Step 2 shows completed audit)
   aiAuditResult: AiAuditResult | null;
+  // Pre-selected audit id passed from the Audit detail drawer via URL param ?auditId=
+  // Step2Audit reads this on mount to auto-select the audit in "Use Existing Audit" mode.
+  preselectedAuditId: string | null;
+  // Audit type label for display in Step 2 pre-select summary
+  preselectedAuditType: string | null;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -120,6 +125,8 @@ function createDefaultState(wizardId: string): ProposalWizardState {
     intakeRecord: null,
     opportunityId: null,
     aiAuditResult: null,
+    preselectedAuditId: null,
+    preselectedAuditType: null,
   };
 }
 

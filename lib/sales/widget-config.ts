@@ -2,7 +2,7 @@
 // Defines which KPI cards are available on each configurable dashboard page.
 // Add entries here to register new widgets; page files read from these arrays.
 
-export type WidgetPageId = "performance" | "tasks" | "affiliates";
+export type WidgetPageId = "performance" | "tasks" | "affiliates" | "leads";
 
 export interface WidgetDefinition {
   id: string;
@@ -200,6 +200,85 @@ export const AFFILIATES_WIDGETS: WidgetDefinition[] = [
   },
 ];
 
+// ─── Leads Page Widgets ──────────────────────────────────────────────────────
+// Mirrors the KPI cards rendered in app/(sales)/sales/leads/page.tsx.
+// Widgets hidden by default are secondary metrics not needed in daily use.
+
+export const LEADS_WIDGETS: WidgetDefinition[] = [
+  {
+    id: "leads-new",
+    pageId: "leads",
+    label: "New Leads",
+    description: "Leads that have just entered the pipeline and not yet been contacted.",
+    defaultVisible: true,
+    defaultOrder: 1,
+  },
+  {
+    id: "leads-contact-attempted",
+    pageId: "leads",
+    label: "Contact Attempted",
+    description: "Leads where outreach has been initiated but contact not yet confirmed.",
+    defaultVisible: true,
+    defaultOrder: 2,
+  },
+  {
+    id: "leads-contacted",
+    pageId: "leads",
+    label: "Contacted",
+    description: "Leads where two-way contact has been established.",
+    defaultVisible: true,
+    defaultOrder: 3,
+  },
+  {
+    id: "leads-discovery-scheduled",
+    pageId: "leads",
+    label: "Discovery Scheduled",
+    description: "Leads with a discovery call or meeting booked.",
+    defaultVisible: true,
+    defaultOrder: 4,
+  },
+  {
+    id: "leads-discovery-complete",
+    pageId: "leads",
+    label: "Discovery Complete",
+    description: "Leads where the discovery call has been completed.",
+    defaultVisible: true,
+    defaultOrder: 5,
+  },
+  {
+    id: "leads-qualified",
+    pageId: "leads",
+    label: "Qualified",
+    description: "Leads that have met all qualification criteria and are ready for opportunity creation.",
+    defaultVisible: true,
+    defaultOrder: 6,
+  },
+  {
+    id: "leads-disqualified",
+    pageId: "leads",
+    label: "Disqualified",
+    description: "Leads that did not meet qualification criteria and have been removed from active pipeline.",
+    defaultVisible: false,
+    defaultOrder: 7,
+  },
+  {
+    id: "leads-conversion",
+    pageId: "leads",
+    label: "Conversion Rate",
+    description: "Percentage of total leads that have reached Qualified stage.",
+    defaultVisible: true,
+    defaultOrder: 8,
+  },
+  {
+    id: "leads-ghl-contacts",
+    pageId: "leads",
+    label: "GHL Contacts",
+    description: "Total GHL contacts successfully synced. Secondary metric — hidden by default.",
+    defaultVisible: false,
+    defaultOrder: 9,
+  },
+];
+
 // ─── Lookup Helper ────────────────────────────────────────────────────────────
 
 export function getWidgetsForPage(pageId: WidgetPageId): WidgetDefinition[] {
@@ -210,5 +289,7 @@ export function getWidgetsForPage(pageId: WidgetPageId): WidgetDefinition[] {
       return TASKS_WIDGETS;
     case "affiliates":
       return AFFILIATES_WIDGETS;
+    case "leads":
+      return LEADS_WIDGETS;
   }
 }

@@ -95,6 +95,107 @@ const MOCK_EXISTING_AUDITS: MockAudit[] = [
     criticalCount: 1,
     goalLabels: ["Improve Meta Ads", "Improve Google Business Profile", "Improve SEO"],
   },
+  // Audits from the Audit Intelligence Center (audits/page.tsx)
+  {
+    id: "aud-001",
+    name: "SEO Technical Audit — Summit Landscaping",
+    client: "Summit Landscaping",
+    date: "2025-06-05",
+    score: 74,
+    findingsCount: 7,
+    criticalCount: 1,
+    goalLabels: ["Improve SEO", "Improve Google Business Profile"],
+  },
+  {
+    id: "aud-002",
+    name: "GBP Audit — Blue Ridge Plumbing",
+    client: "Blue Ridge Plumbing",
+    date: "2025-06-07",
+    score: 31,
+    findingsCount: 11,
+    criticalCount: 3,
+    goalLabels: ["Improve Google Business Profile", "Generate More Leads"],
+  },
+  {
+    id: "aud-003",
+    name: "PPC Audit — Apex Roofing",
+    client: "Apex Roofing",
+    date: "2025-05-30",
+    score: 28,
+    findingsCount: 9,
+    criticalCount: 2,
+    goalLabels: ["Improve PPC", "Generate More Leads"],
+  },
+  {
+    id: "aud-004",
+    name: "Meta Ads Audit — Pinnacle HVAC",
+    client: "Pinnacle HVAC",
+    date: "2025-06-01",
+    score: 42,
+    findingsCount: 6,
+    criticalCount: 1,
+    goalLabels: ["Improve Meta Ads", "Generate More Leads"],
+  },
+  {
+    id: "aud-005",
+    name: "Website Audit — Morrison HVAC and Cooling",
+    client: "Morrison HVAC and Cooling",
+    date: "2025-05-18",
+    score: 19,
+    findingsCount: 14,
+    criticalCount: 4,
+    goalLabels: ["Website Redesign", "Improve SEO"],
+  },
+  {
+    id: "aud-006",
+    name: "LSA Audit — Coastal Plumbing Co.",
+    client: "Coastal Plumbing Co.",
+    date: "2025-06-03",
+    score: 38,
+    findingsCount: 5,
+    criticalCount: 1,
+    goalLabels: ["Increase Phone Calls", "Generate More Leads"],
+  },
+  {
+    id: "aud-007",
+    name: "GBP Audit — GreenWave Lawn Care",
+    client: "GreenWave Lawn Care",
+    date: "2025-06-08",
+    score: 41,
+    findingsCount: 8,
+    criticalCount: 0,
+    goalLabels: ["Improve Google Business Profile", "Generate More Leads"],
+  },
+  {
+    id: "aud-008",
+    name: "Competitor Audit — Summit Landscaping",
+    client: "Summit Landscaping",
+    date: "2025-05-24",
+    score: 58,
+    findingsCount: 4,
+    criticalCount: 0,
+    goalLabels: ["Generate More Leads", "Improve SEO"],
+  },
+  {
+    id: "aud-009",
+    name: "SEO Technical Audit — Morrison HVAC and Cooling",
+    client: "Morrison HVAC and Cooling",
+    date: "2025-06-02",
+    score: 44,
+    findingsCount: 6,
+    criticalCount: 1,
+    goalLabels: ["Improve SEO", "Generate More Leads"],
+  },
+  {
+    id: "aud-010",
+    name: "PPC Audit — Apex Roofing (Storm Campaign)",
+    client: "Apex Roofing",
+    date: "2025-06-05",
+    score: 47,
+    findingsCount: 5,
+    criticalCount: 1,
+    goalLabels: ["Improve PPC", "Generate More Leads"],
+  },
 ];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -823,7 +924,13 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
     "";
   const hasWebsiteUrl = Boolean(websiteUrl && websiteUrl.trim().length > 0);
 
+  // Detect pre-selected audit coming in from the Audit Intelligence Center
+  // via URL param ?auditId= forwarded through wizard initialState.
+  const preselectedAuditId: string | null = (state as ProposalWizardState & { preselectedAuditId?: string }).preselectedAuditId ?? null;
+
   const [mode, setMode] = useState<AuditMode>(() => {
+    // If a pre-selected audit id is provided, jump straight to existing mode.
+    if (preselectedAuditId) return "existing";
     if (state.auditMode === "ai") return "ai";
     if (state.auditMode === "quick") return "quick";
     if (state.auditMode === "existing") return "existing";
@@ -833,7 +940,7 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
   });
 
   const [selectedAuditId, setSelectedAuditId] = useState<string>(
-    state.selectedAuditId ?? ""
+    state.selectedAuditId ?? preselectedAuditId ?? ""
   );
 
   // Intake audit state
@@ -862,6 +969,15 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
   // Hybrid audit state
   const [hybridRequest, setHybridRequest] = useState<HybridAuditRequest | null>(null);
   const [viewingAsDept, setViewingAsDept] = useState<string>("Sales rep (read-only)");
+
+  // Auto-select audit on mount when arriving from Audit Intelligence Center
+  // via ?auditId= URL param (forwarded as preselectedAuditId in wizard state).
+  useEffect(() => {
+    if (preselectedAuditId && !state.auditResult) {
+      handleSelectExistingAudit(preselectedAuditId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectedAuditId]);
 
   // Run intake audit on mount if intake data is available
   useEffect(() => {

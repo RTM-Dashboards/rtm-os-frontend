@@ -7,6 +7,8 @@ import { getWorkspace } from "@/lib/workspaces";
 import Link from "next/link";
 import { CreateOpportunityModal } from "@/components/sales/opportunity/CreateOpportunityModal";
 import type { OpportunityRecord } from "@/lib/sales/types";
+import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
+import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
 
 const workspace = getWorkspace("sales")!;
 
@@ -128,11 +130,11 @@ const LEADS: Lead[] = [
     notes: "High value deal. Discovery complete. Needs qualification.",
   },
   {
-    id: "L004", name: "Tanya Okafor", businessName: "Cascade Flooring", industry: "Home Improvement",
-    website: "cascadeflooring.com", email: "tanya@cascadeflooring.com", phone: "(425) 555-0404",
+    id: "L004", name: "Tanya Okafor", businessName: "Cascade Pest Control", industry: "Pest Control",
+    website: "cascadepest.com", email: "tanya@cascadepest.com", phone: "(425) 555-0404",
     location: "Seattle, WA",
     ghlContactId: "GHL-CON-0004", ghlAssignedUser: "Alex R.", ghlSource: "Partner",
-    ghlCreatedDate: "2024-12-08", ghlLastActivityDate: "2024-12-14", ghlContactTags: ["Flooring", "Partner", "Seattle"],
+    ghlCreatedDate: "2024-12-08", ghlLastActivityDate: "2024-12-14", ghlContactTags: ["Pest Control", "Partner", "Seattle"],
     ghlContactStatus: "Active", ghlSyncStatus: "Pending Sync",
     leadSource: "Partner", assignedRep: "Alex R.", stage: "Discovery Scheduled",
     opportunityReadiness: "Not Ready",
@@ -147,7 +149,7 @@ const LEADS: Lead[] = [
     notes: "Partner referral via BuildRight network.",
   },
   {
-    id: "L005", name: "Dr. Lucia Vega", businessName: "Metro Dental Group", industry: "Dental",
+    id: "L005", name: "Lucia Vega", businessName: "Metro Dental Group", industry: "Dental",
     website: "metrodentalgroup.com", email: "lvega@metrodentalgroup.com", phone: "(312) 555-0505",
     location: "Chicago, IL",
     ghlContactId: "GHL-CON-0005", ghlAssignedUser: "Jordan M.", ghlSource: "Affiliate",
@@ -204,7 +206,7 @@ const LEADS: Lead[] = [
     notes: "Client referral from Summit Landscaping.",
   },
   {
-    id: "L008", name: "Dr. Aaron Park", businessName: "Apex Dental Partners", industry: "Dental",
+    id: "L008", name: "Aaron Park", businessName: "Apex Dental Partners", industry: "Dental",
     website: "apexdentalpartners.com", email: "apark@apexdental.com", phone: "(415) 555-0808",
     location: "San Francisco, CA",
     ghlContactId: "GHL-CON-0008", ghlAssignedUser: "Mike T.", ghlSource: "Affiliate",
@@ -261,11 +263,11 @@ const LEADS: Lead[] = [
     notes: "Carlos Reyes affiliate. Needs discovery call.",
   },
   {
-    id: "L011", name: "Finn O'Brien", businessName: "Iron Forge Fitness", industry: "Fitness",
-    website: "ironforgefit.com", email: "finn@ironforgefit.com", phone: "(617) 555-1111",
+    id: "L011", name: "Finn O'Brien", businessName: "Morrison HVAC and Cooling", industry: "HVAC",
+    website: "morrisonhvaccooling.com", email: "finn@morrisonhvac.com", phone: "(617) 555-1111",
     location: "Boston, MA",
     ghlContactId: "GHL-CON-0011", ghlAssignedUser: "Alex R.", ghlSource: "Meta Ads",
-    ghlCreatedDate: "2024-12-12", ghlLastActivityDate: "2024-12-16", ghlContactTags: ["Fitness", "Boston", "Meta"],
+    ghlCreatedDate: "2024-12-12", ghlLastActivityDate: "2024-12-16", ghlContactTags: ["HVAC", "Boston", "Meta"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Meta Ads", assignedRep: "Alex R.", stage: "Contacted",
     opportunityReadiness: "Not Ready",
@@ -280,17 +282,17 @@ const LEADS: Lead[] = [
     notes: "Meta Ads inbound. Initial contact made.",
   },
   {
-    id: "L012", name: "Natasha Brown", businessName: "Silverstone Law Group", industry: "Legal",
-    website: "silverstonelaw.com", email: "nbrown@silverstonelaw.com", phone: "(213) 555-1212",
+    id: "L012", name: "Natasha Brown", businessName: "Silverstone Roofing LLC", industry: "Roofing",
+    website: "silverstroneroofing.com", email: "nbrown@silverstroneroofing.com", phone: "(213) 555-1212",
     location: "Los Angeles, CA",
     ghlContactId: "GHL-CON-0012", ghlAssignedUser: "Mike T.", ghlSource: "LSA",
-    ghlCreatedDate: "2024-11-25", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Legal", "LSA", "Los Angeles", "High Budget"],
+    ghlCreatedDate: "2024-11-25", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Roofing", "LSA", "Los Angeles", "High Budget"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "LSA", assignedRep: "Mike T.", stage: "Qualified",
     opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-02",
-    discoveryNotes: "Personal injury firm. Wants LSA + PPC. Ready to move.",
-    businessGoals: ["Dominate LSA for personal injury in LA", "50+ inbound calls/mo"],
+    discoveryNotes: "Roofing contractor. Wants LSA + PPC domination. Ready to move.",
+    businessGoals: ["Dominate LSA for roofing in LA", "50+ inbound calls/mo"],
     painPoints: ["High cost per lead", "Google LSA not optimized"],
     requestedServices: ["LSA", "PPC", "GBP"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
@@ -356,19 +358,19 @@ const LEADS: Lead[] = [
     notes: "Client referral. Discovery complete. Business need identified.",
   },
   {
-    id: "L016", name: "Diana Pham", businessName: "Luxe Med Spa", industry: "Medical Spa",
-    website: "luxemedspa.com", email: "diana@luxemedspa.com", phone: "(310) 555-1616",
+    id: "L016", name: "Diana Pham", businessName: "Luxe Pool and Spa", industry: "Pool & Spa",
+    website: "luxepoolandspa.com", email: "diana@luxepoolandspa.com", phone: "(310) 555-1616",
     location: "Beverly Hills, CA",
     ghlContactId: "GHL-CON-0016", ghlAssignedUser: "Mike T.", ghlSource: "Meta Ads",
-    ghlCreatedDate: "2024-11-08", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Med Spa", "High Value", "Beverly Hills", "Meta"],
+    ghlCreatedDate: "2024-11-08", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Pool & Spa", "High Value", "Beverly Hills", "Meta"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Meta Ads", assignedRep: "Mike T.", stage: "Qualified",
     opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-11-22",
-    discoveryNotes: "High-end med spa. Botox, fillers, lasers. Wants Meta + SEO + Creative.",
-    businessGoals: ["Fill Botox appointments 8 weeks out", "Build Instagram brand to 50K"],
-    painPoints: ["Inconsistent Meta Ads results", "No creative strategy"],
-    requestedServices: ["Meta Ads", "SEO", "Creative", "Reporting"],
+    discoveryNotes: "High-end pool and spa company. Wants Meta + SEO + GBP to drive installs.",
+    businessGoals: ["Fill install schedule 8 weeks out", "Rank #1 for pool installation Beverly Hills"],
+    painPoints: ["Inconsistent Meta Ads results", "No SEO strategy"],
+    requestedServices: ["Meta Ads", "SEO", "GBP", "Reporting"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
     estimatedValue: 7500, affiliateName: "—",
     createdDate: "2024-11-08", lastActivity: "Today",
@@ -413,37 +415,37 @@ const LEADS: Lead[] = [
     notes: "Cold outbound. Interested but needs follow-up.",
   },
   {
-    id: "L019", name: "Holly Jennings", businessName: "Harvest Table Catering", industry: "Food & Beverage",
-    website: "harvesttablecatering.com", email: "holly@harvesttable.com", phone: "(612) 555-2020",
+    id: "L019", name: "Holly Jennings", businessName: "Harvest Landscaping", industry: "Landscaping",
+    website: "harvestlandscaping.com", email: "holly@harvestlandscaping.com", phone: "(612) 555-2020",
     location: "Minneapolis, MN",
     ghlContactId: "GHL-CON-0019", ghlAssignedUser: "Alex R.", ghlSource: "Meta Ads",
-    ghlCreatedDate: "2024-12-15", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Catering", "Meta", "Minneapolis"],
+    ghlCreatedDate: "2024-12-15", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Landscaping", "Meta", "Minneapolis"],
     ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
     leadSource: "Meta Ads", assignedRep: "Alex R.", stage: "New Lead",
     opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
-    businessGoals: ["Book more corporate events"],
-    painPoints: ["No social media strategy"],
-    requestedServices: ["Meta Ads", "Creative"],
+    businessGoals: ["Grow seasonal residential accounts"],
+    painPoints: ["No digital presence"],
+    requestedServices: ["SEO", "GBP"],
     budget: "Low", authority: "Decision Maker", need: "Medium", timeline: "3-6 months",
     estimatedValue: 1400, affiliateName: "—",
     createdDate: "2024-12-15", lastActivity: "Today",
     notes: "Meta Ads form fill. Needs initial call.",
   },
   {
-    id: "L020", name: "Leila Hassan", businessName: "NovaCare Physical Therapy", industry: "Physical Therapy",
-    website: "novacarerehab.com", email: "lhassan@novacare.com", phone: "(404) 555-2222",
+    id: "L020", name: "Leila Hassan", businessName: "NovaCare Pest Control", industry: "Pest Control",
+    website: "novacarepest.com", email: "lhassan@novacarepest.com", phone: "(404) 555-2222",
     location: "Atlanta, GA",
     ghlContactId: "GHL-CON-0020", ghlAssignedUser: "Sarah K.", ghlSource: "Affiliate",
-    ghlCreatedDate: "2024-11-29", ghlLastActivityDate: "2024-12-14", ghlContactTags: ["PT", "Affiliate", "Atlanta", "Multi-Location"],
+    ghlCreatedDate: "2024-11-29", ghlLastActivityDate: "2024-12-14", ghlContactTags: ["Pest Control", "Affiliate", "Atlanta", "Multi-Location"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Affiliate", assignedRep: "Sarah K.", stage: "Qualified",
     opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-06",
-    discoveryNotes: "Multi-location PT clinic. Strong budget. Wants SEO + GBP package.",
-    businessGoals: ["Fill all 4 clinics to capacity", "Rank top 5 in Atlanta PT"],
-    painPoints: ["Insurance referrals drying up", "Low digital presence"],
+    discoveryNotes: "Multi-location pest control. Strong budget. Wants SEO + GBP package.",
+    businessGoals: ["Grow recurring service accounts across 4 locations", "Rank top 5 in Atlanta pest control"],
+    painPoints: ["Relying on word of mouth", "Low digital presence"],
     requestedServices: ["SEO", "GBP", "Reporting"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "1-3 months",
     estimatedValue: 3300, affiliateName: "Kenji Yamamoto",
@@ -470,19 +472,19 @@ const LEADS: Lead[] = [
     notes: "Physician referral. Qualified. Ready for opportunity.",
   },
   {
-    id: "L022", name: "Walter Huang", businessName: "Pacific Kitchen & Bath", industry: "Kitchen & Bath Remodeling",
-    website: "pacifickitchenbath.com", email: "walter@pacifickb.com", phone: "(206) 555-3333",
+    id: "L022", name: "Walter Huang", businessName: "Pacific Plumbing Co.", industry: "Plumbing",
+    website: "pacificplumbingco.com", email: "walter@pacificplumbing.com", phone: "(206) 555-3333",
     location: "Bellevue, WA",
     ghlContactId: "GHL-CON-0022", ghlAssignedUser: "Jordan M.", ghlSource: "Partner",
-    ghlCreatedDate: "2024-11-28", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Remodeling", "Partner", "Bellevue", "High Value"],
+    ghlCreatedDate: "2024-11-28", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Plumbing", "Partner", "Bellevue", "High Value"],
     ghlContactStatus: "Active", ghlSyncStatus: "Manual Override",
     leadSource: "Partner", assignedRep: "Jordan M.", stage: "Qualified",
     opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-04",
-    discoveryNotes: "High-end remodeler. Wants SEO + Web redesign + GBP. Large project.",
-    businessGoals: ["Attract luxury homeowners in Bellevue", "Rank for kitchen remodel near Seattle"],
-    painPoints: ["Outdated website", "No SEO"],
-    requestedServices: ["SEO", "Web", "GBP"],
+    discoveryNotes: "Full-service plumbing company. Wants SEO + LSA + GBP. Strong pipeline.",
+    businessGoals: ["Rank for plumber near Bellevue", "Drive emergency call volume"],
+    painPoints: ["Competitor LSA domination", "No organic SEO"],
+    requestedServices: ["SEO", "LSA", "GBP"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "1-3 months",
     estimatedValue: 4800, affiliateName: "—",
     createdDate: "2024-11-28", lastActivity: "2 days ago",
@@ -508,30 +510,30 @@ const LEADS: Lead[] = [
     notes: "LSA inbound. Discovery done. Decision maker confirmed.",
   },
   {
-    id: "L024", name: "Erica Walton", businessName: "NextGen Physical Medicine", industry: "Physical Medicine",
-    website: "nextgenmed.com", email: "erica@nextgenmed.com", phone: "(615) 555-4848",
+    id: "L024", name: "Erica Walton", businessName: "NextGen HVAC Services", industry: "HVAC",
+    website: "nextgenhvac.com", email: "erica@nextgenhvac.com", phone: "(615) 555-4848",
     location: "Nashville, TN",
     ghlContactId: "GHL-CON-0024", ghlAssignedUser: "Alex R.", ghlSource: "Google Ads",
-    ghlCreatedDate: "2024-11-30", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Physical Medicine", "Google Ads", "Nashville"],
+    ghlCreatedDate: "2024-11-30", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["HVAC", "Google Ads", "Nashville"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Google Ads", assignedRep: "Alex R.", stage: "Discovery Complete",
     opportunityReadiness: "Budget Discussed",
     discoveryScheduled: true, discoveryDate: "2024-12-08",
-    discoveryNotes: "Pain management + physical therapy. Wants PPC + SEO + Reporting.",
-    businessGoals: ["Fill pain management schedule", "Rank for pain clinic Nashville"],
+    discoveryNotes: "Fast-growing HVAC company. Wants PPC + SEO + LSA to dominate Nashville.",
+    businessGoals: ["Fill install and service schedule year-round", "Rank for HVAC Nashville"],
     painPoints: ["High Google Ads spend with poor ROI"],
-    requestedServices: ["PPC", "SEO", "GBP", "Reporting"],
+    requestedServices: ["PPC", "SEO", "LSA", "GBP"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
     estimatedValue: 4100, affiliateName: "—",
     createdDate: "2024-11-30", lastActivity: "Today",
     notes: "Google Ads inbound. Budget discussed. Hot lead.",
   },
   {
-    id: "L025", name: "Paul Whitmore", businessName: "Keystone Insurance Agency", industry: "Insurance",
-    website: "keystoneinsurance.com", email: "paul@keystoneins.com", phone: "(215) 555-2525",
+    id: "L025", name: "Paul Whitmore", businessName: "Keystone Roofing", industry: "Roofing",
+    website: "keystoneroofing.com", email: "paul@keystoneroofing.com", phone: "(215) 555-2525",
     location: "Philadelphia, PA",
     ghlContactId: "GHL-CON-0025", ghlAssignedUser: "Jordan M.", ghlSource: "Outbound",
-    ghlCreatedDate: "2024-11-20", ghlLastActivityDate: "2024-12-03", ghlContactTags: ["Insurance", "Outbound", "Disqualified"],
+    ghlCreatedDate: "2024-11-20", ghlLastActivityDate: "2024-12-03", ghlContactTags: ["Roofing", "Outbound", "Disqualified"],
     ghlContactStatus: "Inactive", ghlSyncStatus: "Synced",
     leadSource: "Outbound", assignedRep: "Jordan M.", stage: "Disqualified",
     opportunityReadiness: "Not Ready",
@@ -583,37 +585,37 @@ const LEADS: Lead[] = [
     notes: "Cold outbound converted. Ready for opportunity.",
   },
   {
-    id: "L028", name: "Kimberly Ross", businessName: "Rosewood Event Venue", industry: "Event Venue",
-    website: "rosewoodevents.com", email: "kim@rosewoodevents.com", phone: "(404) 555-5252",
+    id: "L028", name: "Kimberly Ross", businessName: "Rosewood Painting Co.", industry: "Painting",
+    website: "rosewoodpainting.com", email: "kim@rosewoodpainting.com", phone: "(404) 555-5252",
     location: "Atlanta, GA",
     ghlContactId: "GHL-CON-0028", ghlAssignedUser: "Alex R.", ghlSource: "Website",
-    ghlCreatedDate: "2024-12-15", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Events", "Website", "Atlanta"],
+    ghlCreatedDate: "2024-12-15", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Painting", "Website", "Atlanta"],
     ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
     leadSource: "Website", assignedRep: "Alex R.", stage: "New Lead",
     opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
-    businessGoals: ["Book more weddings and corporate events"],
-    painPoints: ["Dependent on The Knot and WeddingWire"],
-    requestedServices: ["SEO", "Meta Ads"],
+    businessGoals: ["Book more residential and commercial paint jobs"],
+    painPoints: ["No online presence", "Dependent on word of mouth"],
+    requestedServices: ["SEO", "GBP"],
     budget: "Medium", authority: "Decision Maker", need: "Medium", timeline: "3-6 months",
     estimatedValue: 1400, affiliateName: "—",
     createdDate: "2024-12-15", lastActivity: "Today",
     notes: "Website inquiry. First contact pending.",
   },
   {
-    id: "L029", name: "Vivian Wu", businessName: "Harmony Pediatric Dentistry", industry: "Pediatric Dentistry",
-    website: "harmonypeddentistry.com", email: "vivian@harmonyped.com", phone: "(408) 555-4646",
+    id: "L029", name: "Vivian Wu", businessName: "Harmony Home Services", industry: "Home Services",
+    website: "harmonyhomeservices.com", email: "vivian@harmonyhomeservices.com", phone: "(408) 555-4646",
     location: "San Jose, CA",
     ghlContactId: "GHL-CON-0029", ghlAssignedUser: "Sarah K.", ghlSource: "Affiliate",
-    ghlCreatedDate: "2024-11-14", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Dental", "Affiliate", "San Jose", "Pediatric"],
+    ghlCreatedDate: "2024-11-14", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Home Services", "Affiliate", "San Jose", "Multi-Service"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Affiliate", assignedRep: "Sarah K.", stage: "Qualified",
     opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-11-29",
-    discoveryNotes: "3-dentist practice. High-growth area. Wants SEO + GBP + PPC.",
-    businessGoals: ["Fill 3 dentist chairs daily", "Rank #1 for pediatric dentist San Jose"],
-    painPoints: ["New patient acquisition slow", "No PPC strategy"],
+    discoveryNotes: "Multi-service home services company. High-growth area. Wants SEO + GBP + PPC.",
+    businessGoals: ["Grow service volume 40% in next 6 months", "Rank #1 for home services San Jose"],
+    painPoints: ["Inconsistent lead flow", "No PPC strategy"],
     requestedServices: ["SEO", "GBP", "PPC", "Reporting"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
     estimatedValue: 5200, affiliateName: "Kenji Yamamoto",
@@ -621,19 +623,19 @@ const LEADS: Lead[] = [
     notes: "Kenji Yamamoto affiliate. Ready for opportunity.",
   },
   {
-    id: "L030", name: "Ingrid Larsson", businessName: "NordicFit Personal Training", industry: "Personal Training",
-    website: "nordicfit.com", email: "ingrid@nordicfit.com", phone: "(612) 555-5050",
+    id: "L030", name: "Ingrid Larsson", businessName: "Nordic Electrical", industry: "Electrical",
+    website: "nordicelectrical.com", email: "ingrid@nordicelectrical.com", phone: "(612) 555-5050",
     location: "Minneapolis, MN",
     ghlContactId: "GHL-CON-0030", ghlAssignedUser: "Sarah K.", ghlSource: "Meta Ads",
-    ghlCreatedDate: "2024-12-11", ghlLastActivityDate: "2024-12-16", ghlContactTags: ["Fitness", "Meta", "Minneapolis"],
+    ghlCreatedDate: "2024-12-11", ghlLastActivityDate: "2024-12-16", ghlContactTags: ["Electrical", "Meta", "Minneapolis"],
     ghlContactStatus: "Active", ghlSyncStatus: "Sync Failed",
     leadSource: "Meta Ads", assignedRep: "Sarah K.", stage: "Discovery Scheduled",
     opportunityReadiness: "Not Ready",
     discoveryScheduled: true, discoveryDate: "2024-12-22",
     discoveryNotes: "",
-    businessGoals: ["Book 20 private clients", "Build online training income"],
-    painPoints: ["No online sales funnel", "Relying on word of mouth"],
-    requestedServices: ["Meta Ads", "Web", "Creative"],
+    businessGoals: ["Book more residential electrical jobs", "Rank for electrician Minneapolis"],
+    painPoints: ["No online presence", "Relying on word of mouth"],
+    requestedServices: ["SEO", "GBP", "LSA"],
     budget: "Medium", authority: "Decision Maker", need: "Medium", timeline: "1-3 months",
     estimatedValue: 1800, affiliateName: "—",
     createdDate: "2024-12-11", lastActivity: "Yesterday",
@@ -1693,6 +1695,8 @@ function SalesLeadsPageInner() {
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const toastCounter = useRef(0);
   const [leads, setLeads] = useState<Lead[]>(LEADS);
+  const [showCustomizeView, setShowCustomizeView] = useState(false);
+  const { isVisible, widgetOrder } = useWidgetPreferences("leads");
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
   const [selectedLeadForOpportunity, setSelectedLeadForOpportunity] = useState<{
     id: string;
@@ -1861,6 +1865,12 @@ function SalesLeadsPageInner() {
           onAssign={handleAssignLeads}
         />
       )}
+      {showCustomizeView && (
+        <CustomizeViewModal
+          pageId="leads"
+          onClose={() => setShowCustomizeView(false)}
+        />
+      )}
       {showCreateOpportunityModal && (
         <CreateOpportunityModal
           leadData={selectedLeadForOpportunity ?? undefined}
@@ -1889,11 +1899,6 @@ function SalesLeadsPageInner() {
           <p className="text-sm mt-1"style={{ color: "var(--rtm-text-muted)"}}>
             Lead qualification, discovery management, and opportunity readiness.
           </p>
-          <div className="flex items-center gap-2 mt-2">
-            <Link href="/sales/pipeline" className="text-[11px] px-2 py-0.5 rounded font-semibold"style={{ background: "#EEF2FF", color: "#6366F1"}}>
-              Opportunity Management → Pipeline
-            </Link>
-          </div>
         </div>
 
         {/* Top Action Bar */}
@@ -1906,6 +1911,11 @@ function SalesLeadsPageInner() {
           <button onClick={() => setShowImportModal(true)} className="rtm-btn-secondary text-sm px-3 py-2">Import Leads</button>
           <button onClick={() => setShowAssignModal(true)} className="rtm-btn-secondary text-sm px-3 py-2">Assign Leads</button>
           <button onClick={handleExportLeads} className="rtm-btn-secondary text-sm px-3 py-2">Export Leads</button>
+          <button
+            onClick={() => setShowCustomizeView(true)}
+            className="rtm-btn-secondary text-sm px-3 py-2">
+            Customize View
+          </button>
           <button
             onClick={() => setShowSyncPanel(v => !v)}
             className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"style={{
@@ -1984,24 +1994,43 @@ function SalesLeadsPageInner() {
         </div>
       )}
 
-      {/*  KPI Cards  */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        {[
-          { title: "New Leads",            value: String(newLeads),           icon: "", iconBg: "#EEF2FF", iconColor: "#6366F1", trend: "up"as const,      trendValue: "+5"},
-          { title: "Contact Attempted",    value: String(contactAttempted),   icon: "", iconBg: "#F5F3FF", iconColor: "#8B5CF6", trend: "neutral"as const, trendValue: "±0"},
-          { title: "Discovery Scheduled",  value: String(discoveryScheduled), iconBg: "#F0F9FF", iconColor: "#0284C7", trend: "up"as const,      trendValue: "+2"},
-          { title: "Discovery Complete",   value: String(discoveryComplete),  icon: "", iconBg: "#ECFEFF", iconColor: "#0891B2", trend: "up"as const,      trendValue: "+3"},
-          { title: "Qualified Leads",      value: String(qualifiedLeads),     icon: "", iconBg: "#FFFBEB", iconColor: "#D97706", trend: "up"as const,      trendValue: "+4"},
-          { title: "Disqualified",         value: String(disqualifiedLeads),  icon: "",  iconBg: "#F1F5F9", iconColor: "#94A3B8", trend: "neutral"as const, trendValue: "±0"},
-          { title: "Conversion Rate",      value: `${conversionRate}%`,       icon: "", iconBg: "#F0FDF4", iconColor: "#16A34A", trend: "up"as const,      trendValue: "+2%"},
-          { title: "GHL Contacts Synced",  value: String(ghlSynced),          icon: "", iconBg: "#ECFDF5", iconColor: "#059669", trend: "up"as const,      trendValue: `+${ghlSynced}` },
-        ].map(card => (
-          <KpiCard key={card.title} title={card.title} value={card.value}
-            icon={<span className="text-lg">{card.icon}</span>}
-            iconBg={card.iconBg} iconColor={card.iconColor}
-            trend={card.trend} trendValue={card.trendValue} />
-        ))}
-      </div>
+      {/*  KPI Cards — widget-preference driven, neutral card backgrounds  */}
+      {(() => {
+        // Map widget id → card data. All card backgrounds neutral; semantic color on values/badges only.
+        const KPI_NEUTRAL_BG = "var(--rtm-surface)";
+        const KPI_NEUTRAL_ICON_BG = "var(--rtm-bg)";
+        const KPI_NEUTRAL_ICON_COLOR = "var(--rtm-text-muted)";
+        const widgetData: Record<string, { title: string; value: string; trend: "up" | "down" | "neutral"; trendValue: string }> = {
+          "leads-new":                { title: "New Leads",           value: String(newLeads),           trend: "up",      trendValue: "+5" },
+          "leads-contact-attempted":  { title: "Contact Attempted",   value: String(contactAttempted),   trend: "neutral", trendValue: "±0" },
+          "leads-contacted":          { title: "Contacted",           value: String(leads.filter(l => l.stage === "Contacted").length), trend: "up", trendValue: "+1" },
+          "leads-discovery-scheduled":{ title: "Discovery Scheduled", value: String(discoveryScheduled), trend: "up",      trendValue: "+2" },
+          "leads-discovery-complete": { title: "Discovery Complete",  value: String(discoveryComplete),  trend: "up",      trendValue: "+3" },
+          "leads-qualified":          { title: "Qualified",           value: String(qualifiedLeads),     trend: "up",      trendValue: "+4" },
+          "leads-disqualified":       { title: "Disqualified",        value: String(disqualifiedLeads),  trend: "neutral", trendValue: "±0" },
+          "leads-conversion":         { title: "Conversion Rate",     value: `${conversionRate}%`,       trend: "up",      trendValue: "+2%" },
+          "leads-ghl-contacts":       { title: "GHL Contacts",        value: String(ghlSynced),          trend: "up",      trendValue: `+${ghlSynced}` },
+        };
+        const visibleCards = widgetOrder
+          .filter(id => isVisible(id) && widgetData[id])
+          .map(id => ({ id, ...widgetData[id] }));
+        if (visibleCards.length === 0) return null;
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+            {visibleCards.map(card => (
+              <KpiCard
+                key={card.id}
+                title={card.title}
+                value={card.value}
+                iconBg={KPI_NEUTRAL_ICON_BG}
+                iconColor={KPI_NEUTRAL_ICON_COLOR}
+                trend={card.trend}
+                trendValue={card.trendValue}
+              />
+            ))}
+          </div>
+        );
+      })()}
 
       {/*  Lead Stage Pipeline  */}
       <div className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
@@ -2028,70 +2057,64 @@ function SalesLeadsPageInner() {
               <button key={stage}
                 onClick={() => setStageFilter(isActive ? "All": stage)}
                 className="flex-shrink-0 rounded-xl border p-3 text-left min-w-[140px] transition-all"style={{
-                  background: isActive ? cfg.bg : "var(--rtm-bg)",
+                  background: "var(--rtm-bg)",
                   borderColor: isActive ? cfg.color : "var(--rtm-border)",
                   boxShadow: isActive ? `0 0 0 2px ${cfg.color}30` : undefined,
                 }}>
                 <p className="text-2xl font-bold mb-1"style={{ color: cfg.color }}>{count}</p>
-                <p className="text-[10px] font-bold leading-tight"style={{ color: cfg.color }}>{stage}</p>
+                <p className="text-[10px] font-bold leading-tight"style={{ color: "var(--rtm-text-muted)"}}>{stage}</p>
               </button>
             );
           })}
         </div>
 
-        {/* Lead → Opportunity Workflow */}
+        {/* Lead → Opportunity Workflow — read-only flow indicator */}
         <div className="mt-4 pt-4 border-t"style={{ borderColor: "var(--rtm-border)"}}>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>
             Lead → Opportunity Workflow
           </p>
           <div className="flex items-center gap-1 flex-wrap text-[10px] font-semibold">
             {[
-              { label: "Lead Created",         here: true },
-              { label: "Assigned",             here: true },
-              { label: "Contacted",            here: true },
-              { label: "Discovery",            here: true },
-              { label: "Qualified",            here: true },
-              { label: "Create Opportunity",   here: false },
-              { label: "Sales Pipeline",       here: false },
+              { label: "Lead Created",       active: true },
+              { label: "Assigned",           active: true },
+              { label: "Contacted",          active: true },
+              { label: "Discovery",          active: true },
+              { label: "Qualified",          active: true },
+              { label: "Opportunity Created",active: false },
+              { label: "Sales Pipeline",     active: false },
             ].map((step, i, arr) => (
               <span key={step.label} className="flex items-center gap-1">
                 <span className="px-2 py-0.5 rounded"style={{
-                    background: step.here ? "var(--rtm-bg)": "#EEF2FF",
-                    color: step.here ? "var(--rtm-text-secondary)": "#6366F1",
-                    border: step.here ? "1px solid var(--rtm-border)": "1px solid #C7D2FE",
-                    fontWeight: step.here ? 500 : 700,
+                    background: "var(--rtm-bg)",
+                    color: step.active ? "var(--rtm-text-secondary)" : "var(--rtm-text-muted)",
+                    border: "1px solid var(--rtm-border)",
+                    fontWeight: step.active ? 600 : 400,
                   }}>
-                  {step.here ? step.label : `→ ${step.label}`}
+                  {step.label}
                 </span>
-                {i < arr.length - 1 && step.here && arr[i + 1].here && (
-                  <span style={{ color: workspace.accentColor }}>→</span>
+                {i < arr.length - 1 && (
+                  <span style={{ color: "var(--rtm-text-muted)" }}>→</span>
                 )}
               </span>
             ))}
           </div>
-          <p className="text-[10px] mt-2"style={{ color: "var(--rtm-text-muted)"}}>
-            Leads live here. Opportunities belong in{""}
-            <Link href="/sales/pipeline" className="font-bold underline" style={{ color: "#6366F1" }}>
-              /sales/pipeline
-            </Link>
-          </p>
         </div>
       </div>
 
-      {/*  Lead Sources  */}
+      {/*  Lead Sources — neutral chips, filter on click  */}
       <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-3">
         {sources.sort((a, b) => sourceCounts[b] - sourceCounts[a]).map(source => {
-          const color    = SOURCE_COLORS[source] ?? "#64748B";
           const isActive = sourceFilter === source;
           return (
             <button key={source}
               onClick={() => setSourceFilter(isActive ? "All": source)}
               className="rounded-xl border p-3 text-center transition-all"style={{
-                background: isActive ? `${color}15` : "var(--rtm-surface)",
-                borderColor: isActive ? color : "var(--rtm-border)",
+                background: "var(--rtm-surface)",
+                borderColor: isActive ? "var(--rtm-text-secondary)" : "var(--rtm-border)",
+                boxShadow: isActive ? "0 0 0 2px var(--rtm-border)" : undefined,
               }}>
-              <p className="text-xl font-bold"style={{ color }}>{sourceCounts[source]}</p>
-              <p className="text-[10px] font-bold mt-0.5 leading-tight"style={{ color: isActive ? color : "var(--rtm-text-muted)"}}>{source}</p>
+              <p className="text-xl font-bold"style={{ color: "var(--rtm-text-primary)"}}>{sourceCounts[source]}</p>
+              <p className="text-[10px] font-semibold mt-0.5 leading-tight"style={{ color: "var(--rtm-text-muted)"}}>{source}</p>
             </button>
           );
         })}
@@ -2148,7 +2171,6 @@ function SalesLeadsPageInner() {
                     {/* Lead Name */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <p className="font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{lead.name}</p>
-                      <p className="text-xs font-mono"style={{ color: "var(--rtm-text-muted)"}}>{lead.ghlContactId}</p>
                     </td>
 
                     {/* Business Name */}
@@ -2176,19 +2198,6 @@ function SalesLeadsPageInner() {
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
                             Opportunity Created
                           </span>
-                        )}
-                        {isReady && !opportunityCreatedLeadIds.has(lead.id) && (
-                          <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                            <button
-                              className="text-[10px] px-1.5 py-0.5 rounded font-bold"
-                              style={{ background: "#059669", color: "#fff" }}
-                              onClick={(e) => { e.stopPropagation(); handleCreateOpportunityFromLead(lead); }}>
-                              Create Opp
-                            </button>
-                            <Link href="/sales/pipeline" className="text-[10px] px-1.5 py-0.5 rounded font-semibold border inline-block" style={{ color: "#059669", borderColor: "#A7F3D0", background: "#F0FDF4" }}>
-                              Pipeline →
-                            </Link>
-                          </div>
                         )}
                       </div>
                     </td>
@@ -2255,21 +2264,7 @@ function SalesLeadsPageInner() {
         )}
       </div>
 
-      {/*  Bottom Navigation  */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Sales Pipeline",  href: "/sales/pipeline",  desc: "Opportunity management · deal stages · close tracking", color: "#6366F1"},
-          { label: "Tasks",           href: "/sales/tasks",      desc: "Follow-ups · discovery reminders · lead tasks",          color: "#0284C7"},
-          { label: "Follow Ups",      href: "/sales/followups",  desc: "Manage overdue and upcoming follow-ups.",               color: "#7C3AED"},
-          { label: "Affiliates",      href: "/sales/affiliates", desc: "Affiliate attribution · commission tracking",            color: "#D97706"},
-        ].map(item => (
-          <Link key={item.label} href={item.href}
-            className="rounded-xl border p-4 block transition-all hover:shadow-md"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-            <p className="text-sm font-bold"style={{ color: item.color }}>{item.label} →</p>
-            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{item.desc}</p>
-          </Link>
-        ))}
-      </div>
+
     </div>
   );
 }

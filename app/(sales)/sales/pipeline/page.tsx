@@ -114,7 +114,7 @@ type LeadSource =
 
 type AuditStatus = "Not Started"| "Requested"| "In Progress"| "Completed"| "Reviewed";
 type ProposalStatus = "Not Started"| "Drafting"| "Sent"| "Viewed"| "Approved"| "Rejected";
-type FollowUpStatus = "Upcoming"| "Overdue"| "Completed";
+type FollowUpStatus = "Upcoming" | "Due Today" | "Overdue" | "Completed" | "Cancelled";
 type HandoffStatus = "Not Started"| "Initiated"| "Billing Sent"| "Invoice Created"| "Activated";
 type BillingRequestStatus = "Pending"| "Submitted"| "Approved"| "Rejected";
 type InvoiceStatus = "Not Created"| "Drafted"| "Sent"| "Paid";
@@ -1637,9 +1637,11 @@ const PROPOSAL_STATUS_CONFIG: Record<ProposalStatus, { color?: string; bg?: stri
 };
 
 const FOLLOW_UP_STATUS_CONFIG: Record<FollowUpStatus, { color?: string; bg?: string; border: string }> = {
-  "Upcoming":  { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE"},
-  "Overdue":   { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
-  "Completed": { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
+  "Upcoming":  { color: "#2563EB", bg: "#EFF6FF",  border: "#BFDBFE" },
+  "Due Today": { color: "#B45309", bg: "#FFFBEB",  border: "#FDE68A" },
+  "Overdue":   { color: "#DC2626", bg: "#FEF2F2",  border: "#FECACA" },
+  "Completed": { color: "#059669", bg: "#ECFDF5",  border: "#A7F3D0" },
+  "Cancelled": { color: "#6B7280", bg: "#F3F4F6",  border: "#D1D5DB" },
 };
 
 const HANDOFF_STATUS_CONFIG: Record<HandoffStatus, { color?: string; bg?: string; border: string }> = {
@@ -1989,7 +1991,7 @@ function RowActionsMenu({
         ...
       </button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-50 rounded-xl border shadow-lg py-1 min-w-[210px]"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <div className="absolute right-0 top-full mt-1 z-[9999] rounded-xl border shadow-lg py-1 min-w-[210px]"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
           <button onClick={() => { onView(opp); setOpen(false); }}
             className="w-full text-left text-xs px-4 py-2 hover:opacity-80 font-semibold" style={{ color: workspace.accentColor }}>
             View Opportunity
@@ -3599,6 +3601,7 @@ interface PipelineFollowUp {
   dueDate: string;
   lastContact: string;
   stage: string;
+  relatedType: "pipeline" | "lead" | "proposal";
   status: FollowUpStatus;
 }
 
@@ -3618,12 +3621,53 @@ function buildFollowUpQueue(opps: Opportunity[]): PipelineFollowUp[] {
           ? opp.recentActivities[opp.recentActivities.length - 1].date
           : "—",
         stage: opp.stage,
+        relatedType: "pipeline",
         status: fu.status as FollowUpStatus,
       });
     }
   }
   return items;
 }
+
+// ── Standalone Follow Ups mock (36 Home Services rows) ─────────────────────────────
+const STANDALONE_FOLLOW_UPS: PipelineFollowUp[] = [
+  { id:"sfu-001", contact:"Marcus Webb",     relatedRecord:"Summit Landscaping",        followUpType:"Call",    assignedRep:"Jordan M.", priority:"High",   dueDate:"Jan 14, 2025", lastContact:"Jan 6, 2025",  stage:"Audit In Progress",  relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-002", contact:"Tom Ridge",       relatedRecord:"Blue Ridge Plumbing",       followUpType:"Email",   assignedRep:"Sarah K.",  priority:"High",   dueDate:"Jan 10, 2025", lastContact:"Jan 7, 2025",  stage:"Proposal Sent",      relatedType:"pipeline", status:"Overdue" },
+  { id:"sfu-003", contact:"Jake Apex",       relatedRecord:"Apex Roofing",              followUpType:"Call",    assignedRep:"Mike T.",   priority:"Urgent", dueDate:"Jan 12, 2025", lastContact:"Jan 2, 2025",  stage:"Negotiation",        relatedType:"pipeline", status:"Overdue" },
+  { id:"sfu-004", contact:"Dana Pinnacle",   relatedRecord:"Pinnacle HVAC",             followUpType:"Meeting", assignedRep:"Sarah K.",  priority:"High",   dueDate:"Jan 15, 2025", lastContact:"Jan 8, 2025",  stage:"Proposal Draft",     relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-005", contact:"Jim Morrison",    relatedRecord:"Morrison HVAC and Cooling", followUpType:"Call",    assignedRep:"Alex R.",   priority:"High",   dueDate:"Jan 11, 2025", lastContact:"Jan 5, 2025",  stage:"Audit In Progress",  relatedType:"pipeline", status:"Due Today" },
+  { id:"sfu-006", contact:"Carlos Vega",     relatedRecord:"Coastal Plumbing Co.",      followUpType:"Email",   assignedRep:"Mike T.",   priority:"Medium", dueDate:"Jan 13, 2025", lastContact:"Jan 3, 2025",  stage:"Proposal Sent",      relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-007", contact:"Greg Lawn",       relatedRecord:"GreenWave Lawn Care",       followUpType:"Call",    assignedRep:"Jordan M.", priority:"Medium", dueDate:"Jan 16, 2025", lastContact:"Jan 8, 2025",  stage:"Qualified",          relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-008", contact:"Marcus Webb",     relatedRecord:"Summit Landscaping",        followUpType:"SMS",     assignedRep:"Jordan M.", priority:"Low",    dueDate:"Jan 18, 2025", lastContact:"Jan 9, 2025",  stage:"Proposal Draft",     relatedType:"proposal", status:"Upcoming" },
+  { id:"sfu-009", contact:"Tom Ridge",       relatedRecord:"Blue Ridge Plumbing",       followUpType:"Meeting", assignedRep:"Sarah K.",  priority:"High",   dueDate:"Jan 8, 2025",  lastContact:"Jan 2, 2025",  stage:"Negotiation",        relatedType:"pipeline", status:"Overdue" },
+  { id:"sfu-010", contact:"Jake Apex",       relatedRecord:"Apex Roofing",              followUpType:"Call",    assignedRep:"Mike T.",   priority:"High",   dueDate:"Jan 11, 2025", lastContact:"Jan 6, 2025",  stage:"Proposal Sent",      relatedType:"pipeline", status:"Due Today" },
+  { id:"sfu-011", contact:"Dana Pinnacle",   relatedRecord:"Pinnacle HVAC",             followUpType:"Email",   assignedRep:"Sarah K.",  priority:"Medium", dueDate:"Jan 14, 2025", lastContact:"Jan 7, 2025",  stage:"Negotiation",        relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-012", contact:"Jim Morrison",    relatedRecord:"Morrison HVAC and Cooling", followUpType:"Meeting", assignedRep:"Alex R.",   priority:"Urgent", dueDate:"Jan 9, 2025",  lastContact:"Jan 3, 2025",  stage:"Proposal Sent",      relatedType:"pipeline", status:"Overdue" },
+  { id:"sfu-013", contact:"Luis Reyes",      relatedRecord:"Reyes Landscaping",         followUpType:"Call",    assignedRep:"Alex R.",   priority:"Medium", dueDate:"Jan 12, 2025", lastContact:"Dec 30, 2024", stage:"Qualified",          relatedType:"pipeline", status:"Overdue" },
+  { id:"sfu-014", contact:"Frank DeLuca",    relatedRecord:"DeLuca Gutters & Siding",   followUpType:"Email",   assignedRep:"Mike T.",   priority:"Medium", dueDate:"Jan 13, 2025", lastContact:"Jan 2, 2025",  stage:"Proposal Sent",      relatedType:"proposal", status:"Overdue" },
+  { id:"sfu-015", contact:"Tom Castillo",    relatedRecord:"Castillo Electric Co.",     followUpType:"Call",    assignedRep:"Mike T.",   priority:"High",   dueDate:"Jan 14, 2025", lastContact:"Jan 9, 2025",  stage:"Discovery",          relatedType:"lead",     status:"Upcoming" },
+  { id:"sfu-016", contact:"Elijah Brown",    relatedRecord:"Brown & Sons Plumbing",     followUpType:"Meeting", assignedRep:"Alex R.",   priority:"Urgent", dueDate:"Jan 11, 2025", lastContact:"Jan 4, 2025",  stage:"Negotiation",        relatedType:"pipeline", status:"Completed" },
+  { id:"sfu-017", contact:"James Carter",    relatedRecord:"Carter HVAC Services",      followUpType:"Email",   assignedRep:"Jordan M.", priority:"Medium", dueDate:"Jan 15, 2025", lastContact:"Jan 10, 2025", stage:"Lead",               relatedType:"lead",     status:"Upcoming" },
+  { id:"sfu-018", contact:"Kevin Strand",    relatedRecord:"Strand Painting Co.",       followUpType:"Call",    assignedRep:"Jordan M.", priority:"Low",    dueDate:"Feb 18, 2025", lastContact:"Nov 20, 2024", stage:"Closed Lost",        relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-019", contact:"Marcus DeLeon",   relatedRecord:"DeLeon Roofing & Gutters",  followUpType:"Call",    assignedRep:"Alex R.",   priority:"Medium", dueDate:"Jan 13, 2025", lastContact:"Jan 10, 2025", stage:"Lead",               relatedType:"lead",     status:"Upcoming" },
+  { id:"sfu-020", contact:"Carla Whitfield", relatedRecord:"Harbor Flooring Co.",       followUpType:"Email",   assignedRep:"Sarah K.",  priority:"Medium", dueDate:"Jan 14, 2025", lastContact:"Jan 6, 2025",  stage:"Qualified",          relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-021", contact:"Ray Morales",     relatedRecord:"Morales Roofing LLC",       followUpType:"SMS",     assignedRep:"Alex R.",   priority:"Low",    dueDate:"Jan 13, 2025", lastContact:"Jan 11, 2025", stage:"Lead",               relatedType:"lead",     status:"Upcoming" },
+  { id:"sfu-022", contact:"Derek Holt",      relatedRecord:"Harbor Auto Group",         followUpType:"Call",    assignedRep:"Mike T.",   priority:"Urgent", dueDate:"Jan 11, 2025", lastContact:"Jan 5, 2025",  stage:"Qualified",          relatedType:"pipeline", status:"Due Today" },
+  { id:"sfu-023", contact:"Paul Ferretti",   relatedRecord:"Ferretti Tile & Stone",     followUpType:"Meeting", assignedRep:"Mike T.",   priority:"Medium", dueDate:"Jan 13, 2025", lastContact:"Jan 7, 2025",  stage:"Audit Requested",    relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-024", contact:"Amy Thornton",    relatedRecord:"Thornton Med Spa",          followUpType:"Call",    assignedRep:"Jordan M.", priority:"High",   dueDate:"Jan 11, 2025", lastContact:"Jan 9, 2025",  stage:"Audit Requested",    relatedType:"pipeline", status:"Due Today" },
+  { id:"sfu-025", contact:"Vanessa Cruz",    relatedRecord:"Elite Electrical Services", followUpType:"Email",   assignedRep:"Jordan M.", priority:"High",   dueDate:"Jan 10, 2025", lastContact:"Jan 4, 2025",  stage:"Proposal Sent",      relatedType:"proposal", status:"Overdue" },
+  { id:"sfu-026", contact:"Janet Holloway",  relatedRecord:"Green Valley HVAC",         followUpType:"Call",    assignedRep:"Mike T.",   priority:"High",   dueDate:"Jan 14, 2025", lastContact:"Jan 8, 2025",  stage:"Proposal Sent",      relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-027", contact:"Damon Parks",     relatedRecord:"Parks Electrical Services", followUpType:"Email",   assignedRep:"Jordan M.", priority:"High",   dueDate:"Jan 13, 2025", lastContact:"Jan 8, 2025",  stage:"Negotiation",        relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-028", contact:"Tom Ridge",       relatedRecord:"Blue Ridge Plumbing",       followUpType:"Call",    assignedRep:"Sarah K.",  priority:"Medium", dueDate:"Jan 11, 2025", lastContact:"Jan 9, 2025",  stage:"Audit In Progress",  relatedType:"pipeline", status:"Completed" },
+  { id:"sfu-029", contact:"Marcus Webb",     relatedRecord:"Summit Landscaping",        followUpType:"Meeting", assignedRep:"Jordan M.", priority:"High",   dueDate:"Jan 15, 2025", lastContact:"Jan 6, 2025",  stage:"Proposal Draft",     relatedType:"proposal", status:"Upcoming" },
+  { id:"sfu-030", contact:"Luis Reyes",      relatedRecord:"Reyes Landscaping",         followUpType:"Call",    assignedRep:"Alex R.",   priority:"Medium", dueDate:"Jan 7, 2025",  lastContact:"Jan 1, 2025",  stage:"Qualified",          relatedType:"pipeline", status:"Overdue" },
+  { id:"sfu-031", contact:"Jim Morrison",    relatedRecord:"Morrison HVAC and Cooling", followUpType:"Email",   assignedRep:"Alex R.",   priority:"High",   dueDate:"Jan 16, 2025", lastContact:"Jan 6, 2025",  stage:"Proposal Sent",      relatedType:"proposal", status:"Upcoming" },
+  { id:"sfu-032", contact:"Tom Castillo",    relatedRecord:"Castillo Electric Co.",     followUpType:"SMS",     assignedRep:"Mike T.",   priority:"Medium", dueDate:"Jan 10, 2025", lastContact:"Jan 8, 2025",  stage:"Discovery",          relatedType:"lead",     status:"Completed" },
+  { id:"sfu-033", contact:"Dana Pinnacle",   relatedRecord:"Pinnacle HVAC",             followUpType:"Call",    assignedRep:"Sarah K.",  priority:"High",   dueDate:"Jan 17, 2025", lastContact:"Jan 10, 2025", stage:"Negotiation",        relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-034", contact:"Carlos Vega",     relatedRecord:"Coastal Plumbing Co.",      followUpType:"Meeting", assignedRep:"Mike T.",   priority:"Medium", dueDate:"Jan 18, 2025", lastContact:"Jan 7, 2025",  stage:"Proposal Sent",      relatedType:"pipeline", status:"Upcoming" },
+  { id:"sfu-035", contact:"Elijah Brown",    relatedRecord:"Brown & Sons Plumbing",     followUpType:"Call",    assignedRep:"Alex R.",   priority:"Urgent", dueDate:"Jan 9, 2025",  lastContact:"Jan 4, 2025",  stage:"Negotiation",        relatedType:"pipeline", status:"Overdue" },
+  { id:"sfu-036", contact:"Jake Apex",       relatedRecord:"Apex Roofing",              followUpType:"Email",   assignedRep:"Mike T.",   priority:"High",   dueDate:"Jan 14, 2025", lastContact:"Jan 5, 2025",  stage:"Proposal Sent",      relatedType:"proposal", status:"Upcoming" },
+];
 
 function SalesPipelinePageInner() {
   const searchParams = useSearchParams();
@@ -3655,6 +3699,28 @@ function SalesPipelinePageInner() {
 
   // followUpQueue is built after mergedOpportunities is computed below
   // Placeholder — real queue built after mergedOpportunities
+
+  // Follow Ups tab state
+  const [fuStatusFilter, setFuStatusFilter] = useState<FollowUpStatus | "All">("All");
+  const [fuRows, setFuRows] = useState<PipelineFollowUp[]>(STANDALONE_FOLLOW_UPS);
+  // Log Follow Up modal
+  const [logModalRow, setLogModalRow] = useState<PipelineFollowUp | null>(null);
+  // Three-dot menu state: rowId -> open/closed
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  // Change Status popover: rowId -> open/closed
+  const [statusPopoverId, setStatusPopoverId] = useState<string | null>(null);
+  // Reschedule popover
+  const [rescheduleId, setRescheduleId] = useState<string | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<string>("");
+  // Cancel confirm
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  // Log modal form state
+  const [logOutcome, setLogOutcome] = useState("");
+  const [logNotes, setLogNotes] = useState("");
+  const [logScheduleNext, setLogScheduleNext] = useState(true);
+  const [logNextType, setLogNextType] = useState("Call");
+  const [logNextDate, setLogNextDate] = useState("");
+  const [logNextPriority, setLogNextPriority] = useState<Priority>("Medium");
 
   function addPipelineToast(text: string, variant: PipelineToast["variant"] = "success") {
     _pipelineToastCounter += 1;
@@ -3856,79 +3922,370 @@ function SalesPipelinePageInner() {
         ))}
       </div>
 
-      {/* ── Follow Ups tab ── */}
-      {mainTab === "followups" && (
-        <div className="space-y-6">
-          {/* Compact KPI row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: "Due Today",          value: followUpQueue.filter(f => f.dueDate.toLowerCase() === "today").length, bg: "#FFFBEB", text: "#B45309", border: "#FDE68A" },
-              { label: "Overdue",            value: followUpQueue.filter(f => f.status === "Overdue").length,   bg: "#FEF2F2", text: "#DC2626", border: "#FECACA" },
-              { label: "Uncontacted Leads",  value: followUpQueue.filter(f => f.stage === "Lead").length,       bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-              { label: "Proposal Follow-Ups",value: followUpQueue.filter(f => f.stage === "Proposal Sent" || f.stage === "Proposal Draft").length, bg: "#FDF4FF", text: "#7E22CE", border: "#E9D5FF" },
-            ].map(card => (
-              <div key={card.label} className="rounded-xl border p-4 text-center" style={{ background: card.bg, borderColor: card.border }}>
-                <p className="text-2xl font-bold" style={{ color: card.text }}>{card.value}</p>
-                <p className="text-[10px] font-semibold mt-0.5 leading-tight" style={{ color: card.text }}>{card.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Follow Ups table */}
-          <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
-            <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      {/* ── Log Follow Up Modal ── */}
+      {logModalRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
+          <div className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
+            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Log Follow Up — {logModalRow.contact}</h2>
+              <button onClick={() => setLogModalRow(null)} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>x</button>
+            </div>
+            <div className="px-6 py-5 space-y-4">
               <div>
-                <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Follow-Up Queue</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{followUpQueue.length} follow-ups from pipeline opportunities</p>
+                <label className="text-[10px] font-bold uppercase tracking-wide block mb-2" style={{ color: "var(--rtm-text-muted)" }}>Outcome (required)</label>
+                <div className="space-y-2">
+                  {["Connected — had a conversation", "Left voicemail", "Sent email", "No response", "Meeting scheduled", "Not interested"].map(opt => (
+                    <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="log-outcome" value={opt} checked={logOutcome === opt} onChange={() => setLogOutcome(opt)} />
+                      <span className="text-sm" style={{ color: "var(--rtm-text-primary)" }}>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Notes (optional)</label>
+                <textarea value={logNotes} onChange={e => setLogNotes(e.target.value)} rows={3}
+                  placeholder="What was discussed or what happened?"
+                  className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none resize-none"
+                  style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+              </div>
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={logScheduleNext} onChange={e => setLogScheduleNext(e.target.checked)} />
+                  <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Schedule Next Follow Up</span>
+                </label>
+                {logScheduleNext && (
+                  <div className="mt-3 grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Type</label>
+                      <select value={logNextType} onChange={e => setLogNextType(e.target.value)}
+                        className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                        {["Call","Email","Meeting","SMS"].map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Due Date</label>
+                      <input type="date" value={logNextDate} onChange={e => setLogNextDate(e.target.value)}
+                        className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Priority</label>
+                      <select value={logNextPriority} onChange={e => setLogNextPriority(e.target.value as Priority)}
+                        className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                        {["High","Medium","Low"].map(p => <option key={p}>{p}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "900px" }}>
-                <thead>
-                  <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
-                    {["Contact / Client", "Related Record", "Type", "Rep", "Priority", "Due Date", "Last Contact", "Stage", "Status", "Actions"].map(h => (
-                      <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {followUpQueue.map((fu, i) => {
-                    const statusColor = fu.status === "Overdue" ? "#DC2626" : fu.status === "Upcoming" ? "#D97706" : fu.status === "Completed" ? "#059669" : "#6B7280";
-                    const statusBg   = fu.status === "Overdue" ? "#FEF2F2" : fu.status === "Upcoming" ? "#FFFBEB" : fu.status === "Completed" ? "#F0FDF4" : "#F3F4F6";
-                    const priorityColor = fu.priority === "Urgent" ? "#BE185D" : fu.priority === "High" ? "#DC2626" : fu.priority === "Medium" ? "#D97706" : "#64748B";
-                    const priorityBg    = fu.priority === "Urgent" ? "#FDF2F8" : fu.priority === "High" ? "#FEF2F2" : fu.priority === "Medium" ? "#FFFBEB" : "#F8FAFC";
-                    return (
-                      <tr key={fu.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "transparent" : "var(--rtm-surface)" }}>
-                        <td className="px-4 py-3 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fu.contact}</td>
-                        <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{fu.relatedRecord}</td>
-                        <td className="px-4 py-3" style={{ color: "var(--rtm-text-muted)" }}>{fu.followUpType}</td>
-                        <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{fu.assignedRep}</td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ background: priorityBg, color: priorityColor, borderColor: priorityColor + "40" }}>{fu.priority}</span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{fu.dueDate}</td>
-                        <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{fu.lastContact}</td>
-                        <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{fu.stage}</td>
-                        <td className="px-4 py-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ background: statusBg, color: statusColor, borderColor: statusColor + "40" }}>{fu.status}</span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <button className="text-[10px] font-semibold px-2 py-1 rounded border" style={{ background: "var(--rtm-bg)", color: workspace.accentColor, borderColor: workspace.accentColor + "50" }}>Follow Up</button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {followUpQueue.length === 0 && (
-                <div className="py-12 text-center">
-                  <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>No follow-ups found in pipeline.</p>
-                </div>
-              )}
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <button onClick={() => setLogModalRow(null)} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+                style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+              <button
+                disabled={!logOutcome}
+                onClick={() => {
+                  if (!logOutcome || !logModalRow) return;
+                  // Mark this row as Completed
+                  setFuRows(prev => {
+                    const updated = prev.map(r => r.id === logModalRow.id ? { ...r, status: "Completed" as FollowUpStatus } : r);
+                    // If schedule next, add new row
+                    if (logScheduleNext && logNextDate) {
+                      const newRow: PipelineFollowUp = {
+                        ...logModalRow,
+                        id: `sfu-next-${Date.now()}`,
+                        followUpType: logNextType,
+                        dueDate: new Date(logNextDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                        priority: logNextPriority,
+                        status: "Upcoming",
+                      };
+                      return [...updated, newRow];
+                    }
+                    return updated;
+                  });
+                  const nextDateStr = logScheduleNext && logNextDate
+                    ? new Date(logNextDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : null;
+                  addPipelineToast(
+                    nextDateStr
+                      ? `Follow-up logged. Next follow-up scheduled for ${nextDateStr}.`
+                      : "Follow-up logged.",
+                    "success"
+                  );
+                  setLogModalRow(null);
+                  setLogOutcome("");
+                  setLogNotes("");
+                  setLogScheduleNext(true);
+                  setLogNextDate("");
+                }}
+                className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40"
+                style={{ background: "#059669", color: "#fff" }}>Save Follow Up</button>
             </div>
           </div>
         </div>
       )}
+
+      {/* ── Follow Ups tab ── */}
+      {mainTab === "followups" && (() => {
+        const visibleFuRows = fuStatusFilter === "All"
+          ? fuRows
+          : fuRows.filter(r => r.status === fuStatusFilter);
+        return (
+          <div className="space-y-6">
+            {/* Compact KPI row */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {[
+                { label: "Due Today",  value: fuRows.filter(f => f.status === "Due Today").length,  bg: "#FFFBEB", text: "#B45309", border: "#FDE68A" },
+                { label: "Overdue",    value: fuRows.filter(f => f.status === "Overdue").length,    bg: "#FEF2F2", text: "#DC2626", border: "#FECACA" },
+                { label: "Upcoming",   value: fuRows.filter(f => f.status === "Upcoming").length,   bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
+                { label: "Completed",  value: fuRows.filter(f => f.status === "Completed").length,  bg: "#ECFDF5", text: "#059669", border: "#A7F3D0" },
+                { label: "Cancelled",  value: fuRows.filter(f => f.status === "Cancelled").length,  bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB" },
+              ].map(card => (
+                <div key={card.label} className="rounded-xl border p-4 text-center" style={{ background: card.bg, borderColor: card.border }}>
+                  <p className="text-2xl font-bold" style={{ color: card.text }}>{card.value}</p>
+                  <p className="text-[10px] font-semibold mt-0.5 leading-tight" style={{ color: card.text }}>{card.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Status filter bar */}
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Filter:</span>
+              {(["All", "Upcoming", "Due Today", "Overdue", "Completed", "Cancelled"] as const).map(s => (
+                <button key={s} onClick={() => setFuStatusFilter(s as FollowUpStatus | "All")}
+                  className="text-xs px-3 py-1.5 rounded-lg font-semibold border whitespace-nowrap"
+                  style={{
+                    background: fuStatusFilter === s
+                      ? (s === "All" ? "#1D4ED8" : FOLLOW_UP_STATUS_CONFIG[s as FollowUpStatus]?.bg ?? "#EFF6FF")
+                      : "var(--rtm-surface)",
+                    color: fuStatusFilter === s
+                      ? (s === "All" ? "#fff" : FOLLOW_UP_STATUS_CONFIG[s as FollowUpStatus]?.color ?? "#1D4ED8")
+                      : "var(--rtm-text-muted)",
+                    borderColor: fuStatusFilter === s
+                      ? (s === "All" ? "#1D4ED8" : FOLLOW_UP_STATUS_CONFIG[s as FollowUpStatus]?.border ?? "#BFDBFE")
+                      : "var(--rtm-border)",
+                  }}>
+                  {s}
+                </button>
+              ))}
+              <span className="text-xs ml-auto" style={{ color: "var(--rtm-text-muted)" }}>{visibleFuRows.length} follow-up{visibleFuRows.length !== 1 ? "s" : ""}</span>
+            </div>
+
+            {/* Follow Ups table */}
+            <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
+              <div className="px-5 py-4 border-b flex items-center justify-between" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                <div>
+                  <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Follow-Up Queue</p>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{fuRows.length} total follow-ups</p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "1050px" }}>
+                  <thead>
+                    <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
+                      {["Contact / Client", "Related Record", "Type", "Rep", "Priority", "Due Date", "Last Contact", "Stage", "Status", "Actions"].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleFuRows.map((fu, i) => {
+                      const stCfg = FOLLOW_UP_STATUS_CONFIG[fu.status];
+                      const isCancelled = fu.status === "Cancelled";
+                      return (
+                        <tr key={fu.id} style={{
+                          borderBottom: "1px solid var(--rtm-border-light)",
+                          background: i % 2 === 0 ? "transparent" : "var(--rtm-surface)",
+                          opacity: isCancelled ? 0.5 : 1,
+                        }}>
+                          <td className="px-4 py-3 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{fu.contact}</td>
+                          <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{fu.relatedRecord}</td>
+                          <td className="px-4 py-3" style={{ color: "var(--rtm-text-muted)" }}>{fu.followUpType}</td>
+                          <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{fu.assignedRep}</td>
+                          <td className="px-4 py-3">
+                            <StatusBadge label={fu.priority} cfg={PRIORITY_CONFIG[fu.priority]} />
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{fu.dueDate}</td>
+                          <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{fu.lastContact}</td>
+                          <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{fu.stage}</td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"
+                              style={{ background: stCfg.bg, color: stCfg.color, borderColor: stCfg.border }}>
+                              {fu.status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 relative">
+                              {/* Primary Follow Up button */}
+                              <button
+                                onClick={() => {
+                                  setLogOutcome(""); setLogNotes(""); setLogScheduleNext(true);
+                                  setLogNextType("Call"); setLogNextDate(""); setLogNextPriority("Medium");
+                                  setLogModalRow(fu);
+                                }}
+                                className="text-[10px] font-semibold px-2 py-1 rounded border"
+                                style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>
+                                Follow Up
+                              </button>
+
+                              {/* Three-dot menu button */}
+                              <div className="relative">
+                                <button
+                                  onClick={() => setOpenMenuId(openMenuId === fu.id ? null : fu.id)}
+                                  className="w-7 h-7 flex items-center justify-center rounded border text-base font-bold"
+                                  style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>
+                                  ⋮
+                                </button>
+
+                                {/* Dropdown menu */}
+                                {openMenuId === fu.id && (
+                                  <div className="absolute right-0 top-8 z-40 w-48 rounded-xl border shadow-xl py-1"
+                                    style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
+                                    <button
+                                      className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-blue-50 transition-colors"
+                                      style={{ color: "var(--rtm-text-primary)" }}
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        setLogOutcome(""); setLogNotes(""); setLogScheduleNext(true);
+                                        setLogNextType("Call"); setLogNextDate(""); setLogNextPriority("Medium");
+                                        setLogModalRow(fu);
+                                      }}>
+                                      Log Follow Up
+                                    </button>
+                                    <button
+                                      className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-blue-50 transition-colors"
+                                      style={{ color: "var(--rtm-text-primary)" }}
+                                      onClick={() => { setOpenMenuId(null); setStatusPopoverId(fu.id); }}>
+                                      Change Status
+                                    </button>
+                                    <button
+                                      className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-blue-50 transition-colors"
+                                      style={{ color: "var(--rtm-text-primary)" }}
+                                      onClick={() => { setOpenMenuId(null); setRescheduleDate(""); setRescheduleId(fu.id); }}>
+                                      Reschedule
+                                    </button>
+                                    <button
+                                      className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-blue-50 transition-colors"
+                                      style={{ color: "var(--rtm-text-primary)" }}
+                                      onClick={() => {
+                                        setOpenMenuId(null);
+                                        const dest = fu.relatedType === "lead" ? "/sales/leads"
+                                          : fu.relatedType === "proposal" ? "/sales/proposals"
+                                          : "/sales/pipeline";
+                                        window.location.href = dest;
+                                      }}>
+                                      View Related
+                                    </button>
+                                    <div style={{ borderTop: "1px solid var(--rtm-border)", margin: "4px 0" }} />
+                                    <button
+                                      className="w-full text-left px-4 py-2 text-xs font-semibold hover:bg-red-50 transition-colors"
+                                      style={{ color: "#DC2626" }}
+                                      onClick={() => { setOpenMenuId(null); setCancelConfirmId(fu.id); }}>
+                                      Cancel Follow Up
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Change Status popover */}
+                                {statusPopoverId === fu.id && (
+                                  <div className="absolute right-0 top-8 z-40 w-52 rounded-xl border shadow-xl p-3"
+                                    style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
+                                    <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--rtm-text-muted)" }}>Change Status</p>
+                                    <div className="mb-2">
+                                      <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                                        style={{ background: stCfg.bg, color: stCfg.color, borderColor: stCfg.border }}>Current: {fu.status}</span>
+                                    </div>
+                                    {(["Upcoming", "Due Today", "Overdue", "Completed", "Cancelled"] as FollowUpStatus[]).map(s => (
+                                      <button key={s}
+                                        className="w-full text-left px-3 py-1.5 text-xs rounded-lg mb-0.5 font-semibold"
+                                        style={{
+                                          background: fu.status === s ? FOLLOW_UP_STATUS_CONFIG[s].bg : "transparent",
+                                          color: FOLLOW_UP_STATUS_CONFIG[s].color,
+                                        }}
+                                        onClick={() => {
+                                          setFuRows(prev => prev.map(r => r.id === fu.id ? { ...r, status: s } : r));
+                                          setStatusPopoverId(null);
+                                          addPipelineToast(`Status updated to ${s}`, "success");
+                                        }}>
+                                        {s}
+                                      </button>
+                                    ))}
+                                    <button onClick={() => setStatusPopoverId(null)}
+                                      className="w-full text-center text-xs mt-1 py-1 rounded border"
+                                      style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-muted)" }}>Close</button>
+                                  </div>
+                                )}
+
+                                {/* Reschedule popover */}
+                                {rescheduleId === fu.id && (
+                                  <div className="absolute right-0 top-8 z-40 w-52 rounded-xl border shadow-xl p-3"
+                                    style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
+                                    <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--rtm-text-muted)" }}>Reschedule</p>
+                                    <input type="date" value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)}
+                                      className="w-full text-sm rounded-lg border px-3 py-2 mb-2 focus:outline-none"
+                                      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+                                    <div className="flex gap-2">
+                                      <button
+                                        disabled={!rescheduleDate}
+                                        onClick={() => {
+                                          if (!rescheduleDate) return;
+                                          const formatted = new Date(rescheduleDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                                          setFuRows(prev => prev.map(r => r.id === fu.id
+                                            ? { ...r, dueDate: formatted, status: r.status === "Overdue" ? "Upcoming" : r.status }
+                                            : r));
+                                          setRescheduleId(null);
+                                          addPipelineToast(`Rescheduled to ${formatted}`, "success");
+                                        }}
+                                        className="flex-1 text-xs font-bold px-2 py-1.5 rounded border disabled:opacity-40"
+                                        style={{ background: "#1D4ED8", color: "#fff", borderColor: "#1D4ED8" }}>Confirm</button>
+                                      <button onClick={() => setRescheduleId(null)}
+                                        className="text-xs px-2 py-1.5 rounded border"
+                                        style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-muted)" }}>Cancel</button>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Cancel confirm */}
+                                {cancelConfirmId === fu.id && (
+                                  <div className="absolute right-0 top-8 z-40 w-52 rounded-xl border shadow-xl p-3"
+                                    style={{ background: "var(--rtm-bg)", borderColor: "#FECACA" }}>
+                                    <p className="text-xs font-semibold mb-3" style={{ color: "#DC2626" }}>Cancel this follow-up?</p>
+                                    <div className="flex gap-2">
+                                      <button
+                                        onClick={() => {
+                                          setFuRows(prev => prev.map(r => r.id === fu.id ? { ...r, status: "Cancelled" as FollowUpStatus } : r));
+                                          setCancelConfirmId(null);
+                                          addPipelineToast("Follow-up cancelled.", "info");
+                                        }}
+                                        className="flex-1 text-xs font-bold px-2 py-1.5 rounded border"
+                                        style={{ background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" }}>Yes</button>
+                                      <button onClick={() => setCancelConfirmId(null)}
+                                        className="flex-1 text-xs font-bold px-2 py-1.5 rounded border"
+                                        style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-muted)" }}>No</button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {visibleFuRows.length === 0 && (
+                  <div className="py-12 text-center">
+                    <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>No follow-ups match the selected filter.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Stalled Deals tab ── */}
       {mainTab === "stalled" && (

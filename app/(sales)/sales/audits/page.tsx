@@ -1709,7 +1709,11 @@ function AuditDetailDrawer({
               <button
                 className="text-sm px-4 py-1.5 rounded-lg font-bold"
                 style={{ background: "#059669", color: "#fff" }}
-                onClick={() => { window.location.href = "/sales/proposals?new=true"; }}
+                onClick={() => {
+                  const auditId = encodeURIComponent(audit.id);
+                  const auditType = encodeURIComponent(audit.auditType);
+                  window.location.href = `/sales/proposals?new=true&auditId=${auditId}&auditType=${auditType}`;
+                }}
               >
                 Generate Proposal
               </button>

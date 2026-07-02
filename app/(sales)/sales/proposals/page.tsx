@@ -2133,9 +2133,27 @@ function ProposalsPageInner() {
   useEffect(() => {
     const isNew = searchParams.get("new") === "true";
     const resumeId = searchParams.get("resume");
+    const auditId = searchParams.get("auditId");
+    const auditType = searchParams.get("auditType");
     if (isNew) {
       setView("wizard");
-      setWizardInitialState(undefined);
+      // If auditId is present, pre-populate wizard to open Step 2 in
+      // "Use Existing Audit" mode with the audit already selected.
+      if (auditId) {
+        setWizardInitialState({
+          currentStep: 2 as const,
+          selectedAuditId: auditId,
+          auditMode: "existing" as const,
+          // Store the auditId and auditType so Step2Audit can pre-select it
+          // We embed it in a custom field via the wizard state extension
+          // @ts-ignore – preselectedAuditId is read by Step2Audit on mount
+          preselectedAuditId: auditId,
+          // @ts-ignore
+          preselectedAuditType: auditType ?? undefined,
+        });
+      } else {
+        setWizardInitialState(undefined);
+      }
     } else if (resumeId) {
       // Load draft from localStorage
       let initial: Partial<ProposalWizardState> | undefined;
