@@ -47,7 +47,6 @@ export default function TaskAccessCard({
         style={{ background: "var(--rtm-blue-xlight)", border: "1px solid #BFDBFE"}}
       >
         <div className="flex items-center gap-3">
-          
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>
@@ -114,7 +113,6 @@ export default function TaskAccessCard({
         className="px-5 py-4 flex items-center justify-between gap-3"style={{ background: "var(--rtm-blue-xlight)", borderBottom: "1px solid #BFDBFE"}}
       >
         <div className="flex items-center gap-2">
-          
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>

@@ -66,11 +66,24 @@ export default function AdminPage() {
       {/*  Page header  */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <p
-            className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "var(--rtm-blue)"}}
-          >
-            Real Time Marketing Operational Dashboards
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <p
+              className="text-[11px] font-bold uppercase tracking-widest"
+              style={{ color: "var(--rtm-blue)"}}
+            >
+              Real Time Marketing Operational Dashboards
+            </p>
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+              style={{
+                background: "#FFFBEB",
+                borderColor: "#FDE68A",
+                color: "#92400E",
+              }}
+            >
+              Preview — Target State
+            </span>
+          </div>
           <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
             Good morning, Admin 
           </h1>

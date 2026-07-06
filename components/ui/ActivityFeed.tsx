@@ -57,7 +57,7 @@ export default function ActivityFeed({ items, maxItems = 8 }: ActivityFeedProps)
             <p className="text-sm leading-snug"style={{ color: "var(--rtm-text-secondary)"}}>
               <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
                 {item.actor}
-              </span>{""}
+              </span>{" "}
               {item.action}
               {item.target && (
                 <span className="font-medium"style={{ color: "var(--rtm-blue)"}}> {item.target}</span>
