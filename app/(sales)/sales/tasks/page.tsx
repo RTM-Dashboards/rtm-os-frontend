@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useState } from "react";
-import { salesTasks } from "@/lib/mock/workspace-tasks";
+import React, { useState, useEffect } from "react";
+import { salesTasks, pendingSalesTasks } from "@/lib/mock/workspace-tasks";
 import type { WorkspaceTask, WorkspaceTaskStatus, WorkspaceTaskPriority } from "@/components/workspace/WorkspaceTaskPage";
 import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
 import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
+
+// ─── Locale-independent date helper (avoids hydration mismatch) ──────────────
+function formatDateOffset(hours: number): string {
+  const d = new Date(Date.now() + hours * 3600 * 1000);
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
 // ─── Role mock (no toggle buttons in production) ─────────────────────────────
 // In production this comes from auth context.
@@ -58,7 +67,7 @@ export default function SalesTasksPage() {
       assignee: "Alex K.",
       priority: "High" as WorkspaceTask["priority"],
       status: "In Progress" as WorkspaceTask["status"],
-      dueDate: new Date(Date.now() + 4 * 3600 * 1000).toLocaleDateString(),
+      dueDate: formatDateOffset(4),
       blocker: null,
     },
     {
@@ -72,7 +81,7 @@ export default function SalesTasksPage() {
       assignee: "Marcus T.",
       priority: "High" as WorkspaceTask["priority"],
       status: "Pending" as WorkspaceTask["status"],
-      dueDate: new Date(Date.now() + 18 * 3600 * 1000).toLocaleDateString(),
+      dueDate: formatDateOffset(18),
       blocker: null,
     },
     {
@@ -86,11 +95,23 @@ export default function SalesTasksPage() {
       assignee: "Casey R.",
       priority: "Critical" as WorkspaceTask["priority"],
       status: "Blocked" as WorkspaceTask["status"],
-      dueDate: new Date(Date.now() - 6 * 3600 * 1000).toLocaleDateString(),
+      dueDate: formatDateOffset(-6),
       blocker: "Overdue — SLA deadline passed",
     },
   ];
-  const [tasks, setTasks] = useState<WorkspaceTask[]>([...salesTasks, ...AUDIT_REVIEW_TASKS]);
+  const [tasks, setTasks] = useState<WorkspaceTask[]>([...salesTasks, ...AUDIT_REVIEW_TASKS, ...pendingSalesTasks]);
+
+  // Drain any cross-department tasks that were pushed into pendingSalesTasks
+  // after this component first mounted (e.g. from Billing Invoices page).
+  useEffect(() => {
+    if (pendingSalesTasks.length === 0) return;
+    setTasks(prev => {
+      const existingIds = new Set(prev.map(t => t.id));
+      const newOnes = pendingSalesTasks.filter(t => !existingIds.has(t.id));
+      return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<WorkspaceTaskStatus | "All">("All");
   const [filterPriority, setFilterPriority] = useState<WorkspaceTaskPriority | "All">("All");

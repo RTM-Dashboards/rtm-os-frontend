@@ -25,6 +25,8 @@ interface TaskAccessCardProps {
   examples?: string[];
   variant?: "card"| "banner";
   className?: string;
+  /** Override the tasks URL — defaults to /tasks (global). Pass workspace-scoped route to restrict. */
+  tasksHref?: string;
 }
 
 export default function TaskAccessCard({
@@ -34,8 +36,9 @@ export default function TaskAccessCard({
   examples,
   variant = "card",
   className = "",
+  tasksHref,
 }: TaskAccessCardProps) {
-  const taskUrl = "/tasks";
+  const taskUrl = tasksHref ?? "/tasks";
 
   if (variant === "banner") {
     return (

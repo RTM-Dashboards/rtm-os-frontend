@@ -162,6 +162,16 @@ export const localServiceAdsTasks: WorkspaceTask[] = [
   mkTask("ls-5", "Account dispute — Summit Landscaping",   "Summit Landscaping",  "Summit Landscaping — LSA",         "LSA", "LSA", "Manual Task",        null,                                        "Sarah K.",  "High",   "Blocked",     "Jun 5", "Escalated to Google Support"),
 ];
 
+// ── Cross-department pending Sales tasks queue ────────────────────────────────
+// Module-level mutable queue. Other modules (e.g. Billing Invoices) push tasks
+// here so they are visible on the Sales Tasks page when it next mounts.
+// Intentionally mutable — this is the cross-workspace signal store.
+export const pendingSalesTasks: WorkspaceTask[] = [];
+
+export function addPendingSalesTask(task: WorkspaceTask): void {
+  pendingSalesTasks.push(task);
+}
+
 // ── IT & Security ─────────────────────────────────────────────────────────────
 export const itSecurityTasks: WorkspaceTask[] = [
   mkTask("it-1", "SSL renewal — Client sites",             "Multiple Clients",    "Infrastructure — Security",       "IT & Security", "IT & Security", "Workflow Automation",{ workflow: "Certificate Renewal Workflow" }, "Mike T.",   "High",   "Pending",     "Jun 6"),

@@ -2135,6 +2135,7 @@ function ProposalsPageInner() {
     const resumeId = searchParams.get("resume");
     const auditId = searchParams.get("auditId");
     const auditType = searchParams.get("auditType");
+    const opportunityId = searchParams.get("opportunityId");
     if (isNew) {
       setView("wizard");
       // If auditId is present, pre-populate wizard to open Step 2 in
@@ -2150,6 +2151,46 @@ function ProposalsPageInner() {
           preselectedAuditId: auditId,
           // @ts-ignore
           preselectedAuditType: auditType ?? undefined,
+          // @ts-ignore
+          ...(opportunityId ? { linkedOpportunityId: opportunityId } : {}),
+        });
+      } else if (opportunityId) {
+        // Pre-fill wizard with opportunity context; look up in sessionStorage if pipeline page stored it
+        let oppData: { businessName?: string; contactName?: string; notes?: string } = {};
+        try {
+          const stored = sessionStorage.getItem(`rtm-opp-${opportunityId}`);
+          if (stored) oppData = JSON.parse(stored);
+        } catch { /* ignore */ }
+        setWizardInitialState({
+          // @ts-ignore
+          linkedOpportunityId: opportunityId,
+          ...(oppData.businessName ? {
+            clientInfo: {
+              name: "",
+              businessName: oppData.businessName ?? "",
+              industry: "",
+              location: "",
+              website: "",
+              leadSource: "",
+              contactName: oppData.contactName ?? "",
+              contactEmail: "",
+              contactPhone: "",
+              notes: oppData.notes ?? `Linked from opportunity ${opportunityId}`,
+            },
+          } : {
+            clientInfo: {
+              name: "",
+              businessName: "",
+              industry: "",
+              location: "",
+              website: "",
+              leadSource: "",
+              contactName: "",
+              contactEmail: "",
+              contactPhone: "",
+              notes: `Linked from opportunity ${opportunityId}`,
+            },
+          }),
         });
       } else {
         setWizardInitialState(undefined);

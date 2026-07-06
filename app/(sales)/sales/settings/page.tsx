@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import {
   BUDGET_SERVICE_CATALOG,
   DISCOUNT_TIERS,
@@ -50,12 +51,10 @@ const TEAM_MEMBERS = [
   { name: "David L.",   role: "Business Dev Rep",   access: "View",        status: "Inactive" },
 ];
 
-// ─── Pipeline stages mock ─────────────────────────────────────────────────────
-const PIPELINE_STAGES = [
-  "Lead", "Discovery", "Qualified", "Audit Requested", "Audit In Progress",
-  "Proposal Draft", "Proposal Sent", "Negotiation", "Verbal Approval",
-  "Proposal Approved", "Sales Handoff", "Closed Won", "Closed Lost",
-];
+// ─── Pipeline stages — sourced from the canonical list ───────────────────────
+// The single source of truth is lib/sales/pipeline-stages.ts.
+// Do NOT maintain a separate hardcoded list here.
+import { DEFAULT_PIPELINE_STAGE_NAMES as PIPELINE_STAGES } from "@/lib/sales/pipeline-stages";
 
 // ─── Lead sources from intake config ─────────────────────────────────────────
 const LEAD_SOURCES = INTAKE_SOURCE_OPTIONS.map(s => s.label);
@@ -74,10 +73,12 @@ const KPI_DEFINITIONS = [
 function Section({
   title,
   description,
+  href,
   children,
 }: {
   title: string;
   description: string;
+  href?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -88,10 +89,17 @@ function Section({
           <h2 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
           <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{description}</p>
         </div>
-        <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
-          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
-          Configure
-        </button>
+        {href ? (
+          <Link href={href} className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
+            Configure
+          </Link>
+        ) : (
+          <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }} disabled>
+            Configure
+          </button>
+        )}
       </div>
       <div className="p-5" style={{ background: "var(--rtm-bg)" }}>
         {children}
@@ -149,7 +157,7 @@ export default function SalesSettingsPage() {
       </div>
 
       {/* Section 1 — Team and Access */}
-      <Section title="Team and Access" description="Current team members, roles, and access levels.">
+      <Section title="Team and Access" description="Current team members, roles, and access levels." href="/sales/settings/team-access">
         <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
           <table className="w-full text-xs">
             <thead>
@@ -203,10 +211,10 @@ export default function SalesSettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Sales Intake</p>
-              <button className="text-xs font-semibold px-3 py-1 rounded-lg border"
+              <Link href="/sales/settings/sales-intake" className="text-xs font-semibold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
                 style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
                 Configure
-              </button>
+              </Link>
             </div>
             <Row label="Intake form fields configured" value={STEP1_BUSINESS_INFO_FIELDS.length} />
             <Row label="Lead sources configured" value={INTAKE_SOURCE_OPTIONS.length} />
@@ -217,10 +225,10 @@ export default function SalesSettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Audit Configuration</p>
-              <button className="text-xs font-semibold px-3 py-1 rounded-lg border"
+              <Link href="/sales/settings/audit-configuration" className="text-xs font-semibold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
                 style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
                 Configure
-              </button>
+              </Link>
             </div>
             <Row label="Scoring threshold rules configured" value={SCORING_THRESHOLDS.length} />
             <Row label="Audit goal categories configured" value={AUDIT_GOAL_CONFIG.length} />
@@ -230,10 +238,10 @@ export default function SalesSettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Recommendation Rules</p>
-              <button className="text-xs font-semibold px-3 py-1 rounded-lg border"
+              <Link href="/sales/settings/recommendation-rules" className="text-xs font-semibold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
                 style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
                 Configure
-              </button>
+              </Link>
             </div>
             <Row label="Recommendation rules configured" value={RECOMMENDATION_RULES.length} />
             <Row label="Services in service catalog" value={SERVICE_CATALOG.length} />
@@ -243,10 +251,10 @@ export default function SalesSettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Budget Optimizer</p>
-              <button className="text-xs font-semibold px-3 py-1 rounded-lg border"
+              <Link href="/sales/settings/budget-optimizer" className="text-xs font-semibold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
                 style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
                 Configure
-              </button>
+              </Link>
             </div>
             <Row label="Services in catalog" value={BUDGET_SERVICE_CATALOG.length} />
             <Row label="Discount tiers configured" value={DISCOUNT_TIERS.length} />
@@ -256,10 +264,10 @@ export default function SalesSettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Proposal Templates</p>
-              <button className="text-xs font-semibold px-3 py-1 rounded-lg border"
+              <Link href="/sales/settings/proposal-templates" className="text-xs font-semibold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
                 style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
                 Configure
-              </button>
+              </Link>
             </div>
             <Row label="Proposal templates configured" value={PROPOSAL_TEMPLATES.length} />
             <Row label="Proposal sections configured" value={PROPOSAL_SECTIONS.length} />
@@ -269,10 +277,10 @@ export default function SalesSettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Contract Templates</p>
-              <button className="text-xs font-semibold px-3 py-1 rounded-lg border"
+              <Link href="/sales/settings/contract-templates" className="text-xs font-semibold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
                 style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
                 Configure
-              </button>
+              </Link>
             </div>
             <Row label="Contract templates configured" value={CONTRACT_TEMPLATES.length} />
             <Row label="Contract clauses configured" value={CONTRACT_CLAUSES.length} />
@@ -282,10 +290,10 @@ export default function SalesSettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Handoff Configuration</p>
-              <button className="text-xs font-semibold px-3 py-1 rounded-lg border"
+              <Link href="/sales/settings/handoff-configuration" className="text-xs font-semibold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
                 style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
                 Configure
-              </button>
+              </Link>
             </div>
             <Row label="Handoff checklist items configured" value={HANDOFF_CHECKLIST.length} />
             <Row label="Handoff summary fields configured" value={HANDOFF_SUMMARY_FIELDS.length} />
@@ -294,7 +302,7 @@ export default function SalesSettingsPage() {
       </div>
 
       {/* Section 3 — Pipeline Configuration */}
-      <Section title="Pipeline Configuration" description="Current pipeline stages and lead source list.">
+      <Section title="Pipeline Configuration" description="Current pipeline stages and lead source list." href="/sales/settings/pipeline-configuration">
         <div className="space-y-3">
           <div>
             <p className="text-xs font-semibold mb-2" style={{ color: "var(--rtm-text-muted)" }}>Pipeline Stages ({PIPELINE_STAGES.length})</p>
@@ -322,7 +330,7 @@ export default function SalesSettingsPage() {
       </Section>
 
       {/* Section 4 — Notification Preferences */}
-      <Section title="Notification Preferences" description="Current notification toggle settings.">
+      <Section title="Notification Preferences" description="Current notification toggle settings." href="/sales/settings/notification-preferences">
         <div className="space-y-2">
           {[
             { label: "New lead submitted",         enabled: true  },
@@ -347,7 +355,7 @@ export default function SalesSettingsPage() {
       </Section>
 
       {/* Section 5 — Performance and Reporting */}
-      <Section title="Performance and Reporting" description="KPI definitions used on the Performance page.">
+      <Section title="Performance and Reporting" description="KPI definitions used on the Performance page." href="/sales/settings/performance-reporting">
         <div className="space-y-2">
           {KPI_DEFINITIONS.map(({ name, definition }) => (
             <div key={name} className="py-2 border-b last:border-b-0" style={{ borderColor: "var(--rtm-border)" }}>
@@ -359,7 +367,7 @@ export default function SalesSettingsPage() {
       </Section>
 
       {/* Section 6 — Affiliate Configuration */}
-      <Section title="Affiliate Configuration" description="Commission rules and affiliate tier summary.">
+      <Section title="Affiliate Configuration" description="Commission rules and affiliate tier summary." href="/sales/settings/affiliate-configuration">
         <Row label="Affiliate tiers" value="3 (Standard, Silver, Gold)" />
         <Row label="Default commission model" value="Percentage of first month MRR" />
         <Row label="Standard commission rate" value="10% of Month 1 MRR" />

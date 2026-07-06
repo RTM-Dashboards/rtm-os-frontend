@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { OPPORTUNITY_STAGES } from "@/lib/sales/intake-config";
+import { DEFAULT_PIPELINE_STAGE_NAMES } from "@/lib/sales/pipeline-stages";
 import type { OpportunityRecord } from "@/lib/sales/types";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -14,16 +14,22 @@ interface OpportunityCardProps {
 
 // ─── Stage Colors ─────────────────────────────────────────────────────────────
 
+// Stage colours aligned with the 13-stage canonical pipeline list.
+// Canonical list source: lib/sales/pipeline-stages.ts
 const STAGE_COLORS: Record<string, { color: string; bg: string; border: string }> = {
-  "New Opportunity":     { color: "#6366F1", bg: "#EEF2FF", border: "#C7D2FE" },
-  "Discovery Scheduled": { color: "#0284C7", bg: "#F0F9FF", border: "#BAE6FD" },
-  "Discovery Complete":  { color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" },
-  "Audit Requested":     { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
-  "Audit Complete":      { color: "#059669", bg: "#F0FDF4", border: "#BBF7D0" },
-  "Proposal Sent":       { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-  "Negotiation":         { color: "#EA580C", bg: "#FFF7ED", border: "#FDBA74" },
-  "Won":                 { color: "#15803D", bg: "#F0FDF4", border: "#86EFAC" },
-  "Lost":                { color: "#94A3B8", bg: "#F1F5F9", border: "#CBD5E1" },
+  "Lead":             { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0" },
+  "Discovery":        { color: "#3B82F6", bg: "#EFF6FF", border: "#BFDBFE" },
+  "Qualified":        { color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" },
+  "Audit Requested":  { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
+  "Audit In Progress":{ color: "#6D28D9", bg: "#EDE9FE", border: "#C4B5FD" },
+  "Proposal Draft":   { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
+  "Proposal Sent":    { color: "#B45309", bg: "#FEF3C7", border: "#FCD34D" },
+  "Negotiation":      { color: "#EA580C", bg: "#FFF7ED", border: "#FED7AA" },
+  "Verbal Approval":  { color: "#16A34A", bg: "#F0FDF4", border: "#BBF7D0" },
+  "Proposal Approved":{ color: "#15803D", bg: "#DCFCE7", border: "#86EFAC" },
+  "Sales Handoff":    { color: "#0F766E", bg: "#F0FDFA", border: "#99F6E4" },
+  "Closed Won":       { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
+  "Closed Lost":      { color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
 };
 
 const PRIORITY_COLORS: Record<string, { color: string; bg: string; border: string }> = {
@@ -114,7 +120,7 @@ export function OpportunityCard({
                     className="absolute left-full top-0 w-44 rounded-lg border shadow-lg z-30"
                     style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
                   >
-                    {OPPORTUNITY_STAGES.map((stage) => (
+                    {DEFAULT_PIPELINE_STAGE_NAMES.map((stage) => (
                       <button
                         key={stage}
                         className="block w-full text-left px-3 py-2 text-xs first:rounded-t-lg last:rounded-b-lg hover:opacity-80"

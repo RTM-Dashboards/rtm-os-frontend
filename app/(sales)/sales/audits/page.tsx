@@ -1808,6 +1808,7 @@ function AuditRequestStatusBadgeLocal({ status }: { status: AuditRequestStatus }
 
 function AuditRequestQueueSection() {
   const [search, setSearch] = React.useState("");
+  const [selectedReq, setSelectedReq] = React.useState<AuditRequestQueueItem | null>(null);
   const filtered = MOCK_AUDIT_REQUESTS.filter((r) => {
     const q = search.toLowerCase();
     return (
@@ -1819,6 +1820,7 @@ function AuditRequestQueueSection() {
   });
 
   return (
+    <>
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
@@ -1919,7 +1921,8 @@ function AuditRequestQueueSection() {
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        className="text-xs px-3 py-1 rounded-lg font-semibold border"
+                        onClick={() => setSelectedReq(req)}
+                        className="text-xs px-3 py-1 rounded-lg font-semibold border transition-all hover:opacity-80"
                         style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}
                       >
                         View
@@ -1940,6 +1943,63 @@ function AuditRequestQueueSection() {
         </div>
       </div>
     </div>
+
+      {/* Audit Request Detail Drawer */}
+      {selectedReq && (
+        <div className="fixed inset-0 z-50 flex">
+          <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={() => setSelectedReq(null)} />
+          <div className="w-[480px] h-full flex flex-col shadow-2xl overflow-hidden"
+            style={{ background: "var(--rtm-bg)", borderLeft: "1px solid var(--rtm-border)" }}>
+            <div className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0"
+              style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}>
+              <div>
+                <p className="text-xs font-mono" style={{ color: "var(--rtm-text-muted)" }}>{selectedReq.id}</p>
+                <h2 className="text-lg font-bold mt-0.5" style={{ color: "var(--rtm-text-primary)" }}>{selectedReq.clientName}</h2>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <AuditRequestStatusBadgeLocal status={selectedReq.status} />
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"
+                    style={{ background: selectedReq.requestType === "Hybrid" ? "#F5F3FF" : "#EFF6FF", color: selectedReq.requestType === "Hybrid" ? "#7C3AED" : "#1D4ED8", borderColor: selectedReq.requestType === "Hybrid" ? "#DDD6FE" : "#BFDBFE" }}>
+                    {selectedReq.requestType}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => setSelectedReq(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-lg flex-shrink-0 ml-4"
+                style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>x</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {[  
+                ["Request ID",         selectedReq.id],
+                ["Client",             selectedReq.clientName],
+                ["Request Type",       selectedReq.requestType],
+                ["Departments",        selectedReq.departments.join(", ")],
+                ["Assigned Reviewers", selectedReq.assignedReviewers.length > 0 ? selectedReq.assignedReviewers.join(", ") : "—"],
+                ["Requested By",       selectedReq.requestedBy],
+                ["SLA Deadline",       new Date(selectedReq.slaDeadline) < new Date() ? `Overdue — ${new Date(selectedReq.slaDeadline).toLocaleDateString()}` : new Date(selectedReq.slaDeadline).toLocaleString()],
+              ].map(([label, value]) => (
+                <div key={label} className="flex gap-3">
+                  <span className="text-xs font-semibold w-36 flex-shrink-0" style={{ color: "var(--rtm-text-muted)" }}>{label}</span>
+                  <span className="text-xs" style={{ color: "var(--rtm-text-primary)" }}>{value}</span>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 px-6 py-4 border-t flex-shrink-0"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <a href={`/sales/audits?requestId=${selectedReq.id}`}
+                className="flex-1 text-xs font-semibold py-2 rounded-lg border text-center"
+                style={{ background: "#1D4ED8", color: "#fff", borderColor: "#1D4ED8" }}>
+                Open Full Audit
+              </a>
+              <button onClick={() => setSelectedReq(null)}
+                className="text-xs font-semibold px-4 py-2 rounded-lg border"
+                style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -2224,7 +2224,7 @@ function SalesLeadsPageInner() {
                             ···
                           </button>
                           <div className="absolute right-0 top-full mt-1 w-44 rounded-lg border shadow-lg z-10 hidden group-hover:block"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                            {["Edit Lead", "Assign Sales Rep", "Schedule Discovery", "Create Follow-Up", "Move Stage", "Retry GHL Sync", "Add Note", "Disqualify"].map(action => (
+                            {["Edit Lead", "Assign Sales Rep", "Schedule Discovery", "Create Follow-Up", "Move Stage", "Add Note", "Disqualify"].map(action => (
                               <button key={action}
                                 className="block w-full text-left px-3 py-2 text-xs hover:bg-slate-50 first:rounded-t-lg last:rounded-b-lg"style={{ color: action === "Disqualify"? "#DC2626": "var(--rtm-text-primary)"}}>
                                 {action}

@@ -1436,17 +1436,9 @@ export const PRIMARY_LEAD_SOURCES: string[] = [
 
 export const BBB_RATINGS: string[] = ["A+", "A", "B", "C", "Not Rated"];
 
-export const OPPORTUNITY_STAGES: string[] = [
-  "New Opportunity",
-  "Discovery Scheduled",
-  "Discovery Complete",
-  "Audit Requested",
-  "Audit Complete",
-  "Proposal Sent",
-  "Negotiation",
-  "Won",
-  "Lost",
-];
+// NOTE: OPPORTUNITY_STAGES was removed from this file.
+// The canonical pipeline stage list lives in lib/sales/pipeline-stages.ts.
+// This file (intake-config.ts) is for intake form configuration only.
 
 export const OPPORTUNITY_PRIORITIES: string[] = ["High", "Medium", "Low"];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
@@ -197,7 +197,7 @@ const mockCancellations: CancellationRecord[] = [
     finalInvoiceStatus: "Paid",
     offboardingStatus: "Pending",
     priority: "Medium",
-    nextBillingAction: "Trigger Offboarding",
+    nextBillingAction: "Notify AM",
     currentPlan: "LSA Only",
     monthlyValue: "$400",
     remainingContractValue: "$0",
@@ -446,6 +446,50 @@ function ActionBtn({
   );
 }
 
+// ─── Toast ─────────────────────────────────────────────────────────────────────────────
+
+function Toast({
+  message,
+  variant,
+  onDismiss,
+}: {
+  message: string;
+  variant: "success" | "info" | "warning" | "error";
+  onDismiss: () => void;
+}) {
+  useEffect(() => {
+    const t = setTimeout(onDismiss, 4000);
+    return () => clearTimeout(t);
+  }, [onDismiss]);
+
+  const colors = {
+    success: { bg: "#ECFDF5", border: "#A7F3D0", color: "#065F46" },
+    info:    { bg: "#EFF6FF", border: "#BFDBFE", color: "#1E3A8A" },
+    warning: { bg: "#FFFBEB", border: "#FDE68A", color: "#92400E" },
+    error:   { bg: "#FEF2F2", border: "#FECACA", color: "#991B1B" },
+  }[variant];
+
+  return (
+    <div
+      className="fixed top-4 right-4 z-[100] flex items-center gap-3 rounded-xl border px-5 py-3 shadow-xl"
+      style={{
+        background: colors.bg,
+        borderColor: colors.border,
+        color: colors.color,
+        minWidth: 300,
+      }}
+    >
+      <span className="text-sm font-semibold flex-1">{message}</span>
+      <button
+        onClick={onDismiss}
+        className="text-base leading-none opacity-60 hover:opacity-100"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
 function LifecycleFlow() {
   const steps: { label: string; color?: string; bg?: string; border: string }[] = [
     { label: "Cancellation Requested",   color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
@@ -453,7 +497,7 @@ function LifecycleFlow() {
     { label: "Final Invoice Needed",     color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
     { label: "Pending Balance",          color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
     { label: "Approved for Offboarding", color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
-    { label: "Offboarding Triggered",    color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC"},
+    { label: "AM Notified",              color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC" },
     { label: "Billing Closed",           color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
   ];
   return (
@@ -850,9 +894,9 @@ function BillingHoldModal({
   );
 }
 
-//  Trigger Offboarding Modal 
+//  Notify AM Modal (replaces Trigger Offboarding) 
 
-function TriggerOffboardingModal({
+function NotifyAMModal({
   record,
   onClose,
   onSave,
@@ -864,7 +908,7 @@ function TriggerOffboardingModal({
   const [form, setForm] = useState<TriggerOffboardingForm>({
     client: record.client,
     billingCleared: record.outstandingBalance === "$0",
-    finalInvoiceSent: record.finalInvoiceStatus === "Paid"|| record.finalInvoiceStatus === "Sent",
+    finalInvoiceSent: record.finalInvoiceStatus === "Paid" || record.finalInvoiceStatus === "Sent",
     outstandingBalance: record.outstandingBalance,
     amOwner: record.amOwner,
     operationsOwner: "Operations Team",
@@ -876,25 +920,25 @@ function TriggerOffboardingModal({
   }
 
   return (
-    <ModalShell title="Trigger Offboarding"onClose={onClose}>
+    <ModalShell title="Notify Account Management" onClose={onClose}>
       <div
-        className="rounded-lg border p-3 text-xs"style={{ background: "#F5F3FF", borderColor: "#DDD6FE", color: "#7C3AED"}}
+        className="rounded-lg border p-3 text-xs"
+        style={{ background: "#ECFDF5", borderColor: "#A7F3D0", color: "#065F46" }}
       >
-        <strong>Offboarding Handoff:</strong> This will hand off to{""}
-        <Link href="/billing/cancellations/offboarding" className="underline font-semibold">
-          /billing/cancellations/offboarding
-        </Link>{""}
-        and notify AM and Operations.
+        <strong>Billing’s responsibility ends here.</strong> This sends a mock “AM Notified” signal.
+        Account Management owns all downstream steps (campaign pausing, CRM archival, win-back).
       </div>
       <FormField label="Client">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
       <CheckboxField
-        label="Billing Cleared"checked={form.billingCleared}
+        label="Billing Cleared"
+        checked={form.billingCleared}
         onChange={(v) => f("billingCleared", v)}
       />
       <CheckboxField
-        label="Final Invoice Sent"checked={form.finalInvoiceSent}
+        label="Final Invoice Sent"
+        checked={form.finalInvoiceSent}
         onChange={(v) => f("finalInvoiceSent", v)}
       />
       <FormField label="Outstanding Balance">
@@ -903,25 +947,21 @@ function TriggerOffboardingModal({
           onChange={(v) => f("outstandingBalance", v)}
         />
       </FormField>
-      <FormField label="AM Owner">
+      <FormField label="AM Owner (will be notified)">
         <TextInput value={form.amOwner} onChange={(v) => f("amOwner", v)} />
       </FormField>
-      <FormField label="Operations Owner">
-        <TextInput
-          value={form.operationsOwner}
-          onChange={(v) => f("operationsOwner", v)}
-        />
-      </FormField>
-      <FormField label="Offboarding Notes">
+      <FormField label="Handoff Notes">
         <TextArea
           value={form.offboardingNotes}
           onChange={(v) => f("offboardingNotes", v)}
-          placeholder="Add offboarding notes…"/>
+          placeholder="Add handoff notes for AM…" />
       </FormField>
       <ActionBtn
-        variant="primary"label="Trigger Offboarding"onClick={() => {
+        variant="primary"
+        label="Notify AM — Billing Complete"
+        onClick={() => {
           onSave(
-            `Offboarding triggered for ${form.client} — AM: ${form.amOwner} — Ops: ${form.operationsOwner}`
+            `AM notified: ${form.client} — Billing cleared. Handoff to ${form.amOwner}.`
           );
           onClose();
         }}
@@ -989,6 +1029,12 @@ function CloseBillingModal({
 export default function BillingCancellationsPage() {
   const [records, setRecords] = useState<CancellationRecord[]>(mockCancellations);
   const [modal, setModal]     = useState<ModalKind>(null);
+  const [toast, setToast]     = useState<{ message: string; variant: "success" | "info" | "warning" | "error" } | null>(null);
+
+  function showToast(message: string, variant: "success" | "info" | "warning" | "error" = "success") {
+    setToast({ message, variant });
+  }
+
   const [eventLog, setEventLog] = useState<
     { date: string; client: string; event: string; by: string; billingStatus: string; offboardingStatus: string; notes: string }[]
   >([
@@ -1047,10 +1093,20 @@ export default function BillingCancellationsPage() {
   return (
     <div className="space-y-8">
 
+      {/* Toast */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => setToast(null)}
+        />
+      )}
+
       {/*  Task Management Engine Banner  */}
       <TaskAccessCard
-        context="Cancellations"variant="banner"counters={{ open: 5, overdue: 1, dueToday: 2, completed: 9 }}
-        createLabel="Create Cancellation Task"examples={["Cancellation Review", "Retention Call", "Final Invoice", "Billing Close"]}
+        context="Cancellations" variant="banner" counters={{ open: 5, overdue: 1, dueToday: 2, completed: 9 }}
+        createLabel="Create Cancellation Task" examples={["Cancellation Review", "Retention Call", "Final Invoice", "Billing Close"]}
+        tasksHref="/billing/tasks"
       />
 
       {/*  Header  */}
@@ -1063,10 +1119,10 @@ export default function BillingCancellationsPage() {
         <h1
           className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}
         >
-          Billing Cancellations &amp; Offboarding
+          Billing Cancellations
         </h1>
-        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
-          Manage cancellation billing impact, final invoice status, offboarding triggers, and account closure readiness.
+        <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+          Manage cancellation billing impact, final invoice status, and account closure. Billing’s job ends at notifying AM — downstream steps are owned by Account Management.
         </p>
       </div>
 
@@ -1074,16 +1130,7 @@ export default function BillingCancellationsPage() {
       <div className="flex flex-wrap gap-2">
         <ActionBtn variant="primary"label="+ New Cancellation Review"onClick={() => addEvent("—", "New Cancellation Review Started", "Billing", "Cancellation Requested", "Not Started")} />
         <ActionBtn variant="secondary"label="Export Cancellation Queue"onClick={() => addEvent("—", "Cancellation Queue Exported", "Billing", "—", "—")} />
-        <ActionBtn variant="secondary"label="Sync Billing Status"onClick={() => addEvent("—", "Billing Status Synced", "System", "—", "—")} />
-        <Link
-          href="/billing/cancellations/offboarding"className="text-sm font-semibold px-3.5 py-2 rounded-lg border transition-colors"style={{
-            background: "#F5F3FF",
-            color: "#7C3AED",
-            borderColor: "#DDD6FE",
-          }}
-        >
-          View Offboarding Queue →
-        </Link>
+        <ActionBtn variant="secondary" label="Sync Billing Status" onClick={() => addEvent("—", "Billing Status Synced", "System", "—", "—")} />
       </div>
 
       {/*  KPI Cards  */}
@@ -1105,8 +1152,8 @@ export default function BillingCancellationsPage() {
           subtitle="Outstanding amounts"accentColor="#DC2626"iconBg="#FEF2F2"iconColor="#DC2626"
         />
         <KpiCard
-          title="Offboarding Triggered"value={String(offboardTriggered)}
-          subtitle="In offboarding flow"accentColor="#7C3AED"iconBg="#F5F3FF"iconColor="#7C3AED"
+          title="AM Notified" value={String(offboardTriggered)}
+          subtitle="AM handoff signaled" accentColor="#7C3AED" iconBg="#F5F3FF" iconColor="#7C3AED"
         />
         <KpiCard
           title="Billing Holds"value={String(billingHolds)}
@@ -1228,7 +1275,7 @@ export default function BillingCancellationsPage() {
                       <ActionBtn
                         small
                         variant="secondary"label="Mark Balance Cleared"onClick={() => {
-                          updateRecordStatus(row.id, "Approved for Offboarding", "Trigger Offboarding");
+                          updateRecordStatus(row.id, "Approved for Offboarding", "Notify AM");
                           addEvent(row.client, "Balance Cleared", "Billing", "Approved for Offboarding", row.offboardingStatus, "Balance marked cleared");
                         }}
                       />
@@ -1238,7 +1285,7 @@ export default function BillingCancellationsPage() {
                       />
                       <ActionBtn
                         small
-                        variant="secondary"label="Trigger Offboarding"onClick={() => setModal({ kind: "offboard", record: row })}
+                        variant="secondary" label="Notify AM" onClick={() => setModal({ kind: "offboard", record: row })}
                       />
                       <ActionBtn
                         small
@@ -1348,16 +1395,15 @@ export default function BillingCancellationsPage() {
         </div>
       </SectionWrapper>
 
-      {/*  */}
-      {/*  3. Offboarding Trigger Queue  */}
-      {/*  */}
+      {/*  3. AM Notification Queue  */}
       <SectionWrapper
-        title="Offboarding Trigger Queue"description="Clients ready for billing-to-offboarding handoff. Trigger offboarding once billing is cleared.">
+        title="AM Notification Queue"
+        description="Clients where Billing has cleared all balances. Use Notify AM to signal Account Management. Billing’s job ends here.">
         {offboardingReady.length === 0 ? (
           <div
             className="text-center py-8 text-sm"style={{ color: "var(--rtm-text-muted)"}}
           >
-            No clients currently ready for offboarding trigger.
+            No clients currently ready for AM notification.
           </div>
         ) : (
           <div
@@ -1419,29 +1465,16 @@ export default function BillingCancellationsPage() {
                         <div className="flex flex-wrap gap-1.5">
                           <ActionBtn
                             small
-                            variant="primary"label="Trigger Offboarding"onClick={() => setModal({ kind: "offboard", record: row })}
+                            variant="primary"
+                            label="Notify AM"
+                            onClick={() => setModal({ kind: "offboard", record: row })}
                           />
                           <ActionBtn
                             small
-                            variant="secondary"label="Notify AM"onClick={() => addEvent(row.client, "AM Notified", "Billing", row.cancellationStatus, row.offboardingStatus, "AM notified for offboarding")}
+                            variant="secondary"
+                            label="Close Billing"
+                            onClick={() => setModal({ kind: "close", record: row })}
                           />
-                          <ActionBtn
-                            small
-                            variant="secondary"label="Notify Operations"onClick={() => addEvent(row.client, "Operations Notified", "Billing", row.cancellationStatus, row.offboardingStatus, "Ops notified for offboarding")}
-                          />
-                          <ActionBtn
-                            small
-                            variant="secondary"label="Create Offboarding Tasks"onClick={() => addEvent(row.client, "Offboarding Tasks Created", "Billing", row.cancellationStatus, row.offboardingStatus)}
-                          />
-                          <Link
-                            href="/admin/workflows"className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-colors"style={{
-                              background: "var(--rtm-surface,#fff)",
-                              color: "var(--rtm-text-primary)",
-                              borderColor: "var(--rtm-border)",
-                            }}
-                          >
-                            Open Workflow →
-                          </Link>
                         </div>
                       </Td>
                     </tr>
@@ -1522,12 +1555,11 @@ export default function BillingCancellationsPage() {
         </p>
         <div className="flex flex-wrap gap-2">
           {[
-            { label: "Account Management", href: "/account-management", color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE"},
-            { label: "Client Portfolio",   href: "/clients",            color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
-            { label: "Workflow Engine",    href: "/admin/workflows",    color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
-            { label: "Tasks",             href: "/tasks",              color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
-            { label: "Offboarding Queue", href: "/billing/cancellations/offboarding", color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC"},
-            { label: "Billing Dashboard", href: workspace.dashboardRoute, color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB"},
+            { label: "Account Management", href: "/account-management", color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE" },
+            { label: "Client Portfolio",   href: "/billing/client-portfolio", color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
+            { label: "Workflow Engine",    href: "/admin/workflows",    color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
+            { label: "Tasks",             href: "/billing/tasks",      color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
+            { label: "Billing Dashboard", href: workspace.dashboardRoute, color: "#6B7280", bg: "#F9FAFB", border: "#E5E7EB" },
           ].map((link) => (
             <Link
               key={link.href}
@@ -1571,13 +1603,14 @@ export default function BillingCancellationsPage() {
           }}
         />
       )}
-      {modal?.kind === "offboard"&& (
-        <TriggerOffboardingModal
+      {modal?.kind === "offboard" && (
+        <NotifyAMModal
           record={modal.record}
           onClose={() => setModal(null)}
           onSave={(msg) => {
-            addEvent(modal.record.client, "Offboarding Triggered", "Billing", "Offboarding Triggered", "Triggered", msg);
-            updateRecordStatus(modal.record.id, "Offboarding Triggered", "Monitor Closure", "Triggered");
+            addEvent(modal.record.client, "AM Notified", "Billing", "Approved for Offboarding", "Triggered", msg);
+            updateRecordStatus(modal.record.id, "Approved for Offboarding", "Close Billing", "Triggered");
+            showToast(`✅ AM notified for ${modal.record.client} — Billing’s job is complete`, "success");
           }}
         />
       )}

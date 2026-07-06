@@ -9,6 +9,7 @@ import { OpportunityCard as NewOpportunityCard } from "@/components/sales/opport
 import { updateOpportunityStage, addLogEntryToOpportunity } from "@/lib/sales/opportunity-engine";
 import type { OpportunityRecord, CommunicationLog, CommunicationLogEntry } from "@/lib/sales/types";
 import { CommunicationLogPanel } from "@/components/sales/communication-log/CommunicationLogPanel";
+import type { PipelineStageDefinition } from "@/lib/sales/pipeline-stages";
 
 const workspace = getWorkspace("sales")!;
 
@@ -1581,6 +1582,17 @@ const STAGE_CONFIG: StageConfig[] = [
   { label: "Closed Lost",       color: "#DC2626", bg: "#FEF2F2", border: "#FECACA"},
 ];
 
+// Home-Services industry filter — only these industries are relevant for the RTM OS pipeline
+const HOME_SERVICES_INDUSTRIES = new Set([
+  "HVAC", "Plumbing", "Electrical", "Roofing", "Landscaping", "Home Improvement",
+  "Pest Control", "Commercial Cleaning", "Painting", "Chiropractic", "Lawn Care",
+  "Landscaping / Lawn Care",
+]);
+
+const HOME_SERVICES_OPPORTUNITIES = OPPORTUNITIES.filter(
+  (o) => HOME_SERVICES_INDUSTRIES.has(o.industry)
+);
+
 //  GHL Sync Status Config 
 
 const GHL_SYNC_STATUS_CONFIG: Record<GhlSyncStatus, { color?: string; bg?: string; border: string }> = {
@@ -1961,12 +1973,24 @@ function RowActionsMenu({
   onView,
   onChangeStage,
   onCreateFollowUp,
+  onMarkWon,
+  onMarkLost,
+  onEditOpp,
+  onAddNote,
+  onCreateAudit,
+  onCreateProposal,
 }: {
   opp: Opportunity;
   allStages: PipelineStage[];
   onView: (opp: Opportunity) => void;
   onChangeStage: (oppId: string, stage: PipelineStage) => void;
   onCreateFollowUp: (oppId: string) => void;
+  onMarkWon?: (oppId: string) => void;
+  onMarkLost?: (oppId: string) => void;
+  onEditOpp?: (opp: Opportunity) => void;
+  onAddNote?: (oppId: string) => void;
+  onCreateAudit?: (oppId: string) => void;
+  onCreateProposal?: (oppId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [showStageSubmenu, setShowStageSubmenu] = useState(false);
@@ -2029,23 +2053,30 @@ function RowActionsMenu({
             Create Follow Up
           </button>
           <div style={{ height: 1, background: "var(--rtm-border)", margin: "2px 0" }} />
-          {["Edit Opportunity", "Schedule Discovery", "Create Audit", "Create Proposal", "Mark Won", "Mark Lost", "Add Note"].map((action) => (
-            <button key={action}
-              onClick={() => setOpen(false)}
-              className="w-full text-left text-xs px-4 py-2 hover:opacity-80"style={{
-                color: action === "Mark Lost" ? "#DC2626" : action === "Mark Won" ? "#059669" : "var(--rtm-text-primary)",
-              }}>
-              {action}
-            </button>
-          ))}
-          <div style={{ height: 1, background: "var(--rtm-border)", margin: "2px 0" }} />
-          {["Open in GHL", "Resync Opportunity", "Manual Override"].map((action) => (
-            <button key={action}
-              onClick={() => setOpen(false)}
-              className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "#0891B2" }}>
-              {action}
-            </button>
-          ))}
+          <button onClick={() => { onEditOpp?.(opp); setOpen(false); }}
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "var(--rtm-text-primary)" }}>
+            Edit Opportunity
+          </button>
+          <button onClick={() => { onCreateAudit?.(opp.id); setOpen(false); }}
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "var(--rtm-text-primary)" }}>
+            Create Audit
+          </button>
+          <button onClick={() => { onCreateProposal?.(opp.id); setOpen(false); }}
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "var(--rtm-text-primary)" }}>
+            Create Proposal
+          </button>
+          <button onClick={() => { onAddNote?.(opp.id); setOpen(false); }}
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "var(--rtm-text-primary)" }}>
+            Add Note
+          </button>
+          <button onClick={() => { onMarkWon?.(opp.id); setOpen(false); }}
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "#059669" }}>
+            Mark Won
+          </button>
+          <button onClick={() => { onMarkLost?.(opp.id); setOpen(false); }}
+            className="w-full text-left text-xs px-4 py-2 hover:opacity-80" style={{ color: "#DC2626" }}>
+            Mark Lost
+          </button>
         </div>
       )}
     </div>
@@ -2390,7 +2421,7 @@ function IntegrationCard({
   );
 }
 
-function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry }: { opp: Opportunity; onClose: () => void; commLog?: CommunicationLog; onAddCommLogEntry?: (opportunityId: string, entry: CommunicationLogEntry) => void; }) {
+function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon, onMarkLost }: { opp: Opportunity; onClose: () => void; commLog?: CommunicationLog; onAddCommLogEntry?: (opportunityId: string, entry: CommunicationLogEntry) => void; onMarkWon?: (id: string) => void; onMarkLost?: (id: string) => void; }) {
   const [activeTab, setActiveTab] = useState<DrawerTab>("Client Overview");
   const stageCfg = getStageCfg(opp.stage);
   const weightedRevenue = Math.round((opp.estimatedValue * opp.probability) / 100);
@@ -2950,20 +2981,8 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry }: { opp: 
                 </div>
               )}
               <div className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: "#A5F3FC"}}>
-                <h4 className="text-[11px] font-bold uppercase tracking-wide mb-3"style={{ color: "#0891B2"}}>GHL Actions</h4>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: "Open in GHL", col: "#0891B2", bg: "#0891B2", white: true },
-                    { label: "Resync Opportunity", col: "#0891B2", bg: "var(--rtm-bg)", white: false },
-                    { label: "Manual Override", col: "#7C3AED", bg: "#EDE9FE", white: false },
-                    { label: "Resolve Sync Error", col: "#DC2626", bg: "#FEF2F2", white: false },
-                  ].map(({ label, col, bg, white }) => (
-                    <button key={label}
-                      className="text-xs font-semibold px-4 py-2 rounded-lg border"style={{ background: bg, color: white ? "#fff": col, borderColor: white ? col : col }}>
-                      {label}
-                    </button>
-                  ))}
-                </div>
+                <h4 className="text-[11px] font-bold uppercase tracking-wide mb-1"style={{ color: "#0891B2"}}>GHL Sync Status</h4>
+                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>GHL sync is managed automatically. No manual actions required at this stage.</p>
               </div>
             </div>
           )}
@@ -2972,10 +2991,9 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry }: { opp: 
 
         {/* Footer */}
         <div className="flex items-center gap-2 px-4 py-3 border-t flex-shrink-0"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}>
-          <button className="flex-1 text-xs font-semibold py-2 rounded-lg border"style={{ background: workspace.accentColor, color: "#fff", borderColor: workspace.accentColor }}>Edit Opportunity</button>
-          <button className="text-xs font-semibold px-4 py-2 rounded-lg border"style={{ background: "#ECFEFF", color: "#0891B2", borderColor: "#A5F3FC"}}> Open in GHL</button>
-          <button className="text-xs font-semibold px-4 py-2 rounded-lg border"style={{ background: "var(--rtm-bg)", color: "#059669", borderColor: "#A7F3D0"}}>Mark Won</button>
-          <button className="text-xs font-semibold px-4 py-2 rounded-lg border"style={{ background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA"}}>Mark Lost</button>
+          <button className="flex-1 text-xs font-semibold py-2 rounded-lg border" onClick={onClose} style={{ background: workspace.accentColor, color: "#fff", borderColor: workspace.accentColor }}>Close</button>
+          <button className="text-xs font-semibold px-4 py-2 rounded-lg border" onClick={() => { onMarkWon?.(opp.id); }} style={{ background: "var(--rtm-bg)", color: "#059669", borderColor: "#A7F3D0"}}>Mark Won</button>
+          <button className="text-xs font-semibold px-4 py-2 rounded-lg border" onClick={() => { onMarkLost?.(opp.id); }} style={{ background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA"}}>Mark Lost</button>
         </div>
       </div>
     </>
@@ -2991,6 +3009,12 @@ function OpportunityCard({
   onOpenDetail,
   onChangeStage,
   onCreateFollowUp,
+  onMarkWon,
+  onMarkLost,
+  onEditOpp,
+  onAddNote,
+  onCreateAudit,
+  onCreateProposal,
 }: {
   opp: Opportunity & { activeWizardId?: string };
   stageCfg: StageConfig;
@@ -2998,6 +3022,12 @@ function OpportunityCard({
   onOpenDetail: (opp: Opportunity) => void;
   onChangeStage: (oppId: string, stage: PipelineStage) => void;
   onCreateFollowUp: (oppId: string) => void;
+  onMarkWon?: (oppId: string) => void;
+  onMarkLost?: (oppId: string) => void;
+  onEditOpp?: (opp: Opportunity) => void;
+  onAddNote?: (oppId: string) => void;
+  onCreateAudit?: (oppId: string) => void;
+  onCreateProposal?: (oppId: string) => void;
 }) {
   const hasWizard = !!opp.activeWizardId;
   return (
@@ -3010,7 +3040,7 @@ function OpportunityCard({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
           <PriorityBadge priority={opp.priority} />
-          <RowActionsMenu opp={opp} allStages={ALL_PIPELINE_STAGES} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} />
+          <RowActionsMenu opp={opp} allStages={ALL_PIPELINE_STAGES} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} onMarkWon={onMarkWon} onMarkLost={onMarkLost} onEditOpp={onEditOpp} onAddNote={onAddNote} onCreateAudit={onCreateAudit} onCreateProposal={onCreateProposal} />
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">
@@ -3064,11 +3094,17 @@ const ALL_PIPELINE_STAGES: PipelineStage[] = [
   "Proposal Approved", "Sales Handoff", "Closed Won", "Closed Lost",
 ];
 
-function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp }: {
+function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp, onMarkWon, onMarkLost, onEditOpp, onAddNote, onCreateAudit, onCreateProposal }: {
   opportunities: Opportunity[];
   onView: (opp: Opportunity) => void;
   onChangeStage: (oppId: string, stage: PipelineStage) => void;
   onCreateFollowUp: (oppId: string) => void;
+  onMarkWon?: (oppId: string) => void;
+  onMarkLost?: (oppId: string) => void;
+  onEditOpp?: (opp: Opportunity) => void;
+  onAddNote?: (oppId: string) => void;
+  onCreateAudit?: (oppId: string) => void;
+  onCreateProposal?: (oppId: string) => void;
 }) {
   return (
     <div className="overflow-x-auto rounded-xl border"style={{ borderColor: "var(--rtm-border)"}}>
@@ -3131,7 +3167,7 @@ function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp 
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}><PriorityBadge priority={opp.priority} /></td>
                 <td className="px-3 py-2.5 whitespace-nowrap"onClick={(e) => e.stopPropagation()}>
-                  <RowActionsMenu opp={opp} allStages={ALL_PIPELINE_STAGES} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} />
+                  <RowActionsMenu opp={opp} allStages={ALL_PIPELINE_STAGES} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} onMarkWon={onMarkWon} onMarkLost={onMarkLost} onEditOpp={onEditOpp} onAddNote={onAddNote} onCreateAudit={onCreateAudit} onCreateProposal={onCreateProposal} />
                 </td>
               </tr>
             );
@@ -3688,6 +3724,8 @@ function SalesPipelinePageInner() {
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState<{ oppId?: string } | null>(null);
   const [showAuditPicker, setShowAuditPicker] = useState(false);
+  const [stalledFollowUpDone, setStalledFollowUpDone] = useState<Set<string>>(new Set());
+  const [stalledReassigned, setStalledReassigned] = useState<Record<string, string>>({});
   const [pipelineToasts, setPipelineToasts] = useState<PipelineToast[]>([]);
   const pipelineToastCounter = useRef(0);
   // Local mutable stage overrides for pipeline opportunities
@@ -3696,6 +3734,31 @@ function SalesPipelinePageInner() {
   const [extraFollowUps, setExtraFollowUps] = useState<Record<string, FollowUp[]>>({});
   // Track activeWizardId per opportunity
   const [wizardIds, setWizardIds] = useState<Record<string, string>>({});
+
+  // ── Live stage config loaded from API (data/pipeline-stages.json) ──────────
+  // Falls back to the compiled STAGE_CONFIG if the API returns nothing.
+  // On reload after a settings change the fresh list is reflected here,
+  // making the Kanban columns match what was saved in Pipeline Configuration.
+  const [liveStageConfig, setLiveStageConfig] = useState<StageConfig[]>(STAGE_CONFIG);
+  const [liveAllStages, setLiveAllStages] = useState<string[]>(ALL_PIPELINE_STAGES as string[]);
+
+  useEffect(() => {
+    fetch("/api/pipeline-stages")
+      .then((r) => r.json() as Promise<{ stages: PipelineStageDefinition[] }>)
+      .then(({ stages }) => {
+        if (!Array.isArray(stages) || stages.length === 0) return;
+        setLiveStageConfig(
+          stages.map((s) => ({
+            label: s.name as PipelineStage,
+            color: s.color,
+            bg: s.bg,
+            border: s.border,
+          }))
+        );
+        setLiveAllStages(stages.map((s) => s.name));
+      })
+      .catch(() => {/* keep defaults */});
+  }, []);
 
   // followUpQueue is built after mergedOpportunities is computed below
   // Placeholder — real queue built after mergedOpportunities
@@ -3754,12 +3817,46 @@ function SalesPipelinePageInner() {
     // Generate a wizard id for this opportunity and navigate to wizard
     const wizardId = `wizard-opp-${opp.id}-${Date.now()}`;
     setWizardIds(prev => ({ ...prev, [opp.id]: wizardId }));
+    // Store opportunity context so the proposals wizard can pre-fill
+    try {
+      sessionStorage.setItem(
+        `rtm-opp-${opp.id}`,
+        JSON.stringify({
+          businessName: opp.businessName,
+          contactName: opp.clientName,
+          notes: `Opportunity ${opp.id} — ${opp.stage} — ${opp.assignedRep} — Est. $${opp.estimatedValue}/mo`,
+        })
+      );
+    } catch { /* ignore */ }
     window.location.href = `/sales/proposals?new=true&opportunityId=${opp.id}`;
   }
 
-  function handleAddNote(oppId: string, _text: string) {
-    // Note is already appended in the drawer component's local state; nothing extra needed here
-    void oppId;
+  function handleAddNote(oppId: string, _text?: string) {
+    // Open the detail drawer so the user can add a note there
+    const opp = mergedOpportunities.find((o) => o.id === oppId);
+    if (opp) setDetailOpp(opp);
+    void _text;
+  }
+
+  function handleMarkWon(oppId: string) {
+    handleChangeStage(oppId, "Closed Won");
+  }
+
+  function handleMarkLost(oppId: string) {
+    handleChangeStage(oppId, "Closed Lost");
+  }
+
+  function handleEditOpp(opp: Opportunity) {
+    setDetailOpp(opp);
+  }
+
+  function handleCreateAudit(oppId: string) {
+    window.location.href = `/sales/audits?opportunityId=${oppId}`;
+  }
+
+  function handleCreateProposal(oppId: string) {
+    const opp = mergedOpportunities.find((o) => o.id === oppId);
+    if (opp) handleStartProposal(opp);
   }
 
   // Communication log state: keyed by OpportunityRecord id for the OpportunityRecord list
@@ -3786,7 +3883,7 @@ function SalesPipelinePageInner() {
   }
 
   // Merge stage overrides into opportunities list
-  const mergedOpportunities = OPPORTUNITIES.map(o => ({
+  const mergedOpportunities = HOME_SERVICES_OPPORTUNITIES.map(o => ({
     ...o,
     stage: stageOverrides[o.id] ?? o.stage,
     activeWizardId: wizardIds[o.id],
@@ -3794,7 +3891,7 @@ function SalesPipelinePageInner() {
   })) as (Opportunity & { activeWizardId?: string })[];
 
 
-  const allReps = Array.from(new Set(OPPORTUNITIES.map((o) => o.assignedRep))).sort();
+  const allReps = Array.from(new Set(HOME_SERVICES_OPPORTUNITIES.map((o) => o.assignedRep))).sort();
   const allSources: LeadSource[] = ["Direct", "Affiliate", "Partner", "Website", "Google Ads", "Meta Ads", "LSA"];
   const allPriorities: Priority[] = ["Low", "Medium", "High", "Urgent"];
   const allSyncStatuses: GhlSyncStatus[] = ["Synced", "Pending Sync", "Sync Failed", "Manual Override", "Not Connected"];
@@ -3821,7 +3918,7 @@ function SalesPipelinePageInner() {
   return (
     <div className="space-y-7">
       <PipelineToastContainer toasts={pipelineToasts} dismiss={(id) => setPipelineToasts(prev => prev.filter(t => t.id !== id))} />
-      {drawerOpp && <OpportunityDrawer opp={drawerOpp} onClose={() => setDrawerOpp(null)} commLog={commLogs[drawerOpp.id] ?? { opportunityId: drawerOpp.id, entries: [] }} onAddCommLogEntry={handleAddCommLogEntry} />}
+      {drawerOpp && <OpportunityDrawer opp={drawerOpp} onClose={() => setDrawerOpp(null)} commLog={commLogs[drawerOpp.id] ?? { opportunityId: drawerOpp.id, entries: [] }} onAddCommLogEntry={handleAddCommLogEntry} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} />}
       {detailOpp && (
         <OpportunityDetailDrawer
           opp={detailOpp}
@@ -4305,7 +4402,10 @@ function SalesPipelinePageInner() {
                   </tr>
                 </thead>
                 <tbody>
-                  {STALLED_DEALS.map((deal, i) => (
+                  {STALLED_DEALS.map((deal, i) => {
+                    const fuDone = stalledFollowUpDone.has(deal.id);
+                    const reassigned = stalledReassigned[deal.id];
+                    return (
                     <tr key={deal.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "transparent" : "var(--rtm-surface)" }}>
                       <td className="px-4 py-3 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{deal.client}</td>
                       <td className="px-4 py-3">
@@ -4315,15 +4415,37 @@ function SalesPipelinePageInner() {
                       <td className="px-4 py-3">
                         <span className="font-bold text-sm" style={{ color: deal.daysStalled > 14 ? "#DC2626" : "#D97706" }}>{deal.daysStalled}d</span>
                       </td>
-                      <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{deal.assignedRep}</td>
+                      <td className="px-4 py-3" style={{ color: reassigned ? "#059669" : "var(--rtm-text-secondary)" }}>
+                        {reassigned ?? deal.assignedRep}
+                        {reassigned && <span className="ml-1 text-[10px] font-bold text-green-600">(reassigned)</span>}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1.5">
-                          <button className="text-[10px] font-semibold px-2 py-1 rounded border" style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>Follow Up Now</button>
-                          <button className="text-[10px] font-semibold px-2 py-1 rounded border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>Reassign</button>
+                          <button
+                            onClick={() => {
+                              setStalledFollowUpDone(prev => { const n = new Set(prev); n.add(deal.id); return n; });
+                              addPipelineToast(`Follow-up logged for ${deal.client}`, "success");
+                            }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded border transition-all"
+                            style={{ background: fuDone ? "#ECFDF5" : "#EFF6FF", color: fuDone ? "#059669" : "#1D4ED8", borderColor: fuDone ? "#A7F3D0" : "#BFDBFE" }}>
+                            {fuDone ? "Followed Up" : "Follow Up Now"}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const reps = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
+                              const next = reps.find(r => r !== (stalledReassigned[deal.id] ?? deal.assignedRep)) ?? reps[0];
+                              setStalledReassigned(prev => ({ ...prev, [deal.id]: next }));
+                              addPipelineToast(`${deal.client} reassigned to ${next}`, "success");
+                            }}
+                            className="text-[10px] font-semibold px-2 py-1 rounded border transition-all"
+                            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>
+                            Reassign
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -4489,7 +4611,7 @@ function SalesPipelinePageInner() {
           <h2 className="text-sm font-bold uppercase tracking-wide mb-4"style={{ color: "var(--rtm-text-muted)"}}>Pipeline Stages · GHL Source</h2>
           <div className="overflow-x-auto pb-4">
             <div className="flex gap-4"style={{ minWidth: "max-content"}}>
-              {STAGE_CONFIG.map((stageCfg) => {
+              {liveStageConfig.map((stageCfg) => {
                 const cards = filtered.filter((o) => o.stage === stageCfg.label);
                 const stageValue = cards.reduce((s, o) => s + o.estimatedValue, 0);
                 return (
@@ -4506,7 +4628,7 @@ function SalesPipelinePageInner() {
                         <div className="flex items-center justify-center py-6 rounded-lg border border-dashed"style={{ borderColor: stageCfg.border }}>
                           <p className="text-[11px]"style={{ color: stageCfg.color, opacity: 0.5 }}>No opportunities</p>
                         </div>
-                      ) : cards.map((opp) => <OpportunityCard key={opp.id} opp={opp as Opportunity & { activeWizardId?: string }} stageCfg={stageCfg} onView={setDrawerOpp} onOpenDetail={setDetailOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} />)}
+                      ) : cards.map((opp) => <OpportunityCard key={opp.id} opp={opp as Opportunity & { activeWizardId?: string }} stageCfg={stageCfg} onView={setDrawerOpp} onOpenDetail={setDetailOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} />)}
                     </div>
                   </div>
                 );
@@ -4523,14 +4645,14 @@ function SalesPipelinePageInner() {
               {filtered.length} {filtered.length === 1 ? "opportunity": "opportunities"}
             </span>
           </div>
-          <PipelineTable opportunities={filtered} onView={setDrawerOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} />
+          <PipelineTable opportunities={filtered} onView={setDrawerOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} />
         </div>
       )}
       {viewMode === "analytics"&& <PipelineAnalytics opportunities={filtered} />}
       <div className="p-4 rounded-xl border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
         <h3 className="text-xs font-bold uppercase tracking-wide mb-3"style={{ color: "var(--rtm-text-muted)"}}>Pipeline Summary</h3>
         <div className="flex flex-wrap gap-3">
-          {STAGE_CONFIG.map((cfg) => {
+          {liveStageConfig.map((cfg) => {
             const count = filtered.filter((o) => o.stage === cfg.label).length;
             return (
               <div key={cfg.label} className="flex items-center gap-2 px-3 py-2 rounded-lg border"style={{ background: cfg.bg, borderColor: cfg.border }}>
