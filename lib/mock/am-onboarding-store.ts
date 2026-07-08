@@ -624,6 +624,7 @@ export function getFieldStatusMeta(status: FieldStatus): {
     primaryContact:         { fieldId: "primaryContact",         status: "pending-client", value: "", assignedAt: "2025-05-08T00:00:00.000Z", sentToClientAt: "2025-05-08T00:00:00.000Z" },
     phone:                  { fieldId: "phone",                  status: "pending-client", value: "", assignedAt: "2025-05-08T00:00:00.000Z", sentToClientAt: "2025-05-08T00:00:00.000Z" },
     website:                { fieldId: "website",                status: "pending-client", value: "", assignedAt: "2025-05-08T00:00:00.000Z", sentToClientAt: "2025-05-08T00:00:00.000Z" },
+    businessSize:           { fieldId: "businessSize",           status: "pending-client", value: "", assignedAt: "2026-07-09T00:00:00.000Z", sentToClientAt: "2026-07-09T00:00:00.000Z" },
     serviceStartTargetDate: { fieldId: "serviceStartTargetDate", status: "unset",          value: "", assignedAt: "2025-05-08T00:00:00.000Z" },
     specialInstructions:    { fieldId: "specialInstructions",    status: "unset",          value: "", assignedAt: "2025-05-08T00:00:00.000Z" },
     kickoffCallDate:        { fieldId: "kickoffCallDate",         status: "am-filled",      value: "2025-05-08",                      assignedAt: "2025-05-08T00:00:00.000Z" },
@@ -653,7 +654,7 @@ export function getFieldStatusMeta(status: FieldStatus): {
     {
       id: "onb-seed-mc004",
       clientId: "mc004",
-      status: "AM In Progress",
+      status: "Ready for Kickoff",
       salesPrefill: {
         clientName:     "Blue Ridge Plumbing Co.",
         email:          "tom@blueridgeplumbing.com",
@@ -665,7 +666,7 @@ export function getFieldStatusMeta(status: FieldStatus): {
       fieldAssignments: mc004Fields,
       createdAt: "2025-05-08T00:00:00.000Z",
       updatedAt: "2025-05-28T00:00:00.000Z",
-      projectId: "proj-seed-mc004",
+      projectId: "proj-am-mc004",
     },
     {
       id: "onb-seed-mc011",
@@ -682,7 +683,7 @@ export function getFieldStatusMeta(status: FieldStatus): {
       fieldAssignments: mc011Fields,
       createdAt: "2025-05-20T00:00:00.000Z",
       updatedAt: "2025-05-27T00:00:00.000Z",
-      projectId: "proj-seed-mc011",
+      projectId: "proj-am-mc011",
     },
   ];
 

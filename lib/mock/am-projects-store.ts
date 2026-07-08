@@ -231,7 +231,7 @@ export function createProject(
         createdAt:      now,
         updatedAt:      now,
         clientName,
-        projectName:    `${clientName} — Onboarding`,
+        projectName:    activeServices.length > 0 ? `${clientName} — ${activeServices.join(" / ")}` : `${clientName} — General Services`,
         description:    bpt.description,
       });
     }
@@ -260,7 +260,7 @@ export function createProject(
 
   const project: Project = {
     id:              projectId,
-    name:            `${clientName} — Onboarding`,
+    name:            activeServices.length > 0 ? `${clientName} — ${activeServices.join(" / ")}` : `${clientName} — General Services`,
     client:          clientName,
     clientSlug:      clientId,
     clientId,

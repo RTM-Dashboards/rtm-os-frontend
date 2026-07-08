@@ -1,60 +1,54 @@
 "use client";
 
 /**
- * AM Onboarding Queue — unified entry queue + intake form center
+ * AM Onboarding Queue — v3
  *
  * DATA SOURCES
  * ─────────────
- * lib/mock/master-clients.ts          ← cleared client queue (Queue tab)
+ * lib/engine/mock-data.ts             ← ENGINE_STORE — tasks (onboarding task status)
+ * lib/mock/master-clients.ts          ← cleared client queue
  * lib/mock/am-onboarding-store.ts     ← per-record + per-field state (Records tab)
- * lib/mock/am-onboarding-field-schema.ts ← field definitions
- * lib/mock/am-projects-store.ts       ← project creation / lookup
+ *
+ * ARCHITECTURE (post-refactor)
+ * ──────────────────────────────
+ * Onboarding is task #1 in every project's task list. It is automatically
+ * created when a project is activated via the Project Activation Center wizard.
+ *
+ * KPI cards and row status are driven by the engine Onboarding task's
+ * completion status (linkedOnboardingId field), NOT by a separate parallel
+ * tracking mechanism.
+ *
+ * FLOW (single-step, from this Queue)
+ *   1. Client cleared by Billing → appears here.
+ *   2. AM activates project (→ Projects page wizard) → project created,
+ *      Onboarding task #1 auto-created, onboarding record auto-created.
+ *   3. AM opens onboarding task → routed to /onboarding/[recordId] form.
+ *   4. AM fills fields, kickoff, completes → task status auto-syncs to Completed.
  *
  * TABS
- * ─────
- * "Queue"   — shows cleared=true clients not yet Active. This is the AM
- *             workflow entry point. KPI summary for the whole cleared pipeline.
- *             CORRECTED FLOW ORDER:
- *               1. "Activate Project" (primary)  → creates project + task list
- *               2. "Start Onboarding" (unlocked after project exists) → opens intake form
- *               3. Kickoff call tracked inside the onboarding detail view
+ *   "Queue"   — cleared clients, task-driven onboarding status KPIs.
+ *   "Records" — all created onboarding intake records.
  *
- * "Records" — shows all created onboarding intake records. Click "Open Form"
- *             to drill into the collaborative per-field form.
- *
- * Cleared = Billing-owned read-only flag. Explanation banner shown on Queue tab.
+ * Cleared = Billing-owned read-only flag.
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ENGINE_STORE } from "@/lib/engine/mock-data";
+import type { Task } from "@/lib/engine/types";
 import {
   MASTER_CLIENTS,
   computeHealth,
-  markOnboardingRecordCreated,
-  markActivationTasksCreated,
 } from "@/lib/mock/master-clients";
-import type {
-  MasterClient,
-  ActivationStatus,
-  HealthStatus,
-} from "@/lib/mock/master-clients";
+import type { MasterClient, ActivationStatus, HealthStatus } from "@/lib/mock/master-clients";
 import {
   getAllOnboardingRecords,
   getOnboardingRecordByClientId,
-  createOnboardingRecord,
   getOnboardingStatusMeta,
   getFieldAssignmentSummary,
-  updateOnboardingRecord,
 } from "@/lib/mock/am-onboarding-store";
-import type {
-  OnboardingIntakeStatus,
-  SalesPrefillData,
-} from "@/lib/mock/am-onboarding-store";
-import {
-  createProject,
-  getProjectByClientId,
-} from "@/lib/mock/am-projects-store";
-import { MOCK_INTAKE_RECORDS } from "@/lib/sales/intake-config";
+import type { OnboardingIntakeStatus } from "@/lib/mock/am-onboarding-store";
 import { KpiCard, StatusBadge } from "@/components/ui";
 import type { StatusVariant } from "@/components/ui";
 
@@ -68,6 +62,64 @@ function fmt(iso: string | null | undefined): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+// ─── Engine helpers: resolve onboarding task for a client ─────────────────────
+
+/**
+ * Finds the Onboarding task (task #1, has linkedOnboardingId) for a given
+ * clientId by looking up the client's project in ENGINE_STORE.
+ */
+function getOnboardingTaskForClient(clientId: string): Task | undefined {
+  const project = ENGINE_STORE.projects.find((p) => p.clientId === clientId);
+  if (!project) return undefined;
+  return ENGINE_STORE.tasks.find(
+    (t) => t.projectId === project.id && !!t.linkedOnboardingId
+  );
+}
+
+/**
+ * Returns the project for a clientId.
+ */
+function getProjectForClient(clientId: string) {
+  return ENGINE_STORE.projects.find((p) => p.clientId === clientId);
+}
+
+// ─── Onboarding task status helpers ───────────────────────────────────────────
+
+type OnboardingTaskStatus =
+  | "no-project"        // no engine project exists
+  | "not-started"       // task exists, status = Open
+  | "in-progress"       // task exists, status = In Progress / Waiting / Review
+  | "blocked"           // task exists, status = Blocked
+  | "complete";         // task exists, status = Completed
+
+function getOnboardingTaskStatus(clientId: string): OnboardingTaskStatus {
+  const task = getOnboardingTaskForClient(clientId);
+  if (!task) return "no-project";
+  switch (task.status) {
+    case "Completed":   return "complete";
+    case "Blocked":     return "blocked";
+    case "Open":        return "not-started";
+    default:            return "in-progress"; // In Progress, Waiting, Review
+  }
+}
+
+function onboardingStatusBadgeStyle(s: OnboardingTaskStatus): {
+  bg: string; color: string; border: string; label: string;
+} {
+  switch (s) {
+    case "complete":
+      return { bg: "#D1FAE5", color: "#065F46", border: "#6EE7B7", label: "✓ Onboarding Complete" };
+    case "in-progress":
+      return { bg: "#DBEAFE", color: "#1E40AF", border: "#93C5FD", label: "In Progress" };
+    case "blocked":
+      return { bg: "#FEE2E2", color: "#991B1B", border: "#FCA5A5", label: "Blocked" };
+    case "not-started":
+      return { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1", label: "Not Started" };
+    case "no-project":
+      return { bg: "#FEF3C7", color: "#92400E", border: "#FCD34D", label: "No Project Yet" };
+  }
 }
 
 // ─── Badge variant helpers ─────────────────────────────────────────────────────
@@ -94,48 +146,6 @@ function healthVariant(h: HealthStatus): StatusVariant {
   }
 }
 
-// ─── Sales intake prefill helpers (ported from cleared-clients) ───────────────
-
-function findMatchedIntakeRecord(clientName: string) {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
-  const target = normalize(clientName);
-  return MOCK_INTAKE_RECORDS.find((r) => {
-    const candidate = normalize(r.businessName);
-    return (
-      target.includes(candidate) ||
-      candidate.includes(target) ||
-      target.split(" ").slice(0, 2).join(" ") ===
-        candidate.split(" ").slice(0, 2).join(" ")
-    );
-  });
-}
-
-function buildSalesPrefill(client: MasterClient): SalesPrefillData {
-  const intake = findMatchedIntakeRecord(client.clientName);
-  return {
-    clientName: client.clientName,
-    email: client.email,
-    industry: client.industry,
-    salesOwner: client.salesOwner,
-    referralSource: client.referralSource,
-    affiliateName: client.affiliateName,
-    activeServices: client.activeServices,
-    monthlyValue: client.monthlyValue,
-    primaryContact: intake?.primaryContact,
-    phone: intake?.phone,
-    website: intake?.website,
-    location: intake?.location,
-    businessSize: intake?.businessSize,
-    intakeSource: intake?.intakeSource,
-    selectedGoals: intake?.selectedGoals,
-    discoveryNotes:
-      typeof intake?.answers?.discoveryNotes === "string"
-        ? intake.answers.discoveryNotes
-        : undefined,
-  };
-}
-
 // ─── Queue tab: cleared clients (entry queue) ─────────────────────────────────
 
 const QUEUE_ACTIVATION_STATUSES: ActivationStatus[] = [
@@ -148,9 +158,7 @@ const QUEUE_ACTIVATION_STATUSES: ActivationStatus[] = [
 /** Clients cleared by Billing and not yet fully Active */
 function getClearedQueueClients(): MasterClient[] {
   return MASTER_CLIENTS.filter(
-    (c) =>
-      c.cleared === true &&
-      c.activationStatus !== "Active"
+    (c) => c.cleared === true && c.activationStatus !== "Active"
   );
 }
 
@@ -158,21 +166,17 @@ function getClearedQueueClients(): MasterClient[] {
 
 function QueueClientRow({
   client,
-  onActivateProject,
-  onStartOnboarding,
   onOpenRecord,
 }: {
   client: MasterClient;
-  onActivateProject: (client: MasterClient) => void;
-  onStartOnboarding: (client: MasterClient) => void;
   onOpenRecord: (recordId: string) => void;
 }) {
-  const health = computeHealth(client);
-  const existingProject = getProjectByClientId(client.id);
-  const existingRecord = getOnboardingRecordByClientId(client.id);
-
-  const projectExists = !!existingProject || client.activationChecklist.activationTasksCreated;
-  const recordExists = !!existingRecord || client.activationChecklist.onboardingRecordCreated;
+  const health   = computeHealth(client);
+  const project  = getProjectForClient(client.id);
+  const obTask   = getOnboardingTaskForClient(client.id);
+  const obRecord = getOnboardingRecordByClientId(client.id);
+  const taskStatus = getOnboardingTaskStatus(client.id);
+  const badge    = onboardingStatusBadgeStyle(taskStatus);
 
   return (
     <tr className="hover:bg-slate-50 transition-colors">
@@ -218,15 +222,6 @@ function QueueClientRow({
         {client.monthlyValue > 0 ? `$${client.monthlyValue.toLocaleString()}` : "—"}
       </td>
 
-      {/* Activation Status */}
-      <td className="px-4 py-3 whitespace-nowrap">
-        <StatusBadge
-          variant={activationStatusVariant(client.activationStatus)}
-          label={client.activationStatus}
-          size="sm"
-        />
-      </td>
-
       {/* Assigned AM */}
       <td className="px-4 py-3 text-slate-700 whitespace-nowrap text-sm">
         {client.assignedAM === "Unassigned" ? (
@@ -241,85 +236,64 @@ function QueueClientRow({
         <StatusBadge variant={healthVariant(health)} label={health} size="sm" />
       </td>
 
-      {/* Flow Steps */}
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-1">
-          {/* Step 1: Activate Project */}
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
-              projectExists
-                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                : "bg-slate-50 border-slate-200 text-slate-400"
-            }`}
-          >
-            {projectExists ? "✓" : "1"} Project
-          </span>
-          <span className="text-slate-300 text-xs">→</span>
-          {/* Step 2: Start Onboarding */}
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
-              recordExists
-                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                : projectExists
-                ? "bg-blue-50 border-blue-200 text-blue-700"
-                : "bg-slate-50 border-slate-200 text-slate-300"
-            }`}
-          >
-            {recordExists ? "✓" : "2"} Intake
-          </span>
-          <span className="text-slate-300 text-xs">→</span>
-          {/* Step 3: Kickoff */}
-          <span
-            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
-              client.activationChecklist.kickoffCallCompleted
-                ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                : recordExists && client.activationChecklist.kickoffNeeded
-                ? "bg-amber-50 border-amber-200 text-amber-700"
-                : recordExists && !client.activationChecklist.kickoffNeeded
-                ? "bg-slate-50 border-slate-200 text-slate-400"
-                : "bg-slate-50 border-slate-200 text-slate-300"
-            }`}
-          >
-            {client.activationChecklist.kickoffCallCompleted
-              ? "✓"
-              : !client.activationChecklist.kickoffNeeded
-              ? "—"
-              : "3"}{" "}
-            Kickoff
-          </span>
-        </div>
+      {/* Project */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        {project ? (
+          <div>
+            <p className="text-xs font-semibold text-emerald-700">✓ Activated</p>
+            <p className="text-[10px] text-slate-400 max-w-[140px] truncate">{project.name}</p>
+          </div>
+        ) : (
+          <span className="text-xs text-amber-600 font-semibold">Not activated</span>
+        )}
       </td>
 
-      {/* Actions */}
+      {/* Onboarding Task Status (engine-driven) */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <span
+          className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border"
+          style={{ background: badge.bg, color: badge.color, borderColor: badge.border }}
+        >
+          {badge.label}
+        </span>
+        {obTask && (
+          <p className="text-[10px] text-slate-400 mt-0.5">
+            Due: {obTask.dueDate ? fmt(obTask.dueDate) : "—"}
+          </p>
+        )}
+      </td>
+
+      {/* Action */}
       <td className="px-4 py-3">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {!projectExists ? (
-            // STEP 1: Primary action — Activate Project
-            <button
-              onClick={() => onActivateProject(client)}
-              className="rounded-lg bg-blue-600 border border-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+        <div className="flex flex-col gap-1">
+          {!project ? (
+            // No project: send AM to Projects page to activate
+            <Link
+              href="/account-management/projects"
+              className="rounded-lg bg-blue-600 border border-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors text-center"
             >
-              Activate Project
-            </button>
-          ) : !recordExists ? (
-            // STEP 2: Primary action — Start Onboarding (project exists)
+              Activate Project →
+            </Link>
+          ) : obRecord ? (
+            // Project + record exist: open onboarding form directly
             <button
-              onClick={() => onStartOnboarding(client)}
-              className="rounded-lg bg-blue-600 border border-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
+              onClick={() => onOpenRecord(obRecord.id)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                taskStatus === "complete"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                  : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+              }`}
             >
-              Start Onboarding
+              {taskStatus === "complete" ? "View Onboarding" : "Open Onboarding Form →"}
             </button>
           ) : (
-            // Both exist — open onboarding record (includes kickoff)
-            <button
-              onClick={() => existingRecord && onOpenRecord(existingRecord.id)}
-              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors"
+            // Project exists but record not yet created (edge: pre-wizard seed state)
+            <Link
+              href="/account-management/projects"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors text-center"
             >
-              {client.activationChecklist.kickoffCallCompleted ||
-              !client.activationChecklist.kickoffNeeded
-                ? "View Onboarding"
-                : "Continue / Kickoff"}
-            </button>
+              View Project →
+            </Link>
           )}
         </div>
       </td>
@@ -327,22 +301,13 @@ function QueueClientRow({
   );
 }
 
-// ─── Queue tab (cleared clients entry queue) ──────────────────────────────────
+// ─── Queue tab ─────────────────────────────────────────────────────────────────
 
-function QueueTab({
-  onStartOnboarding,
-  onOpenRecord,
-}: {
-  onStartOnboarding: (client: MasterClient) => void;
-  onOpenRecord: (recordId: string) => void;
-}) {
-  const [, forceUpdate] = useState(0);
-  const refresh = useCallback(() => forceUpdate((n) => n + 1), []);
-  const router = useRouter();
-
+function QueueTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void }) {
   const [search, setSearch] = useState("");
   const [activationFilter, setActivationFilter] = useState<ActivationStatus | "All">("All");
   const [amFilter, setAmFilter] = useState("All");
+  const [taskStatusFilter, setTaskStatusFilter] = useState<OnboardingTaskStatus | "All">("All");
 
   const CLEARED_CLIENTS = getClearedQueueClients();
 
@@ -362,42 +327,41 @@ function QueueTab({
     const matchesActivation =
       activationFilter === "All" || c.activationStatus === activationFilter;
     const matchesAM = amFilter === "All" || c.assignedAM === amFilter;
-    return matchesSearch && matchesActivation && matchesAM;
+    const matchesTaskStatus =
+      taskStatusFilter === "All" || getOnboardingTaskStatus(c.id) === taskStatusFilter;
+    return matchesSearch && matchesActivation && matchesAM && matchesTaskStatus;
   });
 
-  // KPIs — over all cleared queue clients, not just filtered
+  // ── Task-driven KPIs ───────────────────────────────────────────────────────
   const total = CLEARED_CLIENTS.length;
+
+  // "No project" = not yet activated
+  const noProject = CLEARED_CLIENTS.filter(
+    (c) => getOnboardingTaskStatus(c.id) === "no-project"
+  ).length;
+
+  // Onboarding in progress = task exists and is In Progress / Waiting / not complete
+  const onboardingInProgress = CLEARED_CLIENTS.filter(
+    (c) => getOnboardingTaskStatus(c.id) === "in-progress"
+  ).length;
+
+  // Onboarding blocked
+  const onboardingBlocked = CLEARED_CLIENTS.filter(
+    (c) => getOnboardingTaskStatus(c.id) === "blocked"
+  ).length;
+
+  // Onboarding complete = task marked Completed
+  const onboardingComplete = CLEARED_CLIENTS.filter(
+    (c) => getOnboardingTaskStatus(c.id) === "complete"
+  ).length;
+
+  // Needs AM assignment (pre-project, AM not yet assigned)
   const needsAssignment = CLEARED_CLIENTS.filter(
     (c) => c.activationStatus === "AM Assignment Needed"
   ).length;
-  const readyForOnboarding = CLEARED_CLIENTS.filter(
-    (c) => c.activationStatus === "Ready for Onboarding"
-  ).length;
-  const onboardingInProgress = CLEARED_CLIENTS.filter(
-    (c) =>
-      c.activationStatus === "Onboarding Pending" ||
-      c.activationStatus === "Department Activation Pending"
-  ).length;
+
+  // Cleared MRR
   const totalMrr = CLEARED_CLIENTS.reduce((sum, c) => sum + c.monthlyValue, 0);
-  const projectsCreated = CLEARED_CLIENTS.filter(
-    (c) => c.activationChecklist.activationTasksCreated
-  ).length;
-
-  function handleActivateProject(client: MasterClient) {
-    const salesPrefill = buildSalesPrefill(client);
-    const services =
-      client.activeServices.length > 0 ? client.activeServices : ["General Onboarding"];
-
-    createProject(
-      client.id,
-      client.clientName,
-      client.assignedAM !== "Unassigned" ? client.assignedAM : "",
-      services,
-      null
-    );
-    markActivationTasksCreated(client.id);
-    refresh();
-  }
 
   return (
     <div className="space-y-5">
@@ -406,45 +370,56 @@ function QueueTab({
         <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
         <span className="text-xs font-semibold text-emerald-800">
           Cleared = Billing has confirmed payment, activated services, and handed off to AM.
-          This flag is set by Billing and is read-only from the AM side.
+          Activating a project automatically creates the Onboarding task and intake form.
         </span>
       </div>
 
-      {/* KPI row */}
+      {/* KPI row — task-driven */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KpiCard title="Cleared (Not Active)" value={String(total)} />
+        <KpiCard title="Cleared (Not Active)"    value={String(total)} />
         <KpiCard
           title="Needs AM Assignment"
           value={String(needsAssignment)}
           risk={needsAssignment > 0 ? "at-risk" : "healthy"}
         />
         <KpiCard
-          title="Ready for Onboarding"
-          value={String(readyForOnboarding)}
-          risk={readyForOnboarding > 0 ? "at-risk" : "healthy"}
+          title="No Project Yet"
+          value={String(noProject)}
+          risk={noProject > 0 ? "at-risk" : "healthy"}
         />
-        <KpiCard title="Onboarding In Progress" value={String(onboardingInProgress)} />
-        <KpiCard title="Projects Activated"     value={String(projectsCreated)} />
-        <KpiCard title="Cleared MRR"            value={`$${totalMrr.toLocaleString()}`} />
+        <KpiCard title="Onboarding In Progress"  value={String(onboardingInProgress)} />
+        <KpiCard
+          title="Onboarding Blocked"
+          value={String(onboardingBlocked)}
+          risk={onboardingBlocked > 0 ? "critical" : "healthy"}
+        />
+        <KpiCard title="Onboarding Complete"     value={String(onboardingComplete)} />
       </div>
 
-      {/* Flow order explainer */}
+      {/* Cleared MRR strip */}
+      <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 flex items-center gap-4">
+        <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Cleared MRR</span>
+        <span className="text-xl font-bold text-slate-900">${totalMrr.toLocaleString()}</span>
+        <span className="text-xs text-slate-400 italic">Billing-owned, read-only</span>
+      </div>
+
+      {/* Flow explainer */}
       <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 flex flex-wrap items-center gap-3">
         <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">Flow:</span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-white px-3 py-1 text-xs font-semibold text-blue-700">
-          1 · Activate Project
+          1 · Activate Project (wizard)
         </span>
         <span className="text-blue-300 text-sm">→</span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-          2 · Start Onboarding
+          2 · Onboarding Task #1 auto-created
         </span>
         <span className="text-blue-300 text-sm">→</span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-          3 · Kickoff Call
+          3 · AM opens form → fills fields + kickoff
         </span>
         <span className="text-blue-300 text-sm">→</span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
-          Active
+          Onboarding Complete
         </span>
       </div>
 
@@ -468,6 +443,18 @@ function QueueTab({
           ))}
         </select>
         <select
+          value={taskStatusFilter}
+          onChange={(e) => setTaskStatusFilter(e.target.value as OnboardingTaskStatus | "All")}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+        >
+          <option value="All">All Onboarding Statuses</option>
+          <option value="no-project">No Project Yet</option>
+          <option value="not-started">Not Started</option>
+          <option value="in-progress">In Progress</option>
+          <option value="blocked">Blocked</option>
+          <option value="complete">Complete</option>
+        </select>
+        <select
           value={amFilter}
           onChange={(e) => setAmFilter(e.target.value)}
           className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -479,32 +466,6 @@ function QueueTab({
           ))}
         </select>
         <span className="text-sm text-slate-400 whitespace-nowrap">{filtered.length} clients</span>
-      </div>
-
-      {/* Activation status tab bar */}
-      <div className="flex flex-wrap gap-1 border-b border-slate-200">
-        {(["All", ...QUEUE_ACTIVATION_STATUSES] as (ActivationStatus | "All")[]).map((s) => {
-          const count =
-            s === "All"
-              ? CLEARED_CLIENTS.length
-              : CLEARED_CLIENTS.filter((c) => c.activationStatus === s).length;
-          return (
-            <button
-              key={s}
-              onClick={() => setActivationFilter(s)}
-              className={`rounded-t-lg border border-b-0 px-3 py-2 text-xs font-semibold transition-colors ${
-                activationFilter === s
-                  ? "border-slate-200 bg-white text-blue-700 -mb-px z-10"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              {s}
-              {s !== "All" && (
-                <span className="ml-1 text-[10px] text-slate-400">({count})</span>
-              )}
-            </button>
-          );
-        })}
       </div>
 
       {total === 0 ? (
@@ -523,10 +484,10 @@ function QueueTab({
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Client</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Active Services</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 text-right">MRR</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Activation Status</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Assigned AM</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Health</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Flow Steps</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Project</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Onboarding Task</th>
                 <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Action</th>
               </tr>
             </thead>
@@ -535,8 +496,6 @@ function QueueTab({
                 <QueueClientRow
                   key={client.id}
                   client={client}
-                  onActivateProject={handleActivateProject}
-                  onStartOnboarding={onStartOnboarding}
                   onOpenRecord={onOpenRecord}
                 />
               ))}
@@ -554,7 +513,7 @@ function QueueTab({
               Showing {filtered.length} of {total} cleared (non-active) clients
             </span>
             <span className="text-xs text-slate-400 italic">
-              Active Services, MRR, Billing Owner, and Cleared flag are Billing-owned — read-only
+              Active Services, MRR, and Cleared flag are Billing-owned — read-only
             </span>
           </div>
         </div>
@@ -563,7 +522,7 @@ function QueueTab({
   );
 }
 
-// ─── Onboarding status badges ──────────────────────────────────────────────────
+// ─── Onboarding status badge (for Records tab) ─────────────────────────────────
 
 function OnboardingStatusBadge({ status }: { status: OnboardingIntakeStatus }) {
   const meta = getOnboardingStatusMeta(status);
@@ -578,7 +537,7 @@ function OnboardingStatusBadge({ status }: { status: OnboardingIntakeStatus }) {
   );
 }
 
-// ─── Progress bar ──────────────────────────────────────────────────────────────
+// ─── Progress bar (for Records tab) ───────────────────────────────────────────
 
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;
@@ -594,11 +553,7 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
 
 // ─── Records tab (existing onboarding records) ─────────────────────────────────
 
-function RecordsTab({
-  onOpenRecord,
-}: {
-  onOpenRecord: (recordId: string) => void;
-}) {
+function RecordsTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void }) {
   const [statusFilter, setStatusFilter] = useState<OnboardingIntakeStatus | "All">("All");
   const [search, setSearch] = useState("");
 
@@ -613,11 +568,11 @@ function RecordsTab({
 
   const records = getAllOnboardingRecords();
   const total = records.length;
-  const amInProgress = records.filter((r) => r.status === "AM In Progress").length;
-  const sentToClient = records.filter((r) => r.status === "Sent to Client").length;
+  const amInProgress   = records.filter((r) => r.status === "AM In Progress").length;
+  const sentToClient   = records.filter((r) => r.status === "Sent to Client").length;
   const readyForKickoff = records.filter((r) => r.status === "Ready for Kickoff").length;
-  const complete = records.filter((r) => r.status === "Complete").length;
-  const hasProject = records.filter((r) => r.projectId !== null).length;
+  const complete       = records.filter((r) => r.status === "Complete").length;
+  const hasProject     = records.filter((r) => r.projectId !== null).length;
 
   const filtered = records.filter((r) => {
     if (statusFilter !== "All" && r.status !== statusFilter) return false;
@@ -639,10 +594,12 @@ function RecordsTab({
         <div className="text-slate-300 text-5xl mb-4">🗂️</div>
         <h2 className="text-lg font-bold text-slate-700 mb-1">No onboarding records yet</h2>
         <p className="text-sm text-slate-400 max-w-md mx-auto">
-          Onboarding records are created when you click{" "}
-          <strong className="text-slate-600">"Start Onboarding"</strong> on a cleared client in
-          the <strong className="text-slate-600">Queue tab</strong> above. Activate a project
-          first, then start onboarding.
+          Onboarding records are created automatically when you activate a project for a cleared
+          client via the{" "}
+          <Link href="/account-management/projects" className="text-blue-600 underline">
+            Project Activation Center
+          </Link>
+          .
         </p>
       </div>
     );
@@ -697,7 +654,7 @@ function RecordsTab({
           </thead>
           <tbody className="divide-y divide-slate-50">
             {filtered.map((record) => {
-              const sum = getFieldAssignmentSummary(record);
+              const sum    = getFieldAssignmentSummary(record);
               const amName = record.fieldAssignments["assignedAM"]?.value ?? "";
               return (
                 <tr key={record.id} className="hover:bg-slate-50 transition-colors">
@@ -737,9 +694,9 @@ function RecordsTab({
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     {record.projectId ? (
-                      <span className="text-xs font-medium text-emerald-600">✓ Created</span>
+                      <span className="text-xs font-medium text-emerald-600">✓ Linked</span>
                     ) : (
-                      <span className="text-xs text-slate-300 italic">Not created</span>
+                      <span className="text-xs text-slate-300 italic">Not linked</span>
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{fmt(record.createdAt)}</td>
@@ -774,30 +731,12 @@ export default function OnboardingQueuePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"queue" | "records">("queue");
 
-  function handleStartOnboarding(client: MasterClient) {
-    const salesPrefill = buildSalesPrefill(client);
-    const record = createOnboardingRecord(
-      client.id,
-      salesPrefill,
-      client.assignedAM !== "Unassigned" ? client.assignedAM : ""
-    );
-    markOnboardingRecordCreated(client.id);
-
-    // Link project to record if project exists and record has no projectId
-    const project = getProjectByClientId(client.id);
-    if (project && !record.projectId) {
-      updateOnboardingRecord({ ...record, projectId: project.id });
-    }
-
-    router.push(`/account-management/onboarding/${record.id}`);
-  }
-
   function handleOpenRecord(recordId: string) {
     router.push(`/account-management/onboarding/${recordId}`);
   }
 
   const recordCount = getAllOnboardingRecords().length;
-  const queueCount = getClearedQueueClients().length;
+  const queueCount  = getClearedQueueClients().length;
 
   return (
     <div className="space-y-6">
@@ -808,8 +747,8 @@ export default function OnboardingQueuePage() {
         </p>
         <h1 className="text-2xl font-bold text-slate-900">Onboarding Queue</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Entry queue for cleared clients — activate projects, start onboarding intake forms,
-          and track kickoff calls. Existing onboarding records are in the Records tab.
+          Cleared clients awaiting project activation and onboarding. Status is driven by each
+          client's Onboarding task (task #1 in their project), not a separate tracking system.
         </p>
       </div>
 
@@ -845,10 +784,7 @@ export default function OnboardingQueuePage() {
 
       {/* Tab content */}
       {activeTab === "queue" ? (
-        <QueueTab
-          onStartOnboarding={handleStartOnboarding}
-          onOpenRecord={handleOpenRecord}
-        />
+        <QueueTab onOpenRecord={handleOpenRecord} />
       ) : (
         <RecordsTab onOpenRecord={handleOpenRecord} />
       )}

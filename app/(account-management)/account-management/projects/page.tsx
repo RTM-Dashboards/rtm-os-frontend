@@ -1,11 +1,11 @@
 "use client";
 
 /**
- * AM Project Activation Center — v2
+ * AM Project Activation Center — v3
  *
  * DATA SOURCE: lib/engine/  (real engine store — Projects, Tasks, Blueprints)
  *              lib/mock/master-clients.ts (client list + activation checklist)
- *              lib/mock/am-onboarding-store.ts (onboarding record lookup)
+ *              lib/mock/am-onboarding-store.ts (onboarding record — auto-created at project creation)
  *
  * Replaces lib/mock/am-projects-store.ts placeholder entirely.
  *
@@ -14,8 +14,14 @@
  *  - 2-step "Activate Project" wizard for cleared clients without a project:
  *      Step 1 — Load Task List from Templates (matches activeServices → BLUEPRINTS)
  *      Step 2 — Activate Departments (marks departments active for this client)
- *  - Once both wizard steps are done, "Activate Onboarding" links to the
- *    existing onboarding form at /account-management/onboarding/{recordId}
+ *  - Project is named after the client's actual contracted services
+ *    (e.g. "Blue Ridge Plumbing Co. — SEO / GBP / Website Build")
+ *  - Task #1 in every project is a dedicated "Client Onboarding" task.
+ *    Creating the project automatically creates the onboarding record in
+ *    am-onboarding-store and links task ↔ record via linkedOnboardingId.
+ *    Opening this task routes to /account-management/onboarding/{recordId}.
+ *    The task is marked Complete when the record reaches "Ready for Kickoff"
+ *    or "Complete" status.
  */
 
 import React, { useState, useCallback, useMemo, useEffect, Suspense } from "react";
@@ -27,9 +33,16 @@ import type { Project, Task, Milestone, DepartmentName } from "@/lib/engine/type
 import {
   MASTER_CLIENTS,
   markActivationTasksCreated,
+  markOnboardingRecordCreated,
 } from "@/lib/mock/master-clients";
 import type { MasterClient } from "@/lib/mock/master-clients";
-import { getOnboardingRecordByClientId } from "@/lib/mock/am-onboarding-store";
+import {
+  getOnboardingRecordByClientId,
+  createOnboardingRecord,
+  updateOnboardingRecord,
+  type SalesPrefillData,
+} from "@/lib/mock/am-onboarding-store";
+import { MOCK_INTAKE_RECORDS } from "@/lib/sales/intake-config";
 import { KpiCard } from "@/components/ui";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -38,6 +51,48 @@ function fmt(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso.length === 10 ? iso + "T00:00:00" : iso);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
+// ── Sales prefill helper (mirrors onboarding/page.tsx) ───────────────────────
+
+function findMatchedIntakeRecord(clientName: string) {
+  const normalize = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
+  const target = normalize(clientName);
+  return MOCK_INTAKE_RECORDS.find((r) => {
+    const candidate = normalize(r.businessName);
+    return (
+      target.includes(candidate) ||
+      candidate.includes(target) ||
+      target.split(" ").slice(0, 2).join(" ") ===
+        candidate.split(" ").slice(0, 2).join(" ")
+    );
+  });
+}
+
+function buildSalesPrefill(client: MasterClient): SalesPrefillData {
+  const intake = findMatchedIntakeRecord(client.clientName);
+  return {
+    clientName: client.clientName,
+    email: client.email,
+    industry: client.industry,
+    salesOwner: client.salesOwner,
+    referralSource: client.referralSource,
+    affiliateName: client.affiliateName,
+    activeServices: client.activeServices,
+    monthlyValue: client.monthlyValue,
+    primaryContact: intake?.primaryContact,
+    phone: intake?.phone,
+    website: intake?.website,
+    location: intake?.location,
+    businessSize: intake?.businessSize,
+    intakeSource: intake?.intakeSource,
+    selectedGoals: intake?.selectedGoals,
+    discoveryNotes:
+      typeof intake?.answers?.discoveryNotes === "string"
+        ? intake.answers.discoveryNotes
+        : undefined,
+  };
 }
 
 // ── Engine mutation helpers ────────────────────────────────────────────────────
@@ -91,7 +146,21 @@ const DEPT_LABELS: Partial<Record<DepartmentName, string>> = {
   "Design":             "Design",
 };
 
-/** Creates a real engine Project + Tasks + Milestone from client + selected services */
+/**
+ * Derives the human-readable project name from the client's contracted services.
+ * e.g. "Blue Ridge Plumbing Co. — SEO / GBP / Website Build"
+ */
+function deriveProjectName(clientName: string, services: string[]): string {
+  if (services.length === 0) return `${clientName} — General Services`;
+  return `${clientName} — ${services.join(" / ")}`;
+}
+
+/**
+ * Creates a real engine Project + Tasks + Milestone from client + selected services.
+ * - Project name reflects the actual contracted services (not "Onboarding Project").
+ * - Task #1 is a dedicated "Client Onboarding" task with linkedOnboardingId.
+ * - Automatically creates the onboarding record in am-onboarding-store.
+ */
 function createEngineProject(
   client: MasterClient,
   services: string[]
@@ -101,10 +170,51 @@ function createEngineProject(
   const projectId   = `proj-wizard-${++_projSeq}`;
   const milestoneId = `ms-wizard-${++_msSeq}`;
 
-  const bpIds = blueprintIdsForServices(services);
-  const taskIds: string[] = [];
-  const tasks: Task[] = [];
+  // Derive proper project name from services
+  const projectName = deriveProjectName(client.clientName, services);
 
+  // ── Auto-create onboarding record (task #1 will link to it) ────────────────
+  const salesPrefill = buildSalesPrefill(client);
+  const assignedAM = client.assignedAM !== "Unassigned" ? client.assignedAM : "";
+  const onboardingRecord = createOnboardingRecord(client.id, salesPrefill, assignedAM);
+  // Link record back to this project
+  updateOnboardingRecord({ ...onboardingRecord, projectId });
+
+  // ── Task #1: Onboarding task (linked to the record) ──────────────────────
+  const onboardingTaskId = `tsk-wizard-${++_taskSeq}`;
+  const onboardingTask: Task = {
+    id:               onboardingTaskId,
+    projectId,
+    milestoneId,
+    title:            "Client Onboarding",
+    description:      "Complete the onboarding intake form, collect access credentials, and conduct kickoff call.",
+    type:             "One-Time",
+    source:           "Manual",
+    department:       "Account Management",
+    service:          "Account Management",
+    assignedUserName: assignedAM || "Unassigned",
+    createdById:      "u3",
+    createdByName:    "Activation Wizard",
+    status:           "In Progress",
+    priority:         "Urgent",
+    dueDate:          new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
+    estimatedHours:   2,
+    dependencies:     [],
+    notes:            [],
+    files:            [],
+    automationHistory: [],
+    linkedOnboardingId: onboardingRecord.id,
+    createdAt:        now,
+    updatedAt:        now,
+    clientName:       client.clientName,
+    projectName,
+  };
+
+  const taskIds: string[] = [onboardingTaskId];
+  const tasks: Task[]    = [onboardingTask];
+
+  // ── Blueprint tasks (service-specific, added after onboarding task) ────────
+  const bpIds = blueprintIdsForServices(services);
   for (const bpId of bpIds) {
     const bp = BLUEPRINTS.find((b) => b.id === bpId);
     if (!bp) continue;
@@ -135,17 +245,17 @@ function createEngineProject(
         createdAt:      now,
         updatedAt:      now,
         clientName:     client.clientName,
-        projectName:    `${client.clientName} — Onboarding`,
+        projectName,
         description:    bpt.description,
       });
     }
   }
 
-  // Derive departments from tasks
+  // Derive departments from tasks (include Account Management for onboarding task)
   const deptSet = new Set(tasks.map((t) => t.department));
   const departments = Array.from(deptSet).map((dept) => ({
     department: dept,
-    owner:      "Unassigned",
+    owner:      dept === "Account Management" ? (assignedAM || "Unassigned") : "Unassigned",
     taskIds:    tasks.filter((t) => t.department === dept).map((t) => t.id),
     escalationStatus: "None" as const,
   }));
@@ -153,7 +263,7 @@ function createEngineProject(
   const milestone: Milestone = {
     id:         milestoneId,
     projectId,
-    name:       "Onboarding Launch",
+    name:       "Service Launch",
     owner:      client.assignedAM,
     status:     "In Progress",
     startDate:  today,
@@ -165,7 +275,7 @@ function createEngineProject(
 
   const project: Project = {
     id:              projectId,
-    name:            `${client.clientName} — Onboarding`,
+    name:            projectName,
     client:          client.clientName,
     clientSlug:      client.slug,
     clientId:        client.id,
@@ -219,10 +329,31 @@ function ProjectDetail({
   project: Project;
   onBack: () => void;
 }) {
-  // Group tasks by service
-  const allTasks = ENGINE_STORE.tasks.filter((t) => t.projectId === project.id);
+  // Auto-sync the Onboarding task status from its linked record.
+  // When the record reaches "Ready for Kickoff" or "Complete", mark task Completed.
+  const allTasksRaw = ENGINE_STORE.tasks.filter((t) => t.projectId === project.id);
+  for (const task of allTasksRaw) {
+    if (task.linkedOnboardingId) {
+      const rec = getOnboardingRecordByClientId(project.clientId ?? "");
+      if (
+        rec &&
+        (rec.status === "Ready for Kickoff" || rec.status === "Complete") &&
+        task.status !== "Completed"
+      ) {
+        task.status = "Completed";
+        task.completionDate = new Date().toISOString().split("T")[0];
+        task.updatedAt = new Date().toISOString();
+      }
+    }
+  }
+
+  // Separate onboarding task (always first) from the rest, then group by service
+  const onboardingTask = allTasksRaw.find((t) => !!t.linkedOnboardingId);
+  const regularTasks  = allTasksRaw.filter((t) => !t.linkedOnboardingId);
+  const allTasks      = allTasksRaw; // for progress calc
+
   const grouped: Record<string, Task[]> = {};
-  for (const t of allTasks) {
+  for (const t of regularTasks) {
     if (!grouped[t.service]) grouped[t.service] = [];
     grouped[t.service].push(t);
   }
@@ -265,20 +396,13 @@ function ProjectDetail({
           >
             {project.status}
           </span>
-          {/* Cross-link: always show when an onboarding record exists for this client */}
-          {onbRecord ? (
+          {/* Cross-link: show when an onboarding record exists (always true for wizard-created projects) */}
+          {onbRecord && (
             <Link
               href={`/account-management/onboarding/${onbRecord.id}`}
               className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700"
             >
               View Onboarding Record →
-            </Link>
-          ) : (
-            <Link
-              href="/account-management/onboarding"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-            >
-              Start Onboarding →
             </Link>
           )}
         </div>
@@ -302,7 +426,57 @@ function ProjectDetail({
         <p className="text-xs text-slate-400 mt-1">{pct}% complete</p>
       </div>
 
-      {/* Tasks by service */}
+      {/* ── Onboarding task (Task #1 — always shown first) ───────────────── */}
+      {onboardingTask && (() => {
+        const st  = taskStatusStyle(onboardingTask.status);
+        const rec = onbRecord;
+        return (
+          <div className="rounded-xl border-2 border-blue-200 bg-blue-50 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-blue-200 bg-blue-100">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-600 text-white text-[11px] font-bold">1</span>
+                <span className="text-sm font-bold text-blue-900">Client Onboarding</span>
+                <span className="text-[10px] font-semibold text-blue-600 bg-white border border-blue-200 rounded-full px-2 py-0.5">First task</span>
+              </div>
+              <span
+                className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border"
+                style={{ background: st.bg, color: st.color, borderColor: st.border }}
+              >
+                {onboardingTask.status}
+              </span>
+            </div>
+            <div className="px-4 py-4 flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-slate-800">{onboardingTask.title}</p>
+                {onboardingTask.description && (
+                  <p className="text-xs text-slate-500 mt-0.5 max-w-sm">{onboardingTask.description}</p>
+                )}
+                <p className="text-xs text-slate-400 mt-1">
+                  Due: {onboardingTask.dueDate ? fmt(onboardingTask.dueDate) : "—"}
+                  {" · "}Assigned: {onboardingTask.assignedUserName || "Unassigned"}
+                  {rec && (
+                    <span className="ml-2 font-semibold" style={{ color: "#059669" }}>
+                      Intake: {rec.status}
+                    </span>
+                  )}
+                </p>
+              </div>
+              {rec ? (
+                <Link
+                  href={`/account-management/onboarding/${rec.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700 whitespace-nowrap"
+                >
+                  Open Onboarding Form →
+                </Link>
+              ) : (
+                <span className="text-xs text-slate-400 italic">No onboarding record linked</span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Service tasks grouped by service ─────────────────────────────── */}
       {Object.entries(grouped).map(([service, tasks]) => {
         const svcDone = tasks.filter((t) => t.status === "Completed").length;
         return (
@@ -443,6 +617,7 @@ function ActivationWizard({
     ENGINE_STORE.tasks.push(...tasks);
     ENGINE_STORE.milestones.push(milestone);
     markActivationTasksCreated(client.id);
+    markOnboardingRecordCreated(client.id);
     // Tag the project with departmentsActivated
     (project as Project & { departmentsActivated?: boolean }).departmentsActivated = true;
     setState((prev) => ({ ...prev, step: "done", createdProject: project, deptsActivated: true }));
@@ -581,10 +756,10 @@ function ActivationWizard({
         {/* Preview info — project not created yet */}
         <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
           <p className="text-sm font-bold text-blue-800">
-            Ready to create: <span className="font-normal">{client.clientName} — Onboarding</span>
+            Ready to create: <span className="font-normal">{deriveProjectName(client.clientName, state.selectedServices)}</span>
           </p>
           <p className="text-xs text-blue-700 mt-0.5">
-            {totalPreviewTasks} tasks from {blueprintIdsForServices(state.selectedServices).length} blueprints will be generated after you confirm departments.
+            {totalPreviewTasks + 1} tasks will be generated (1 Onboarding task + {totalPreviewTasks} from {blueprintIdsForServices(state.selectedServices).length} blueprint{blueprintIdsForServices(state.selectedServices).length !== 1 ? "s" : ""}) after you confirm departments.
           </p>
         </div>
 
@@ -700,8 +875,9 @@ function ProjectActivationPageInner() {
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Account Management</p>
           <h1 className="text-2xl font-bold text-slate-900">Project Activation Center</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Onboarding projects created from cleared clients. Each project carries tasks
-            generated from real Task Blueprints matched to the client's contracted services.
+            Service delivery projects for active clients. Each project is named after the
+            client's contracted services and carries tasks generated from Task Blueprints.
+            Task #1 is always the Client Onboarding task, linked to the onboarding intake form.
           </p>
         </div>
       </div>

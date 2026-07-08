@@ -287,26 +287,30 @@ function makeActivity(
 // ---------------------------------------------------------------------------
 // TASKS — Blue Ridge Plumbing Co. (proj-am-mc004) — migrated from AM store
 // clientId: mc004
+// Project name: "Blue Ridge Plumbing Co. — SEO / GBP / Website Build"
 // ---------------------------------------------------------------------------
 
 const blueRidgeTasks: Task[] = [
-  // migrated from am-projects-store seed: proj-seed-mc004
-  makeTask({ id: "am-mc004-t1", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-1", blueprintId: "bp-001", title: "Kickoff call — SEO / GBP", department: "Account Management", service: "SEO / GBP", status: "Completed", priority: "High", dueDate: "2025-05-08", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — Onboarding Project", completionDate: "2025-05-08", createdAt: "2025-05-01T00:00:00Z" }),
-  makeTask({ id: "am-mc004-t2", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-1", blueprintId: "bp-001", title: "Set up access & tracking — SEO / GBP", department: "Account Management", service: "SEO / GBP", status: "Completed", priority: "High", dueDate: "2025-05-08", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — Onboarding Project", completionDate: "2025-05-08", createdAt: "2025-05-01T00:00:00Z" }),
-  makeTask({ id: "am-mc004-t3", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-1", blueprintId: "bp-007", title: "Kickoff call — Website Build", department: "Account Management", service: "Website Build", status: "Completed", priority: "High", dueDate: "2025-05-08", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — Onboarding Project", completionDate: "2025-05-08", createdAt: "2025-05-01T00:00:00Z" }),
-  makeTask({ id: "am-mc004-t4", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-2", blueprintId: "bp-007", title: "Deliver wireframe/mockup — Website Build", department: "Design", service: "Website Build", status: "In Progress", priority: "High", dueDate: "2025-06-10", source: "Task Blueprint", type: "One-Time", assignedUserName: "Casey L.", estimatedHours: 8, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — Onboarding Project", createdAt: "2025-05-01T00:00:00Z" }),
+  // Task #1: Onboarding task — linked to the onboarding record (seeded via am-onboarding-store seed)
+  makeTask({ id: "am-mc004-t0", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-1", title: "Client Onboarding", department: "Account Management", service: "Account Management", status: "Completed", priority: "Urgent", dueDate: "2025-05-08", source: "Manual", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 2, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — SEO / GBP / Website Build", completionDate: "2025-05-08", createdAt: "2025-05-01T00:00:00Z", linkedOnboardingId: "onb-seed-mc004" }),
+  makeTask({ id: "am-mc004-t1", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-1", blueprintId: "bp-001", title: "Kickoff call — SEO / GBP", department: "Account Management", service: "SEO / GBP", status: "Completed", priority: "High", dueDate: "2025-05-08", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — SEO / GBP / Website Build", completionDate: "2025-05-08", createdAt: "2025-05-01T00:00:00Z" }),
+  makeTask({ id: "am-mc004-t2", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-1", blueprintId: "bp-001", title: "Set up access & tracking — SEO / GBP", department: "Account Management", service: "SEO / GBP", status: "Completed", priority: "High", dueDate: "2025-05-08", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — SEO / GBP / Website Build", completionDate: "2025-05-08", createdAt: "2025-05-01T00:00:00Z" }),
+  makeTask({ id: "am-mc004-t3", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-1", blueprintId: "bp-007", title: "Kickoff call — Website Build", department: "Account Management", service: "Website Build", status: "Completed", priority: "High", dueDate: "2025-05-08", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — SEO / GBP / Website Build", completionDate: "2025-05-08", createdAt: "2025-05-01T00:00:00Z" }),
+  makeTask({ id: "am-mc004-t4", projectId: "proj-am-mc004", milestoneId: "ms-am-mc004-2", blueprintId: "bp-007", title: "Deliver wireframe/mockup — Website Build", department: "Design", service: "Website Build", status: "In Progress", priority: "High", dueDate: "2025-06-10", source: "Task Blueprint", type: "One-Time", assignedUserName: "Casey L.", estimatedHours: 8, clientName: "Blue Ridge Plumbing Co.", projectName: "Blue Ridge Plumbing Co. — SEO / GBP / Website Build", createdAt: "2025-05-01T00:00:00Z" }),
 ];
 
 // ---------------------------------------------------------------------------
 // TASKS — Ridgeline Construction LLC (proj-am-mc011) — migrated from AM store
 // clientId: mc011
+// Project name: "Ridgeline Construction LLC — SEO / GBP"
 // ---------------------------------------------------------------------------
 
 const ridgelineTasks: Task[] = [
-  // migrated from am-projects-store seed: proj-seed-mc011
-  makeTask({ id: "am-mc011-t1", projectId: "proj-am-mc011", milestoneId: "ms-am-mc011-1", blueprintId: "bp-001", title: "Kickoff call — SEO / GBP", department: "Account Management", service: "SEO / GBP", status: "Completed", priority: "High", dueDate: "2025-05-20", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Ridgeline Construction LLC", projectName: "Ridgeline Construction LLC — Onboarding Project", completionDate: "2025-05-20", createdAt: "2025-05-15T00:00:00Z" }),
-  makeTask({ id: "am-mc011-t2", projectId: "proj-am-mc011", milestoneId: "ms-am-mc011-1", blueprintId: "bp-001", title: "Set up access & tracking — SEO / GBP", department: "Account Management", service: "SEO / GBP", status: "Blocked", priority: "High", dueDate: "2025-05-30", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Ridgeline Construction LLC", projectName: "Ridgeline Construction LLC — Onboarding Project", createdAt: "2025-05-15T00:00:00Z" }),
-  makeTask({ id: "am-mc011-t3", projectId: "proj-am-mc011", milestoneId: "ms-am-mc011-1", blueprintId: "bp-001", title: "Configure initial SEO / GBP campaign", department: "SEO", service: "SEO / GBP", status: "Open", priority: "Medium", dueDate: "2025-06-10", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 2, clientName: "Ridgeline Construction LLC", projectName: "Ridgeline Construction LLC — Onboarding Project", dependencies: [{ id: "dep-rc-1", dependsOnTaskId: "am-mc011-t2", dependsOnTaskName: "Set up access & tracking — SEO / GBP", type: "Finish-To-Start", direction: "blocked-by", status: "Blocked" }], createdAt: "2025-05-15T00:00:00Z" }),
+  // Task #1: Onboarding task — linked to the onboarding record (seeded via am-onboarding-store seed)
+  makeTask({ id: "am-mc011-t0", projectId: "proj-am-mc011", milestoneId: "ms-am-mc011-1", title: "Client Onboarding", department: "Account Management", service: "Account Management", status: "In Progress", priority: "Urgent", dueDate: "2025-05-22", source: "Manual", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 2, clientName: "Ridgeline Construction LLC", projectName: "Ridgeline Construction LLC — SEO / GBP", createdAt: "2025-05-15T00:00:00Z", linkedOnboardingId: "onb-seed-mc011" }),
+  makeTask({ id: "am-mc011-t1", projectId: "proj-am-mc011", milestoneId: "ms-am-mc011-1", blueprintId: "bp-001", title: "Kickoff call — SEO / GBP", department: "Account Management", service: "SEO / GBP", status: "Completed", priority: "High", dueDate: "2025-05-20", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Ridgeline Construction LLC", projectName: "Ridgeline Construction LLC — SEO / GBP", completionDate: "2025-05-20", createdAt: "2025-05-15T00:00:00Z" }),
+  makeTask({ id: "am-mc011-t2", projectId: "proj-am-mc011", milestoneId: "ms-am-mc011-1", blueprintId: "bp-001", title: "Set up access & tracking — SEO / GBP", department: "Account Management", service: "SEO / GBP", status: "Blocked", priority: "High", dueDate: "2025-05-30", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 1, clientName: "Ridgeline Construction LLC", projectName: "Ridgeline Construction LLC — SEO / GBP", createdAt: "2025-05-15T00:00:00Z" }),
+  makeTask({ id: "am-mc011-t3", projectId: "proj-am-mc011", milestoneId: "ms-am-mc011-1", blueprintId: "bp-001", title: "Configure initial SEO / GBP campaign", department: "SEO", service: "SEO / GBP", status: "Open", priority: "Medium", dueDate: "2025-06-10", source: "Task Blueprint", type: "One-Time", assignedUserName: "Alex R.", estimatedHours: 2, clientName: "Ridgeline Construction LLC", projectName: "Ridgeline Construction LLC — SEO / GBP", dependencies: [{ id: "dep-rc-1", dependsOnTaskId: "am-mc011-t2", dependsOnTaskName: "Set up access & tracking — SEO / GBP", type: "Finish-To-Start", direction: "blocked-by", status: "Blocked" }], createdAt: "2025-05-15T00:00:00Z" }),
 ];
 
 // ---------------------------------------------------------------------------
@@ -516,11 +520,11 @@ export const MILESTONES: Milestone[] = [
   { id: "ms-wt-it",        projectId: "proj-wt-it",        name: "IT & Security Active",   owner: "Mike T.",    status: "In Progress", startDate: "2025-06-01", dueDate: "2025-12-31", progress: 20, taskIds: ["it-1","it-2","it-3","it-4","it-5","it-6"] },
 
   // Blue Ridge Plumbing Co. (proj-am-mc004)
-  { id: "ms-am-mc004-1", projectId: "proj-am-mc004", name: "Kickoff & Access", owner: "Alex R.", status: "Completed", startDate: "2025-05-01", dueDate: "2025-05-20", completionDate: "2025-05-08", progress: 100, taskIds: ["am-mc004-t1","am-mc004-t2","am-mc004-t3"], blueprintId: "bp-004" },
+  { id: "ms-am-mc004-1", projectId: "proj-am-mc004", name: "Service Launch", owner: "Alex R.", status: "Completed", startDate: "2025-05-01", dueDate: "2025-05-20", completionDate: "2025-05-08", progress: 100, taskIds: ["am-mc004-t0","am-mc004-t1","am-mc004-t2","am-mc004-t3"], blueprintId: "bp-004" },
   { id: "ms-am-mc004-2", projectId: "proj-am-mc004", name: "Website Build", owner: "Casey L.", status: "In Progress", startDate: "2025-05-20", dueDate: "2025-06-30", progress: 25, taskIds: ["am-mc004-t4"], blueprintId: "bp-007" },
 
   // Ridgeline Construction LLC (proj-am-mc011)
-  { id: "ms-am-mc011-1", projectId: "proj-am-mc011", name: "Onboarding & Access", owner: "Alex R.", status: "Blocked", startDate: "2025-05-15", dueDate: "2025-06-10", progress: 33, taskIds: ["am-mc011-t1","am-mc011-t2","am-mc011-t3"], blueprintId: "bp-001", blockedReason: "Awaiting GBP and Search Console access credentials from client" },
+  { id: "ms-am-mc011-1", projectId: "proj-am-mc011", name: "Service Launch", owner: "Alex R.", status: "Blocked", startDate: "2025-05-15", dueDate: "2025-06-10", progress: 25, taskIds: ["am-mc011-t0","am-mc011-t1","am-mc011-t2","am-mc011-t3"], blueprintId: "bp-001", blockedReason: "Awaiting GBP and Search Console access credentials from client" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -537,65 +541,65 @@ function depts(...args: Array<[DepartmentName, string, string[]]>): ProjectDepar
 }
 
 export const PROJECTS: Project[] = [
-  // ---------- proj-am-mc004: Blue Ridge Plumbing Co. — migrated from AM store ----------
+  // ---------- proj-am-mc004: Blue Ridge Plumbing Co. — SEO / GBP / Website Build ----------
   {
     id: "proj-am-mc004",
-    name: "Blue Ridge Plumbing Co. — Onboarding Project",
+    name: "Blue Ridge Plumbing Co. — SEO / GBP / Website Build",
     client: "Blue Ridge Plumbing Co.",
     clientSlug: "blue-ridge-plumbing",
     clientId: "mc004",
     servicePackage: "Custom",
-    contractSummary: "SEO / GBP + Website Build onboarding. Signed 2025-05-01.",
+    contractSummary: "SEO / GBP + Website Build. Signed 2025-05-01.",
     owner: "Alex R.",
     accountManager: "Alex R.",
     departments: [
-      { department: "Account Management", owner: "Alex R.",   taskIds: ["am-mc004-t1","am-mc004-t2","am-mc004-t3"], escalationStatus: "None" },
-      { department: "SEO",                owner: "Alex R.",   taskIds: [],                                          escalationStatus: "None" },
-      { department: "Design",             owner: "Casey L.",  taskIds: ["am-mc004-t4"],                             escalationStatus: "None" },
-      { department: "Web Development",    owner: "Casey L.",  taskIds: [],                                          escalationStatus: "None" },
+      { department: "Account Management", owner: "Alex R.",   taskIds: ["am-mc004-t0","am-mc004-t1","am-mc004-t2","am-mc004-t3"], escalationStatus: "None" },
+      { department: "SEO",                owner: "Alex R.",   taskIds: [],                                                          escalationStatus: "None" },
+      { department: "Design",             owner: "Casey L.",  taskIds: ["am-mc004-t4"],                                             escalationStatus: "None" },
+      { department: "Web Development",    owner: "Casey L.",  taskIds: [],                                                          escalationStatus: "None" },
     ],
     launchDate: "2025-06-30",
     status: "In Progress",
     health: "Green",
     priority: "High",
     milestoneIds: ["ms-am-mc004-1","ms-am-mc004-2"],
-    taskIds: ["am-mc004-t1","am-mc004-t2","am-mc004-t3","am-mc004-t4"],
+    taskIds: ["am-mc004-t0","am-mc004-t1","am-mc004-t2","am-mc004-t3","am-mc004-t4"],
     activityLog: [
-      makeActivity("proj-am-mc004","Project Created",   "Onboarding project activated from AM wizard.",  "Alex R.",  "2025-05-01T08:00:00Z"),
+      makeActivity("proj-am-mc004","Project Created",   "Project activated from AM wizard. Services: SEO / GBP, Website Build.", "Alex R.",  "2025-05-01T08:00:00Z"),
       makeActivity("proj-am-mc004","Blueprint Applied", "SEO + GBP and Website Build blueprints applied.","System",  "2025-05-01T08:01:00Z"),
-      makeActivity("proj-am-mc004","Task Completed",    "Kickoff calls completed for all services.",     "Alex R.",  "2025-05-08T17:00:00Z"),
+      makeActivity("proj-am-mc004","Task Completed",    "Onboarding and kickoff calls completed.",         "Alex R.",  "2025-05-08T17:00:00Z"),
     ],
     notes: "Blue Ridge Plumbing — website build in wireframe phase. SEO setup pending completion of build.",
     createdAt: "2025-05-01T08:00:00Z",
     updatedAt: "2025-05-28T10:00:00Z",
   },
 
-  // ---------- proj-am-mc011: Ridgeline Construction LLC — migrated from AM store ----------
+  // ---------- proj-am-mc011: Ridgeline Construction LLC — SEO / GBP ----------
   {
     id: "proj-am-mc011",
-    name: "Ridgeline Construction LLC — Onboarding Project",
+    name: "Ridgeline Construction LLC — SEO / GBP",
     client: "Ridgeline Construction LLC",
     clientSlug: "ridgeline-construction",
     clientId: "mc011",
     servicePackage: "Custom",
-    contractSummary: "SEO / GBP onboarding. Signed 2025-05-15.",
+    contractSummary: "SEO / GBP. Signed 2025-05-15.",
     owner: "Alex R.",
     accountManager: "Alex R.",
     departments: [
-      { department: "Account Management", owner: "Alex R.", taskIds: ["am-mc011-t1","am-mc011-t2"], escalationStatus: "Escalated", delayReason: "Awaiting client credentials" },
-      { department: "SEO",                owner: "Alex R.", taskIds: ["am-mc011-t3"],               escalationStatus: "Escalated", delayReason: "Blocked on access" },
+      { department: "Account Management", owner: "Alex R.", taskIds: ["am-mc011-t0","am-mc011-t1","am-mc011-t2"], escalationStatus: "Escalated", delayReason: "Awaiting client credentials" },
+      { department: "SEO",                owner: "Alex R.", taskIds: ["am-mc011-t3"],                              escalationStatus: "Escalated", delayReason: "Blocked on access" },
     ],
     launchDate: "2025-06-30",
     status: "Pending Client",
     health: "Yellow",
     priority: "High",
     milestoneIds: ["ms-am-mc011-1"],
-    taskIds: ["am-mc011-t1","am-mc011-t2","am-mc011-t3"],
+    taskIds: ["am-mc011-t0","am-mc011-t1","am-mc011-t2","am-mc011-t3"],
     activityLog: [
-      makeActivity("proj-am-mc011","Project Created",  "Onboarding project activated from AM wizard.",    "Alex R.", "2025-05-15T08:00:00Z"),
-      makeActivity("proj-am-mc011","Blueprint Applied","SEO / GBP blueprint applied — 3 tasks generated.","System",  "2025-05-15T08:01:00Z"),
-      makeActivity("proj-am-mc011","Task Completed",   "Kickoff call completed.",                         "Alex R.", "2025-05-20T17:00:00Z"),
-      makeActivity("proj-am-mc011","Blocker Added",    "Client has not provided GBP or Search Console access.", "Alex R.", "2025-05-27T09:00:00Z"),
+      makeActivity("proj-am-mc011","Project Created",  "Project activated from AM wizard. Services: SEO / GBP.", "Alex R.", "2025-05-15T08:00:00Z"),
+      makeActivity("proj-am-mc011","Blueprint Applied","SEO / GBP blueprint applied — tasks generated.",         "System",  "2025-05-15T08:01:00Z"),
+      makeActivity("proj-am-mc011","Task Completed",   "Kickoff call completed.",                                 "Alex R.", "2025-05-20T17:00:00Z"),
+      makeActivity("proj-am-mc011","Blocker Added",    "Client has not provided GBP or Search Console access.",   "Alex R.", "2025-05-27T09:00:00Z"),
     ],
     notes: "Awaiting GBP admin access and Search Console credentials from client.",
     createdAt: "2025-05-15T08:00:00Z",

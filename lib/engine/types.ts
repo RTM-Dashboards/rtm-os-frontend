@@ -235,6 +235,14 @@ export interface Task {
   files: string[];
   automationHistory: TaskAutomationEvent[];
 
+  /**
+   * When set, this task is the Onboarding task for a project.
+   * The value is the AMOnboardingRecord.id from am-onboarding-store.
+   * Opening this task routes to /account-management/onboarding/{linkedOnboardingId}.
+   * Task status is auto-synced from the linked record's completion state.
+   */
+  linkedOnboardingId?: string;
+
   // Audit
   createdAt: string;
   updatedAt: string;

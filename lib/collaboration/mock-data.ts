@@ -939,7 +939,7 @@ export const COLLABORATION_DATA: TaskCollaboration[] = [
     taskName: "Technical SEO Audit",
     // Real engine project: Ridgeline Construction LLC (mc011) — SEO / GBP onboarding, blocked on access
     projectId: "proj-am-mc011",
-    projectName: "Ridgeline Construction LLC — Onboarding Project",
+    projectName: "Ridgeline Construction LLC — SEO / GBP",
     // Engine task link: am-mc011-t2 (Set up access & tracking — SEO / GBP, Blocked)
     engineTaskId: "am-mc011-t2" as string,
     comments: comments_t1,
@@ -959,7 +959,7 @@ export const COLLABORATION_DATA: TaskCollaboration[] = [
     taskName: "Landing Page Development",
     // Real engine project: Blue Ridge Plumbing Co. (mc004) — website build in progress
     projectId: "proj-am-mc004",
-    projectName: "Blue Ridge Plumbing Co. — Onboarding Project",
+    projectName: "Blue Ridge Plumbing Co. — SEO / GBP / Website Build",
     // Engine task link: am-mc004-t4 (Deliver wireframe/mockup — Website Build, In Progress)
     engineTaskId: "am-mc004-t4" as string,
     comments: comments_t2,
