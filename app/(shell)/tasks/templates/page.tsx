@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
+import { BLUEPRINTS } from "@/lib/engine/mock-data";
 
 // 
 // Task Blueprints (formerly Task Template Library)
@@ -70,9 +71,94 @@ interface TaskTemplate {
   lineItemSLA: LineItemSLARef;
 }
 
-//  Mock Data 
+// ---------------------------------------------------------------------------
+// Engine adapter — derive TaskTemplate entries from engine BLUEPRINTS.
+// The page's inline TASK_TEMPLATES are kept for extended display fields
+// (monthly counts, SLA details) that go beyond the engine schema.
+// Engine blueprints are merged first so they are always the authoritative source.
+// ---------------------------------------------------------------------------
 
-const TASK_TEMPLATES: TaskTemplate[] = [
+function blueprintToTemplate(bp: import("@/lib/engine/types").TaskBlueprint): TaskTemplate {
+  // Map engine dept → page-local Department
+  const deptMap: Record<string, Department> = {
+    "SEO": "SEO",
+    "GBP": "GBP",
+    "PPC": "Paid Advertising",
+    "Meta Ads": "Meta Ads",
+    "Reporting": "Reporting",
+    "Web Development": "Web Development",
+    "Design": "Creative",
+    "Account Management": "Account Management",
+  };
+  const dept: Department = (deptMap[bp.department] as Department) ?? "Account Management";
+
+  // Infer TemplateType from blueprint name
+  let type: TemplateType = "Setup";
+  const lname = bp.name.toLowerCase();
+  if (lname.includes("onboard")) type = "Onboarding";
+  else if (lname.includes("launch")) type = "Launch";
+  else if (lname.includes("monthly")) type = "Monthly Management";
+  else if (lname.includes("build") || lname.includes("website")) type = "Setup";
+
+  // Infer ActivationTrigger
+  let trigger: ActivationTrigger = "Invoice Paid";
+  const at = bp.activationTrigger.toLowerCase();
+  if (at.includes("contract") || at.includes("signed")) trigger = "Contract Signed";
+  else if (at.includes("client") && at.includes("activat")) trigger = "Client Activated";
+
+  const tasks: TemplateTask[] = bp.tasks.map((bpt) => ({
+    name: bpt.name,
+    department: (deptMap[bpt.department] as Department) ?? dept,
+    ownerRole: bpt.ownerRole,
+    targetCompletionDays: bpt.dueDaysOffset,
+    priority: bpt.priority === "Urgent" ? "High" : (bpt.priority as TaskPriority),
+    dependency: bpt.dependsOnId ?? "None",
+    dueOffset: `Day ${bpt.dueDaysOffset}`,
+    status: "Required" as DependencyStatus,
+  }));
+
+  const defaultSLA: LineItemSLARef = {
+    firstResponseSLA: "1 business day",
+    targetCompletionDays: bp.estimatedTotalHours,
+    dueDateOffset: 0,
+    escalationAfterDays: 7,
+    clientUpdateFrequency: "Weekly",
+    slaPriority: "Standard",
+    slaStatus: "Active",
+  };
+
+  return {
+    id: bp.id,
+    name: bp.name,
+    department: dept,
+    type,
+    mappedLineItem: bp.mappedLineItem,
+    taskCount: bp.tasks.length,
+    targetCompletionDays: bp.estimatedTotalHours,
+    firstResponseSLA: "1 Business Day",
+    activationTrigger: trigger,
+    status: bp.isActive ? "Active" : "Inactive",
+    lastUpdated: bp.lastUpdated,
+    activationReady: bp.isActive,
+    tasks,
+    description: bp.description,
+    dependencies: [],
+    monthlyTaskCount: bp.tasks.length,
+    quarterlyTaskCount: bp.tasks.length * 3,
+    marginContribution: "High",
+    lineItemSLA: defaultSLA,
+  };
+}
+
+/** Engine blueprint IDs already represented in the page's inline data */
+const ENGINE_BP_IDS = new Set(BLUEPRINTS.map((b) => b.id));
+
+/** Converts all engine blueprints to TaskTemplate shape for this page */
+const ENGINE_DERIVED_TEMPLATES: TaskTemplate[] = BLUEPRINTS.map(blueprintToTemplate);
+
+//  Mock Data (inline templates for extended service coverage beyond engine blueprints)
+
+const INLINE_TASK_TEMPLATES: TaskTemplate[] = [
   {
     id: "tt-001",
     name: "SEO Setup Template",
@@ -637,6 +723,16 @@ const TASK_TEMPLATES: TaskTemplate[] = [
       { name: "Roadmap Update", department: "Account Management", ownerRole: "Account Manager", targetCompletionDays: 1, priority: "Medium", dependency: "Follow-Up Action Plan", dueOffset: "Day 10", status: "Optional"},
     ],
   },
+];
+
+/**
+ * TASK_TEMPLATES — single merged source.
+ * Engine blueprints (authoritative) come first; inline entries that
+ * duplicate an engine blueprint ID are filtered out.
+ */
+const TASK_TEMPLATES: TaskTemplate[] = [
+  ...ENGINE_DERIVED_TEMPLATES,
+  ...INLINE_TASK_TEMPLATES.filter((t) => !ENGINE_BP_IDS.has(t.id)),
 ];
 
 //  Design helpers 

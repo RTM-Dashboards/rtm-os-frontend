@@ -33,6 +33,7 @@ interface ActivationChecklist {
   onboardingRecordCreated: boolean;
   activationTasksCreated: boolean;
   kickoffNeeded: boolean;
+  kickoffCallCompleted: boolean;
 }
 
 interface RecentEvent {
@@ -95,7 +96,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-28",
     invoiceStatus: "Paid",
     nextRequiredAction: "Send June performance report",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-28", actor: "Jordan M.", action: "Sent May performance report"},
       { date: "2025-05-22", actor: "System", action: "Invoice #1042 processed – $5,350"},
@@ -124,7 +125,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-27",
     invoiceStatus: "Overdue 30d",
     nextRequiredAction: "Escalate billing — personal outreach required",
-    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-27", actor: "Sarah K.", action: "Flagged as at-risk — invoice 30+ days overdue"},
       { date: "2025-05-10", actor: "Sarah K.", action: "Called Linda — no answer. Left voicemail."},
@@ -155,7 +156,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-29",
     invoiceStatus: "Paid",
     nextRequiredAction: "Send renewal proposal — due in 16 days",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-29", actor: "System", action: "Monthly report sent to Dr. Yee"},
       { date: "2025-05-15", actor: "Jordan M.", action: "Discussed second location expansion — Q4 2025 target"},
@@ -186,7 +187,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-28",
     invoiceStatus: "Paid",
     nextRequiredAction: "Complete website wireframes and department activation",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: false, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: false, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-28", actor: "Casey L.", action: "Started website wireframe design"},
       { date: "2025-05-08", actor: "Alex R.", action: "Onboarding kickoff call — all access received"},
@@ -213,7 +214,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-26",
     invoiceStatus: "Pending",
     nextRequiredAction: "Resolve content quality dispute — escalate to director",
-    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-26", actor: "Sarah K.", action: "Escalation raised — content quality complaint from Frank"},
       { date: "2025-05-15", actor: "Mike T.", action: "Launched Summer Sale Meta campaign — $8k budget"},
@@ -240,7 +241,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-30",
     invoiceStatus: "Not Issued",
     nextRequiredAction: "Send initial proposal",
-    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: false, servicesConfirmed: false, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
+    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: false, servicesConfirmed: false, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-30", actor: "Mike T.", action: "Discovery call completed — strong fit for SEO + Google Ads"},
     ],
@@ -266,7 +267,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-25",
     invoiceStatus: "Not Issued",
     nextRequiredAction: "Follow up on proposal — 5 days no response",
-    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: false, servicesConfirmed: false, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
+    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: false, servicesConfirmed: false, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-25", actor: "Sarah K.", action: "Sent $4,200/mo proposal — SEO + PPC + Content"},
       { date: "2025-05-20", actor: "Mike T.", action: "Second discovery call completed"},
@@ -293,7 +294,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-29",
     invoiceStatus: "Sent — Awaiting Payment",
     nextRequiredAction: "Wait for invoice payment to trigger onboarding",
-    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
+    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-29", actor: "System", action: "Invoice #1110 sent — $2,800/mo SEO + GBP + Content"},
       { date: "2025-05-26", actor: "Mike T.", action: "Contract signed — services confirmed"},
@@ -320,7 +321,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-31",
     invoiceStatus: "Paid",
     nextRequiredAction: "Assign Account Manager immediately",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-31", actor: "System", action: "Invoice #1115 confirmed paid — $3,200"},
       { date: "2025-05-28", actor: "Mike T.", action: "Deal closed — Meta Ads + SEO + Content package"},
@@ -347,7 +348,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-31",
     invoiceStatus: "Paid",
     nextRequiredAction: "Schedule onboarding kickoff call",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-31", actor: "Sarah K.", action: "Onboarding record queued — kickoff call to be scheduled"},
       { date: "2025-05-30", actor: "System", action: "Billing cleared — ready to activate"},
@@ -374,7 +375,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-27",
     invoiceStatus: "Paid",
     nextRequiredAction: "Complete onboarding tasks — access credentials pending",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: false, kickoffNeeded: true },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: false, kickoffNeeded: true, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-27", actor: "Alex R.", action: "Waiting on client to share GBP access credentials"},
       { date: "2025-05-20", actor: "Alex R.", action: "Onboarding record created — tasks assigned to SEO team"},
@@ -401,7 +402,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-30",
     invoiceStatus: "Paid",
     nextRequiredAction: "Quarterly business review — schedule for June",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-30", actor: "Jordan M.", action: "May report delivered — all KPIs green"},
       { date: "2025-05-01", actor: "System", action: "Invoice #2088 processed — $7,200"},
@@ -428,7 +429,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-29",
     invoiceStatus: "Pending",
     nextRequiredAction: "Retention call — director must be on the line",
-    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-29", actor: "Craig W.", action: "Submitted cancellation request via portal"},
       { date: "2025-05-28", actor: "Sarah K.", action: "Escalated to director — retention required"},
@@ -455,7 +456,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-26",
     invoiceStatus: "Final invoice issued",
     nextRequiredAction: "Complete data export and access revocation",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-26", actor: "Alex R.", action: "Initiated offboarding — data export in progress"},
       { date: "2025-05-20", actor: "System", action: "Final invoice #988 issued and paid"},
@@ -482,7 +483,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-28",
     invoiceStatus: "Paid",
     nextRequiredAction: "Deliver June SEO performance report",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-28", actor: "Lisa P.", action: "Google Ads optimized — CPC reduced 18%"},
       { date: "2025-05-01", actor: "System", action: "Invoice #1890 processed — $3,600"},
@@ -509,7 +510,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-24",
     invoiceStatus: "Overdue 15d",
     nextRequiredAction: "Send second billing notice — flag for collections if no response",
-    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-24", actor: "System", action: "Second billing reminder sent — no response"},
       { date: "2025-05-10", actor: "Sarah K.", action: "Left voicemail for billing contact"},
@@ -536,7 +537,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-27",
     invoiceStatus: "Paid",
     nextRequiredAction: "No immediate action needed",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-27", actor: "Alex R.", action: "May deliverables completed — client confirmed satisfaction"},
       { date: "2025-05-01", actor: "System", action: "Invoice #1777 processed — $2,100"},
@@ -563,7 +564,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-29",
     invoiceStatus: "Paid",
     nextRequiredAction: "Send renewal agreement — 30 days out",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-29", actor: "Jordan M.", action: "Renewal conversation started — client open to expansion"},
       { date: "2025-05-01", actor: "System", action: "Invoice #2222 processed — $5,800"},
@@ -590,7 +591,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-26",
     invoiceStatus: "Paid",
     nextRequiredAction: "Deliver June content calendar",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-26", actor: "Sarah K.", action: "Email campaign Q2 wrap-up — 42% open rate"},
       { date: "2025-05-01", actor: "System", action: "Invoice #2011 processed — $3,300"},
@@ -617,7 +618,7 @@ const PORTFOLIO_CLIENTS: MasterClient[] = [
     lastActivity: "2025-05-28",
     invoiceStatus: "Paid",
     nextRequiredAction: "Present Q2 results deck",
-    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false },
+    activationChecklist: { invoicePaid: true, billingCleared: true, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: true, onboardingRecordCreated: true, activationTasksCreated: true, kickoffNeeded: false, kickoffCallCompleted: false },
     recentEvents: [
       { date: "2025-05-28", actor: "Alex R.", action: "LinkedIn Ads showing 3.2x ROAS — reporting in progress"},
       { date: "2025-05-01", actor: "System", action: "Invoice #1955 processed — $4,400"},

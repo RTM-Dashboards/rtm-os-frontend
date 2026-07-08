@@ -245,6 +245,8 @@ export interface TaskCollaboration {
   taskName: string;
   projectId: string;
   projectName: string;
+  /** Real engine task ID — links collab data to a live engine Task record */
+  engineTaskId?: string;
   comments: TaskComment[];
   internalNotes: InternalNote[];
   clientNotes: ClientNote[];

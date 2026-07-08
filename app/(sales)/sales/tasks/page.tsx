@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { salesTasks, pendingSalesTasks } from "@/lib/mock/workspace-tasks";
+import { getWorkspaceTasksByDepartment } from "@/lib/engine";
+import { pendingSalesTasks } from "@/lib/engine/pending-sales-tasks";
 import type { WorkspaceTask, WorkspaceTaskStatus, WorkspaceTaskPriority } from "@/components/workspace/WorkspaceTaskPage";
 import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
 import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
@@ -99,7 +100,7 @@ export default function SalesTasksPage() {
       blocker: "Overdue — SLA deadline passed",
     },
   ];
-  const [tasks, setTasks] = useState<WorkspaceTask[]>([...salesTasks, ...AUDIT_REVIEW_TASKS, ...pendingSalesTasks]);
+  const [tasks, setTasks] = useState<WorkspaceTask[]>(() => [...getWorkspaceTasksByDepartment("Sales"), ...AUDIT_REVIEW_TASKS, ...pendingSalesTasks]);
 
   // Drain any cross-department tasks that were pushed into pendingSalesTasks
   // after this component first mounted (e.g. from Billing Invoices page).
@@ -224,7 +225,7 @@ export default function SalesTasksPage() {
             Customize View
           </button>
           {CAN_SEE_GLOBAL && (
-            <a href="/tasks"
+            <a href="/projects/tasks"
               className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
               style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>
               Open Global Tasks

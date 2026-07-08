@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { RoleToggle } from "@/components/am-role-toggle";
+import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
 import {
   ALL_CLIENTS,
   ALL_TASKS,
@@ -164,6 +166,54 @@ function PipelineStat({ label, value, color }: { label: string; value: string | 
 
 //  HEAD VIEW 
 
+// ─── Cleared-Client Queue summary card ─────────────────────────────────────
+// Reads from MASTER_CLIENTS directly — does NOT touch role-data.ts.
+function ClearedClientSummaryCard() {
+  const clearedClients = MASTER_CLIENTS.filter((c) => c.cleared);
+  const needsAssignment = clearedClients.filter(
+    (c) => c.activationStatus === "AM Assignment Needed"
+  ).length;
+  const readyForOnboarding = clearedClients.filter(
+    (c) => c.activationStatus === "Ready for Onboarding"
+  ).length;
+  const awaitingAction = needsAssignment + readyForOnboarding;
+
+  return (
+    <div
+      className="rounded-xl border px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4"
+      style={{
+        background: awaitingAction > 0 ? "#EFF6FF" : "var(--rtm-surface)",
+        borderColor: awaitingAction > 0 ? "#BFDBFE" : "var(--rtm-border)",
+      }}
+    >
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-0.5">
+          Onboarding Queue
+        </p>
+        <p className="text-base font-semibold text-slate-900">
+          {clearedClients.length} clients cleared by Billing
+          {awaitingAction > 0 && (
+            <span className="ml-2 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+              {awaitingAction} awaiting AM action
+            </span>
+          )}
+        </p>
+        <p className="text-sm text-slate-500 mt-0.5">
+          {needsAssignment > 0 && `${needsAssignment} need AM assignment · `}
+          {readyForOnboarding > 0 && `${readyForOnboarding} ready for onboarding · `}
+          Billing handoff complete — AM workflow starts here.
+        </p>
+      </div>
+      <Link
+        href="/account-management/onboarding"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors whitespace-nowrap flex-shrink-0"
+      >
+        View Onboarding Queue →
+      </Link>
+    </div>
+  );
+}
+
 function HeadView() {
   const workload = getWorkloadSummary();
 
@@ -241,6 +291,9 @@ function HeadView() {
 
   return (
     <div className="space-y-6">
+
+      {/*  Cleared-Client Queue summary card  */}
+      <ClearedClientSummaryCard />
 
       {/*  1. Portfolio KPI Summary  */}
       <section>

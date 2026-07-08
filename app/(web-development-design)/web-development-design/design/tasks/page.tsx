@@ -1,7 +1,7 @@
 "use client";
 
 import WorkspaceTaskPage from "@/components/workspace/WorkspaceTaskPage";
-import { designTasks } from "@/lib/mock/workspace-tasks";
+import { getWorkspaceTasksByDepartment } from "@/lib/engine";
 import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("web-development-design")!;
@@ -9,7 +9,8 @@ const workspace = getWorkspace("web-development-design")!;
 export default function DesignTasksPage() {
   return (
     <WorkspaceTaskPage
-      workspaceName="Design"tasks={designTasks}
+      workspaceName="Design"
+      tasks={getWorkspaceTasksByDepartment("Design")}
       accentColor={workspace.accentColor}
     />
   );

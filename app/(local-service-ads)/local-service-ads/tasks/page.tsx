@@ -1,7 +1,7 @@
 "use client";
 
 import WorkspaceTaskPage from "@/components/workspace/WorkspaceTaskPage";
-import { localServiceAdsTasks } from "@/lib/mock/workspace-tasks";
+import { getWorkspaceTasksByDepartment } from "@/lib/engine";
 import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("local-service-ads")!;
@@ -10,7 +10,7 @@ export default function LsaTasksPage() {
   return (
     <WorkspaceTaskPage
       workspaceName={workspace.name}
-      tasks={localServiceAdsTasks}
+      tasks={getWorkspaceTasksByDepartment("LSA")}
       accentColor={workspace.accentColor}
     />
   );

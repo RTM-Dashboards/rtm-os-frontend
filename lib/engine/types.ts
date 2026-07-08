@@ -283,6 +283,8 @@ export interface Project {
   // Client & contract
   client: string;
   clientSlug: string;
+  /** References MASTER_CLIENTS[].id — undefined when no MC record exists */
+  clientId?: string;
   servicePackage: ServicePackage;
   contractSummary: string;
 
@@ -310,6 +312,12 @@ export interface Project {
   activityLog: ActivityEntry[];
 
   notes?: string;
+  /**
+   * Communication log entry IDs from lib/account-management/am-client-success-data.ts
+   * that are associated with this project.
+   * Use getCommunicationsByProject(project.id) for the full records.
+   */
+  communicationLog?: string[];
   createdAt: string;
   updatedAt: string;
 }

@@ -14,7 +14,9 @@ import type {
   ProjectStatus,
   TaskStatus,
   ProjectHealth,
+  TaskSource,
 } from "./types";
+import type { WorkspaceTask } from "@/components/workspace/WorkspaceTaskPage";
 
 export { ENGINE_STORE };
 export * from "./types";
@@ -114,6 +116,113 @@ export function getUsers(): AssignedUser[] {
 }
 
 // ---------------------------------------------------------------------------
+// Engine → WorkspaceTask adapter
+// ---------------------------------------------------------------------------
+
+/**
+ * Maps an engine Task source to a WorkspaceTaskSource.
+ * WorkspaceTaskPage accepts only: "Task Blueprint" | "Workflow Automation" | "Manual Task"
+ */
+function mapSource(s: TaskSource): WorkspaceTask["source"] {
+  if (s === "Task Blueprint") return "Task Blueprint";
+  if (s === "Workflow Automation") return "Workflow Automation";
+  return "Manual Task";
+}
+
+/**
+ * Maps an engine TaskStatus to a WorkspaceTaskStatus.
+ * WorkspaceTaskPage accepts: "Pending" | "In Progress" | "In Review" | "Blocked" | "Done"
+ */
+function mapStatus(s: TaskStatus): WorkspaceTask["status"] {
+  switch (s) {
+    case "Open":      return "Pending";
+    case "In Progress": return "In Progress";
+    case "Waiting":   return "Pending";
+    case "Review":    return "In Review";
+    case "Blocked":   return "Blocked";
+    case "Completed": return "Done";
+    case "Cancelled": return "Done";
+    default:          return "Pending";
+  }
+}
+
+/**
+ * Maps an engine TaskPriority to a WorkspaceTaskPriority.
+ * WorkspaceTaskPage accepts: "Low" | "Medium" | "High" | "Critical"
+ * Engine uses "Urgent" instead of "Critical".
+ */
+function mapPriority(p: Task["priority"]): WorkspaceTask["priority"] {
+  if (p === "Urgent") return "Critical";
+  return p as WorkspaceTask["priority"];
+}
+
+/**
+ * Converts a single engine Task to a WorkspaceTask for display in workspace pages.
+ */
+export function taskToWorkspaceTask(t: Task): WorkspaceTask {
+  return {
+    id: t.id,
+    title: t.title,
+    client: t.clientName,
+    project: t.projectName,
+    department: t.department,
+    service: t.service,
+    source: mapSource(t.source),
+    blueprintSource: t.blueprintId,
+    assignee: t.assignedUserName ?? "Unassigned",
+    priority: mapPriority(t.priority),
+    status: mapStatus(t.status),
+    dueDate: t.dueDate,
+    blocker: t.status === "Blocked" ? (t.notes?.[0]?.body ?? "Blocked") : null,
+  };
+}
+
+/**
+ * Returns engine tasks for a department, adapted to WorkspaceTask shape.
+ * This is the primary data source for all workspace Tasks pages.
+ */
+export function getWorkspaceTasksByDepartment(department: DepartmentName): WorkspaceTask[] {
+  return getTasksByDepartment(department).map(taskToWorkspaceTask);
+}
+
+// ---------------------------------------------------------------------------
+// Client-scoped queries (Phase 2 — MASTER_CLIENTS integration)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns all projects associated with a given MASTER_CLIENTS id.
+ * Matches on the optional clientId field.
+ */
+export function getProjectsByClient(clientId: string): Project[] {
+  return ENGINE_STORE.projects.filter((p) => p.clientId === clientId);
+}
+
+/**
+ * Returns all tasks for a given MASTER_CLIENTS id, via clientId on their parent project.
+ */
+export function getTasksByClient(clientId: string): Task[] {
+  const projectIds = new Set(getProjectsByClient(clientId).map((p) => p.id));
+  return ENGINE_STORE.tasks.filter((t) => projectIds.has(t.projectId));
+}
+
+/**
+ * Returns all tasks for a client matched by client name (case-insensitive).
+ * Useful when clientId is not yet set on a project.
+ */
+export function getTasksByClientName(clientName: string): Task[] {
+  const lower = clientName.toLowerCase();
+  return ENGINE_STORE.tasks.filter((t) => t.clientName.toLowerCase() === lower);
+}
+
+/**
+ * Returns all projects matched by client name (case-insensitive).
+ */
+export function getProjectsByClientName(clientName: string): Project[] {
+  const lower = clientName.toLowerCase();
+  return ENGINE_STORE.projects.filter((p) => p.client.toLowerCase() === lower);
+}
+
+// ---------------------------------------------------------------------------
 // KPI helpers
 // ---------------------------------------------------------------------------
 
@@ -169,4 +278,17 @@ export function getBlockingTasks(task: Task): Task[] {
 export function isTaskUnblocked(task: Task): boolean {
   const blockers = getBlockingTasks(task);
   return blockers.every((t) => t.status === "Completed");
+}
+
+// ---------------------------------------------------------------------------
+// Communication log helpers (cross-references lib/account-management)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns communication entry IDs associated with a project's client.
+ * Requires lib/account-management/am-client-success-data to be imported at call site.
+ * Engine projects store an optional communicationLog[] of cm-ids on the Project object.
+ */
+export function getCommunicationIdsForProject(project: Project): string[] {
+  return project.communicationLog ?? [];
 }

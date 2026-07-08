@@ -165,19 +165,26 @@ export interface CommunicationEntry {
   actionItems: string[];
   sentiment: SentimentType;
   openConcerns: string[];
+  /** MASTER_CLIENTS id — set when this communication maps to a real engine client */
+  clientId?: string;
+  /** Engine Project id — set when this communication is associated with a specific project */
+  engineProjectId?: string;
 }
 
 export const COMMUNICATIONS: CommunicationEntry[] = [
-  { id: "cm01", client: "Apex Roofing", accountManager: "Sarah Chen", type: "Call Summary", date: "2025-06-02", subject: "Monthly Strategy Call", summary: "Client happy with lead volume. Discussed storm season opportunity for LSA expansion. Agreed to send upsell proposal.", followUpRequired: true, followUpDate: "2025-06-09", actionItems: ["Send LSA upsell proposal", "Prepare storm season ad creative brief"], sentiment: "Positive", openConcerns: [] },
-  { id: "cm02", client: "Harbor Auto", accountManager: "Sarah Chen", type: "Call Summary", date: "2025-05-15", subject: "Performance Review Call", summary: "Client expressed frustration with lead volume decline. Payment still overdue. Promised to follow up on both payment and a strategy update.", followUpRequired: true, followUpDate: "2025-06-10", actionItems: ["Send payment reminder", "Prepare lead quality analysis", "Escalate to billing"], sentiment: "Negative", openConcerns: ["Overdue payment $3,200", "Lead volume down 28% MoM"] },
-  { id: "cm03", client: "Lakeview Dental", accountManager: "Sarah Chen", type: "Email", date: "2025-05-28", subject: "Renewal Discussion", summary: "Emailed client about upcoming renewal. No response yet. Renewal is June 30. Payment also overdue.", followUpRequired: true, followUpDate: "2025-06-10", actionItems: ["Follow up via phone", "Prepare renewal brief", "Escalate to manager if no response by Jun 12"], sentiment: "Neutral", openConcerns: ["No response to renewal email", "Payment 45 days overdue"] },
-  { id: "cm04", client: "Pinnacle HVAC", accountManager: "James Park", type: "Meeting Notes", date: "2025-06-01", subject: "Q2 Renewal Planning Meeting", summary: "Very productive meeting. Client wants to expand GBP + LSA for summer. Strong interest in new analytics reporting.", followUpRequired: true, followUpDate: "2025-06-15", actionItems: ["Send expanded GBP/LSA proposal", "Schedule analytics report demo"], sentiment: "Positive", openConcerns: [] },
-  { id: "cm05", client: "NorthStar Dental", accountManager: "Tina Webb", type: "Client Notes", date: "2025-06-03", subject: "Post-Campaign Check-in", summary: "Client very happy with new patient acquisition from PPC. Asked about expanding to additional locations.", followUpRequired: true, followUpDate: "2025-06-20", actionItems: ["Prepare multi-location expansion brief"], sentiment: "Positive", openConcerns: [] },
-  { id: "cm06", client: "Metro Electrical", accountManager: "James Park", type: "Follow-Up", date: "2025-06-04", subject: "Onboarding Asset Request Follow-Up", summary: "Third follow-up attempt for missing LSA docs. Client says they are working on it.", followUpRequired: true, followUpDate: "2025-06-11", actionItems: ["Final follow-up before escalation"], sentiment: "Neutral", openConcerns: ["LSA verification docs missing for 3 weeks"] },
+  { id: "cm01", clientId: "pc01", client: "Apex Roofing", accountManager: "Sarah Chen", type: "Call Summary", date: "2025-06-02", subject: "Monthly Strategy Call", summary: "Client happy with lead volume. Discussed storm season opportunity for LSA expansion. Agreed to send upsell proposal.", followUpRequired: true, followUpDate: "2025-06-09", actionItems: ["Send LSA upsell proposal", "Prepare storm season ad creative brief"], sentiment: "Positive", openConcerns: [] },
+  { id: "cm02", clientId: "pc02", client: "Harbor Auto", accountManager: "Sarah Chen", type: "Call Summary", date: "2025-05-15", subject: "Performance Review Call", summary: "Client expressed frustration with lead volume decline. Payment still overdue. Promised to follow up on both payment and a strategy update.", followUpRequired: true, followUpDate: "2025-06-10", actionItems: ["Send payment reminder", "Prepare lead quality analysis", "Escalate to billing"], sentiment: "Negative", openConcerns: ["Overdue payment $3,200", "Lead volume down 28% MoM"] },
+  { id: "cm03", clientId: "pc03", client: "Lakeview Dental", accountManager: "Sarah Chen", type: "Email", date: "2025-05-28", subject: "Renewal Discussion", summary: "Emailed client about upcoming renewal. No response yet. Renewal is June 30. Payment also overdue.", followUpRequired: true, followUpDate: "2025-06-10", actionItems: ["Follow up via phone", "Prepare renewal brief", "Escalate to manager if no response by Jun 12"], sentiment: "Neutral", openConcerns: ["No response to renewal email", "Payment 45 days overdue"] },
+  { id: "cm04", clientId: "pc06", client: "Pinnacle HVAC", accountManager: "James Park", type: "Meeting Notes", date: "2025-06-01", subject: "Q2 Renewal Planning Meeting", summary: "Very productive meeting. Client wants to expand GBP + LSA for summer. Strong interest in new analytics reporting.", followUpRequired: true, followUpDate: "2025-06-15", actionItems: ["Send expanded GBP/LSA proposal", "Schedule analytics report demo"], sentiment: "Positive", openConcerns: [] },
+  { id: "cm05", clientId: "pc08", client: "NorthStar Dental", accountManager: "Tina Webb", type: "Client Notes", date: "2025-06-03", subject: "Post-Campaign Check-in", summary: "Client very happy with new patient acquisition from PPC. Asked about expanding to additional locations.", followUpRequired: true, followUpDate: "2025-06-20", actionItems: ["Prepare multi-location expansion brief"], sentiment: "Positive", openConcerns: [] },
+  { id: "cm06", clientId: "pc05", client: "Metro Electrical", accountManager: "James Park", type: "Follow-Up", date: "2025-06-04", subject: "Onboarding Asset Request Follow-Up", summary: "Third follow-up attempt for missing LSA docs. Client says they are working on it.", followUpRequired: true, followUpDate: "2025-06-11", actionItems: ["Final follow-up before escalation"], sentiment: "Neutral", openConcerns: ["LSA verification docs missing for 3 weeks"] },
   { id: "cm07", client: "Harbor View Realty", accountManager: "James Park", type: "Email", date: "2025-05-30", subject: "CRM Integration Issue", summary: "Client unhappy with lead tracking. CRM API key still not provided. Escalated to manager.", followUpRequired: true, followUpDate: "2025-06-10", actionItems: ["Escalate CRM API issue", "Send interim manual tracking report"], sentiment: "Negative", openConcerns: ["CRM API key not provided", "Lead tracking broken", "Client threatening review reduction"] },
-  { id: "cm08", client: "CloudPath Tech", accountManager: "Maria Santos", type: "Meeting Notes", date: "2025-06-03", subject: "Q2 Strategy & LinkedIn Ads Review", summary: "Excellent meeting. Client approved Q2 expansion into LinkedIn Ads. Budget increased to $12K/mo.", followUpRequired: false, actionItems: ["Set up LinkedIn Ads account", "Send updated contract addendum"], sentiment: "Positive", openConcerns: [] },
+  { id: "cm08", clientId: "pc13", client: "CloudPath Tech", accountManager: "Maria Santos", type: "Meeting Notes", date: "2025-06-03", subject: "Q2 Strategy & LinkedIn Ads Review", summary: "Excellent meeting. Client approved Q2 expansion into LinkedIn Ads. Budget increased to $12K/mo.", followUpRequired: false, actionItems: ["Set up LinkedIn Ads account", "Send updated contract addendum"], sentiment: "Positive", openConcerns: [] },
   { id: "cm09", client: "Radiance MedSpa", accountManager: "Tina Webb", type: "SMS", date: "2025-06-01", subject: "Quick Check-in", summary: "Text from client asking about summer Meta Ads promotion timeline. Confirmed launch by July 1.", followUpRequired: false, actionItems: [], sentiment: "Positive", openConcerns: [] },
   { id: "cm10", client: "Peak Performance HVAC", accountManager: "James Park", type: "Action Item", date: "2025-06-04", subject: "Overdue Report Escalation", summary: "Reports now 2 months overdue. AM is preparing reports. Client has not been contacted in 25 days.", followUpRequired: true, followUpDate: "2025-06-08", actionItems: ["Send June report immediately", "Book makeup call with client", "Escalate delayed reporting to team lead"], sentiment: "Negative", openConcerns: ["2 monthly reports overdue", "No client contact in 25 days"] },
+  // Engine-backed entries: linked to real MASTER_CLIENTS and engine Projects
+  { id: "cm11", clientId: "mc004", engineProjectId: "proj-am-mc004", client: "Blue Ridge Plumbing Co.", accountManager: "Alex R.", type: "Call Summary", date: "2025-05-08", subject: "Kickoff Call — SEO / GBP + Website Build", summary: "Completed onboarding kickoff. Confirmed service scope: SEO/GBP and Website Build. Access requests sent for GA4, GSC, and website CMS. Website wireframe review scheduled for late May.", followUpRequired: true, followUpDate: "2025-05-15", actionItems: ["Send access request links", "Schedule wireframe review", "Assign SEO specialist"], sentiment: "Positive", openConcerns: [] },
+  { id: "cm12", clientId: "mc011", engineProjectId: "proj-am-mc011", client: "Ridgeline Construction LLC", accountManager: "Alex R.", type: "Follow-Up", date: "2025-05-27", subject: "Access Credentials Follow-Up", summary: "Second follow-up for GBP admin access and Search Console credentials. Client says credentials are with their IT team. SEO work is blocked until access is granted.", followUpRequired: true, followUpDate: "2025-06-03", actionItems: ["Send credential request template", "Escalate if no response by June 3", "Document blocker in project record"], sentiment: "Neutral", openConcerns: ["GBP admin access not yet provided", "Search Console pending IT team handoff"] },
 ];
 
 // ── AI Communication Intelligence ────────────────────────────────────────────
@@ -358,3 +365,29 @@ export const DEPARTMENT_STATUS: DepartmentStatus[] = [
   { department: "LSA", openTasks: 5, blockedWork: 1, upcomingDeliverables: ["Pinnacle HVAC LSA go-live"], dependencies: ["Metro Electrical license verification"], escalations: 0 },
   { department: "SEO & Local", openTasks: 7, blockedWork: 1, upcomingDeliverables: ["Riverstone GBP update", "GreenLeaf local citations"], dependencies: [], escalations: 0 },
 ];
+
+// ── Communication helpers ─────────────────────────────────────────────────────
+
+/**
+ * Returns all communication entries associated with a given client.
+ * Matches on clientId (MASTER_CLIENTS or PORTFOLIO_CLIENTS id) or
+ * falls back to case-insensitive name match.
+ */
+export function getCommunicationsByClient(
+  clientIdOrName: string
+): CommunicationEntry[] {
+  return COMMUNICATIONS.filter(
+    (c) =>
+      c.clientId === clientIdOrName ||
+      c.client.toLowerCase() === clientIdOrName.toLowerCase()
+  );
+}
+
+/**
+ * Returns all communication entries linked to a specific engine project.
+ */
+export function getCommunicationsByProject(
+  engineProjectId: string
+): CommunicationEntry[] {
+  return COMMUNICATIONS.filter((c) => c.engineProjectId === engineProjectId);
+}

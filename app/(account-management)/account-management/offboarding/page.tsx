@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   OFFBOARDING_RECORDS,
+  pendingOffboardingRecords,
   getActiveOffboardings,
   getCompletedOffboardings,
   getPendingAssetTransfers,
@@ -414,10 +415,28 @@ function OffboardingDashboard() {
 function OffboardingTable({ onSelect }: { onSelect: (r: OffboardingRecord) => void }) {
   const [statusFilter, setStatusFilter] = useState<OffboardingStatus | "All">("All");
   const [search, setSearch] = useState("");
+  // Track pending records so the table re-renders when Billing pushes new ones.
+  const [pendingSnapshot, setPendingSnapshot] = useState<OffboardingRecord[]>([...pendingOffboardingRecords]);
+
+  // Drain any newly pushed records from Billing into local state (mount only).
+  useEffect(() => {
+    if (pendingOffboardingRecords.length === 0) return;
+    setPendingSnapshot(prev => {
+      const existingIds = new Set(prev.map(r => r.id));
+      const newOnes = pendingOffboardingRecords.filter(r => !existingIds.has(r.id));
+      return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const allRecords = useMemo(
+    () => [...OFFBOARDING_RECORDS, ...pendingSnapshot],
+    [pendingSnapshot]
+  );
 
   const filtered = useMemo(
     () =>
-      OFFBOARDING_RECORDS.filter((r) => {
+      allRecords.filter((r) => {
         if (statusFilter !== "All"&& r.offboardingStatus !== statusFilter) return false;
         if (
           search &&
@@ -427,7 +446,7 @@ function OffboardingTable({ onSelect }: { onSelect: (r: OffboardingRecord) => vo
           return false;
         return true;
       }),
-    [statusFilter, search]
+    [allRecords, statusFilter, search]
   );
 
   const ALL_STATUSES: OffboardingStatus[] = [
@@ -450,7 +469,7 @@ function OffboardingTable({ onSelect }: { onSelect: (r: OffboardingRecord) => vo
           <option value="All">All Statuses</option>
           {ALL_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
         </select>
-        <span className="ml-auto text-xs text-slate-400">{filtered.length} of {OFFBOARDING_RECORDS.length}</span>
+        <span className="ml-auto text-xs text-slate-400">{filtered.length} of {allRecords.length}</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -1286,6 +1305,20 @@ const MAIN_TABS: { id: MainTab; label: string }[] = [
 export default function OffboardingPage() {
   const [mainTab, setMainTab] = useState<MainTab>("dashboard");
   const [selectedRecord, setSelectedRecord] = useState<OffboardingRecord | null>(null);
+  // Track billing-triggered offboarding records so the banner re-renders.
+  const [billingTriggered, setBillingTriggered] = useState<OffboardingRecord[]>([...pendingOffboardingRecords]);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // Drain pending offboarding records into local state on mount only.
+  useEffect(() => {
+    if (pendingOffboardingRecords.length === 0) return;
+    setBillingTriggered(prev => {
+      const existingIds = new Set(prev.map(r => r.id));
+      const newOnes = pendingOffboardingRecords.filter(r => !existingIds.has(r.id));
+      return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const mrrLost = getTotalRevenueLost();
   const active = getActiveOffboardings();
@@ -1329,6 +1362,31 @@ export default function OffboardingPage() {
           </div>
         </div>
       </div>
+
+      {/* Billing-triggered offboarding notification banner */}
+      {billingTriggered.length > 0 && !bannerDismissed && (
+        <div
+          className="rounded-xl border px-5 py-3 flex items-center justify-between gap-4"
+          style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "#1E3A8A" }}>
+            ℹ️ {billingTriggered.length} new offboarding case{billingTriggered.length !== 1 ? "s" : ""} created by Billing:
+            {" "}{billingTriggered.map((r) => r.client).join(", ")}.
+            {" "}<button
+              onClick={() => setMainTab("records")}
+              className="underline font-bold"
+              style={{ color: "#1D4ED8" }}
+            >View in Offboarding Records →</button>
+          </p>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="text-xs font-semibold px-2 py-1 rounded"
+            style={{ color: "#3B82F6" }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main tabs */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">

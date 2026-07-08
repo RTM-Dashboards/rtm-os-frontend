@@ -1,7 +1,7 @@
 "use client";
 
 import WorkspaceTaskPage from "@/components/workspace/WorkspaceTaskPage";
-import { reportingTasks } from "@/lib/mock/workspace-tasks";
+import { getWorkspaceTasksByDepartment } from "@/lib/engine";
 import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("reporting")!;
@@ -10,7 +10,7 @@ export default function ReportingTasksPage() {
   return (
     <WorkspaceTaskPage
       workspaceName={workspace.name}
-      tasks={reportingTasks}
+      tasks={getWorkspaceTasksByDepartment("Reporting")}
       accentColor={workspace.accentColor}
     />
   );

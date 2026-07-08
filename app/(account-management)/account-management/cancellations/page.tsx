@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   CANCELLATION_REQUESTS,
   getOpenRequests,
@@ -19,6 +19,14 @@ import {
   type RetentionStrategy,
   type SaveAttemptStep,
 } from "@/lib/account-management/cancellations-data";
+import {
+  pendingCancellationRequests,
+  addPendingCancellationRequest,
+  CANCELLATION_REASONS,
+  type PendingCancellationRequest,
+  type BillingCancellationStatus,
+} from "@/lib/mock/cancellation-queue";
+import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // UTILITIES
@@ -85,17 +93,36 @@ function strategyStyle(strategy: RetentionStrategy) {
   }
 }
 
-function reasonStyle(reason: CancellationReason) {
+// Covers the exact locked 11-category reason list.
+function reasonStyle(reason: CancellationReason | string) {
   switch (reason) {
-    case "Budget":            return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    case "Performance":       return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
-    case "Service Quality":   return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
-    case "Communication":     return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"};
-    case "Internal Staffing": return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE"};
-    case "Business Closure":  return { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1"};
-    case "Competitor":        return { bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA"};
-    case "No Longer Needed":  return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4"};
-    default:                  return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1"};
+    case "Not Performing":                    return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
+    case "Moving In-house":                   return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE"};
+    case "Unpaid Invoice":                    return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
+    case "Pricing/Financial Hardship":        return { bg: "#FEF2F2", color: "#B91C1C", border: "#FECACA"};
+    case "Communication Issue":               return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"};
+    case "Bankruptcy":                        return { bg: "#F1F5F9", color: "#334155", border: "#CBD5E1"};
+    case "Business Acquisition":              return { bg: "#F0FFFE", color: "#0F766E", border: "#99F6E4"};
+    case "Acquired By Private Equity":        return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
+    case "Changing Provider (New Company Name)": return { bg: "#FFF7ED", color: "#9A3412", border: "#FED7AA"};
+    case "Closing Business":                  return { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1"};
+    case "Pending Client Confirmation":       return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
+    default:                                  return { bg: "#F8FAFC", color: "#64748B", border: "#CBD5E1"};
+  }
+}
+
+// Style for Billing-owned status (read-only from AM's perspective).
+function billingStatusStyle(s: BillingCancellationStatus) {
+  switch (s) {
+    case "Cancellation Requested":   return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" };
+    case "Billing Review":           return { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" };
+    case "Final Invoice Needed":     return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" };
+    case "Pending Balance":          return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
+    case "Approved for Offboarding": return { bg: "#F5F3FF", color: "#6D28D9", border: "#DDD6FE" };
+    case "Offboarding Triggered":    return { bg: "#ECFEFF", color: "#0891B2", border: "#A5F3FC" };
+    case "Billing Hold":             return { bg: "#FEF2F2", color: "#B91C1C", border: "#FECACA" };
+    case "Billing Closed":           return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
+    case "Cancelled":                return { bg: "#F1F5F9", color: "#475569", border: "#CBD5E1" };
   }
 }
 
@@ -239,6 +266,231 @@ function SectionHeader({
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// INITIATE CANCELLATION REQUEST MODAL
+// AM initiates; request is pushed to the shared queue and picked up by Billing.
+// AM cannot mark cancellations Cleared — only Billing can do that.
+// ══════════════════════════════════════════════════════════════════════════════
+
+const inputCls = "w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-200";
+const inputSty = { background: "var(--rtm-bg, #F9FAFB)", borderColor: "#E2E8F0", color: "#0F172A" };
+
+function InitiateCancellationModal({
+  onClose,
+  onSubmit,
+}: {
+  onClose: () => void;
+  onSubmit: (client: string, reason: string) => void;
+}) {
+  const clientNames = MASTER_CLIENTS.map((c) => c.clientName);
+  const [client, setClient] = useState(clientNames[0]);
+  const [reason, setReason] = useState<typeof CANCELLATION_REASONS[number]>(CANCELLATION_REASONS[0]);
+  const [notes, setNotes] = useState("");
+  const [amOwner, setAmOwner] = useState("Account Management");
+
+  function handleSubmit() {
+    const now = new Date();
+    const displayDate = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const masterClient = MASTER_CLIENTS.find((c) => c.clientName === client);
+    const mrrImpact = masterClient ? `-$${masterClient.monthlyValue.toLocaleString()}` : "-$0";
+
+    addPendingCancellationRequest({
+      client,
+      reason,
+      notes,
+      amOwner,
+      requestedDate: displayDate,
+      mrrImpact,
+      billingOwner: "Billing Team",
+    });
+    onSubmit(client, reason);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div
+        className="w-full max-w-lg rounded-2xl border shadow-2xl overflow-y-auto"
+        style={{ background: "var(--rtm-surface, #fff)", borderColor: "#E2E8F0", maxHeight: "90vh" }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "#E2E8F0" }}>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mb-0.5">Account Management</p>
+            <h2 className="text-base font-bold" style={{ color: "#0F172A" }}>Initiate Cancellation Request</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
+            style={{ color: "#64748B", borderColor: "#E2E8F0" }}
+          >
+            Close
+          </button>
+        </div>
+
+        {/* Ownership notice */}
+        <div className="mx-6 mt-5 rounded-lg border px-4 py-3 text-xs" style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1E3A8A" }}>
+          <strong>AM initiates. Billing clears.</strong> This request will appear on Billing's Cancellations page for review and clearance.
+          AM cannot mark a cancellation cleared or approved — that step belongs to Billing.
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          {/* Client */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide" style={{ color: "#64748B" }}>Client</label>
+            <select
+              className={inputCls}
+              style={inputSty}
+              value={client}
+              onChange={(e) => setClient(e.target.value)}
+            >
+              {clientNames.map((n) => <option key={n} value={n}>{n}</option>)}
+            </select>
+          </div>
+
+          {/* Cancellation Reason — locked 11-category list */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide" style={{ color: "#64748B" }}>Cancellation Reason</label>
+            <select
+              className={inputCls}
+              style={inputSty}
+              value={reason}
+              onChange={(e) => setReason(e.target.value as typeof CANCELLATION_REASONS[number])}
+            >
+              {CANCELLATION_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+
+          {/* AM Owner */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide" style={{ color: "#64748B" }}>AM Owner</label>
+            <input
+              type="text"
+              className={inputCls}
+              style={inputSty}
+              value={amOwner}
+              onChange={(e) => setAmOwner(e.target.value)}
+              placeholder="Your name"
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1">
+            <label className="block text-xs font-semibold uppercase tracking-wide" style={{ color: "#64748B" }}>Notes (optional)</label>
+            <textarea
+              rows={3}
+              className={`${inputCls} resize-none`}
+              style={inputSty}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any context for Billing…"
+            />
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            className="w-full rounded-lg px-4 py-2.5 text-sm font-bold text-white"
+            style={{ background: "#1D4ED8" }}
+          >
+            Submit to Billing →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// AM-INITIATED REQUESTS PANEL
+// Read-only view of requests AM submitted. Billing status is owned by Billing.
+// ══════════════════════════════════════════════════════════════════════════════
+
+function AMInitiatedRequestsPanel({
+  requests,
+}: {
+  requests: PendingCancellationRequest[];
+}) {
+  if (requests.length === 0) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <SectionHeader
+          eyebrow="AM-Initiated Requests"
+          title="Cancellation Requests Sent to Billing"
+          desc="Requests submitted by AM and awaiting Billing review. Billing owns all status changes."
+          accentColor="#1D4ED8"
+        />
+        <div className="px-6 py-10 text-center">
+          <p className="text-sm text-slate-400">No AM-initiated requests yet.</p>
+          <p className="text-xs text-slate-400 mt-1">Use &ldquo;Initiate Cancellation Request&rdquo; above to submit one.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <SectionHeader
+        eyebrow="AM-Initiated Requests"
+        title="Cancellation Requests Sent to Billing"
+        desc="Requests submitted by AM and awaiting Billing review. Billing owns all status changes — AM cannot mark a request Cleared or Approved."
+        accentColor="#1D4ED8"
+      />
+
+      {/* Read-only ownership banner */}
+      <div className="mx-6 mt-4 mb-2 rounded-lg border px-4 py-2.5 text-xs" style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}>
+        <strong>Read-only:</strong> Billing status below is set by Billing only. AM cannot approve or clear cancellation requests.
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead style={{ background: "var(--rtm-bg)" }}>
+            <tr>
+              {["Client", "Reason", "AM Owner", "Requested", "MRR Impact", "Billing Status (read-only)", "Notes"].map((h) => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {requests.map((r) => {
+              const rs = reasonStyle(r.reason);
+              const bs = billingStatusStyle(r.billingStatus);
+              return (
+                <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <td className="px-4 py-3 whitespace-nowrap font-semibold" style={{ color: "#0F172A" }}>
+                    {r.client}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold border"
+                      style={{ background: rs.bg, color: rs.color, borderColor: rs.border }}>
+                      {r.reason}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-slate-600">{r.amOwner}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-slate-500 text-xs">{r.requestedDate}</td>
+                  <td className="px-4 py-3 whitespace-nowrap font-semibold" style={{ color: "#DC2626" }}>{r.mrrImpact}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border"
+                      style={{ background: bs.bg, color: bs.color, borderColor: bs.border }}>
+                      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: bs.color }} />
+                      {r.billingStatus}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-500">{r.notes || "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="border-t border-slate-100 px-6 py-2.5 text-xs text-slate-400">
+        {requests.length} request{requests.length !== 1 ? "s" : ""} pending Billing review
+      </div>
+    </section>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // SECTION: CANCELLATIONS DASHBOARD
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -378,6 +630,19 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
   const [statusFilter, setStatusFilter] = useState<CancellationStatus | "All">("All");
   const [riskFilter, setRiskFilter] = useState<RiskLevel | "All">("All");
   const [search, setSearch] = useState("");
+  // Track AM-initiated requests so the panel re-renders when new ones are added.
+  const [amRequests, setAmRequests] = useState<PendingCancellationRequest[]>([...pendingCancellationRequests]);
+
+  // Drain any newly pushed requests into local state on mount only.
+  useEffect(() => {
+    if (pendingCancellationRequests.length === 0) return;
+    setAmRequests(prev => {
+      const existingIds = new Set(prev.map(r => r.id));
+      const newOnes = pendingCancellationRequests.filter(r => !existingIds.has(r.id));
+      return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = useMemo(
     () =>
@@ -408,6 +673,7 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
   ];
 
   return (
+  <div className="space-y-6">
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <SectionHeader
         eyebrow="Cancellation Pipeline"title="Cancellation Requests"desc="All cancellation requests with risk level, retention status, and revenue exposure."/>
@@ -538,6 +804,10 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
         </table>
       </div>
     </section>
+
+    {/* AM-Initiated Requests: read-only view of requests sent to Billing */}
+    <AMInitiatedRequestsPanel requests={amRequests} />
+  </div>
   );
 }
 
@@ -1693,6 +1963,8 @@ const MAIN_TABS: { id: MainTab; label: string }[] = [
 export default function CancellationsPage() {
   const [mainTab, setMainTab] = useState<MainTab>("dashboard");
   const [selectedRecord, setSelectedRecord] = useState<CancellationRequest | null>(null);
+  const [showInitiateModal, setShowInitiateModal] = useState(false);
+  const [lastSubmitted, setLastSubmitted] = useState<{ client: string; reason: string } | null>(null);
 
   const mrrAtRisk = getRevenueAtRisk();
   const arrAtRisk = getARRAtRisk();
@@ -1734,7 +2006,15 @@ export default function CancellationsPage() {
             Retention engine — prevent cancellations, save clients, and protect revenue.
           </p>
         </div>
-        <div className="flex gap-3 text-sm">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          {/* Initiate Cancellation Request — AM's primary action */}
+          <button
+            onClick={() => setShowInitiateModal(true)}
+            className="rounded-xl border px-4 py-2.5 text-sm font-bold text-white shadow-sm"
+            style={{ background: "#1D4ED8", borderColor: "#1D4ED8" }}
+          >
+            + Initiate Cancellation Request
+          </button>
           <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-center shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-red-500">
               ARR At Risk
@@ -1755,6 +2035,25 @@ export default function CancellationsPage() {
           </div>
         </div>
       </div>
+
+      {/* Success notification after initiating a request */}
+      {lastSubmitted && (
+        <div
+          className="rounded-xl border px-5 py-3 flex items-center justify-between gap-4"
+          style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "#065F46" }}>
+            ✓ Cancellation request for <strong>{lastSubmitted.client}</strong> ({lastSubmitted.reason}) submitted to Billing's review queue.
+          </p>
+          <button
+            onClick={() => setLastSubmitted(null)}
+            className="text-xs font-semibold px-2 py-1 rounded"
+            style={{ color: "#059669" }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Main tabs */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
@@ -1779,6 +2078,18 @@ export default function CancellationsPage() {
         {mainTab === "revenue"&& <RevenueAtRisk />}
         {mainTab === "executive"&& <ExecutiveRetentionDashboard />}
       </div>
+
+      {/* Initiate Cancellation Request Modal */}
+      {showInitiateModal && (
+        <InitiateCancellationModal
+          onClose={() => setShowInitiateModal(false)}
+          onSubmit={(client, reason) => {
+            setLastSubmitted({ client, reason });
+            // Switch to Cancellations tab so the user can see their new request.
+            setMainTab("cancellations");
+          }}
+        />
+      )}
     </div>
   );
 }

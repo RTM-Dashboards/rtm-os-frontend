@@ -5,10 +5,15 @@ import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
+import {
+  pendingCancellationRequests,
+  type PendingCancellationRequest,
+} from "@/lib/mock/cancellation-queue";
+import { addPendingOffboardingRecord } from "@/lib/account-management/offboarding-data";
 
 const workspace = getWorkspace("billing")!;
 
-//  Types 
+//  Types
 
 type BadgeVariant = "success"| "error"| "warning"| "info"| "neutral"| "pending";
 
@@ -98,7 +103,7 @@ type ModalKind =
   | { kind: "close";     record: CancellationRecord }
   | null;
 
-//  Mock Data 
+//  Mock Data
 
 const mockCancellations: CancellationRecord[] = [
   {
@@ -331,7 +336,7 @@ const mockCancellations: CancellationRecord[] = [
   },
 ];
 
-//  Helpers 
+//  Helpers
 
 function cancellationStatusVariant(s: CancellationStatus): BadgeVariant {
   switch (s) {
@@ -532,7 +537,7 @@ function LifecycleFlow() {
   );
 }
 
-//  Modal Shell 
+//  Modal Shell
 
 function ModalShell({
   title,
@@ -687,7 +692,7 @@ function CheckboxField({
   );
 }
 
-//  Review Billing Modal 
+//  Review Billing Modal
 
 function ReviewBillingModal({
   record,
@@ -748,12 +753,12 @@ function ReviewBillingModal({
         <TextArea
           value={form.notes}
           onChange={(v) => f("notes", v)}
-          placeholder="Add review notes…"/>
+          placeholder="Add review notes..."/>
       </FormField>
       <ActionBtn
         variant="primary"label="Save Billing Review"onClick={() => {
           onSave(
-            `Billing reviewed for ${form.client} — Decision: ${form.billingDecision}`
+            `Billing reviewed for ${form.client} - Decision: ${form.billingDecision}`
           );
           onClose();
         }}
@@ -762,7 +767,7 @@ function ReviewBillingModal({
   );
 }
 
-//  Create Final Invoice Modal 
+//  Create Final Invoice Modal
 
 function CreateFinalInvoiceModal({
   record,
@@ -818,12 +823,12 @@ function CreateFinalInvoiceModal({
         <TextArea
           value={form.invoiceNotes}
           onChange={(v) => f("invoiceNotes", v)}
-          placeholder="Add invoice notes…"/>
+          placeholder="Add invoice notes..."/>
       </FormField>
       <ActionBtn
         variant="primary"label="Create Final Invoice"onClick={() => {
           onSave(
-            `Final invoice created for ${form.client} — ${form.invoiceType} — ${form.invoiceAmount}`
+            `Final invoice created for ${form.client} - ${form.invoiceType} - ${form.invoiceAmount}`
           );
           onClose();
         }}
@@ -832,7 +837,7 @@ function CreateFinalInvoiceModal({
   );
 }
 
-//  Place Billing Hold Modal 
+//  Place Billing Hold Modal
 
 function BillingHoldModal({
   record,
@@ -882,11 +887,11 @@ function BillingHoldModal({
         <TextArea
           value={form.notes}
           onChange={(v) => f("notes", v)}
-          placeholder="Add hold notes…"/>
+          placeholder="Add hold notes..."/>
       </FormField>
       <ActionBtn
         variant="danger"label="Place Billing Hold"onClick={() => {
-          onSave(`Billing hold placed for ${form.client} — Reason: ${form.holdReason}`);
+          onSave(`Billing hold placed for ${form.client} - Reason: ${form.holdReason}`);
           onClose();
         }}
       />
@@ -894,7 +899,7 @@ function BillingHoldModal({
   );
 }
 
-//  Notify AM Modal (replaces Trigger Offboarding) 
+//  Notify AM Modal (replaces Trigger Offboarding)
 
 function NotifyAMModal({
   record,
@@ -925,7 +930,7 @@ function NotifyAMModal({
         className="rounded-lg border p-3 text-xs"
         style={{ background: "#ECFDF5", borderColor: "#A7F3D0", color: "#065F46" }}
       >
-        <strong>Billing’s responsibility ends here.</strong> This sends a mock “AM Notified” signal.
+        <strong>Billing's responsibility ends here.</strong> This sends a mock "AM Notified" signal.
         Account Management owns all downstream steps (campaign pausing, CRM archival, win-back).
       </div>
       <FormField label="Client">
@@ -954,14 +959,14 @@ function NotifyAMModal({
         <TextArea
           value={form.offboardingNotes}
           onChange={(v) => f("offboardingNotes", v)}
-          placeholder="Add handoff notes for AM…" />
+          placeholder="Add handoff notes for AM..." />
       </FormField>
       <ActionBtn
         variant="primary"
-        label="Notify AM — Billing Complete"
+        label="Notify AM - Billing Complete"
         onClick={() => {
           onSave(
-            `AM notified: ${form.client} — Billing cleared. Handoff to ${form.amOwner}.`
+            `AM notified: ${form.client} - Billing cleared. Handoff to ${form.amOwner}.`
           );
           onClose();
         }}
@@ -970,7 +975,7 @@ function NotifyAMModal({
   );
 }
 
-//  Close Billing Modal 
+//  Close Billing Modal
 
 function CloseBillingModal({
   record,
@@ -1012,11 +1017,11 @@ function CloseBillingModal({
         <TextArea
           value={form.closureNotes}
           onChange={(v) => f("closureNotes", v)}
-          placeholder="Add closure notes…"/>
+          placeholder="Add closure notes..."/>
       </FormField>
       <ActionBtn
         variant="primary"label="Close Billing"onClick={() => {
-          onSave(`Billing closed for ${form.client} — Status: ${form.finalBillingStatus}`);
+          onSave(`Billing closed for ${form.client} - Status: ${form.finalBillingStatus}`);
           onClose();
         }}
       />
@@ -1024,16 +1029,63 @@ function CloseBillingModal({
   );
 }
 
-//  Page 
+//  Page
+
+// Convert an AM-initiated cancellation queue entry into Billing's CancellationRecord shape.
+function amRequestToRecord(req: PendingCancellationRequest): CancellationRecord {
+  return {
+    id: req.id,
+    client: req.client,
+    cancellationStatus: "Cancellation Requested",
+    requestedDate: req.requestedDate,
+    requestedBy: "AM",
+    amOwner: req.amOwner,
+    billingOwner: req.billingOwner || "Billing Team",
+    mrrImpact: req.mrrImpact,
+    contractEndDate: "-",
+    outstandingBalance: "$0",
+    finalInvoiceStatus: "Not Required",
+    offboardingStatus: "Not Started",
+    priority: "Medium",
+    nextBillingAction: "Start Billing Review",
+    currentPlan: "-",
+    monthlyValue: req.mrrImpact.replace("-", ""),
+    remainingContractValue: "-",
+    refundRequired: false,
+    proratedAmount: "$0",
+    paymentMethodStatus: "Active",
+    billingDecision: "Continue Billing Until End Date",
+    recentEvents: [
+      { date: req.requestedDate, event: `Cancellation Requested (Reason: ${req.reason})`, by: req.amOwner },
+    ],
+  };
+}
 
 export default function BillingCancellationsPage() {
-  const [records, setRecords] = useState<CancellationRecord[]>(mockCancellations);
+  // Merge AM-initiated requests from the shared queue with Billing's own mock records.
+  // Pattern mirrors Sales tasks page draining pendingSalesTasks on mount.
+  const [records, setRecords] = useState<CancellationRecord[]>(() => [
+    ...mockCancellations,
+    ...pendingCancellationRequests.map(amRequestToRecord),
+  ]);
   const [modal, setModal]     = useState<ModalKind>(null);
   const [toast, setToast]     = useState<{ message: string; variant: "success" | "info" | "warning" | "error" } | null>(null);
 
   function showToast(message: string, variant: "success" | "info" | "warning" | "error" = "success") {
     setToast({ message, variant });
   }
+
+  // Drain any newly pushed AM-initiated requests into Billing's records state.
+  // Same pattern as Sales tasks page reading pendingSalesTasks.
+  useEffect(() => {
+    const existingIds = new Set(records.map((r) => r.id));
+    const newOnes = pendingCancellationRequests
+      .filter((r) => !existingIds.has(r.id))
+      .map(amRequestToRecord);
+    if (newOnes.length > 0) {
+      setRecords((prev) => [...prev, ...newOnes]);
+    }
+  });
 
   const [eventLog, setEventLog] = useState<
     { date: string; client: string; event: string; by: string; billingStatus: string; offboardingStatus: string; notes: string }[]
@@ -1122,15 +1174,15 @@ export default function BillingCancellationsPage() {
           Billing Cancellations
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
-          Manage cancellation billing impact, final invoice status, and account closure. Billing’s job ends at notifying AM — downstream steps are owned by Account Management.
+          Manage cancellation billing impact, final invoice status, and account closure. Billing's job ends at notifying AM - downstream steps are owned by Account Management.
         </p>
       </div>
 
       {/*  Top Action Bar  */}
       <div className="flex flex-wrap gap-2">
-        <ActionBtn variant="primary"label="+ New Cancellation Review"onClick={() => addEvent("—", "New Cancellation Review Started", "Billing", "Cancellation Requested", "Not Started")} />
-        <ActionBtn variant="secondary"label="Export Cancellation Queue"onClick={() => addEvent("—", "Cancellation Queue Exported", "Billing", "—", "—")} />
-        <ActionBtn variant="secondary" label="Sync Billing Status" onClick={() => addEvent("—", "Billing Status Synced", "System", "—", "—")} />
+        <ActionBtn variant="primary"label="+ New Cancellation Review"onClick={() => addEvent("-", "New Cancellation Review Started", "Billing", "Cancellation Requested", "Not Started")} />
+        <ActionBtn variant="secondary"label="Export Cancellation Queue"onClick={() => addEvent("-", "Cancellation Queue Exported", "Billing", "-", "-")} />
+        <ActionBtn variant="secondary" label="Sync Billing Status" onClick={() => addEvent("-", "Billing Status Synced", "System", "-", "-")} />
       </div>
 
       {/*  KPI Cards  */}
@@ -1308,7 +1360,7 @@ export default function BillingCancellationsPage() {
       {/*  2. Billing Impact Review  */}
       {/*  */}
       <SectionWrapper
-        title="Billing Impact Review"description="Financial snapshot of each cancellation — refunds, prorations, balances, and billing decisions.">
+        title="Billing Impact Review"description="Financial snapshot of each cancellation - refunds, prorations, balances, and billing decisions.">
         <div
           className="overflow-x-auto rounded-lg border"style={{ borderColor: "var(--rtm-border-light)"}}
         >
@@ -1398,7 +1450,7 @@ export default function BillingCancellationsPage() {
       {/*  3. AM Notification Queue  */}
       <SectionWrapper
         title="AM Notification Queue"
-        description="Clients where Billing has cleared all balances. Use Notify AM to signal Account Management. Billing’s job ends here.">
+        description="Clients where Billing has cleared all balances. Use Notify AM to signal Account Management. Billing's job ends here.">
         {offboardingReady.length === 0 ? (
           <div
             className="text-center py-8 text-sm"style={{ color: "var(--rtm-text-muted)"}}
@@ -1534,7 +1586,7 @@ export default function BillingCancellationsPage() {
                       <span className="text-xs">{ev.offboardingStatus}</span>
                     </Td>
                     <Td muted>
-                      <span className="text-xs">{ev.notes || "—"}</span>
+                      <span className="text-xs">{ev.notes || "-"}</span>
                     </Td>
                   </tr>
                 );
@@ -1599,7 +1651,7 @@ export default function BillingCancellationsPage() {
           onClose={() => setModal(null)}
           onSave={(msg) => {
             addEvent(modal.record.client, "Billing Hold Placed", "Billing", "Billing Hold", modal.record.offboardingStatus, msg);
-            updateRecordStatus(modal.record.id, "Billing Hold", "Resolve Hold — Escalate to AM");
+            updateRecordStatus(modal.record.id, "Billing Hold", "Resolve Hold - Escalate to AM");
           }}
         />
       )}
@@ -1608,9 +1660,27 @@ export default function BillingCancellationsPage() {
           record={modal.record}
           onClose={() => setModal(null)}
           onSave={(msg) => {
+            // Update Billing's local record state.
             addEvent(modal.record.client, "AM Notified", "Billing", "Approved for Offboarding", "Triggered", msg);
             updateRecordStatus(modal.record.id, "Approved for Offboarding", "Close Billing", "Triggered");
-            showToast(`✅ AM notified for ${modal.record.client} — Billing’s job is complete`, "success");
+
+            // CROSS-WORKSPACE SIGNAL: create a real offboarding record on AM's Offboarding page.
+            // Looks up the cancellation reason from the AM-initiated queue if available,
+            // otherwise defaults to the first locked category.
+            const queueEntry = pendingCancellationRequests.find(
+              (r) => r.client === modal.record.client
+            );
+            addPendingOffboardingRecord({
+              client: modal.record.client,
+              accountManager: modal.record.amOwner,
+              reason: (queueEntry?.reason ?? "Pending Client Confirmation") as Parameters<typeof addPendingOffboardingRecord>[0]["reason"],
+              mrr: parseInt(modal.record.monthlyValue.replace(/[^0-9]/g, ""), 10) || 0,
+              offboardingOwner: modal.record.amOwner,
+              billingOwner: modal.record.billingOwner,
+              billingHandoffNotes: msg,
+            });
+
+            showToast(`✅ AM notified for ${modal.record.client} — Offboarding case created in Account Management`, "success");
           }}
         />
       )}

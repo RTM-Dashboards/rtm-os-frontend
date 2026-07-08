@@ -5,8 +5,22 @@
 export type CancellationStatus =
   | "Request Received"| "Under Review"| "Retention Attempt"| "Executive Review"| "Cancellation Approved"| "Cancellation Withdrawn"| "Converted To Downgrade"| "Converted To Renewal"| "Converted To Change Request"| "Moved To Offboarding";
 
+// Locked 11-category reason list — do not change without product sign-off.
+// Replaces prior 9-category list (Budget, Performance, Service Quality,
+// Communication, Internal Staffing, Business Closure, Competitor,
+// No Longer Needed, Other).
 export type CancellationReason =
-  | "Budget"| "Performance"| "Service Quality"| "Communication"| "Internal Staffing"| "Business Closure"| "Competitor"| "No Longer Needed"| "Other";
+  | "Not Performing"
+  | "Moving In-house"
+  | "Unpaid Invoice"
+  | "Pricing/Financial Hardship"
+  | "Communication Issue"
+  | "Bankruptcy"
+  | "Business Acquisition"
+  | "Acquired By Private Equity"
+  | "Changing Provider (New Company Name)"
+  | "Closing Business"
+  | "Pending Client Confirmation";
 
 export type RetentionStrategy =
   | "Budget Adjustment"| "Service Reduction"| "Service Realignment"| "Temporary Pause"| "Additional Support"| "Executive Escalation"| "Custom Retention Plan";
@@ -93,7 +107,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Maria Santos",
     mrr: 5100,
     arr: 61200,
-    reason: "Budget",
+    reason: "Pricing/Financial Hardship",
     reasonDetail: "Client cited Q2 budget cuts and reduced ROI confidence. Requesting a 40% service reduction.",
     riskLevel: "Critical",
     healthScore: 31,
@@ -157,7 +171,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Sarah Chen",
     mrr: 3200,
     arr: 38400,
-    reason: "Budget",
+    reason: "Pricing/Financial Hardship",
     reasonDetail: "Owner claims monthly retainer is too high relative to lead volume. Comparing pricing to competitors.",
     riskLevel: "High",
     healthScore: 48,
@@ -218,7 +232,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Sarah Chen",
     mrr: 2400,
     arr: 28800,
-    reason: "Budget",
+    reason: "Pricing/Financial Hardship",
     reasonDetail: "Practice revenue declined due to insurance reimbursement changes. Cannot sustain current marketing spend.",
     riskLevel: "Critical",
     healthScore: 34,
@@ -279,7 +293,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Sarah Chen",
     mrr: 2200,
     arr: 26400,
-    reason: "Budget",
+    reason: "Pricing/Financial Hardship",
     reasonDetail: "Education sector funding cuts. Director requesting 50% budget reduction or cancellation.",
     riskLevel: "High",
     healthScore: 55,
@@ -339,7 +353,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "James Park",
     mrr: 6200,
     arr: 74400,
-    reason: "Performance",
+    reason: "Not Performing",
     reasonDetail: "Client claims lead volume dropped 35% over Q1. No reports delivered in 25 days. Threatening immediate cancellation.",
     riskLevel: "Critical",
     healthScore: 29,
@@ -392,7 +406,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "James Park",
     mrr: 3600,
     arr: 43200,
-    reason: "Performance",
+    reason: "Not Performing",
     reasonDetail: "Client frustrated with onboarding delays. Campaign not yet live after 45 days. Considering alternative agency.",
     riskLevel: "High",
     healthScore: 52,
@@ -453,7 +467,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "James Park",
     mrr: 2900,
     arr: 34800,
-    reason: "Performance",
+    reason: "Not Performing",
     reasonDetail: "Client disappointed with SEO ranking improvements after 8 months. Comparing results to competitor case studies.",
     riskLevel: "Medium",
     healthScore: 62,
@@ -514,7 +528,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "James Park",
     mrr: 4500,
     arr: 54000,
-    reason: "Budget",
+    reason: "Pricing/Financial Hardship",
     reasonDetail: "Requested cancellation citing budget reallocation to internal hire. Offered budget adjustment and performance review.",
     riskLevel: "High",
     healthScore: 88,
@@ -567,7 +581,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Tina Webb",
     mrr: 3800,
     arr: 45600,
-    reason: "Communication",
+    reason: "Communication Issue",
     reasonDetail: "Client felt out of the loop — no check-ins for 6 weeks. Nearly cancelled before AM escalation.",
     riskLevel: "Medium",
     healthScore: 84,
@@ -619,7 +633,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Tina Webb",
     mrr: 4200,
     arr: 50400,
-    reason: "Service Quality",
+    reason: "Communication Issue",
     reasonDetail: "Client unhappy with Meta Ads creative quality. Requested design overhaul and campaign restructure.",
     riskLevel: "High",
     healthScore: 72,
@@ -673,7 +687,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Tina Webb",
     mrr: 3500,
     arr: 42000,
-    reason: "Internal Staffing",
+    reason: "Moving In-house",
     reasonDetail: "Firm hired an internal marketing director. Full in-house transition effective July 1.",
     riskLevel: "Medium",
     healthScore: 76,
@@ -725,7 +739,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Maria Santos",
     mrr: 1800,
     arr: 21600,
-    reason: "Business Closure",
+    reason: "Closing Business",
     reasonDetail: "Owner is closing the pharmacy due to retirement. All marketing services cancelled effective immediately.",
     riskLevel: "Low",
     healthScore: 82,
@@ -767,7 +781,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Maria Santos",
     mrr: 2600,
     arr: 31200,
-    reason: "Competitor",
+    reason: "Changing Provider (New Company Name)",
     reasonDetail: "Client received a lower price offer from a competitor agency. Despite retention offer, client chose competitor.",
     riskLevel: "High",
     healthScore: 61,
@@ -819,7 +833,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Sarah Chen",
     mrr: 2700,
     arr: 32400,
-    reason: "No Longer Needed",
+    reason: "Closing Business",
     reasonDetail: "Owner says business is slow — reducing all external spend. Not a performance complaint.",
     riskLevel: "Medium",
     healthScore: 70,
@@ -870,7 +884,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Tina Webb",
     mrr: 4800,
     arr: 57600,
-    reason: "Service Quality",
+    reason: "Communication Issue",
     reasonDetail: "Client reports inaccurate GBP listing management and delayed reporting. Trust has eroded.",
     riskLevel: "Critical",
     healthScore: 38,
@@ -933,7 +947,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Tina Webb",
     mrr: 4800,
     arr: 57600,
-    reason: "Communication",
+    reason: "Communication Issue",
     reasonDetail: "Senior partner frustrated with delayed responses and lack of strategic guidance from AM.",
     riskLevel: "High",
     healthScore: 58,
@@ -989,7 +1003,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Tina Webb",
     mrr: 3200,
     arr: 38400,
-    reason: "Performance",
+    reason: "Not Performing",
     reasonDetail: "Client unhappy with GBP ranking stagnation. Competitor clinics outranking in local maps.",
     riskLevel: "Medium",
     healthScore: 65,
@@ -1044,7 +1058,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Maria Santos",
     mrr: 5100,
     arr: 61200,
-    reason: "Performance",
+    reason: "Not Performing",
     reasonDetail: "Client in onboarding, frustrated with campaign setup delays. Wants results faster.",
     riskLevel: "High",
     healthScore: 60,
@@ -1100,7 +1114,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Sarah Chen",
     mrr: 2800,
     arr: 33600,
-    reason: "Other",
+    reason: "Pending Client Confirmation",
     reasonDetail: "Client acquired by a national franchise that has a preferred agency contract. Cannot continue.",
     riskLevel: "Low",
     healthScore: 92,
@@ -1146,7 +1160,7 @@ export const CANCELLATION_REQUESTS: CancellationRequest[] = [
     accountManager: "Maria Santos",
     mrr: 4600,
     arr: 55200,
-    reason: "Budget",
+    reason: "Pricing/Financial Hardship",
     reasonDetail: "Startup experiencing funding gap. CFO froze all discretionary spend pending Series B close.",
     riskLevel: "High",
     healthScore: 74,

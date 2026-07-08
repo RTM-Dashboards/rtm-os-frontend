@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { ENGINE_STORE, BLUEPRINTS } from "@/lib/engine/mock-data";
+import type { Project, Task, Milestone } from "@/lib/engine/types";
 
 // 
 // Activation Engine
@@ -683,7 +685,7 @@ function RowAction({ label, onClick }: { label: string; onClick: () => void }) {
 
 //  Detail Drawer 
 
-function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => void }) {
+function DetailDrawer({ item, onClose, onActivate }: { item: ActivationCase; onClose: () => void; onActivate: (id: string) => void }) {
   const [activeTab, setActiveTab] = useState<
     "overview"| "contract"| "billing"| "lineitems"| "rules"| "tasks"| "departments"| "timeline"| "notes">("overview");
 
@@ -1012,7 +1014,7 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
         {/* Footer Actions */}
         <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex gap-2 flex-wrap shrink-0">
           {item.activationStatus === "Ready for Activation"&& (
-            <button className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700">Run Activation</button>
+            <button onClick={() => { onActivate(item.id); onClose(); }} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700">Run Activation</button>
           )}
           {(item.activationStatus === "Rules Matched"|| item.activationStatus === "Generating Tasks") && (
             <button className="px-3 py-1.5 text-xs font-semibold rounded-lg text-white" style={{ background: "var(--rtm-blue)" }}>Generate Tasks</button>
@@ -1034,36 +1036,242 @@ function DetailDrawer({ item, onClose }: { item: ActivationCase; onClose: () => 
   );
 }
 
+// ---------------------------------------------------------------------------
+// Engine integration — creates real Project + Task records on activation
+// ---------------------------------------------------------------------------
+
+let _aeTaskSeq = 8000;
+function genAeId(prefix: string): string {
+  return `${prefix}-ae-${++_aeTaskSeq}`;
+}
+
+/**
+ * Maps an ActivationCase to a real engine Project + Tasks and pushes them
+ * into ENGINE_STORE in-memory. Called when "Run Activation" is clicked.
+ */
+function activateCaseInEngine(c: ActivationCase): { projectId: string } {
+  // Guard — already in engine
+  const existing = ENGINE_STORE.projects.find((p) => p.clientSlug === c.clientSlug && p.name.includes("Activated"));
+  if (existing) return { projectId: existing.id };
+
+  const now = new Date().toISOString();
+  const projectId = genAeId("proj");
+  const milestoneId = genAeId("ms");
+
+  // Map line-item department names to engine DepartmentName
+  const deptMap: Record<string, import("@/lib/engine/types").DepartmentName> = {
+    "SEO": "SEO",
+    "GBP": "GBP",
+    "Paid Advertising": "PPC",
+    "Meta Ads": "Meta Ads",
+    "LSA": "LSA",
+    "Reporting": "Reporting",
+    "Web Development": "Web Development",
+    "Creative": "Design",
+    "Account Management": "Account Management",
+  };
+
+  // Generate tasks from matching BLUEPRINTS
+  const taskIds: string[] = [];
+  const tasks: Task[] = [];
+
+  // Always include onboarding blueprint (bp-004)
+  const onboardingBp = BLUEPRINTS.find((b) => b.id === "bp-004");
+  if (onboardingBp) {
+    onboardingBp.tasks.forEach((bpt, i) => {
+      const tid = `${projectId}-t-ob${i}`;
+      taskIds.push(tid);
+      tasks.push({
+        id: tid,
+        projectId,
+        milestoneId,
+        blueprintId: onboardingBp.id,
+        title: bpt.name,
+        type: "One-Time",
+        source: "Task Blueprint",
+        department: deptMap[bpt.department] ?? "Account Management",
+        service: "Account Management",
+        assignedUserName: "AM Team",
+        createdById: "u3",
+        createdByName: "System",
+        status: "Open",
+        priority: bpt.priority,
+        dueDate: new Date(Date.now() + bpt.dueDaysOffset * 86400000).toISOString().split("T")[0],
+        estimatedHours: bpt.estimatedHours,
+        dependencies: [],
+        notes: [],
+        files: [],
+        automationHistory: [],
+        createdAt: now,
+        updatedAt: now,
+        clientName: c.client,
+        projectName: `${c.client} — Activated`,
+      });
+    });
+  }
+
+  // Match department blueprints by line item
+  const lineItemToBlueprintId: Record<string, string> = {
+    "SEO Setup": "bp-001",
+    "SEO Monthly": "bp-001",
+    "GBP Optimization": "bp-002",
+    "GBP Monthly Management": "bp-002",
+    "Paid Advertising Setup": "bp-003",
+    "PPC Management": "bp-003",
+    "Meta Ads Setup": "bp-006",
+    "Meta Ads Monthly": "bp-006",
+    "Reporting Monthly": "bp-005",
+    "Monthly Reporting": "bp-005",
+  };
+
+  const usedBpIds = new Set<string>();
+  for (const li of c.lineItems) {
+    const bpId = lineItemToBlueprintId[li.name];
+    if (!bpId || usedBpIds.has(bpId)) continue;
+    usedBpIds.add(bpId);
+    const bp = BLUEPRINTS.find((b) => b.id === bpId);
+    if (!bp) continue;
+    bp.tasks.forEach((bpt, i) => {
+      const tid = `${projectId}-t-${bpId}-${i}`;
+      taskIds.push(tid);
+      tasks.push({
+        id: tid,
+        projectId,
+        milestoneId,
+        blueprintId: bpId,
+        title: bpt.name,
+        type: "One-Time",
+        source: "Task Blueprint",
+        department: deptMap[bpt.department] ?? "Account Management",
+        service: li.name,
+        assignedUserName: "Unassigned",
+        createdById: "u3",
+        createdByName: "System",
+        status: "Open",
+        priority: bpt.priority,
+        dueDate: new Date(Date.now() + bpt.dueDaysOffset * 86400000).toISOString().split("T")[0],
+        estimatedHours: bpt.estimatedHours,
+        dependencies: [],
+        notes: [],
+        files: [],
+        automationHistory: [],
+        createdAt: now,
+        updatedAt: now,
+        clientName: c.client,
+        projectName: `${c.client} — Activated`,
+      });
+    });
+  }
+
+  const milestone: Milestone = {
+    id: milestoneId,
+    projectId,
+    name: "Activation Launch",
+    owner: "System",
+    status: "In Progress",
+    startDate: now.split("T")[0],
+    dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+    progress: 0,
+    taskIds,
+    blueprintId: "bp-004",
+  };
+
+  const project: Project = {
+    id: projectId,
+    name: `${c.client} — Activated`,
+    client: c.client,
+    clientSlug: c.clientSlug,
+    servicePackage: "Custom",
+    contractSummary: `Contract: ${c.contractRef}. Invoice: ${c.invoiceRef}. Activated ${now.split("T")[0]}.`,
+    owner: "System",
+    accountManager: "Unassigned",
+    departments: c.departments.map((d) => ({
+      department: (deptMap[d] ?? "Account Management") as import("@/lib/engine/types").DepartmentName,
+      owner: "Unassigned",
+      taskIds: tasks.filter((t) => t.department === (deptMap[d] ?? "Account Management")).map((t) => t.id),
+      escalationStatus: "None" as const,
+    })),
+    launchDate: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
+    status: "In Progress",
+    health: "Green",
+    priority: c.priority === "High" ? "High" : c.priority === "Low" ? "Low" : "Medium",
+    milestoneIds: [milestoneId],
+    taskIds,
+    activityLog: [
+      {
+        id: genAeId("act"),
+        projectId,
+        eventType: "Project Created",
+        description: `Project activated via Activation Engine. Contract: ${c.contractRef}.`,
+        actorName: "Activation Engine",
+        timestamp: now,
+      },
+    ],
+    notes: `Activated from Activation Engine case ${c.id}. Client: ${c.client}.`,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  ENGINE_STORE.projects.push(project);
+  ENGINE_STORE.milestones.push(milestone);
+  ENGINE_STORE.tasks.push(...tasks);
+
+  return { projectId };
+}
+
 //  Main Page 
 
 export default function ActivationEnginePage() {
+  const [cases, setCases] = useState<ActivationCase[]>(ACTIVATION_CASES);
   const [selectedCase, setSelectedCase] = useState<ActivationCase | null>(null);
   const [filterStatus, setFilterStatus] = useState<ActivationStatus | "All">("All");
   const [filterPriority, setFilterPriority] = useState<Priority | "All">("All");
   const [search, setSearch] = useState("");
 
+  const handleActivate = useCallback((caseId: string) => {
+    setCases((prev) =>
+      prev.map((c) => {
+        if (c.id !== caseId) return c;
+        // Create real engine records
+        const { projectId } = activateCaseInEngine(c);
+        return {
+          ...c,
+          activationStatus: "Activated" as ActivationStatus,
+          activatedAt: new Date().toISOString().split("T")[0],
+          notes: c.notes + ` | Engine project created: ${projectId}`,
+        };
+      })
+    );
+    // Keep selected case in sync
+    setSelectedCase((prev) =>
+      prev?.id === caseId
+        ? { ...prev, activationStatus: "Activated", activatedAt: new Date().toISOString().split("T")[0] }
+        : prev
+    );
+  }, []);
+
   //  KPIs 
   const kpis = useMemo(() => {
-    const ready = ACTIVATION_CASES.filter((c) => c.activationStatus === "Ready for Activation").length;
-    const pendingSig = ACTIVATION_CASES.filter((c) => c.contractStatus === "Pending Signature").length;
-    const pendingPay = ACTIVATION_CASES.filter((c) => c.invoiceStatus === "Pending Payment"|| c.invoiceStatus === "Overdue").length;
-    const rulesMatched = ACTIVATION_CASES.filter((c) => c.activationStatus === "Rules Matched").length;
-    const templatesGen = ACTIVATION_CASES.filter((c) => c.generatedTasks.length > 0).length;
-    const deptsActivated = ACTIVATION_CASES.filter((c) => c.activationStatus === "Activated").length;
-    const blocked = ACTIVATION_CASES.filter((c) => c.activationStatus === "Blocked").length;
-    const activatedMonth = ACTIVATION_CASES.filter((c) => c.activatedAt?.startsWith("2025-07")).length;
+    const ready = cases.filter((c) => c.activationStatus === "Ready for Activation").length;
+    const pendingSig = cases.filter((c) => c.contractStatus === "Pending Signature").length;
+    const pendingPay = cases.filter((c) => c.invoiceStatus === "Pending Payment"|| c.invoiceStatus === "Overdue").length;
+    const rulesMatched = cases.filter((c) => c.activationStatus === "Rules Matched").length;
+    const templatesGen = cases.filter((c) => c.generatedTasks.length > 0).length;
+    const deptsActivated = cases.filter((c) => c.activationStatus === "Activated").length;
+    const blocked = cases.filter((c) => c.activationStatus === "Blocked").length;
+    const activatedMonth = cases.filter((c) => c.activatedAt?.startsWith("2025-07")).length;
     return { ready, pendingSig, pendingPay, rulesMatched, templatesGen, deptsActivated, blocked, activatedMonth };
   }, []);
 
   //  Filtered queue 
   const filtered = useMemo(() => {
-    return ACTIVATION_CASES.filter((c) => {
+    return cases.filter((c) => {
       const matchStatus = filterStatus === "All"|| c.activationStatus === filterStatus;
       const matchPriority = filterPriority === "All"|| c.priority === filterPriority;
       const matchSearch = search === ""|| c.client.toLowerCase().includes(search.toLowerCase());
       return matchStatus && matchPriority && matchSearch;
     });
-  }, [filterStatus, filterPriority, search]);
+  }, [cases, filterStatus, filterPriority, search]);
 
   const STATUSES: (ActivationStatus | "All")[] = [
     "All", "Not Ready", "Ready for Activation", "Rules Matched",
@@ -1237,7 +1445,7 @@ export default function ActivationEnginePage() {
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-0.5">
                         <RowAction label="View"onClick={() => setSelectedCase(c)} />
-                        {c.activationStatus === "Ready for Activation"&& <RowAction label="Run Activation"onClick={() => {}} />}
+                        {c.activationStatus === "Ready for Activation"&& <RowAction label="Run Activation"onClick={() => handleActivate(c.id)} />}
                         {(c.activationStatus === "Rules Matched"|| c.activationStatus === "Generating Tasks") && <RowAction label="Generate Tasks"onClick={() => {}} />}
                         {c.activationStatus === "Department Activation Pending"&& <RowAction label="Assign Owners"onClick={() => {}} />}
                         {c.activationStatus === "Activated"&& <RowAction label="Push Onboarding"onClick={() => {}} />}
@@ -1264,7 +1472,7 @@ export default function ActivationEnginePage() {
             <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}> Blocked Activations</h2>
           </div>
           <div className="p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {ACTIVATION_CASES.filter((c) => c.activationStatus === "Blocked"|| c.blockedReason).map((c) => (
+            {cases.filter((c) => c.activationStatus === "Blocked"|| c.blockedReason).map((c) => (
               <div key={c.id} className="rounded-xl p-4 flex flex-col gap-2"style={{ background: "#FEF2F2", border: "1px solid #FECACA"}}>
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{c.client}</span>
@@ -1277,7 +1485,7 @@ export default function ActivationEnginePage() {
                 <button onClick={() => setSelectedCase(c)} className="text-xs font-semibold hover:underline self-start mt-1"style={{ color: "#DC2626"}}>View Details →</button>
               </div>
             ))}
-            {ACTIVATION_CASES.filter((c) => c.activationStatus === "Blocked"|| c.blockedReason).length === 0 && (
+            {cases.filter((c) => c.activationStatus === "Blocked"|| c.blockedReason).length === 0 && (
               <p className="text-sm col-span-3"style={{ color: "var(--rtm-text-muted)"}}>No blocked activations.</p>
             )}
           </div>
@@ -1295,12 +1503,12 @@ export default function ActivationEnginePage() {
                 "Reporting", "Web Development", "Creative", "Account Management",
               ] as Department[]
             ).map((dept) => {
-              const workloads = ACTIVATION_CASES.flatMap((c) =>
+              const workloads = cases.flatMap((c) =>
                 c.departmentWorkload.filter((dw) => dw.department === dept && dw.status === "Active")
               );
               const totalTasks = workloads.reduce((a, dw) => a + dw.taskCount, 0);
               const activatedClients = new Set(
-                ACTIVATION_CASES.filter((c) =>
+                cases.filter((c) =>
                   c.departmentWorkload.some((dw) => dw.department === dept && dw.status === "Active")
                 ).map((c) => c.id)
               ).size;
@@ -1329,7 +1537,7 @@ export default function ActivationEnginePage() {
 
       {/*  Detail Drawer  */}
       {selectedCase && (
-        <DetailDrawer item={selectedCase} onClose={() => setSelectedCase(null)} />
+        <DetailDrawer item={selectedCase} onClose={() => setSelectedCase(null)} onActivate={handleActivate} />
       )}
     </div>
   );

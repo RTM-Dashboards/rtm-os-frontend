@@ -20,6 +20,8 @@ export const workspaces: WorkspaceConfig[] = [
     role: "Account Managers",
     navItems: [
       { label: "Dashboard",               href: "/account-management"},
+      { label: "Onboarding Queue",        href: "/account-management/onboarding"},
+      { label: "Projects",               href: "/account-management/projects"},
       { label: "Client Portfolio",        href: "/account-management/client-portfolio"},
       { label: "Client Health",           href: "/account-management/client-health"},
       { label: "Communications",          href: "/account-management/communications"},

@@ -25,8 +25,25 @@ export type ChecklistItemStatus =
 export type DepartmentTaskStatus =
   | "Not Started"| "In Progress"| "Completed"| "Overdue"| "Blocked";
 
+// Locked 11-category reason list — matches cancellation-queue.ts and cancellations-data.ts.
+// Existing seed records use legacy values; the type is kept broad with string
+// fallback in reason-breakdown rendering to avoid hard errors during the seed-data migration.
 export type CancellationReason =
-  | "Budget"| "Performance"| "Service Quality"| "Communication"| "Competitor"| "Business Closure"| "Internal Staffing"| "No Longer Needed"| "Other";
+  | "Not Performing"
+  | "Moving In-house"
+  | "Unpaid Invoice"
+  | "Pricing/Financial Hardship"
+  | "Communication Issue"
+  | "Bankruptcy"
+  | "Business Acquisition"
+  | "Acquired By Private Equity"
+  | "Changing Provider (New Company Name)"
+  | "Closing Business"
+  | "Pending Client Confirmation"
+  // Legacy values kept for existing seed records; new records use the locked list.
+  | "Budget" | "Performance" | "Service Quality" | "Communication"
+  | "Competitor" | "Business Closure" | "Internal Staffing"
+  | "No Longer Needed" | "Other";
 
 // ── Checklist Item ─────────────────────────────────────────────────────────
 
@@ -1413,45 +1430,151 @@ export const OFFBOARDING_RECORDS: OffboardingRecord[] = [
 ];
 
 // ══════════════════════════════════════════════════════════════════════════════
+// CROSS-WORKSPACE SIGNAL: Billing → AM Offboarding
+//
+// Pattern mirrors pendingSalesTasks / addPendingSalesTask in workspace-tasks.ts.
+// When Billing fires "Notify AM — Billing Complete", it calls
+// addPendingOffboardingRecord(). AM's Offboarding page drains this queue on
+// mount so new records become visible immediately.
+// TODO: replace with real database persistence when backend is wired.
+//
+// OWNERSHIP
+//   Writer : Billing Cancellations page  (addPendingOffboardingRecord)
+//   Reader : AM Offboarding page  (pendingOffboardingRecords)
+// ══════════════════════════════════════════════════════════════════════════════
+
+export const pendingOffboardingRecords: OffboardingRecord[] = [];
+
+let _nextOffboardingId = 1;
+
+export function addPendingOffboardingRecord(
+  partial: Pick<OffboardingRecord, "client" | "accountManager" | "reason"> &
+    Partial<Pick<OffboardingRecord, "mrr" | "arr" | "offboardingOwner">> & {
+      billingHandoffNotes?: string;
+      billingOwner?: string;
+    }
+): OffboardingRecord {
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  const targetDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const record: OffboardingRecord = {
+    id: `ob-billing-${_nextOffboardingId++}`,
+    client: partial.client,
+    accountManager: partial.accountManager,
+    offboardingOwner: partial.offboardingOwner ?? partial.accountManager,
+    cancellationDate: dateStr,
+    targetCompletionDate: targetDate,
+    actualCompletionDate: null,
+    offboardingStatus: "Initiated",
+    finalBillingStatus: "Not Started",
+    assetTransferStatus: "Not Started",
+    accessRemovalStatus: "Active",
+    completionPct: 0,
+    mrr: partial.mrr ?? 0,
+    arr: partial.arr ?? (partial.mrr ? partial.mrr * 12 : 0),
+    reason: partial.reason,
+    departmentsInvolved: ["Account Management", "Billing"],
+    services: [],
+    checklist: [
+      { id: `c-new-1`, label: "Confirm Billing Clearance", status: "Completed", owner: partial.billingOwner ?? "Billing Team", dueDate: dateStr, notes: partial.billingHandoffNotes },
+      { id: `c-new-2`, label: "AM Initial Review", status: "Not Started", owner: partial.accountManager, dueDate: targetDate },
+      { id: `c-new-3`, label: "Export Reports", status: "Not Started", owner: partial.accountManager, dueDate: targetDate },
+      { id: `c-new-4`, label: "Transfer Assets", status: "Not Started", owner: "Operations", dueDate: targetDate },
+      { id: `c-new-5`, label: "Remove Internal Access", status: "Not Started", owner: "IT Team", dueDate: targetDate },
+      { id: `c-new-6`, label: "Archive Records", status: "Not Started", owner: partial.accountManager, dueDate: targetDate },
+    ],
+    departmentTasks: [
+      { id: `dt-new-1`, department: "Account Management", task: "Complete AM offboarding review", status: "Not Started", owner: partial.accountManager, dueDate: targetDate },
+      { id: `dt-new-2`, department: "Billing", task: "Billing closed — no further action required", status: "Completed", owner: partial.billingOwner ?? "Billing Team", dueDate: dateStr },
+    ],
+    assetTransfers: [],
+    accessRemovals: [],
+    finalBilling: {
+      outstandingBalance: 0,
+      credits: 0,
+      refunds: 0,
+      finalInvoiceAmount: 0,
+      finalInvoiceDate: dateStr,
+      collectionStatus: "Collected",
+      approvalStatus: "Approved",
+      notes: partial.billingHandoffNotes ?? "Billing cleared by Billing team.",
+    },
+    knowledgeArchive: {
+      finalNotes: "",
+      lessonsLearned: "",
+      clientHistory: "",
+      projectSummary: "",
+      retentionAttempts: "",
+      reasonForDeparture: partial.reason,
+    },
+    aiSummary: {
+      clientSummary: `${partial.client} — offboarding initiated by Billing clearance.`,
+      reasonForCancellation: partial.reason,
+      revenueImpact: partial.mrr ? `$${partial.mrr.toLocaleString()}/mo MRR.` : "MRR unknown.",
+      assetsTransferred: "Pending.",
+      outstandingRisks: "None at this time.",
+      recommendedActions: ["Complete AM review", "Schedule asset transfer", "Remove internal access"],
+    },
+    activityTimeline: [
+      {
+        date: dateStr,
+        event: "Offboarding Created — Billing Clearance",
+        actor: partial.billingOwner ?? "Billing Team",
+        description: `Billing cleared the cancellation for ${partial.client} and notified AM. Offboarding case created automatically.${
+          partial.billingHandoffNotes ? ` Notes: ${partial.billingHandoffNotes}` : ""
+        }`,
+        category: "Offboarding Created" as const,
+      },
+    ],
+  };
+
+  pendingOffboardingRecords.push(record);
+  return record;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // COMPUTED HELPERS
 // ══════════════════════════════════════════════════════════════════════════════
 
 export function getActiveOffboardings(): OffboardingRecord[] {
-  return OFFBOARDING_RECORDS.filter(
+  return [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords].filter(
     (r) => r.offboardingStatus !== "Completed"&& r.offboardingStatus !== "Archived");
 }
 
 export function getCompletedOffboardings(): OffboardingRecord[] {
-  return OFFBOARDING_RECORDS.filter(
+  return [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords].filter(
     (r) => r.offboardingStatus === "Completed"|| r.offboardingStatus === "Archived");
 }
 
 export function getPendingAssetTransfers(): OffboardingRecord[] {
-  return OFFBOARDING_RECORDS.filter(
+  return [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords].filter(
     (r) => r.assetTransferStatus === "In Progress"|| r.assetTransferStatus === "Waiting On Client"|| r.assetTransferStatus === "Not Started");
 }
 
 export function getPendingAccessRemovals(): OffboardingRecord[] {
-  return OFFBOARDING_RECORDS.filter(
+  return [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords].filter(
     (r) => r.accessRemovalStatus === "Active"|| r.accessRemovalStatus === "Pending Removal");
 }
 
 export function getPendingFinalBilling(): OffboardingRecord[] {
-  return OFFBOARDING_RECORDS.filter(
+  return [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords].filter(
     (r) => r.finalBillingStatus !== "Paid"&& r.finalBillingStatus !== "Waived"&& r.finalBillingStatus !== "Write Off");
 }
 
 export function getTotalRevenueLost(): number {
-  return OFFBOARDING_RECORDS.reduce((sum, r) => sum + r.mrr, 0);
+  return [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords].reduce((sum, r) => sum + r.mrr, 0);
 }
 
 export function getAnnualRevenueLost(): number {
-  return OFFBOARDING_RECORDS.reduce((sum, r) => sum + r.arr, 0);
+  return [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords].reduce((sum, r) => sum + r.arr, 0);
 }
 
 export function getReasonBreakdown(): Record<CancellationReason, number> {
   const result = {} as Record<CancellationReason, number>;
-  for (const r of OFFBOARDING_RECORDS) {
+  for (const r of [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords]) {
     result[r.reason] = (result[r.reason] || 0) + 1;
   }
   return result;
@@ -1459,7 +1582,7 @@ export function getReasonBreakdown(): Record<CancellationReason, number> {
 
 export function getStatusBreakdown(): Record<OffboardingStatus, number> {
   const result = {} as Record<OffboardingStatus, number>;
-  for (const r of OFFBOARDING_RECORDS) {
+  for (const r of [...OFFBOARDING_RECORDS, ...pendingOffboardingRecords]) {
     result[r.offboardingStatus] = (result[r.offboardingStatus] || 0) + 1;
   }
   return result;

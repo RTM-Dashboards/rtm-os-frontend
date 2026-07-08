@@ -1,173 +1,267 @@
 "use client";
 
+/**
+ * AM Client Portfolio
+ *
+ * DATA SOURCE: lib/mock/master-clients.ts (MASTER_CLIENTS — 20 clients)
+ *   Same source as Billing's Client Portfolio and Admin's Clients page.
+ *
+ * SCOPE — AM reads/displays only. AM-owned fields:
+ *   assignedAM, activationStatus, onboardingStatus, renewalDate, renewalStatus
+ *
+ * READ-ONLY (never editable from this page):
+ *   clientHealth, priority         — computed fields
+ *   activeServices, monthlyValue   — Billing-owned
+ *   billingOwner                   — Billing-owned
+ *   cleared, billingStatus, etc.   — Billing-owned
+ *   salesStatus, salesOwner        — Sales-owned
+ *
+ * FIELD GAP NOTE (Phase 1):
+ *   The old PORTFOLIO_CLIENTS mock had primaryContact, location, projectCount,
+ *   healthScore (numeric), and startDate — none of these exist on MASTER_CLIENTS.
+ *   These fields are dropped in this migration; no data is fabricated to fill them.
+ *   They can be added to MASTER_CLIENTS in a later phase if needed.
+ */
+
 import React, { useState } from "react";
-import {
-  PORTFOLIO_CLIENTS,
-  type PortfolioClient,
-  type ClientStatus,
-  type HealthStatus,
-  type RenewalStatus,
-} from "@/lib/account-management/am-client-success-data";
+import Link from "next/link";
+import { MASTER_CLIENTS, computeHealth, computePriority } from "@/lib/mock/master-clients";
+import type { MasterClient, ActivationStatus, HealthStatus, Priority } from "@/lib/mock/master-clients";
+import { KpiCard, StatusBadge } from "@/components/ui";
+import type { StatusVariant } from "@/components/ui";
 
-// ── Badge helpers ─────────────────────────────────────────────────────────────
+// ─── Badge variant helpers ────────────────────────────────────────────────────
 
-function statusBadgeStyle(status: ClientStatus): React.CSSProperties {
-  const map: Record<string, React.CSSProperties> = {
-    Active:                 { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
-    Onboarding:             { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
-    Expansion:              { background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" },
-    Renewal:                { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" },
-    "At Risk":              { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
-    "Cancellation Requested":{ background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
-    Offboarding:            { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
-    Archived:               { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
-    Prospect:               { background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" },
-  };
-  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+function activationStatusVariant(s: ActivationStatus): StatusVariant {
+  switch (s) {
+    case "Active":                        return "active";
+    case "Ready for Onboarding":          return "approved";
+    case "AM Assignment Needed":          return "warning";
+    case "Onboarding Pending":            return "pending";
+    case "Department Activation Pending": return "review";
+    case "Not Started":                   return "neutral";
+    default:                              return "neutral";
+  }
 }
 
-function renewalBadgeStyle(status: RenewalStatus): React.CSSProperties {
-  const map: Record<string, React.CSSProperties> = {
-    "Not Started": { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
-    "In Progress": { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
-    Renewed:       { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
-    "At Risk":     { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
-    Declined:      { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
-  };
-  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+function onboardingStatusVariant(s: string): StatusVariant {
+  switch (s) {
+    case "Completed":    return "completed";
+    case "In Progress":  return "review";
+    case "Pending":      return "pending";
+    case "Not Started":  return "neutral";
+    default:             return "neutral";
+  }
 }
 
-function healthColor(score: number): string {
-  if (score >= 80) return "#059669";
-  if (score >= 60) return "#B45309";
-  return "#DC2626";
+function healthVariant(h: HealthStatus): StatusVariant {
+  switch (h) {
+    case "Excellent": return "healthy";
+    case "Good":      return "info";
+    case "At Risk":   return "at-risk";
+    case "Critical":  return "critical";
+    default:          return "neutral";
+  }
 }
 
-function healthStatusBadgeStyle(status: HealthStatus): React.CSSProperties {
-  const map: Record<string, React.CSSProperties> = {
-    Healthy:   { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
-    Monitor:   { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
-    "At Risk": { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
-    Critical:  { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" },
-  };
-  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+function priorityVariant(p: Priority): StatusVariant {
+  switch (p) {
+    case "High":   return "error";
+    case "Medium": return "warning";
+    case "Low":    return "success";
+    default:       return "neutral";
+  }
 }
 
-function fmt(n: number, prefix = "$"): string {
-  return `${prefix}${n.toLocaleString()}`;
+function renewalStatusVariant(s: string): StatusVariant {
+  switch (s) {
+    case "Active":            return "active";
+    case "Schedule Pending":  return "warning";
+    case "At Risk":           return "at-risk";
+    case "Cancelled":         return "cancelled";
+    default:                  return "neutral";
+  }
 }
 
-// ── KPI Card ──────────────────────────────────────────────────────────────────
+// ─── Filter helpers ───────────────────────────────────────────────────────────
 
-function KpiCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  color?: string;
-}) {
-  return (
-    <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
-      <p className="mt-1.5 text-2xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>{value}</p>
-      {sub && <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{sub}</p>}
-    </div>
-  );
-}
+type ClearedFilter = "All" | "Cleared" | "Not Cleared";
 
-// ── All client statuses for filter tabs ──────────────────────────────────────
-
-const ALL_STATUSES: ClientStatus[] = [
+const ACTIVATION_STATUSES: ActivationStatus[] = [
   "Active",
-  "Onboarding",
-  "Expansion",
-  "Renewal",
-  "At Risk",
-  "Cancellation Requested",
-  "Offboarding",
-  "Archived",
-  "Prospect",
+  "Ready for Onboarding",
+  "AM Assignment Needed",
+  "Onboarding Pending",
+  "Department Activation Pending",
+  "Not Started",
 ];
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+const HEALTH_STATUSES: HealthStatus[] = ["Excellent", "Good", "At Risk", "Critical"];
 
-export default function ClientPortfolioPage() {
-  const [activeStatus, setActiveStatus] = useState<ClientStatus | "All">("All");
+// ─── Page component ───────────────────────────────────────────────────────────
+
+export default function AMClientPortfolioPage() {
   const [search, setSearch] = useState("");
+  const [activationFilter, setActivationFilter] = useState<ActivationStatus | "All">("All");
+  const [healthFilter, setHealthFilter] = useState<HealthStatus | "All">("All");
+  const [amFilter, setAmFilter] = useState<string>("All");
+  const [clearedFilter, setClearedFilter] = useState<ClearedFilter>("All");
 
-  const filtered = PORTFOLIO_CLIENTS.filter((c) => {
-    const matchesStatus = activeStatus === "All"|| c.status === activeStatus;
+  // Derive all unique AM names for filter
+  const amNames = Array.from(
+    new Set(MASTER_CLIENTS.map((c) => c.assignedAM).filter((am) => am !== "Unassigned"))
+  ).sort();
+
+  // Apply filters
+  const filtered = MASTER_CLIENTS.filter((c) => {
+    const health = computeHealth(c);
     const q = search.toLowerCase();
+
     const matchesSearch =
       !q ||
-      c.name.toLowerCase().includes(q) ||
-      c.accountManager.toLowerCase().includes(q) ||
-      c.primaryContact.toLowerCase().includes(q) ||
-      c.services.some((s) => s.toLowerCase().includes(q));
-    return matchesStatus && matchesSearch;
+      c.clientName.toLowerCase().includes(q) ||
+      c.assignedAM.toLowerCase().includes(q) ||
+      c.industry.toLowerCase().includes(q) ||
+      c.activeServices.some((s) => s.toLowerCase().includes(q)) ||
+      c.activationStatus.toLowerCase().includes(q);
+
+    const matchesActivation =
+      activationFilter === "All" || c.activationStatus === activationFilter;
+
+    const matchesHealth = healthFilter === "All" || health === healthFilter;
+
+    const matchesAM = amFilter === "All" || c.assignedAM === amFilter;
+    const matchesCleared =
+      clearedFilter === "All" ||
+      (clearedFilter === "Cleared" && c.cleared === true) ||
+      (clearedFilter === "Not Cleared" && c.cleared === false);
+
+    return matchesSearch && matchesActivation && matchesHealth && matchesAM && matchesCleared;
   });
 
   // KPIs
-  const total = PORTFOLIO_CLIENTS.length;
-  const active = PORTFOLIO_CLIENTS.filter((c) => c.status === "Active").length;
-  const atRisk = PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "At Risk").length;
-  const critical = PORTFOLIO_CLIENTS.filter((c) => c.healthStatus === "Critical").length;
-  const avgHealth = Math.round(
-    PORTFOLIO_CLIENTS.reduce((a, c) => a + c.healthScore, 0) / total
+  const total = MASTER_CLIENTS.length;
+  const activeCount = MASTER_CLIENTS.filter((c) => c.activationStatus === "Active").length;
+  const onboardingCount = MASTER_CLIENTS.filter(
+    (c) =>
+      c.activationStatus === "Onboarding Pending" ||
+      c.activationStatus === "Department Activation Pending" ||
+      c.activationStatus === "Ready for Onboarding"
+  ).length;
+  const needsAssignment = MASTER_CLIENTS.filter(
+    (c) => c.activationStatus === "AM Assignment Needed"
+  ).length;
+  const atRiskCount = MASTER_CLIENTS.filter(
+    (c) => computeHealth(c) === "At Risk" || computeHealth(c) === "Critical"
+  ).length;
+  const totalMrr = MASTER_CLIENTS.filter((c) => c.monthlyValue > 0).reduce(
+    (sum, c) => sum + c.monthlyValue,
+    0
   );
-  const totalMrr = PORTFOLIO_CLIENTS.reduce((a, c) => a + c.mrr, 0);
-  const totalArr = PORTFOLIO_CLIENTS.reduce((a, c) => a + c.arr, 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Page header */}
       <div>
         <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
           Account Management
         </p>
         <h1 className="text-2xl font-bold text-slate-900">Client Portfolio</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Complete view of all clients — health, renewals, revenue, and account status.
+          All 20 clients from the shared master client list — AM status, onboarding progress,
+          renewals, and health. Billing-owned fields (services, MRR, billing status) are read-only.
         </p>
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        <KpiCard label="Total Clients"value={total} />
-        <KpiCard label="Active" value={active} />
-        <KpiCard label="At Risk" value={atRisk} />
-        <KpiCard label="Critical" value={critical} />
-        <KpiCard label="Avg Health Score" value={`${avgHealth}%`} />
-        <KpiCard label="Total MRR" value={fmt(totalMrr)} />
-        <KpiCard label="Total ARR" value={fmt(totalArr)} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KpiCard title="Total Clients"    value={String(total)} />
+        <KpiCard title="Active"           value={String(activeCount)} />
+        <KpiCard title="In Onboarding"    value={String(onboardingCount)} />
+        <KpiCard title="Needs Assignment" value={String(needsAssignment)}
+          risk={needsAssignment > 0 ? "at-risk" : "healthy"} />
+        <KpiCard title="At Risk / Critical" value={String(atRiskCount)}
+          risk={atRiskCount > 0 ? "at-risk" : "healthy"} />
+        <KpiCard title="Active MRR"       value={`$${totalMrr.toLocaleString()}`} />
       </div>
 
-      {/* Search */}
-      <div className="flex items-center gap-3">
+      {/* Search + filters */}
+      <div className="flex flex-wrap items-center gap-3">
         <input
-          type="text"placeholder="Search clients, managers, services…"value={search}
+          type="text"
+          placeholder="Search clients, AM, industry, services…"
+          value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 max-w-md rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"/>
-        <span className="text-sm text-slate-400">{filtered.length} clients</span>
+          className="flex-1 min-w-[220px] max-w-sm rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+        />
+
+        {/* Activation Status filter */}
+        <select
+          value={activationFilter}
+          onChange={(e) => setActivationFilter(e.target.value as ActivationStatus | "All")}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+        >
+          <option value="All">All Statuses</option>
+          {ACTIVATION_STATUSES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+
+        {/* Health filter */}
+        <select
+          value={healthFilter}
+          onChange={(e) => setHealthFilter(e.target.value as HealthStatus | "All")}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+        >
+          <option value="All">All Health</option>
+          {HEALTH_STATUSES.map((h) => (
+            <option key={h} value={h}>{h}</option>
+          ))}
+        </select>
+
+        {/* Cleared filter */}
+        <select
+          value={clearedFilter}
+          onChange={(e) => setClearedFilter(e.target.value as ClearedFilter)}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+        >
+          <option value="All">All (Cleared + Not Cleared)</option>
+          <option value="Cleared">Cleared by Billing</option>
+          <option value="Not Cleared">Not Yet Cleared</option>
+        </select>
+
+        {/* AM filter */}
+        <select
+          value={amFilter}
+          onChange={(e) => setAmFilter(e.target.value)}
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
+        >
+          <option value="All">All AMs</option>
+          <option value="Unassigned">Unassigned</option>
+          {amNames.map((am) => (
+            <option key={am} value={am}>{am}</option>
+          ))}
+        </select>
+
+        <span className="text-sm text-slate-400 whitespace-nowrap">{filtered.length} clients</span>
       </div>
 
-      {/* Status filter tabs */}
+      {/* Activation status tab bar */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
-        {(["All", ...ALL_STATUSES] as (ClientStatus | "All")[]).map((s) => (
+        {(["All", ...ACTIVATION_STATUSES] as (ActivationStatus | "All")[]).map((s) => (
           <button
             key={s}
-            onClick={() => setActiveStatus(s)}
+            onClick={() => setActivationFilter(s)}
             className={`rounded-t-lg border border-b-0 px-3 py-2 text-xs font-semibold transition-colors ${
-              activeStatus === s
-                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10": "border-transparent text-slate-500 hover:text-slate-700"}`}
+              activationFilter === s
+                ? "border-slate-200 bg-white text-blue-700 -mb-px z-10"
+                : "border-transparent text-slate-500 hover:text-slate-700"
+            }`}
           >
             {s}
-            {s !== "All"&& (
+            {s !== "All" && (
               <span className="ml-1 text-[10px] text-slate-400">
-                ({PORTFOLIO_CLIENTS.filter((c) => c.status === s).length})
+                ({MASTER_CLIENTS.filter((c) => c.activationStatus === s).length})
               </span>
             )}
           </button>
@@ -180,16 +274,17 @@ export default function ClientPortfolioPage() {
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50 text-left">
               <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Client</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Primary Contact</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Account Manager</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Services</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 text-center">Projects</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Health</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Renewal</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Cleared</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Assigned AM</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Activation Status</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Onboarding</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Active Services</th>
               <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 text-right">MRR</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 text-right">ARR</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Status</th>
-              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Actions</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Health</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Priority</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Renewal</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Billing Owner</th>
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Next Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
@@ -198,79 +293,156 @@ export default function ClientPortfolioPage() {
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-4 py-10 text-center text-sm text-slate-400">
+                <td colSpan={12} className="px-4 py-10 text-center text-sm text-slate-400">
                   No clients match the current filters.
                 </td>
               </tr>
             )}
           </tbody>
         </table>
-        <div className="border-t border-slate-100 bg-slate-50 px-4 py-2 text-xs text-slate-400">
-          Showing {filtered.length} of {total} clients
+        <div className="border-t border-slate-100 bg-slate-50 px-4 py-2 flex items-center justify-between">
+          <span className="text-xs text-slate-400">
+            Showing {filtered.length} of {total} clients
+          </span>
+          <span className="text-xs text-slate-400 italic">
+            Active Services, MRR, Billing Owner, and Cleared flag are Billing-owned — read-only.
+            Cleared = Billing has confirmed payment, activated services, and handed off to AM.
+          </span>
         </div>
       </div>
     </div>
   );
 }
 
-function ClientRow({ client }: { client: PortfolioClient }) {
+// ─── Table row ────────────────────────────────────────────────────────────────
+
+function ClientRow({ client }: { client: MasterClient }) {
+  const health = computeHealth(client);
+  const priority = computePriority(health, client.billingStatus);
+
   return (
     <tr className="hover:bg-slate-50 transition-colors">
-      <td className="px-4 py-3">
-        <div>
-          <p className="font-semibold text-slate-900">{client.name}</p>
-          <p className="text-xs text-slate-400">{client.industry} · {client.location}</p>
-        </div>
-      </td>
-      <td className="px-4 py-3 text-slate-700">{client.primaryContact}</td>
-      <td className="px-4 py-3 text-slate-700">{client.accountManager}</td>
-      <td className="px-4 py-3">
-        <div className="flex flex-wrap gap-1">
-          {client.services.map((s) => (
-            <span
-              key={s}
-              className="inline-block rounded-md bg-blue-50 border border-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700">
-              {s}
-            </span>
-          ))}
-        </div>
-      </td>
-      <td className="px-4 py-3 text-center text-slate-700">{client.projectCount}</td>
+      {/* Client name + industry */}
       <td className="px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold" style={{ color: healthColor(client.healthScore) }}>
-            {client.healthScore}
-          </span>
           <span
-            className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-            style={healthStatusBadgeStyle(client.healthStatus)}
+            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
+            style={{ background: client.avatarColor }}
           >
-            {client.healthStatus}
+            {client.clientName.slice(0, 2).toUpperCase()}
           </span>
+          <div>
+            <p className="font-semibold text-slate-900 whitespace-nowrap">{client.clientName}</p>
+            <p className="text-[11px] text-slate-400">{client.industry}</p>
+          </div>
         </div>
       </td>
-      <td className="px-4 py-3">
-        <span
-          className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-          style={renewalBadgeStyle(client.renewalStatus)}
-        >
-          {client.renewalStatus}
-        </span>
+
+      {/* Cleared — Billing-owned, read-only */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        {client.cleared ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
+            Cleared
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0" />
+            Not Cleared
+          </span>
+        )}
       </td>
-      <td className="px-4 py-3 text-right font-semibold text-slate-800">{fmt(client.mrr)}</td>
-      <td className="px-4 py-3 text-right text-slate-600">{fmt(client.arr)}</td>
-      <td className="px-4 py-3">
-        <span
-          className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold"
-          style={statusBadgeStyle(client.status)}
-        >
-          {client.status}
-        </span>
+
+      {/* Assigned AM */}
+      <td className="px-4 py-3 text-slate-700 whitespace-nowrap">
+        {client.assignedAM === "Unassigned" ? (
+          <span className="text-slate-400 italic text-xs">Unassigned</span>
+        ) : (
+          client.assignedAM
+        )}
       </td>
+
+      {/* Activation Status */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <StatusBadge
+          variant={activationStatusVariant(client.activationStatus)}
+          label={client.activationStatus}
+          size="sm"
+        />
+      </td>
+
+      {/* Onboarding Status */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <StatusBadge
+          variant={onboardingStatusVariant(client.onboardingStatus)}
+          label={client.onboardingStatus}
+          size="sm"
+        />
+      </td>
+
+      {/* Active Services — read-only, billing-owned */}
       <td className="px-4 py-3">
-        <button className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors">
-          View
-        </button>
+        {client.activeServices.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {client.activeServices.map((s) => (
+              <span
+                key={s}
+                className="inline-block rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-600"
+              >
+                {s}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className="text-xs text-slate-400 italic">No services yet</span>
+        )}
+      </td>
+
+      {/* MRR — read-only, billing-owned */}
+      <td className="px-4 py-3 text-right font-semibold text-slate-800 whitespace-nowrap">
+        {client.monthlyValue > 0 ? `$${client.monthlyValue.toLocaleString()}` : "—"}
+      </td>
+
+      {/* Health */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <StatusBadge
+          variant={healthVariant(health)}
+          label={health}
+          size="sm"
+        />
+      </td>
+
+      {/* Priority */}
+      <td className="px-4 py-3 whitespace-nowrap">
+        <StatusBadge
+          variant={priorityVariant(priority)}
+          label={priority}
+          size="sm"
+        />
+      </td>
+
+      {/* Renewal */}
+      <td className="px-4 py-3">
+        <div className="flex flex-col gap-0.5">
+          <StatusBadge
+            variant={renewalStatusVariant(client.renewalStatus)}
+            label={client.renewalStatus}
+            size="sm"
+          />
+          {client.renewalDate && client.renewalDate !== "—" && (
+            <span className="text-[10px] text-slate-400">{client.renewalDate}</span>
+          )}
+        </div>
+      </td>
+
+      {/* Billing Owner — read-only */}
+      <td className="px-4 py-3 text-slate-600 whitespace-nowrap text-sm">
+        {client.billingOwner}
+      </td>
+
+      {/* Next Required Action */}
+      <td className="px-4 py-3 text-xs text-slate-500 max-w-[180px]">
+        {client.nextRequiredAction || "—"}
       </td>
     </tr>
   );

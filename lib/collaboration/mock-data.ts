@@ -1,7 +1,14 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // RTM OS — Task Collaboration Mock Data
-// Realistic examples spanning multiple projects
+// Collaboration records are keyed on collaboration-internal taskIds.
+// projectId fields reference real engine project IDs from lib/engine/.
+//
+// t-001-2-1 → proj-am-mc011 (Ridgeline Construction — SEO / GBP audit task)
+// t-002-lp  → proj-am-mc004 (Blue Ridge Plumbing — website build / landing page)
+// t-003-ppc → proj-wt-ppc   (PPC department queue — Google Ads campaign launch)
 // ─────────────────────────────────────────────────────────────────────────────
+import { ENGINE_STORE } from "@/lib/engine/mock-data";
+import type { Task } from "@/lib/engine/types";
 
 import type {
   TaskCollaboration,
@@ -930,8 +937,11 @@ export const COLLABORATION_DATA: TaskCollaboration[] = [
   {
     taskId: "t-001-2-1",
     taskName: "Technical SEO Audit",
-    projectId: "proj-001",
-    projectName: "Horizon Dental — SEO Launch",
+    // Real engine project: Ridgeline Construction LLC (mc011) — SEO / GBP onboarding, blocked on access
+    projectId: "proj-am-mc011",
+    projectName: "Ridgeline Construction LLC — Onboarding Project",
+    // Engine task link: am-mc011-t2 (Set up access & tracking — SEO / GBP, Blocked)
+    engineTaskId: "am-mc011-t2" as string,
     comments: comments_t1,
     internalNotes: internalNotes_t1,
     clientNotes: clientNotes_t1,
@@ -947,8 +957,11 @@ export const COLLABORATION_DATA: TaskCollaboration[] = [
   {
     taskId: "t-002-lp",
     taskName: "Landing Page Development",
-    projectId: "proj-002",
-    projectName: "Maple Ridge Clinic — PPC + Landing Page",
+    // Real engine project: Blue Ridge Plumbing Co. (mc004) — website build in progress
+    projectId: "proj-am-mc004",
+    projectName: "Blue Ridge Plumbing Co. — Onboarding Project",
+    // Engine task link: am-mc004-t4 (Deliver wireframe/mockup — Website Build, In Progress)
+    engineTaskId: "am-mc004-t4" as string,
     comments: comments_t2,
     internalNotes: internalNotes_t2,
     clientNotes: clientNotes_t2,
@@ -964,8 +977,11 @@ export const COLLABORATION_DATA: TaskCollaboration[] = [
   {
     taskId: "t-003-ppc",
     taskName: "Google Ads Campaign Launch",
-    projectId: "proj-003",
-    projectName: "Summit HVAC — PPC Campaign",
+    // Real engine project: PPC department workspace queue
+    projectId: "proj-wt-ppc",
+    projectName: "PPC/Google Ads — Active Queue",
+    // Engine task link: ga-1 (Monthly check-in / campaign optimization task in PPC workspace)
+    engineTaskId: "ga-1" as string,
     comments: comments_t3,
     internalNotes: internalNotes_t3,
     clientNotes: clientNotes_t3,
@@ -984,6 +1000,23 @@ export const COLLABORATION_DATA: TaskCollaboration[] = [
 
 export function getTaskCollaboration(taskId: string): TaskCollaboration | undefined {
   return COLLABORATION_DATA.find((d) => d.taskId === taskId);
+}
+
+/**
+ * Returns the real engine Task record linked to a collaboration entry.
+ * Uses engineTaskId when set; otherwise returns undefined.
+ */
+export function getEngineTaskForCollab(collab: TaskCollaboration): Task | undefined {
+  const id = collab.engineTaskId;
+  if (!id) return undefined;
+  return ENGINE_STORE.tasks.find((t) => t.id === id);
+}
+
+/**
+ * Returns the collaboration entry whose engineTaskId matches a given engine task ID.
+ */
+export function getCollabForEngineTask(engineTaskId: string): TaskCollaboration | undefined {
+  return COLLABORATION_DATA.find((d) => d.engineTaskId === engineTaskId);
 }
 
 // ── All notifications across all tasks (for notification feed) ───────────────

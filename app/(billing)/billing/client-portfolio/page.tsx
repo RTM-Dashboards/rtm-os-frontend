@@ -251,7 +251,7 @@ function AddClientModal({ onClose, onAdd }: {
       lastActivity: new Date().toISOString().slice(0, 10),
       nextRequiredAction: "Generate and send invoice",
       notes: "",
-      activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true },
+      activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true, kickoffCallCompleted: false },
       recentEvents: [{ date: new Date().toISOString().slice(0, 10), actor: form.billingOwner, action: "Client record created by Billing" }],
     };
     onAdd(newClient);

@@ -1,7 +1,7 @@
 "use client";
 
 import WorkspaceTaskPage from "@/components/workspace/WorkspaceTaskPage";
-import { seoTasks } from "@/lib/mock/workspace-tasks";
+import { getWorkspaceTasksByDepartment } from "@/lib/engine";
 import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("seo-local")!;
@@ -9,7 +9,8 @@ const workspace = getWorkspace("seo-local")!;
 export default function SeoTasksPage() {
   return (
     <WorkspaceTaskPage
-      workspaceName="SEO"tasks={seoTasks}
+      workspaceName="SEO"
+      tasks={getWorkspaceTasksByDepartment("SEO")}
       accentColor={workspace.accentColor}
     />
   );

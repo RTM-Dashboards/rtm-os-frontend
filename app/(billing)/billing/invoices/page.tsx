@@ -11,7 +11,8 @@ import {
   computePriority,
 } from "@/lib/mock/master-clients";
 import type { MasterClient } from "@/lib/mock/master-clients";
-import { billingTasks, addPendingSalesTask } from "@/lib/mock/workspace-tasks";
+import { getWorkspaceTasksByDepartment } from "@/lib/engine";
+import { addPendingSalesTask } from "@/lib/engine/pending-sales-tasks";
 import type { WorkspaceTask } from "@/components/workspace";
 
 const workspace = getWorkspace("billing")!;
@@ -707,7 +708,7 @@ export default function BillingInvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>(INITIAL_INVOICES);
   const [handoffRows, setHandoffRows] = useState<SalesHandoffRow[]>(INITIAL_HANDOFF_ROWS);
   const [masterClients, setMasterClients] = useState<MasterClient[]>(MASTER_CLIENTS);
-  const [billingTaskList, setBillingTaskList] = useState<WorkspaceTask[]>(billingTasks);
+  const [billingTaskList, setBillingTaskList] = useState<WorkspaceTask[]>(() => getWorkspaceTasksByDepartment("Billing"));
   const [drawerInvoice, setDrawerInvoice] = useState<InvoiceRow | null>(null);
   const [handoffDrawerRow, setHandoffDrawerRow] = useState<SalesHandoffRow | null>(null);
   const [paymentTarget, setPaymentTarget] = useState<InvoiceRow | null>(null);
@@ -815,6 +816,7 @@ export default function BillingInvoicesPage() {
           onboardingRecordCreated: false,
           activationTasksCreated: false,
           kickoffNeeded: true,
+          kickoffCallCompleted: false,
         },
         recentEvents: [
           { date: new Date().toISOString().slice(0, 10), actor: inv.billingOwner, action: `Client auto-created — invoice ${inv.invoiceNumber} marked paid` },
