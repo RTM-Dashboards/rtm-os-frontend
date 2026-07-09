@@ -7,23 +7,15 @@
  *
  * A simplified, standalone view for a specific onboarding record that the AM
  * can share with their client via a copyable link. This page renders ONLY the
- * fields currently assigned to the client (status "pending-client") — no AM
- * internal notes, no Sales Prefill Reference panel, no sidebar, no AM nav.
+ * fields currently assigned to the client (status "pending-client").
  *
- * When the client fills in and submits a field, the field's status moves to
- * "client-responded", which is immediately visible back on the AM-side detail
- * view at /account-management/onboarding/[recordId].
- *
- * KNOWN LIMITATIONS (interim / mock pattern — consistent with rest of app):
- * - No authentication: access is via record ID in the URL only. Real auth
- *   tokens should be added before any production use.
- * - In-memory store: a hard reload will lose records created in the same
- *   session (seed records onb-seed-* survive because they are module-level).
- * - No real email delivery: AMs copy the link manually using the
- *   "Copy Client Link" button on the AM detail view.
+ * Data is loaded from and written to the file-backed API route at
+ * /api/onboarding-records, so this client-facing view and the AM view at
+ * /account-management/onboarding/[recordId] always see the same live data,
+ * even though they live in different Next.js route groups.
  */
 
-import React, { useState, useCallback, use } from "react";
+import React, { useState, useCallback, useEffect, use } from "react";
 import {
   getOnboardingRecordById,
   simulateClientResponse,
@@ -34,11 +26,6 @@ import type { AMOnboardingFieldDef } from "@/lib/mock/am-onboarding-field-schema
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Returns only the fields that:
- * 1. Are currently assigned to the client (status "pending-client")
- * 2. Are NOT in the "am-internal" section (internal notes are never client-visible)
- */
 function getClientVisibleFields(record: AMOnboardingRecord): AMOnboardingFieldDef[] {
   return ONBOARDING_FIELD_SCHEMA.filter((f) => {
     if (f.section === "am-internal") return false;
@@ -130,15 +117,13 @@ function ClientFieldCard({
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(isResponded);
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!value.trim() && field.type !== "checkbox") return;
     setSaving(true);
-    simulateClientResponse(record.id, field.id, value);
-    setTimeout(() => {
-      setSaving(false);
-      setSaved(true);
-      onSubmitted();
-    }, 300);
+    await simulateClientResponse(record.id, field.id, value);
+    setSaving(false);
+    setSaved(true);
+    onSubmitted();
   }
 
   if (saved || isResponded) {
@@ -177,7 +162,7 @@ function ClientFieldCard({
 
       <div className="mt-3 flex items-center gap-2">
         <button
-          onClick={handleSubmit}
+          onClick={() => void handleSubmit()}
           disabled={saving || (!value.trim() && field.type !== "checkbox")}
           className="rounded-xl bg-violet-600 px-5 py-2 text-sm font-semibold text-white hover:bg-violet-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -194,13 +179,34 @@ function ClientFieldCard({
 // ─── Main client view ─────────────────────────────────────────────────────────
 
 function ClientOnboardingView({ recordId }: { recordId: string }) {
-  const [, forceUpdate] = useState(0);
-  const refresh = useCallback(() => forceUpdate((n) => n + 1), []);
+  // Load from file-backed API — cross-route-group reliable
+  const [record, setRecord] = useState<AMOnboardingRecord | null | undefined>(undefined);
 
-  const record = getOnboardingRecordById(recordId);
+  const loadRecord = useCallback(async () => {
+    const r = await getOnboardingRecordById(recordId);
+    setRecord(r ?? null);
+  }, [recordId]);
 
-  // Record not found
-  if (!record) {
+  useEffect(() => {
+    void loadRecord();
+  }, [loadRecord]);
+
+  // After client submits a field, reload so the count/progress updates
+  const refresh = useCallback(() => {
+    void loadRecord();
+  }, [loadRecord]);
+
+  // Loading
+  if (record === undefined) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-violet-50 to-slate-50 flex items-center justify-center p-6">
+        <p className="text-sm text-slate-400">Loading onboarding form…</p>
+      </div>
+    );
+  }
+
+  // Not found
+  if (record === null) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-violet-50 to-slate-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
@@ -252,7 +258,6 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-6 py-8">
         {allDone ? (
-          // All done state
           <div className="text-center py-12">
             <div className="text-6xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold text-slate-800 mb-2">All done!</h2>
@@ -266,7 +271,6 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
             </div>
           </div>
         ) : total === 0 ? (
-          // No pending fields
           <div className="text-center py-12">
             <div className="text-5xl mb-4">✅</div>
             <h2 className="text-xl font-bold text-slate-700 mb-2">Nothing to fill in right now</h2>
@@ -276,7 +280,6 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
           </div>
         ) : (
           <>
-            {/* Intro */}
             <div className="mb-6">
               <h2 className="text-lg font-bold text-slate-800 mb-1">
                 Please fill in the following information
@@ -286,7 +289,6 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
               </p>
             </div>
 
-            {/* Pending fields */}
             <div className="space-y-4">
               {clientFields.map((field) => (
                 <ClientFieldCard
@@ -298,7 +300,6 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
               ))}
             </div>
 
-            {/* Footer note */}
             <p className="mt-8 text-center text-xs text-slate-300">
               Secure link provided by your account manager · {record.salesPrefill.clientName}
             </p>

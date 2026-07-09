@@ -11,8 +11,9 @@ import {
   computePriority,
 } from "@/lib/mock/master-clients";
 import type { MasterClient } from "@/lib/mock/master-clients";
+import { upsertMasterClient, fetchMasterClients } from "@/lib/mock/master-clients-api";
 import { getWorkspaceTasksByDepartment } from "@/lib/engine";
-import { addPendingSalesTask } from "@/lib/engine/pending-sales-tasks";
+
 import type { WorkspaceTask } from "@/components/workspace";
 
 const workspace = getWorkspace("billing")!;
@@ -708,6 +709,11 @@ export default function BillingInvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>(INITIAL_INVOICES);
   const [handoffRows, setHandoffRows] = useState<SalesHandoffRow[]>(INITIAL_HANDOFF_ROWS);
   const [masterClients, setMasterClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+
+  // Hydrate from file-backed API on mount for cross-route-group reliability
+  useEffect(() => {
+    fetchMasterClients().then((live) => setMasterClients(live)).catch(() => {/* keep seed */});
+  }, []);
   const [billingTaskList, setBillingTaskList] = useState<WorkspaceTask[]>(() => getWorkspaceTasksByDepartment("Billing"));
   const [drawerInvoice, setDrawerInvoice] = useState<InvoiceRow | null>(null);
   const [handoffDrawerRow, setHandoffDrawerRow] = useState<SalesHandoffRow | null>(null);
@@ -728,7 +734,7 @@ export default function BillingInvoicesPage() {
   }
 
   // ─── Auto-create/update client in master list when invoice is paid ──────────
-  function autoCreateClientFromInvoice(inv: InvoiceRow) {
+  async function autoCreateClientFromInvoice(inv: InvoiceRow) {
     const clientName = inv.client;
     const existing = masterClients.find(
       (c) => c.clientName.toLowerCase() === clientName.toLowerCase() ||
@@ -753,21 +759,21 @@ export default function BillingInvoicesPage() {
 
     if (existing) {
       // Update billing-owned fields only
+      const updatedFields = {
+        billingStatus: "Cleared" as const,
+        invoiceStatus: "Paid" as const,
+        paymentStatus: "Paid" as const,
+        activeServices: activeServices.length > 0 ? activeServices : existing.activeServices,
+        billingOwner: inv.billingOwner,
+        monthlyValue: monthlyNum > 0 ? monthlyNum : existing.monthlyValue,
+        clientHealth: computeHealth({ billingStatus: "Cleared", paymentStatus: "Paid", cancellationStatus: existing.cancellationStatus, activationStatus: existing.activationStatus }),
+        priority: computePriority(computeHealth({ billingStatus: "Cleared", paymentStatus: "Paid", cancellationStatus: existing.cancellationStatus, activationStatus: existing.activationStatus }), "Cleared"),
+      };
       setMasterClients((prev) => prev.map((c) =>
-        c.id === existing.id
-          ? {
-              ...c,
-              billingStatus: "Cleared",
-              invoiceStatus: "Paid",
-              paymentStatus: "Paid",
-              activeServices: activeServices.length > 0 ? activeServices : c.activeServices,
-              billingOwner: inv.billingOwner,
-              monthlyValue: monthlyNum > 0 ? monthlyNum : c.monthlyValue,
-              clientHealth: computeHealth({ billingStatus: "Cleared", paymentStatus: "Paid", cancellationStatus: c.cancellationStatus, activationStatus: c.activationStatus }),
-              priority: computePriority(computeHealth({ billingStatus: "Cleared", paymentStatus: "Paid", cancellationStatus: c.cancellationStatus, activationStatus: c.activationStatus }), "Cleared"),
-            }
-          : c
+        c.id === existing.id ? { ...c, ...updatedFields } : c
       ));
+      // Persist to file-backed API (cross-route-group reliable)
+      await upsertMasterClient({ ...existing, ...updatedFields }).catch(() => {});
       log(`✅ Master client updated: ${clientName} — billing fields synced from paid invoice`);
       showToast(`${clientName} client record updated in master list`, "success");
     } else {
@@ -823,6 +829,8 @@ export default function BillingInvoicesPage() {
         ],
       };
       setMasterClients((prev) => [...prev, newClient]);
+      // Persist to file-backed API (cross-route-group reliable)
+      await upsertMasterClient(newClient).catch(() => {});
       log(`✅ New client auto-created: ${clientName} — added to master client list`);
       showToast(`${clientName} automatically created in master client list`, "success");
     }
@@ -856,7 +864,7 @@ export default function BillingInvoicesPage() {
     // Auto-create/update client when fully paid
     if (isPaid) {
       const updatedInv: InvoiceRow = { ...inv, invoiceStatus: "Paid", paymentStatus: "Paid" };
-      autoCreateClientFromInvoice(updatedInv);
+      void autoCreateClientFromInvoice(updatedInv);
     }
   }
 
@@ -864,7 +872,7 @@ export default function BillingInvoicesPage() {
     const inv = invoices.find((i) => i.id === id)!;
     updateStatus(id, "Paid", "Paid", `${inv.invoiceNumber} marked as Paid`, "success");
     const updatedInv: InvoiceRow = { ...inv, invoiceStatus: "Paid", paymentStatus: "Paid" };
-    autoCreateClientFromInvoice(updatedInv);
+    void autoCreateClientFromInvoice(updatedInv);
   }
 
   function handleCreateInvoice(inv: InvoiceRow, handoffId?: string) {
@@ -909,7 +917,12 @@ export default function BillingInvoicesPage() {
       dueDate,
       blocker: null,
     };
-    addPendingSalesTask(salesTask);
+    // POST to file-backed API — cross-route-group reliable.
+    fetch("/api/pending-sales-tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(salesTask),
+    }).catch((err) => console.error("[Billing Invoices] Failed to persist sales task:", err));
 
     log(`Info request sent to Sales for ${row.client} — task assigned to ${row.salesOwner}`);
     showToast(`Missing info requested from ${row.salesOwner} for ${row.client} — task created on Sales Tasks`, "info");

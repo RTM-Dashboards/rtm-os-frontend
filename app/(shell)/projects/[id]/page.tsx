@@ -1,16 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { use } from "react";
 import {
   getProject,
   getMilestonesForProject,
   getTasksForProject,
-  getBlueprint,
-  type Project,
-  type Task,
+  ENGINE_STORE,
+  type Project as EngineProject,
   type Milestone,
+  type Task,
+  getBlueprint,
   type ProjectStatus,
   type ProjectHealth,
   type MilestoneStatus,
@@ -157,7 +158,61 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
-  const project = getProject(id);
+  const [liveProject, setLiveProject] = useState<EngineProject | null | undefined>(
+    undefined // undefined = loading, null = not found
+  );
+  const [liveMilestones, setLiveMilestones] = useState<Milestone[]>([]);
+  const [liveTasks, setLiveTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    fetch("/api/engine?resource=projects")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { projects: EngineProject[] } | null) => {
+        if (!d?.projects) {
+          // Fallback to in-memory seed
+          setLiveProject(getProject(id) ?? null);
+          setLiveMilestones(getMilestonesForProject(id));
+          setLiveTasks(getTasksForProject(id));
+          return;
+        }
+        const proj = d.projects.find((p) => p.id === id) ?? null;
+        setLiveProject(proj);
+        if (proj) {
+          setLiveMilestones((ENGINE_STORE.milestones as Milestone[]).filter((m) => m.projectId === id));
+          setLiveTasks(d.projects.length > 0 ? [] : []);
+        }
+      })
+      .catch(() => {
+        setLiveProject(getProject(id) ?? null);
+        setLiveMilestones(getMilestonesForProject(id));
+        setLiveTasks(getTasksForProject(id));
+      });
+
+    fetch("/api/engine?resource=tasks")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { tasks: Task[] } | null) => {
+        if (d?.tasks) setLiveTasks(d.tasks.filter((t) => t.projectId === id));
+      })
+      .catch(() => {});
+
+    fetch("/api/engine?resource=milestones")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { milestones: Milestone[] } | null) => {
+        if (d?.milestones) setLiveMilestones(d.milestones.filter((m) => m.projectId === id));
+      })
+      .catch(() => {});
+  }, [id]);
+
+  // Still loading
+  if (liveProject === undefined) {
+    return (
+      <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--rtm-bg)" }}>
+        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Loading...</p>
+      </div>
+    );
+  }
+
+  const project = liveProject;
   if (!project) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--rtm-bg)" }}>
@@ -173,8 +228,8 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const milestones = getMilestonesForProject(id);
-  const tasks = getTasksForProject(id);
+  const milestones = liveMilestones;
+  const tasks = liveTasks;
   const health = HEALTH_CFG[project.health];
   const allDeps = tasks.flatMap((t) => t.dependencies);
 

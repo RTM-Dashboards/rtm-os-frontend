@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getWorkspaceTasksByDepartment } from "@/lib/engine";
-import { pendingSalesTasks } from "@/lib/engine/pending-sales-tasks";
+import { getWorkspaceTasksByDepartment, taskToWorkspaceTask } from "@/lib/engine";
+import type { Task } from "@/lib/engine/types";
+
 import type { WorkspaceTask, WorkspaceTaskStatus, WorkspaceTaskPriority } from "@/components/workspace/WorkspaceTaskPage";
 import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
 import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
@@ -100,17 +101,38 @@ export default function SalesTasksPage() {
       blocker: "Overdue — SLA deadline passed",
     },
   ];
-  const [tasks, setTasks] = useState<WorkspaceTask[]>(() => [...getWorkspaceTasksByDepartment("Sales"), ...AUDIT_REVIEW_TASKS, ...pendingSalesTasks]);
+  const [tasks, setTasks] = useState<WorkspaceTask[]>(() => [...getWorkspaceTasksByDepartment("Sales"), ...AUDIT_REVIEW_TASKS]);
 
-  // Drain any cross-department tasks that were pushed into pendingSalesTasks
-  // after this component first mounted (e.g. from Billing Invoices page).
+  // Hydrate Sales engine tasks from the file-backed API on mount so Sales sees
+  // the same live ENGINE_STORE data as Billing and AM (cross-route-group reliable).
+  // The in-memory seed above provides the initial render with no loading flicker.
   useEffect(() => {
-    if (pendingSalesTasks.length === 0) return;
-    setTasks(prev => {
-      const existingIds = new Set(prev.map(t => t.id));
-      const newOnes = pendingSalesTasks.filter(t => !existingIds.has(t.id));
-      return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
-    });
+    fetch("/api/engine?resource=tasks")
+      .then((r) => r.ok ? r.json() as Promise<{ tasks: Task[] }> : Promise.reject(r.status))
+      .then(({ tasks: engineTasks }) => {
+        const salesTasks = engineTasks
+          .filter((t) => t.department === "Sales")
+          .map(taskToWorkspaceTask);
+        // Replace the engine-sourced slice; keep AUDIT_REVIEW_TASKS (manual, static)
+        setTasks([...salesTasks, ...AUDIT_REVIEW_TASKS]);
+      })
+      .catch((err) => console.error("[Sales Tasks] Failed to hydrate engine tasks:", err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch cross-department tasks from file-backed API on mount — cross-route-group reliable.
+  useEffect(() => {
+    fetch("/api/pending-sales-tasks")
+      .then((r) => r.json())
+      .then((data: { tasks: WorkspaceTask[] }) => {
+        if (!Array.isArray(data.tasks)) return;
+        setTasks(prev => {
+          const existingIds = new Set(prev.map(t => t.id));
+          const newOnes = data.tasks.filter(t => !existingIds.has(t.id));
+          return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+        });
+      })
+      .catch((err) => console.error("[Sales Tasks] Failed to load pending tasks:", err));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [search, setSearch] = useState("");

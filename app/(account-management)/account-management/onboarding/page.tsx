@@ -32,11 +32,11 @@
  * Cleared = Billing-owned read-only flag.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ENGINE_STORE } from "@/lib/engine/mock-data";
-import type { Task } from "@/lib/engine/types";
+import type { Project, Task } from "@/lib/engine/types";
 import {
   MASTER_CLIENTS,
   computeHealth,
@@ -44,11 +44,10 @@ import {
 import type { MasterClient, ActivationStatus, HealthStatus } from "@/lib/mock/master-clients";
 import {
   getAllOnboardingRecords,
-  getOnboardingRecordByClientId,
   getOnboardingStatusMeta,
   getFieldAssignmentSummary,
 } from "@/lib/mock/am-onboarding-store";
-import type { OnboardingIntakeStatus } from "@/lib/mock/am-onboarding-store";
+import type { AMOnboardingRecord, OnboardingIntakeStatus } from "@/lib/mock/am-onboarding-store";
 import { KpiCard, StatusBadge } from "@/components/ui";
 import type { StatusVariant } from "@/components/ui";
 
@@ -68,21 +67,29 @@ function fmt(iso: string | null | undefined): string {
 
 /**
  * Finds the Onboarding task (task #1, has linkedOnboardingId) for a given
- * clientId by looking up the client's project in ENGINE_STORE.
+ * clientId by looking up the client's project in the provided data arrays.
+ * Falls back to ENGINE_STORE for server-side compatibility.
  */
-function getOnboardingTaskForClient(clientId: string): Task | undefined {
-  const project = ENGINE_STORE.projects.find((p) => p.clientId === clientId);
+function getOnboardingTaskForClient(
+  clientId: string,
+  projects?: Project[],
+  tasks?: Task[]
+): Task | undefined {
+  const projectsList = projects ?? ENGINE_STORE.projects;
+  const tasksList = tasks ?? ENGINE_STORE.tasks;
+  const project = projectsList.find((p) => p.clientId === clientId);
   if (!project) return undefined;
-  return ENGINE_STORE.tasks.find(
+  return tasksList.find(
     (t) => t.projectId === project.id && !!t.linkedOnboardingId
   );
 }
 
 /**
- * Returns the project for a clientId.
+ * Returns the project for a clientId from the provided data array.
  */
-function getProjectForClient(clientId: string) {
-  return ENGINE_STORE.projects.find((p) => p.clientId === clientId);
+function getProjectForClient(clientId: string, projects?: Project[]) {
+  const projectsList = projects ?? ENGINE_STORE.projects;
+  return projectsList.find((p) => p.clientId === clientId);
 }
 
 // ─── Onboarding task status helpers ───────────────────────────────────────────
@@ -94,8 +101,12 @@ type OnboardingTaskStatus =
   | "blocked"           // task exists, status = Blocked
   | "complete";         // task exists, status = Completed
 
-function getOnboardingTaskStatus(clientId: string): OnboardingTaskStatus {
-  const task = getOnboardingTaskForClient(clientId);
+function getOnboardingTaskStatus(
+  clientId: string,
+  projects?: Project[],
+  tasks?: Task[]
+): OnboardingTaskStatus {
+  const task = getOnboardingTaskForClient(clientId, projects, tasks);
   if (!task) return "no-project";
   switch (task.status) {
     case "Completed":   return "complete";
@@ -156,8 +167,9 @@ const QUEUE_ACTIVATION_STATUSES: ActivationStatus[] = [
 ];
 
 /** Clients cleared by Billing and not yet fully Active */
-function getClearedQueueClients(): MasterClient[] {
-  return MASTER_CLIENTS.filter(
+function getClearedQueueClients(clients?: MasterClient[]): MasterClient[] {
+  const clientsList = clients ?? MASTER_CLIENTS;
+  return clientsList.filter(
     (c) => c.cleared === true && c.activationStatus !== "Active"
   );
 }
@@ -166,16 +178,21 @@ function getClearedQueueClients(): MasterClient[] {
 
 function QueueClientRow({
   client,
+  obRecord,
   onOpenRecord,
+  liveProjects,
+  liveTasks,
 }: {
   client: MasterClient;
+  obRecord: AMOnboardingRecord | undefined;
   onOpenRecord: (recordId: string) => void;
+  liveProjects: Project[];
+  liveTasks: Task[];
 }) {
   const health   = computeHealth(client);
-  const project  = getProjectForClient(client.id);
-  const obTask   = getOnboardingTaskForClient(client.id);
-  const obRecord = getOnboardingRecordByClientId(client.id);
-  const taskStatus = getOnboardingTaskStatus(client.id);
+  const project  = getProjectForClient(client.id, liveProjects);
+  const obTask   = getOnboardingTaskForClient(client.id, liveProjects, liveTasks);
+  const taskStatus = getOnboardingTaskStatus(client.id, liveProjects, liveTasks);
   const badge    = onboardingStatusBadgeStyle(taskStatus);
 
   return (
@@ -267,9 +284,10 @@ function QueueClientRow({
       <td className="px-4 py-3">
         <div className="flex flex-col gap-1">
           {!project ? (
-            // No project: send AM to Projects page to activate
+            // No project: send AM to Projects page with this client pre-selected
+            // so the 2-step wizard auto-opens for the specific client clicked.
             <Link
-              href="/account-management/projects"
+              href={`/account-management/projects?activateClientId=${client.id}`}
               className="rounded-lg bg-blue-600 border border-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors text-center"
             >
               Activate Project →
@@ -303,13 +321,25 @@ function QueueClientRow({
 
 // ─── Queue tab ─────────────────────────────────────────────────────────────────
 
-function QueueTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void }) {
+function QueueTab({
+  allRecords,
+  onOpenRecord,
+  liveProjects,
+  liveTasks,
+  liveClients,
+}: {
+  allRecords: AMOnboardingRecord[];
+  onOpenRecord: (recordId: string) => void;
+  liveProjects: Project[];
+  liveTasks: Task[];
+  liveClients: MasterClient[];
+}) {
   const [search, setSearch] = useState("");
   const [activationFilter, setActivationFilter] = useState<ActivationStatus | "All">("All");
   const [amFilter, setAmFilter] = useState("All");
   const [taskStatusFilter, setTaskStatusFilter] = useState<OnboardingTaskStatus | "All">("All");
 
-  const CLEARED_CLIENTS = getClearedQueueClients();
+  const CLEARED_CLIENTS = getClearedQueueClients(liveClients);
 
   const amNames = Array.from(
     new Set(CLEARED_CLIENTS.map((c) => c.assignedAM).filter((am) => am !== "Unassigned"))
@@ -328,7 +358,7 @@ function QueueTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void }
       activationFilter === "All" || c.activationStatus === activationFilter;
     const matchesAM = amFilter === "All" || c.assignedAM === amFilter;
     const matchesTaskStatus =
-      taskStatusFilter === "All" || getOnboardingTaskStatus(c.id) === taskStatusFilter;
+      taskStatusFilter === "All" || getOnboardingTaskStatus(c.id, liveProjects, liveTasks) === taskStatusFilter;
     return matchesSearch && matchesActivation && matchesAM && matchesTaskStatus;
   });
 
@@ -337,22 +367,22 @@ function QueueTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void }
 
   // "No project" = not yet activated
   const noProject = CLEARED_CLIENTS.filter(
-    (c) => getOnboardingTaskStatus(c.id) === "no-project"
+    (c) => getOnboardingTaskStatus(c.id, liveProjects, liveTasks) === "no-project"
   ).length;
 
   // Onboarding in progress = task exists and is In Progress / Waiting / not complete
   const onboardingInProgress = CLEARED_CLIENTS.filter(
-    (c) => getOnboardingTaskStatus(c.id) === "in-progress"
+    (c) => getOnboardingTaskStatus(c.id, liveProjects, liveTasks) === "in-progress"
   ).length;
 
   // Onboarding blocked
   const onboardingBlocked = CLEARED_CLIENTS.filter(
-    (c) => getOnboardingTaskStatus(c.id) === "blocked"
+    (c) => getOnboardingTaskStatus(c.id, liveProjects, liveTasks) === "blocked"
   ).length;
 
   // Onboarding complete = task marked Completed
   const onboardingComplete = CLEARED_CLIENTS.filter(
-    (c) => getOnboardingTaskStatus(c.id) === "complete"
+    (c) => getOnboardingTaskStatus(c.id, liveProjects, liveTasks) === "complete"
   ).length;
 
   // Needs AM assignment (pre-project, AM not yet assigned)
@@ -496,7 +526,10 @@ function QueueTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void }
                 <QueueClientRow
                   key={client.id}
                   client={client}
+                  obRecord={allRecords.find((r) => r.clientId === client.id)}
                   onOpenRecord={onOpenRecord}
+                  liveProjects={liveProjects}
+                  liveTasks={liveTasks}
                 />
               ))}
               {filtered.length === 0 && (
@@ -553,7 +586,7 @@ function ProgressBar({ value, max, color }: { value: number; max: number; color:
 
 // ─── Records tab (existing onboarding records) ─────────────────────────────────
 
-function RecordsTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void }) {
+function RecordsTab({ allRecords, onOpenRecord }: { allRecords: AMOnboardingRecord[]; onOpenRecord: (recordId: string) => void }) {
   const [statusFilter, setStatusFilter] = useState<OnboardingIntakeStatus | "All">("All");
   const [search, setSearch] = useState("");
 
@@ -566,7 +599,7 @@ function RecordsTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void
     "Complete",
   ];
 
-  const records = getAllOnboardingRecords();
+  const records = allRecords;
   const total = records.length;
   const amInProgress   = records.filter((r) => r.status === "AM In Progress").length;
   const sentToClient   = records.filter((r) => r.status === "Sent to Client").length;
@@ -730,13 +763,51 @@ function RecordsTab({ onOpenRecord }: { onOpenRecord: (recordId: string) => void
 export default function OnboardingQueuePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"queue" | "records">("queue");
+  const [allRecords, setAllRecords] = useState<AMOnboardingRecord[]>([]);
+  const [liveProjects, setLiveProjects] = useState<Project[]>(() => ENGINE_STORE.projects);
+  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => ENGINE_STORE.tasks);
+  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => MASTER_CLIENTS);
+
+  const loadRecords = useCallback(async () => {
+    const records = await getAllOnboardingRecords();
+    setAllRecords(records);
+  }, []);
+
+  const loadEngineData = useCallback(async () => {
+    try {
+      const [projectsRes, tasksRes, clientsRes] = await Promise.all([
+        fetch("/api/engine?resource=projects"),
+        fetch("/api/engine?resource=tasks"),
+        fetch("/api/master-clients"),
+      ]);
+      if (projectsRes.ok) {
+        const d = await projectsRes.json() as { projects: Project[] };
+        setLiveProjects(d.projects);
+      }
+      if (tasksRes.ok) {
+        const d = await tasksRes.json() as { tasks: Task[] };
+        setLiveTasks(d.tasks);
+      }
+      if (clientsRes.ok) {
+        const d = await clientsRes.json() as { clients: MasterClient[] };
+        setLiveClients(d.clients);
+      }
+    } catch {
+      // Keep using seed data on fetch failure — non-fatal
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRecords();
+    void loadEngineData();
+  }, [loadRecords, loadEngineData]);
 
   function handleOpenRecord(recordId: string) {
     router.push(`/account-management/onboarding/${recordId}`);
   }
 
-  const recordCount = getAllOnboardingRecords().length;
-  const queueCount  = getClearedQueueClients().length;
+  const recordCount = allRecords.length;
+  const queueCount  = getClearedQueueClients(liveClients).length;
 
   return (
     <div className="space-y-6">
@@ -784,9 +855,15 @@ export default function OnboardingQueuePage() {
 
       {/* Tab content */}
       {activeTab === "queue" ? (
-        <QueueTab onOpenRecord={handleOpenRecord} />
+        <QueueTab
+          allRecords={allRecords}
+          onOpenRecord={handleOpenRecord}
+          liveProjects={liveProjects}
+          liveTasks={liveTasks}
+          liveClients={liveClients}
+        />
       ) : (
-        <RecordsTab onOpenRecord={handleOpenRecord} />
+        <RecordsTab allRecords={allRecords} onOpenRecord={handleOpenRecord} />
       )}
     </div>
   );

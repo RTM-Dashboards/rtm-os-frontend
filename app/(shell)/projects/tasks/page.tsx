@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   getAllTasks,
   getProjects,
   getDepartmentTaskKPIs,
   DEPARTMENT_WORKSPACE_FILTERS,
+  type Project,
   type Task,
   type DepartmentName,
   type TaskStatus,
@@ -93,8 +94,18 @@ function RowActions({ task }: { task: Task }) {
 // ---------------------------------------------------------------------------
 
 export default function GlobalTasksPage() {
-  const allTasks = getAllTasks();
-  const projects = getProjects();
+  const [allTasks, setAllTasks] = useState<Task[]>(() => getAllTasks());
+  const [projects, setProjects] = useState<Project[]>(() => getProjects());
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/engine?resource=tasks").then((r) => r.ok ? r.json() : null),
+      fetch("/api/engine?resource=projects").then((r) => r.ok ? r.json() : null),
+    ]).then(([td, pd]) => {
+      if (td?.tasks) setAllTasks(td.tasks as Task[]);
+      if (pd?.projects) setProjects(pd.projects as Project[]);
+    }).catch(() => {});
+  }, []);
 
   const [deptFilter, setDeptFilter]     = useState<DepartmentName | "All">("All");
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "All">("All");

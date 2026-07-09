@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { use } from "react";
 import {
@@ -8,7 +8,9 @@ import {
   getProject,
   getBlueprint,
   getAllTasks,
+  ENGINE_STORE,
   type Task,
+  type Project,
   type TaskStatus,
   type TaskPriority,
 } from "@/lib/engine";
@@ -71,9 +73,44 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const [activeTab, setActiveTab] = useState<Tab>("info");
 
-  const task = getTask(id);
-  const allTasks = getAllTasks();
+  const [liveTask, setLiveTask] = useState<Task | null | undefined>(undefined);
+  const [allTasks, setAllTasks] = useState<Task[]>(() => getAllTasks());
+  const [liveProject, setLiveProject] = useState<Project | undefined>(() => undefined);
 
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/engine?resource=tasks").then((r) => r.ok ? r.json() : null),
+      fetch("/api/engine?resource=projects").then((r) => r.ok ? r.json() : null),
+    ]).then(([td, pd]) => {
+      if (td?.tasks) {
+        const tasks = td.tasks as Task[];
+        setAllTasks(tasks);
+        setLiveTask(tasks.find((t) => t.id === id) ?? null);
+        const found = tasks.find((t) => t.id === id);
+        if (found && pd?.projects) {
+          setLiveProject((pd.projects as Project[]).find((p) => p.id === found.projectId));
+        }
+      } else {
+        setLiveTask(getTask(id) ?? null);
+      }
+      if (!td?.tasks && pd?.projects) {
+        const t = getTask(id);
+        if (t) setLiveProject((pd.projects as Project[]).find((p) => p.id === t.projectId));
+      }
+    }).catch(() => {
+      setLiveTask(getTask(id) ?? null);
+    });
+  }, [id]);
+
+  if (liveTask === undefined) {
+    return (
+      <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--rtm-bg)" }}>
+        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Loading...</p>
+      </div>
+    );
+  }
+
+  const task = liveTask;
   if (!task) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--rtm-bg)" }}>
@@ -85,7 +122,7 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     );
   }
 
-  const project   = getProject(task.projectId);
+  const project = liveProject ?? getProject(task.projectId);
   const blueprint = task.blueprintId ? getBlueprint(task.blueprintId) : undefined;
   const sc = TS_CFG[task.status];
   const pc = PRIORITY_CFG[task.priority];

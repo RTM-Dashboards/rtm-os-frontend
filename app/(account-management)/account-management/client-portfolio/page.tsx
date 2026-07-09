@@ -23,7 +23,7 @@
  *   They can be added to MASTER_CLIENTS in a later phase if needed.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { MASTER_CLIENTS, computeHealth, computePriority } from "@/lib/mock/master-clients";
 import type { MasterClient, ActivationStatus, HealthStatus, Priority } from "@/lib/mock/master-clients";
@@ -106,14 +106,21 @@ export default function AMClientPortfolioPage() {
   const [healthFilter, setHealthFilter] = useState<HealthStatus | "All">("All");
   const [amFilter, setAmFilter] = useState<string>("All");
   const [clearedFilter, setClearedFilter] = useState<ClearedFilter>("All");
+  const [liveClients, setLiveClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+
+  useEffect(() => {
+    fetch("/api/master-clients").then((r) => r.ok ? r.json() : null).then((d: { clients: MasterClient[] } | null) => {
+      if (d?.clients) setLiveClients(d.clients);
+    }).catch(() => {/* keep seed */});
+  }, []);
 
   // Derive all unique AM names for filter
   const amNames = Array.from(
-    new Set(MASTER_CLIENTS.map((c) => c.assignedAM).filter((am) => am !== "Unassigned"))
+    new Set(liveClients.map((c) => c.assignedAM).filter((am) => am !== "Unassigned"))
   ).sort();
 
   // Apply filters
-  const filtered = MASTER_CLIENTS.filter((c) => {
+  const filtered = liveClients.filter((c) => {
     const health = computeHealth(c);
     const q = search.toLowerCase();
 
@@ -140,21 +147,21 @@ export default function AMClientPortfolioPage() {
   });
 
   // KPIs
-  const total = MASTER_CLIENTS.length;
-  const activeCount = MASTER_CLIENTS.filter((c) => c.activationStatus === "Active").length;
-  const onboardingCount = MASTER_CLIENTS.filter(
+  const total = liveClients.length;
+  const activeCount = liveClients.filter((c) => c.activationStatus === "Active").length;
+  const onboardingCount = liveClients.filter(
     (c) =>
       c.activationStatus === "Onboarding Pending" ||
       c.activationStatus === "Department Activation Pending" ||
       c.activationStatus === "Ready for Onboarding"
   ).length;
-  const needsAssignment = MASTER_CLIENTS.filter(
+  const needsAssignment = liveClients.filter(
     (c) => c.activationStatus === "AM Assignment Needed"
   ).length;
-  const atRiskCount = MASTER_CLIENTS.filter(
+  const atRiskCount = liveClients.filter(
     (c) => computeHealth(c) === "At Risk" || computeHealth(c) === "Critical"
   ).length;
-  const totalMrr = MASTER_CLIENTS.filter((c) => c.monthlyValue > 0).reduce(
+  const totalMrr = liveClients.filter((c) => c.monthlyValue > 0).reduce(
     (sum, c) => sum + c.monthlyValue,
     0
   );
@@ -261,7 +268,7 @@ export default function AMClientPortfolioPage() {
             {s}
             {s !== "All" && (
               <span className="ml-1 text-[10px] text-slate-400">
-                ({MASTER_CLIENTS.filter((c) => c.activationStatus === s).length})
+                ({liveClients.filter((c) => c.activationStatus === s).length})
               </span>
             )}
           </button>

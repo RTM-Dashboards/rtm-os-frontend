@@ -20,8 +20,6 @@ import {
   type SaveAttemptStep,
 } from "@/lib/account-management/cancellations-data";
 import {
-  pendingCancellationRequests,
-  addPendingCancellationRequest,
   CANCELLATION_REASONS,
   type PendingCancellationRequest,
   type BillingCancellationStatus,
@@ -293,15 +291,21 @@ function InitiateCancellationModal({
     const masterClient = MASTER_CLIENTS.find((c) => c.clientName === client);
     const mrrImpact = masterClient ? `-$${masterClient.monthlyValue.toLocaleString()}` : "-$0";
 
-    addPendingCancellationRequest({
-      client,
-      reason,
-      notes,
-      amOwner,
-      requestedDate: displayDate,
-      mrrImpact,
-      billingOwner: "Billing Team",
-    });
+    // POST to file-backed API route — cross-route-group reliable.
+    fetch("/api/pending-cancellation-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client,
+        reason,
+        notes,
+        amOwner,
+        requestedDate: displayDate,
+        mrrImpact,
+        billingOwner: "Billing Team",
+      }),
+    }).catch((err) => console.error("[AM Cancellations] Failed to persist request:", err));
+
     onSubmit(client, reason);
     onClose();
   }
@@ -631,16 +635,21 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
   const [riskFilter, setRiskFilter] = useState<RiskLevel | "All">("All");
   const [search, setSearch] = useState("");
   // Track AM-initiated requests so the panel re-renders when new ones are added.
-  const [amRequests, setAmRequests] = useState<PendingCancellationRequest[]>([...pendingCancellationRequests]);
+  const [amRequests, setAmRequests] = useState<PendingCancellationRequest[]>([]);
 
-  // Drain any newly pushed requests into local state on mount only.
+  // Fetch from file-backed API on mount — cross-route-group reliable.
   useEffect(() => {
-    if (pendingCancellationRequests.length === 0) return;
-    setAmRequests(prev => {
-      const existingIds = new Set(prev.map(r => r.id));
-      const newOnes = pendingCancellationRequests.filter(r => !existingIds.has(r.id));
-      return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
-    });
+    fetch("/api/pending-cancellation-requests")
+      .then((r) => r.json())
+      .then((data: { records: PendingCancellationRequest[] }) => {
+        if (!Array.isArray(data.records)) return;
+        setAmRequests(prev => {
+          const existingIds = new Set(prev.map(r => r.id));
+          const newOnes = data.records.filter(r => !existingIds.has(r.id));
+          return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+        });
+      })
+      .catch((err) => console.error("[AM Cancellations] Failed to load requests:", err));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

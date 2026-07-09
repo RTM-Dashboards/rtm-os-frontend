@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import type { ProjectRecord } from "@/lib/sales/project-config";
 import {
   getProjects,
-  getProjectKPIs,
   getAllTasks,
   getBlueprints,
   type Project,
+  type Task,
+  type TaskBlueprint,
   type ProjectStatus,
   type ProjectHealth,
   type ServicePackage,
@@ -225,10 +226,38 @@ export default function GlobalProjectsPage() {
   const [packageFilter, setPackageFilter] = useState<ServicePackage | "All">("All");
   const [search, setSearch] = useState("");
 
-  const projects = getProjects();
-  const kpis = getProjectKPIs();
-  const allTasks = getAllTasks();
-  const blueprints = getBlueprints();
+  // Live data — initialized from seed, hydrated from API on mount
+  const [liveProjects, setLiveProjects] = useState<Project[]>(() => getProjects());
+  const [liveTasks, setLiveTasks] = useState<Task[]>(() => getAllTasks());
+  const [liveBlueprints] = useState<TaskBlueprint[]>(() => getBlueprints());
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/engine?resource=projects").then((r) => r.ok ? r.json() : null),
+      fetch("/api/engine?resource=tasks").then((r) => r.ok ? r.json() : null),
+    ]).then(([pd, td]) => {
+      if (pd?.projects) setLiveProjects(pd.projects as Project[]);
+      if (td?.tasks) setLiveTasks(td.tasks as Task[]);
+    }).catch(() => {/* keep seed */});
+  }, []);
+
+  const projects = liveProjects;
+  const allTasks = liveTasks;
+  const blueprints = liveBlueprints;
+  const kpis = {
+    total:          projects.length,
+    active:         projects.filter((p) => p.status === "In Progress" || p.status === "Launched").length,
+    blocked:        projects.filter((p) => p.status === "Blocked" || p.status === "Pending Client").length,
+    completed:      projects.filter((p) => p.status === "Completed").length,
+    healthGreen:    projects.filter((p) => p.health === "Green").length,
+    healthYellow:   projects.filter((p) => p.health === "Yellow").length,
+    healthRed:      projects.filter((p) => p.health === "Red").length,
+    totalTasks:     allTasks.length,
+    openTasks:      allTasks.filter((t) => t.status !== "Completed" && t.status !== "Cancelled").length,
+    blockedTasks:   allTasks.filter((t) => t.status === "Blocked").length,
+    completedTasks: allTasks.filter((t) => t.status === "Completed").length,
+    tasksWithDeps:  allTasks.filter((t) => t.dependencies.length > 0).length,
+  };
 
   const [taskSearch, setTaskSearch] = useState("");
   const [taskDeptFilter, setTaskDeptFilter] = useState("All");

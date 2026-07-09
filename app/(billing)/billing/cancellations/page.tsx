@@ -6,10 +6,9 @@ import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 import {
-  pendingCancellationRequests,
   type PendingCancellationRequest,
 } from "@/lib/mock/cancellation-queue";
-import { addPendingOffboardingRecord } from "@/lib/account-management/offboarding-data";
+
 
 const workspace = getWorkspace("billing")!;
 
@@ -1062,12 +1061,11 @@ function amRequestToRecord(req: PendingCancellationRequest): CancellationRecord 
 }
 
 export default function BillingCancellationsPage() {
-  // Merge AM-initiated requests from the shared queue with Billing's own mock records.
-  // Pattern mirrors Sales tasks page draining pendingSalesTasks on mount.
-  const [records, setRecords] = useState<CancellationRecord[]>(() => [
-    ...mockCancellations,
-    ...pendingCancellationRequests.map(amRequestToRecord),
-  ]);
+  // records: Billing's own mock records merged with AM-initiated requests from the API.
+  const [records, setRecords] = useState<CancellationRecord[]>([...mockCancellations]);
+  // amQueue: raw AM-initiated requests fetched from the file-backed API (used for
+  // reason look-up when triggering offboarding).
+  const [amQueue, setAmQueue] = useState<PendingCancellationRequest[]>([]);
   const [modal, setModal]     = useState<ModalKind>(null);
   const [toast, setToast]     = useState<{ message: string; variant: "success" | "info" | "warning" | "error" } | null>(null);
 
@@ -1075,17 +1073,24 @@ export default function BillingCancellationsPage() {
     setToast({ message, variant });
   }
 
-  // Drain any newly pushed AM-initiated requests into Billing's records state.
-  // Same pattern as Sales tasks page reading pendingSalesTasks.
+  // Fetch AM-initiated requests from the file-backed API on mount — cross-route-group reliable.
   useEffect(() => {
-    const existingIds = new Set(records.map((r) => r.id));
-    const newOnes = pendingCancellationRequests
-      .filter((r) => !existingIds.has(r.id))
-      .map(amRequestToRecord);
-    if (newOnes.length > 0) {
-      setRecords((prev) => [...prev, ...newOnes]);
-    }
-  });
+    fetch("/api/pending-cancellation-requests")
+      .then((r) => r.json())
+      .then((data: { records: PendingCancellationRequest[] }) => {
+        if (!Array.isArray(data.records)) return;
+        setAmQueue(data.records);
+        setRecords((prev) => {
+          const existingIds = new Set(prev.map((r) => r.id));
+          const newOnes = data.records
+            .filter((r) => !existingIds.has(r.id))
+            .map(amRequestToRecord);
+          return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+        });
+      })
+      .catch((err) => console.error("[Billing Cancellations] Failed to load AM requests:", err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [eventLog, setEventLog] = useState<
     { date: string; client: string; event: string; by: string; billingStatus: string; offboardingStatus: string; notes: string }[]
@@ -1667,18 +1672,23 @@ export default function BillingCancellationsPage() {
             // CROSS-WORKSPACE SIGNAL: create a real offboarding record on AM's Offboarding page.
             // Looks up the cancellation reason from the AM-initiated queue if available,
             // otherwise defaults to the first locked category.
-            const queueEntry = pendingCancellationRequests.find(
+            const queueEntry = amQueue.find(
               (r) => r.client === modal.record.client
             );
-            addPendingOffboardingRecord({
-              client: modal.record.client,
-              accountManager: modal.record.amOwner,
-              reason: (queueEntry?.reason ?? "Pending Client Confirmation") as Parameters<typeof addPendingOffboardingRecord>[0]["reason"],
-              mrr: parseInt(modal.record.monthlyValue.replace(/[^0-9]/g, ""), 10) || 0,
-              offboardingOwner: modal.record.amOwner,
-              billingOwner: modal.record.billingOwner,
-              billingHandoffNotes: msg,
-            });
+            // POST to file-backed API — cross-route-group reliable.
+            fetch("/api/pending-offboarding-records", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                client: modal.record.client,
+                accountManager: modal.record.amOwner,
+                reason: queueEntry?.reason ?? "Pending Client Confirmation",
+                mrr: parseInt(modal.record.monthlyValue.replace(/[^0-9]/g, ""), 10) || 0,
+                offboardingOwner: modal.record.amOwner,
+                billingOwner: modal.record.billingOwner,
+                billingHandoffNotes: msg,
+              }),
+            }).catch((err) => console.error("[Billing Cancellations] Failed to create offboarding record:", err));
 
             showToast(`✅ AM notified for ${modal.record.client} — Offboarding case created in Account Management`, "success");
           }}

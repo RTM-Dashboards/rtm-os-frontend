@@ -1,0 +1,262 @@
+{
+  "records": [
+    {
+      "id": "onb-seed-mc004",
+      "clientId": "mc004",
+      "status": "Ready for Kickoff",
+      "salesPrefill": {
+        "clientName": "Blue Ridge Plumbing Co.",
+        "email": "tom@blueridgeplumbing.com",
+        "industry": "Home Services – Plumbing",
+        "salesOwner": "Jake R.",
+        "activeServices": [
+          "SEO / GBP",
+          "Website Build"
+        ],
+        "monthlyValue": 1500
+      },
+      "fieldAssignments": {
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Alex R.",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Blue Ridge Plumbing Co.",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "clientEmail": {
+          "fieldId": "clientEmail",
+          "status": "am-filled",
+          "value": "tom@blueridgeplumbing.com",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Home Services – Plumbing",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "activeServices": {
+          "fieldId": "activeServices",
+          "status": "am-filled",
+          "value": "SEO / GBP, Website Build",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "monthlyValue": {
+          "fieldId": "monthlyValue",
+          "status": "am-filled",
+          "value": "1500",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "am-filled",
+          "value": "Email",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "am-filled",
+          "value": "Medium",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "am-filled",
+          "value": "12",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "am-filled",
+          "value": "true",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "am-filled",
+          "value": "All access received on kickoff call. Website wireframes in progress.",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2025-05-08T00:00:00.000Z",
+          "sentToClientAt": "2025-05-08T00:00:00.000Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2025-05-08T00:00:00.000Z",
+          "sentToClientAt": "2025-05-08T00:00:00.000Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2025-05-08T00:00:00.000Z",
+          "sentToClientAt": "2025-05-08T00:00:00.000Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-09T00:00:00.000Z",
+          "sentToClientAt": "2026-07-09T00:00:00.000Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "am-filled",
+          "value": "2025-05-08",
+          "assignedAt": "2025-05-08T00:00:00.000Z"
+        }
+      },
+      "createdAt": "2025-05-08T00:00:00.000Z",
+      "updatedAt": "2026-07-09T15:40:55.516Z",
+      "projectId": "proj-am-mc004"
+    },
+    {
+      "id": "onb-seed-mc011",
+      "clientId": "mc011",
+      "status": "Sent to Client",
+      "salesPrefill": {
+        "clientName": "Ridgeline Construction LLC",
+        "email": "tony@ridgelineconstruction.com",
+        "industry": "Construction",
+        "salesOwner": "Marco T.",
+        "activeServices": [
+          "SEO / GBP"
+        ],
+        "monthlyValue": 2800
+      },
+      "fieldAssignments": {
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Alex R.",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Ridgeline Construction LLC",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "clientEmail": {
+          "fieldId": "clientEmail",
+          "status": "am-filled",
+          "value": "tony@ridgelineconstruction.com",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Construction",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "activeServices": {
+          "fieldId": "activeServices",
+          "status": "am-filled",
+          "value": "SEO / GBP",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "monthlyValue": {
+          "fieldId": "monthlyValue",
+          "status": "am-filled",
+          "value": "2800",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "am-filled",
+          "value": "Email",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "am-filled",
+          "value": "Medium",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "am-filled",
+          "value": "12",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "am-filled",
+          "value": "false",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "am-filled",
+          "value": "Tasks assigned to SEO team. Waiting on client to share GBP access credentials.",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2025-05-20T00:00:00.000Z",
+          "sentToClientAt": "2025-05-20T00:00:00.000Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2025-05-20T00:00:00.000Z",
+          "sentToClientAt": "2025-05-20T00:00:00.000Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2025-05-20T00:00:00.000Z",
+          "sentToClientAt": "2025-05-20T00:00:00.000Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2025-05-20T00:00:00.000Z"
+        }
+      },
+      "createdAt": "2025-05-20T00:00:00.000Z",
+      "updatedAt": "2025-05-27T00:00:00.000Z",
+      "projectId": "proj-am-mc011"
+    }
+  ]
+}

@@ -5,19 +5,13 @@
  *
  * Route: /account-management/onboarding/[recordId]
  *
- * Gives AMs a real, bookmarkable URL for each onboarding record.
- * Renders the same OnboardingDetail view as the client-state-driven
- * version on the Queue page, but loaded directly by recordId from the
- * URL param so it survives refresh, bookmark, and direct navigation.
- *
- * Known limitation: the data store is module-level in-memory mock state.
- * Records created in the same browser session are available here, but a
- * hard reload of this URL will only find seed records (onb-seed-*). This
- * is consistent with all other mock-data patterns in this app and is noted
- * as an interim limitation pending a real persistence layer.
+ * Data is loaded from and written to the file-backed API route at
+ * /api/onboarding-records, so both this AM view and the client-facing portal
+ * view at /client-onboarding/[recordId] always see the same live data —
+ * even across separate Next.js route groups in dev mode.
  */
 
-import React, { useState, useCallback, use } from "react";
+import React, { useState, useCallback, useEffect, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -44,6 +38,7 @@ import {
 import type { AMOnboardingFieldDef } from "@/lib/mock/am-onboarding-field-schema";
 import { getAllProjects, getProjectByClientId } from "@/lib/mock/am-projects-store";
 import { MASTER_CLIENTS, markKickoffComplete } from "@/lib/mock/master-clients";
+import { apiMarkKickoffComplete } from "@/lib/mock/master-clients-api";
 
 // ─── Formatting helpers ────────────────────────────────────────────────────────
 
@@ -350,32 +345,32 @@ function CollaborativeFieldRow({
     setDraft(storedValue);
   }
 
-  function startFilling() {
+  async function startFilling() {
     setDraft(storedValue);
     setIsEditing(true);
-    setFieldAmFilling(record.id, field.id);
+    await setFieldAmFilling(record.id, field.id);
     onChanged();
   }
-  function handleSave() {
-    saveFieldValue(record.id, field.id, draft);
+  async function handleSave() {
+    await saveFieldValue(record.id, field.id, draft);
     setIsEditing(false);
     onChanged();
   }
-  function handleCancelEdit() {
+  async function handleCancelEdit() {
     setDraft(storedValue);
     setIsEditing(false);
     if (!storedValue) {
-      setFieldAssignment(record.id, field.id, { status: "unset" });
+      await setFieldAssignment(record.id, field.id, { status: "unset" });
       onChanged();
     }
   }
-  function handleSendToClient() {
+  async function handleSendToClient() {
     setIsEditing(false);
-    markFieldPendingClient(record.id, field.id);
+    await markFieldPendingClient(record.id, field.id);
     onChanged();
   }
   function handleAmFillInstead() {
-    startFilling();
+    void startFilling();
   }
 
   if (status === "pending-client") {
@@ -441,9 +436,9 @@ function CollaborativeFieldRow({
         {field.description && <p className="text-xs text-slate-500 mb-2">{field.description}</p>}
         <FieldInput field={field} value={draft} onChange={setDraft} />
         <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-          <button onClick={handleSave} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors">Save</button>
-          <button onClick={handleCancelEdit} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
-          <button onClick={handleSendToClient} className="ml-auto rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors">→ Send to Client instead</button>
+          <button onClick={() => void handleSave()} className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors">Save</button>
+          <button onClick={() => void handleCancelEdit()} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+          <button onClick={() => void handleSendToClient()} className="ml-auto rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors">→ Send to Client instead</button>
         </div>
       </div>
     );
@@ -468,8 +463,8 @@ function CollaborativeFieldRow({
             )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <button onClick={startFilling} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Edit</button>
-            <button onClick={handleSendToClient} className="rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition-colors">→ Client</button>
+            <button onClick={() => void startFilling()} className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors">Edit</button>
+            <button onClick={() => void handleSendToClient()} className="rounded-lg border border-amber-200 bg-white px-2.5 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50 transition-colors">→ Client</button>
           </div>
         </div>
       </div>
@@ -490,8 +485,8 @@ function CollaborativeFieldRow({
           {field.description && <p className="text-xs text-slate-400 mt-0.5">{field.description}</p>}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <button onClick={startFilling} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors">Fill it in</button>
-          <button onClick={handleSendToClient} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors">Send to Client</button>
+          <button onClick={() => void startFilling()} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors">Fill it in</button>
+          <button onClick={() => void handleSendToClient()} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors">Send to Client</button>
         </div>
       </div>
     </div>
@@ -530,11 +525,13 @@ function KickoffCallWidget({
     );
   }
 
-  function handleMarkComplete() {
+  async function handleMarkComplete() {
     setCompleting(true);
     if (kickoffDate) {
-      saveFieldValue(record.id, "kickoffCallDate", kickoffDate);
+      await saveFieldValue(record.id, "kickoffCallDate", kickoffDate);
     }
+    // Persist to file-backed API (cross-route-group reliable) + in-memory fallback
+    await apiMarkKickoffComplete(record.clientId, kickoffDate || undefined).catch(() => {});
     markKickoffComplete(record.clientId, kickoffDate || undefined);
     setTimeout(() => {
       setCompleting(false);
@@ -575,7 +572,7 @@ function KickoffCallWidget({
                 />
               </div>
               <button
-                onClick={handleMarkComplete}
+                onClick={() => void handleMarkComplete()}
                 disabled={completing}
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
               >
@@ -623,23 +620,56 @@ function CopyClientLinkButton({ recordId }: { recordId: string }) {
 
 function OnboardingDetailView({ recordId }: { recordId: string }) {
   const router = useRouter();
-  const [, forceUpdate] = useState(0);
-  const refresh = useCallback(() => forceUpdate((n) => n + 1), []);
+
+  // Load record from API (file-backed, cross-route-group reliable)
+  const [record, setRecord] = useState<AMOnboardingRecord | null | undefined>(undefined);
+
+  const [liveProjects, setLiveProjects] = useState<import("@/lib/engine/types").Project[]>([]);
+
+  const loadRecord = useCallback(async () => {
+    const r = await getOnboardingRecordById(recordId);
+    setRecord(r ?? null);
+  }, [recordId]);
+
+  useEffect(() => {
+    void loadRecord();
+    // Hydrate engine projects from file-backed API for cross-route-group reliability
+    fetch("/api/engine?resource=projects")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { projects: import("@/lib/engine/types").Project[] } | null) => {
+        if (d?.projects) setLiveProjects(d.projects);
+      })
+      .catch(() => {});
+  }, [loadRecord]);
+
+  // After any mutation: reload from API so UI reflects persisted state
+  const refresh = useCallback(() => {
+    void loadRecord();
+  }, [loadRecord]);
 
   const [sectionFilter, setSectionFilter] = useState<
     AMOnboardingFieldDef["section"] | "all" | "pending-client" | "unset"
   >("all");
 
-  const freshRecord = getOnboardingRecordById(recordId);
+  // Loading state
+  if (record === undefined) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-16 text-center">
+        <p className="text-sm text-slate-400">Loading onboarding record…</p>
+      </div>
+    );
+  }
 
-  if (!freshRecord) {
+  // Not found
+  if (record === null) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-16 text-center">
         <div className="text-slate-300 text-5xl mb-4">🔍</div>
         <h2 className="text-lg font-bold text-slate-700 mb-1">Record not found</h2>
         <p className="text-sm text-slate-400 max-w-md mx-auto mb-4">
-          Onboarding record <span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">{recordId}</span> could not be found.
-          This can happen after a page reload if the record was created in a previous session (in-memory mock data only).
+          Onboarding record{" "}
+          <span className="font-mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">{recordId}</span>{" "}
+          could not be found.
         </p>
         <button
           onClick={() => router.push("/account-management/onboarding")}
@@ -651,20 +681,20 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
     );
   }
 
-  const summary = getFieldAssignmentSummary(freshRecord);
-  const freshProject = freshRecord.projectId
-    ? getAllProjects().find((p) => p.id === freshRecord.projectId)
-    : getProjectByClientId(freshRecord.clientId);
+  const summary = getFieldAssignmentSummary(record);
+  const freshProject = record.projectId
+    ? (liveProjects.find((p) => p.id === record.projectId) ?? getAllProjects().find((p) => p.id === record.projectId))
+    : (liveProjects.find((p) => p.clientId === record.clientId) ?? getProjectByClientId(record.clientId));
 
   function getFieldsToShow(): AMOnboardingFieldDef[] {
     if (sectionFilter === "pending-client") {
       return ONBOARDING_FIELD_SCHEMA.filter(
-        (f) => (freshRecord!.fieldAssignments[f.id]?.status ?? "unset") === "pending-client"
+        (f) => (record!.fieldAssignments[f.id]?.status ?? "unset") === "pending-client"
       );
     }
     if (sectionFilter === "unset") {
       return ONBOARDING_FIELD_SCHEMA.filter(
-        (f) => (freshRecord!.fieldAssignments[f.id]?.status ?? "unset") === "unset"
+        (f) => (record!.fieldAssignments[f.id]?.status ?? "unset") === "unset"
       );
     }
     if (sectionFilter !== "all") {
@@ -699,11 +729,11 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
             Account Management — Onboarding Queue
           </p>
           <h1 className="text-2xl font-bold text-slate-900">
-            {freshRecord.salesPrefill.clientName}
+            {record.salesPrefill.clientName}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Created: {fmt(freshRecord.createdAt)} · Record ID:{" "}
-            <span className="font-mono text-xs text-slate-400">{freshRecord.id}</span>
+            Created: {fmt(record.createdAt)} · Record ID:{" "}
+            <span className="font-mono text-xs text-slate-400">{record.id}</span>
           </p>
           {freshProject && (
             <div className="mt-1.5">
@@ -718,8 +748,8 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
           )}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <CopyClientLinkButton recordId={freshRecord.id} />
-          <OnboardingStatusBadge status={freshRecord.status} />
+          <CopyClientLinkButton recordId={record.id} />
+          <OnboardingStatusBadge status={record.status} />
         </div>
       </div>
 
@@ -752,13 +782,13 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
       </div>
 
       {/* Sales prefill reference (AM-only) */}
-      <SalesPrefillPanel record={freshRecord} />
+      <SalesPrefillPanel record={record} />
 
       {/* Pending client fields summary */}
-      {summary.pendingClient > 0 && <PendingFieldsSummary record={freshRecord} />}
+      {summary.pendingClient > 0 && <PendingFieldsSummary record={record} />}
 
       {/* Kickoff Call widget */}
-      <KickoffCallWidget record={freshRecord} onRefresh={refresh} />
+      <KickoffCallWidget record={record} onRefresh={refresh} />
 
       {/* Section / view filter */}
       <div className="flex flex-wrap items-center gap-2">
@@ -802,7 +832,7 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
             fieldsToShow.map((field) => (
               <CollaborativeFieldRow
                 key={field.id}
-                record={freshRecord}
+                record={record}
                 field={field}
                 onChanged={refresh}
               />
@@ -820,8 +850,8 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
             );
             const secFilled = secFields.filter(
               (f) =>
-                (freshRecord.fieldAssignments[f.id]?.status ?? "unset") === "am-filled" ||
-                (freshRecord.fieldAssignments[f.id]?.status ?? "unset") === "client-responded"
+                (record.fieldAssignments[f.id]?.status ?? "unset") === "am-filled" ||
+                (record.fieldAssignments[f.id]?.status ?? "unset") === "client-responded"
             ).length;
             return (
               <div key={sec.id} className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -835,7 +865,7 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
                   {secFields.map((field) => (
                     <CollaborativeFieldRow
                       key={field.id}
-                      record={freshRecord}
+                      record={record}
                       field={field}
                       onChanged={refresh}
                     />

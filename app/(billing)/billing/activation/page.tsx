@@ -19,12 +19,13 @@
  * and Billing Client Portfolio — session-state mirrors the shared store.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
 import type { MasterClient } from "@/lib/mock/master-clients";
+import { apiMarkCleared, fetchMasterClients } from "@/lib/mock/master-clients-api";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 
 const workspace = getWorkspace("billing")!;
@@ -105,7 +106,7 @@ function isInvoiceCleared(c: MasterClient): boolean {
 function ClearanceModal({ client, onClose, onConfirm }: {
   client: MasterClient;
   onClose: () => void;
-  onConfirm: (id: string) => void;
+  onConfirm: (id: string) => void | Promise<void>;
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
@@ -138,7 +139,7 @@ function ClearanceModal({ client, onClose, onConfirm }: {
               style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
               Cancel
             </button>
-            <button onClick={() => { onConfirm(client.id); onClose(); }}
+            <button onClick={() => { void Promise.resolve(onConfirm(client.id)).then(() => onClose()); }}
               className="flex-1 text-sm font-semibold py-2.5 rounded-lg text-white"
               style={{ background: "#059669" }}>
               Clearance — Send to Account Management →
@@ -207,12 +208,23 @@ function ExpandedDetail({ client, onClearance }: { client: MasterClient; onClear
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BillingActivationPage() {
-  // Session-scoped state initialized from master client list
+  // State initialized from seed data, hydrated from file-backed API on mount
   const [clients, setClients] = useState<MasterClient[]>(MASTER_CLIENTS);
   const [clearanceTarget, setClearanceTarget] = useState<MasterClient | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "info" | "warning" | "error" } | null>(null);
   const [actionLog, setActionLog] = useState<string[]>([]);
+
+  const refreshClients = useCallback(async () => {
+    try {
+      const live = await fetchMasterClients();
+      setClients(live);
+    } catch {
+      // Keep seed data on failure
+    }
+  }, []);
+
+  useEffect(() => { void refreshClients(); }, [refreshClients]);
 
   function log(msg: string) {
     setActionLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 9)]);
@@ -222,8 +234,11 @@ export default function BillingActivationPage() {
     setToast({ message: msg, variant });
   }
 
-  function handleClearance(id: string) {
+  async function handleClearance(id: string) {
     const name = clients.find((c) => c.id === id)?.clientName ?? id;
+    // Persist to file-backed API (cross-route-group reliable)
+    await apiMarkCleared(id);
+    // Update local state optimistically
     setClients((prev) => prev.map((c) =>
       c.id === id ? { ...c, cleared: true, billingStatus: "Cleared" as const } : c
     ));

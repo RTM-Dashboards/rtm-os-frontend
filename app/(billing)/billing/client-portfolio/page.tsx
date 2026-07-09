@@ -32,6 +32,7 @@ import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import { MASTER_CLIENTS, computeHealth, computePriority } from "@/lib/mock/master-clients";
+import { patchMasterClient, upsertMasterClient, fetchMasterClients } from "@/lib/mock/master-clients-api";
 import type {
   MasterClient,
   BillingStatus,
@@ -393,7 +394,7 @@ function UpdateStatusModal({ client, onClose, onUpdate }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BillingClientPortfolioPage() {
-  // Session-persisted local state initialized from master client list
+  // State initialized from seed, hydrated from file-backed API on mount
   const [clients, setClients] = useState<MasterClient[]>(MASTER_CLIENTS);
   const [showAddModal, setShowAddModal] = useState(false);
   const [updateTarget, setUpdateTarget] = useState<MasterClient | null>(null);
@@ -401,17 +402,25 @@ export default function BillingClientPortfolioPage() {
   const [actionLog, setActionLog] = useState<string[]>([]);
   const [search, setSearch] = useState("");
 
+  useEffect(() => {
+    fetchMasterClients().then((live) => setClients(live)).catch(() => {/* keep seed */});
+  }, []);
+
   function log(msg: string) {
     setActionLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 9)]);
   }
 
   function handleUpdate(id: string, patch: Partial<MasterClient>) {
     setClients((prev) => prev.map((c) => c.id === id ? { ...c, ...patch } : c));
+    // Persist to file-backed API
+    void patchMasterClient(id, patch).catch(() => {});
     log(`Updated billing fields for ${clients.find((c) => c.id === id)?.clientName ?? id}`);
   }
 
   function handleAdd(newClient: MasterClient) {
     setClients((prev) => [...prev, newClient]);
+    // Persist to file-backed API
+    void upsertMasterClient(newClient).catch(() => {});
     log(`Added new client: ${newClient.clientName}`);
   }
 
@@ -419,6 +428,8 @@ export default function BillingClientPortfolioPage() {
     setClients((prev) => prev.map((c) =>
       c.id === id ? { ...c, cleared: true, billingStatus: "Cleared" as BillingStatus } : c
     ));
+    // Persist to file-backed API
+    void patchMasterClient(id, { cleared: true, billingStatus: "Cleared" }).catch(() => {});
     const name = clients.find((c) => c.id === id)?.clientName ?? id;
     log(`✅ Cleared ${name} — signaled ready for Account Management. Client removed from activation view.`);
   }

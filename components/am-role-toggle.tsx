@@ -15,7 +15,7 @@ export function RoleToggle({ role, onRoleChange }: RoleToggleProps) {
         <button
           onClick={() => onRoleChange("head")}
           className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            role === "head" ? "text-white shadow" : "text-slate-500 hover:text-slate-700 bg-transparent"}`}
+            role === "head" ? "bg-indigo-700 text-white shadow" : "text-slate-500 hover:text-slate-700 bg-transparent"}`}
         >
            Account Management Head View
         </button>

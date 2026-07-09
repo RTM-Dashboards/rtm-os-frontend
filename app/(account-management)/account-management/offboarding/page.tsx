@@ -3,7 +3,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
   OFFBOARDING_RECORDS,
-  pendingOffboardingRecords,
   getActiveOffboardings,
   getCompletedOffboardings,
   getPendingAssetTransfers,
@@ -416,16 +415,21 @@ function OffboardingTable({ onSelect }: { onSelect: (r: OffboardingRecord) => vo
   const [statusFilter, setStatusFilter] = useState<OffboardingStatus | "All">("All");
   const [search, setSearch] = useState("");
   // Track pending records so the table re-renders when Billing pushes new ones.
-  const [pendingSnapshot, setPendingSnapshot] = useState<OffboardingRecord[]>([...pendingOffboardingRecords]);
+  const [pendingSnapshot, setPendingSnapshot] = useState<OffboardingRecord[]>([]);
 
-  // Drain any newly pushed records from Billing into local state (mount only).
+  // Fetch from file-backed API on mount — cross-route-group reliable.
   useEffect(() => {
-    if (pendingOffboardingRecords.length === 0) return;
-    setPendingSnapshot(prev => {
-      const existingIds = new Set(prev.map(r => r.id));
-      const newOnes = pendingOffboardingRecords.filter(r => !existingIds.has(r.id));
-      return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
-    });
+    fetch("/api/pending-offboarding-records")
+      .then((r) => r.json())
+      .then((data: { records: OffboardingRecord[] }) => {
+        if (!Array.isArray(data.records)) return;
+        setPendingSnapshot(prev => {
+          const existingIds = new Set(prev.map(r => r.id));
+          const newOnes = data.records.filter(r => !existingIds.has(r.id));
+          return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+        });
+      })
+      .catch((err) => console.error("[AM Offboarding Table] Failed to load pending records:", err));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1306,17 +1310,22 @@ export default function OffboardingPage() {
   const [mainTab, setMainTab] = useState<MainTab>("dashboard");
   const [selectedRecord, setSelectedRecord] = useState<OffboardingRecord | null>(null);
   // Track billing-triggered offboarding records so the banner re-renders.
-  const [billingTriggered, setBillingTriggered] = useState<OffboardingRecord[]>([...pendingOffboardingRecords]);
+  const [billingTriggered, setBillingTriggered] = useState<OffboardingRecord[]>([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
-  // Drain pending offboarding records into local state on mount only.
+  // Fetch pending offboarding records from file-backed API on mount — cross-route-group reliable.
   useEffect(() => {
-    if (pendingOffboardingRecords.length === 0) return;
-    setBillingTriggered(prev => {
-      const existingIds = new Set(prev.map(r => r.id));
-      const newOnes = pendingOffboardingRecords.filter(r => !existingIds.has(r.id));
-      return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
-    });
+    fetch("/api/pending-offboarding-records")
+      .then((r) => r.json())
+      .then((data: { records: OffboardingRecord[] }) => {
+        if (!Array.isArray(data.records)) return;
+        setBillingTriggered(prev => {
+          const existingIds = new Set(prev.map(r => r.id));
+          const newOnes = data.records.filter(r => !existingIds.has(r.id));
+          return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+        });
+      })
+      .catch((err) => console.error("[AM Offboarding Page] Failed to load pending records:", err));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
