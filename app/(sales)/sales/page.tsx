@@ -41,6 +41,17 @@ const QUICK_LINKS = [
   { label: "Performance",  desc: "KPIs, rep metrics, and revenue forecasting.",     href: "/sales/performance" },
 ];
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
 function initials(name: string): string {
   return name.split(" ").map(p => p[0]).join("").toUpperCase().slice(0, 2);
 }
@@ -60,6 +71,7 @@ export default function SalesDashboard() {
           <h1 className="text-2xl font-medium tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
             Sales Dashboard
           </h1>
+          <div className="mt-2"><PreviewBadge /></div>
           <p className="text-sm mt-1" style={{ color: "var(--rtm-text-muted)" }}>
             Your sales workspace — leads, pipeline, and workflow.
           </p>

@@ -15,7 +15,7 @@ import type { MasterClient } from "@/lib/mock/master-clients";
 //   - MASTER_CLIENTS  → cleared clients awaiting activation (no engine project yet)
 //   - ENGINE_STORE    → activated projects / tasks / department breakdowns
 //
-// AM's 2-step wizard (/account-management/account-management/projects) remains
+// AM's 2-step wizard (/account-management/projects) remains
 // the SOLE activation mechanism. This page is a read-only observatory + CTA to
 // the wizard. No "Run Activation" button exists here.
 // =============================================================================
@@ -301,7 +301,7 @@ function ClearedClientDrawer({
         {/* Footer */}
         <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex gap-2 flex-wrap shrink-0">
           <Link
-            href="/account-management/account-management/projects"
+            href="/account-management/projects"
             className="px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700"
           >
             Activate via AM Wizard →
@@ -482,9 +482,11 @@ export default function ActivationEnginePage() {
   const [search, setSearch] = useState("");
 
   // Live data — initialized from in-memory seed, hydrated from file-backed API on mount
-  const [liveProjects, setLiveProjects] = useState<Project[]>(() => ENGINE_STORE.projects);
-  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => ENGINE_STORE.tasks);
-  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => MASTER_CLIENTS);
+  // Shallow-copy the seed arrays so later ENGINE_STORE.push() mutations do not
+  // silently contaminate state and cause duplicate keys after a refresh.
+  const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...ENGINE_STORE.projects]);
+  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
+  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => [...MASTER_CLIENTS]);
 
   const refreshData = useCallback(async () => {
     try {
@@ -603,7 +605,7 @@ export default function ActivationEnginePage() {
             are derived from MASTER_CLIENTS; activated projects and task breakdowns come from the
             engine. Activation is performed by AM via the{" "}
             <Link
-              href="/account-management/account-management/projects"
+              href="/account-management/projects"
               className="font-semibold underline"
               style={{ color: "var(--rtm-blue)" }}
             >
@@ -614,7 +616,7 @@ export default function ActivationEnginePage() {
         </div>
         <div className="flex gap-2 flex-wrap items-center">
           <Link
-            href="/account-management/account-management/projects"
+            href="/account-management/projects"
             className="px-4 py-2 text-sm font-bold rounded-lg text-white"
             style={{ background: "var(--rtm-blue)" }}
           >
@@ -772,7 +774,7 @@ export default function ActivationEnginePage() {
             </p>
           </div>
           <Link
-            href="/account-management/account-management/projects"
+            href="/account-management/projects"
             className="px-3 py-1.5 text-xs font-bold rounded-lg text-white flex-none"
             style={{ background: "var(--rtm-blue)" }}
           >
@@ -919,7 +921,7 @@ export default function ActivationEnginePage() {
                           View
                         </button>
                         <Link
-                          href="/account-management/account-management/projects"
+                          href="/account-management/projects"
                           className="text-[11px] font-semibold hover:underline whitespace-nowrap"
                           style={{ color: "#059669" }}
                         >

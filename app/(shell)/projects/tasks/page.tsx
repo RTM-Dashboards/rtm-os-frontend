@@ -94,8 +94,10 @@ function RowActions({ task }: { task: Task }) {
 // ---------------------------------------------------------------------------
 
 export default function GlobalTasksPage() {
-  const [allTasks, setAllTasks] = useState<Task[]>(() => getAllTasks());
-  const [projects, setProjects] = useState<Project[]>(() => getProjects());
+  // Shallow-copy seed arrays so ENGINE_STORE mutations don't contaminate state
+  // before the authoritative API fetch replaces these arrays.
+  const [allTasks, setAllTasks] = useState<Task[]>(() => [...getAllTasks()]);
+  const [projects, setProjects] = useState<Project[]>(() => [...getProjects()]);
 
   useEffect(() => {
     Promise.all([

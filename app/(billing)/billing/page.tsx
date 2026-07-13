@@ -7,13 +7,13 @@ import { getWorkspace } from "@/lib/workspaces";
 import {
   invoices,
   recurringContracts,
-  activationQueue,
   collections,
   revenueSummary,
   aiBillingSummary,
   activityTimeline,
 } from "@/lib/billing/action-center-data";
 import type { CollectionStatus } from "@/lib/billing/action-center-data";
+import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
 
 const workspace = getWorkspace("billing")!;
 
@@ -37,11 +37,30 @@ function collectionStatusVariant(s: CollectionStatus): BadgeVariant {
 const outstanding       = invoices.filter((i) => i.status !== "Paid" && i.status !== "Cancelled" && i.status !== "Refunded");
 const overdue           = invoices.filter((i) => i.status === "Overdue");
 const pendingCollection = collections.filter((c) => c.collectionStatus !== "Resolved");
-const activationReady   = activationQueue.filter((a) => a.activationStatus === "Ready For Activation");
+// Activation Ready: same predicate as /billing/activation — invoice-cleared but not yet cleared for AM.
+// Replaces activationQueue mock count; aligns Dashboard KPI with the real activation page.
+const activationReadyClients = MASTER_CLIENTS.filter(
+  (c) =>
+    (c.billingStatus === "Cleared" || (c.billingStatus === "Paid" && c.paymentStatus === "Paid")) &&
+    !c.cleared &&
+    c.currentStatus !== "Lead" &&
+    c.currentStatus !== "Proposal Sent"
+);
 const collectedThisMonth = invoices.filter((i) => i.status === "Paid").reduce((sum, i) => sum + i.amount, 0);
 const outstandingBalance = outstanding.reduce((sum, i) => sum + i.amount, 0);
 
 // ── Sub-components ────────────────────────────────────────────────────────────
+
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -104,9 +123,12 @@ export default function BillingDashboard() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>
           {workspace.name}
         </p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
-          Billing Dashboard
-        </h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
+            Billing Dashboard
+          </h1>
+          <PreviewBadge />
+        </div>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
           Billing action layer — invoice management, recurring revenue, collections, activation readiness, and revenue tracking.
         </p>
@@ -146,7 +168,7 @@ export default function BillingDashboard() {
           />
           <KpiCard
             title="Activation Ready"
-            value={String(activationReady.length)}
+            value={String(activationReadyClients.length)}
             trend="up" trendValue="3"
             iconBg="#F0F9FF" iconColor="#0891B2"
             icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5 13l4 4L19 7"/></svg>}
@@ -225,8 +247,7 @@ export default function BillingDashboard() {
             border="#DDD6FE"
             description="Clients cleared through billing ready for activation and onboarding."
             stats={[
-              { label: "Ready", value: activationReady.length },
-              { label: "On Hold", value: activationQueue.filter((a) => a.activationStatus === "On Hold").length },
+              { label: "Ready", value: activationReadyClients.length },
             ]}
           />
           <SummaryLinkCard

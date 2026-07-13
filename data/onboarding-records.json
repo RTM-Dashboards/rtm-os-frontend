@@ -24,9 +24,9 @@
         },
         "clientName": {
           "fieldId": "clientName",
-          "status": "am-filled",
+          "status": "am-filling",
           "value": "Blue Ridge Plumbing Co.",
-          "assignedAt": "2025-05-08T00:00:00.000Z"
+          "assignedAt": "2026-07-11T09:10:29.659Z"
         },
         "clientEmail": {
           "fieldId": "clientEmail",
@@ -36,9 +36,10 @@
         },
         "industry": {
           "fieldId": "industry",
-          "status": "am-filled",
+          "status": "pending-client",
           "value": "Home Services – Plumbing",
-          "assignedAt": "2025-05-08T00:00:00.000Z"
+          "assignedAt": "2026-07-13T14:48:01.248Z",
+          "sentToClientAt": "2026-07-13T14:48:01.236Z"
         },
         "activeServices": {
           "fieldId": "activeServices",
@@ -78,15 +79,16 @@
         },
         "onboardingNotes": {
           "fieldId": "onboardingNotes",
-          "status": "am-filled",
+          "status": "am-filling",
           "value": "All access received on kickoff call. Website wireframes in progress.",
-          "assignedAt": "2025-05-08T00:00:00.000Z"
+          "assignedAt": "2026-07-11T09:31:32.051Z",
+          "sentToClientAt": "2026-07-11T09:28:48.661Z"
         },
         "primaryContact": {
           "fieldId": "primaryContact",
-          "status": "pending-client",
+          "status": "am-filling",
           "value": "",
-          "assignedAt": "2025-05-08T00:00:00.000Z",
+          "assignedAt": "2026-07-11T09:12:41.927Z",
           "sentToClientAt": "2025-05-08T00:00:00.000Z"
         },
         "phone": {
@@ -100,8 +102,8 @@
           "fieldId": "website",
           "status": "pending-client",
           "value": "",
-          "assignedAt": "2025-05-08T00:00:00.000Z",
-          "sentToClientAt": "2025-05-08T00:00:00.000Z"
+          "assignedAt": "2026-07-13T14:47:59.533Z",
+          "sentToClientAt": "2026-07-13T14:47:59.520Z"
         },
         "businessSize": {
           "fieldId": "businessSize",
@@ -112,25 +114,90 @@
         },
         "serviceStartTargetDate": {
           "fieldId": "serviceStartTargetDate",
-          "status": "unset",
+          "status": "pending-client",
           "value": "",
-          "assignedAt": "2025-05-08T00:00:00.000Z"
+          "assignedAt": "2026-07-11T09:30:54.492Z",
+          "sentToClientAt": "2026-07-11T09:30:54.492Z"
         },
         "specialInstructions": {
           "fieldId": "specialInstructions",
-          "status": "unset",
+          "status": "pending-client",
           "value": "",
-          "assignedAt": "2025-05-08T00:00:00.000Z"
+          "assignedAt": "2026-07-11T09:28:42.569Z",
+          "sentToClientAt": "2026-07-11T09:28:42.555Z"
         },
         "kickoffCallDate": {
           "fieldId": "kickoffCallDate",
           "status": "am-filled",
           "value": "2025-05-08",
           "assignedAt": "2025-05-08T00:00:00.000Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-11T09:12:36.962Z",
+          "sentToClientAt": "2026-07-11T09:12:36.944Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-11T09:28:57.016Z",
+          "sentToClientAt": "2026-07-11T09:28:57.002Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-11T09:28:57.765Z",
+          "sentToClientAt": "2026-07-11T09:28:57.752Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-11T09:29:01.578Z",
+          "sentToClientAt": "2026-07-11T09:29:01.565Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-11T09:29:02.627Z",
+          "sentToClientAt": "2026-07-11T09:29:02.613Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-11T09:29:04.198Z",
+          "sentToClientAt": "2026-07-11T09:29:04.186Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-11T09:29:04.934Z",
+          "sentToClientAt": "2026-07-11T09:29:04.921Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-11T09:29:05.774Z",
+          "sentToClientAt": "2026-07-11T09:29:05.763Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T14:48:02.072Z",
+          "sentToClientAt": "2026-07-13T14:48:02.061Z"
         }
       },
       "createdAt": "2025-05-08T00:00:00.000Z",
-      "updatedAt": "2026-07-09T15:40:55.516Z",
+      "updatedAt": "2026-07-13T14:48:02.081Z",
       "projectId": "proj-am-mc004"
     },
     {
@@ -257,6 +324,2368 @@
       "createdAt": "2025-05-20T00:00:00.000Z",
       "updatedAt": "2025-05-27T00:00:00.000Z",
       "projectId": "proj-am-mc011"
+    },
+    {
+      "id": "onb-1783698463634-2",
+      "clientId": "mc010",
+      "status": "Sent to Client",
+      "salesPrefill": {
+        "clientName": "Clearwater Insurance Agency",
+        "email": "bill@clearwaterins.com",
+        "industry": "Financial Services – Insurance",
+        "salesOwner": "Chris M.",
+        "activeServices": [
+          "SEO",
+          "GBP",
+          "Google Ads"
+        ],
+        "monthlyValue": 3800
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Clearwater Insurance Agency",
+          "assignedAt": "2026-07-10T18:12:55.063Z",
+          "sentToClientAt": "2026-07-10T18:12:51.870Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "bill@clearwaterins.com",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Financial Services – Insurance",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Sarah K.",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T18:13:08.316Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-10T15:47:43.634Z"
+        }
+      },
+      "createdAt": "2026-07-10T15:47:43.634Z",
+      "updatedAt": "2026-07-10T18:13:08.324Z",
+      "projectId": "proj-wizard-9001"
+    },
+    {
+      "id": "onb-1783957319931-1",
+      "clientId": "mc001",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Apex Roofing Solutions",
+        "email": "david@apexroofing.com",
+        "industry": "Home Services – Roofing",
+        "salesOwner": "Mike T.",
+        "referralSource": "Direct",
+        "activeServices": [
+          "SEO / GBP",
+          "Meta Ads",
+          "Content Writing",
+          "Monthly Reporting"
+        ],
+        "monthlyValue": 5350
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Apex Roofing Solutions",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "david@apexroofing.com",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Home Services – Roofing",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Jordan M.",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.931Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:41:59.931Z",
+      "updatedAt": "2026-07-13T15:41:59.939Z",
+      "projectId": "proj-wizard-19f5c2470bd-7474"
+    },
+    {
+      "id": "onb-1783957319942-2",
+      "clientId": "mc002",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Sunbelt HVAC & Air",
+        "email": "linda@sunbelthvac.com",
+        "industry": "Home Services – HVAC",
+        "salesOwner": "Marco T.",
+        "referralSource": "Affiliate",
+        "affiliateName": "Brandon Ellis",
+        "activeServices": [
+          "SEO / GBP",
+          "Review Management"
+        ],
+        "monthlyValue": 2000
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Sunbelt HVAC & Air",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "linda@sunbelthvac.com",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Home Services – HVAC",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Sarah K.",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.942Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:41:59.942Z",
+      "updatedAt": "2026-07-13T15:41:59.949Z",
+      "projectId": "proj-wizard-19f5c247104-59a0"
+    },
+    {
+      "id": "onb-1783957319952-3",
+      "clientId": "mc003",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Pacific Dental Group",
+        "email": "karen@pacificdentalgroup.com",
+        "industry": "Healthcare – Dentistry",
+        "salesOwner": "Jake R.",
+        "referralSource": "Affiliate",
+        "affiliateName": "Maria Santos",
+        "activeServices": [
+          "SEO / GBP",
+          "Website Maintenance",
+          "Content Writing",
+          "Yelp Ads"
+        ],
+        "monthlyValue": 5150
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Pacific Dental Group",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "karen@pacificdentalgroup.com",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Healthcare – Dentistry",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Jordan M.",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.952Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:41:59.952Z",
+      "updatedAt": "2026-07-13T15:41:59.957Z",
+      "projectId": "proj-wizard-19f5c24710d-677c"
+    },
+    {
+      "id": "onb-1783957319960-4",
+      "clientId": "mc005",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Harbor Auto Group",
+        "email": "frank@harborauto.com",
+        "industry": "Automotive – Dealership",
+        "salesOwner": "Tina W.",
+        "activeServices": [
+          "Meta Ads",
+          "SEO / GBP"
+        ],
+        "monthlyValue": 6500,
+        "primaryContact": "James Keller",
+        "phone": "(206) 555-0404",
+        "website": "https://www.harborauto.com",
+        "location": "Seattle, WA",
+        "businessSize": "51–150 employees",
+        "intakeSource": "Website",
+        "selectedGoals": [
+          "goal-seo",
+          "goal-ppc",
+          "goal-website-redesign"
+        ]
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Harbor Auto Group",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "am-filled",
+          "value": "James Keller",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "frank@harborauto.com",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "am-filled",
+          "value": "(206) 555-0404",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "am-filled",
+          "value": "https://www.harborauto.com",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Automotive – Dealership",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "am-filled",
+          "value": "Seattle, WA",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "am-filled",
+          "value": "51–150 employees",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Sarah K.",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.960Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:41:59.960Z",
+      "updatedAt": "2026-07-13T15:41:59.968Z",
+      "projectId": "proj-wizard-19f5c247116-7ab1"
+    },
+    {
+      "id": "onb-1783957319970-5",
+      "clientId": "mc012",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Nova MedSpa & Aesthetics",
+        "email": "kim@novamedspa.com",
+        "industry": "Healthcare – MedSpa",
+        "salesOwner": "Chris M.",
+        "activeServices": [
+          "SEO / GBP",
+          "Meta Ads",
+          "Content Writing",
+          "Google Ads"
+        ],
+        "monthlyValue": 7200
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Nova MedSpa & Aesthetics",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "kim@novamedspa.com",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Healthcare – MedSpa",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Jordan M.",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.970Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:41:59.970Z",
+      "updatedAt": "2026-07-13T15:41:59.974Z",
+      "projectId": "proj-wizard-19f5c247120-e637"
+    },
+    {
+      "id": "onb-1783957319976-6",
+      "clientId": "mc013",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Desert Solar Energy",
+        "email": "craig@desertsolar.com",
+        "industry": "Energy – Solar",
+        "salesOwner": "Tina W.",
+        "activeServices": [
+          "SEO / GBP",
+          "Meta Ads"
+        ],
+        "monthlyValue": 3900
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Desert Solar Energy",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "craig@desertsolar.com",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Energy – Solar",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Sarah K.",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.976Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:41:59.976Z",
+      "updatedAt": "2026-07-13T15:41:59.984Z",
+      "projectId": "proj-wizard-19f5c247126-b91b"
+    },
+    {
+      "id": "onb-1783957319989-7",
+      "clientId": "mc014",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Lakeside Property Management",
+        "email": "mgmt@lakesideproperty.com",
+        "industry": "Real Estate",
+        "salesOwner": "Jake R.",
+        "activeServices": [],
+        "monthlyValue": 0
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Lakeside Property Management",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "mgmt@lakesideproperty.com",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Real Estate",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Alex R.",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:41:59.989Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:41:59.989Z",
+      "updatedAt": "2026-07-13T15:41:59.999Z",
+      "projectId": "proj-wizard-19f5c247131-f45b"
+    },
+    {
+      "id": "onb-1783957320009-8",
+      "clientId": "mc015",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Pinnacle Chiropractic",
+        "email": "dr.lee@pinnaclechiro.com",
+        "industry": "Healthcare – Chiropractic",
+        "salesOwner": "Chris M.",
+        "activeServices": [
+          "SEO / GBP",
+          "Google Ads",
+          "Review Management"
+        ],
+        "monthlyValue": 3600
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Pinnacle Chiropractic",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "dr.lee@pinnaclechiro.com",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Healthcare – Chiropractic",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Jordan M.",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.009Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:42:00.009Z",
+      "updatedAt": "2026-07-13T15:42:00.013Z",
+      "projectId": "proj-wizard-19f5c247140-6f36"
+    },
+    {
+      "id": "onb-1783957320016-9",
+      "clientId": "mc016",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Capital Contractors Group",
+        "email": "ops@capitalcontractors.com",
+        "industry": "Construction – Commercial",
+        "salesOwner": "Marco T.",
+        "activeServices": [
+          "SEO / GBP",
+          "Website Maintenance",
+          "Monthly Reporting"
+        ],
+        "monthlyValue": 2400
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Capital Contractors Group",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "ops@capitalcontractors.com",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Construction – Commercial",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Sarah K.",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.016Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:42:00.016Z",
+      "updatedAt": "2026-07-13T15:42:00.020Z",
+      "projectId": "proj-wizard-19f5c24714e-9b2f"
+    },
+    {
+      "id": "onb-1783957320022-10",
+      "clientId": "mc017",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Eastside Veterinary Clinic",
+        "email": "admin@eastsidevetclinic.com",
+        "industry": "Healthcare – Veterinary",
+        "salesOwner": "Chris M.",
+        "activeServices": [
+          "SEO / GBP",
+          "Content Writing"
+        ],
+        "monthlyValue": 2100
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Eastside Veterinary Clinic",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "admin@eastsidevetclinic.com",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Healthcare – Veterinary",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Alex R.",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.022Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:42:00.022Z",
+      "updatedAt": "2026-07-13T15:42:00.027Z",
+      "projectId": "proj-wizard-19f5c247154-3162"
+    },
+    {
+      "id": "onb-1783957320029-11",
+      "clientId": "mc018",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Ironclad Security Systems",
+        "email": "sales@ironcladsecurity.com",
+        "industry": "Security Services",
+        "salesOwner": "Jake R.",
+        "activeServices": [
+          "SEO / GBP",
+          "Meta Ads",
+          "Google Ads",
+          "Monthly Reporting"
+        ],
+        "monthlyValue": 5800
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Ironclad Security Systems",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "sales@ironcladsecurity.com",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Security Services",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Jordan M.",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.029Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:42:00.029Z",
+      "updatedAt": "2026-07-13T15:42:00.035Z",
+      "projectId": "proj-wizard-19f5c24715b-587a"
+    },
+    {
+      "id": "onb-1783957320038-12",
+      "clientId": "mc019",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Coastal Wellness Center",
+        "email": "info@coastalwellness.com",
+        "industry": "Health & Wellness – Holistic",
+        "salesOwner": "Tina W.",
+        "activeServices": [
+          "SEO / GBP",
+          "Meta Ads",
+          "Email Marketing"
+        ],
+        "monthlyValue": 3300,
+        "primaryContact": "Lisa Park",
+        "phone": "(619) 555-0505",
+        "website": "https://www.coastalwellness.com",
+        "location": "San Diego, CA",
+        "businessSize": "6–15 employees",
+        "intakeSource": "Affiliate",
+        "selectedGoals": [
+          "goal-meta",
+          "goal-gbp",
+          "goal-seo"
+        ]
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Coastal Wellness Center",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "am-filled",
+          "value": "Lisa Park",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "info@coastalwellness.com",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "am-filled",
+          "value": "(619) 555-0505",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "am-filled",
+          "value": "https://www.coastalwellness.com",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Health & Wellness – Holistic",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "am-filled",
+          "value": "San Diego, CA",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "am-filled",
+          "value": "6–15 employees",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Sarah K.",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.038Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:42:00.038Z",
+      "updatedAt": "2026-07-13T15:42:00.043Z",
+      "projectId": "proj-wizard-19f5c247164-d8f7"
+    },
+    {
+      "id": "onb-1783957320045-13",
+      "clientId": "mc020",
+      "status": "AM In Progress",
+      "statusOverride": null,
+      "salesPrefill": {
+        "clientName": "Frontier Logistics Inc.",
+        "email": "hr@frontierlogistics.com",
+        "industry": "Transportation & Logistics",
+        "salesOwner": "Jake R.",
+        "activeServices": [
+          "SEO / GBP",
+          "LinkedIn Ads",
+          "Content Writing",
+          "Monthly Reporting"
+        ],
+        "monthlyValue": 4400
+      },
+      "fieldAssignments": {
+        "clientName": {
+          "fieldId": "clientName",
+          "status": "am-filled",
+          "value": "Frontier Logistics Inc.",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "primaryContact": {
+          "fieldId": "primaryContact",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "email": {
+          "fieldId": "email",
+          "status": "am-filled",
+          "value": "hr@frontierlogistics.com",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "phone": {
+          "fieldId": "phone",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "website": {
+          "fieldId": "website",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "industry": {
+          "fieldId": "industry",
+          "status": "am-filled",
+          "value": "Transportation & Logistics",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "location": {
+          "fieldId": "location",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "businessSize": {
+          "fieldId": "businessSize",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "assignedAM": {
+          "fieldId": "assignedAM",
+          "status": "am-filled",
+          "value": "Alex R.",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "kickoffCallDate": {
+          "fieldId": "kickoffCallDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "serviceStartTargetDate": {
+          "fieldId": "serviceStartTargetDate",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "contractTermMonths": {
+          "fieldId": "contractTermMonths",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "preferredContactMethod": {
+          "fieldId": "preferredContactMethod",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "internalPriority": {
+          "fieldId": "internalPriority",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "accessCredentialsReceived": {
+          "fieldId": "accessCredentialsReceived",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "targetAudience": {
+          "fieldId": "targetAudience",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "uniqueSellingPoints": {
+          "fieldId": "uniqueSellingPoints",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "competitorNames": {
+          "fieldId": "competitorNames",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "reviewProfiles": {
+          "fieldId": "reviewProfiles",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "preferredKickoffTime": {
+          "fieldId": "preferredKickoffTime",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "accountsAndLogins": {
+          "fieldId": "accountsAndLogins",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "brandKit": {
+          "fieldId": "brandKit",
+          "status": "pending-client",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "onboardingNotes": {
+          "fieldId": "onboardingNotes",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        },
+        "specialInstructions": {
+          "fieldId": "specialInstructions",
+          "status": "unset",
+          "value": "",
+          "assignedAt": "2026-07-13T15:42:00.045Z"
+        }
+      },
+      "createdAt": "2026-07-13T15:42:00.045Z",
+      "updatedAt": "2026-07-13T15:42:00.053Z",
+      "projectId": "proj-wizard-19f5c24716b-9565"
     }
   ]
 }

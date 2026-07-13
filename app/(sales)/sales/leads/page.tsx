@@ -12,7 +12,7 @@ import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModa
 
 const workspace = getWorkspace("sales")!;
 
-//  Types 
+//  Types ─────────────────────────────────────────────────────────────────────
 
 type LeadStage =
   | "New Lead"| "Contact Attempted"| "Contacted"| "Discovery Scheduled"| "Discovery Complete"| "Qualified"| "Disqualified";
@@ -27,7 +27,6 @@ type LeadSource =
 
 interface Lead {
   id: string;
-  // Contact info
   name: string;
   businessName: string;
   industry: string;
@@ -35,7 +34,6 @@ interface Lead {
   email: string;
   phone: string;
   location: string;
-  // GHL fields
   ghlContactId: string;
   ghlAssignedUser: string;
   ghlSource: string;
@@ -44,32 +42,49 @@ interface Lead {
   ghlContactTags: string[];
   ghlContactStatus: string;
   ghlSyncStatus: GHLSyncStatus;
-  // Lead fields
   leadSource: LeadSource;
   assignedRep: string;
   stage: LeadStage;
   opportunityReadiness: OpportunityReadiness;
-  // Discovery
   discoveryScheduled: boolean;
   discoveryDate: string;
   discoveryNotes: string;
   businessGoals: string[];
   painPoints: string[];
   requestedServices: string[];
-  // BANT
   budget: "High"| "Medium"| "Low"| "Unknown";
   authority: "Decision Maker"| "Influencer"| "Unknown";
   need: "High"| "Medium"| "Low";
   timeline: "Immediate"| "1-3 months"| "3-6 months"| "6+ months";
-  // Misc
   estimatedValue: number;
   affiliateName: string;
   createdDate: string;
   lastActivity: string;
   notes: string;
+  // Persisted overlay fields
+  disqualified?: boolean;
+  disqualifiedReason?: string;
 }
 
-//  Mock Data 
+// LeadStatusRecord mirrors the API shape
+interface LeadStatusRecord {
+  leadId: string;
+  stage?: string;
+  assignedRep?: string;
+  discoveryScheduled?: boolean;
+  discoveryDate?: string;
+  discoveryNotes?: string;
+  notes?: string;
+  disqualified?: boolean;
+  disqualifiedReason?: string;
+  name?: string;
+  businessName?: string;
+  industry?: string;
+  leadSource?: string;
+  updatedAt: string;
+}
+
+//  Mock Data ──────────────────────────────────────────────────────────────────
 
 const LEADS: Lead[] = [
   {
@@ -545,6 +560,7 @@ const LEADS: Lead[] = [
     estimatedValue: 0, affiliateName: "—",
     createdDate: "2024-11-20", lastActivity: "2 weeks ago",
     notes: "Not a fit. Already with large agency. Disqualified.",
+    disqualified: true, disqualifiedReason: "Already with large agency",
   },
   {
     id: "L026", name: "Stephanie Lane", businessName: "GreenWave Lawn Care", industry: "Lawn Care",
@@ -643,7 +659,28 @@ const LEADS: Lead[] = [
   },
 ];
 
-//  Stage Config 
+//  Merge helper — apply persisted overrides onto a Lead ─────────────────────
+
+function applyOverride(lead: Lead, record: LeadStatusRecord | undefined): Lead {
+  if (!record) return lead;
+  return {
+    ...lead,
+    ...(record.stage              !== undefined ? { stage: record.stage as LeadStage }           : {}),
+    ...(record.assignedRep        !== undefined ? { assignedRep: record.assignedRep }             : {}),
+    ...(record.discoveryScheduled !== undefined ? { discoveryScheduled: record.discoveryScheduled } : {}),
+    ...(record.discoveryDate      !== undefined ? { discoveryDate: record.discoveryDate }         : {}),
+    ...(record.discoveryNotes     !== undefined ? { discoveryNotes: record.discoveryNotes }       : {}),
+    ...(record.notes              !== undefined ? { notes: record.notes }                         : {}),
+    ...(record.disqualified       !== undefined ? { disqualified: record.disqualified }           : {}),
+    ...(record.disqualifiedReason !== undefined ? { disqualifiedReason: record.disqualifiedReason } : {}),
+    ...(record.name               !== undefined ? { name: record.name }                           : {}),
+    ...(record.businessName       !== undefined ? { businessName: record.businessName }           : {}),
+    ...(record.industry           !== undefined ? { industry: record.industry }                   : {}),
+    ...(record.leadSource         !== undefined ? { leadSource: record.leadSource as LeadSource } : {}),
+  };
+}
+
+//  Stage Config ───────────────────────────────────────────────────────────────
 
 const STAGE_CONFIG: Record<LeadStage, { color?: string; bg?: string; border: string; order: number }> = {
   "New Lead":            { color: "#6366F1", bg: "#EEF2FF", border: "#C7D2FE", order: 0 },
@@ -656,9 +693,9 @@ const STAGE_CONFIG: Record<LeadStage, { color?: string; bg?: string; border: str
 };
 
 const GHL_SYNC_CONFIG: Record<GHLSyncStatus, { color?: string; bg?: string; icon?: string }> = {
-  "Synced":          { color: "#059669", bg: "#ECFDF5", icon: ""},
+  "Synced":          { color: "#059669", bg: "#ECFDF5", icon: "✓"},
   "Pending Sync":    { color: "#D97706", bg: "#FFFBEB"},
-  "Sync Failed":     { color: "#DC2626", bg: "#FEF2F2", icon: ""},
+  "Sync Failed":     { color: "#DC2626", bg: "#FEF2F2", icon: "✕"},
   "Manual Override": { color: "#7C3AED", bg: "#F5F3FF"},
 };
 
@@ -683,12 +720,16 @@ const LEAD_STAGES: LeadStage[] = [
   "Discovery Scheduled", "Discovery Complete", "Qualified", "Disqualified",
 ];
 
-//  Helpers 
+const SALES_REPS = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
+const LEAD_SOURCE_OPTIONS: LeadSource[] = ["Website", "Google Ads", "Meta Ads", "GBP", "LSA", "Referral", "Affiliate", "Partner", "Direct", "Outbound"];
+
+//  Helpers ────────────────────────────────────────────────────────────────────
 
 function stageBadge(stage: LeadStage) {
   const c = STAGE_CONFIG[stage];
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border"style={{ background: c.bg, color: c.color, borderColor: c.border }}>
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border"
+      style={{ background: c.bg, color: c.color, borderColor: c.border }}>
       {stage}
     </span>
   );
@@ -697,7 +738,8 @@ function stageBadge(stage: LeadStage) {
 function ghlSyncBadge(status: GHLSyncStatus) {
   const c = GHL_SYNC_CONFIG[status];
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"style={{ background: c.bg, color: c.color }}>
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+      style={{ background: c.bg, color: c.color }}>
       {c.icon} {status}
     </span>
   );
@@ -706,7 +748,8 @@ function ghlSyncBadge(status: GHLSyncStatus) {
 function readinessBadge(readiness: OpportunityReadiness) {
   const c = READINESS_CONFIG[readiness];
   return (
-    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"style={{ background: c.bg, color: c.color }}>
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
+      style={{ background: c.bg, color: c.color }}>
       {readiness}
     </span>
   );
@@ -715,7 +758,8 @@ function readinessBadge(readiness: OpportunityReadiness) {
 function sourceBadge(source: string) {
   const color = SOURCE_COLORS[source] ?? "#64748B";
   return (
-    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border"style={{ background: `${color}15`, color, borderColor: `${color}30` }}>
+    <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border"
+      style={{ background: `${color}15`, color, borderColor: `${color}30` }}>
       {source}
     </span>
   );
@@ -725,85 +769,611 @@ function fmt$(v: number) {
   return v >= 1000 ? `$${(v / 1000).toFixed(1)}K` : `$${v}`;
 }
 
-//  Drawer Component 
+//  Persistence helper ─────────────────────────────────────────────────────────
 
-function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
+async function persistLeadStatus(leadId: string, patch: Partial<LeadStatusRecord>): Promise<void> {
+  await fetch("/api/leads-status", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ leadId, ...patch }),
+  });
+}
+
+//  Action Modals ──────────────────────────────────────────────────────────────
+
+// Shared modal shell
+function ModalShell({ title, subtitle, onClose, children, footer }: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.50)", backdropFilter: "blur(2px)" }}>
+      <div className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
+        <div className="flex items-center justify-between px-6 py-4 border-b"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
+            {subtitle && <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{subtitle}</p>}
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>✕</button>
+        </div>
+        <div className="px-6 py-5 space-y-4">{children}</div>
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          {footer}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Edit Lead Modal
+function EditLeadModal({ lead, onClose, onSave }: {
+  lead: Lead;
+  onClose: () => void;
+  onSave: (patch: Partial<Lead>) => void;
+}) {
+  const [name, setName] = useState(lead.name);
+  const [businessName, setBusinessName] = useState(lead.businessName);
+  const [industry, setIndustry] = useState(lead.industry);
+  const [leadSource, setLeadSource] = useState<LeadSource>(lead.leadSource);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    const patch = { name, businessName, industry, leadSource };
+    await persistLeadStatus(lead.id, patch);
+    onSave(patch);
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="Edit Lead" subtitle={lead.businessName} onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
+          {saving ? "Saving…" : "Save Changes"}
+        </button>
+      </>}>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Contact Name</label>
+        <input value={name} onChange={e => setName(e.target.value)} className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Business Name</label>
+        <input value={businessName} onChange={e => setBusinessName(e.target.value)} className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Industry</label>
+        <input value={industry} onChange={e => setIndustry(e.target.value)} className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Lead Source</label>
+        <select value={leadSource} onChange={e => setLeadSource(e.target.value as LeadSource)}
+          className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+          {LEAD_SOURCE_OPTIONS.map(s => <option key={s}>{s}</option>)}
+        </select>
+      </div>
+    </ModalShell>
+  );
+}
+
+// Assign Sales Rep Modal
+function AssignRepModal({ lead, onClose, onSave }: {
+  lead: Lead;
+  onClose: () => void;
+  onSave: (rep: string) => void;
+}) {
+  const [rep, setRep] = useState(lead.assignedRep);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    await persistLeadStatus(lead.id, { assignedRep: rep });
+    onSave(rep);
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="Assign Sales Rep" subtitle={lead.businessName} onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
+          {saving ? "Saving…" : "Assign Rep"}
+        </button>
+      </>}>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Currently Assigned</label>
+        <p className="text-sm font-semibold mb-3" style={{ color: "var(--rtm-text-primary)" }}>{lead.assignedRep}</p>
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Assign To</label>
+        <div className="space-y-1.5">
+          {SALES_REPS.map(r => (
+            <button key={r} onClick={() => setRep(r)}
+              className="w-full text-left px-4 py-2.5 rounded-lg border text-sm font-semibold transition-colors"
+              style={{
+                background: rep === r ? "#EFF6FF" : "var(--rtm-surface)",
+                borderColor: rep === r ? "#2563EB" : "var(--rtm-border)",
+                color: rep === r ? "#2563EB" : "var(--rtm-text-primary)",
+              }}>
+              {r} {r === lead.assignedRep ? <span className="text-[10px] font-normal text-slate-400">(current)</span> : ""}
+            </button>
+          ))}
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+// Schedule / Complete Discovery Modal
+function ScheduleDiscoveryModal({ lead, onClose, onSave }: {
+  lead: Lead;
+  onClose: () => void;
+  onSave: (patch: { discoveryScheduled: boolean; discoveryDate: string; discoveryNotes: string }) => void;
+}) {
+  const [date, setDate] = useState(lead.discoveryDate || "");
+  const [notes, setNotes] = useState(lead.discoveryNotes || "");
+  const [complete, setComplete] = useState(lead.stage === "Discovery Complete");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    const patch = {
+      discoveryScheduled: true,
+      discoveryDate: date,
+      discoveryNotes: notes,
+      ...(complete ? { stage: "Discovery Complete" as LeadStage } : { stage: "Discovery Scheduled" as LeadStage }),
+    };
+    await persistLeadStatus(lead.id, patch);
+    onSave({ discoveryScheduled: true, discoveryDate: date, discoveryNotes: notes });
+    setSaving(false);
+  }
+
+  const title = lead.discoveryScheduled ? "Update Discovery" : "Schedule Discovery";
+
+  return (
+    <ModalShell title={title} subtitle={lead.businessName} onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving || !date} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
+          {saving ? "Saving…" : title}
+        </button>
+      </>}>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Discovery Date</label>
+        <input type="date" value={date} onChange={e => setDate(e.target.value)}
+          className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Discovery Notes</label>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+          placeholder="Key insights from the discovery call..."
+          className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none resize-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input type="checkbox" checked={complete} onChange={e => setComplete(e.target.checked)} />
+        <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Mark Discovery as Complete</span>
+      </label>
+    </ModalShell>
+  );
+}
+
+// Move Stage Modal
+function MoveStageModal({ lead, onClose, onSave }: {
+  lead: Lead;
+  onClose: () => void;
+  onSave: (stage: LeadStage) => void;
+}) {
+  const [stage, setStage] = useState<LeadStage>(lead.stage);
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    await persistLeadStatus(lead.id, { stage });
+    onSave(stage);
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="Move Stage" subtitle={lead.businessName} onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving || stage === lead.stage}
+          className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
+          {saving ? "Saving…" : "Move Stage"}
+        </button>
+      </>}>
+      <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Current: <strong>{lead.stage}</strong></p>
+      <div className="space-y-1.5">
+        {LEAD_STAGES.map(s => {
+          const cfg = STAGE_CONFIG[s];
+          return (
+            <button key={s} onClick={() => setStage(s)}
+              className="w-full text-left px-4 py-2.5 rounded-lg border text-sm font-semibold transition-colors"
+              style={{
+                background: stage === s ? cfg.bg : "var(--rtm-surface)",
+                borderColor: stage === s ? cfg.color : "var(--rtm-border)",
+                color: stage === s ? cfg.color : "var(--rtm-text-primary)",
+              }}>
+              {s} {s === lead.stage ? <span className="text-[10px] font-normal text-slate-400">(current)</span> : ""}
+            </button>
+          );
+        })}
+      </div>
+    </ModalShell>
+  );
+}
+
+// Add Note Modal
+function AddNoteModal({ lead, onClose, onSave }: {
+  lead: Lead;
+  onClose: () => void;
+  onSave: (notes: string) => void;
+}) {
+  const [note, setNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!note.trim()) return;
+    setSaving(true);
+    const timestamp = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const appended = lead.notes
+      ? `${lead.notes}\n[${timestamp}] ${note.trim()}`
+      : `[${timestamp}] ${note.trim()}`;
+    await persistLeadStatus(lead.id, { notes: appended });
+    onSave(appended);
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="Add Note" subtitle={lead.businessName} onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving || !note.trim()} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
+          {saving ? "Saving…" : "Add Note"}
+        </button>
+      </>}>
+      {lead.notes && (
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Existing Notes</label>
+          <div className="rounded-lg p-3 border text-xs whitespace-pre-wrap max-h-32 overflow-y-auto"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
+            {lead.notes}
+          </div>
+        </div>
+      )}
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>New Note</label>
+        <textarea value={note} onChange={e => setNote(e.target.value)} rows={4}
+          placeholder="Enter your note..."
+          className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none resize-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+    </ModalShell>
+  );
+}
+
+// Disqualify Modal
+function DisqualifyModal({ lead, onClose, onSave }: {
+  lead: Lead;
+  onClose: () => void;
+  onSave: (reason: string) => void;
+}) {
+  const [reason, setReason] = useState(lead.disqualifiedReason || "");
+  const [saving, setSaving] = useState(false);
+
+  const REASONS = [
+    "Already with another agency",
+    "Budget too low",
+    "Not a good fit",
+    "No decision maker engagement",
+    "Unreachable / ghosted",
+    "Competitor selected",
+    "Other",
+  ];
+
+  async function handleSave() {
+    setSaving(true);
+    await persistLeadStatus(lead.id, {
+      stage: "Disqualified",
+      disqualified: true,
+      disqualifiedReason: reason || "Not specified",
+    });
+    onSave(reason || "Not specified");
+    setSaving(false);
+  }
+
+  return (
+    <ModalShell title="Disqualify Lead" subtitle={lead.businessName} onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving}
+          className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40"
+          style={{ background: "#DC2626", color: "#fff" }}>
+          {saving ? "Saving…" : "Disqualify Lead"}
+        </button>
+      </>}>
+      <div className="rounded-lg p-4 border" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
+        <p className="text-sm font-bold" style={{ color: "#DC2626" }}>⚠ This will move the lead to Disqualified stage.</p>
+        <p className="text-xs mt-1" style={{ color: "#B91C1C" }}>This action is persisted but can be reversed via Move Stage.</p>
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Disqualification Reason</label>
+        <div className="space-y-1.5 mb-3">
+          {REASONS.map(r => (
+            <button key={r} onClick={() => setReason(r)}
+              className="w-full text-left px-3 py-2 rounded-lg border text-xs font-semibold transition-colors"
+              style={{
+                background: reason === r ? "#FEF2F2" : "var(--rtm-surface)",
+                borderColor: reason === r ? "#DC2626" : "var(--rtm-border)",
+                color: reason === r ? "#DC2626" : "var(--rtm-text-primary)",
+              }}>
+              {r}
+            </button>
+          ))}
+        </div>
+        <input value={reason} onChange={e => setReason(e.target.value)}
+          placeholder="Or type a custom reason..."
+          className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+    </ModalShell>
+  );
+}
+
+// Create Follow-Up Modal (creates a real engine task via /api/pending-sales-tasks)
+function CreateFollowUpModal({ lead, onClose, onSave }: {
+  lead: Lead;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
+  const defaultDate = `${tomorrow.getUTCFullYear()}-${String(tomorrow.getUTCMonth() + 1).padStart(2, "0")}-${String(tomorrow.getUTCDate()).padStart(2, "0")}`;
+
+  const [title, setTitle] = useState(`Follow-Up: ${lead.businessName}`);
+  const [dueDate, setDueDate] = useState(defaultDate);
+  const [priority, setPriority] = useState<"Low" | "Medium" | "High" | "Critical">("High");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSave() {
+    if (!title.trim() || !dueDate) { setError("Title and due date are required."); return; }
+    setSaving(true);
+    setError("");
+    const task = {
+      id: `lead-fu-${lead.id}-${Date.now()}`,
+      title: title.trim(),
+      client: lead.businessName,
+      project: `Lead ${lead.id}`,
+      department: "Sales",
+      service: "Sales Follow-Up",
+      source: "Manual Task" as const,
+      assignee: lead.assignedRep,
+      priority,
+      dueDate,
+      status: "Pending" as const,
+      blocker: null,
+      owner: lead.assignedRep,
+      due: dueDate,
+      blueprintSource: undefined,
+      workflowSource: undefined,
+      // Extra context carried in description-style fields
+      ...(notes.trim() ? { blocker: notes.trim() } : {}),
+    };
+    try {
+      const res = await fetch("/api/pending-sales-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(task),
+      });
+      if (!res.ok) throw new Error("API error");
+      onSave();
+    } catch {
+      setError("Failed to create task. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const PRIORITIES = ["Low", "Medium", "High", "Critical"] as const;
+
+  return (
+    <ModalShell title="Create Follow-Up Task" subtitle={`${lead.businessName} · Assigned to ${lead.assignedRep}`} onClose={onClose}
+      footer={<>
+        <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+        <button onClick={handleSave} disabled={saving} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
+          {saving ? "Creating…" : "Create Task"}
+        </button>
+      </>}>
+      {error && (
+        <div className="rounded-lg p-3 border text-xs font-semibold" style={{ background: "#FEF2F2", borderColor: "#FECACA", color: "#DC2626" }}>{error}</div>
+      )}
+      <div className="rounded-lg p-3 border text-xs" style={{ background: "#F0FDF4", borderColor: "#A7F3D0", color: "#15803D" }}>
+        ✓ This task will appear on the <strong>Sales Tasks</strong> page after creation.
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Task Title</label>
+        <input value={title} onChange={e => setTitle(e.target.value)}
+          className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Due Date</label>
+          <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+            className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+        </div>
+        <div>
+          <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Priority</label>
+          <select value={priority} onChange={e => setPriority(e.target.value as typeof priority)}
+            className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+            {PRIORITIES.map(p => <option key={p}>{p}</option>)}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Notes (optional)</label>
+        <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2}
+          placeholder="What needs to happen on this follow-up?"
+          className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none resize-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="rounded-lg p-2 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <p className="font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Assigned To</p>
+          <p style={{ color: "var(--rtm-text-primary)" }}>{lead.assignedRep}</p>
+        </div>
+        <div className="rounded-lg p-2 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <p className="font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Lead</p>
+          <p style={{ color: "var(--rtm-text-primary)" }}>{lead.businessName}</p>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+// Action modal union type
+type ActiveModal =
+  | { type: "editLead"; lead: Lead }
+  | { type: "assignRep"; lead: Lead }
+  | { type: "scheduleDiscovery"; lead: Lead }
+  | { type: "moveStage"; lead: Lead }
+  | { type: "addNote"; lead: Lead }
+  | { type: "disqualify"; lead: Lead }
+  | { type: "createFollowUp"; lead: Lead };
+
+//  Drawer Component ───────────────────────────────────────────────────────────
+
+function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
+  lead: Lead;
+  onClose: () => void;
+  onAction: (modal: ActiveModal) => void;
+  onCreateOpportunity: (lead: Lead) => void;
+}) {
   const [activeTab, setActiveTab] = useState<
-    "overview"| "ghl"| "qualification"| "discovery"| "readiness"| "affiliate"| "timeline">("overview");
+    "overview" | "ghl" | "qualification" | "discovery" | "readiness" | "affiliate" | "timeline"
+  >("overview");
 
   const tabs = [
-    { key: "overview"as const,      label: "Overview"},
-    { key: "ghl"as const,           label: "GHL Contact"},
-    { key: "qualification"as const, label: "Qualification"},
-    { key: "discovery"as const,     label: "Discovery"},
-    { key: "readiness"as const,     label: "Opp Readiness"},
-    { key: "affiliate"as const,     label: "Affiliate"},
-    { key: "timeline"as const,      label: "Timeline"},
+    { key: "overview" as const, label: "Overview" },
+    { key: "ghl" as const, label: "GHL Contact" },
+    { key: "qualification" as const, label: "Qualification" },
+    { key: "discovery" as const, label: "Discovery" },
+    { key: "readiness" as const, label: "Opp Readiness" },
+    { key: "affiliate" as const, label: "Affiliate" },
+    { key: "timeline" as const, label: "Timeline" },
   ];
 
   const isReadyForOpportunity = lead.opportunityReadiness === "Ready For Opportunity";
   const isQualified = lead.stage === "Qualified";
 
   const readinessChecklist = [
-    { label: "Discovery Complete",        done: lead.opportunityReadiness !== "Not Ready"},
-    { label: "Budget Discussed",          done: lead.budget !== "Unknown"},
-    { label: "Decision Maker Identified", done: lead.authority === "Decision Maker"},
-    { label: "Business Need Identified",  done: lead.need === "High"|| lead.need === "Medium"},
-    { label: "Lead Qualified",            done: isQualified },
+    { label: "Discovery Complete", done: lead.opportunityReadiness !== "Not Ready" },
+    { label: "Budget Discussed", done: lead.budget !== "Unknown" },
+    { label: "Decision Maker Identified", done: lead.authority === "Decision Maker" },
+    { label: "Business Need Identified", done: lead.need === "High" || lead.need === "Medium" },
+    { label: "Lead Qualified", done: isQualified },
   ];
 
   const timeline = [
-    { date: lead.ghlCreatedDate, event: "GHL Contact Created"},
-    { date: lead.createdDate,    event: "Lead Created in RTM"},
-    { date: lead.createdDate,    event: `Assigned to ${lead.assignedRep}` },
-    ...(lead.discoveryDate ? [{ date: lead.discoveryDate, event: "Discovery Completed"}] : []),
-    ...(isQualified ? [{ date: lead.lastActivity, event: "Lead Qualified"}] : []),
-    ...(isReadyForOpportunity ? [{ date: lead.lastActivity, event: "Ready For Opportunity"}] : []),
-    { date: lead.lastActivity,   event: `Current Stage: ${lead.stage}` },
+    { date: lead.ghlCreatedDate, event: "GHL Contact Created" },
+    { date: lead.createdDate, event: "Lead Created in RTM" },
+    { date: lead.createdDate, event: `Assigned to ${lead.assignedRep}` },
+    ...(lead.discoveryDate ? [{ date: lead.discoveryDate, event: "Discovery Completed" }] : []),
+    ...(isQualified ? [{ date: lead.lastActivity, event: "Lead Qualified" }] : []),
+    ...(isReadyForOpportunity ? [{ date: lead.lastActivity, event: "Ready For Opportunity" }] : []),
+    { date: lead.lastActivity, event: `Current Stage: ${lead.stage}` },
+  ];
+
+  const quickActions: { label: string; modal: ActiveModal["type"] }[] = [
+    { label: "Assign Sales Rep", modal: "assignRep" },
+    { label: "Schedule Discovery", modal: "scheduleDiscovery" },
+    { label: "Create Follow-Up", modal: "createFollowUp" },
+    { label: "Move Stage", modal: "moveStage" },
+    { label: "Add Note", modal: "addNote" },
   ];
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="flex-1 bg-black/40 backdrop-blur-sm"onClick={onClose} />
-      <div className="w-[720px] h-full flex flex-col shadow-2xl overflow-hidden"style={{ background: "var(--rtm-bg)", borderLeft: "1px solid var(--rtm-border)"}}>
+      <div className="flex-1 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="w-[720px] h-full flex flex-col shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-bg)", borderLeft: "1px solid var(--rtm-border)" }}>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}>
+        <div className="flex items-start justify-between px-6 py-5 border-b flex-shrink-0"
+          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               {stageBadge(lead.stage)}
               {ghlSyncBadge(lead.ghlSyncStatus)}
               {isReadyForOpportunity && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0"}}>
-                   Ready For Opportunity
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
+                  ✓ Ready For Opportunity
+                </span>
+              )}
+              {lead.disqualified && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
+                  Disqualified{lead.disqualifiedReason ? `: ${lead.disqualifiedReason}` : ""}
                 </span>
               )}
             </div>
-            <h2 className="text-xl font-bold truncate"style={{ color: "var(--rtm-text-primary)"}}>{lead.businessName}</h2>
-            <p className="text-sm mt-0.5"style={{ color: "var(--rtm-text-secondary)"}}>
+            <h2 className="text-xl font-bold truncate" style={{ color: "var(--rtm-text-primary)" }}>{lead.businessName}</h2>
+            <p className="text-sm mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
               {lead.name} · {lead.industry} · {lead.location}
             </p>
-            <p className="text-xs mt-0.5 font-mono"style={{ color: "var(--rtm-text-muted)"}}>
+            <p className="text-xs mt-0.5 font-mono" style={{ color: "var(--rtm-text-muted)" }}>
               GHL: {lead.ghlContactId}
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4 flex-shrink-0">
             {isReadyForOpportunity && (
-              <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-bold border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>
+              <button onClick={() => onCreateOpportunity(lead)}
+                className="text-xs px-3 py-1.5 rounded-lg font-bold border"
+                style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>
                 Create Opportunity →
-              </Link>
+              </button>
             )}
-            <button className="rtm-btn-primary text-xs px-3 py-1.5">Edit Lead</button>
+            <button onClick={() => onAction({ type: "editLead", lead })}
+              className="rtm-btn-primary text-xs px-3 py-1.5">Edit Lead</button>
             <button onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-lg"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)"}}></button>
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-lg"
+              style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>✕</button>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-0 border-b flex-shrink-0 overflow-x-auto"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}>
+        <div className="flex gap-0 border-b flex-shrink-0 overflow-x-auto"
+          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}>
           {tabs.map(t => (
             <button key={t.key} onClick={() => setActiveTab(t.key)}
-              className="px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2"style={{
+              className="px-4 py-3 text-xs font-semibold whitespace-nowrap transition-colors border-b-2"
+              style={{
                 borderBottomColor: activeTab === t.key ? workspace.accentColor : "transparent",
                 color: activeTab === t.key ? workspace.accentColor : "var(--rtm-text-muted)",
               }}>
@@ -815,11 +1385,11 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
 
-          {/*  OVERVIEW  */}
-          {activeTab === "overview"&& (
+          {/* OVERVIEW */}
+          {activeTab === "overview" && (
             <>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Lead Overview</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Lead Overview</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[
                     ["Lead Name", lead.name],
@@ -835,29 +1405,35 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                     ["Last Activity", lead.lastActivity],
                     ["Est. Monthly Value", `${fmt$(lead.estimatedValue)}/mo`],
                   ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{k}</p>
-                      <p className="text-sm font-semibold truncate"style={{ color: "var(--rtm-text-primary)"}}>{v}</p>
+                    <div key={k} className="rounded-lg p-3 border"
+                      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>{v}</p>
                     </div>
                   ))}
                 </div>
               </section>
 
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Opportunity Readiness</h3>
-                <div className="rounded-lg p-4 border flex items-center justify-between"style={{ background: isReadyForOpportunity ? "#ECFDF5": "var(--rtm-surface)", borderColor: isReadyForOpportunity ? "#A7F3D0": "var(--rtm-border)"}}>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Opportunity Readiness</h3>
+                <div className="rounded-lg p-4 border flex items-center justify-between"
+                  style={{ background: isReadyForOpportunity ? "#ECFDF5" : "var(--rtm-surface)", borderColor: isReadyForOpportunity ? "#A7F3D0" : "var(--rtm-border)" }}>
                   <div>
                     {readinessBadge(lead.opportunityReadiness)}
-                    <p className="text-xs mt-1"style={{ color: "var(--rtm-text-muted)"}}>
-                      {isReadyForOpportunity ? "This lead is ready to become an opportunity.": "Complete discovery and qualification steps to advance."}
+                    <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>
+                      {isReadyForOpportunity ? "This lead is ready to become an opportunity." : "Complete discovery and qualification steps to advance."}
                     </p>
                   </div>
                   {isReadyForOpportunity && (
                     <div className="flex gap-2 flex-shrink-0 ml-4">
-                      <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-bold"style={{ background: "#059669", color: "#fff"}}>
+                      <button onClick={() => onCreateOpportunity(lead)}
+                        className="text-xs px-3 py-1.5 rounded-lg font-bold"
+                        style={{ background: "#059669", color: "#fff" }}>
                         Create Opportunity
-                      </Link>
-                      <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-semibold border"style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0"}}>
+                      </button>
+                      <Link href="/sales/pipeline"
+                        className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
+                        style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0" }}>
                         Open Pipeline →
                       </Link>
                     </div>
@@ -866,123 +1442,98 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
               </section>
 
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Quick Actions</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Quick Actions</h3>
                 <div className="flex flex-wrap gap-2">
-                  {["Assign Sales Rep", "Schedule Discovery", "Create Follow-Up", "Move Stage", "Add Note"].map(a => (
-                    <button key={a} className="rtm-btn-secondary text-xs px-3 py-1.5">{a}</button>
+                  {quickActions.map(a => (
+                    <button key={a.label}
+                      onClick={() => onAction({ type: a.modal, lead } as ActiveModal)}
+                      className="rtm-btn-secondary text-xs px-3 py-1.5">{a.label}</button>
                   ))}
                   {isReadyForOpportunity && (
-                    <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-bold inline-block"style={{ background: workspace.accentColor, color: "#fff"}}>
+                    <button onClick={() => onCreateOpportunity(lead)}
+                      className="text-xs px-3 py-1.5 rounded-lg font-bold inline-block"
+                      style={{ background: workspace.accentColor, color: "#fff" }}>
                       Send To Pipeline →
-                    </Link>
+                    </button>
                   )}
                 </div>
               </section>
             </>
           )}
 
-          {/*  GHL CONTACT  */}
-          {activeTab === "ghl"&& (
+          {/* GHL CONTACT */}
+          {activeTab === "ghl" && (
             <>
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>GHL Contact Details</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>GHL Contact Details</h3>
                   {ghlSyncBadge(lead.ghlSyncStatus)}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    ["GHL Contact ID",    lead.ghlContactId],
-                    ["Assigned User",     lead.ghlAssignedUser],
-                    ["Lead Source",       lead.ghlSource],
-                    ["Contact Status",    lead.ghlContactStatus],
-                    ["GHL Created Date",  lead.ghlCreatedDate],
-                    ["Last Activity",     lead.ghlLastActivityDate],
-                    ["Sync Status",       lead.ghlSyncStatus],
+                    ["GHL Contact ID", lead.ghlContactId],
+                    ["Assigned User", lead.ghlAssignedUser],
+                    ["Lead Source", lead.ghlSource],
+                    ["Contact Status", lead.ghlContactStatus],
+                    ["GHL Created Date", lead.ghlCreatedDate],
+                    ["Last Activity", lead.ghlLastActivityDate],
+                    ["Sync Status", lead.ghlSyncStatus],
                   ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{k}</p>
-                      <p className="text-sm font-semibold truncate"style={{ color: "var(--rtm-text-primary)"}}>{v}</p>
+                    <div key={k} className="rounded-lg p-3 border"
+                      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>{v}</p>
                     </div>
                   ))}
                 </div>
               </section>
-
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>GHL Contact Tags</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>GHL Contact Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {lead.ghlContactTags.map(tag => (
-                    <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-semibold"style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE"}}>
-                      {tag}
-                    </span>
+                    <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                      style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>{tag}</span>
                   ))}
                 </div>
               </section>
-
-              {lead.ghlSyncStatus === "Sync Failed"&& (
-                <section>
-                  <div className="rounded-lg p-4 border"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
-                    <p className="text-sm font-bold mb-1"style={{ color: "#DC2626"}}> GHL Sync Error</p>
-                    <p className="text-xs mb-3"style={{ color: "#B91C1C"}}>
-                      This contact failed to sync with GoHighLevel. Review and resolve the sync issue.
-                    </p>
-                    <button className="text-xs px-3 py-1.5 rounded-lg font-bold"style={{ background: "#DC2626", color: "#fff"}}>
-                      Retry Sync
-                    </button>
-                  </div>
-                </section>
-              )}
-
-              {lead.ghlSyncStatus === "Manual Override"&& (
-                <section>
-                  <div className="rounded-lg p-4 border"style={{ background: "#F5F3FF", borderColor: "#DDD6FE"}}>
-                    <p className="text-sm font-bold mb-1"style={{ color: "#7C3AED"}}> Manual Override Active</p>
-                    <p className="text-xs"style={{ color: "#6D28D9"}}>
-                      This contact has a manual sync override. GHL auto-sync is disabled for this record.
-                    </p>
-                  </div>
-                </section>
-              )}
             </>
           )}
 
-          {/*  QUALIFICATION  */}
-          {activeTab === "qualification"&& (
+          {/* QUALIFICATION */}
+          {activeTab === "qualification" && (
             <>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>BANT Qualification</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>BANT Qualification</h3>
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Budget",    value: lead.budget,    icon: "", good: lead.budget === "High"|| lead.budget === "Medium"},
-                    { label: "Authority", value: lead.authority, good: lead.authority === "Decision Maker"},
-                    { label: "Need",      value: lead.need,      icon: "", good: lead.need === "High"},
-                    { label: "Timeline",  value: lead.timeline,  icon: "", good: lead.timeline === "Immediate"|| lead.timeline === "1-3 months"},
+                    { label: "Budget", value: lead.budget, icon: "💰", good: lead.budget === "High" || lead.budget === "Medium" },
+                    { label: "Authority", value: lead.authority, good: lead.authority === "Decision Maker" },
+                    { label: "Need", value: lead.need, icon: "🎯", good: lead.need === "High" },
+                    { label: "Timeline", value: lead.timeline, icon: "⏰", good: lead.timeline === "Immediate" || lead.timeline === "1-3 months" },
                   ].map(item => (
-                    <div key={item.label} className="rounded-lg p-4 border"style={{ background: item.good ? "#F0FDF4": "#FEF2F2", borderColor: item.good ? "#A7F3D0": "#FECACA"}}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span>{item.icon}</span>
-                        <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: item.good ? "#15803D": "#DC2626"}}>{item.label}</p>
-                      </div>
-                      <p className="text-sm font-bold"style={{ color: item.good ? "#15803D": "#DC2626"}}>{item.value}</p>
+                    <div key={item.label} className="rounded-lg p-4 border"
+                      style={{ background: item.good ? "#F0FDF4" : "#FEF2F2", borderColor: item.good ? "#A7F3D0" : "#FECACA" }}>
+                      <p className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: item.good ? "#15803D" : "#DC2626" }}>{item.label}</p>
+                      <p className="text-sm font-bold" style={{ color: item.good ? "#15803D" : "#DC2626" }}>{item.value}</p>
                     </div>
                   ))}
                 </div>
               </section>
-
               {lead.requestedServices.length > 0 && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Requested Services</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Requested Services</h3>
                   <div className="flex flex-wrap gap-2">
                     {lead.requestedServices.map(s => (
-                      <span key={s} className="text-xs px-2.5 py-1 rounded-full font-semibold border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}>{s}</span>
+                      <span key={s} className="text-xs px-2.5 py-1 rounded-full font-semibold border"
+                        style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE" }}>{s}</span>
                     ))}
                   </div>
                 </section>
               )}
-
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Estimated Monthly Value</h3>
-                <div className="rounded-lg p-4 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                  <p className="text-2xl font-bold"style={{ color: workspace.accentColor }}>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Estimated Monthly Value</h3>
+                <div className="rounded-lg p-4 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                  <p className="text-2xl font-bold" style={{ color: workspace.accentColor }}>
                     {fmt$(lead.estimatedValue)}<span className="text-sm font-normal text-slate-400">/mo</span>
                   </p>
                 </div>
@@ -990,140 +1541,132 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
             </>
           )}
 
-          {/*  DISCOVERY  */}
-          {activeTab === "discovery"&& (
+          {/* DISCOVERY */}
+          {activeTab === "discovery" && (
             <>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Discovery Management</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Discovery Management</h3>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   {[
-                    ["Discovery Scheduled", lead.discoveryScheduled ? "Yes": "No"],
-                    ["Discovery Date",      lead.discoveryDate || "Not Scheduled"],
-                    ["Assigned Rep",        lead.assignedRep],
+                    ["Discovery Scheduled", lead.discoveryScheduled ? "Yes" : "No"],
+                    ["Discovery Date", lead.discoveryDate || "Not Scheduled"],
+                    ["Assigned Rep", lead.assignedRep],
                   ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{k}</p>
-                      <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{v as string}</p>
+                    <div key={k} className="rounded-lg p-3 border"
+                      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
+                      <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{v as string}</p>
                     </div>
                   ))}
                 </div>
               </section>
-
               {lead.discoveryNotes && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Discovery Notes</h3>
-                  <div className="rounded-lg p-4 border text-sm"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Discovery Notes</h3>
+                  <div className="rounded-lg p-4 border text-sm"
+                    style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
                     {lead.discoveryNotes}
                   </div>
                 </section>
               )}
-
               {lead.businessGoals.length > 0 && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Business Goals</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Business Goals</h3>
                   <ul className="space-y-1.5">
                     {lead.businessGoals.map(g => (
-                      <li key={g} className="flex items-start gap-2 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
-                        {g}
-                      </li>
+                      <li key={g} className="flex items-start gap-2 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>✓ {g}</li>
                     ))}
                   </ul>
                 </section>
               )}
-
               {lead.painPoints.length > 0 && (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Pain Points</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Pain Points</h3>
                   <ul className="space-y-1.5">
                     {lead.painPoints.map(p => (
-                      <li key={p} className="flex items-start gap-2 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
+                      <li key={p} className="flex items-start gap-2 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
                         <span className="text-amber-500 mt-0.5">!</span>{p}
                       </li>
                     ))}
                   </ul>
                 </section>
               )}
-
               <section>
                 <div className="flex flex-wrap gap-2">
-                  {["Schedule Discovery", "Complete Discovery", "Update Notes"].map(a => (
-                    <button key={a} className="rtm-btn-secondary text-xs px-3 py-1.5">{a}</button>
-                  ))}
+                  <button onClick={() => onAction({ type: "scheduleDiscovery", lead })}
+                    className="rtm-btn-secondary text-xs px-3 py-1.5">
+                    {lead.discoveryScheduled ? "Update Discovery" : "Schedule Discovery"}
+                  </button>
+                  <button onClick={() => onAction({ type: "scheduleDiscovery", lead })}
+                    className="rtm-btn-secondary text-xs px-3 py-1.5">Complete Discovery</button>
+                  <button onClick={() => onAction({ type: "addNote", lead })}
+                    className="rtm-btn-secondary text-xs px-3 py-1.5">Update Notes</button>
                 </div>
               </section>
             </>
           )}
 
-          {/*  OPP READINESS  */}
-          {activeTab === "readiness"&& (
+          {/* OPP READINESS */}
+          {activeTab === "readiness" && (
             <>
               <section>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Opportunity Readiness</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Opportunity Readiness</h3>
                   {readinessBadge(lead.opportunityReadiness)}
                 </div>
                 <div className="space-y-2">
                   {readinessChecklist.map(item => (
-                    <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg border"style={{ background: item.done ? "#F0FDF4": "var(--rtm-surface)", borderColor: item.done ? "#A7F3D0": "var(--rtm-border)"}}>
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"style={{ background: item.done ? "#059669": "#E2E8F0", color: item.done ? "#fff": "#94A3B8"}}>
-                        {item.done ? "": ""}
+                    <div key={item.label} className="flex items-center gap-3 p-3 rounded-lg border"
+                      style={{ background: item.done ? "#F0FDF4" : "var(--rtm-surface)", borderColor: item.done ? "#A7F3D0" : "var(--rtm-border)" }}>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                        style={{ background: item.done ? "#059669" : "#E2E8F0", color: item.done ? "#fff" : "#94A3B8" }}>
+                        {item.done ? "✓" : ""}
                       </div>
-                      <span className="text-sm font-medium"style={{ color: item.done ? "#15803D": "var(--rtm-text-secondary)"}}>{item.label}</span>
+                      <span className="text-sm font-medium" style={{ color: item.done ? "#15803D" : "var(--rtm-text-secondary)" }}>{item.label}</span>
                     </div>
                   ))}
                 </div>
               </section>
-
               {isReadyForOpportunity && (
                 <section>
-                  <div className="rounded-xl p-5 border-2"style={{ background: "#ECFDF5", borderColor: "#059669"}}>
-                    <p className="text-sm font-bold mb-1"style={{ color: "#059669"}}> Ready For Opportunity</p>
-                    <p className="text-xs mb-4"style={{ color: "#15803D"}}>
+                  <div className="rounded-xl p-5 border-2" style={{ background: "#ECFDF5", borderColor: "#059669" }}>
+                    <p className="text-sm font-bold mb-1" style={{ color: "#059669" }}>✓ Ready For Opportunity</p>
+                    <p className="text-xs mb-4" style={{ color: "#15803D" }}>
                       All readiness criteria met. Create an opportunity in the Sales Pipeline to advance this lead.
                     </p>
                     <div className="flex gap-2">
-                      <Link href="/sales/pipeline"className="text-xs px-4 py-2 rounded-lg font-bold inline-block"style={{ background: "#059669", color: "#fff"}}>
+                      <button onClick={() => onCreateOpportunity(lead)}
+                        className="text-xs px-4 py-2 rounded-lg font-bold"
+                        style={{ background: "#059669", color: "#fff" }}>
                         Create Opportunity
-                      </Link>
-                      <Link href="/sales/pipeline"className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0"}}>
-                        Send To Pipeline →
-                      </Link>
-                      <Link href="/sales/pipeline"className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"style={{ background: "#fff", color: "#15803D", borderColor: "#A7F3D0"}}>
+                      </button>
+                      <Link href="/sales/pipeline"
+                        className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"
+                        style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0" }}>
                         Open Pipeline →
                       </Link>
                     </div>
                   </div>
                 </section>
               )}
-
-              {!isReadyForOpportunity && (
-                <section>
-                  <div className="rounded-lg p-4 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                    <p className="text-sm font-semibold mb-1"style={{ color: "var(--rtm-text-primary)"}}>Next Steps</p>
-                    <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
-                      Complete outstanding readiness criteria above before creating an opportunity.
-                      Opportunity management happens in <strong>/sales/pipeline</strong>.
-                    </p>
-                  </div>
-                </section>
-              )}
             </>
           )}
 
-          {/*  AFFILIATE  */}
-          {activeTab === "affiliate"&& (
+          {/* AFFILIATE */}
+          {activeTab === "affiliate" && (
             <>
-              {lead.affiliateName !== "—"? (
+              {lead.affiliateName !== "—" ? (
                 <section>
-                  <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Affiliate Attribution</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Affiliate Attribution</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      ["Affiliate Name",    lead.affiliateName],
+                      ["Affiliate Name", lead.affiliateName],
                       ["GHL Contact Source", lead.ghlSource],
                     ].map(([k, v]) => (
-                      <div key={k} className="rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                        <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5"style={{ color: "var(--rtm-text-muted)"}}>{k}</p>
-                        <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{v as string}</p>
+                      <div key={k} className="rounded-lg p-3 border"
+                        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
+                        <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{v as string}</p>
                       </div>
                     ))}
                   </div>
@@ -1134,60 +1677,69 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
                   </div>
                 </section>
               ) : (
-                <div className="rounded-lg p-6 border text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                  <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>This lead has no affiliate attribution.</p>
+                <div className="rounded-lg p-6 border text-center"
+                  style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                  <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>This lead has no affiliate attribution.</p>
                 </div>
               )}
             </>
           )}
 
-          {/*  TIMELINE  */}
-          {activeTab === "timeline"&& (
+          {/* TIMELINE */}
+          {activeTab === "timeline" && (
             <>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-3"style={{ color: "var(--rtm-text-muted)"}}>Lead Journey</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Lead Journey</h3>
                 <div className="relative pl-6 space-y-4">
-                  <div className="absolute left-2 top-0 bottom-0 w-px"style={{ background: "var(--rtm-border)"}} />
+                  <div className="absolute left-2 top-0 bottom-0 w-px" style={{ background: "var(--rtm-border)" }} />
                   {timeline.map((item, i) => (
                     <div key={i} className="relative flex items-start gap-3">
-                      <div className="absolute -left-4 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px]"style={{ background: "var(--rtm-surface)", borderColor: workspace.accentColor }}>
-                        {(item as { icon?: string; date: string; event: string }).icon ?? "·"}
-                      </div>
-                      <div className="flex-1 rounded-lg p-3 border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                        <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{item.event}</p>
-                        <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{item.date}</p>
+                      <div className="absolute -left-4 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px]"
+                        style={{ background: "var(--rtm-surface)", borderColor: workspace.accentColor }}>·</div>
+                      <div className="flex-1 rounded-lg p-3 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                        <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{item.event}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{item.date}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </section>
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>Notes</h3>
-                <div className="rounded-lg p-4 border text-sm"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Notes</h3>
+                <div className="rounded-lg p-4 border text-sm whitespace-pre-wrap"
+                  style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
                   {lead.notes || "No notes added."}
                 </div>
-                <button className="mt-2 rtm-btn-secondary text-xs px-3 py-1.5">Add Note</button>
+                <button onClick={() => onAction({ type: "addNote", lead })}
+                  className="mt-2 rtm-btn-secondary text-xs px-3 py-1.5">Add Note</button>
               </section>
             </>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t flex-shrink-0"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <div className="flex items-center justify-between px-6 py-4 border-t flex-shrink-0"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <div className="flex gap-2">
-            <button className="text-xs px-3 py-1.5 rounded-lg font-semibold border"style={{ color: "#DC2626", borderColor: "#FECACA", background: "#FEF2F2"}}>
+            <button onClick={() => onAction({ type: "disqualify", lead })}
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
+              style={{ color: "#DC2626", borderColor: "#FECACA", background: "#FEF2F2" }}>
               Disqualify
             </button>
           </div>
           <div className="flex gap-2">
-            <button className="rtm-btn-secondary text-xs px-3 py-1.5">Move Stage</button>
+            <button onClick={() => onAction({ type: "moveStage", lead })}
+              className="rtm-btn-secondary text-xs px-3 py-1.5">Move Stage</button>
             {isReadyForOpportunity ? (
-              <Link href="/sales/pipeline"className="text-xs px-3 py-1.5 rounded-lg font-bold inline-block"style={{ background: "#059669", color: "#fff"}}>
+              <button onClick={() => onCreateOpportunity(lead)}
+                className="text-xs px-3 py-1.5 rounded-lg font-bold"
+                style={{ background: "#059669", color: "#fff" }}>
                 Create Opportunity →
-              </Link>
+              </button>
             ) : (
-              <button className="rtm-btn-primary text-xs px-3 py-1.5"disabled={!isQualified}
-                style={{ opacity: isQualified ? 1 : 0.4 }}>
+              <button className="rtm-btn-primary text-xs px-3 py-1.5" disabled={!isQualified}
+                style={{ opacity: isQualified ? 1 : 0.4 }}
+                onClick={isQualified ? () => onCreateOpportunity(lead) : undefined}>
                 Create Opportunity
               </button>
             )}
@@ -1198,9 +1750,7 @@ function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
   );
 }
 
-//  Main Page 
-
-// ─── Add Lead Modal ───────────────────────────────────────────────────────────
+//  Main Page ──────────────────────────────────────────────────────────────────
 
 const MODAL_INDUSTRY_OPTIONS = [
   "Home Services", "Healthcare", "Legal", "Automotive",
@@ -1213,9 +1763,7 @@ const MODAL_SOURCE_OPTIONS = [
   "Google Ads", "Meta Ads", "Outbound", "Direct",
 ];
 
-const MODAL_ASSIGNED_REPS = [
-  "Jordan M.", "Sarah K.", "Mike T.", "Alex R.",
-];
+const MODAL_ASSIGNED_REPS = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
 
 interface AddLeadFormState {
   businessName: string;
@@ -1230,15 +1778,10 @@ interface AddLeadFormState {
 }
 
 const EMPTY_ADD_LEAD_FORM: AddLeadFormState = {
-  businessName: "",
-  contactName: "",
-  industry: MODAL_INDUSTRY_OPTIONS[0],
-  location: "",
-  leadSource: MODAL_SOURCE_OPTIONS[0],
-  assignedRep: MODAL_ASSIGNED_REPS[0],
-  contactEmail: "",
-  contactPhone: "",
-  notes: "",
+  businessName: "", contactName: "",
+  industry: MODAL_INDUSTRY_OPTIONS[0], location: "",
+  leadSource: MODAL_SOURCE_OPTIONS[0], assignedRep: MODAL_ASSIGNED_REPS[0],
+  contactEmail: "", contactPhone: "", notes: "",
 };
 
 function AddLeadModal({ onClose, onAdd }: {
@@ -1264,39 +1807,20 @@ function AddLeadModal({ onClose, onAdd }: {
     if (!validate()) return;
     const newLead: Lead = {
       id: `L${String(Date.now()).slice(-6)}`,
-      name: form.contactName,
-      businessName: form.businessName,
-      industry: form.industry,
-      website: "",
-      email: form.contactEmail,
-      phone: form.contactPhone,
-      location: form.location,
-      ghlContactId: "—",
-      ghlAssignedUser: form.assignedRep,
-      ghlSource: form.leadSource,
-      ghlCreatedDate: new Date().toISOString().split("T")[0],
+      name: form.contactName, businessName: form.businessName,
+      industry: form.industry, website: "", email: form.contactEmail,
+      phone: form.contactPhone, location: form.location,
+      ghlContactId: "—", ghlAssignedUser: form.assignedRep,
+      ghlSource: form.leadSource, ghlCreatedDate: new Date().toISOString().split("T")[0],
       ghlLastActivityDate: new Date().toISOString().split("T")[0],
-      ghlContactTags: [],
-      ghlContactStatus: "New",
-      ghlSyncStatus: "Pending Sync",
-      leadSource: form.leadSource as LeadSource,
-      assignedRep: form.assignedRep,
-      stage: "New Lead",
-      opportunityReadiness: "Not Ready",
-      discoveryScheduled: false,
-      discoveryDate: "",
-      discoveryNotes: "",
-      businessGoals: [],
-      painPoints: [],
-      requestedServices: [],
-      budget: "Unknown",
-      authority: "Unknown",
-      need: "Low",
-      timeline: "6+ months",
-      estimatedValue: 0,
-      affiliateName: "—",
-      createdDate: new Date().toISOString().split("T")[0],
-      lastActivity: "Just now",
+      ghlContactTags: [], ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
+      leadSource: form.leadSource as LeadSource, assignedRep: form.assignedRep,
+      stage: "New Lead", opportunityReadiness: "Not Ready",
+      discoveryScheduled: false, discoveryDate: "", discoveryNotes: "",
+      businessGoals: [], painPoints: [], requestedServices: [],
+      budget: "Unknown", authority: "Unknown", need: "Low", timeline: "6+ months",
+      estimatedValue: 0, affiliateName: "—",
+      createdDate: new Date().toISOString().split("T")[0], lastActivity: "Just now",
       notes: form.notes,
     };
     onAdd(newLead);
@@ -1307,8 +1831,6 @@ function AddLeadModal({ onClose, onAdd }: {
       style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
       <div className="w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden"
         style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}>
-
-        {/* Modal Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b"
           style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <div>
@@ -1319,200 +1841,100 @@ function AddLeadModal({ onClose, onAdd }: {
             className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold"
             style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>✕</button>
         </div>
-
-        {/* Modal Body */}
         <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
-
-          {/* Business Name */}
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-              style={{ color: "var(--rtm-text-muted)" }}>Business Name <span style={{ color: "#DC2626" }}>*</span></label>
-            <input
-              value={form.businessName}
-              onChange={e => set("businessName", e.target.value)}
-              placeholder="e.g. Summit Landscaping"
-              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
-              style={{ background: "var(--rtm-surface)", borderColor: errors.businessName ? "#DC2626" : "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-            />
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Business Name <span style={{ color: "#DC2626" }}>*</span></label>
+            <input value={form.businessName} onChange={e => set("businessName", e.target.value)} placeholder="e.g. Summit Landscaping"
+            className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+            style={{ background: "var(--rtm-surface)", borderColor: errors.businessName ? "#DC2626" : "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
             {errors.businessName && <p className="text-[10px] mt-0.5" style={{ color: "#DC2626" }}>{errors.businessName}</p>}
           </div>
-
-          {/* Contact Name */}
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-              style={{ color: "var(--rtm-text-muted)" }}>Contact Name <span style={{ color: "#DC2626" }}>*</span></label>
-            <input
-              value={form.contactName}
-              onChange={e => set("contactName", e.target.value)}
-              placeholder="e.g. Marcus Webb"
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Contact Name <span style={{ color: "#DC2626" }}>*</span></label>
+            <input value={form.contactName} onChange={e => set("contactName", e.target.value)} placeholder="e.g. Marcus Webb"
               className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
-              style={{ background: "var(--rtm-surface)", borderColor: errors.contactName ? "#DC2626" : "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-            />
+              style={{ background: "var(--rtm-surface)", borderColor: errors.contactName ? "#DC2626" : "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
             {errors.contactName && <p className="text-[10px] mt-0.5" style={{ color: "#DC2626" }}>{errors.contactName}</p>}
           </div>
-
-          {/* Industry + Location */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-                style={{ color: "var(--rtm-text-muted)" }}>Industry</label>
-              <select
-                value={form.industry}
-                onChange={e => set("industry", e.target.value)}
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Industry</label>
+              <select value={form.industry} onChange={e => set("industry", e.target.value)}
                 className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
                 style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
                 {MODAL_INDUSTRY_OPTIONS.map(o => <option key={o}>{o}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-                style={{ color: "var(--rtm-text-muted)" }}>Location — City, State</label>
-              <input
-                value={form.location}
-                onChange={e => set("location", e.target.value)}
-                placeholder="e.g. Austin, TX"
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Location</label>
+              <input value={form.location} onChange={e => set("location", e.target.value)} placeholder="e.g. Austin, TX"
                 className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
-                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-              />
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
             </div>
           </div>
-
-          {/* Lead Source + Assigned Rep */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-                style={{ color: "var(--rtm-text-muted)" }}>Lead Source</label>
-              <select
-                value={form.leadSource}
-                onChange={e => set("leadSource", e.target.value)}
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Lead Source</label>
+              <select value={form.leadSource} onChange={e => set("leadSource", e.target.value)}
                 className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
                 style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
                 {MODAL_SOURCE_OPTIONS.map(o => <option key={o}>{o}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-                style={{ color: "var(--rtm-text-muted)" }}>Assigned Rep</label>
-              <select
-                value={form.assignedRep}
-                onChange={e => set("assignedRep", e.target.value)}
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Assigned Rep</label>
+              <select value={form.assignedRep} onChange={e => set("assignedRep", e.target.value)}
                 className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
                 style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
                 {MODAL_ASSIGNED_REPS.map(o => <option key={o}>{o}</option>)}
               </select>
             </div>
           </div>
-
-          {/* Contact Email + Phone */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-                style={{ color: "var(--rtm-text-muted)" }}>Contact Email</label>
-              <input
-                type="email"
-                value={form.contactEmail}
-                onChange={e => set("contactEmail", e.target.value)}
-                placeholder="contact@business.com"
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Email</label>
+              <input type="email" value={form.contactEmail} onChange={e => set("contactEmail", e.target.value)} placeholder="contact@business.com"
                 className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
-                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-              />
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-                style={{ color: "var(--rtm-text-muted)" }}>Contact Phone</label>
-              <input
-                value={form.contactPhone}
-                onChange={e => set("contactPhone", e.target.value)}
-                placeholder="(555) 555-5555"
+              <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Phone</label>
+              <input value={form.contactPhone} onChange={e => set("contactPhone", e.target.value)} placeholder="(555) 555-5555"
                 className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
-                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-              />
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
             </div>
           </div>
-
-          {/* Notes */}
           <div>
-            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1"
-              style={{ color: "var(--rtm-text-muted)" }}>Notes <span style={{ color: "var(--rtm-text-muted)", fontWeight: 400 }}>(optional)</span></label>
-            <textarea
-              value={form.notes}
-              onChange={e => set("notes", e.target.value)}
-              placeholder="Any additional notes about this lead..."
-              rows={3}
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Notes (optional)</label>
+            <textarea value={form.notes} onChange={e => set("notes", e.target.value)} placeholder="Any additional notes..." rows={3}
               className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none resize-none"
-              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-            />
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
           </div>
-
-          {/* Sync to GHL Toggle Row */}
-          <div className="rounded-xl border p-4"
-            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>Sync to GHL</span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                    style={{ background: "#F1F5F9", color: "#94A3B8", border: "1px solid #CBD5E1" }}>Coming Soon</span>
-                </div>
-                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                  Syncs this lead to GoHighLevel on creation. Requires GHL integration.
-                </p>
-              </div>
-              {/* Disabled toggle */}
-              <div className="flex-shrink-0">
-                <div
-                  className="relative w-10 h-6 rounded-full cursor-not-allowed"
-                  style={{ background: "#CBD5E1" }}
-                  title="Coming Soon">
-                  <div className="absolute top-1 left-1 w-4 h-4 rounded-full"
-                    style={{ background: "#fff" }} />
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
-
-        {/* Modal Footer */}
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t"
           style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-          <button onClick={onClose}
-            className="text-sm px-4 py-2 rounded-lg font-semibold border"
-            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
-            Cancel
-          </button>
-          <button onClick={handleSubmit}
-            className="rtm-btn-primary text-sm px-4 py-2">
-            Add Lead
-          </button>
+          <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
+          <button onClick={handleSubmit} className="rtm-btn-primary text-sm px-4 py-2">Add Lead</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Toast ─────────────────────────────────────────────────────────────────────
-
-interface ToastMsg {
-  id: number;
-  text: string;
-  variant: "success" | "info" | "danger";
-}
+// Toast
+interface ToastMsg { id: number; text: string; variant: "success" | "info" | "danger"; }
 
 function Toast({ msg, onDismiss }: { msg: ToastMsg; onDismiss: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 4000);
-    return () => clearTimeout(t);
-  }, [onDismiss]);
-
+  useEffect(() => { const t = setTimeout(onDismiss, 4000); return () => clearTimeout(t); }, [onDismiss]);
   const bg = msg.variant === "success" ? "#F0FDF4" : msg.variant === "danger" ? "#FEF2F2" : "#EFF6FF";
   const text = msg.variant === "success" ? "#15803D" : msg.variant === "danger" ? "#DC2626" : "#1D4ED8";
   const border = msg.variant === "success" ? "#A7F3D0" : msg.variant === "danger" ? "#FECACA" : "#BFDBFE";
-
   return (
-    <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-lg" style={{ background: bg, borderColor: border, minWidth: 280, maxWidth: 400 }}>
+    <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border shadow-lg"
+      style={{ background: bg, borderColor: border, minWidth: 280, maxWidth: 400 }}>
       <p className="text-sm font-semibold" style={{ color: text }}>{msg.text}</p>
-      <button onClick={onDismiss} className="font-bold text-lg" style={{ color: text }}>x</button>
+      <button onClick={onDismiss} className="font-bold text-lg" style={{ color: text }}>×</button>
     </div>
   );
 }
@@ -1526,8 +1948,7 @@ function ToastContainer({ toasts, dismiss }: { toasts: ToastMsg[]; dismiss: (id:
   );
 }
 
-// ─── Import Leads Modal ──────────────────────────────────────────────────────
-
+// Import Leads Modal
 function ImportLeadsModal({ onClose, onImport }: {
   onClose: () => void;
   onImport: (mockCount: number) => void;
@@ -1535,24 +1956,6 @@ function ImportLeadsModal({ onClose, onImport }: {
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f) setFileName(f.name);
-  }
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (f) setFileName(f.name);
-  }
-
-  function handleImport() {
-    const count = Math.floor(Math.random() * 8) + 3; // 3–10 mock leads
-    onImport(count);
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
@@ -1565,49 +1968,35 @@ function ImportLeadsModal({ onClose, onImport }: {
             <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Upload a CSV file to import leads in bulk</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold"
-            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>x</button>
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>✕</button>
         </div>
-
         <div className="px-6 py-5 space-y-4">
-          <div
-            className="rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-colors"
+          <div className="rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-colors"
             style={{ borderColor: dragging ? "#2563EB" : "var(--rtm-border)", background: dragging ? "#EFF6FF" : "var(--rtm-surface)" }}
             onDragOver={e => { e.preventDefault(); setDragging(true); }}
             onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
+            onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) setFileName(f.name); }}
             onClick={() => fileRef.current?.click()}>
             <p className="text-sm font-semibold" style={{ color: dragging ? "#1D4ED8" : "var(--rtm-text-secondary)" }}>
               {fileName ? fileName : "Drop a CSV file here or click to browse"}
             </p>
             <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>Accepted format: .csv</p>
-            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
-          </div>
-
-          <div className="rounded-lg border px-4 py-3" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-            <p className="text-[10px] font-bold uppercase tracking-wide mb-1.5" style={{ color: "var(--rtm-text-muted)" }}>Expected CSV Columns</p>
-            <div className="flex flex-wrap gap-2">
-              {["Business Name", "Contact Name", "Email", "Phone", "Lead Source"].map(col => (
-                <span key={col} className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
-                  style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>{col}</span>
-              ))}
-            </div>
+            <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) setFileName(f.name); }} />
           </div>
         </div>
-
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t"
           style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
             style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
-          <button onClick={handleImport} className="text-sm px-4 py-2 rounded-lg font-bold"
-            style={{ background: "#2563EB", color: "#fff" }}>Import</button>
+          <button onClick={() => onImport(Math.floor(Math.random() * 8) + 3)}
+            className="text-sm px-4 py-2 rounded-lg font-bold" style={{ background: "#2563EB", color: "#fff" }}>Import</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Assign Leads Modal ──────────────────────────────────────────────────────
-
+// Assign Leads Modal (bulk)
 const ASSIGN_REPS = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
 
 function AssignLeadsModal({ leads, onClose, onAssign }: {
@@ -1619,11 +2008,7 @@ function AssignLeadsModal({ leads, onClose, onAssign }: {
   const candidates = unassigned.length > 0 ? unassigned : leads.slice(0, 5);
   const [selectedIds, setSelectedIds] = useState<string[]>(candidates.map(l => l.id));
   const [rep, setRep] = useState(ASSIGN_REPS[0]);
-
-  function toggleLead(id: string) {
-    setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
-  }
-
+  function toggleLead(id: string) { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
@@ -1636,9 +2021,8 @@ function AssignLeadsModal({ leads, onClose, onAssign }: {
             <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Bulk-assign leads to a sales rep</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold"
-            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>x</button>
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>✕</button>
         </div>
-
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Assign To Rep</label>
@@ -1648,7 +2032,6 @@ function AssignLeadsModal({ leads, onClose, onAssign }: {
               {ASSIGN_REPS.map(r => <option key={r}>{r}</option>)}
             </select>
           </div>
-
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wide block mb-2" style={{ color: "var(--rtm-text-muted)" }}>Select Leads ({selectedIds.length} selected)</label>
             <div className="space-y-1 max-h-52 overflow-y-auto rounded-lg border" style={{ borderColor: "var(--rtm-border)" }}>
@@ -1665,7 +2048,6 @@ function AssignLeadsModal({ leads, onClose, onAssign }: {
             </div>
           </div>
         </div>
-
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t"
           style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
@@ -1679,15 +2061,14 @@ function AssignLeadsModal({ leads, onClose, onAssign }: {
   );
 }
 
-// ─── Main Page ─────────────────────────────────────────────────────────────────
-
+// Main page inner component
 function SalesLeadsPageInner() {
   const searchParams = useSearchParams();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [stageFilter, setStageFilter]   = useState<LeadStage | "All">("All");
+  const [stageFilter, setStageFilter] = useState<LeadStage | "All">("All");
   const [sourceFilter, setSourceFilter] = useState<string>("All");
-  const [syncFilter, setSyncFilter]     = useState<GHLSyncStatus | "All">("All");
-  const [searchQuery, setSearchQuery]   = useState("");
+  const [syncFilter, setSyncFilter] = useState<GHLSyncStatus | "All">("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showSyncPanel, setShowSyncPanel] = useState(false);
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -1699,24 +2080,28 @@ function SalesLeadsPageInner() {
   const { isVisible, widgetOrder } = useWidgetPreferences("leads");
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
   const [selectedLeadForOpportunity, setSelectedLeadForOpportunity] = useState<{
-    id: string;
-    clientName: string;
-    businessName: string;
-    contactName: string;
-    contactPhone: string;
-    contactEmail: string;
-    leadSource: string;
-    assignedRep: string;
-    notes: string;
+    id: string; clientName: string; businessName: string; contactName: string;
+    contactPhone: string; contactEmail: string; leadSource: string; assignedRep: string; notes: string;
   } | null>(null);
-  const [opportunities, setOpportunities] = useState<OpportunityRecord[]>([]);
   const [opportunityCreatedLeadIds, setOpportunityCreatedLeadIds] = useState<Set<string>>(new Set());
+  const [activeModal, setActiveModal] = useState<ActiveModal | null>(null);
+
+  // Hydrate lead overrides from the file-backed API on mount (seed-then-hydrate pattern)
+  useEffect(() => {
+    fetch("/api/leads-status")
+      .then(r => r.ok ? r.json() as Promise<{ records: LeadStatusRecord[] }> : Promise.reject(r.status))
+      .then(({ records }) => {
+        if (!Array.isArray(records) || records.length === 0) return;
+        const byId = new Map(records.map(r => [r.leadId, r]));
+        setLeads(prev => prev.map(l => applyOverride(l, byId.get(l.id))));
+      })
+      .catch(err => console.error("[Leads] Failed to hydrate lead status overrides:", err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auto-open Add Lead modal when ?action=add-lead is in the URL
   useEffect(() => {
-    if (searchParams.get("action") === "add-lead") {
-      setShowAddLeadModal(true);
-    }
+    if (searchParams.get("action") === "add-lead") setShowAddLeadModal(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1726,68 +2111,128 @@ function SalesLeadsPageInner() {
     setToasts(prev => [...prev, { id, text, variant }]);
   }
 
-  function dismissToast(id: number) {
-    setToasts(prev => prev.filter(t => t.id !== id));
+  function dismissToast(id: number) { setToasts(prev => prev.filter(t => t.id !== id)); }
+
+  // Generic lead updater — applies a partial patch to the in-memory lead and closes any modal
+  function patchLead(leadId: string, patch: Partial<Lead>) {
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ...patch } : l));
+    // If the open drawer has this lead, update it too
+    setSelectedLead(prev => prev?.id === leadId ? { ...prev, ...patch } : prev);
+  }
+
+  // Action handlers
+  function handleEditLead(patch: Partial<Lead>) {
+    if (!activeModal || activeModal.type !== "editLead") return;
+    patchLead(activeModal.lead.id, patch);
+    setActiveModal(null);
+    addToast("Lead updated successfully");
+  }
+
+  function handleAssignRep(rep: string) {
+    if (!activeModal || activeModal.type !== "assignRep") return;
+    patchLead(activeModal.lead.id, { assignedRep: rep });
+    setActiveModal(null);
+    addToast(`Lead assigned to ${rep}`);
+  }
+
+  function handleScheduleDiscovery(patch: { discoveryScheduled: boolean; discoveryDate: string; discoveryNotes: string }) {
+    if (!activeModal || activeModal.type !== "scheduleDiscovery") return;
+    const stagePatch = patch.discoveryDate ? {} : {};
+    patchLead(activeModal.lead.id, { ...patch, ...stagePatch });
+    setActiveModal(null);
+    addToast("Discovery updated successfully");
+  }
+
+  function handleMoveStage(stage: LeadStage) {
+    if (!activeModal || activeModal.type !== "moveStage") return;
+    patchLead(activeModal.lead.id, { stage });
+    setActiveModal(null);
+    addToast(`Lead moved to ${stage}`);
+  }
+
+  function handleAddNote(notes: string) {
+    if (!activeModal || activeModal.type !== "addNote") return;
+    patchLead(activeModal.lead.id, { notes });
+    setActiveModal(null);
+    addToast("Note added successfully");
+  }
+
+  function handleDisqualify(reason: string) {
+    if (!activeModal || activeModal.type !== "disqualify") return;
+    patchLead(activeModal.lead.id, { stage: "Disqualified", disqualified: true, disqualifiedReason: reason });
+    setActiveModal(null);
+    addToast("Lead disqualified");
+  }
+
+  function handleFollowUpCreated() {
+    setActiveModal(null);
+    addToast("Follow-up task created — visible on Sales Tasks");
   }
 
   function handleImportLeads(mockCount: number) {
-    // Build mock leads from imported batch
     const mockBatch: Lead[] = Array.from({ length: mockCount }, (_, i) => ({
       id: `LIMP${Date.now()}${i}`,
-      name: `Imported Contact ${i + 1}`,
-      businessName: `Imported Business ${i + 1}`,
-      industry: "Home Services",
-      website: "",
-      email: `contact${i + 1}@imported.com`,
-      phone: "",
-      location: "—",
-      ghlContactId: "—",
-      ghlAssignedUser: ASSIGN_REPS[0],
-      ghlSource: "Website",
-      ghlCreatedDate: new Date().toISOString().split("T")[0],
+      name: `Imported Contact ${i + 1}`, businessName: `Imported Business ${i + 1}`,
+      industry: "Home Services", website: "", email: `contact${i + 1}@imported.com`,
+      phone: "", location: "—", ghlContactId: "—", ghlAssignedUser: ASSIGN_REPS[0],
+      ghlSource: "Website", ghlCreatedDate: new Date().toISOString().split("T")[0],
       ghlLastActivityDate: new Date().toISOString().split("T")[0],
-      ghlContactTags: [],
-      ghlContactStatus: "New",
-      ghlSyncStatus: "Pending Sync" as GHLSyncStatus,
-      leadSource: "Website" as LeadSource,
-      assignedRep: ASSIGN_REPS[0],
-      stage: "New Lead" as LeadStage,
-      opportunityReadiness: "Not Ready" as OpportunityReadiness,
-      discoveryScheduled: false,
-      discoveryDate: "",
-      discoveryNotes: "",
-      businessGoals: [],
-      painPoints: [],
-      requestedServices: [],
-      budget: "Unknown" as const,
-      authority: "Unknown" as const,
-      need: "Low" as const,
-      timeline: "6+ months" as const,
-      estimatedValue: 0,
-      affiliateName: "—",
-      createdDate: new Date().toISOString().split("T")[0],
-      lastActivity: "Just now",
-      notes: "Imported via CSV",
+      ghlContactTags: [], ghlContactStatus: "New", ghlSyncStatus: "Pending Sync" as GHLSyncStatus,
+      leadSource: "Website" as LeadSource, assignedRep: ASSIGN_REPS[0],
+      stage: "New Lead" as LeadStage, opportunityReadiness: "Not Ready" as OpportunityReadiness,
+      discoveryScheduled: false, discoveryDate: "", discoveryNotes: "",
+      businessGoals: [], painPoints: [], requestedServices: [],
+      budget: "Unknown" as const, authority: "Unknown" as const, need: "Low" as const, timeline: "6+ months" as const,
+      estimatedValue: 0, affiliateName: "—", createdDate: new Date().toISOString().split("T")[0],
+      lastActivity: "Just now", notes: "Imported via CSV",
     }));
     setLeads(prev => [...mockBatch, ...prev]);
     setShowImportModal(false);
-    addToast(`${mockCount} leads imported successfully`, "success");
+    addToast(`${mockCount} leads imported successfully`);
   }
 
   function handleAssignLeads(leadIds: string[], rep: string) {
-    setLeads(prev => prev.map(l => leadIds.includes(l.id) ? { ...l, assignedRep: rep, ghlAssignedUser: rep } : l));
+    setLeads(prev => prev.map(l => leadIds.includes(l.id) ? { ...l, assignedRep: rep } : l));
     setShowAssignModal(false);
-    addToast(`${leadIds.length} lead${leadIds.length !== 1 ? "s" : ""} assigned to ${rep}`, "success");
+    addToast(`${leadIds.length} lead${leadIds.length !== 1 ? "s" : ""} assigned to ${rep}`);
   }
 
   function handleExportLeads() {
     addToast("Exporting leads...", "info");
-    setTimeout(() => addToast(`${leads.length} leads exported successfully`, "success"), 1000);
+    setTimeout(() => addToast(`${leads.length} leads exported successfully`), 1000);
   }
 
   function handleRetrySync(leadId: string) {
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ghlSyncStatus: "Synced" as GHLSyncStatus } : l));
-    addToast("GHL sync resolved successfully", "success");
+    addToast("GHL sync resolved successfully");
+  }
+
+  function handleCreateOpportunityFromLead(lead: Lead) {
+    setSelectedLeadForOpportunity({
+      id: lead.id, clientName: lead.name, businessName: lead.businessName,
+      contactName: lead.name, contactPhone: lead.phone, contactEmail: lead.email,
+      leadSource: lead.leadSource, assignedRep: lead.assignedRep, notes: lead.discoveryNotes,
+    });
+    setShowCreateOpportunityModal(true);
+  }
+
+  async function handleOpportunityCreated(opp: OpportunityRecord) {
+    // Persist to file-backed store so Pipeline page can read it
+    try {
+      await fetch("/api/sales-opportunities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(opp),
+      });
+    } catch (err) {
+      console.error("[Leads] Failed to persist opportunity:", err);
+    }
+    if (opp.leadId) {
+      setOpportunityCreatedLeadIds(prev => new Set([...prev, opp.leadId as string]));
+    }
+    setShowCreateOpportunityModal(false);
+    setSelectedLeadForOpportunity(null);
+    addToast("Opportunity created — now visible on Pipeline");
   }
 
   const filtered = leads.filter(l => {
@@ -1806,150 +2251,139 @@ function SalesLeadsPageInner() {
     return true;
   });
 
-  //  KPI calcs 
-  const newLeads            = leads.filter(l => l.stage === "New Lead").length;
-  const contactAttempted    = leads.filter(l => l.stage === "Contact Attempted").length;
-  const discoveryScheduled  = leads.filter(l => l.stage === "Discovery Scheduled").length;
-  const discoveryComplete   = leads.filter(l => l.stage === "Discovery Complete").length;
-  const qualifiedLeads      = leads.filter(l => l.stage === "Qualified").length;
-  const disqualifiedLeads   = leads.filter(l => l.stage === "Disqualified").length;
-  const readyForOpp         = leads.filter(l => l.opportunityReadiness === "Ready For Opportunity").length;
-  const ghlSynced           = leads.filter(l => l.ghlSyncStatus === "Synced").length;
-  const ghlPending          = leads.filter(l => l.ghlSyncStatus === "Pending Sync").length;
-  const ghlFailed           = leads.filter(l => l.ghlSyncStatus === "Sync Failed").length;
-  const conversionRate      = leads.length > 0 ? Math.round((qualifiedLeads / leads.length) * 100) : 0;
+  // KPI calcs
+  const newLeads = leads.filter(l => l.stage === "New Lead").length;
+  const contactAttempted = leads.filter(l => l.stage === "Contact Attempted").length;
+  const discoveryScheduled = leads.filter(l => l.stage === "Discovery Scheduled").length;
+  const discoveryComplete = leads.filter(l => l.stage === "Discovery Complete").length;
+  const qualifiedLeads = leads.filter(l => l.stage === "Qualified").length;
+  const disqualifiedLeads = leads.filter(l => l.stage === "Disqualified").length;
+  const readyForOpp = leads.filter(l => l.opportunityReadiness === "Ready For Opportunity").length;
+  const ghlSynced = leads.filter(l => l.ghlSyncStatus === "Synced").length;
+  const ghlPending = leads.filter(l => l.ghlSyncStatus === "Pending Sync").length;
+  const ghlFailed = leads.filter(l => l.ghlSyncStatus === "Sync Failed").length;
+  const conversionRate = leads.length > 0 ? Math.round((qualifiedLeads / leads.length) * 100) : 0;
 
   const stageCounts = Object.fromEntries(LEAD_STAGES.map(s => [s, leads.filter(l => l.stage === s).length]));
-  const sources     = Array.from(new Set(leads.map(l => l.leadSource)));
-  const sourceCounts= Object.fromEntries(sources.map(s => [s, leads.filter(l => l.leadSource === s).length]));
-
-  function handleCreateOpportunityFromLead(lead: Lead) {
-    setSelectedLeadForOpportunity({
-      id: lead.id,
-      clientName: lead.name,
-      businessName: lead.businessName,
-      contactName: lead.name,
-      contactPhone: lead.phone,
-      contactEmail: lead.email,
-      leadSource: lead.leadSource,
-      assignedRep: lead.assignedRep,
-      notes: lead.discoveryNotes,
-    });
-    setShowCreateOpportunityModal(true);
-  }
+  const sources = Array.from(new Set(leads.map(l => l.leadSource)));
+  const sourceCounts = Object.fromEntries(sources.map(s => [s, leads.filter(l => l.leadSource === s).length]));
 
   return (
     <div className="space-y-6">
       <ToastContainer toasts={toasts} dismiss={dismissToast} />
-      {selectedLead && <LeadDrawer lead={selectedLead} onClose={() => setSelectedLead(null)} />}
+
+      {/* Lead Drawer */}
+      {selectedLead && (
+        <LeadDrawer
+          lead={selectedLead}
+          onClose={() => setSelectedLead(null)}
+          onAction={modal => setActiveModal(modal)}
+          onCreateOpportunity={handleCreateOpportunityFromLead}
+        />
+      )}
+
+      {/* Action Modals */}
+      {activeModal?.type === "editLead" && (
+        <EditLeadModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleEditLead} />
+      )}
+      {activeModal?.type === "assignRep" && (
+        <AssignRepModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleAssignRep} />
+      )}
+      {activeModal?.type === "scheduleDiscovery" && (
+        <ScheduleDiscoveryModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleScheduleDiscovery} />
+      )}
+      {activeModal?.type === "moveStage" && (
+        <MoveStageModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleMoveStage} />
+      )}
+      {activeModal?.type === "addNote" && (
+        <AddNoteModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleAddNote} />
+      )}
+      {activeModal?.type === "disqualify" && (
+        <DisqualifyModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleDisqualify} />
+      )}
+      {activeModal?.type === "createFollowUp" && (
+        <CreateFollowUpModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleFollowUpCreated} />
+      )}
+
+      {/* Add Lead Modal */}
       {showAddLeadModal && (
         <AddLeadModal
           onClose={() => setShowAddLeadModal(false)}
-          onAdd={(newLead) => {
-            setLeads(prev => [newLead, ...prev]);
-            setShowAddLeadModal(false);
-            addToast("Lead added successfully", "success");
-          }}
+          onAdd={newLead => { setLeads(prev => [newLead, ...prev]); setShowAddLeadModal(false); addToast("Lead added successfully"); }}
         />
       )}
+
+      {/* Import Modal */}
       {showImportModal && (
-        <ImportLeadsModal
-          onClose={() => setShowImportModal(false)}
-          onImport={handleImportLeads}
-        />
+        <ImportLeadsModal onClose={() => setShowImportModal(false)} onImport={handleImportLeads} />
       )}
+
+      {/* Assign Modal */}
       {showAssignModal && (
-        <AssignLeadsModal
-          leads={leads}
-          onClose={() => setShowAssignModal(false)}
-          onAssign={handleAssignLeads}
-        />
+        <AssignLeadsModal leads={leads} onClose={() => setShowAssignModal(false)} onAssign={handleAssignLeads} />
       )}
+
+      {/* Customize View Modal */}
       {showCustomizeView && (
-        <CustomizeViewModal
-          pageId="leads"
-          onClose={() => setShowCustomizeView(false)}
-        />
+        <CustomizeViewModal pageId="leads" onClose={() => setShowCustomizeView(false)} />
       )}
+
+      {/* Create Opportunity Modal */}
       {showCreateOpportunityModal && (
         <CreateOpportunityModal
           leadData={selectedLeadForOpportunity ?? undefined}
-          onCreated={(opp) => {
-            setOpportunities((prev) => [opp, ...prev]);
-            if (opp.leadId) {
-              setOpportunityCreatedLeadIds((prev) => new Set([...prev, opp.leadId as string]));
-            }
-            setShowCreateOpportunityModal(false);
-            setSelectedLeadForOpportunity(null);
-          }}
-          onClose={() => {
-            setShowCreateOpportunityModal(false);
-            setSelectedLeadForOpportunity(null);
-          }}
+          onCreated={handleOpportunityCreated}
+          onClose={() => { setShowCreateOpportunityModal(false); setSelectedLeadForOpportunity(null); }}
         />
       )}
 
-      {/*  Page Header  */}
+      {/* Page Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>Sales</p>
-          <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-            Leads
-          </h1>
-          <p className="text-sm mt-1"style={{ color: "var(--rtm-text-muted)"}}>
+          <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>Sales</p>
+          <h1 className="text-2xl font-medium tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Leads</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--rtm-text-muted)" }}>
             Lead qualification, discovery management, and opportunity readiness.
           </p>
         </div>
-
-        {/* Top Action Bar */}
         <div className="flex flex-wrap gap-2 flex-shrink-0">
-          <button
-            onClick={() => setShowAddLeadModal(true)}
-            className="rtm-btn-primary text-sm flex items-center gap-1.5 px-3 py-2">
-            Add Lead
-          </button>
+          <button onClick={() => setShowAddLeadModal(true)} className="rtm-btn-primary text-sm flex items-center gap-1.5 px-3 py-2">Add Lead</button>
           <button onClick={() => setShowImportModal(true)} className="rtm-btn-secondary text-sm px-3 py-2">Import Leads</button>
           <button onClick={() => setShowAssignModal(true)} className="rtm-btn-secondary text-sm px-3 py-2">Assign Leads</button>
           <button onClick={handleExportLeads} className="rtm-btn-secondary text-sm px-3 py-2">Export Leads</button>
-          <button
-            onClick={() => setShowCustomizeView(true)}
-            className="rtm-btn-secondary text-sm px-3 py-2">
-            Customize View
-          </button>
-          <button
-            onClick={() => setShowSyncPanel(v => !v)}
-            className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"style={{
-              background: showSyncPanel ? "#ECFDF5": "var(--rtm-surface)",
-              color: showSyncPanel ? "#059669": "var(--rtm-text-primary)",
-              borderColor: showSyncPanel ? "#A7F3D0": "var(--rtm-border)",
+          <button onClick={() => setShowCustomizeView(true)} className="rtm-btn-secondary text-sm px-3 py-2">Customize View</button>
+          <button onClick={() => setShowSyncPanel(v => !v)}
+            className="text-sm px-3 py-2 rounded-lg font-semibold border transition-colors"
+            style={{
+              background: showSyncPanel ? "#ECFDF5" : "var(--rtm-surface)",
+              color: showSyncPanel ? "#059669" : "var(--rtm-text-primary)",
+              borderColor: showSyncPanel ? "#A7F3D0" : "var(--rtm-border)",
             }}>
             Sync Status
           </button>
         </div>
       </div>
 
-      {/*  GHL Sync Panel  */}
+      {/* GHL Sync Panel */}
       {showSyncPanel && (
-        <div className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+        <div className="rounded-xl border p-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-base font-bold"style={{ color: "var(--rtm-text-primary)"}}>GHL Lead Sync Status</h2>
-              <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
-                GoHighLevel contact synchronization · Last sync: Today, 9:42 AM
-              </p>
+              <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>GHL Lead Sync Status</h2>
+              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>GoHighLevel contact synchronization · Last sync: Today, 9:42 AM</p>
             </div>
             <button onClick={() => setShowSyncPanel(false)}
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)"}}>
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+              style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)" }}>
               Close
             </button>
           </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
             {[
-              { label: "Synced Contacts",  value: ghlSynced,  color: "#059669"},
-              { label: "Pending Sync",     value: ghlPending, color: "#D97706"},
-              { label: "Sync Failed",      value: ghlFailed,  color: "#DC2626"},
-              { label: "Manual Override",  value: leads.filter(l => l.ghlSyncStatus === "Manual Override").length, color: "#7C3AED"},
+              { label: "Synced Contacts", value: ghlSynced, color: "#059669" },
+              { label: "Pending Sync", value: ghlPending, color: "#D97706" },
+              { label: "Sync Failed", value: ghlFailed, color: "#DC2626" },
+              { label: "Manual Override", value: leads.filter(l => l.ghlSyncStatus === "Manual Override").length, color: "#7C3AED" },
             ].map(item => (
               <div key={item.label} className="rounded-lg p-4 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
                 <p className="text-2xl font-bold" style={{ color: item.color }}>{item.value}</p>
@@ -1957,49 +2391,24 @@ function SalesLeadsPageInner() {
               </div>
             ))}
           </div>
-
           {ghlFailed > 0 && (
-            <div className="rounded-lg p-4 border mb-4"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
-              <p className="text-sm font-bold mb-2"style={{ color: "#DC2626"}}> Sync Issues Detected</p>
+            <div className="rounded-lg p-4 border mb-4" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
+              <p className="text-sm font-bold mb-2" style={{ color: "#DC2626" }}>⚠ Sync Issues Detected</p>
               <div className="space-y-2">
                 {leads.filter(l => l.ghlSyncStatus === "Sync Failed").map(l => (
-                  <div key={l.id} className="flex items-center justify-between text-xs"style={{ color: "#B91C1C"}}>
+                  <div key={l.id} className="flex items-center justify-between text-xs" style={{ color: "#B91C1C" }}>
                     <span>{l.businessName} ({l.ghlContactId})</span>
-                    <button onClick={() => handleRetrySync(l.id)} className="px-2 py-0.5 rounded font-bold"style={{ background: "#DC2626", color: "#fff"}}>Retry</button>
+                    <button onClick={() => handleRetrySync(l.id)} className="px-2 py-0.5 rounded font-bold" style={{ background: "#DC2626", color: "#fff" }}>Retry</button>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          <div className="flex flex-wrap gap-2">
-            {(["Synced", "Pending Sync", "Sync Failed", "Manual Override"] as GHLSyncStatus[]).map(s => (
-              <button key={s}
-                onClick={() => setSyncFilter(syncFilter === s ? "All": s)}
-                className="text-xs px-3 py-1.5 rounded-lg font-semibold border transition-colors"style={{
-                  background: syncFilter === s ? GHL_SYNC_CONFIG[s].bg : "var(--rtm-bg)",
-                  color: syncFilter === s ? GHL_SYNC_CONFIG[s].color : "var(--rtm-text-muted)",
-                  borderColor: syncFilter === s ? GHL_SYNC_CONFIG[s].color : "var(--rtm-border)",
-                }}>
-                {GHL_SYNC_CONFIG[s].icon} Filter: {s}
-              </button>
-            ))}
-            {syncFilter !== "All"&& (
-              <button onClick={() => setSyncFilter("All")}
-                className="text-xs px-2 py-1 rounded font-semibold"style={{ background: "#FEF2F2", color: "#DC2626"}}>
-                Clear Sync Filter
-              </button>
-            )}
-          </div>
         </div>
       )}
 
-      {/*  KPI Cards — widget-preference driven, neutral card backgrounds  */}
+      {/* KPI Cards */}
       {(() => {
-        // Map widget id → card data. All card backgrounds neutral; semantic color on values/badges only.
-        const KPI_NEUTRAL_BG = "var(--rtm-surface)";
-        const KPI_NEUTRAL_ICON_BG = "var(--rtm-bg)";
-        const KPI_NEUTRAL_ICON_COLOR = "var(--rtm-text-muted)";
         const widgetData: Record<string, { title: string; value: string; trend: "up" | "down" | "neutral"; trendValue: string }> = {
           "leads-new":                { title: "New Leads",           value: String(newLeads),           trend: "up",      trendValue: "+5" },
           "leads-contact-attempted":  { title: "Contact Attempted",   value: String(contactAttempted),   trend: "neutral", trendValue: "±0" },
@@ -2011,265 +2420,202 @@ function SalesLeadsPageInner() {
           "leads-conversion":         { title: "Conversion Rate",     value: `${conversionRate}%`,       trend: "up",      trendValue: "+2%" },
           "leads-ghl-contacts":       { title: "GHL Contacts",        value: String(ghlSynced),          trend: "up",      trendValue: `+${ghlSynced}` },
         };
-        const visibleCards = widgetOrder
-          .filter(id => isVisible(id) && widgetData[id])
-          .map(id => ({ id, ...widgetData[id] }));
+        const visibleCards = widgetOrder.filter(id => isVisible(id) && widgetData[id]).map(id => ({ id, ...widgetData[id] }));
         if (visibleCards.length === 0) return null;
         return (
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
             {visibleCards.map(card => (
-              <KpiCard
-                key={card.id}
-                title={card.title}
-                value={card.value}
-                iconBg={KPI_NEUTRAL_ICON_BG}
-                iconColor={KPI_NEUTRAL_ICON_COLOR}
-                trend={card.trend}
-                trendValue={card.trendValue}
-              />
+              <KpiCard key={card.id} title={card.title} value={card.value}
+                iconBg="var(--rtm-bg)" iconColor="var(--rtm-text-muted)"
+                trend={card.trend} trendValue={card.trendValue} />
             ))}
           </div>
         );
       })()}
 
-      {/*  Lead Stage Pipeline  */}
-      <div className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+      {/* Lead Stage Pipeline */}
+      <div className="rounded-xl border p-5" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-base font-bold"style={{ color: "var(--rtm-text-primary)"}}>Lead Stages</h2>
-            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Lead Stages</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
               {LEADS.length} total leads · {readyForOpp} ready for opportunity
             </p>
           </div>
-          <div className="flex gap-2">
-            <Link href="/sales/pipeline"className="rtm-btn-secondary text-xs px-3 py-1.5 flex items-center gap-1">
-              <span>→</span> Sales Pipeline
-            </Link>
-          </div>
+          <Link href="/sales/pipeline" className="rtm-btn-secondary text-xs px-3 py-1.5 flex items-center gap-1">
+            → Sales Pipeline
+          </Link>
         </div>
-
         <div className="flex gap-2 overflow-x-auto pb-2">
           {LEAD_STAGES.map(stage => {
-            const cfg   = STAGE_CONFIG[stage];
+            const cfg = STAGE_CONFIG[stage];
             const count = stageCounts[stage] || 0;
             const isActive = stageFilter === stage;
             return (
-              <button key={stage}
-                onClick={() => setStageFilter(isActive ? "All": stage)}
-                className="flex-shrink-0 rounded-xl border p-3 text-left min-w-[140px] transition-all"style={{
+              <button key={stage} onClick={() => setStageFilter(isActive ? "All" : stage)}
+                className="flex-shrink-0 rounded-xl border p-3 text-left min-w-[140px] transition-all"
+                style={{
                   background: "var(--rtm-bg)",
                   borderColor: isActive ? cfg.color : "var(--rtm-border)",
                   boxShadow: isActive ? `0 0 0 2px ${cfg.color}30` : undefined,
                 }}>
-                <p className="text-2xl font-bold mb-1"style={{ color: cfg.color }}>{count}</p>
-                <p className="text-[10px] font-bold leading-tight"style={{ color: "var(--rtm-text-muted)"}}>{stage}</p>
+                <p className="text-2xl font-bold mb-1" style={{ color: cfg.color }}>{count}</p>
+                <p className="text-[10px] font-bold leading-tight" style={{ color: "var(--rtm-text-muted)" }}>{stage}</p>
               </button>
             );
           })}
         </div>
-
-        {/* Lead → Opportunity Workflow — read-only flow indicator */}
-        <div className="mt-4 pt-4 border-t"style={{ borderColor: "var(--rtm-border)"}}>
-          <p className="text-[10px] font-bold uppercase tracking-widest mb-2"style={{ color: "var(--rtm-text-muted)"}}>
-            Lead → Opportunity Workflow
-          </p>
-          <div className="flex items-center gap-1 flex-wrap text-[10px] font-semibold">
-            {[
-              { label: "Lead Created",       active: true },
-              { label: "Assigned",           active: true },
-              { label: "Contacted",          active: true },
-              { label: "Discovery",          active: true },
-              { label: "Qualified",          active: true },
-              { label: "Opportunity Created",active: false },
-              { label: "Sales Pipeline",     active: false },
-            ].map((step, i, arr) => (
-              <span key={step.label} className="flex items-center gap-1">
-                <span className="px-2 py-0.5 rounded"style={{
-                    background: "var(--rtm-bg)",
-                    color: step.active ? "var(--rtm-text-secondary)" : "var(--rtm-text-muted)",
-                    border: "1px solid var(--rtm-border)",
-                    fontWeight: step.active ? 600 : 400,
-                  }}>
-                  {step.label}
-                </span>
-                {i < arr.length - 1 && (
-                  <span style={{ color: "var(--rtm-text-muted)" }}>→</span>
-                )}
-              </span>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/*  Lead Sources — neutral chips, filter on click  */}
+      {/* Lead Sources */}
       <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-3">
         {sources.sort((a, b) => sourceCounts[b] - sourceCounts[a]).map(source => {
           const isActive = sourceFilter === source;
           return (
-            <button key={source}
-              onClick={() => setSourceFilter(isActive ? "All": source)}
-              className="rounded-xl border p-3 text-center transition-all"style={{
+            <button key={source} onClick={() => setSourceFilter(isActive ? "All" : source)}
+              className="rounded-xl border p-3 text-center transition-all"
+              style={{
                 background: "var(--rtm-surface)",
                 borderColor: isActive ? "var(--rtm-text-secondary)" : "var(--rtm-border)",
-                boxShadow: isActive ? "0 0 0 2px var(--rtm-border)" : undefined,
               }}>
-              <p className="text-xl font-bold"style={{ color: "var(--rtm-text-primary)"}}>{sourceCounts[source]}</p>
-              <p className="text-[10px] font-semibold mt-0.5 leading-tight"style={{ color: "var(--rtm-text-muted)"}}>{source}</p>
+              <p className="text-xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>{sourceCounts[source]}</p>
+              <p className="text-[10px] font-semibold mt-0.5 leading-tight" style={{ color: "var(--rtm-text-muted)" }}>{source}</p>
             </button>
           );
         })}
       </div>
 
-      {/*  Search & Filter Bar  */}
+      {/* Search & Filter Bar */}
       <div className="flex items-center gap-3">
         <div className="flex-1 relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm"style={{ color: "var(--rtm-text-muted)"}}></span>
-          <input
-            value={searchQuery}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
-            placeholder="Search leads by name, business, industry, or GHL ID..."className="w-full pl-8 pr-4 py-2 rounded-lg border text-sm outline-none transition-colors"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
-          />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: "var(--rtm-text-muted)" }}>🔍</span>
+          <input value={searchQuery} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
+            placeholder="Search leads by name, business, industry, or GHL ID..."
+            className="w-full pl-8 pr-4 py-2 rounded-lg border text-sm outline-none transition-colors"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
         </div>
-        <div className="flex items-center gap-2 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
+        <div className="flex items-center gap-2 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
           <span>{filtered.length} leads</span>
-          {(stageFilter !== "All"|| sourceFilter !== "All"|| syncFilter !== "All"|| searchQuery) && (
-            <button
-              onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
-              className="px-2 py-1 rounded font-semibold"style={{ background: "#FEF2F2", color: "#DC2626"}}>
+          {(stageFilter !== "All" || sourceFilter !== "All" || syncFilter !== "All" || searchQuery) && (
+            <button onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
+              className="px-2 py-1 rounded font-semibold" style={{ background: "#FEF2F2", color: "#DC2626" }}>
               Clear Filters
             </button>
           )}
         </div>
       </div>
 
-      {/*  Lead Table  */}
-      <div className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)"}}>
+      {/* Lead Table */}
+      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
-                {[
-                  "Lead Name", "Business Name", "Lead Source", "Assigned Rep",
-                  "Lead Stage", "Opp Readiness",
-                  "Created Date", "Last Activity", "Actions",
-                ].map(h => (
-                  <th key={h}
-                    className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>
-                    {h}
-                  </th>
+              <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
+                {["Lead Name", "Business Name", "Lead Source", "Assigned Rep", "Lead Stage", "Opp Readiness", "Created Date", "Last Activity", "Actions"].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
+                    style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y"style={{ borderColor: "var(--rtm-border)"}}>
-              {filtered.map((lead, i) => {
-                const isReady = lead.opportunityReadiness === "Ready For Opportunity";
-                return (
-                  <tr key={lead.id}
-                    className="transition-colors hover:cursor-pointer"style={{ background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)"}}
-                    onClick={() => setSelectedLead(lead)}>
-
-                    {/* Lead Name */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{lead.name}</p>
-                    </td>
-
-                    {/* Business Name */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="font-semibold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{lead.businessName}</p>
-                      <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{lead.location}</p>
-                    </td>
-
-                    {/* Lead Source */}
-                    <td className="px-4 py-3 whitespace-nowrap">{sourceBadge(lead.leadSource)}</td>
-
-                    {/* Assigned Rep */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{lead.assignedRep}</p>
-                    </td>
-
-                    {/* Lead Stage */}
-                    <td className="px-4 py-3 whitespace-nowrap">{stageBadge(lead.stage)}</td>
-
-                    {/* Opportunity Readiness */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="space-y-1">
-                        {readinessBadge(lead.opportunityReadiness)}
-                        {opportunityCreatedLeadIds.has(lead.id) && (
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
-                            Opportunity Created
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Created Date */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{lead.createdDate}</p>
-                    </td>
-
-                    {/* Last Activity */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>{lead.lastActivity}</p>
-                    </td>
-
-                    {/* Actions */}
-                    <td className="px-4 py-3 whitespace-nowrap"onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setSelectedLead(lead)}
-                          className="text-xs px-2 py-1 rounded font-semibold"style={{ background: "var(--rtm-bg)", color: workspace.accentColor, border: `1px solid ${workspace.accentColor}30` }}>
-                          View
+            <tbody className="divide-y" style={{ borderColor: "var(--rtm-border)" }}>
+              {filtered.map((lead, i) => (
+                <tr key={lead.id} className="transition-colors hover:cursor-pointer"
+                  style={{ background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)" }}
+                  onClick={() => setSelectedLead(lead)}>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <p className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{lead.name}</p>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <p className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{lead.businessName}</p>
+                    <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{lead.location}</p>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">{sourceBadge(lead.leadSource)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{lead.assignedRep}</p>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">{stageBadge(lead.stage)}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="space-y-1">
+                      {readinessBadge(lead.opportunityReadiness)}
+                      {opportunityCreatedLeadIds.has(lead.id) && (
+                        <span className="block text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
+                          Opportunity Created
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{lead.createdDate}</p>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{lead.lastActivity}</p>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => setSelectedLead(lead)}
+                        className="text-xs px-2 py-1 rounded font-semibold"
+                        style={{ background: "var(--rtm-bg)", color: workspace.accentColor, border: `1px solid ${workspace.accentColor}30` }}>
+                        View
+                      </button>
+                      <div className="relative group">
+                        <button className="text-xs px-2 py-1 rounded font-semibold"
+                          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)" }}>
+                          ···
                         </button>
-                        <div className="relative group">
-                          <button className="text-xs px-2 py-1 rounded font-semibold"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)"}}>
-                            ···
-                          </button>
-                          <div className="absolute right-0 top-full mt-1 w-44 rounded-lg border shadow-lg z-10 hidden group-hover:block"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-                            {["Edit Lead", "Assign Sales Rep", "Schedule Discovery", "Create Follow-Up", "Move Stage", "Add Note", "Disqualify"].map(action => (
-                              <button key={action}
-                                className="block w-full text-left px-3 py-2 text-xs hover:bg-slate-50 first:rounded-t-lg last:rounded-b-lg"style={{ color: action === "Disqualify"? "#DC2626": "var(--rtm-text-primary)"}}>
-                                {action}
-                              </button>
-                            ))}
-                            <button
-                              className="block w-full text-left px-3 py-2 text-xs font-bold"
-                              style={{ color: "#059669", background: opportunityCreatedLeadIds.has(lead.id) ? "#F0FDF4" : "#ECFDF5" }}
-                              onClick={(e) => { e.stopPropagation(); handleCreateOpportunityFromLead(lead); }}>
-                              {opportunityCreatedLeadIds.has(lead.id) ? "Create Another Opportunity" : "Create Opportunity"}
+                        <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border shadow-lg z-10 hidden group-hover:block"
+                          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                          {(
+                            [
+                              { label: "Edit Lead", modal: "editLead" as const },
+                              { label: "Assign Sales Rep", modal: "assignRep" as const },
+                              { label: "Schedule Discovery", modal: "scheduleDiscovery" as const },
+                              { label: "Create Follow-Up", modal: "createFollowUp" as const },
+                              { label: "Move Stage", modal: "moveStage" as const },
+                              { label: "Add Note", modal: "addNote" as const },
+                              { label: "Disqualify", modal: "disqualify" as const },
+                            ] as { label: string; modal: ActiveModal["type"] }[]
+                          ).map(action => (
+                            <button key={action.label}
+                              onClick={e => { e.stopPropagation(); setActiveModal({ type: action.modal, lead } as ActiveModal); }}
+                              className="block w-full text-left px-3 py-2 text-xs hover:bg-slate-50 first:rounded-t-lg"
+                              style={{ color: action.modal === "disqualify" ? "#DC2626" : "var(--rtm-text-primary)" }}>
+                              {action.label}
                             </button>
-                            <Link href={`/sales/intake?leadId=${lead.id}`}
-                              className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"style={{ color: "#2563EB", background: "#EFF6FF"}}
-                              onClick={e => e.stopPropagation()}>
-                              Start Intake
-                            </Link>
-                          </div>
+                          ))}
+                          <button
+                            className="block w-full text-left px-3 py-2 text-xs font-bold"
+                            style={{ color: "#059669", background: opportunityCreatedLeadIds.has(lead.id) ? "#F0FDF4" : "#ECFDF5" }}
+                            onClick={e => { e.stopPropagation(); handleCreateOpportunityFromLead(lead); }}>
+                            {opportunityCreatedLeadIds.has(lead.id) ? "Create Another Opportunity" : "Create Opportunity"}
+                          </button>
+                          <Link href={`/sales/intake?leadId=${lead.id}`}
+                            className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"
+                            style={{ color: "#2563EB", background: "#EFF6FF" }}
+                            onClick={e => e.stopPropagation()}>
+                            Start Intake
+                          </Link>
                         </div>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
-
         {filtered.length === 0 && (
           <div className="py-16 text-center">
-            <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}>No leads match your filters.</p>
-            <button
-              onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
-              className="mt-3 rtm-btn-secondary text-xs px-3 py-1.5">
-              Clear Filters
-            </button>
+            <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No leads match your filters.</p>
+            <button onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
+              className="mt-3 rtm-btn-secondary text-xs px-3 py-1.5">Clear Filters</button>
           </div>
         )}
       </div>
-
-
     </div>
   );
 }
 
-// Root export with Suspense boundary (required for useSearchParams)
 export default function SalesLeadsPage() {
   return (
     <Suspense fallback={

@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ENGINE_STORE } from "@/lib/engine/mock-data";
-import type { Task, Project, DepartmentName } from "@/lib/engine/types";
+import type { Task, Project, DepartmentName, ProjectDepartment } from "@/lib/engine/types";
 import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
 import type { MasterClient } from "@/lib/mock/master-clients";
 
@@ -20,7 +20,7 @@ import type { MasterClient } from "@/lib/mock/master-clients";
 //                          scoped to those client projects
 //   - "Blueprint tasks"  → same ENGINE_STORE.tasks where source = "Task Blueprint"
 //
-// AM's 2-step wizard (/account-management/account-management/projects) is the
+// AM's 2-step wizard (/account-management/projects) is the
 // sole activation mechanism. This page reflects its outputs.
 // =============================================================================
 
@@ -53,6 +53,66 @@ function groupByDept(tasks: Task[]): Map<DepartmentName, Task[]> {
     bucket.push(t);
     map.set(t.department, bucket);
   }
+  return map;
+}
+
+/**
+ * Metadata about an activated department sourced directly from project.departments[].
+ * Used to surface zero-task departments that are explicitly activated.
+ */
+export interface ActivatedDeptMeta {
+  /** "Active" | "Pending" | "Not Started" — from ProjectDepartment.activationStatus.
+   *  Absent on seeded records: fall back to "Active" when the dept has tasks (compat). */
+  activationStatus: "Active" | "Pending" | "Not Started";
+  /** ISO timestamp, present on wizard-created records. */
+  activatedAt?: string;
+  /** Owner name from the project department entry. */
+  owner: string;
+}
+
+/**
+ * Build a map of department → ActivatedDeptMeta by scanning all client projects.
+ * A department is included when:
+ *   - It has an explicit activationStatus of "Active", OR
+ *   - It has no activationStatus (pre-field seeded data) AND has at least one task (compat).
+ * When multiple projects have the same department, the earliest activatedAt wins
+ * (or the one with tasks if both are present).
+ */
+function buildActivatedDeptMeta(
+  clientProjects: Project[],
+): Map<DepartmentName, ActivatedDeptMeta> {
+  const map = new Map<DepartmentName, ActivatedDeptMeta>();
+
+  for (const project of clientProjects) {
+    for (const dept of project.departments as ProjectDepartment[]) {
+      const deptName = dept.department;
+      const hasExplicitActive = dept.activationStatus === "Active";
+      const hasTasks = dept.taskIds.length > 0;
+      // Include if explicitly active, OR if legacy seeded (no field) but has tasks
+      if (!hasExplicitActive && !hasTasks) continue;
+
+      const status = dept.activationStatus ?? "Active"; // compat: treat legacy+tasks as Active
+      const candidate: ActivatedDeptMeta = {
+        activationStatus: status,
+        activatedAt: dept.activatedAt,
+        owner: dept.owner,
+      };
+
+      const existing = map.get(deptName);
+      if (!existing) {
+        map.set(deptName, candidate);
+      } else {
+        // Prefer the earliest activatedAt; if timestamps tie or missing, keep existing
+        if (
+          candidate.activatedAt &&
+          (!existing.activatedAt || candidate.activatedAt < existing.activatedAt)
+        ) {
+          map.set(deptName, candidate);
+        }
+      }
+    }
+  }
+
   return map;
 }
 
@@ -270,18 +330,57 @@ function TaskDrawer({
 // Department Section — queue + blueprint tasks for one department
 // ---------------------------------------------------------------------------
 
+function DeptStatusBadge({
+  status,
+  activatedAt,
+}: {
+  status: "Active" | "Pending" | "Not Started";
+  activatedAt?: string;
+}) {
+  const styles: Record<string, { bg: string; color: string; border: string }> = {
+    Active:        { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
+    Pending:       { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
+    "Not Started": { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" },
+  };
+  const s = styles[status] ?? styles["Not Started"];
+  const dateLabel = activatedAt
+    ? new Date(activatedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
+        style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
+      >
+        {status}
+      </span>
+      {dateLabel && (
+        <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+          {dateLabel}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function DepartmentSection({
   dept,
   tasks,
   projects,
   search,
   onSelectTask,
+  deptMeta,
 }: {
   dept: DepartmentName;
   tasks: Task[];
   projects: Project[];
   search: string;
   onSelectTask: (t: Task) => void;
+  deptMeta?: ActivatedDeptMeta;
 }) {
   const c = DEPT_COLORS[dept] ?? DEFAULT_DEPT_STYLE;
 
@@ -300,7 +399,10 @@ function DepartmentSection({
   const blocked   = filtered.filter((t) => t.status === "Blocked").length;
   const completed = filtered.filter((t) => t.status === "Completed").length;
 
-  if (filtered.length === 0) return null;
+  // If no tasks AND no explicit activation meta, hide the section entirely.
+  // Departments with activationStatus=Active but zero tasks are still shown (empty state).
+  const isExplicitlyActive = deptMeta?.activationStatus === "Active";
+  if (filtered.length === 0 && !isExplicitlyActive) return null;
 
   const projectById = new Map(projects.map((p) => [p.id, p]));
 
@@ -401,6 +503,13 @@ function DepartmentSection({
           >
             {filtered.length} task{filtered.length !== 1 ? "s" : ""}
           </span>
+          {/* Department Status indicator */}
+          {deptMeta && (
+            <DeptStatusBadge
+              status={deptMeta.activationStatus}
+              activatedAt={deptMeta.activatedAt}
+            />
+          )}
         </div>
         <div className="flex items-center gap-3 text-xs font-semibold" style={{ color: c.color }}>
           <span>{open} open</span>
@@ -500,10 +609,12 @@ function DepartmentSection({
         </>
       )}
 
-      {/* Empty for search */}
+      {/* Empty state — either search miss or activated dept with no tasks yet */}
       {filtered.length === 0 && (
         <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>
-          No tasks match your search in this department.
+          {isExplicitlyActive
+            ? "Department activated — no tasks assigned yet."
+            : "No tasks match your search in this department."}
         </div>
       )}
     </div>
@@ -519,10 +630,11 @@ export default function DepartmentActivationPage() {
   const [deptFilter, setDeptFilter] = useState<DepartmentName | "All">("All");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Live data — initialized from in-memory seed, hydrated from file-backed API on mount
-  const [liveProjects, setLiveProjects] = useState<Project[]>(() => ENGINE_STORE.projects);
-  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => ENGINE_STORE.tasks);
-  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => MASTER_CLIENTS);
+  // Live data — shallow-copy seed arrays (not mutable ENGINE_STORE refs) so
+  // wizard push() calls don't silently contaminate state before the API refresh.
+  const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...ENGINE_STORE.projects]);
+  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
+  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => [...MASTER_CLIENTS]);
 
   const refreshData = useCallback(async () => {
     try {
@@ -552,10 +664,14 @@ export default function DepartmentActivationPage() {
 
   // ── Derive real data ──────────────────────────────────────────────────────
 
-  const { clientProjects, clientTasks, deptBreakdown, kpis } = useMemo(() => {
-    const clientProjects = getClientProjects(liveProjects);
-    const clientTasks    = getClientTasks(clientProjects, liveTasks);
-    const deptBreakdown  = groupByDept(clientTasks);
+  const { clientProjects, clientTasks, deptBreakdown, activatedDeptMeta, kpis } = useMemo(() => {
+    const clientProjects   = getClientProjects(liveProjects);
+    const clientTasks      = getClientTasks(clientProjects, liveTasks);
+    const deptBreakdown    = groupByDept(clientTasks);
+    const activatedDeptMeta = buildActivatedDeptMeta(clientProjects);
+
+    // Active dept count = union of task-holding depts + explicitly activated depts with zero tasks
+    const activeDeptsCount = activatedDeptMeta.size;
 
     const kpis = {
       clientProjects:   clientProjects.length,
@@ -564,24 +680,32 @@ export default function DepartmentActivationPage() {
       openTasks:        clientTasks.filter((t) => t.status === "Open" || t.status === "In Progress").length,
       blockedTasks:     clientTasks.filter((t) => t.status === "Blocked").length,
       completedTasks:   clientTasks.filter((t) => t.status === "Completed").length,
-      deptsActive:      deptBreakdown.size,
+      deptsActive:      activeDeptsCount,
       unassigned:       clientTasks.filter((t) => !t.assignedUserName || t.assignedUserName === "Unassigned").length,
     };
 
-    return { clientProjects, clientTasks, deptBreakdown, kpis };
+    return { clientProjects, clientTasks, deptBreakdown, activatedDeptMeta, kpis };
   }, [liveProjects, liveTasks]);
 
+  // All departments to show in filter = union of task-holding + explicitly activated (zero-task)
   const allDepts = useMemo<DepartmentName[]>(
-    () => Array.from(deptBreakdown.keys()),
-    [deptBreakdown]
+    () => Array.from(activatedDeptMeta.keys()),
+    [activatedDeptMeta]
   );
 
-  // Filter department breakdown for display
+  // Display breakdown: merge task-based map with zero-task activated depts
   const displayBreakdown = useMemo<Map<DepartmentName, Task[]>>(() => {
-    if (deptFilter === "All") return deptBreakdown;
-    const filtered = deptBreakdown.get(deptFilter as DepartmentName);
-    return filtered ? new Map([[deptFilter as DepartmentName, filtered]]) : new Map();
-  }, [deptBreakdown, deptFilter]);
+    // Build a merged map: every activated dept gets an entry (even empty arrays)
+    const merged = new Map<DepartmentName, Task[]>();
+    for (const dept of activatedDeptMeta.keys()) {
+      merged.set(dept, deptBreakdown.get(dept) ?? []);
+    }
+    if (deptFilter === "All") return merged;
+    const filtered = merged.get(deptFilter as DepartmentName);
+    return filtered !== undefined
+      ? new Map([[deptFilter as DepartmentName, filtered]])
+      : new Map();
+  }, [activatedDeptMeta, deptBreakdown, deptFilter]);
 
   const selectedTaskProject = selectedTask
     ? clientProjects.find((p) => p.id === selectedTask.projectId)
@@ -620,7 +744,7 @@ export default function DepartmentActivationPage() {
             Real engine tasks for activated client projects, grouped by department. Blueprint-activated
             and manually created tasks are shown separately. Activate clients via the{" "}
             <Link
-              href="/account-management/account-management/projects"
+              href="/account-management/projects"
               className="font-semibold underline"
               style={{ color: "var(--rtm-blue)" }}
             >
@@ -631,7 +755,7 @@ export default function DepartmentActivationPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/account-management/account-management/projects"
+            href="/account-management/projects"
             className="px-4 py-2 text-sm font-bold rounded-lg text-white"
             style={{ background: "var(--rtm-blue)" }}
           >
@@ -781,7 +905,7 @@ export default function DepartmentActivationPage() {
           {clientProjects.length === 0 && (
             <div className="mt-4">
               <Link
-                href="/account-management/account-management/projects"
+                href="/account-management/projects"
                 className="inline-flex items-center px-4 py-2 text-sm font-bold rounded-lg text-white"
                 style={{ background: "var(--rtm-blue)" }}
               >
@@ -799,6 +923,7 @@ export default function DepartmentActivationPage() {
             projects={clientProjects}
             search={search}
             onSelectTask={setSelectedTask}
+            deptMeta={activatedDeptMeta.get(dept)}
           />
         ))
       )}
@@ -983,7 +1108,7 @@ export default function DepartmentActivationPage() {
         </Link>
         . To activate a new client, use the{" "}
         <Link
-          href="/account-management/account-management/projects"
+          href="/account-management/projects"
           className="font-semibold hover:underline"
           style={{ color: "var(--rtm-blue)" }}
         >

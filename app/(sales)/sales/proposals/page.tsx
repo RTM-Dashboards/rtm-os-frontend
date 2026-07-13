@@ -2131,11 +2131,14 @@ function ProposalsPageInner() {
 
   // Read URL params to determine wizard mode
   useEffect(() => {
+    // Wrapped in void IIFE to allow async/await for leadId context fetch.
+    void (async () => {
     const isNew = searchParams.get("new") === "true";
     const resumeId = searchParams.get("resume");
     const auditId = searchParams.get("auditId");
     const auditType = searchParams.get("auditType");
     const opportunityId = searchParams.get("opportunityId");
+    const leadId = searchParams.get("leadId");
     if (isNew) {
       setView("wizard");
       // If auditId is present, pre-populate wizard to open Step 2 in
@@ -2192,6 +2195,41 @@ function ProposalsPageInner() {
             },
           }),
         });
+      } else if (leadId) {
+        // Intake path: /sales/intake?leadId=X redirected here with leadId preserved.
+        // Fetch the lead's persisted state to pre-populate wizard context.
+        let leadContext: { businessName?: string; contactName?: string; notes?: string; assignedRep?: string } = {};
+        try {
+          const res = await fetch("/api/leads-status");
+          if (res.ok) {
+            const data = await res.json() as { records: { leadId: string; businessName?: string; name?: string; notes?: string; assignedRep?: string }[] };
+            const record = data.records.find((r) => r.leadId === leadId);
+            if (record) {
+              leadContext = {
+                businessName: record.businessName,
+                contactName: record.name,
+                notes: record.notes,
+                assignedRep: record.assignedRep,
+              };
+            }
+          }
+        } catch { /* ignore — wizard opens with empty state */ }
+        setWizardInitialState({
+          // @ts-ignore
+          linkedLeadId: leadId,
+          clientInfo: {
+            name: "",
+            businessName: leadContext.businessName ?? "",
+            industry: "",
+            location: "",
+            website: "",
+            leadSource: "",
+            contactName: leadContext.contactName ?? "",
+            contactEmail: "",
+            contactPhone: "",
+            notes: leadContext.notes ?? `Linked from lead ${leadId}`,
+          },
+        });
       } else {
         setWizardInitialState(undefined);
       }
@@ -2214,6 +2252,7 @@ function ProposalsPageInner() {
       // No wizard params — ensure we are in list view
       setView("dashboard");
     }
+    })(); // end async IIFE
   }, [searchParams]);
 
   function openDetail(p: Proposal) {
@@ -2335,9 +2374,17 @@ function ProposalsPageInner() {
           <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "#059669"}}>
             Sales
           </p>
-          <h1 className="text-xl font-medium"style={{ color: "var(--rtm-text-primary)"}}>
-            {view === "builder"? (editingProposal ? `Edit: ${editingProposal.name}` : "New Proposal") : "Proposals"}
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-xl font-medium"style={{ color: "var(--rtm-text-primary)"}}>
+              {view === "builder"? (editingProposal ? `Edit: ${editingProposal.name}` : "New Proposal") : "Proposals"}
+            </h1>
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+              style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+            >
+              Preview — Target State
+            </span>
+          </div>
           <p className="mt-1 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
             Build and send client proposals.
           </p>

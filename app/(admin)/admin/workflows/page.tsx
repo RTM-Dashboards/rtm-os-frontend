@@ -3,6 +3,42 @@
 import Link from "next/link";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 
+// ─── Honesty-treatment helpers (matches /operations/workflows pattern) ────────
+
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
+function DisabledBtn({
+  children,
+  className,
+  style,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <button
+      disabled
+      title="Not yet available"
+      className={`opacity-40 cursor-not-allowed ${className ?? ""}`}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
+import React from "react";
+
 // 
 // Workflow Engine — Workflow-Generated Tasks Integration
 // Route: /admin/workflows
@@ -169,9 +205,12 @@ export default function WorkflowsPage() {
           <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "var(--rtm-blue)"}}>
             Admin
           </p>
-          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-            Workflow Engine
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
+              Workflow Engine
+            </h1>
+            <PreviewBadge />
+          </div>
           <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
             Automated workflow triggers and generated tasks across Sales, Billing, Onboarding, Renewals, and Offboarding.
           </p>
@@ -182,12 +221,26 @@ export default function WorkflowsPage() {
           >
              Open Tasks
           </Link>
-          <Link
-            href="/tasks"className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
+          <DisabledBtn
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
           >
             + Create Workflow Task
-          </Link>
+          </DisabledBtn>
         </div>
+      </div>
+
+      {/* ── Prototype Data Banner ── */}
+      <div
+        className="flex items-start gap-3 px-4 py-3 rounded-xl border text-sm"
+        style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+      >
+        <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+        <span>
+          <strong>Prototype figures only.</strong> The trigger counts, task totals, and generated-task records shown here are static mock data — they do not reflect live system state and will not match data shown elsewhere in RTM OS.
+        </span>
       </div>
 
       {/* Task Access Card */}

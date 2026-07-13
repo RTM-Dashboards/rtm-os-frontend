@@ -175,6 +175,12 @@ export default function AISummaryPanel({ summary, taskName, projectName }: Props
             <p className="text-sm font-bold">AI Collaboration Summary</p>
             <p className="text-[11px] opacity-80">{taskName} · {projectName}</p>
           </div>
+          <span
+            className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+            style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+          >
+            Preview — Target State
+          </span>
         </div>
         <div className="text-right flex-shrink-0">
           <p className="text-[10px] opacity-70">Generated</p>

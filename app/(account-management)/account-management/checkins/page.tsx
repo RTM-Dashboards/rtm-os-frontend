@@ -7,6 +7,17 @@ import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("account-management")!;
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
 //  Types 
 
 type StatusV = "success"| "warning"| "error"| "info"| "neutral"| "pending";
@@ -465,6 +476,7 @@ export default function AccountCheckinsPage() {
         <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
           Check-ins
         </h1>
+        <div className="mt-2"><PreviewBadge /></div>
         <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Client communication and follow-up workspace.
         </p>

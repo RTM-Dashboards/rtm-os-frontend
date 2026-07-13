@@ -65,12 +65,12 @@ const navItems: NavItem[] = [
   { label: "Clients",             href: "/clients",            icon: IconUsers,        section: "overview"},
   {
     label: "Projects & Tasks",
-    href: "/tasks",
+    href: "/projects",
     icon: IconCheckSquare,
     section: "overview",
     badge: "124",
     children: [
-      { label: "Project Management",    href: "/tasks"},
+      { label: "Project Management",    href: "/projects"},
       { label: "Task Blueprints",        href: "/tasks/templates"},
       { label: "Activation Rules",      href: "/tasks/activation-rules"},
       { label: "Activation Engine",     href: "/tasks/activation-engine"},
@@ -81,7 +81,6 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Notifications",       href: "/notifications",      icon: IconBellSidebar,  section: "overview"},
-  { label: "Activation & Handoff", href: "/activation",         icon: IconCheckSquare,  section: "overview"},
 
   // ── Operations ─────────────────────────────────────────────────
   {
@@ -90,9 +89,8 @@ const navItems: NavItem[] = [
     icon: IconCheckSquare,
     section: "operations",
     children: [
-      { label: "Workflow Engine",          href: "/operations/workflows"},
-      { label: "Projects & Tasks",         href: "/tasks"},
-      { label: "Activation & Handoff",     href: "/activation"},
+      { label: "Workflow Engine",          href: "/admin/workflows"},
+      { label: "Projects & Tasks",         href: "/projects"},
       { label: "Reporting & Intelligence", href: "/reporting"},
     ],
   },
@@ -188,7 +186,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     "/seo-local":                true,
     "/paid-advertising":         true,
     "/web-development-design":   true,
-    "/tasks":                    true,
+    "/projects":                 true,
     "/reporting":                true,
     "/operations/workflows":     true,
   }));
@@ -244,10 +242,10 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             href="/admin"className="flex items-center gap-2 py-1 focus:outline-none group"onClick={onClose}
           >
             <Image
-              src="/rtm-logo.png"alt="Real Time Marketing"width={144}
+              src="/rtm-logo.png" alt="Real Time Marketing" width={144}
               height={36}
               priority
-              className="object-contain"style={{ filter: "brightness(1.1) saturate(0.9)"}}
+              className="object-contain" style={{ filter: "brightness(1.1) saturate(0.9)", width: 144, height: "auto" }}
             />
           </Link>
           <button

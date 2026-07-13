@@ -764,9 +764,11 @@ export default function OnboardingQueuePage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"queue" | "records">("queue");
   const [allRecords, setAllRecords] = useState<AMOnboardingRecord[]>([]);
-  const [liveProjects, setLiveProjects] = useState<Project[]>(() => ENGINE_STORE.projects);
-  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => ENGINE_STORE.tasks);
-  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => MASTER_CLIENTS);
+  // Shallow-copy seed arrays so wizard push() mutations don't silently
+  // contaminate state before the API refresh completes.
+  const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...ENGINE_STORE.projects]);
+  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
+  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => [...MASTER_CLIENTS]);
 
   const loadRecords = useCallback(async () => {
     const records = await getAllOnboardingRecords();

@@ -26,6 +26,17 @@ import {
 // UTILITIES
 // ══════════════════════════════════════════════════════════════════════════════
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
 function fmt$(n: number): string {
   if (Math.abs(n) >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   if (Math.abs(n) >= 1_000) return `$${(Math.abs(n) / 1_000).toFixed(0)}K`;
@@ -233,19 +244,25 @@ function SectionHeader({
   title,
   desc,
   accentColor = "#1B4FD8",
+  badge,
 }: {
   eyebrow?: string;
   title: string;
   desc?: string;
   accentColor?: string;
+  badge?: React.ReactNode;
 }) {
   return (
     <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
       {eyebrow && (
-        <p className="text-xs font-bold uppercase tracking-widest mb-0.5"style={{ color: accentColor }}>
-          {eyebrow}
-        </p>
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className="text-xs font-bold uppercase tracking-widest"style={{ color: accentColor }}>
+            {eyebrow}
+          </p>
+          {badge}
+        </div>
       )}
+      {!eyebrow && badge && <div className="mb-1">{badge}</div>}
       <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h2>
       {desc && <p className="text-sm text-slate-500 mt-0.5">{desc}</p>}
     </div>
@@ -256,7 +273,13 @@ function SectionHeader({
 // SECTION 1: OFFBOARDING DASHBOARD
 // ══════════════════════════════════════════════════════════════════════════════
 
-function OffboardingDashboard() {
+function OffboardingDashboard({
+  onSelectRecord,
+  onStatusFilter,
+}: {
+  onSelectRecord: (r: OffboardingRecord) => void;
+  onStatusFilter: (status: OffboardingStatus) => void;
+}) {
   const active = getActiveOffboardings();
   const completed = getCompletedOffboardings();
   const pendingAssets = getPendingAssetTransfers();
@@ -324,13 +347,20 @@ function OffboardingDashboard() {
               const pct = Math.round((count / OFFBOARDING_RECORDS.length) * 100);
               const s = offboardingStatusStyle(status);
               return (
-                <div key={status} className="flex items-center justify-between rounded-lg border px-4 py-2.5"style={{ background: s.bg, borderColor: s.border }}>
+                <div
+                  key={status}
+                  className="flex items-center justify-between rounded-lg border px-4 py-2.5 cursor-pointer hover:opacity-80 transition-opacity"
+                  style={{ background: s.bg, borderColor: s.border }}
+                  onClick={() => onStatusFilter(status)}
+                  title={`View ${status} records`}
+                >
                   <span className="text-sm font-semibold"style={{ color: s.color }}>{status}</span>
                   <div className="flex items-center gap-3">
                     <div className="w-20 h-1.5 rounded-full bg-white/60">
                       <div className="h-1.5 rounded-full"style={{ width: `${pct}%`, background: s.color }} />
                     </div>
                     <span className="text-sm font-bold w-6 text-right"style={{ color: s.color }}>{count}</span>
+                    <span className="text-xs font-bold" style={{ color: s.color }}>→</span>
                   </div>
                 </div>
               );
@@ -366,7 +396,11 @@ function OffboardingDashboard() {
           <h3 className="text-base font-bold text-slate-800">Active Offboarding Projects</h3>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {active.map((r) => (
-              <div key={r.id} className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3">
+              <div
+                key={r.id}
+                className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-3 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all"
+                onClick={() => onSelectRecord(r)}
+              >
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <p className="font-bold text-slate-900">{r.client}</p>
@@ -395,8 +429,11 @@ function OffboardingDashboard() {
                   </div>
                   <ProgressBar pct={r.completionPct} />
                 </div>
-                <div className="flex gap-2 flex-wrap">
-                  <ReasonBadge reason={r.reason} />
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex gap-2 flex-wrap">
+                    <ReasonBadge reason={r.reason} />
+                  </div>
+                  <span className="text-xs font-semibold text-blue-600 flex-shrink-0">View →</span>
                 </div>
               </div>
             ))}
@@ -411,8 +448,15 @@ function OffboardingDashboard() {
 // SECTION 2: OFFBOARDING TABLE
 // ══════════════════════════════════════════════════════════════════════════════
 
-function OffboardingTable({ onSelect }: { onSelect: (r: OffboardingRecord) => void }) {
-  const [statusFilter, setStatusFilter] = useState<OffboardingStatus | "All">("All");
+function OffboardingTable({
+  onSelect,
+  statusFilter,
+  setStatusFilter,
+}: {
+  onSelect: (r: OffboardingRecord) => void;
+  statusFilter: OffboardingStatus | "All";
+  setStatusFilter: (s: OffboardingStatus | "All") => void;
+}) {
   const [search, setSearch] = useState("");
   // Track pending records so the table re-renders when Billing pushes new ones.
   const [pendingSnapshot, setPendingSnapshot] = useState<OffboardingRecord[]>([]);
@@ -610,7 +654,10 @@ function OffboardingChecklist({ record }: { record: OffboardingRecord }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-        <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-0.5">Offboarding Checklist</p>
+        <div className="flex items-center gap-2 mb-1">
+          <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Offboarding Checklist</p>
+          <PreviewBadge />
+        </div>
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Checklist — {record.client}</h2>
           <span className="text-sm font-bold"style={{ color: completionColor(pct) }}>{pct}% complete</span>
@@ -661,7 +708,7 @@ function DepartmentTasks({ record }: { record: OffboardingRecord }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <SectionHeader eyebrow="Department Tasks"title={`Department Tasks — ${record.client}`} desc="Task assignments by department for this offboarding."accentColor="#6D28D9"/>
+      <SectionHeader eyebrow="Department Tasks"title={`Department Tasks — ${record.client}`} desc="Task assignments by department for this offboarding."accentColor="#6D28D9" badge={<PreviewBadge />}/>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead style={{ background: "var(--rtm-bg)" }}>
@@ -703,7 +750,10 @@ function AssetTransferCenter({ record }: { record: OffboardingRecord }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-        <p className="text-xs font-bold uppercase tracking-widest text-sky-600 mb-0.5">Asset Transfer Center</p>
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className="text-xs font-bold uppercase tracking-widest text-sky-600">Asset Transfer Center</p>
+          <PreviewBadge />
+        </div>
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Asset Transfers — {record.client}</h2>
           <span className="text-sm font-bold"style={{ color: completionColor(pct) }}>{transferred} of {totalAssets} transferred</span>
@@ -747,7 +797,10 @@ function AccessRemovalCenter({ record }: { record: OffboardingRecord }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
-        <p className="text-xs font-bold uppercase tracking-widest text-teal-600 mb-0.5">Access Removal Center</p>
+        <div className="flex items-center gap-2 mb-0.5">
+          <p className="text-xs font-bold uppercase tracking-widest text-teal-600">Access Removal Center</p>
+          <PreviewBadge />
+        </div>
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Access Removal — {record.client}</h2>
           <span className="text-sm font-bold text-emerald-600">{revoked} of {total} revoked</span>
@@ -796,7 +849,7 @@ function FinalBillingCenter({ record }: { record: OffboardingRecord }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <SectionHeader eyebrow="Final Billing Center"title={`Final Billing — ${record.client}`} desc="Outstanding balance, credits, refunds, and invoice status."accentColor="#B45309"/>
+      <SectionHeader eyebrow="Final Billing Center"title={`Final Billing — ${record.client}`} desc="Outstanding balance, credits, refunds, and invoice status."accentColor="#B45309" badge={<PreviewBadge />}/>
       <div className="p-6 space-y-5">
         {/* Billing summary grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -863,7 +916,7 @@ function KnowledgeArchive({ record }: { record: OffboardingRecord }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <SectionHeader eyebrow="Knowledge Archive"title={`Knowledge Archive — ${record.client}`} desc="Final notes, lessons learned, client history, and departure context."accentColor="#475569"/>
+      <SectionHeader eyebrow="Knowledge Archive"title={`Knowledge Archive — ${record.client}`} desc="Final notes, lessons learned, client history, and departure context."accentColor="#475569" badge={<PreviewBadge />}/>
       <div className="p-6 grid sm:grid-cols-2 gap-5">
         {fields.map(({ label, value, color }) => (
           <div key={label} className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-1.5">
@@ -885,7 +938,7 @@ function AIOffboardingSummary({ record }: { record: OffboardingRecord }) {
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <SectionHeader eyebrow="AI Offboarding Summary"title={`AI Summary — ${record.client}`} desc="AI-generated analysis of this offboarding — impact, risks, and recommended actions."accentColor="#6D28D9"/>
+      <SectionHeader eyebrow="AI Offboarding Summary"title={`AI Summary — ${record.client}`} desc="AI-generated analysis of this offboarding — impact, risks, and recommended actions."accentColor="#6D28D9" badge={<PreviewBadge />}/>
       <div className="p-6 space-y-4">
         {/* Summary panels */}
         {[
@@ -959,6 +1012,10 @@ function ExecutiveOffboardingDashboard() {
   return (
     <div className="space-y-6">
       {/* Executive KPI row */}
+      <div className="flex items-center gap-2 mb-3">
+        <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Key Metrics</p>
+        <PreviewBadge />
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-center shadow-sm">
           <p className="text-xs font-semibold uppercase tracking-wide text-red-400">Total Revenue Lost</p>
@@ -985,7 +1042,7 @@ function ExecutiveOffboardingDashboard() {
       <div className="grid lg:grid-cols-2 gap-5">
         {/* Top cancellation reasons */}
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <SectionHeader eyebrow="Cancellation Reasons"title="Top Cancellation Reasons"desc="Revenue lost per departure driver."accentColor="#DC2626"/>
+          <SectionHeader eyebrow="Cancellation Reasons"title="Top Cancellation Reasons"desc="Revenue lost per departure driver."accentColor="#DC2626" badge={<PreviewBadge />}/>
           <div className="p-5 space-y-3">
             {(Object.entries(reasonBreakdown) as [CancellationReason, number][])
               .sort((a, b) => b[1] - a[1])
@@ -1013,7 +1070,7 @@ function ExecutiveOffboardingDashboard() {
 
         {/* Department impact */}
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <SectionHeader eyebrow="Department Impact"title="Departments Involved"desc="Number of offboardings requiring each department."accentColor="#6D28D9"/>
+          <SectionHeader eyebrow="Department Impact"title="Departments Involved"desc="Number of offboardings requiring each department."accentColor="#6D28D9" badge={<PreviewBadge />}/>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead style={{ background: "var(--rtm-bg)" }}>
@@ -1049,7 +1106,7 @@ function ExecutiveOffboardingDashboard() {
 
       {/* Monthly trend */}
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <SectionHeader eyebrow="Offboarding Trends"title="Monthly Offboarding Volume"desc="Number of offboardings and MRR lost per month in 2025."/>
+        <SectionHeader eyebrow="Offboarding Trends"title="Monthly Offboarding Volume"desc="Number of offboardings and MRR lost per month in 2025." badge={<PreviewBadge />}/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead style={{ background: "var(--rtm-bg)" }}>
@@ -1083,7 +1140,7 @@ function ExecutiveOffboardingDashboard() {
 
       {/* Completed offboardings summary */}
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <SectionHeader eyebrow="Completed"title="Completed Offboardings"desc="All closed and archived offboarding records."accentColor="#059669"/>
+        <SectionHeader eyebrow="Completed"title="Completed Offboardings"desc="All closed and archived offboarding records."accentColor="#059669" badge={<PreviewBadge />}/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead style={{ background: "var(--rtm-bg)" }}>
@@ -1111,7 +1168,7 @@ function ExecutiveOffboardingDashboard() {
 
       {/* Pending offboardings */}
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <SectionHeader eyebrow="Pending"title="Pending Offboardings"desc="Active offboardings requiring attention."accentColor="#B45309"/>
+        <SectionHeader eyebrow="Pending"title="Pending Offboardings"desc="Active offboardings requiring attention."accentColor="#B45309" badge={<PreviewBadge />}/>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead style={{ background: "var(--rtm-bg)" }}>
@@ -1152,7 +1209,7 @@ function ExecutiveOffboardingDashboard() {
 function ActivityTimeline({ record }: { record: OffboardingRecord }) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <SectionHeader eyebrow="Activity Timeline"title={`Activity Timeline — ${record.client}`} desc="Chronological history of all offboarding events."/>
+      <SectionHeader eyebrow="Activity Timeline"title={`Activity Timeline — ${record.client}`} desc="Chronological history of all offboarding events." badge={<PreviewBadge />}/>
       <div className="p-6">
         <div className="relative">
           <div className="absolute left-5 top-0 bottom-0 w-px bg-slate-200"/>
@@ -1309,6 +1366,7 @@ const MAIN_TABS: { id: MainTab; label: string }[] = [
 export default function OffboardingPage() {
   const [mainTab, setMainTab] = useState<MainTab>("dashboard");
   const [selectedRecord, setSelectedRecord] = useState<OffboardingRecord | null>(null);
+  const [statusFilter, setStatusFilter] = useState<OffboardingStatus | "All">("All");
   // Track billing-triggered offboarding records so the banner re-renders.
   const [billingTriggered, setBillingTriggered] = useState<OffboardingRecord[]>([]);
   const [bannerDismissed, setBannerDismissed] = useState(false);
@@ -1414,8 +1472,22 @@ export default function OffboardingPage() {
 
       {/* Tab content */}
       <div className="min-h-[400px]">
-        {mainTab === "dashboard"&& <OffboardingDashboard />}
-        {mainTab === "records"&& <OffboardingTable onSelect={setSelectedRecord} />}
+        {mainTab === "dashboard" && (
+          <OffboardingDashboard
+            onSelectRecord={setSelectedRecord}
+            onStatusFilter={(status) => {
+              setStatusFilter(status);
+              setMainTab("records");
+            }}
+          />
+        )}
+        {mainTab === "records" && (
+          <OffboardingTable
+            onSelect={setSelectedRecord}
+            statusFilter={statusFilter}
+            setStatusFilter={setStatusFilter}
+          />
+        )}
         {mainTab === "executive"&& <ExecutiveOffboardingDashboard />}
       </div>
     </div>

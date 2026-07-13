@@ -1,0 +1,108 @@
+{
+  "handoffs": [
+    {
+      "id": "hof-seed-0041",
+      "handoffNumber": "HOF-2026-6844",
+      "clientName": "Summit Landscaping",
+      "contractNumber": "CTR-2025-0041",
+      "contractId": "ctr-0041",
+      "preparedBy": "Jake Monroe",
+      "createdAt": "2025-06-01T09:00:00Z",
+      "status": "in-progress",
+      "summaryFields": {
+        "client-name": "Summit Landscaping",
+        "contract-number": "CTR-2025-0041",
+        "services-sold": "SEO, Google Business Profile, Reporting",
+        "monthly-recurring-revenue": "$2,400/mo",
+        "setup-fees": "$0",
+        "payment-terms": "Net 15",
+        "term-length": "12 months",
+        "departments": "SEO Team, GBP Team, Analytics"
+      },
+      "checklist": [
+        { "id": "contract-signed",         "label": "Contract Signed",              "status": "complete",  "completedAt": "2025-06-01T09:00:00Z" },
+        { "id": "invoice-created",          "label": "Invoice Created",              "status": "pending" },
+        { "id": "payment-terms-confirmed",  "label": "Payment Terms Confirmed",      "status": "complete",  "completedAt": "2025-06-01T09:00:00Z" },
+        { "id": "services-verified",        "label": "Services Verified",            "status": "complete",  "completedAt": "2025-06-01T09:00:00Z" },
+        { "id": "am-assigned",              "label": "AM Assigned",                  "status": "pending" },
+        { "id": "departments-notified",     "label": "Departments Notified",         "status": "pending" },
+        { "id": "activation-record-created","label": "Activation Record Created",    "status": "pending" },
+        { "id": "billing-team-notified",    "label": "Billing Team Notified",        "status": "pending" }
+      ],
+      "completionPercentage": 38,
+      "readyToSubmit": false,
+      "submittedToBilling": false,
+      "processed": false
+    },
+    {
+      "id": "hof-seed-0042",
+      "handoffNumber": "HOF-2026-6845",
+      "clientName": "Metro Dental Group",
+      "contractNumber": "CTR-2025-0042",
+      "contractId": "ctr-0042",
+      "preparedBy": "Jordan M.",
+      "createdAt": "2025-06-05T10:30:00Z",
+      "status": "in-progress",
+      "summaryFields": {
+        "client-name": "Metro Dental Group",
+        "contract-number": "CTR-2025-0042",
+        "services-sold": "SEO, GBP, PPC, Reporting",
+        "monthly-recurring-revenue": "$4,500/mo",
+        "setup-fees": "$500",
+        "payment-terms": "Net 30",
+        "term-length": "12 months",
+        "departments": "SEO Team, PPC Team, GBP Team, Analytics"
+      },
+      "checklist": [
+        { "id": "contract-signed",         "label": "Contract Signed",              "status": "complete",  "completedAt": "2025-06-05T10:30:00Z" },
+        { "id": "invoice-created",          "label": "Invoice Created",              "status": "pending" },
+        { "id": "payment-terms-confirmed",  "label": "Payment Terms Confirmed",      "status": "pending" },
+        { "id": "services-verified",        "label": "Services Verified",            "status": "pending" },
+        { "id": "am-assigned",              "label": "AM Assigned",                  "status": "pending" },
+        { "id": "departments-notified",     "label": "Departments Notified",         "status": "pending" },
+        { "id": "activation-record-created","label": "Activation Record Created",    "status": "pending" },
+        { "id": "billing-team-notified",    "label": "Billing Team Notified",        "status": "pending" }
+      ],
+      "completionPercentage": 13,
+      "readyToSubmit": false,
+      "submittedToBilling": false,
+      "processed": false
+    },
+    {
+      "id": "hof-seed-0043",
+      "handoffNumber": "HOF-2026-6840",
+      "clientName": "Coastal Wellness Spa",
+      "contractNumber": "CTR-2025-0043",
+      "contractId": "ctr-0043",
+      "preparedBy": "Sarah K.",
+      "createdAt": "2025-06-08T08:00:00Z",
+      "status": "submitted",
+      "summaryFields": {
+        "client-name": "Coastal Wellness Spa",
+        "contract-number": "CTR-2025-0043",
+        "services-sold": "Meta Ads, SEO, Creative",
+        "monthly-recurring-revenue": "$3,800/mo",
+        "setup-fees": "$0",
+        "payment-terms": "Net 15",
+        "term-length": "12 months",
+        "assigned-am": "Dana L.",
+        "departments": "Meta Ads Team, SEO Team, Creative Team"
+      },
+      "checklist": [
+        { "id": "contract-signed",         "label": "Contract Signed",              "status": "complete",  "completedAt": "2025-06-08T08:00:00Z" },
+        { "id": "invoice-created",          "label": "Invoice Created",              "status": "complete",  "completedAt": "2025-06-08T08:00:00Z" },
+        { "id": "payment-terms-confirmed",  "label": "Payment Terms Confirmed",      "status": "complete",  "completedAt": "2025-06-08T08:00:00Z" },
+        { "id": "services-verified",        "label": "Services Verified",            "status": "complete",  "completedAt": "2025-06-08T08:00:00Z" },
+        { "id": "am-assigned",              "label": "AM Assigned",                  "status": "complete",  "completedAt": "2025-06-08T08:00:00Z" },
+        { "id": "departments-notified",     "label": "Departments Notified",         "status": "complete",  "completedAt": "2025-06-08T08:00:00Z" },
+        { "id": "activation-record-created","label": "Activation Record Created",    "status": "complete",  "completedAt": "2025-06-08T08:00:00Z" },
+        { "id": "billing-team-notified",    "label": "Billing Team Notified",        "status": "complete",  "completedAt": "2025-06-08T08:00:00Z" }
+      ],
+      "completionPercentage": 100,
+      "readyToSubmit": true,
+      "submittedToBilling": true,
+      "submittedToBillingAt": "2025-06-08T09:15:00Z",
+      "processed": false
+    }
+  ]
+}

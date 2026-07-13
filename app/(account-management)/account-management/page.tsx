@@ -308,7 +308,7 @@ function HeadView() {
             },
             {
               title: "AM Load & Throughput Risk",
-              text: "Sarah Chen carries 2 critical accounts simultaneously. James Park has a blocked deliverable (Summit Landscaping LSA docs) preventing department launch. Consider redistributing 1 account from Sarah to Tina in Q3 to reduce critical-client concentration.",
+              text: "Sarah K. carries 2 critical accounts simultaneously. Alex R. has a blocked deliverable (Summit Landscaping LSA docs) preventing department launch. Consider redistributing 1 account from Sarah K. to Alex R. in Q3 to reduce critical-client concentration.",
               urgency: "border-orange-200 bg-white",
             },
             {
@@ -546,7 +546,7 @@ function HeadView() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-//  ACCOUNT MANAGER VIEW  (Sarah Chen — hardcoded for demo)
+//  ACCOUNT MANAGER VIEW  (Sarah K. — simulated AM identity from role-data.ts)
 // ══════════════════════════════════════════════════════════════════════════════
 
 function AMView() {

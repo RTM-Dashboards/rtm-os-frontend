@@ -153,6 +153,12 @@ export interface MasterClient {
   onboardingStatus: string;
   renewalDate: string;
   renewalStatus: string;
+  /** ISO timestamp when AM completed client activation (written by apiMarkActivationTasksCreated). */
+  activatedAt?: string;
+  /** ISO timestamp when this client was last assigned/reassigned to an AM. */
+  assignedAt?: string;
+  /** Handoff note left by the assigning/reassigning manager. */
+  handoffNote?: string;
 
   // ── Computed fields (never manually set by any department) ───────────────
   /**
@@ -506,7 +512,7 @@ export const MASTER_CLIENTS: MasterClient[] = [
     paymentStatus: "Paid",
     cancellationStatus: "None",
     upgradeDowngradeStatus: "None",
-    cleared: false,
+    cleared: true,
     activationStatus: "AM Assignment Needed",
     onboardingStatus: "Not Started",
     activeServices: [],
@@ -545,8 +551,8 @@ export const MASTER_CLIENTS: MasterClient[] = [
     cleared: true,
     activationStatus: "Ready for Onboarding",
     onboardingStatus: "Pending",
-    activeServices: [],
-    monthlyValue: 4100,
+    activeServices: ["SEO", "GBP", "Google Ads"],
+    monthlyValue: 3800,
     renewalDate: "2026-06-10",
     renewalStatus: "N/A",
     clientHealth: "Good",
@@ -931,23 +937,110 @@ export const MASTER_CLIENTS: MasterClient[] = [
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Compute client health from billing/status fields.
- * Rules (keep simple — no complex scoring):
- *   Critical  → cancellation requested/approved, OR billing overdue + payment overdue
- *   At Risk   → billing overdue OR payment overdue (but not cancelled)
+ * Optional task-level signals that extend computeHealth() and computeClientHealthScore().
+ * Pass these when engine data is available. When absent, scoring falls back to
+ * billing/status signals only (same behaviour as before).
+ */
+export interface TaskHealthSignals {
+  /** Total tasks for this client across all engine projects. */
+  totalTasks: number;
+  /** Tasks with status "Completed". */
+  completedTasks: number;
+  /** Tasks with status "Waiting" (blocked). */
+  blockedTasks: number;
+  /** Tasks past their dueDate and not Completed. */
+  overdueTasks: number;
+}
+
+/**
+ * Compute client health from billing/status fields, optionally enriched with
+ * task-level signals from the engine when available.
+ *
+ * Rules (evaluated in priority order):
+ *   Critical  → cancellation requested/approved,
+ *               OR (billing overdue AND payment overdue),
+ *               OR (overdueTasks > 5 AND blockedTasks > 3)
+ *   At Risk   → billing overdue OR payment overdue (but not cancelled),
+ *               OR (overdueTasks > 2 OR blockedTasks > 1)
  *   Excellent → billing Paid/Cleared AND activationStatus Active AND no cancellation
+ *               AND no blocked/overdue task pressure
  *   Good      → everything else
  */
-export function computeHealth(c: Pick<MasterClient, "billingStatus" | "paymentStatus" | "cancellationStatus" | "activationStatus">): HealthStatus {
+export function computeHealth(
+  c: Pick<MasterClient, "billingStatus" | "paymentStatus" | "cancellationStatus" | "activationStatus">,
+  taskSignals?: TaskHealthSignals,
+): HealthStatus {
+  // ── 1. Cancellation — always Critical ────────────────────────────────────
   if (c.cancellationStatus === "Requested" || c.cancellationStatus === "Approved") return "Critical";
+
+  // ── 2. Severe billing + severe task pressure → Critical ──────────────────
   if (c.billingStatus === "Overdue" && c.paymentStatus === "Overdue") return "Critical";
+  if (taskSignals && taskSignals.overdueTasks > 5 && taskSignals.blockedTasks > 3) return "Critical";
+
+  // ── 3. Billing overdue OR task pressure → At Risk ────────────────────────
   if (c.billingStatus === "Overdue" || c.paymentStatus === "Overdue") return "At Risk";
+  if (taskSignals && (taskSignals.overdueTasks > 2 || taskSignals.blockedTasks > 1)) return "At Risk";
+
+  // ── 4. Clean billing + active + no task pressure → Excellent ─────────────
   if (
     (c.billingStatus === "Paid" || c.billingStatus === "Cleared") &&
     c.activationStatus === "Active" &&
-    c.cancellationStatus === "None"
+    c.cancellationStatus === "None" &&
+    (!taskSignals || (taskSignals.blockedTasks === 0 && taskSignals.overdueTasks === 0))
   ) return "Excellent";
+
   return "Good";
+}
+
+/**
+ * Compute a 0–100 numeric health score from real billing + optional task signals.
+ * Used exclusively by Client Health page; returned alongside the tier label so
+ * the page has both a categorical bucket and a numeric ordering key.
+ *
+ * Weights:
+ *   Billing health  40 pts  (billingStatus + paymentStatus)
+ *   Task completion 30 pts  (completedTasks / totalTasks)
+ *   Task pressure   20 pts  (overdueTasks + blockedTasks penalty)
+ *   Activation      10 pts  (activationStatus === Active)
+ *
+ * When taskSignals is absent the task weights collapse to their neutral value.
+ */
+export function computeClientHealthScore(
+  c: Pick<MasterClient, "billingStatus" | "paymentStatus" | "cancellationStatus" | "activationStatus"> & { renewalDate: string },
+  taskSignals?: TaskHealthSignals,
+): number {
+  // ── Billing component (0–40) ───────────────────────────────────────────────
+  let billingPts = 0;
+  if (c.billingStatus === "Paid" || c.billingStatus === "Cleared") billingPts = 40;
+  else if (c.billingStatus === "Pending") billingPts = 28;
+  else if (c.billingStatus === "Overdue" && c.paymentStatus !== "Overdue") billingPts = 15;
+  else if (c.billingStatus === "Overdue" && c.paymentStatus === "Overdue") billingPts = 5;
+  else if (c.billingStatus === "Closed") billingPts = 20;
+  else billingPts = 20;
+
+  // Cancellation hard-cap
+  if (c.cancellationStatus === "Requested" || c.cancellationStatus === "Approved") billingPts = Math.min(billingPts, 10);
+
+  // ── Task completion component (0–30) ───────────────────────────────────────
+  let taskCompPts = 20; // neutral when no task data
+  if (taskSignals && taskSignals.totalTasks > 0) {
+    const rate = taskSignals.completedTasks / taskSignals.totalTasks;
+    taskCompPts = Math.round(rate * 30);
+  }
+
+  // ── Task pressure penalty (0–20, higher = less pressure) ──────────────────
+  let pressurePts = 18; // neutral
+  if (taskSignals) {
+    const penaltyPer = taskSignals.totalTasks > 0
+      ? Math.min(1, (taskSignals.overdueTasks + taskSignals.blockedTasks * 1.5) / taskSignals.totalTasks)
+      : 0;
+    pressurePts = Math.round((1 - penaltyPer) * 20);
+  }
+
+  // ── Activation component (0–10) ────────────────────────────────────────────
+  const activationPts = c.activationStatus === "Active" ? 10 : 5;
+
+  return Math.min(100, Math.max(0, billingPts + taskCompPts + pressurePts + activationPts));
 }
 
 /**
@@ -962,6 +1055,173 @@ export function computePriority(health: HealthStatus, billingStatus: BillingStat
   if (health === "Good" && billingStatus !== "Paid" && billingStatus !== "Cleared") return "Medium";
   if (health === "Excellent") return "Low";
   return "Medium";
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPUTED NEXT ACTION
+// Derives the client's next required action from real state signals only,
+// evaluated in priority order. Same pattern as computeHealth / computePriority —
+// never manually set, always derived.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Number of days from today until an ISO date string. Negative = past. */
+function daysUntil(isoDate: string): number {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const target = new Date(isoDate);
+  if (isNaN(target.getTime())) return Infinity;
+  return Math.round((target.getTime() - now.getTime()) / 86_400_000);
+}
+
+/**
+ * The renewal window threshold used by the Renewals page for its most-urgent
+ * "due soon" bucket. Defined here once so computeNextAction and the Renewals
+ * page share the same constant.
+ */
+export const RENEWAL_URGENT_DAYS = 30;
+
+export interface ComputedNextAction {
+  text: string;
+  href?: string;
+}
+
+/**
+ * Inputs needed for next-action derivation.
+ * incompleteOnboardingFields is the count of fields still unset or
+ * pending-client in the onboarding record; pass undefined if the record
+ * doesn't exist or hasn't been loaded yet.
+ */
+export interface NextActionInputs {
+  cleared: boolean;
+  assignedAM: string;
+  cancellationStatus: CancellationStatus;
+  activationStatus: ActivationStatus;
+  activationChecklist: ActivationChecklist;
+  clientHealth: HealthStatus;
+  renewalDate: string;
+  /** Count of onboarding fields still needing attention (unset + pending-client). */
+  incompleteOnboardingFields?: number;
+}
+
+/**
+ * Compute next required action from real client state signals.
+ * Priority order (highest to lowest):
+ *   1. Active cancellation (Requested / In Review / Approved)
+ *   2. Not cleared by Billing — informational, no AM action
+ *   3. Cleared but unassigned
+ *   4. Assigned, onboarding not yet started (no activationTasksCreated)
+ *   5. Onboarding started, kickoff call not complete
+ *   6. Kickoff done, onboarding record has incomplete fields
+ *   7. Active client, health Critical or At Risk
+ *   8. Active client, renewal ≤ RENEWAL_URGENT_DAYS days away
+ *   9. Fallback — no immediate action
+ *
+ * Never fabricates a rule for a signal that isn't backed by real data.
+ * Billing-owned fields (cleared, cancellationStatus) are read-only here.
+ */
+export function computeNextAction(inputs: NextActionInputs): ComputedNextAction {
+  const {
+    cleared,
+    assignedAM,
+    cancellationStatus,
+    activationStatus,
+    activationChecklist,
+    clientHealth,
+    renewalDate,
+    incompleteOnboardingFields,
+  } = inputs;
+
+  // ── 1. Active cancellation in progress ────────────────────────────────────
+  if (
+    cancellationStatus === "Requested" ||
+    cancellationStatus === "In Review" ||
+    cancellationStatus === "Approved"
+  ) {
+    return {
+      text: "Cancellation in progress — retention action required",
+      href: "/account-management/cancellations",
+    };
+  }
+
+  // ── 2. Not cleared by Billing — no AM action yet ──────────────────────────
+  if (!cleared) {
+    return {
+      text: "Awaiting Billing clearance — no AM action yet",
+      // No destination: purely informational, AM cannot act here
+    };
+  }
+
+  // ── 3. Cleared but no AM assigned ─────────────────────────────────────────
+  if (assignedAM === "Unassigned" || activationStatus === "AM Assignment Needed") {
+    return {
+      text: "Needs AM assignment",
+      href: "/account-management/assignments",
+    };
+  }
+
+  // ── 4. Assigned, onboarding not yet kicked off (no project/task list yet) ──
+  if (!activationChecklist.activationTasksCreated) {
+    return {
+      text: "Start onboarding — create project and task list",
+      href: "/account-management/onboarding",
+    };
+  }
+
+  // ── 5. Onboarding started, kickoff call not yet done ─────────────────────
+  if (
+    activationChecklist.activationTasksCreated &&
+    activationChecklist.kickoffNeeded &&
+    !activationChecklist.kickoffCallCompleted
+  ) {
+    return {
+      text: "Complete kickoff call to advance onboarding",
+      href: "/account-management/onboarding",
+    };
+  }
+
+  // ── 6. Kickoff done (or not needed), onboarding fields still incomplete ───
+  if (
+    activationChecklist.activationTasksCreated &&
+    (!activationChecklist.kickoffNeeded || activationChecklist.kickoffCallCompleted) &&
+    activationStatus !== "Active" &&
+    activationStatus !== "Department Activation Pending"
+  ) {
+    if (typeof incompleteOnboardingFields === "number" && incompleteOnboardingFields > 0) {
+      return {
+        text: `Onboarding in progress — ${incompleteOnboardingFields} field${incompleteOnboardingFields !== 1 ? "s" : ""} still need attention`,
+        href: "/account-management/onboarding",
+      };
+    }
+    return {
+      text: "Onboarding in progress — complete remaining onboarding steps",
+      href: "/account-management/onboarding",
+    };
+  }
+
+  // ── 7. Active client with Critical or At Risk health ─────────────────────
+  if (
+    activationStatus === "Active" &&
+    (clientHealth === "Critical" || clientHealth === "At Risk")
+  ) {
+    return {
+      text: "Client at risk — review health and communications",
+      href: "/account-management/client-health",
+    };
+  }
+
+  // ── 8. Active client with renewal due within the urgent window ───────────
+  if (activationStatus === "Active" && renewalDate && renewalDate !== "—") {
+    const days = daysUntil(renewalDate);
+    if (days >= 0 && days <= RENEWAL_URGENT_DAYS) {
+      return {
+        text: `Renewal due in ${days} day${days !== 1 ? "s" : ""} — action required`,
+        href: "/account-management/renewals",
+      };
+    }
+  }
+
+  // ── 9. Fallback — no immediate action needed ──────────────────────────────
+  return { text: "No immediate action needed" };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

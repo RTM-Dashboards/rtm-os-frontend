@@ -122,6 +122,8 @@ export interface TaskDependency {
   /** "blocked-by" = this task is blocked; "blocking" = this task is blocking another */
   direction: "blocked-by" | "blocking";
   status: TaskStatus;
+  /** Human-readable reason why this dependency is blocking, e.g. "Waiting on client access" */
+  blockerReason?: string;
 }
 
 export interface TaskNote {
@@ -229,6 +231,15 @@ export interface Task {
   completionDate?: string;
   estimatedHours: number;
 
+  /**
+   * Overdue attention flag — set by the "Flag Overdue" quick action on the
+   * Workload Planning page. Does NOT affect task.status; use this to surface
+   * overdue-but-not-genuinely-blocked tasks without polluting the Blocked status.
+   */
+  flaggedOverdue?: boolean;
+  /** ISO timestamp when flaggedOverdue was last set. */
+  flaggedOverdueAt?: string;
+
   // Relations
   dependencies: TaskDependency[];
   notes: TaskNote[];
@@ -263,6 +274,13 @@ export interface ProjectDepartment {
   taskIds: string[];
   escalationStatus: "None" | "Escalated" | "Critical";
   delayReason?: string;
+  /**
+   * Activation status for this department, written by the AM wizard at project creation.
+   * Absent on seeded records that predate this field — treat missing as compat fallback.
+   */
+  activationStatus?: "Active" | "Pending" | "Not Started";
+  /** ISO timestamp when this department was activated, set by the AM wizard. */
+  activatedAt?: string;
 }
 
 // ---------------------------------------------------------------------------

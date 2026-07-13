@@ -224,6 +224,38 @@ function statusColor(status: string): "green"| "yellow"| "red"| "blue"| "gray"{
 
 //  Sub-Components 
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
+function DisabledBtn({
+  children,
+  className,
+  style,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <button
+      disabled
+      title="Not yet available"
+      className={`opacity-40 cursor-not-allowed ${className ?? ""}`}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+}
+
 function ActionBar() {
   const actions = [
     { label: "Sync GHL Data",     icon: "", primary: true  },
@@ -236,13 +268,13 @@ function ActionBar() {
   return (
     <div className="flex flex-wrap gap-2">
       {actions.map((a) => (
-        <button
+        <DisabledBtn
           key={a.label}
-          className={a.primary ? "rtm-btn-primary text-sm inline-flex items-center gap-1.5": "rtm-btn-secondary text-sm inline-flex items-center gap-1.5"}
+          className={a.primary ? "rtm-btn-primary text-sm inline-flex items-center gap-1.5" : "rtm-btn-secondary text-sm inline-flex items-center gap-1.5"}
         >
           <span>{a.icon}</span>
           {a.label}
-        </button>
+        </DisabledBtn>
       ))}
     </div>
   );
@@ -338,6 +370,7 @@ export default function SalesPerformancePage() {
         <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
           Performance
         </h1>
+        <div className="mt-2"><PreviewBadge /></div>
         <p className="text-sm mt-1"style={{ color: "var(--rtm-text-muted)"}}>
           Track sales KPIs, rep performance, lead source conversion, affiliate contribution, and revenue forecasting.
         </p>

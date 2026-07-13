@@ -1,12 +1,16 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MOCK_CHANGE_REQUESTS } from "@/lib/change-requests/mock-data";
 import type {
   ChangeRequest,
   ChangeRequestStatus,
   ChangeRequestType,
 } from "@/lib/change-requests/types";
+import SubmitChangeRequestModal, {
+  type PendingChangeRequest,
+  type PendingChangeRequestStatus,
+} from "@/components/account-management/SubmitChangeRequestModal";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Badge helpers
@@ -1503,9 +1507,148 @@ function DetailPanel({ cr }: { cr: ChangeRequest }) {
 
 type PageTab = "dashboard"| "detail";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Live Change Requests Panel
+// Read-only view of AM-submitted requests. Billing status is Billing-owned.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function pendingStatusStyle(status: PendingChangeRequestStatus): React.CSSProperties {
+  const map: Record<PendingChangeRequestStatus, React.CSSProperties> = {
+    Submitted:         { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" },
+    "Under Review":    { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" },
+    "Pending Approval":{ background: "#EFF6FF", color: "#3B82F6", borderColor: "#BFDBFE" },
+    Approved:          { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" },
+    Rejected:          { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" },
+    Implemented:       { background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" },
+    Cancelled:         { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" },
+  };
+  return map[status] ?? { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
+}
+
+function LiveChangeRequestsPanel({ requests }: { requests: PendingChangeRequest[] }) {
+  if (requests.length === 0) {
+    return (
+      <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="px-6 py-4" style={{ borderBottom: "1px solid #E2E8F0" }}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-0.5">AM-Submitted Requests</p>
+              <h2 className="text-base font-bold text-slate-900">My Submitted Change Requests</h2>
+              <p className="text-sm text-slate-500 mt-0.5">Change requests submitted by AM and handed off to Billing for review. Read-only after submission.</p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              Live
+            </span>
+          </div>
+        </div>
+        <div className="px-6 py-10 text-center">
+          <p className="text-sm text-slate-400">No change requests submitted yet.</p>
+          <p className="text-xs text-slate-400 mt-1">Use “Submit Change Request” above to create one.</p>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid #E2E8F0" }}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest text-blue-600 mb-0.5">AM-Submitted Requests</p>
+            <h2 className="text-base font-bold text-slate-900">My Submitted Change Requests</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Read-only after submission. Billing owns all status and approval updates.</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            Live
+          </span>
+        </div>
+      </div>
+
+      {/* Read-only banner */}
+      <div className="mx-6 mt-4 mb-2 rounded-lg border px-4 py-2.5 text-xs" style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}>
+        <strong>Read-only:</strong> Billing reviews and approves change requests. AM cannot approve or implement a submitted request.
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead style={{ background: "#F8FAFC" }}>
+            <tr>
+              {["ID", "Client", "Type", "Project", "Description", "Revenue Impact", "Departments", "Status", "Submitted"].map((h) => (
+                <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "#94A3B8" }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {requests.map((r) => {
+              const ss = pendingStatusStyle(r.status);
+              const ts = typeBadge(r.requestType);
+              const ri = r.revenueImpact;
+              return (
+                <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50">
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-blue-700 whitespace-nowrap">{r.id}</td>
+                  <td className="px-4 py-3 font-semibold text-slate-800 whitespace-nowrap">{r.client}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold" style={ts}>{r.requestType}</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap max-w-[120px] truncate">{r.project}</td>
+                  <td className="px-4 py-3 text-slate-600 max-w-[200px]">
+                    <span className="line-clamp-2 text-xs leading-relaxed">{r.description}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap font-semibold" style={{ color: ri > 0 ? "#059669" : ri < 0 ? "#DC2626" : "#64748B" }}>
+                    {ri === 0 ? "—" : `${ri > 0 ? "+" : ""}$${Math.abs(ri).toLocaleString()}/mo`}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex flex-wrap gap-1">
+                      {r.departmentsImpacted.slice(0, 2).map((d) => (
+                        <span key={d} className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-semibold text-slate-600">{d}</span>
+                      ))}
+                      {r.departmentsImpacted.length > 2 && (
+                        <span className="text-[10px] text-slate-400">+{r.departmentsImpacted.length - 2}</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold" style={ss}>{r.status}</span>
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">{r.submittedDate}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="border-t border-slate-100 px-6 py-2.5 text-xs text-slate-400">
+        {requests.length} request{requests.length !== 1 ? "s" : ""} submitted to Billing
+      </div>
+    </section>
+  );
+}
+
 export default function ChangeRequestsPage() {
   const [selectedCR, setSelectedCR] = useState<ChangeRequest | null>(null);
   const [pageTab, setPageTab] = useState<PageTab>("dashboard");
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [liveRequests, setLiveRequests] = useState<PendingChangeRequest[]>([]);
+  const [lastSubmitted, setLastSubmitted] = useState<PendingChangeRequest | null>(null);
+
+  // Fetch AM-submitted change requests from the file-backed API on mount.
+  useEffect(() => {
+    fetch("/api/pending-change-requests")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { records: PendingChangeRequest[] } | null) => {
+        if (d?.records && Array.isArray(d.records)) setLiveRequests(d.records);
+      })
+      .catch((err) => console.error("[AM Change Requests] Failed to load requests:", err));
+  }, []);
+
+  function handleSubmitted(record: PendingChangeRequest) {
+    setLiveRequests((prev) => [record, ...prev]);
+    setLastSubmitted(record);
+  }
 
   function handleSelect(cr: ChangeRequest) {
     setSelectedCR(cr);
@@ -1534,27 +1677,66 @@ export default function ChangeRequestsPage() {
             changes.
           </p>
         </div>
-        {pageTab === "detail"&& (
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Submit Change Request — AM's primary action */}
           <button
-            onClick={handleBack}
-            className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors whitespace-nowrap shadow-sm">
-            Back to Dashboard
+            onClick={() => setShowSubmitModal(true)}
+            className="rounded-xl border px-4 py-2.5 text-sm font-bold text-white shadow-sm whitespace-nowrap"
+            style={{ background: "#1D4ED8", borderColor: "#1D4ED8" }}
+          >
+            + Submit Change Request
           </button>
-        )}
+          {pageTab === "detail" && (
+            <button
+              onClick={handleBack}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors whitespace-nowrap shadow-sm">
+              Back to Dashboard
+            </button>
+          )}
+        </div>
       </div>
 
-      {pageTab === "dashboard"&& (
+      {/* Success notification after submitting a request */}
+      {lastSubmitted && (
+        <div
+          className="rounded-xl border px-5 py-3 flex items-center justify-between gap-4"
+          style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "#065F46" }}>
+            ✓ Change request <strong>{lastSubmitted.id}</strong> for <strong>{lastSubmitted.client}</strong> ({lastSubmitted.requestType}) submitted to Billing’s review queue.
+          </p>
+          <button
+            onClick={() => setLastSubmitted(null)}
+            className="text-xs font-semibold px-2 py-1 rounded"
+            style={{ color: "#059669" }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {pageTab === "dashboard" && (
         <>
           <KPICards />
           <ChangeRequestTable
             onSelect={handleSelect}
             selectedId={selectedCR?.id ?? null}
           />
+          {/* AM-submitted live requests — read-only */}
+          <LiveChangeRequestsPanel requests={liveRequests} />
         </>
       )}
 
-      {pageTab === "detail"&& selectedCR && (
+      {pageTab === "detail" && selectedCR && (
         <DetailPanel cr={selectedCR} />
+      )}
+
+      {/* Submit Change Request Modal */}
+      {showSubmitModal && (
+        <SubmitChangeRequestModal
+          onClose={() => setShowSubmitModal(false)}
+          onSubmitted={handleSubmitted}
+        />
       )}
     </div>
   );

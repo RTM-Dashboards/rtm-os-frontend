@@ -214,6 +214,293 @@ const MOCK_ONBOARDING_PROJECTS: ProjectRecord[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function genProjectId(): string {
+  return `proj-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// ---------------------------------------------------------------------------
+// New Project Modal
+// ---------------------------------------------------------------------------
+
+const SERVICE_PACKAGES: ServicePackage[] = [
+  "SEO Only",
+  "SEO + GBP",
+  "PPC + Landing Page",
+  "Full Service",
+  "Reporting Only",
+  "Website Build",
+  "AI Automation",
+  "Upsell",
+  "Renewal",
+  "Custom",
+];
+
+const ACCOUNT_MANAGERS = [
+  "Jake Monroe",
+  "Dana W.",
+  "Chris A.",
+  "Sarah K.",
+  "Alex R.",
+  "Jordan M.",
+  "Mike T.",
+];
+
+interface NewProjectFormState {
+  name: string;
+  client: string;
+  servicePackage: ServicePackage;
+  accountManager: string;
+  launchDate: string;
+}
+
+function NewProjectModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: (project: Project) => void;
+}) {
+  const [form, setForm] = useState<NewProjectFormState>({
+    name: "",
+    client: "",
+    servicePackage: "SEO Only",
+    accountManager: "",
+    launchDate: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const valid = form.name.trim() && form.client.trim() && form.accountManager && form.launchDate;
+
+  async function handleSubmit() {
+    if (!valid) return;
+    setSaving(true);
+    setError(null);
+
+    const now = new Date().toISOString();
+    const newProject: Project = {
+      id:              genProjectId(),
+      name:            form.name.trim(),
+      client:          form.client.trim(),
+      clientSlug:      form.client.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+      servicePackage:  form.servicePackage,
+      contractSummary: `${form.servicePackage} — Created via Projects page`,
+      owner:           form.accountManager,
+      accountManager:  form.accountManager,
+      departments:     [],
+      launchDate:      form.launchDate,
+      status:          "Draft",
+      health:          "Green",
+      priority:        "Medium",
+      milestoneIds:    [],
+      taskIds:         [],
+      activityLog:     [],
+      createdAt:       now,
+      updatedAt:       now,
+    };
+
+    try {
+      const res = await fetch("/api/engine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projects: [newProject] }),
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      onCreated(newProject);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to save project");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}
+    >
+      <div
+        className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden"
+        style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-center justify-between px-6 py-4 border-b"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        >
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              New Project
+            </h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+              Creates a project in the engine and appears immediately in the list.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-5 space-y-4">
+          {/* Project Name */}
+          <div>
+            <label
+              className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Project Name *
+            </label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              placeholder="e.g. Summit Landscaping — SEO + GBP"
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{
+                background: "var(--rtm-surface)",
+                borderColor: "var(--rtm-border)",
+                color: "var(--rtm-text-primary)",
+              }}
+            />
+          </div>
+
+          {/* Client */}
+          <div>
+            <label
+              className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Client *
+            </label>
+            <input
+              type="text"
+              value={form.client}
+              onChange={(e) => setForm((f) => ({ ...f, client: e.target.value }))}
+              placeholder="e.g. Summit Landscaping"
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{
+                background: "var(--rtm-surface)",
+                borderColor: "var(--rtm-border)",
+                color: "var(--rtm-text-primary)",
+              }}
+            />
+          </div>
+
+          {/* Service Package */}
+          <div>
+            <label
+              className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Service Package *
+            </label>
+            <select
+              value={form.servicePackage}
+              onChange={(e) => setForm((f) => ({ ...f, servicePackage: e.target.value as ServicePackage }))}
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{
+                background: "var(--rtm-surface)",
+                borderColor: "var(--rtm-border)",
+                color: "var(--rtm-text-primary)",
+              }}
+            >
+              {SERVICE_PACKAGES.map((pkg) => (
+                <option key={pkg} value={pkg}>{pkg}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Account Manager */}
+          <div>
+            <label
+              className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Account Manager *
+            </label>
+            <select
+              value={form.accountManager}
+              onChange={(e) => setForm((f) => ({ ...f, accountManager: e.target.value }))}
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{
+                background: "var(--rtm-surface)",
+                borderColor: "var(--rtm-border)",
+                color: "var(--rtm-text-primary)",
+              }}
+            >
+              <option value="">— Select Account Manager —</option>
+              {ACCOUNT_MANAGERS.map((am) => (
+                <option key={am} value={am}>{am}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Target Launch Date */}
+          <div>
+            <label
+              className="text-[10px] font-bold uppercase tracking-wide block mb-1"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Target Launch Date *
+            </label>
+            <input
+              type="date"
+              value={form.launchDate}
+              onChange={(e) => setForm((f) => ({ ...f, launchDate: e.target.value }))}
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{
+                background: "var(--rtm-surface)",
+                borderColor: "var(--rtm-border)",
+                color: "var(--rtm-text-primary)",
+              }}
+            />
+          </div>
+
+          {error && (
+            <p className="text-xs font-semibold" style={{ color: "#DC2626" }}>
+              Error: {error}
+            </p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div
+          className="flex items-center justify-end gap-2 px-6 py-4 border-t"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        >
+          <button
+            onClick={onClose}
+            className="text-sm px-4 py-2 rounded-lg font-semibold border"
+            style={{
+              background: "var(--rtm-bg)",
+              color: "var(--rtm-text-secondary)",
+              borderColor: "var(--rtm-border)",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!valid || saving}
+            className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40"
+            style={{ background: "var(--rtm-blue)", color: "#fff" }}
+          >
+            {saving ? "Creating…" : "Create Project"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -225,11 +512,13 @@ export default function GlobalProjectsPage() {
   const [healthFilter, setHealthFilter] = useState<ProjectHealth | "All">("All");
   const [packageFilter, setPackageFilter] = useState<ServicePackage | "All">("All");
   const [search, setSearch] = useState("");
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
 
-  // Live data — initialized from seed, hydrated from API on mount
-  const [liveProjects, setLiveProjects] = useState<Project[]>(() => getProjects());
-  const [liveTasks, setLiveTasks] = useState<Task[]>(() => getAllTasks());
-  const [liveBlueprints] = useState<TaskBlueprint[]>(() => getBlueprints());
+  // Live data — initialized from seed snapshots (not mutable ENGINE_STORE refs),
+  // then replaced with authoritative API data on mount.
+  const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...getProjects()]);
+  const [liveTasks, setLiveTasks] = useState<Task[]>(() => [...getAllTasks()]);
+  const [liveBlueprints] = useState<TaskBlueprint[]>(() => [...getBlueprints()]);
 
   useEffect(() => {
     Promise.all([
@@ -294,6 +583,17 @@ export default function GlobalProjectsPage() {
   return (
     <div className="flex flex-col min-h-screen" style={{ background: "var(--rtm-bg)" }}>
 
+      {/* ── NEW PROJECT MODAL ── */}
+      {showNewProjectModal && (
+        <NewProjectModal
+          onClose={() => setShowNewProjectModal(false)}
+          onCreated={(project) => {
+            setLiveProjects((prev) => [project, ...prev]);
+            setShowNewProjectModal(false);
+          }}
+        />
+      )}
+
       {/* ── PAGE HEADER ── */}
       <div
         className="px-6 pt-6 pb-4"
@@ -327,6 +627,7 @@ export default function GlobalProjectsPage() {
                 Task Blueprints
               </Link>
               <button
+                onClick={() => setShowNewProjectModal(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white shadow-sm hover:opacity-90"
                 style={{ background: "var(--rtm-blue)" }}
               >

@@ -88,8 +88,11 @@ const STATUS_STYLES: Record<ContractStatus, { bg: string; text: string; border: 
 
 function RequestInvoiceButton({ contractId, contract }: { contractId: string; contract: ContractRecord }) {
   const router = useRouter();
+  const [creating, setCreating] = React.useState(false);
 
-  function handleClick() {
+  async function handleClick() {
+    if (creating) return;
+    setCreating(true);
     // Build summary fields from contract data
     const summaryFields: Record<string, string> = {
       "client-name": contract.client,
@@ -100,25 +103,30 @@ function RequestInvoiceButton({ contractId, contract }: { contractId: string; co
       "term-length": contract.termLength,
       "setup-fees": "$0",
     };
-    // Get or create the handoff record for this contract
-    const handoff = getOrCreateHandoffForContract(
-      contractId,
-      contract.client,
-      contract.id,
-      contract.assignedRep,
-      summaryFields
-    );
-    // Route to the specific handoff detail view
-    router.push(`/sales/handoffs?handoffId=${handoff.id}&action=request-invoice`);
+    try {
+      // Get or create the handoff record for this contract (file-backed, async)
+      const handoff = await getOrCreateHandoffForContract(
+        contractId,
+        contract.client,
+        contract.id,
+        contract.assignedRep,
+        summaryFields
+      );
+      // Route to the specific handoff detail view
+      router.push(`/sales/handoffs?handoffId=${handoff.id}&action=request-invoice`);
+    } finally {
+      setCreating(false);
+    }
   }
 
   return (
     <button
-      onClick={handleClick}
-      className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90"
+      onClick={() => void handleClick()}
+      disabled={creating}
+      className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90 disabled:opacity-60"
       style={{ background: "#059669", color: "#fff", borderColor: "#047857" }}
     >
-      Request Invoice
+      {creating ? "Creating…" : "Request Invoice"}
     </button>
   );
 }
@@ -135,12 +143,20 @@ export default function SalesContractsPage() {
           >
             Sales
           </p>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "var(--rtm-text-primary)" }}
-          >
-            Contract Builder
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1
+              className="text-2xl font-bold tracking-tight"
+              style={{ color: "var(--rtm-text-primary)" }}
+            >
+              Contract Builder
+            </h1>
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+              style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+            >
+              Preview — Target State
+            </span>
+          </div>
           <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
             Configuration-driven service agreement builder. Consumes proposal output and
             generates structured contracts with editable clauses and e-signature readiness.
@@ -281,7 +297,9 @@ export default function SalesContractsPage() {
                           <RequestInvoiceButton contractId={contract.id} contract={contract} />
                         )}
                         <button
-                          className="text-xs font-semibold px-2 py-1 rounded-lg border"
+                          disabled
+                          title="Not yet available"
+                          className="text-xs font-semibold px-2 py-1 rounded-lg border opacity-40 cursor-not-allowed"
                           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}
                         >
                           View

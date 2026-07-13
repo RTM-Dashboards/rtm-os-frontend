@@ -536,22 +536,22 @@ export default function WorkspaceTaskPage({
             </div>
             <div style={{ fontSize: 12, color: "#0c4a6e", lineHeight: 1.5 }}>
               Filtered view scoped to the <strong>{workspaceName}</strong> workspace. All task creation, ownership,
-              blueprints, and lifecycle management originate from the{" "}
-              <a href="/projects/tasks" style={{ color: "#0369a1", fontWeight: 700 }}>
-                Global Projects &amp; Tasks
-              </a>{" "}module.
+              blueprints, and lifecycle management originate from the Global Projects &amp; Tasks module.
             </div>
           </div>
-          <a
-            href="/projects/tasks"
-            style={{
-              flexShrink: 0, padding: "5px 12px", borderRadius: 6,
-              background: "#0369a1", color: "#fff", fontSize: 11, fontWeight: 700,
-              textDecoration: "none", whiteSpace: "nowrap", alignSelf: "center",
-            }}
-          >
-            Open Global Tasks
-          </a>
+          {/* Only Department Lead and above can navigate to the global module */}
+          {userCtx.role !== "department-member" && (
+            <a
+              href="/projects/tasks"
+              style={{
+                flexShrink: 0, padding: "5px 12px", borderRadius: 6,
+                background: "#0369a1", color: "#fff", fontSize: 11, fontWeight: 700,
+                textDecoration: "none", whiteSpace: "nowrap", alignSelf: "center",
+              }}
+            >
+              Open Global Tasks
+            </a>
+          )}
         </div>
 
         {/* ── KPI Cards ── */}
@@ -606,16 +606,19 @@ export default function WorkspaceTaskPage({
                 Open Projects
               </a>
             )}
-            <a
-              href="/projects/tasks"
-              style={{
-                padding: "5px 12px", borderRadius: 6,
-                background: "#1e293b", color: "#fff",
-                fontSize: 11, fontWeight: 600, textDecoration: "none",
-              }}
-            >
-              Global Tasks
-            </a>
+            {/* Global Tasks admin link — Department Lead and above only */}
+            {userCtx.role !== "department-member" && (
+              <a
+                href="/projects/tasks"
+                style={{
+                  padding: "5px 12px", borderRadius: 6,
+                  background: "#1e293b", color: "#fff",
+                  fontSize: 11, fontWeight: 600, textDecoration: "none",
+                }}
+              >
+                Global Tasks
+              </a>
+            )}
           </div>
         </div>
 
@@ -801,11 +804,15 @@ export default function WorkspaceTaskPage({
           }}
         >
           <strong style={{ color: "var(--rtm-text-primary, #1e293b)" }}>Source of truth:</strong>{" "}
-          All tasks displayed here originate from the{" "}
-          <a href="/projects/tasks" style={{ color: "#0369a1", fontWeight: 600 }}>
-            Global Projects &amp; Tasks
-          </a>{" "}
-          module. This view applies {workspaceName} workspace filters only.
+          All tasks displayed here originate from the Global Projects &amp; Tasks module.
+          This view applies {workspaceName} workspace filters only.
+          {userCtx.role !== "department-member" && (
+            <>{" "}—{" "}
+              <a href="/projects/tasks" style={{ color: "#0369a1", fontWeight: 600 }}>
+                Open Global Tasks →
+              </a>
+            </>
+          )}
         </div>
 
       </div>

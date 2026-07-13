@@ -91,6 +91,7 @@ export async function apiMarkActivationTasksCreated(clientId: string): Promise<v
     } as MasterClient["activationChecklist"],
     activationStatus: "Onboarding Pending",
     currentStatus: "Onboarding Pending",
+    activatedAt: new Date().toISOString(),
   });
 }
 
@@ -130,6 +131,23 @@ export async function apiMarkKickoffComplete(
 }
 
 /**
+ * Step 4: Marks onboarding complete.
+ * Advances activationStatus to "Active", sets currentStatus to "Active",
+ * and sets onboardingStatus to "Completed".
+ * This is the final AM-owned step: client leaves the Onboarding Queue.
+ */
+export async function apiMarkOnboardingComplete(clientId: string): Promise<void> {
+  await patchMasterClient(clientId, {
+    activationStatus: "Active",
+    currentStatus: "Active",
+    onboardingStatus: "Completed",
+    activationChecklist: {
+      kickoffCallCompleted: true,
+    } as MasterClient["activationChecklist"],
+  });
+}
+
+/**
  * Marks a client as cleared by Billing (cleared: true, billingStatus: "Cleared").
  * API-backed so AM pages immediately see the cleared state.
  */
@@ -138,4 +156,37 @@ export async function apiMarkCleared(clientId: string): Promise<void> {
     cleared: true,
     billingStatus: "Cleared",
   });
+}
+
+// ── Reassignment event helpers ────────────────────────────────────────────────
+
+export interface ReassignmentEvent {
+  id: string;
+  clientId: string;
+  clientName: string;
+  from: string;
+  to: string;
+  date: string;
+  reason: string;
+  handoffNote?: string;
+}
+
+/** Fetch all reassignment events (newest first). */
+export async function fetchReassignmentEvents(): Promise<ReassignmentEvent[]> {
+  const res = await apiFetch("/api/reassignment-events");
+  const data = (await res.json()) as { events: ReassignmentEvent[] };
+  return data.events;
+}
+
+/** Record a new reassignment event. */
+export async function postReassignmentEvent(
+  event: Omit<ReassignmentEvent, "id">
+): Promise<ReassignmentEvent> {
+  const res = await apiFetch("/api/reassignment-events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(event),
+  });
+  const data = (await res.json()) as { event: ReassignmentEvent };
+  return data.event;
 }

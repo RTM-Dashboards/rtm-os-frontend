@@ -719,7 +719,7 @@ function AffiliateDrawer({ affiliate, onClose, onGenerateLink }: AffiliateDrawer
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Referral History</p>
-                <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}} onClick={() => alert("[Mock] Generate Referral Link")}>+ Referral Link</button>
+                <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}>+ Referral Link</button>
               </div>
               {affiliateReferrals.length > 0 ? (
                 <DataTable columns={referralsTableColumns} data={affiliateReferrals} />
@@ -734,7 +734,7 @@ function AffiliateDrawer({ affiliate, onClose, onGenerateLink }: AffiliateDrawer
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Commission History</p>
-                <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}} onClick={() => alert("[Mock] Record Payment")}>Record Payment</button>
+                <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>Record Payment</button>
               </div>
               {affiliateCommissions.length > 0 ? (
                 <DataTable columns={commissionsTableColumns} data={affiliateCommissions} />
@@ -749,7 +749,7 @@ function AffiliateDrawer({ affiliate, onClose, onGenerateLink }: AffiliateDrawer
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Referral Links</p>
-                <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}} onClick={() => alert("[Mock] Generate New Link")}>Generate Link</button>
+                <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}>Generate Link</button>
               </div>
               {affiliateLinks.length > 0 ? (
                 <div className="space-y-3">
@@ -796,7 +796,7 @@ function AffiliateDrawer({ affiliate, onClose, onGenerateLink }: AffiliateDrawer
               <div className="flex items-center justify-between">
                 <p className="text-xs font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)"}}>Portal Access Management</p>
                 <div className="flex gap-2">
-                  <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}} onClick={() => alert("[Mock] Invite Portal User")}>Invite User</button>
+                  <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}>Invite User</button>
                   <StatusBadge variant={portalStatusVariant(affiliate.portalStatus)} label={affiliate.portalStatus} size="sm"/>
                 </div>
               </div>
@@ -1317,7 +1317,15 @@ export default function AffiliatesPage() {
       >
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-widest mb-0.5"style={{ color: "#059669"}}>Sales</p>
-          <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Affiliates</h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-medium tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Affiliates</h1>
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+              style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+            >
+              Preview — Target State
+            </span>
+          </div>
           <p className="text-sm mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>
             Manage affiliates, referral performance, commissions, and payouts.
           </p>
@@ -1354,40 +1362,42 @@ export default function AffiliatesPage() {
       )}
       <div className="flex flex-wrap gap-2">
         <button
-          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          disabled
+          title="Not yet available"
+          className="text-sm font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
           style={{ background: "#05966912", color: "#059669", borderColor: "#05966940" }}
-          onClick={() => setShowAddModal(true)}
         >
           Add Affiliate
         </button>
         <button
-          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          disabled
+          title="Not yet available"
+          className="text-sm font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
           style={{ background: "#2563EB12", color: "#2563EB", borderColor: "#2563EB40" }}
-          onClick={() => {
-            const id = Math.random().toString(36).slice(2, 9).toUpperCase();
-            setReferralLinkUrl(`https://app.rtmagency.com/ref/${id}`);
-          }}
         >
           Generate Referral Link
         </button>
         <button
-          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          disabled
+          title="Not yet available"
+          className="text-sm font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
           style={{ background: "#7C3AED12", color: "#7C3AED", borderColor: "#7C3AED40" }}
-          onClick={() => { setExportBanner(true); setTimeout(() => setExportBanner(false), 4000); }}
         >
           Export Affiliates
         </button>
         <button
-          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          disabled
+          title="Not yet available"
+          className="text-sm font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
           style={{ background: "#D97706" + "12", color: "#D97706", borderColor: "#D97706" + "40" }}
-          onClick={() => setShowCommReport(true)}
         >
           Commission Report
         </button>
         <button
-          className="text-sm font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+          disabled
+          title="Not yet available"
+          className="text-sm font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
           style={{ background: "#0891B212", color: "#0891B2", borderColor: "#0891B240" }}
-          onClick={() => setShowPortalMsg(true)}
         >
           Affiliate Portal Access
         </button>
@@ -1521,7 +1531,7 @@ export default function AffiliatesPage() {
       <SectionWrapper
         title="Affiliate Directory"description="All affiliate partners with performance metrics, commission status, and portal access"actions={
           <div className="flex gap-2">
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}} onClick={() => setShowAddModal(true)}> Add Affiliate</button>
+            <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}> Add Affiliate</button>
           </div>
         }
       >
@@ -1644,7 +1654,7 @@ export default function AffiliatesPage() {
       <SectionWrapper
         title="Commission Tracking"description="All commission records across affiliates with approval status and payment dates"actions={
           <div className="flex gap-2">
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}} onClick={() => alert("[Mock] Bulk Approve")}>Bulk Approve</button>
+            <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>Bulk Approve</button>
             <button className="rtm-btn-secondary text-sm"onClick={() => toggle("commissions")}>
               {activeSection === "commissions"? "Collapse": "Expand"}
             </button>
@@ -1681,7 +1691,7 @@ export default function AffiliatesPage() {
       <SectionWrapper
         title="Referral Link Management"description="All affiliate referral links with click tracking, lead attribution, and performance metrics"actions={
           <div className="flex gap-2">
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}} onClick={() => alert("[Mock] Generate New Link")}>Generate Link</button>
+            <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}>Generate Link</button>
             <button className="rtm-btn-secondary text-sm"onClick={() => toggle("referralLinks")}>
               {activeSection === "referralLinks"? "Collapse": "Expand"}
             </button>
@@ -1707,7 +1717,7 @@ export default function AffiliatesPage() {
       <SectionWrapper
         title="Affiliate Portal Access"description="Manage portal user access, login status, and roles across all affiliate accounts"actions={
           <div className="flex gap-2">
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}} onClick={() => alert("[Mock] Invite Portal User")}>Invite User</button>
+            <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#EFF6FF", color: "#2563EB", borderColor: "#BFDBFE"}}>Invite User</button>
             <button className="rtm-btn-secondary text-sm"onClick={() => toggle("portalAccess")}>
               {activeSection === "portalAccess"? "Collapse": "Expand"}
             </button>
@@ -1731,7 +1741,7 @@ export default function AffiliatesPage() {
             <DataTable columns={portalUsersColumns} data={PORTAL_USERS} />
             <div className="flex flex-wrap gap-2 pt-3">
               {["Reset All Access", "Disable Inactive", "Bulk Invite", "Export Portal Users"].map((action) => (
-                <button key={action} className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)"}} onClick={() => alert(`[Mock] ${action}`)}>
+                <button key={action} disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)"}}>
                   {action}
                 </button>
               ))}
@@ -1748,7 +1758,7 @@ export default function AffiliatesPage() {
       <SectionWrapper
         title="Payout Management"description="Review pending commissions and record affiliate payouts"actions={
           <div className="flex gap-2">
-            <button className="text-xs font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}} onClick={() => alert("[Mock] Process Bulk Payout")}>Process Payouts</button>
+            <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1.5 rounded-lg border opacity-40 cursor-not-allowed"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>Process Payouts</button>
           </div>
         }
       >
@@ -1783,7 +1793,7 @@ export default function AffiliatesPage() {
                   <td className="px-4 py-3 text-xs font-semibold"style={{ color: "#059669"}}>{aff.commissionPaid}</td>
                   <td className="px-4 py-3"><StatusBadge variant="pending"label="Pending"size="sm"/></td>
                   <td className="px-4 py-3">
-                    <button className="text-xs font-semibold px-3 py-1 rounded border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}} onClick={() => alert(`[Mock] Record Payment: ${aff.name}`)}>Pay Now</button>
+                    <button disabled title="Not yet available" className="text-xs font-semibold px-3 py-1 rounded border opacity-40 cursor-not-allowed"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>Pay Now</button>
                   </td>
                 </tr>
               ))}

@@ -444,7 +444,30 @@ function ActionBtn({
       "bg-transparent text-[var(--rtm-text-muted)] border-transparent hover:bg-[var(--rtm-bg)] hover:text-[var(--rtm-text-primary)]",
   };
   return (
-    <button className={`${base} ${styles[variant]}`} onClick={onClick}>
+    <button className={`${base} ${styles[variant]}`} onClick={onClick} disabled={false}>
+      {label}
+    </button>
+  );
+}
+
+function DisabledActionBtn({
+  label,
+  variant = "secondary",
+  small,
+}: {
+  label: string;
+  variant?: "primary" | "secondary" | "danger" | "ghost";
+  small?: boolean;
+}) {
+  const base = `font-semibold rounded-lg border whitespace-nowrap opacity-40 cursor-not-allowed ${small ? "text-xs px-2.5 py-1" : "text-sm px-3.5 py-2"}`;
+  const styles: Record<string, string> = {
+    primary:   "bg-[var(--rtm-blue,#1B4FD8)] text-white border-transparent",
+    secondary: "bg-[var(--rtm-surface,#fff)] text-[var(--rtm-text-primary)] border-[var(--rtm-border)]",
+    danger:    "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]",
+    ghost:     "bg-transparent text-[var(--rtm-text-muted)] border-transparent",
+  };
+  return (
+    <button disabled title="Not yet available" className={`${base} ${styles[variant]}`}>
       {label}
     </button>
   );
@@ -1321,13 +1344,13 @@ export default function BillingCancellationsPage() {
                   </Td>
                   <Td>
                     <div className="flex flex-wrap gap-1.5">
-                      <ActionBtn
+                      <DisabledActionBtn
                         small
-                        variant="secondary"label="Review Billing"onClick={() => setModal({ kind: "review", record: row })}
+                        variant="secondary"label="Review Billing"
                       />
-                      <ActionBtn
+                      <DisabledActionBtn
                         small
-                        variant="secondary"label="Create Final Invoice"onClick={() => setModal({ kind: "invoice", record: row })}
+                        variant="secondary"label="Create Final Invoice"
                       />
                       <ActionBtn
                         small
@@ -1336,17 +1359,17 @@ export default function BillingCancellationsPage() {
                           addEvent(row.client, "Balance Cleared", "Billing", "Approved for Offboarding", row.offboardingStatus, "Balance marked cleared");
                         }}
                       />
-                      <ActionBtn
+                      <DisabledActionBtn
                         small
-                        variant="danger"label="Place Billing Hold"onClick={() => setModal({ kind: "hold", record: row })}
+                        variant="danger"label="Place Billing Hold"
                       />
                       <ActionBtn
                         small
                         variant="secondary" label="Notify AM" onClick={() => setModal({ kind: "offboard", record: row })}
                       />
-                      <ActionBtn
+                      <DisabledActionBtn
                         small
-                        variant="secondary"label="Close Billing"onClick={() => setModal({ kind: "close", record: row })}
+                        variant="secondary"label="Close Billing"
                       />
                       <ActionBtn
                         small
@@ -1526,11 +1549,10 @@ export default function BillingCancellationsPage() {
                             label="Notify AM"
                             onClick={() => setModal({ kind: "offboard", record: row })}
                           />
-                          <ActionBtn
+                          <DisabledActionBtn
                             small
                             variant="secondary"
                             label="Close Billing"
-                            onClick={() => setModal({ kind: "close", record: row })}
                           />
                         </div>
                       </Td>

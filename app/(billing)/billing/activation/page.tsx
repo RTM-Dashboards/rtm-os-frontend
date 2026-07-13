@@ -25,7 +25,9 @@ import { SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
 import type { MasterClient } from "@/lib/mock/master-clients";
-import { apiMarkCleared, fetchMasterClients } from "@/lib/mock/master-clients-api";
+import { apiMarkCleared, fetchMasterClients, upsertMasterClient } from "@/lib/mock/master-clients-api";
+import { fetchSalesHandoffs, markHandoffProcessed } from "@/lib/sales/sales-handoffs-api";
+import type { HandoffRecord } from "@/lib/sales/handoff-engine";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 
 const workspace = getWorkspace("billing")!;
@@ -205,6 +207,228 @@ function ExpandedDetail({ client, onClearance }: { client: MasterClient; onClear
   );
 }
 
+// ─── Sales Handoffs Panel ─────────────────────────────────────────────────────
+
+function buildClientFromHandoff(handoff: HandoffRecord): MasterClient {
+  const sf = handoff.summaryFields;
+  const clientName = sf["client-name"] ?? handoff.clientName;
+  const slug = clientName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  const mrrStr = sf["monthly-recurring-revenue"] ?? "";
+  const monthlyValue = parseInt(mrrStr.replace(/[^0-9]/g, ""), 10) || 0;
+  const services = sf["services-sold"]
+    ? sf["services-sold"].split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+  const assignedAM = sf["assigned-am"] ?? "Unassigned";
+
+  return {
+    id: `mc-hof-${handoff.id}`,
+    slug,
+    clientName,
+    email: sf["email"] ?? "",
+    industry: sf["industry"] ?? "Unknown",
+    avatarColor: "#6366f1",
+    // Sales-owned
+    salesStatus: "Closed Won",
+    salesOwner: handoff.preparedBy,
+    // Billing-owned — new client starts pending; Billing still owns invoice/payment gatekeeping
+    billingStatus: "Pending",
+    invoiceStatus: "Draft",
+    paymentStatus: "Unpaid",
+    cancellationStatus: "None",
+    upgradeDowngradeStatus: "None",
+    // MUST be false — Billing must complete invoice/payment gatekeeping before AM's wizard
+    cleared: false,
+    activeServices: services,
+    monthlyValue,
+    billingOwner: "Lisa P.",
+    // AM-owned (future)
+    assignedAM,
+    activationStatus: "Not Started",
+    onboardingStatus: "Not Started",
+    renewalDate: "—",
+    renewalStatus: "N/A",
+    // Computed defaults
+    clientHealth: "Good",
+    priority: "Medium",
+    currentStatus: "Invoice Sent",
+    workflowStatus: "Not Started",
+    lastActivity: new Date().toISOString().slice(0, 10),
+    nextRequiredAction: "Generate and send invoice",
+    notes: `Created from Sales handoff ${handoff.handoffNumber} (${handoff.contractNumber})`,
+    activationChecklist: {
+      invoicePaid: false,
+      billingCleared: false,
+      contractConfirmed: true,
+      servicesConfirmed: services.length > 0,
+      clientContactVerified: true,
+      amAssigned: assignedAM !== "Unassigned",
+      onboardingRecordCreated: false,
+      activationTasksCreated: false,
+      kickoffNeeded: true,
+      kickoffCallCompleted: false,
+    },
+    recentEvents: [
+      {
+        date: new Date().toISOString().slice(0, 10),
+        actor: "Billing",
+        action: `Client record created from Sales handoff ${handoff.handoffNumber}`,
+      },
+    ],
+  };
+}
+
+function SalesHandoffsPanel({
+  handoffs,
+  onProcessed,
+  onLog,
+  onToast,
+}: {
+  handoffs: HandoffRecord[];
+  onProcessed: (handoffId: string, clientId: string) => void;
+  onLog: (msg: string) => void;
+  onToast: (msg: string, variant: "success" | "info" | "warning" | "error") => void;
+}) {
+  const [processing, setProcessing] = useState<string | null>(null);
+
+  const pending = handoffs.filter(
+    (h) => h.submittedToBilling === true && h.processed !== true
+  );
+
+  if (pending.length === 0) return null;
+
+  async function handleProcess(handoff: HandoffRecord) {
+    if (processing) return;
+    setProcessing(handoff.id);
+    try {
+      // Reuse Billing's existing exact write path (same as AddClientModal)
+      const newClient = buildClientFromHandoff(handoff);
+      await upsertMasterClient(newClient);
+      // Mark handoff as processed with the resulting clientId
+      await markHandoffProcessed(handoff.id, newClient.id);
+      onProcessed(handoff.id, newClient.id);
+      onLog(`✅ Processed handoff ${handoff.handoffNumber} → client record created (${newClient.id}, cleared: false)`);
+      onToast(
+        `${handoff.clientName} — client record created. Billing must still issue invoice and clear payment before AM activation.`,
+        "success"
+      );
+    } catch (err) {
+      onToast(`Error processing ${handoff.clientName}: ${String(err)}`, "error");
+    } finally {
+      setProcessing(null);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#BFDBFE" }}>
+      {/* Panel header */}
+      <div
+        className="px-5 py-4 border-b flex items-center justify-between gap-4"
+        style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}
+      >
+        <div>
+          <div className="flex items-center gap-2 mb-0.5">
+            <span
+              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold"
+              style={{ background: "#1B4FD8" }}
+            >
+              {pending.length}
+            </span>
+            <p className="text-sm font-bold" style={{ color: "#1E3A8A" }}>
+              Incoming Sales Handoffs — Pending Processing
+            </p>
+          </div>
+          <p className="text-xs" style={{ color: "#1D4ED8" }}>
+            Sales submitted these handoffs to Billing. Process each one to create the client
+            record. Created records start with <code className="bg-blue-100 px-1 rounded">cleared: false</code> — Billing must still
+            issue the invoice and confirm payment before the client becomes eligible for AM
+            activation.
+          </p>
+        </div>
+      </div>
+
+      {/* Handoff rows */}
+      <div className="divide-y" style={{ borderColor: "#DBEAFE" }}>
+        {pending.map((handoff) => {
+          const sf = handoff.summaryFields;
+          const mrr = sf["monthly-recurring-revenue"] ?? "—";
+          const services = sf["services-sold"] ?? "—";
+          const isProcessing = processing === handoff.id;
+
+          return (
+            <div
+              key={handoff.id}
+              className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap"
+              style={{ background: "var(--rtm-bg)" }}
+            >
+              <div className="space-y-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {handoff.clientName}
+                  </span>
+                  <span
+                    className="text-[10px] font-mono px-2 py-0.5 rounded border"
+                    style={{ background: "#F1F5F9", color: "#475569", borderColor: "#CBD5E1" }}
+                  >
+                    {handoff.handoffNumber}
+                  </span>
+                  <span
+                    className="text-[10px] font-mono px-2 py-0.5 rounded border"
+                    style={{ background: "#F1F5F9", color: "#475569", borderColor: "#CBD5E1" }}
+                  >
+                    {handoff.contractNumber}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+                    <span className="font-semibold">Services:</span> {services}
+                  </span>
+                  <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+                    <span className="font-semibold">MRR:</span> {mrr}
+                  </span>
+                  <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                    Prepared by {handoff.preparedBy}
+                  </span>
+                  {handoff.submittedToBillingAt && (
+                    <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                      Submitted{" "}
+                      {new Date(handoff.submittedToBillingAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={() => void handleProcess(handoff)}
+                disabled={!!processing}
+                className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-lg text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                style={{ background: "#1B4FD8" }}
+              >
+                {isProcessing ? "Creating…" : "Process & Create Client"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Footer notice */}
+      <div
+        className="px-5 py-3 border-t"
+        style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}
+      >
+        <p className="text-xs" style={{ color: "#92400E" }}>
+          <span className="font-bold">⚠ Clearance gatekeeping preserved:</span> Created client records
+          start with <code className="bg-yellow-100 px-1 rounded">cleared: false</code>. They will appear in
+          Client Portfolio under Billing Status = Pending. Billing must issue the invoice, confirm
+          payment, and then grant Clearance before this client appears in AM&rsquo;s Activation Engine.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BillingActivationPage() {
@@ -214,6 +438,7 @@ export default function BillingActivationPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "info" | "warning" | "error" } | null>(null);
   const [actionLog, setActionLog] = useState<string[]>([]);
+  const [salesHandoffs, setSalesHandoffs] = useState<HandoffRecord[]>([]);
 
   const refreshClients = useCallback(async () => {
     try {
@@ -224,7 +449,17 @@ export default function BillingActivationPage() {
     }
   }, []);
 
+  const refreshHandoffs = useCallback(async () => {
+    try {
+      const all = await fetchSalesHandoffs();
+      setSalesHandoffs(all);
+    } catch {
+      // No handoffs on failure — panel simply won't render
+    }
+  }, []);
+
   useEffect(() => { void refreshClients(); }, [refreshClients]);
+  useEffect(() => { void refreshHandoffs(); }, [refreshHandoffs]);
 
   function log(msg: string) {
     setActionLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 9)]);
@@ -247,10 +482,26 @@ export default function BillingActivationPage() {
     showToast(`${name} cleared — removed from Billing activation view`, "success");
   }
 
+  function handleHandoffProcessed(handoffId: string, clientId: string) {
+    // Mark handoff as processed in local state so it leaves the pending queue immediately
+    setSalesHandoffs((prev) =>
+      prev.map((h) =>
+        h.id === handoffId
+          ? { ...h, processed: true, processedClientId: clientId, processedAt: new Date().toISOString() }
+          : h
+      )
+    );
+    // Refresh clients so the new record appears in Client Portfolio
+    void refreshClients();
+  }
+
   // Clients that are invoice-cleared but not yet cleared
   const pendingClearance = clients.filter(isInvoiceCleared);
 
   // KPI counts — Billing-scoped only
+  const pendingSalesHandoffs = salesHandoffs.filter(
+    (h) => h.submittedToBilling === true && h.processed !== true
+  );
   const kpi = {
     awaitingClearance: pendingClearance.length,
     cleared: clients.filter((c) => c.cleared).length,
@@ -327,7 +578,12 @@ export default function BillingActivationPage() {
       </div>
 
       {/* KPI Cards — Billing-scoped */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="rounded-xl border p-5 space-y-1" style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#1B4FD8" }}>Pending Handoffs</p>
+          <p className="text-4xl font-black" style={{ color: "#1B4FD8" }}>{pendingSalesHandoffs.length}</p>
+          <p className="text-xs" style={{ color: "#1E3A8A" }}>Sales submitted — needs client record</p>
+        </div>
         <div className="rounded-xl border p-5 space-y-1" style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}>
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "#D97706" }}>Awaiting Clearance</p>
           <p className="text-4xl font-black" style={{ color: "#D97706" }}>{kpi.awaitingClearance}</p>
@@ -344,6 +600,16 @@ export default function BillingActivationPage() {
           <p className="text-xs" style={{ color: "#991B1B" }}>Not yet cleared — cannot clear</p>
         </div>
       </div>
+
+      {/* Sales Handoffs Queue — Incoming from Sales team */}
+      {pendingSalesHandoffs.length > 0 && (
+        <SalesHandoffsPanel
+          handoffs={salesHandoffs}
+          onProcessed={handleHandoffProcessed}
+          onLog={log}
+          onToast={showToast}
+        />
+      )}
 
       {/* Activation Table */}
       {pendingClearance.length === 0 ? (

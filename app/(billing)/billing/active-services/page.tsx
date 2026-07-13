@@ -157,7 +157,15 @@ export default function BillingServicesPage() {
       {/* Header */}
       <div>
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>{workspace.name}</p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Active Services</h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Active Services</h1>
+          <span
+            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+            style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+          >
+            Preview — Target State
+          </span>
+        </div>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
           All current client service subscriptions — {ACTIVE_SERVICES.length} subscriptions across the master client roster.
           Billing is the source of truth for active services.

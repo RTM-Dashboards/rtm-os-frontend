@@ -4,6 +4,17 @@ import Link from "next/link";
 import { SectionWrapper } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
 const workspace = getWorkspace("account-management")!;
 
 export default function AccountPerformancePage() {
@@ -11,8 +22,11 @@ export default function AccountPerformancePage() {
     <div className="space-y-6">
       <div>
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>{workspace.name}</p>
-        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>Performance</h1>
-        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>Account health metrics and client satisfaction scores.</p>
+        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>AM Performance Analytics</h1>
+        <div className="mt-2"><PreviewBadge /></div>
+        <p className="text-sm text-slate-500 mt-1">
+          Account-manager-level performance benchmarking across your full client book — retention trends, health score trends over time, and check-in completion rates. Distinct from per-client scoring (see Client Health) and your operational client list (see Client Portfolio).
+        </p>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

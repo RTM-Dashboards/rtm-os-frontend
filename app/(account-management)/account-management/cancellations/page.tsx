@@ -24,7 +24,7 @@ import {
   type PendingCancellationRequest,
   type BillingCancellationStatus,
 } from "@/lib/mock/cancellation-queue";
-import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
+import { MASTER_CLIENTS, type MasterClient } from "@/lib/mock/master-clients";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // UTILITIES
@@ -279,8 +279,28 @@ function InitiateCancellationModal({
   onClose: () => void;
   onSubmit: (client: string, reason: string) => void;
 }) {
-  const clientNames = MASTER_CLIENTS.map((c) => c.clientName);
-  const [client, setClient] = useState(clientNames[0]);
+  // Live fetch from /api/master-clients — same hydration pattern as Client Portfolio.
+  // Falls back to in-memory MASTER_CLIENTS only until the API response arrives.
+  const [liveClients, setLiveClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+  const [clientsLoading, setClientsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/master-clients")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { clients: MasterClient[] } | null) => {
+        if (d?.clients && d.clients.length > 0) setLiveClients(d.clients);
+      })
+      .catch((err) => console.error("[AM Cancellations] Failed to load clients:", err))
+      .finally(() => setClientsLoading(false));
+  }, []);
+
+  const clientNames = liveClients.map((c) => c.clientName);
+  const [client, setClient] = useState("");
+  // Once clients load, default-select the first one.
+  useEffect(() => {
+    if (clientNames.length > 0 && !client) setClient(clientNames[0]);
+  }, [clientNames, client]);
+
   const [reason, setReason] = useState<typeof CANCELLATION_REASONS[number]>(CANCELLATION_REASONS[0]);
   const [notes, setNotes] = useState("");
   const [amOwner, setAmOwner] = useState("Account Management");
@@ -288,7 +308,7 @@ function InitiateCancellationModal({
   function handleSubmit() {
     const now = new Date();
     const displayDate = now.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const masterClient = MASTER_CLIENTS.find((c) => c.clientName === client);
+    const masterClient = liveClients.find((c) => c.clientName === client);
     const mrrImpact = masterClient ? `-$${masterClient.monthlyValue.toLocaleString()}` : "-$0";
 
     // POST to file-backed API route — cross-route-group reliable.
@@ -346,9 +366,16 @@ function InitiateCancellationModal({
               style={inputSty}
               value={client}
               onChange={(e) => setClient(e.target.value)}
+              disabled={clientsLoading}
             >
-              {clientNames.map((n) => <option key={n} value={n}>{n}</option>)}
+              {clientsLoading
+                ? <option value="">Loading clients…</option>
+                : clientNames.map((n) => <option key={n} value={n}>{n}</option>)
+              }
             </select>
+            {clientsLoading && (
+              <p className="text-[10px] text-slate-400 mt-0.5">Loading live client list…</p>
+            )}
           </div>
 
           {/* Cancellation Reason — locked 11-category list */}
@@ -416,12 +443,19 @@ function AMInitiatedRequestsPanel({
   if (requests.length === 0) {
     return (
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <SectionHeader
-          eyebrow="AM-Initiated Requests"
-          title="Cancellation Requests Sent to Billing"
-          desc="Requests submitted by AM and awaiting Billing review. Billing owns all status changes."
-          accentColor="#1D4ED8"
-        />
+        <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: "#1D4ED8" }}>AM-Initiated Requests</p>
+              <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Cancellation Requests Sent to Billing</h2>
+              <p className="text-sm text-slate-500 mt-0.5">Requests submitted by AM and awaiting Billing review. Billing owns all status changes.</p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+              Live
+            </span>
+          </div>
+        </div>
         <div className="px-6 py-10 text-center">
           <p className="text-sm text-slate-400">No AM-initiated requests yet.</p>
           <p className="text-xs text-slate-400 mt-1">Use &ldquo;Initiate Cancellation Request&rdquo; above to submit one.</p>
@@ -432,12 +466,19 @@ function AMInitiatedRequestsPanel({
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <SectionHeader
-        eyebrow="AM-Initiated Requests"
-        title="Cancellation Requests Sent to Billing"
-        desc="Requests submitted by AM and awaiting Billing review. Billing owns all status changes — AM cannot mark a request Cleared or Approved."
-        accentColor="#1D4ED8"
-      />
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: "#1D4ED8" }}>AM-Initiated Requests</p>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Cancellation Requests Sent to Billing</h2>
+            <p className="text-sm text-slate-500 mt-0.5">Requests submitted by AM and awaiting Billing review. Billing owns all status changes — AM cannot mark a request Cleared or Approved.</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+            Live
+          </span>
+        </div>
+      </div>
 
       {/* Read-only ownership banner */}
       <div className="mx-6 mt-4 mb-2 rounded-lg border px-4 py-2.5 text-xs" style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}>
@@ -684,8 +725,22 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
   return (
   <div className="space-y-6">
     <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-      <SectionHeader
-        eyebrow="Cancellation Pipeline"title="Cancellation Requests"desc="All cancellation requests with risk level, retention status, and revenue exposure."/>
+      <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-widest mb-0.5" style={{ color: "#1B4FD8" }}>Cancellation Pipeline</p>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Cancellation Requests</h2>
+            <p className="text-sm text-slate-500 mt-0.5">All cancellation requests with risk level, retention status, and revenue exposure.</p>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-bold" style={{ background: "#FAFAFA", color: "#64748B", borderColor: "#CBD5E1" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            Demo Records
+          </span>
+        </div>
+        <div className="mt-2 rounded-lg border px-3 py-2 text-xs" style={{ background: "#F8FAFC", borderColor: "#E2E8F0", color: "#64748B" }}>
+          These 20 records are static demo data included for illustration. AM-submitted live requests appear in the <strong>Live Requests</strong> panel below.
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="px-6 py-3 border-b border-slate-100 flex flex-wrap items-center gap-3">
@@ -713,9 +768,10 @@ function CancellationTable({ onSelect }: { onSelect: (r: CancellationRequest) =>
             </option>
           ))}
         </select>
-        <span className="ml-auto text-xs text-slate-400">
-          {filtered.length} of {CANCELLATION_REQUESTS.length}
-        </span>
+        <span className="ml-auto flex items-center gap-2 text-xs text-slate-400">
+            <span className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold" style={{ background: "#FAFAFA", color: "#64748B", borderColor: "#E2E8F0" }}>Demo</span>
+            {filtered.length} of {CANCELLATION_REQUESTS.length}
+          </span>
       </div>
 
       <div className="overflow-x-auto">

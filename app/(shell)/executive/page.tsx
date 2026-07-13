@@ -1,11 +1,21 @@
 "use client";
 
 import React, { useState } from "react";
+
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
 import {
   KpiCard,
   SectionWrapper,
   StatusBadge,
-  PageHeader,
   AISummary,
   DetailDrawer,
 } from "@/components/ui";
@@ -466,24 +476,28 @@ export default function ExecutiveCommandCenterPage() {
   return (
     <div className="space-y-8">
       {/* ── Page Header ── */}
-      <PageHeader
-        title="Executive Command Center"
-        description="Monitor revenue, client health, project delivery, renewals, risks, escalations, and department performance across RTM OS."
-        breadcrumb={[{ label: "RTM OS" }, { label: "Executive Command Center" }]}
-        primaryActions={
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <h1 className="text-xl font-bold leading-tight" style={{ color: "var(--rtm-text-primary)" }}>
+            Executive Command Center
+          </h1>
+          <PreviewBadge />
+        </div>
+        <p className="text-sm max-w-2xl leading-relaxed" style={{ color: "var(--rtm-text-secondary)" }}>
+          Monitor revenue, client health, project delivery, renewals, risks, escalations, and department performance across RTM OS.
+        </p>
+        <div className="flex items-center gap-2 mt-3">
           <ActionBtn
             label="Export Summary"
             icon={<IconDownload className="w-4 h-4" />}
             variant="primary"
           />
-        }
-        secondaryActions={
           <ActionBtn
             label="Refresh"
             icon={<IconRefresh className="w-4 h-4" />}
           />
-        }
-      />
+        </div>
+      </div>
 
       {/* ── KPI Cards ── */}
       <section aria-label="Executive KPIs">

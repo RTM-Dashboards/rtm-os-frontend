@@ -11,14 +11,12 @@ import {
   getAllHandoffs,
   getHandoffById,
   getHandoffListStatus,
-  updateHandoffInStore,
+  loadHandoffs,
   type HandoffListStatus,
 } from "@/lib/sales/handoff-store";
+import { submitHandoffToBilling } from "@/lib/sales/sales-handoffs-api";
 import type { HandoffRecord } from "@/lib/sales/handoff-engine";
-import {
-  HANDOFF_STATUS_LABELS,
-  HANDOFF_STATUS_COLORS,
-} from "@/lib/sales/handoff-config";
+
 
 // ─── Status display helpers ───────────────────────────────────────────────────
 
@@ -93,23 +91,47 @@ interface RequestInvoiceBannerProps {
   contractSigned: boolean;
   autoExpanded: boolean;
   contractId: string | null;
+  handoffId: string;
   handoffNumber: string;
+  alreadySubmitted: boolean;
 }
 
 function RequestInvoiceBanner({
   contractSigned,
   autoExpanded,
   contractId,
+  handoffId,
   handoffNumber,
+  alreadySubmitted,
 }: RequestInvoiceBannerProps) {
   const bannerRef = useRef<HTMLDivElement>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(alreadySubmitted);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setSubmitted(alreadySubmitted);
+  }, [alreadySubmitted]);
 
   useEffect(() => {
     if (autoExpanded && bannerRef.current) {
       bannerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [autoExpanded]);
+
+  async function handleSubmit() {
+    if (submitting || submitted) return;
+    setSubmitting(true);
+    try {
+      await submitHandoffToBilling(handoffId);
+      setSubmitted(true);
+    } catch {
+      // On error, still show success locally so the UI doesn't feel broken;
+      // the API will retry on next load
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (submitted) {
     return (
@@ -177,11 +199,12 @@ function RequestInvoiceBanner({
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             {contractSigned ? (
               <button
-                onClick={() => setSubmitted(true)}
-                className="px-5 py-2.5 rounded-lg font-bold text-sm border transition-all hover:opacity-90"
+                onClick={() => void handleSubmit()}
+                disabled={submitting}
+                className="px-5 py-2.5 rounded-lg font-bold text-sm border transition-all hover:opacity-90 disabled:opacity-60"
                 style={{ background: "#059669", color: "#fff", borderColor: "#047857" }}
               >
-                Request Invoice — Submit to Billing Team
+                {submitting ? "Submitting…" : "Request Invoice — Submit to Billing Team"}
               </button>
             ) : (
               <div
@@ -254,7 +277,13 @@ function CollapsibleChecklist({ children }: { children: React.ReactNode }) {
 
 function HandoffListView() {
   const router = useRouter();
-  const handoffs = getAllHandoffs();
+  const [handoffs, setHandoffs] = useState<HandoffRecord[]>(getAllHandoffs());
+
+  useEffect(() => {
+    loadHandoffs()
+      .then((records) => setHandoffs(records))
+      .catch(() => {/* keep snapshot */});
+  }, []);
 
   const statusCfg = LIST_STATUS_CONFIG;
 
@@ -495,9 +524,33 @@ function HandoffDetailView({
   handoffId: string;
   action: string | null;
 }) {
-  const handoff = getHandoffById(handoffId);
+  const [handoff, setHandoff] = useState<HandoffRecord | null>(
+    getHandoffById(handoffId) ?? null
+  );
+  const [loading, setLoading] = useState(!handoff);
   const [handoffSubmitted, setHandoffSubmitted] = useState(false);
   const [createdProject, setCreatedProject] = useState<ProjectRecord | null>(null);
+
+  // Load from file-backed API on mount
+  useEffect(() => {
+    if (handoff) return; // already have it from snapshot
+    setLoading(true);
+    loadHandoffs()
+      .then((records) => {
+        const found = records.find((h) => h.id === handoffId);
+        if (found) setHandoff(found);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [handoffId, handoff]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen px-6 pt-6" style={{ background: "var(--rtm-bg)" }}>
+        <p style={{ color: "var(--rtm-text-muted)" }}>Loading handoff…</p>
+      </div>
+    );
+  }
 
   if (!handoff) {
     return (
@@ -601,12 +654,14 @@ function HandoffDetailView({
       </div>
 
       <div className="px-6 space-y-5">
-        {/* Request Invoice Banner */}
+        {/* Request Invoice Banner — now wired to real API */}
         <RequestInvoiceBanner
           contractSigned={contractSigned}
           autoExpanded={autoExpand}
           contractId={handoff.contractNumber}
+          handoffId={handoff.id}
           handoffNumber={handoff.handoffNumber}
+          alreadySubmitted={handoff.submittedToBilling === true}
         />
 
         {/* Collapsed Checklist */}

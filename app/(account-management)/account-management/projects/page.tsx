@@ -1,16 +1,16 @@
 "use client";
 
 /**
- * AM Projects — Health & Action Summary View
+ * AM Projects - Health & Action Summary View
  *
  * DATA SOURCES:
- *   lib/engine/mock-data.ts          (ENGINE_STORE — Projects, Tasks)
- *   lib/mock/master-clients.ts       (MASTER_CLIENTS — activeServices, monthlyValue, billingOwner)
+ *   lib/engine/mock-data.ts          (ENGINE_STORE - Projects, Tasks)
+ *   lib/mock/master-clients.ts       (MASTER_CLIENTS - activeServices, monthlyValue, billingOwner)
  *   lib/account-management/am-client-success-data.ts
- *                                    (COMMUNICATIONS — project communication history + Send Follow-up)
+ *                                    (COMMUNICATIONS - project communication history + Send Follow-up)
  *
  * LOCKED ARCHITECTURE:
- *   This page is a HEALTH/ACTION SUMMARY only — NOT a task management UI.
+ *   This page is a HEALTH/ACTION SUMMARY only - NOT a task management UI.
  *   "Manage Tasks →" deep-links to the real Global Project Management detail view
  *   at /projects/[id] (app/(shell)/projects/[id]/page.tsx).
  *   Task creation/editing happens THERE, not here.
@@ -18,8 +18,8 @@
  * FEATURES:
  *   - Project list with health status from engine project.health
  *   - "Tasks Off-Track" count per project: engine tasks that are Blocked
- *     OR (past dueDate AND not Completed/Cancelled) — computed, not fabricated
- *   - "Departments Needing Follow-up" — unique dept names from off-track tasks
+ *     OR (past dueDate AND not Completed/Cancelled) - computed, not fabricated
+ *   - "Departments Needing Follow-up" - unique dept names from off-track tasks
  *   - Last communication date + "Send Follow-up" action → creates a real
  *     CommunicationEntry in COMMUNICATIONS (in-session persistence)
  *   - "Manage Tasks →" link to /projects/${project.id} (global PM detail view)
@@ -34,6 +34,13 @@ import { ENGINE_STORE, BLUEPRINTS } from "@/lib/engine/mock-data";
 import { appendToEngineStore } from "@/lib/engine/api";
 import type { Project, Task, Milestone, DepartmentName } from "@/lib/engine/types";
 import {
+  createEngineProject,
+  blueprintIdsForServices,
+  deriveProjectName,
+  SERVICE_TO_BLUEPRINT,
+  genId,
+} from "@/lib/engine/create-project";
+import {
   MASTER_CLIENTS,
   markActivationTasksCreated,
   markOnboardingRecordCreated,
@@ -44,12 +51,6 @@ import {
   fetchMasterClients,
 } from "@/lib/mock/master-clients-api";
 import type { MasterClient } from "@/lib/mock/master-clients";
-import {
-  createOnboardingRecord,
-  updateOnboardingRecord,
-  type SalesPrefillData,
-} from "@/lib/mock/am-onboarding-store";
-import { MOCK_INTAKE_RECORDS } from "@/lib/sales/intake-config";
 import {
   COMMUNICATIONS,
   getCommunicationsByProject,
@@ -63,7 +64,7 @@ import { KpiCard } from "@/components/ui";
 const TODAY_ISO = "2025-06-10"; // mock "today" matches demo data dates
 
 function fmt(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   const d = new Date(iso.length === 10 ? iso + "T00:00:00" : iso);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
@@ -74,7 +75,7 @@ function fmt(iso: string | null | undefined): string {
  *   - status === "Blocked", OR
  *   - dueDate is in the past AND status is not "Completed" or "Cancelled"
  *
- * Derived from real engine Task fields — no fabricated fields.
+ * Derived from real engine Task fields - no fabricated fields.
  */
 function getOffTrackTasks(projectId: string, tasksList?: Task[]): Task[] {
   const tasks = tasksList ?? ENGINE_STORE.tasks;
@@ -105,8 +106,6 @@ function getDepartmentsNeedingFollowUp(offTrackTasks: Task[]): DepartmentName[] 
 
 // ── Communication helpers ─────────────────────────────────────────────────────
 
-let _commSeq = 9000;
-
 function createFollowUpEntry(
   projectId: string,
   clientName: string,
@@ -117,7 +116,7 @@ function createFollowUpEntry(
   const now = new Date().toISOString();
   const dateStr = now.split("T")[0];
   return {
-    id: `cm-followup-${++_commSeq}`,
+    id: genId("cm-followup"),
     clientId: clientId ?? undefined,
     engineProjectId: projectId,
     client: clientName,
@@ -133,80 +132,9 @@ function createFollowUpEntry(
   };
 }
 
-// ── Wizard helpers (carried over from original page) ─────────────────────────
-
-function findMatchedIntakeRecord(clientName: string) {
-  const normalize = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9]/g, " ").replace(/\s+/g, " ").trim();
-  const target = normalize(clientName);
-  return MOCK_INTAKE_RECORDS.find((r) => {
-    const candidate = normalize(r.businessName);
-    return (
-      target.includes(candidate) ||
-      candidate.includes(target) ||
-      target.split(" ").slice(0, 2).join(" ") ===
-        candidate.split(" ").slice(0, 2).join(" ")
-    );
-  });
-}
-
-function buildSalesPrefill(client: MasterClient): SalesPrefillData {
-  const intake = findMatchedIntakeRecord(client.clientName);
-  return {
-    clientName: client.clientName,
-    email: client.email,
-    industry: client.industry,
-    salesOwner: client.salesOwner,
-    referralSource: client.referralSource,
-    affiliateName: client.affiliateName,
-    activeServices: client.activeServices,
-    monthlyValue: client.monthlyValue,
-    primaryContact: intake?.primaryContact,
-    phone: intake?.phone,
-    website: intake?.website,
-    location: intake?.location,
-    businessSize: intake?.businessSize,
-    intakeSource: intake?.intakeSource,
-    selectedGoals: intake?.selectedGoals,
-    discoveryNotes:
-      typeof intake?.answers?.discoveryNotes === "string"
-        ? intake.answers.discoveryNotes
-        : undefined,
-  };
-}
-
-let _projSeq = 9000;
-let _taskSeq = 9000;
-let _msSeq   = 9000;
-let _actSeq  = 9000;
-
-const SERVICE_TO_BLUEPRINT: Record<string, string> = {
-  "seo / gbp":          "bp-001",
-  "seo":                "bp-001",
-  "gbp":                "bp-002",
-  "google ads":         "bp-003",
-  "ppc":                "bp-003",
-  "meta ads":           "bp-006",
-  "facebook ads":       "bp-006",
-  "website build":      "bp-007",
-  "website redesign":   "bp-007",
-  "monthly reporting":  "bp-005",
-  "reporting":          "bp-005",
-  "account management": "bp-004",
-  "onboarding":         "bp-004",
-};
-
-function blueprintIdsForServices(services: string[]): string[] {
-  const ids = new Set<string>();
-  ids.add("bp-004");
-  for (const svc of services) {
-    const key = svc.toLowerCase().trim();
-    for (const [pattern, bpId] of Object.entries(SERVICE_TO_BLUEPRINT)) {
-      if (key.includes(pattern)) { ids.add(bpId); break; }
-    }
-  }
-  return Array.from(ids);
-}
+// ── Wizard-local helpers ──────────────────────────────────────────────────────
+// (createEngineProject, blueprintIdsForServices, deriveProjectName, and
+//  SERVICE_TO_BLUEPRINT are now imported from @/lib/engine/create-project)
 
 const DEPT_LABELS: Partial<Record<DepartmentName, string>> = {
   "Account Management": "Account Management",
@@ -218,151 +146,6 @@ const DEPT_LABELS: Partial<Record<DepartmentName, string>> = {
   "Web Development":    "Web Dev",
   "Design":             "Design",
 };
-
-function deriveProjectName(clientName: string, services: string[]): string {
-  if (services.length === 0) return `${clientName} — General Services`;
-  return `${clientName} — ${services.join(" / ")}`;
-}
-
-async function createEngineProject(
-  client: MasterClient,
-  services: string[]
-): Promise<{ project: Project; tasks: Task[]; milestone: Milestone }> {
-  const now       = new Date().toISOString();
-  const today     = now.split("T")[0];
-  const projectId = `proj-wizard-${++_projSeq}`;
-  const milestoneId = `ms-wizard-${++_msSeq}`;
-  const projectName = deriveProjectName(client.clientName, services);
-
-  const salesPrefill = buildSalesPrefill(client);
-  const assignedAM = client.assignedAM !== "Unassigned" ? client.assignedAM : "";
-  const onboardingRecord = await createOnboardingRecord(client.id, salesPrefill, assignedAM);
-  await updateOnboardingRecord({ ...onboardingRecord, projectId });
-
-  const onboardingTaskId = `tsk-wizard-${++_taskSeq}`;
-  const onboardingTask: Task = {
-    id:               onboardingTaskId,
-    projectId,
-    milestoneId,
-    title:            "Client Onboarding",
-    description:      "Complete the onboarding intake form, collect access credentials, and conduct kickoff call.",
-    type:             "One-Time",
-    source:           "Manual",
-    department:       "Account Management",
-    service:          "Account Management",
-    assignedUserName: assignedAM || "Unassigned",
-    createdById:      "u3",
-    createdByName:    "Activation Wizard",
-    status:           "In Progress",
-    priority:         "Urgent",
-    dueDate:          new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
-    estimatedHours:   2,
-    dependencies:     [],
-    notes:            [],
-    files:            [],
-    automationHistory: [],
-    linkedOnboardingId: onboardingRecord.id,
-    createdAt:        now,
-    updatedAt:        now,
-    clientName:       client.clientName,
-    projectName,
-  };
-
-  const taskIds: string[] = [onboardingTaskId];
-  const tasks: Task[]    = [onboardingTask];
-
-  const bpIds = blueprintIdsForServices(services);
-  for (const bpId of bpIds) {
-    const bp = BLUEPRINTS.find((b) => b.id === bpId);
-    if (!bp) continue;
-    for (const bpt of bp.tasks) {
-      const tid = `tsk-wizard-${++_taskSeq}`;
-      taskIds.push(tid);
-      tasks.push({
-        id:             tid,
-        projectId,
-        milestoneId,
-        blueprintId:    bpId,
-        title:          bpt.name,
-        type:           "One-Time",
-        source:         "Task Blueprint",
-        department:     bpt.department as DepartmentName,
-        service:        bp.mappedLineItem,
-        assignedUserName: "Unassigned",
-        createdById:    "u3",
-        createdByName:  "Activation Wizard",
-        status:         "Open",
-        priority:       bpt.priority,
-        dueDate:        new Date(Date.now() + bpt.dueDaysOffset * 86400000).toISOString().split("T")[0],
-        estimatedHours: bpt.estimatedHours,
-        dependencies:   [],
-        notes:          [],
-        files:          [],
-        automationHistory: [],
-        createdAt:      now,
-        updatedAt:      now,
-        clientName:     client.clientName,
-        projectName,
-        description:    bpt.description,
-      });
-    }
-  }
-
-  const deptSet = new Set(tasks.map((t) => t.department));
-  const departments = Array.from(deptSet).map((dept) => ({
-    department: dept,
-    owner:      dept === "Account Management" ? (assignedAM || "Unassigned") : "Unassigned",
-    taskIds:    tasks.filter((t) => t.department === dept).map((t) => t.id),
-    escalationStatus: "None" as const,
-  }));
-
-  const milestone: Milestone = {
-    id:         milestoneId,
-    projectId,
-    name:       "Service Launch",
-    owner:      client.assignedAM,
-    status:     "In Progress",
-    startDate:  today,
-    dueDate:    new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-    progress:   0,
-    taskIds,
-    blueprintId: "bp-004",
-  };
-
-  const project: Project = {
-    id:              projectId,
-    name:            projectName,
-    client:          client.clientName,
-    clientSlug:      client.slug,
-    clientId:        client.id,
-    servicePackage:  "Custom",
-    contractSummary: `Services: ${services.join(", ")}. Activated ${today}.`,
-    owner:           client.assignedAM,
-    accountManager:  client.assignedAM,
-    departments,
-    launchDate:      new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0],
-    status:          "In Progress",
-    health:          "Green",
-    priority:        "High",
-    milestoneIds:    [milestoneId],
-    taskIds,
-    activityLog: [
-      {
-        id:          `act-wizard-${++_actSeq}`,
-        projectId,
-        eventType:   "Project Created",
-        description: `Project created via AM Activation Wizard. Services: ${services.join(", ")}.`,
-        actorName:   client.assignedAM,
-        timestamp:   now,
-      },
-    ],
-    notes:     `Created by AM Activation Wizard for ${client.clientName}.`,
-    createdAt: now,
-    updatedAt: now,
-  };
-
-  return { project, tasks, milestone };
-}
 
 // ── Health badge helpers ──────────────────────────────────────────────────────
 
@@ -388,7 +171,7 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
   const [note, setNote] = useState("");
   const [sent, setSent] = useState(false);
 
-  // Read from seed data — this is display-only, not the mutable status fields
+  // Read from seed data - this is display-only, not the mutable status fields
   const masterClient = MASTER_CLIENTS.find((c) => c.id === project.clientId);
 
   const handleSend = () => {
@@ -479,7 +262,7 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
           </label>
           <textarea
             className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
-            placeholder="Describe the follow-up action, any blockers, next steps, or communication summary…"
+            placeholder="Describe the follow-up action, any blockers, next steps, or communication summary..."
             rows={4}
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -505,14 +288,15 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
   );
 }
 
-// ── 2-Step Activation Wizard (preserved from original) ───────────────────────
+// ── 2-Step Activation Wizard ────────────────────────────────────────────────────────────────────
 
 type WizardStep = 1 | 2 | "done";
 interface WizardState {
-  client:           MasterClient;
-  step:             WizardStep;
-  selectedServices: string[];
-  createdProject:   Project | null;
+  client:             MasterClient;
+  step:               WizardStep;
+  selectedServices:   string[];
+  manualBlueprintIds: string[];  // Part 3A: IDs added manually beyond auto-matched set
+  createdProject:     Project | null;
 }
 
 function ActivationWizard({
@@ -527,23 +311,45 @@ function ActivationWizard({
   const initialServices = client.activeServices.length > 0 ? client.activeServices : [];
   const [state, setState] = useState<WizardState>({
     client,
-    step:             1,
-    selectedServices: initialServices,
-    createdProject:   null,
+    step:               1,
+    selectedServices:   initialServices,
+    manualBlueprintIds: [],
+    createdProject:     null,
   });
 
-  const previewBpIds = useMemo(
+  // Dropdown state for "Add Another Blueprint"
+  const [addBpSelectValue, setAddBpSelectValue] = useState("");
+
+  // Auto-matched blueprint IDs from services
+  const autoMatchedBpIds = useMemo(
     () => blueprintIdsForServices(state.selectedServices),
     [state.selectedServices]
   );
 
+  // All blueprint IDs (auto-matched union manually added)
+  const allBlueprintIds = useMemo(
+    () => Array.from(new Set([...autoMatchedBpIds, ...state.manualBlueprintIds])),
+    [autoMatchedBpIds, state.manualBlueprintIds]
+  );
+
+  // Blueprints available to add manually (not already included)
+  const availableToAdd = useMemo(
+    () => BLUEPRINTS.filter((bp) => !allBlueprintIds.includes(bp.id)),
+    [allBlueprintIds]
+  );
+
   const previewTasks = useMemo(
     () =>
-      previewBpIds
+      allBlueprintIds
         .map((id) => BLUEPRINTS.find((b) => b.id === id))
         .filter(Boolean)
-        .map((bp) => ({ bpName: bp!.name, tasks: bp!.tasks })),
-    [previewBpIds]
+        .map((bp) => ({
+          bpId:     bp!.id,
+          bpName:   bp!.name,
+          tasks:    bp!.tasks,
+          isManual: !autoMatchedBpIds.includes(bp!.id),
+        })),
+    [allBlueprintIds, autoMatchedBpIds]
   );
 
   const affectedDepts = useMemo(() => {
@@ -563,6 +369,22 @@ function ActivationWizard({
     }));
   };
 
+  const addManualBlueprint = () => {
+    if (!addBpSelectValue) return;
+    setState((prev) => ({
+      ...prev,
+      manualBlueprintIds: [...prev.manualBlueprintIds, addBpSelectValue],
+    }));
+    setAddBpSelectValue("");
+  };
+
+  const removeManualBlueprint = (bpId: string) => {
+    setState((prev) => ({
+      ...prev,
+      manualBlueprintIds: prev.manualBlueprintIds.filter((id) => id !== bpId),
+    }));
+  };
+
   const totalPreviewTasks = previewTasks.reduce((s, g) => s + g.tasks.length, 0);
 
   const handleStep1Confirm = () => {
@@ -571,12 +393,20 @@ function ActivationWizard({
   };
 
   const handleStep2Confirm = async () => {
-    const { project, tasks, milestone } = await createEngineProject(client, state.selectedServices);
-    // Write to file-backed API (cross-route-group reliable) + in-memory fallback for same-session reads
+    // Pass the full explicit blueprint IDs so createEngineProject uses them
+    // rather than re-deriving from services (which would miss manually-added blueprints)
+    const { project, tasks, milestone } = await createEngineProject(
+      client,
+      state.selectedServices,
+      allBlueprintIds
+    );
+    // Write to file-backed API only — refreshData() will re-fetch and set
+    // liveProjects/liveTasks from the authoritative file store.
+    // Direct ENGINE_STORE.push() calls were removed because they mutated the
+    // same array reference held as React state (via the useState initializer),
+    // causing duplicate-key warnings on the next render before refreshData
+    // replaced the array.
     await appendToEngineStore({ projects: [project], tasks, milestones: [milestone] });
-    ENGINE_STORE.projects.push(project);
-    ENGINE_STORE.tasks.push(...tasks);
-    ENGINE_STORE.milestones.push(milestone);
     // Persist MASTER_CLIENTS mutations through API (cross-route-group reliable)
     await apiMarkActivationTasksCreated(client.id);
     await apiMarkOnboardingRecordCreated(client.id);
@@ -607,6 +437,7 @@ function ActivationWizard({
           </p>
         </div>
 
+        {/* Contracted Services */}
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
           <h2 className="text-sm font-bold text-slate-800">Contracted Services</h2>
           {initialServices.length > 0 ? (
@@ -637,14 +468,30 @@ function ActivationWizard({
           )}
         </div>
 
+        {/* Blueprint preview (auto-matched + manually added) */}
         {previewTasks.length > 0 && (
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 space-y-4">
             <h2 className="text-sm font-bold text-blue-900">
-              Matched Blueprints → {totalPreviewTasks} tasks will be generated
+              Blueprints → {totalPreviewTasks} tasks will be generated
             </h2>
-            {previewTasks.map(({ bpName, tasks }) => (
-              <div key={bpName} className="space-y-1">
-                <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">{bpName}</p>
+            {previewTasks.map(({ bpId, bpName, tasks, isManual }) => (
+              <div key={bpId} className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">{bpName}</p>
+                  {isManual && (
+                    <>
+                      <span className="inline-block rounded-full bg-violet-100 border border-violet-300 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                        Added manually
+                      </span>
+                      <button
+                        onClick={() => removeManualBlueprint(bpId)}
+                        className="text-[11px] text-red-500 hover:text-red-700 font-semibold ml-1"
+                      >
+                        × Remove
+                      </button>
+                    </>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {tasks.map((t) => (
                     <span
@@ -659,6 +506,42 @@ function ActivationWizard({
             ))}
           </div>
         )}
+
+        {/* Part 3A: Add Another Blueprint */}
+        <div className="rounded-xl border border-violet-200 bg-violet-50 p-5 space-y-3">
+          <h2 className="text-sm font-bold text-violet-900">Add Another Blueprint</h2>
+          <p className="text-xs text-violet-700">
+            Manually include an additional Task Blueprint beyond the auto-matched set (e.g. for
+            upsells or custom service inclusions).
+          </p>
+          {availableToAdd.length === 0 ? (
+            <p className="text-xs font-semibold text-violet-500 italic">
+              All available blueprints are already included.
+            </p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <select
+                value={addBpSelectValue}
+                onChange={(e) => setAddBpSelectValue(e.target.value)}
+                className="flex-1 rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              >
+                <option value="">Select a blueprint to add…</option>
+                {availableToAdd.map((bp) => (
+                  <option key={bp.id} value={bp.id}>
+                    {bp.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={addManualBlueprint}
+                disabled={!addBpSelectValue}
+                className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+              >
+                + Add Blueprint
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="flex gap-3">
           <button
@@ -752,10 +635,11 @@ function ProjectsPageInner() {
   // subsequent liveClients/liveProjects refreshes.
   const [autoLaunchFired, setAutoLaunchFired] = useState(false);
 
-  // Live data — initialized from in-memory seed, hydrated from file-backed API on mount
-  const [liveProjects, setLiveProjects] = useState<Project[]>(() => ENGINE_STORE.projects);
-  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => ENGINE_STORE.tasks);
-  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => MASTER_CLIENTS);
+  // Live data - shallow-copy seed arrays so wizard push() mutations don't
+  // silently contaminate state and cause duplicate keys on the next refresh.
+  const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...ENGINE_STORE.projects]);
+  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
+  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => [...MASTER_CLIENTS]);
 
   const refreshData = useCallback(async () => {
     try {
@@ -783,6 +667,29 @@ function ProjectsPageInner() {
 
   useEffect(() => { void refreshData(); }, [refreshData]);
 
+  /**
+   * BUG FIX (Part 1): Always fetch a fresh client record from the file-backed
+   * API before opening the wizard. The in-memory MASTER_CLIENTS seed may be
+   * stale relative to data/master-clients.json (e.g. after a PATCH that updated
+   * activeServices). Fetching live guarantees the wizard sees the correct
+   * services regardless of whether the page-level refreshData() has resolved.
+   */
+  const openWizardForClient = useCallback(async (clientId: string) => {
+    try {
+      const res = await fetch(`/api/master-clients?id=${encodeURIComponent(clientId)}`);
+      if (res.ok) {
+        const d = await res.json() as { client: MasterClient };
+        setWizardClient(d.client);
+        return;
+      }
+    } catch {
+      // Fall through to liveClients on fetch failure
+    }
+    // Fallback: use liveClients (already API-hydrated after refreshData)
+    const fallback = liveClients.find((c) => c.id === clientId) ?? null;
+    setWizardClient(fallback);
+  }, [liveClients]);
+
   // Auto-launch the activation wizard when arriving from the Onboarding Queue
   // with ?activateClientId=<id>. Runs once after live data is available.
   useEffect(() => {
@@ -791,10 +698,10 @@ function ProjectsPageInner() {
     const client = liveClients.find((c) => c.id === activateClientId);
     if (!client) return;
     const alreadyHasProject = liveProjects.some((p) => p.clientId === activateClientId);
-    if (alreadyHasProject) return; // already activated — don’t re-open wizard
+    if (alreadyHasProject) return; // already activated — don't re-open wizard
     setAutoLaunchFired(true);
-    setWizardClient(client);
-  }, [activateClientId, autoLaunchFired, wizardClient, liveClients, liveProjects]);
+    void openWizardForClient(activateClientId);
+  }, [activateClientId, autoLaunchFired, wizardClient, liveClients, liveProjects, openWizardForClient]);
 
   // All AM-created projects (have a clientId)
   const amProjects = useMemo(
@@ -835,7 +742,7 @@ function ProjectsPageInner() {
     );
   });
 
-  // Wizard completion — re-fetch live data after activation
+  // Wizard completion - re-fetch live data after activation
   const handleWizardComplete = useCallback(
     (project: Project) => {
       setWizardClient(null);
@@ -881,7 +788,7 @@ function ProjectsPageInner() {
           <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
             Account Management
           </p>
-          <h1 className="text-2xl font-bold text-slate-900">Projects — Health & Action Summary</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Projects - Health & Action Summary</h1>
           <p className="text-sm text-slate-500 mt-1">
             Project health, off-track tasks, department follow-ups, and communication context.
             Task creation and editing lives in the{" "}
@@ -938,7 +845,7 @@ function ProjectsPageInner() {
                     )}
                   </div>
                   <button
-                    onClick={() => setWizardClient(client)}
+                    onClick={() => void openWizardForClient(client.id)}
                     className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
                   >
                     Activate Project
@@ -967,7 +874,7 @@ function ProjectsPageInner() {
           <div className="flex flex-wrap items-center gap-3">
             <input
               type="text"
-              placeholder="Search projects or clients…"
+              placeholder="Search projects or clients..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 min-w-[200px] max-w-xs rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -1006,7 +913,7 @@ function ProjectsPageInner() {
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {filtered.map((project) => {
-                    // Off-track tasks — computed from live engine data
+                    // Off-track tasks - computed from live engine data
                     const offTrackTasks = getOffTrackTasks(project.id, liveTasks);
                     const deptsNeedingFollowUp = getDepartmentsNeedingFollowUp(offTrackTasks);
 
@@ -1036,7 +943,7 @@ function ProjectsPageInner() {
                     ].sort((a, b) => b.date.localeCompare(a.date));
                     const latestComm = allComms[0];
 
-                    // Onboarding record link — use engine task's linkedOnboardingId
+                    // Onboarding record link - use engine task's linkedOnboardingId
                     const onbTask = liveTasks.find(
                       (t) => t.projectId === project.id && !!t.linkedOnboardingId
                     );
@@ -1054,7 +961,7 @@ function ProjectsPageInner() {
                           </p>
                           <p className="text-xs text-slate-400 mt-0.5">{project.client}</p>
                           <p className="text-xs text-slate-400">
-                            AM: {project.accountManager || "—"}
+                            AM: {project.accountManager || "-"}
                           </p>
                           <p className="text-xs text-slate-400 mt-0.5">
                             {doneTasks}/{allTasks.length} tasks done
@@ -1097,7 +1004,7 @@ function ProjectsPageInner() {
                             </div>
                           ) : (
                             <p className="text-xs text-slate-400 italic">
-                              {project.contractSummary || "—"}
+                              {project.contractSummary || "-"}
                             </p>
                           )}
                         </td>
@@ -1132,7 +1039,7 @@ function ProjectsPageInner() {
                         {/* Depts Needing Follow-up */}
                         <td className="px-4 py-4">
                           {deptsNeedingFollowUp.length === 0 ? (
-                            <span className="text-xs text-slate-400">—</span>
+                            <span className="text-xs text-slate-400">-</span>
                           ) : (
                             <div className="flex flex-wrap gap-1">
                               {deptsNeedingFollowUp.map((dept) => (
@@ -1191,10 +1098,10 @@ function ProjectsPageInner() {
                               Send Follow-up
                             </button>
 
-                            {/* View Onboarding (if record exists) */}
+                            {/* View Onboarding (if record exists) — read-only record page */}
                             {onboardingRecordId && (
                               <Link
-                                href={`/account-management/onboarding/${onboardingRecordId}`}
+                                href={`/account-management/onboarding/${onboardingRecordId}/record`}
                                 className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 whitespace-nowrap"
                               >
                                 Onboarding Record
@@ -1224,7 +1131,7 @@ function ProjectsPageInner() {
           {offTrackCount > 0 && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-3">
               <h2 className="text-sm font-bold text-amber-900">
-                Projects with Off-Track Tasks — Action Required
+                Projects with Off-Track Tasks - Action Required
               </h2>
               <div className="space-y-3">
                 {offTrackProjects.map((project) => {
@@ -1247,7 +1154,7 @@ function ProjectsPageInner() {
                         <div className="text-[11px] text-slate-500 space-y-0.5">
                           {offTrackTasks.map((t) => (
                             <p key={t.id}>
-                              {t.status === "Blocked" ? "🔴 Blocked" : "🟡 Overdue"} — {t.title}{" "}
+                              {t.status === "Blocked" ? "🔴 Blocked" : "🟡 Overdue"} - {t.title}{" "}
                               {t.dueDate ? `(due ${fmt(t.dueDate)})` : ""}
                             </p>
                           ))}
@@ -1284,7 +1191,7 @@ export default function ProjectsPage() {
     <Suspense
       fallback={
         <div className="flex items-center justify-center py-24 text-slate-400 text-sm">
-          Loading…
+          Loading...
         </div>
       }
     >

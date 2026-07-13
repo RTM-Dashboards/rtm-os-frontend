@@ -8,19 +8,22 @@ import {
   getProject,
   getBlueprint,
   getAllTasks,
-  ENGINE_STORE,
   type Task,
   type Project,
   type TaskStatus,
   type TaskPriority,
 } from "@/lib/engine";
+import { fetchMasterClient } from "@/lib/mock/master-clients-api";
+import type { MasterClient, BillingStatus, PaymentStatus } from "@/lib/mock/master-clients";
+import type { AMOnboardingRecord } from "@/lib/mock/am-onboarding-store";
+import { ONBOARDING_FIELD_SCHEMA, ONBOARDING_SECTIONS } from "@/lib/mock/am-onboarding-field-schema";
 
 // =============================================================================
 // RTM OS — Task Detail Page
 // Route: /projects/tasks/[id]
 // =============================================================================
 
-type Tab = "info" | "project" | "blueprint" | "dependencies" | "notes" | "activity" | "files" | "automation";
+type Tab = "info" | "project" | "blueprint" | "dependencies" | "notes" | "client-context" | "activity" | "files" | "automation";
 
 const TS_CFG: Record<TaskStatus, { bg: string; color: string; dot: string; border: string }> = {
   "Open":       { bg: "#EFF6FF", color: "#1D4ED8", dot: "#3B82F6", border: "#BFDBFE" },
@@ -69,6 +72,74 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Compact BillingStatusBadge for task views
+// ---------------------------------------------------------------------------
+
+function BillingStatusBadge({ billingStatus, paymentStatus }: { billingStatus: BillingStatus; paymentStatus: PaymentStatus }) {
+  type Variant = "paid" | "pending" | "overdue" | "cleared" | "closed" | "unpaid";
+  let variant: Variant = "pending";
+  let label: string = billingStatus;
+
+  if (billingStatus === "Paid" || billingStatus === "Cleared") {
+    variant = billingStatus === "Cleared" ? "cleared" : "paid";
+  } else if (billingStatus === "Overdue" || paymentStatus === "Overdue") {
+    variant = "overdue";
+  } else if (billingStatus === "Closed") {
+    variant = "closed";
+  } else if (paymentStatus === "Unpaid") {
+    variant = "unpaid";
+    label = "Unpaid";
+  }
+
+  const CFG: Record<Variant, { bg: string; color: string; border: string; dot: string }> = {
+    paid:    { bg: "#ECFDF5", color: "#065F46", border: "#6EE7B7", dot: "#10B981" },
+    cleared: { bg: "#F0FDF4", color: "#166534", border: "#86EFAC", dot: "#22C55E" },
+    pending: { bg: "#FFFBEB", color: "#92400E", border: "#FDE68A", dot: "#F59E0B" },
+    unpaid:  { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", dot: "#F59E0B" },
+    overdue: { bg: "#FEF2F2", color: "#991B1B", border: "#FECACA", dot: "#EF4444" },
+    closed:  { bg: "#F8FAFC", color: "#475569", border: "#E2E8F0", dot: "#94A3B8" },
+  };
+  const c = CFG[variant];
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl px-4 py-3 border" style={{ background: c.bg, borderColor: c.border }}>
+      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />
+      <div className="flex-1">
+        <div className="text-[10px] font-bold uppercase tracking-wide" style={{ color: c.color }}>Client Billing Status</div>
+        <div className="text-sm font-bold mt-0.5" style={{ color: c.color }}>
+          {label}
+          {paymentStatus !== "N/A" && paymentStatus !== billingStatus && (
+            <span className="text-xs font-normal ml-2" style={{ color: c.color }}>· Payment: {paymentStatus}</span>
+          )}
+        </div>
+      </div>
+      <div className="text-[10px]" style={{ color: c.color }}>
+        {(variant === "paid" || variant === "cleared") && "Confirmed ✓"}
+        {(variant === "overdue" || variant === "unpaid") && "Check with Billing ⚠"}
+        {variant === "pending" && "Awaiting confirmation"}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Onboarding context helpers (shared logic, no dept-tagging fabrication)
+// ---------------------------------------------------------------------------
+
+function buildOnboardingGroups(record: AMOnboardingRecord) {
+  return ONBOARDING_SECTIONS.map((sec) => {
+    const sectionFields = ONBOARDING_FIELD_SCHEMA.filter((f) => f.section === sec.id);
+    const fields = sectionFields
+      .map((f) => ({
+        label: f.label,
+        value: record.fieldAssignments[f.id]?.value ?? "",
+      }))
+      .filter((r) => r.value.trim().length > 0);
+    return { id: sec.id, label: sec.label, fields };
+  }).filter((s) => s.fields.length > 0);
+}
+
 export default function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [activeTab, setActiveTab] = useState<Tab>("info");
@@ -76,6 +147,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const [liveTask, setLiveTask] = useState<Task | null | undefined>(undefined);
   const [allTasks, setAllTasks] = useState<Task[]>(() => getAllTasks());
   const [liveProject, setLiveProject] = useState<Project | undefined>(() => undefined);
+
+  // Billing + onboarding context — fetched live, never stored on Task
+  const [clientRecord, setClientRecord] = useState<MasterClient | null>(null);
+  const [onboardingRecord, setOnboardingRecord] = useState<AMOnboardingRecord | null | "loading">("loading");
+  const [clientContextExpanded, setClientContextExpanded] = useState<Set<string>>(
+    () => new Set(["client-basics", "engagement-setup", "am-internal"])
+  );
 
   useEffect(() => {
     Promise.all([
@@ -88,7 +166,26 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         setLiveTask(tasks.find((t) => t.id === id) ?? null);
         const found = tasks.find((t) => t.id === id);
         if (found && pd?.projects) {
-          setLiveProject((pd.projects as Project[]).find((p) => p.id === found.projectId));
+          const proj = (pd.projects as Project[]).find((p) => p.id === found.projectId);
+          setLiveProject(proj);
+          // Fetch billing + onboarding when we have a project with clientId
+          if (proj?.clientId) {
+            const cid = proj.clientId;
+            Promise.all([
+              fetchMasterClient(cid),
+              fetch(`/api/onboarding-records?clientId=${encodeURIComponent(cid)}`, { cache: "no-store" })
+                .then((r) => r.ok ? r.json() as Promise<{ record: AMOnboardingRecord | null }> : null)
+                .catch(() => null),
+            ]).then(([mc, onbData]) => {
+              setClientRecord(mc);
+              setOnboardingRecord(onbData?.record ?? null);
+            }).catch(() => {
+              setClientRecord(null);
+              setOnboardingRecord(null);
+            });
+          } else {
+            setOnboardingRecord(null);
+          }
         }
       } else {
         setLiveTask(getTask(id) ?? null);
@@ -133,14 +230,15 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     .filter((t): t is Task => t !== undefined);
 
   const TABS: { id: Tab; label: string }[] = [
-    { id: "info",         label: "Task Info" },
-    { id: "project",      label: "Related Project" },
-    { id: "blueprint",    label: "Blueprint" },
-    { id: "dependencies", label: `Dependencies (${task.dependencies.length})` },
-    { id: "notes",        label: `Notes (${task.notes.length})` },
-    { id: "activity",     label: "Activity" },
-    { id: "files",        label: "Files" },
-    { id: "automation",   label: "Automation History" },
+    { id: "info",           label: "Task Info" },
+    { id: "project",        label: "Related Project" },
+    { id: "blueprint",      label: "Blueprint" },
+    { id: "dependencies",   label: `Dependencies (${task.dependencies.length})` },
+    { id: "notes",          label: `Notes (${task.notes.length})` },
+    { id: "client-context", label: "Client Context" },
+    { id: "activity",       label: "Activity" },
+    { id: "files",          label: "Files" },
+    { id: "automation",     label: "Automation History" },
   ];
 
   return (
@@ -180,6 +278,47 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
               <h1 className="text-xl font-black" style={{ color: "var(--rtm-text-primary)" }}>{task.title}</h1>
               {task.description && (
                 <p className="text-sm mt-1 leading-relaxed" style={{ color: "var(--rtm-text-secondary)" }}>{task.description}</p>
+              )}
+              {/* Compact billing status — live from MASTER_CLIENTS */}
+              {clientRecord && (
+                <div className="mt-2">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border whitespace-nowrap"
+                    style={{
+                      background:
+                        (clientRecord.billingStatus === "Paid" || clientRecord.billingStatus === "Cleared")
+                          ? "#ECFDF5"
+                          : clientRecord.billingStatus === "Overdue" || clientRecord.paymentStatus === "Overdue"
+                          ? "#FEF2F2"
+                          : "#FFFBEB",
+                      color:
+                        (clientRecord.billingStatus === "Paid" || clientRecord.billingStatus === "Cleared")
+                          ? "#065F46"
+                          : clientRecord.billingStatus === "Overdue" || clientRecord.paymentStatus === "Overdue"
+                          ? "#991B1B"
+                          : "#92400E",
+                      borderColor:
+                        (clientRecord.billingStatus === "Paid" || clientRecord.billingStatus === "Cleared")
+                          ? "#6EE7B7"
+                          : clientRecord.billingStatus === "Overdue" || clientRecord.paymentStatus === "Overdue"
+                          ? "#FECACA"
+                          : "#FDE68A",
+                    }}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{
+                        background:
+                          (clientRecord.billingStatus === "Paid" || clientRecord.billingStatus === "Cleared")
+                            ? "#10B981"
+                            : clientRecord.billingStatus === "Overdue" || clientRecord.paymentStatus === "Overdue"
+                            ? "#EF4444"
+                            : "#F59E0B",
+                      }}
+                    />
+                    Billing: {clientRecord.billingStatus}
+                  </span>
+                </div>
               )}
             </div>
             <div className="flex gap-2">
@@ -408,6 +547,120 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
                 <p className="text-sm leading-relaxed" style={{ color: "var(--rtm-text-primary)" }}>{note.body}</p>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* CLIENT CONTEXT */}
+        {activeTab === "client-context" && (
+          <div className="flex flex-col gap-4">
+            <div
+              className="px-4 py-3 rounded-xl text-xs font-semibold"
+              style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}
+            >
+              Client context is fetched live from the onboarding record — not stored on this task.
+              All fields are general (no per-department filtering — no real department tagging exists in the schema).
+            </div>
+
+            {/* Billing status — full version */}
+            {clientRecord && (
+              <BillingStatusBadge
+                billingStatus={clientRecord.billingStatus}
+                paymentStatus={clientRecord.paymentStatus}
+              />
+            )}
+            {!clientRecord && liveProject?.clientId && (
+              <div className="rounded-xl px-4 py-3 text-sm" style={{ background: "#F8FAFC", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-muted)" }}>
+                Loading billing status…
+              </div>
+            )}
+            {!liveProject?.clientId && (
+              <div className="rounded-xl px-4 py-3 text-sm" style={{ background: "#F8FAFC", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-muted)" }}>
+                No MASTER_CLIENTS record linked to this project — billing status unavailable.
+              </div>
+            )}
+
+            {/* Onboarding record — general Client Context */}
+            {onboardingRecord === "loading" && (
+              <div className="rounded-xl px-5 py-4 text-sm" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-muted)" }}>
+                Loading client onboarding record…
+              </div>
+            )}
+            {onboardingRecord === null && (
+              <div className="rounded-xl px-5 py-4" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+                <p className="text-xs font-black uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-secondary)" }}>Client Onboarding Record</p>
+                <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+                  No onboarding record found for this client.
+                </p>
+              </div>
+            )}
+            {onboardingRecord && onboardingRecord !== "loading" && (() => {
+              const groups = buildOnboardingGroups(onboardingRecord);
+              const totalFields = Object.values(onboardingRecord.fieldAssignments).length;
+              const filledFields = Object.values(onboardingRecord.fieldAssignments).filter(
+                (a) => a.value.trim().length > 0
+              ).length;
+              return (
+                <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                  {/* Header */}
+                  <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 border-b" style={{ borderColor: "var(--rtm-border)" }}>
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-wide" style={{ color: "var(--rtm-text-secondary)" }}>Client Onboarding Record</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                        {filledFields} of {totalFields} fields filled · Status: {onboardingRecord.status}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/account-management/onboarding/${onboardingRecord.id}/record`}
+                      className="flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold text-white"
+                      style={{ background: "#2563EB" }}
+                    >
+                      View Full Record →
+                    </Link>
+                  </div>
+                  {/* Sections */}
+                  <div className="divide-y" style={{ borderColor: "var(--rtm-border-light)" }}>
+                    {groups.length === 0 && (
+                      <div className="px-5 py-4 text-sm" style={{ color: "var(--rtm-text-muted)" }}>No fields filled in yet.</div>
+                    )}
+                    {groups.map((sec) => {
+                      const isOpen = clientContextExpanded.has(sec.id);
+                      return (
+                        <div key={sec.id}>
+                          <button
+                            type="button"
+                            onClick={() => setClientContextExpanded((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(sec.id)) next.delete(sec.id);
+                              else next.add(sec.id);
+                              return next;
+                            })}
+                            className="w-full flex items-center justify-between px-5 py-3 text-left hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{sec.label}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: "#EFF6FF", color: "#1D4ED8" }}>
+                                {sec.fields.length} field{sec.fields.length !== 1 ? "s" : ""}
+                              </span>
+                            </div>
+                            <span className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>{isOpen ? "▲" : "▼"}</span>
+                          </button>
+                          {isOpen && (
+                            <div className="px-5 pb-4 grid grid-cols-1 gap-2">
+                              {sec.fields.map((row) => (
+                                <div key={row.label} className="rounded-lg p-3" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)" }}>
+                                  <div className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>{row.label}</div>
+                                  <div className="text-sm" style={{ color: "var(--rtm-text-primary)", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{row.value}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

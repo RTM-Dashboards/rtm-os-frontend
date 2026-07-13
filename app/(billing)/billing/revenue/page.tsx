@@ -10,6 +10,17 @@ const workspace = getWorkspace("billing")!;
 
 // ── Revenue Bar ───────────────────────────────────────────────────────────────
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
 function RevenueBar({ label, value, max, color, showValue = true }: { label: string; value: number; max: number; color?: string; showValue?: boolean }) {
   const pct = Math.max(3, Math.round((value / max) * 100));
   return (
@@ -99,9 +110,12 @@ export default function RevenueDashboardPage() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>
           {workspace.name} / Revenue
         </p>
-        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-          Revenue Dashboard
-        </h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
+            Revenue Dashboard
+          </h1>
+          <PreviewBadge />
+        </div>
         <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Monthly, quarterly, and annual revenue — by department, service, and client.
         </p>

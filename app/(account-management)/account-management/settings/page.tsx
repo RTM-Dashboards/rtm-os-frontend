@@ -2,12 +2,41 @@
 
 import { useState } from "react";
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
+function SaveToast({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="fixed bottom-6 right-6 z-50 flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E", maxWidth: 360 }}
+    >
+      <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div className="flex-1">
+        <p className="font-semibold">Changes not saved</p>
+        <p className="text-xs mt-0.5" style={{ color: "#92400E" }}>This settings panel is a prototype — no data is persisted to any backend.</p>
+      </div>
+      <button onClick={onClose} className="ml-1 text-xs font-bold opacity-60 hover:opacity-100">×</button>
+    </div>
+  );
+}
+
+// Genuine Account Management team — 3 real AMs + department head.
+// Mike T. (Sales) and Lisa P. (Billing) have been removed; they are not AMs.
 const teamMembers = [
-  { name: "Jordan M.", role: "Department Head", access: "Full Access", status: "Active", clients: 12, lastActive: "Today, 9:42 AM"},
-  { name: "Sarah K.", role: "Sr. Account Manager", access: "Edit", status: "Active", clients: 8, lastActive: "Today, 8:15 AM"},
-  { name: "Mike T.", role: "Account Manager", access: "Edit", status: "Active", clients: 6, lastActive: "Yesterday, 5:30 PM"},
-  { name: "Alex R.", role: "Account Coordinator", access: "View", status: "Active", clients: 4, lastActive: "Today, 10:00 AM"},
-  { name: "Lisa P.", role: "Account Specialist", access: "View", status: "Inactive", clients: 0, lastActive: "3 days ago"},
+  { name: "Jordan M.", role: "Department Head", access: "Full Access", status: "Active", clients: 12, lastActive: "Today, 9:42 AM" },
+  { name: "Sarah K.", role: "Sr. Account Manager", access: "Edit", status: "Active", clients: 8, lastActive: "Today, 8:15 AM" },
+  { name: "Alex R.", role: "Account Manager", access: "Edit", status: "Active", clients: 4, lastActive: "Today, 10:00 AM" },
 ];
 
 const workspacePermissions = [
@@ -44,23 +73,30 @@ const accessColors: Record<string, string> = {
 export default function AccountManagementSettingsPage() {
   const [permissions, setPermissions] = useState(workspacePermissions);
   const [notifications, setNotifications] = useState(notificationPrefs);
+  const [showSaveToast, setShowSaveToast] = useState(false);
 
   return (
     <div className="space-y-6">
+      {showSaveToast && <SaveToast onClose={() => setShowSaveToast(false)} />}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "var(--rtm-blue)"}}>
             Account Management · Settings
           </p>
-          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-            Department Settings
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
+              Department Settings
+            </h1>
+            <PreviewBadge />
+          </div>
           <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
             Manage team members, access levels, permissions, and department defaults.
           </p>
         </div>
         <button
+          onClick={() => setShowSaveToast(true)}
           className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors self-start flex-shrink-0"style={{ background: "var(--rtm-blue)"}}
         >
           Save Changes

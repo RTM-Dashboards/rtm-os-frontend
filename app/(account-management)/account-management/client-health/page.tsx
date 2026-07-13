@@ -1,20 +1,105 @@
 "use client";
 
-import { useState, useMemo } from "react";
+/**
+ * RTM OS — Client Health Engine
+ * Route: /account-management/client-health
+ *
+ * DATA SOURCES (Phase 1 — real):
+ *   /api/master-clients  → MasterClient records (MRR, billing status, renewal, activation)
+ *   /api/engine          → Projects + Tasks per client (task completion, blocked, overdue)
+ *
+ * HEALTH SCORE: computed via shared computeHealth() + computeClientHealthScore()
+ *   from lib/mock/master-clients.ts — NO parallel formula.
+ *
+ * DEFERRED (badged "Preview — Target State"):
+ *   Interventions view, Executive view, Escalations tab, Call Intelligence tab,
+ *   Reporting tab, Expansion tab, AI Summary tab.
+ *
+ * Communications tab: links out to /tasks/collaboration (Collaboration Hub).
+ */
+
+import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import {
-  CLIENT_HEALTH_RECORDS,
-  INTERVENTION_QUEUE,
-  computePortfolioSummary,
-  type ClientHealthRecord,
+  MASTER_CLIENTS,
+  computeHealth,
+  computeClientHealthScore,
+  computePriority,
+  RENEWAL_URGENT_DAYS,
+  type MasterClient,
   type HealthStatus,
-  type RiskLevel,
-} from "@/lib/account-management/client-health-data";
+  type TaskHealthSignals,
+} from "@/lib/mock/master-clients";
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TYPES
+// ══════════════════════════════════════════════════════════════════════════════
+
+/** Enriched view model built from real MASTER_CLIENTS + real engine task data. */
+interface ClientHealthVM {
+  // from MasterClient
+  id: string;
+  slug: string;
+  clientName: string;
+  industry: string;
+  assignedAM: string;
+  avatarColor: string;
+  billingStatus: MasterClient["billingStatus"];
+  paymentStatus: MasterClient["paymentStatus"];
+  cancellationStatus: MasterClient["cancellationStatus"];
+  activationStatus: MasterClient["activationStatus"];
+  mrr: number;
+  renewalDate: string;
+  renewalStatus: string;
+  activeServices: string[];
+  cleared: boolean;
+  recentEvents: MasterClient["recentEvents"];
+  notes: string;
+  nextRequiredAction: string;
+  // computed
+  health: HealthStatus;           // categorical tier
+  healthScore: number;            // 0-100 numeric
+  priority: MasterClient["priority"];
+  daysToRenewal: number | null;
+  // task signals (from engine, may be null if client has no engine project)
+  taskSignals: TaskHealthSignals | null;
+}
+
+interface EngineTask {
+  id: string;
+  projectId: string;
+  status: "Open" | "In Progress" | "Waiting" | "Completed" | string;
+  dueDate?: string;
+}
+
+interface EngineProject {
+  id: string;
+  clientId?: string;
+  name: string;
+  status: string;
+  health?: string;
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // UTILITIES
 // ══════════════════════════════════════════════════════════════════════════════
 
-function scoreColor(score: number) {
+function daysUntilDate(isoDate: string): number | null {
+  if (!isoDate || isoDate === "—") return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const target = new Date(isoDate);
+  if (isNaN(target.getTime())) return null;
+  return Math.round((target.getTime() - now.getTime()) / 86_400_000);
+}
+
+function fmt$(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
+  return `$${n}`;
+}
+
+function scoreColor(score: number): string {
   if (score >= 80) return "#059669";
   if (score >= 60) return "#D97706";
   if (score >= 40) return "#EA580C";
@@ -22,59 +107,130 @@ function scoreColor(score: number) {
 }
 
 function scoreBg(score: number) {
-  if (score >= 80) return { bg: "#ECFDF5", border: "#A7F3D0", text: "#059669"};
-  if (score >= 60) return { bg: "#FFFBEB", border: "#FDE68A", text: "#B45309"};
-  if (score >= 40) return { bg: "#FFF7ED", border: "#FED7AA", text: "#C2410C"};
-  return { bg: "#FEF2F2", border: "#FECACA", text: "#DC2626"};
+  if (score >= 80) return { bg: "#ECFDF5", border: "#A7F3D0", text: "#059669" };
+  if (score >= 60) return { bg: "#FFFBEB", border: "#FDE68A", text: "#B45309" };
+  if (score >= 40) return { bg: "#FFF7ED", border: "#FED7AA", text: "#C2410C" };
+  return { bg: "#FEF2F2", border: "#FECACA", text: "#DC2626" };
 }
 
-function healthStatusStyle(status: HealthStatus) {
-  switch (status) {
-    case "Healthy":  return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", dot: "#10B981"};
-    case "Monitor":  return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A", dot: "#F59E0B"};
-    case "At Risk":  return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA", dot: "#F97316"};
-    case "Critical": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", dot: "#EF4444"};
+function healthStyle(h: HealthStatus) {
+  switch (h) {
+    case "Excellent": return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", dot: "#10B981" };
+    case "Good":      return { bg: "#F0FDF9", color: "#0D9488", border: "#99F6E4", dot: "#14B8A6" };
+    case "At Risk":   return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA", dot: "#F97316" };
+    case "Critical":  return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA", dot: "#EF4444" };
   }
 }
 
-function riskStyle(risk: RiskLevel) {
-  switch (risk) {
-    case "Low":      return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
-    case "Medium":   return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
-    case "High":     return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
-    case "Critical": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
+function billingStyle(s: string) {
+  switch (s) {
+    case "Paid":    return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
+    case "Cleared": return { bg: "#F0FDF9", color: "#0D9488", border: "#99F6E4" };
+    case "Pending": return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" };
+    case "Overdue": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
+    case "Closed":  return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" };
+    default:        return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" };
   }
 }
 
-function fmt$(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`;
-  return `$${n}`;
+// ══════════════════════════════════════════════════════════════════════════════
+// BUILD VIEW MODEL
+// ══════════════════════════════════════════════════════════════════════════════
+
+function buildVM(
+  clients: MasterClient[],
+  tasksByClientId: Map<string, EngineTask[]>,
+): ClientHealthVM[] {
+  const today = new Date().toISOString().slice(0, 10);
+
+  return clients.map((c) => {
+    const rawTasks = tasksByClientId.get(c.id) ?? [];
+    let taskSignals: TaskHealthSignals | null = null;
+    if (rawTasks.length > 0) {
+      const completed = rawTasks.filter((t) => t.status === "Completed").length;
+      const blocked = rawTasks.filter((t) => t.status === "Waiting").length;
+      const overdue = rawTasks.filter(
+        (t) => t.dueDate && t.dueDate < today && t.status !== "Completed",
+      ).length;
+      taskSignals = {
+        totalTasks: rawTasks.length,
+        completedTasks: completed,
+        blockedTasks: blocked,
+        overdueTasks: overdue,
+      };
+    }
+
+    const health = computeHealth(c, taskSignals ?? undefined);
+    const healthScore = computeClientHealthScore(c, taskSignals ?? undefined);
+    const priority = computePriority(health, c.billingStatus);
+    const daysToRenewal = daysUntilDate(c.renewalDate);
+
+    return {
+      id: c.id,
+      slug: c.slug,
+      clientName: c.clientName,
+      industry: c.industry,
+      assignedAM: c.assignedAM,
+      avatarColor: c.avatarColor,
+      billingStatus: c.billingStatus,
+      paymentStatus: c.paymentStatus,
+      cancellationStatus: c.cancellationStatus,
+      activationStatus: c.activationStatus,
+      mrr: c.monthlyValue,
+      renewalDate: c.renewalDate,
+      renewalStatus: c.renewalStatus,
+      activeServices: c.activeServices,
+      cleared: c.cleared,
+      recentEvents: c.recentEvents,
+      notes: c.notes,
+      nextRequiredAction: c.nextRequiredAction,
+      health,
+      healthScore,
+      priority,
+      daysToRenewal,
+      taskSignals,
+    };
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PREVIEW BADGE
+// ══════════════════════════════════════════════════════════════════════════════
+
+function PreviewBadge({ label = "Preview — Target State" }: { label?: string }) {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      {label}
+    </span>
+  );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // SHARED ATOMS
 // ══════════════════════════════════════════════════════════════════════════════
 
-function Badge({ label, bg, color, border, dot }: { label: string; bg?: string; color?: string; border: string; dot?: string }) {
+function Badge({
+  label, bg, color, border, dot,
+}: {
+  label: string; bg?: string; color?: string; border: string; dot?: string;
+}) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border whitespace-nowrap"style={{ background: bg, color, borderColor: border }}
+      className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border whitespace-nowrap"
+      style={{ background: bg, color, borderColor: border }}
     >
-      {dot && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: dot }} />}
+      {dot && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: dot }} />}
       {label}
     </span>
   );
 }
 
-function HealthBadge({ status }: { status: HealthStatus }) {
-  const s = healthStatusStyle(status);
-  return <Badge label={status} bg={s.bg} color={s.color} border={s.border} dot={s.dot} />;
-}
-
-function RiskBadge({ risk }: { risk: RiskLevel }) {
-  const s = riskStyle(risk);
-  return <Badge label={risk} bg={s.bg} color={s.color} border={s.border} />;
+function HealthBadge({ health }: { health: HealthStatus }) {
+  const s = healthStyle(health);
+  return <Badge label={health} bg={s.bg} color={s.color} border={s.border} dot={s.dot} />;
 }
 
 function ScoreBar({ score, label }: { score: number; label: string }) {
@@ -82,27 +238,34 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
   return (
     <div className="flex flex-col gap-1">
       <div className="flex justify-between items-center">
-        <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{label}</span>
-        <span className="text-xs font-bold"style={{ color: c }}>{score}</span>
+        <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{label}</span>
+        <span className="text-xs font-bold" style={{ color: c }}>{score}</span>
       </div>
-      <div className="h-1.5 rounded-full"style={{ background: "var(--rtm-border)"}}>
-        <div
-          className="h-1.5 rounded-full transition-all duration-500"style={{ width: `${score}%`, background: c }}
-        />
+      <div className="h-1.5 rounded-full" style={{ background: "var(--rtm-border)" }}>
+        <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${score}%`, background: c }} />
       </div>
     </div>
   );
 }
 
-function SectionCard({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+function SectionCard({
+  title, children, action, badge,
+}: {
+  title: string; children: React.ReactNode; action?: React.ReactNode; badge?: React.ReactNode;
+}) {
   return (
     <div
-      className="rounded-xl border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)"}}
+      className="rounded-xl border"
+      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)" }}
     >
       <div
-        className="flex items-center justify-between px-5 py-3.5 border-b"style={{ borderColor: "var(--rtm-border)"}}
+        className="flex items-center justify-between px-5 py-3.5 border-b gap-2"
+        style={{ borderColor: "var(--rtm-border)" }}
       >
-        <h3 className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{title}</h3>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{title}</h3>
+          {badge}
+        </div>
         {action}
       </div>
       <div className="p-5">{children}</div>
@@ -110,12 +273,16 @@ function SectionCard({ title, children, action }: { title: string; children: Rea
   );
 }
 
-function Stat({ label, value, sub, valueColor }: { label: string; value: string | number; sub?: string; valueColor?: string }) {
+function Stat({
+  label, value, sub, valueColor,
+}: {
+  label: string; value: string | number; sub?: string; valueColor?: string;
+}) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs font-medium uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>{label}</span>
-      <span className="text-xl font-bold"style={{ color: valueColor ?? "var(--rtm-text-primary)"}}>{value}</span>
-      {sub && <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{sub}</span>}
+      <span className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</span>
+      <span className="text-xl font-bold" style={{ color: valueColor ?? "var(--rtm-text-primary)" }}>{value}</span>
+      {sub && <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{sub}</span>}
     </div>
   );
 }
@@ -123,39 +290,28 @@ function Stat({ label, value, sub, valueColor }: { label: string; value: string 
 function DataRow({ label, value, valueEl }: { label: string; value?: string | number; valueEl?: React.ReactNode }) {
   return (
     <div
-      className="flex items-center justify-between gap-2 py-2 border-b last:border-0"style={{ borderColor: "var(--rtm-border-light)"}}
+      className="flex items-center justify-between gap-2 py-2 border-b last:border-0"
+      style={{ borderColor: "var(--rtm-border-light)" }}
     >
-      <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{label}</span>
-      {valueEl ?? <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{value}</span>}
+      <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{label}</span>
+      {valueEl ?? <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{value}</span>}
     </div>
   );
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
-// KPI CARD
-// ══════════════════════════════════════════════════════════════════════════════
-
 function KpiCard({
-  label, value, sub, accent, icon,
+  label, value, sub, accent,
 }: {
-  label: string; value: string | number; sub?: string; accent?: string; icon?: React.ReactNode;
+  label: string; value: string | number; sub?: string; accent?: string;
 }) {
   return (
     <div
-      className="rounded-xl border p-5 flex flex-col gap-3"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)"}}
+      className="rounded-xl border p-5 flex flex-col gap-2"
+      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)" }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>{label}</p>
-          <p className="mt-1.5 text-2xl font-bold"style={{ color: accent ?? "var(--rtm-text-primary)"}}>{value}</p>
-          {sub && <p className="mt-0.5 text-xs"style={{ color: "var(--rtm-text-muted)"}}>{sub}</p>}
-        </div>
-        {icon && (
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"style={{ background: "var(--rtm-blue-xlight)", color: "var(--rtm-blue)"}}>
-            {icon}
-          </div>
-        )}
-      </div>
+      <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
+      <p className="text-2xl font-bold" style={{ color: accent ?? "var(--rtm-text-primary)" }}>{value}</p>
+      {sub && <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{sub}</p>}
     </div>
   );
 }
@@ -169,511 +325,395 @@ function HealthScoreGauge({ score }: { score: number }) {
   const palette = scoreBg(score);
   return (
     <div
-      className="flex flex-col items-center justify-center rounded-xl border p-6 gap-2"style={{ background: palette.bg, borderColor: palette.border }}
+      className="flex flex-col items-center justify-center rounded-xl border p-6 gap-2"
+      style={{ background: palette.bg, borderColor: palette.border }}
     >
-      <span className="text-5xl font-extrabold leading-none"style={{ color: palette.text }}>{score}</span>
-      <span className="text-xs font-semibold uppercase tracking-wide"style={{ color: palette.text }}>Overall Health Score</span>
-      <div className="w-full h-2 rounded-full mt-1"style={{ background: "rgba(0,0,0,0.08)"}}>
-        <div className="h-2 rounded-full transition-all duration-700"style={{ width: `${score}%`, background: c }} />
+      <span className="text-5xl font-extrabold leading-none" style={{ color: palette.text }}>{score}</span>
+      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: palette.text }}>Overall Health Score</span>
+      <div className="w-full h-2 rounded-full mt-1" style={{ background: "rgba(0,0,0,0.08)" }}>
+        <div className="h-2 rounded-full transition-all duration-700" style={{ width: `${score}%`, background: c }} />
       </div>
     </div>
   );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// HEALTH SCORE BREAKDOWN PANEL
+// BILLING TAB — REAL DATA
 // ══════════════════════════════════════════════════════════════════════════════
 
-const SCORE_WEIGHTS = [
-  { key: "projectHealth",       label: "Project Health",       weight: "25%"},
-  { key: "communicationHealth", label: "Communication Health", weight: "20%"},
-  { key: "billingHealth",       label: "Billing Health",       weight: "20%"},
-  { key: "reportingHealth",     label: "Reporting Health",     weight: "10%"},
-  { key: "callIntelligence",    label: "Call Intelligence",    weight: "10%"},
-  { key: "escalationHealth",    label: "Escalation Health",    weight: "10%"},
-  { key: "clientEngagement",    label: "Client Engagement",    weight: "5%"},
-] as const;
+function BillingTab({ vm }: { vm: ClientHealthVM }) {
+  const bs = billingStyle(vm.billingStatus);
 
-type ScoreKey = typeof SCORE_WEIGHTS[number]["key"];
-
-function HealthScoreBreakdownPanel({ record }: { record: ClientHealthRecord }) {
-  return (
-    <SectionCard title="Health Score Model">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <HealthScoreGauge score={record.healthScore.overall} />
-        <div className="flex flex-col gap-3">
-          {SCORE_WEIGHTS.map(({ key, label, weight }) => (
-            <div key={key} className="flex flex-col gap-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
-                  {label}
-                  <span className="ml-1 text-xs"style={{ color: "var(--rtm-text-muted)"}}>({weight})</span>
-                </span>
-                <span className="text-xs font-bold"style={{ color: scoreColor(record.healthScore[key as ScoreKey]) }}>
-                  {record.healthScore[key as ScoreKey]}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full"style={{ background: "var(--rtm-border)"}}>
-                <div
-                  className="h-1.5 rounded-full"style={{
-                    width: `${record.healthScore[key as ScoreKey]}%`,
-                    background: scoreColor(record.healthScore[key as ScoreKey]),
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// PROJECT HEALTH SIGNALS
-// ══════════════════════════════════════════════════════════════════════════════
-
-function projectStatusStyle(s: string) {
-  switch (s) {
-    case "On Track": return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
-    case "Monitor":  return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
-    case "Delayed":  return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
-    case "Blocked":  return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    default:         return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
-  }
-}
-
-function ProjectHealthPanel({ record }: { record: ClientHealthRecord }) {
-  const s = record.projectSignals;
-  const pStyle = projectStatusStyle(s.projectStatus);
-  return (
-    <SectionCard title="Project Health Signals">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-        <Stat label="Milestone Completion"value={`${s.milestoneCompletion}%`} valueColor={scoreColor(s.milestoneCompletion)} />
-        <Stat label="Task Completion"value={`${s.taskCompletion}%`} valueColor={scoreColor(s.taskCompletion)} />
-        <Stat label="Project Risk Score"value={s.projectRiskScore} valueColor={s.projectRiskScore >= 60 ? "#DC2626": s.projectRiskScore >= 30 ? "#D97706": "#059669"} sub="0 = no risk"/>
-        <Stat label="Blocked Tasks"value={s.blockedTasks} valueColor={s.blockedTasks > 0 ? "#DC2626": "#059669"} />
-        <Stat label="Delayed Deliverables"value={s.delayedDeliverables} valueColor={s.delayedDeliverables > 0 ? "#D97706": "#059669"} />
-        <Stat label="Open Dependencies"value={s.openDependencies} valueColor={s.openDependencies > 0 ? "#D97706": "#059669"} />
-      </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <Badge label={s.projectStatus} bg={pStyle.bg} color={pStyle.color} border={pStyle.border} />
-        {s.departmentDelays.length > 0 && s.departmentDelays.map(d => (
-          <Badge key={d} label={`${d} delay`}color="#DC2626"border="#FECACA"/>
-        ))}
-        {s.departmentDelays.length === 0 && (
-          <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No department delays</span>
-        )}
-      </div>
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// COMMUNICATION HEALTH
-// ══════════════════════════════════════════════════════════════════════════════
-
-function commStatusStyle(s: string) {
-  switch (s) {
-    case "Strong": return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
-    case "Good":   return { bg: "#F0FDF9", color: "#0D9488", border: "#99F6E4"};
-    case "Weak":   return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
-    case "Poor":   return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    default:       return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
-  }
-}
-
-function CommunicationHealthPanel({ record }: { record: ClientHealthRecord }) {
-  const s = record.communicationSignals;
-  const cs = commStatusStyle(s.communicationStatus);
-  return (
-    <SectionCard title="Communication Health">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-        <Stat label="Last Contact"value={s.lastContact} sub={`${s.daysSinceContact} days ago`} />
-        <Stat label="Avg Response Time"value={`${s.avgResponseTimeHours}h`} valueColor={s.avgResponseTimeHours <= 8 ? "#059669": s.avgResponseTimeHours <= 24 ? "#D97706": "#DC2626"} />
-        <Stat label="Pending Follow-Ups"value={s.pendingFollowUps} valueColor={s.pendingFollowUps > 0 ? "#D97706": "#059669"} />
-        <Stat label="Open Concerns"value={s.openConcerns} valueColor={s.openConcerns > 0 ? "#DC2626": "#059669"} />
-        <Stat label="Meeting Frequency"value={s.meetingFrequency} />
-        <Stat label="Communication Score"value={s.communicationScore} valueColor={scoreColor(s.communicationScore)} />
-      </div>
-      <Badge label={s.communicationStatus} bg={cs.bg} color={cs.color} border={cs.border} />
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// CALL INTELLIGENCE
-// ══════════════════════════════════════════════════════════════════════════════
-
-function sentimentStyle(s: string) {
-  switch (s) {
-    case "Positive": return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
-    case "Neutral":  return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
-    case "Negative": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    case "Mixed":    return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
-    default:         return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
-  }
-}
-
-function CallIntelPanel({ record }: { record: ClientHealthRecord }) {
-  const s = record.callIntelSignals;
-  const ss = sentimentStyle(s.callSentiment);
-  const trendStyle = s.leadQualityTrend === "Improving"? "#059669": s.leadQualityTrend === "Stable"? "#64748B": "#DC2626";
-  return (
-    <SectionCard title="Call Intelligence Signals">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-        <Stat label="Total Calls"value={s.totalCalls} />
-        <Stat label="Qualified Leads"value={s.qualifiedLeads} />
-        <Stat label="Booked Leads"value={s.bookedLeads} />
-        <Stat label="Missed Opportunities"value={s.missedOpportunities} valueColor={s.missedOpportunities > 5 ? "#DC2626": s.missedOpportunities > 2 ? "#D97706": "#059669"} />
-        <Stat label="Complaint Trends"value={s.complaintTrends} valueColor={s.complaintTrends > 0 ? "#DC2626": "#059669"} />
-        <Stat label="Service Requests"value={s.serviceRequests} />
-        <Stat label="Renewal Signals"value={s.renewalSignals} valueColor={s.renewalSignals > 0 ? "#059669": "#64748B"} />
-        <Stat label="Upsell Signals"value={s.upsellSignals} valueColor={s.upsellSignals > 0 ? "#2563EB": "#64748B"} />
-        <Stat label="Call Quality Score"value={s.callQualityScore} valueColor={scoreColor(s.callQualityScore)} />
-      </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <Badge label={`Sentiment: ${s.callSentiment}`} bg={ss.bg} color={ss.color} border={ss.border} />
-        <Badge
-          label={`Lead Quality: ${s.leadQualityTrend}`}
-          bg={s.leadQualityTrend === "Improving"? "#ECFDF5": s.leadQualityTrend === "Stable"? "#F8FAFC": "#FEF2F2"}
-          color={trendStyle}
-          border={s.leadQualityTrend === "Improving"? "#A7F3D0": s.leadQualityTrend === "Stable"? "#E2E8F0": "#FECACA"}
-        />
-      </div>
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// REPORTING HEALTH
-// ══════════════════════════════════════════════════════════════════════════════
-
-function ReviewStatusBadge({ status }: { status: string }) {
-  const map: Record<string, { bg?: string; color?: string; border: string }> = {
-    "Reviewed":        { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
-    "Pending Review":  { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"},
-    "Not Reviewed":    { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
-    "Overdue":         { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"},
+  const renewalStyle = () => {
+    if (vm.daysToRenewal === null) return { color: "var(--rtm-text-muted)" };
+    if (vm.daysToRenewal <= RENEWAL_URGENT_DAYS) return { color: "#DC2626" };
+    if (vm.daysToRenewal <= 90) return { color: "#D97706" };
+    return { color: "#059669" };
   };
-  const s = map[status] ?? { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
-  return <Badge label={status} bg={s.bg} color={s.color} border={s.border} />;
-}
 
-function ReportingHealthPanel({ record }: { record: ClientHealthRecord }) {
-  const s = record.reportingSignals;
-  const fbStyle = sentimentStyle(s.clientFeedback);
   return (
-    <SectionCard title="Reporting Health">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-        <Stat label="Reports Delivered"value={s.reportsDelivered} />
-        <Stat label="Reports Missed"value={s.reportsMissed} valueColor={s.reportsMissed > 0 ? "#DC2626": "#059669"} />
-        <Stat label="Last Report"value={s.lastReportDate} />
-        <Stat label="Reporting Score"value={s.reportingScore} valueColor={scoreColor(s.reportingScore)} />
+    <SectionCard title="Billing & Revenue">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-5">
+        <Stat
+          label="Monthly Value (MRR)"
+          value={vm.mrr > 0 ? fmt$(vm.mrr) : "—"}
+          sub={vm.mrr > 0 ? `${fmt$(vm.mrr * 12)} ARR` : "No active billing"}
+          valueColor={vm.mrr > 0 ? "#059669" : "var(--rtm-text-muted)"}
+        />
+        <Stat label="Billing Status" value={vm.billingStatus} valueColor={bs.color} />
+        <Stat label="Payment Status" value={vm.paymentStatus} />
+        <Stat
+          label="Renewal Date"
+          value={vm.renewalDate !== "—" ? vm.renewalDate : "N/A"}
+          sub={
+            vm.daysToRenewal !== null
+              ? `${vm.daysToRenewal >= 0 ? vm.daysToRenewal + " days away" : "Overdue"}`
+              : undefined
+          }
+          valueColor={renewalStyle().color}
+        />
+        <Stat label="Renewal Status" value={vm.renewalStatus} />
+        <Stat label="Cancellation" value={vm.cancellationStatus} valueColor={
+          vm.cancellationStatus !== "None" ? "#DC2626" : "#059669"
+        } />
       </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <ReviewStatusBadge status={s.reviewStatus} />
-        <Badge label={`Client Feedback: ${s.clientFeedback}`} bg={fbStyle.bg} color={fbStyle.color} border={fbStyle.border} />
-      </div>
-    </SectionCard>
-  );
-}
 
-// ══════════════════════════════════════════════════════════════════════════════
-// BILLING HEALTH
-// ══════════════════════════════════════════════════════════════════════════════
-
-function billingStatusStyle(s: string) {
-  switch (s) {
-    case "Current": return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
-    case "Overdue": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    case "At Risk": return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
-    case "Failed":  return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    case "Hold":    return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    default:        return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
-  }
-}
-
-function BillingHealthPanel({ record }: { record: ClientHealthRecord }) {
-  const s = record.billingSignals;
-  const bs = billingStatusStyle(s.billingStatus);
-  return (
-    <SectionCard title="Billing Health">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-        <Stat label="MRR"value={fmt$(s.mrr)} />
-        <Stat label="ARR"value={fmt$(s.arr)} />
-        <Stat label="Outstanding Invoices"value={s.outstandingInvoices} valueColor={s.outstandingInvoices > 0 ? "#DC2626": "#059669"} />
-        <Stat label="Days Overdue"value={s.daysOverdue} valueColor={s.daysOverdue > 0 ? "#DC2626": "#059669"} />
-        <Stat label="Billing Score"value={s.billingScore} valueColor={scoreColor(s.billingScore)} />
-      </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <Badge label={s.billingStatus} bg={bs.bg} color={bs.color} border={bs.border} />
-        {s.billingHolds && <Badge label="Billing Hold Active"bg="#FEF2F2"color="#DC2626"border="#FECACA"/>}
-        {s.collectionActivity && <Badge label="Collection Activity"bg="#FFF7ED"color="#C2410C"border="#FED7AA"/>}
-      </div>
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// ESCALATION HEALTH
-// ══════════════════════════════════════════════════════════════════════════════
-
-function escalationSeverityStyle(s: string) {
-  switch (s) {
-    case "None":     return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
-    case "Low":      return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
-    case "Medium":   return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
-    case "High":     return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    case "Critical": return { bg: "#FEF2F2", color: "#7F1D1D", border: "#FECACA"};
-    default:         return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
-  }
-}
-
-function EscalationHealthPanel({ record }: { record: ClientHealthRecord }) {
-  const s = record.escalationSignals;
-  const es = escalationSeverityStyle(s.escalationSeverity);
-  return (
-    <SectionCard title="Escalation Health">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-        <Stat label="Open Escalations"value={s.openEscalations} valueColor={s.openEscalations > 0 ? "#DC2626": "#059669"} />
-        <Stat label="Avg Resolution"value={s.avgResolutionDays > 0 ? `${s.avgResolutionDays}d` : "N/A"} />
-        <Stat label="Escalation Score"value={s.escalationScore} valueColor={scoreColor(s.escalationScore)} />
-      </div>
-      <div className="flex items-center gap-3 flex-wrap">
-        <Badge label={`Severity: ${s.escalationSeverity}`} bg={es.bg} color={es.color} border={es.border} />
-        {s.departmentsInvolved.length > 0 ? s.departmentsInvolved.map(d => (
-          <Badge key={d} label={d}color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
-        )) : (
-          <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No departments involved</span>
+      <div className="flex items-center gap-3 flex-wrap mb-5">
+        <Badge label={vm.billingStatus} bg={bs.bg} color={bs.color} border={bs.border} />
+        {vm.cancellationStatus !== "None" && (
+          <Badge label={`Cancellation: ${vm.cancellationStatus}`} bg="#FEF2F2" color="#DC2626" border="#FECACA" />
+        )}
+        {vm.daysToRenewal !== null && vm.daysToRenewal <= RENEWAL_URGENT_DAYS && vm.daysToRenewal >= 0 && (
+          <Badge label={`Renewal in ${vm.daysToRenewal}d`} bg="#FEF2F2" color="#DC2626" border="#FECACA" />
+        )}
+        {!vm.cleared && (
+          <Badge label="Pending Billing Clearance" bg="#FFFBEB" color="#B45309" border="#FDE68A" />
         )}
       </div>
+
+      {vm.activeServices.length > 0 && (
+        <div>
+          <p className="text-xs font-semibold mb-2" style={{ color: "var(--rtm-text-secondary)" }}>Active Services</p>
+          <div className="flex flex-wrap gap-2">
+            {vm.activeServices.map((s) => (
+              <Badge key={s} label={s} color="var(--rtm-blue)" border="var(--rtm-blue-light)" />
+            ))}
+          </div>
+        </div>
+      )}
     </SectionCard>
   );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// CLIENT ENGAGEMENT
+// PROJECTS TAB — REAL ENGINE DATA
 // ══════════════════════════════════════════════════════════════════════════════
 
-function engagementStatusStyle(s: string) {
-  switch (s) {
-    case "High":         return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
-    case "Medium":       return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
-    case "Low":          return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
-    case "Unresponsive": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-    default:             return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
+function ProjectsTab({ vm, engineProjects }: { vm: ClientHealthVM; engineProjects: EngineProject[] }) {
+  const ts = vm.taskSignals;
+
+  if (engineProjects.length === 0 && !ts) {
+    return (
+      <SectionCard title="Projects & Tasks">
+        <div className="flex flex-col items-center justify-center py-10 gap-2">
+          <p className="text-sm font-medium" style={{ color: "var(--rtm-text-muted)" }}>No engine projects found for this client</p>
+          <p className="text-xs text-center max-w-xs" style={{ color: "var(--rtm-text-muted)" }}>
+            Projects and task data will appear here once the client has active engine projects.
+          </p>
+        </div>
+      </SectionCard>
+    );
   }
-}
 
-function ClientEngagementPanel({ record }: { record: ClientHealthRecord }) {
-  const s = record.engagementSignals;
-  const es = engagementStatusStyle(s.engagementStatus);
+  const completionPct = ts && ts.totalTasks > 0
+    ? Math.round((ts.completedTasks / ts.totalTasks) * 100)
+    : null;
+
   return (
-    <SectionCard title="Client Engagement">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-        <Stat label="Meeting Attendance"value={`${s.meetingAttendance}%`} valueColor={scoreColor(s.meetingAttendance)} />
-        <Stat label="Response Rate"value={`${s.responseRate}%`} valueColor={scoreColor(s.responseRate)} />
-        <Stat label="Engagement Score"value={s.engagementScore} valueColor={scoreColor(s.engagementScore)} />
-        <Stat label="Project Participation"value={s.projectParticipation} />
-        <Stat label="Review Participation"value={s.reviewParticipation} />
-        <Stat label="Comm Frequency"value={s.communicationFrequency} />
-      </div>
-      <Badge label={s.engagementStatus} bg={es.bg} color={es.color} border={es.border} />
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// RENEWAL RISK PANEL
-// ══════════════════════════════════════════════════════════════════════════════
-
-function RenewalRiskPanel({ record }: { record: ClientHealthRecord }) {
-  const r = record.renewalRisk;
-  const rs = riskStyle(r.riskLevel);
-  const ss = sentimentStyle(r.clientSentiment);
-  return (
-    <SectionCard title="Renewal Risk Model">
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-        <Stat label="Risk Score"value={r.riskScore} valueColor={r.riskScore >= 70 ? "#DC2626": r.riskScore >= 40 ? "#D97706": "#059669"} sub="0 = no risk"/>
-        <Stat label="Contract End"value={r.contractEndDate} />
-        <Stat label="Days to Renewal"value={r.daysToRenewal} valueColor={r.daysToRenewal <= 30 ? "#DC2626": r.daysToRenewal <= 60 ? "#D97706": "#059669"} />
-      </div>
-      <div className="flex items-center gap-3 flex-wrap mb-4">
-        <Badge label={`Risk: ${r.riskLevel}`} bg={rs.bg} color={rs.color} border={rs.border} />
-        <Badge label={`Sentiment: ${r.clientSentiment}`} bg={ss.bg} color={ss.color} border={ss.border} />
-      </div>
-      <div>
-        <p className="text-xs font-semibold mb-2"style={{ color: "var(--rtm-text-secondary)"}}>Recommended Actions</p>
-        <ul className="flex flex-col gap-1">
-          {r.recommendedActions.map((a, i) => (
-            <li key={i} className="flex items-start gap-2 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
-              <span className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: "var(--rtm-blue)"}} />
-              {a}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// EXPANSION OPPORTUNITY PANEL
-// ══════════════════════════════════════════════════════════════════════════════
-
-function ExpansionOpportunityPanel({ record }: { record: ClientHealthRecord }) {
-  const e = record.expansionOpportunity;
-  return (
-    <SectionCard title="Expansion Opportunity Model">
-      {e.hasOpportunity ? (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
-            <Stat label="Opportunity Score"value={e.opportunityScore} valueColor={scoreColor(e.opportunityScore)} />
-            <Stat label="Revenue Potential"value={`+${fmt$(e.revenuePotential)}/mo`} valueColor="#059669"/>
-            <Stat label="Confidence Score"value={`${e.confidenceScore}%`} valueColor={scoreColor(e.confidenceScore)} />
+    <div className="flex flex-col gap-6">
+      {/* Task Signal Summary */}
+      {ts && (
+        <SectionCard title="Task Signal Summary">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+            <Stat
+              label="Total Tasks"
+              value={ts.totalTasks}
+            />
+            <Stat
+              label="Completed"
+              value={ts.completedTasks}
+              sub={completionPct !== null ? `${completionPct}% done` : undefined}
+              valueColor="#059669"
+            />
+            <Stat
+              label="Blocked (Waiting)"
+              value={ts.blockedTasks}
+              valueColor={ts.blockedTasks > 0 ? "#DC2626" : "#059669"}
+            />
+            <Stat
+              label="Overdue"
+              value={ts.overdueTasks}
+              valueColor={ts.overdueTasks > 0 ? "#C2410C" : "#059669"}
+            />
           </div>
-          <div className="mb-3">
-            <p className="text-xs font-semibold mb-1.5"style={{ color: "var(--rtm-text-secondary)"}}>Recommended Services</p>
-            <div className="flex flex-wrap gap-2">
-              {e.recommendedServices.map(s => (
-                <Badge key={s} label={s}color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
-              ))}
-            </div>
-          </div>
-          <p className="text-xs mb-4"style={{ color: "var(--rtm-text-secondary)"}}>{e.reason}</p>
-          <div>
-            <p className="text-xs font-semibold mb-2"style={{ color: "var(--rtm-text-secondary)"}}>Recommended Actions</p>
-            <ul className="flex flex-col gap-1">
-              {e.recommendedActions.map((a, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
-                  <span className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: "#059669"}} />
-                  {a}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-6 gap-2">
-          <span className="text-sm font-medium"style={{ color: "var(--rtm-text-muted)"}}>No Expansion Opportunity</span>
-          <p className="text-xs text-center max-w-xs"style={{ color: "var(--rtm-text-muted)"}}>{e.reason}</p>
-        </div>
-      )}
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// AI SUMMARY PANEL
-// ══════════════════════════════════════════════════════════════════════════════
-
-function AISummaryPanel({ record }: { record: ClientHealthRecord }) {
-  const ai = record.aiSummary;
-  return (
-    <SectionCard title="AI Client Summary">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div className="flex flex-col gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-blue)"}}>Client Overview</p>
-            <p className="text-sm leading-relaxed"style={{ color: "var(--rtm-text-secondary)"}}>{ai.overview}</p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-secondary)"}}>Health Assessment</p>
-            <p className="text-sm leading-relaxed"style={{ color: "var(--rtm-text-secondary)"}}>{ai.healthAssessment}</p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-secondary)"}}>Communication Summary</p>
-            <p className="text-sm leading-relaxed"style={{ color: "var(--rtm-text-secondary)"}}>{ai.communicationSummary}</p>
-          </div>
-        </div>
-        <div className="flex flex-col gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide mb-2"style={{ color: "#DC2626"}}>Risks</p>
-            <ul className="flex flex-col gap-1.5">
-              {ai.risks.map((r, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
-                  <span className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-red-400"/>
-                  {r}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {ai.growthOpportunities.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-2"style={{ color: "#059669"}}>Growth Opportunities</p>
-              <ul className="flex flex-col gap-1.5">
-                {ai.growthOpportunities.map((g, i) => (
-                  <li key={i} className="flex items-start gap-2 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
-                    <span className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-green-400"/>
-                    {g}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {completionPct !== null && (
+            <ScoreBar score={completionPct} label="Task Completion Rate" />
           )}
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide mb-2"style={{ color: "var(--rtm-blue)"}}>Recommended Actions</p>
-            <ul className="flex flex-col gap-1.5">
-              {ai.recommendedActions.map((a, i) => (
-                <li key={i} className="flex items-start gap-2 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
-                  <span className="mt-0.5 w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: "var(--rtm-blue)"}} />
-                  {a}
-                </li>
-              ))}
-            </ul>
+        </SectionCard>
+      )}
+
+      {/* Engine Projects List */}
+      {engineProjects.length > 0 && (
+        <SectionCard title={`Active Projects (${engineProjects.length})`}>
+          <div className="flex flex-col divide-y" style={{ borderColor: "var(--rtm-border-light)" }}>
+            {engineProjects.map((p) => {
+              const statusStyle = (() => {
+                switch (p.status) {
+                  case "Complete": case "Completed": return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" };
+                  case "In Progress": return { bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" };
+                  case "On Hold": return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" };
+                  case "Blocked": return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" };
+                  default: return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" };
+                }
+              })();
+              return (
+                <div key={p.id} className="py-3 flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>{p.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>ID: {p.id}</p>
+                  </div>
+                  <Badge label={p.status} bg={statusStyle.bg} color={statusStyle.color} border={statusStyle.border} />
+                </div>
+              );
+            })}
           </div>
-          <div className="grid grid-cols-1 gap-2">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}>Renewal Signals</p>
-              <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{ai.renewalSignals}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}>Expansion Signals</p>
-              <p className="text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{ai.expansionSignals}</p>
-            </div>
+        </SectionCard>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COMMUNICATIONS TAB — LINK OUT TO COLLABORATION HUB
+// ══════════════════════════════════════════════════════════════════════════════
+
+function CommunicationsTab({ vm }: { vm: ClientHealthVM }) {
+  return (
+    <SectionCard title="Communications">
+      <div className="flex flex-col items-center justify-center py-10 gap-4 text-center">
+        <div
+          className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+          style={{ background: "var(--rtm-blue-xlight)", color: "var(--rtm-blue)" }}
+        >
+          💬
+        </div>
+        <div>
+          <p className="text-base font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+            Task &amp; Project Communications
+          </p>
+          <p className="text-sm mt-1 max-w-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+            Message threads, task comments, and project communication context for{" "}
+            <strong>{vm.clientName}</strong> are managed in the Collaboration Hub.
+          </p>
+        </div>
+        <Link
+          href={`/tasks/collaboration?client=${encodeURIComponent(vm.clientName)}`}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-opacity hover:opacity-80"
+          style={{ background: "var(--rtm-blue)", color: "#fff" }}
+        >
+          Open Collaboration Hub
+          <span>→</span>
+        </Link>
+        <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+          Opens Task Collaboration Hub · /tasks/collaboration
+        </p>
+      </div>
+
+      {/* Recent events from MASTER_CLIENTS as a lightweight activity summary */}
+      {vm.recentEvents.length > 0 && (
+        <div className="mt-6 border-t pt-4" style={{ borderColor: "var(--rtm-border-light)" }}>
+          <p className="text-xs font-semibold mb-3" style={{ color: "var(--rtm-text-secondary)" }}>
+            Recent Activity (from client record)
+          </p>
+          <div className="flex flex-col divide-y" style={{ borderColor: "var(--rtm-border-light)" }}>
+            {vm.recentEvents.map((ev, i) => (
+              <div key={i} className="py-2.5 flex items-start gap-3">
+                <span className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{ev.date}</span>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium" style={{ color: "var(--rtm-text-primary)" }}>{ev.actor}</p>
+                  <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{ev.action}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
     </SectionCard>
   );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// COMMUNICATION HISTORY
+// HEALTH HISTORY TAB — REAL COMPUTED SCORE BREAKDOWN
 // ══════════════════════════════════════════════════════════════════════════════
 
-function CommHistoryPanel({ record }: { record: ClientHealthRecord }) {
+function HealthHistoryTab({ vm }: { vm: ClientHealthVM }) {
+  const ts = vm.taskSignals;
+
+  // Build score component breakdown for display
+  const billingPts = (() => {
+    if (vm.billingStatus === "Paid" || vm.billingStatus === "Cleared") return 40;
+    if (vm.billingStatus === "Pending") return 28;
+    if (vm.billingStatus === "Overdue" && vm.paymentStatus !== "Overdue") return 15;
+    if (vm.billingStatus === "Overdue" && vm.paymentStatus === "Overdue") return 5;
+    return 20;
+  })();
+
+  const taskCompPts = ts && ts.totalTasks > 0
+    ? Math.round((ts.completedTasks / ts.totalTasks) * 30)
+    : 20;
+
+  const pressurePts = ts
+    ? Math.round((1 - Math.min(1, (ts.overdueTasks + ts.blockedTasks * 1.5) / Math.max(1, ts.totalTasks))) * 20)
+    : 18;
+
+  const activationPts = vm.activationStatus === "Active" ? 10 : 5;
+
+  const components = [
+    { label: "Billing Health", pts: billingPts, max: 40, weight: "40 pts" },
+    { label: "Task Completion", pts: taskCompPts, max: 30, weight: "30 pts", note: ts ? undefined : "No engine data — neutral" },
+    { label: "Task Pressure", pts: pressurePts, max: 20, weight: "20 pts", note: ts ? undefined : "No engine data — neutral" },
+    { label: "Activation", pts: activationPts, max: 10, weight: "10 pts" },
+  ];
+
   return (
-    <SectionCard title="Communication History">
-      {record.commHistory.length === 0 ? (
-        <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No communication history available.</p>
-      ) : (
-        <div className="flex flex-col divide-y"style={{ borderColor: "var(--rtm-border-light)"}}>
-          {record.commHistory.map((c, i) => {
-            const ss = sentimentStyle(c.sentiment);
-            const typeColor: Record<string, string> = {
-              Call: "#2563EB", Email: "#7C3AED", Meeting: "#059669", Note: "#64748B", "Follow-Up": "#D97706",
-            };
-            return (
-              <div key={i} className="py-3 flex flex-col gap-1.5">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className="text-xs font-semibold px-2 py-0.5 rounded"style={{ background: "#F4F7FF", color: typeColor[c.type] ?? "#64748B"}}
-                  >
-                    {c.type}
+    <div className="flex flex-col gap-6">
+      <SectionCard title="Health Score Breakdown">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <HealthScoreGauge score={vm.healthScore} />
+          <div className="flex flex-col gap-4 justify-center">
+            {components.map(({ label, pts, max, weight, note }) => (
+              <div key={label} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{label}</span>
+                    <span className="ml-1.5 text-xs" style={{ color: "var(--rtm-text-muted)" }}>({weight})</span>
+                  </div>
+                  <span className="text-xs font-bold" style={{ color: scoreColor(Math.round((pts / max) * 100)) }}>
+                    {pts}/{max}
                   </span>
-                  <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{c.date}</span>
-                  <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>by {c.by}</span>
-                  <Badge label={c.sentiment} bg={ss.bg} color={ss.color} border={ss.border} />
                 </div>
-                <p className="text-xs leading-relaxed"style={{ color: "var(--rtm-text-secondary)"}}>{c.summary}</p>
+                <div className="h-1.5 rounded-full" style={{ background: "var(--rtm-border)" }}>
+                  <div
+                    className="h-1.5 rounded-full"
+                    style={{ width: `${(pts / max) * 100}%`, background: scoreColor(Math.round((pts / max) * 100)) }}
+                  />
+                </div>
+                {note && <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{note}</p>}
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      )}
-    </SectionCard>
+      </SectionCard>
+
+      <SectionCard title="Health Signals">
+        <DataRow label="Health Tier" valueEl={<HealthBadge health={vm.health} />} />
+        <DataRow label="Numeric Score" value={`${vm.healthScore}/100`} />
+        <DataRow label="Priority" value={vm.priority} />
+        <DataRow label="Billing Status" value={vm.billingStatus} />
+        <DataRow label="Payment Status" value={vm.paymentStatus} />
+        <DataRow label="Cancellation Status" value={vm.cancellationStatus} />
+        <DataRow label="Activation Status" value={vm.activationStatus} />
+        {ts && (
+          <>
+            <DataRow label="Total Tasks" value={ts.totalTasks} />
+            <DataRow label="Completed Tasks" value={`${ts.completedTasks} (${ts.totalTasks > 0 ? Math.round(ts.completedTasks / ts.totalTasks * 100) : 0}%)`} />
+            <DataRow label="Blocked Tasks" value={ts.blockedTasks} />
+            <DataRow label="Overdue Tasks" value={ts.overdueTasks} />
+          </>
+        )}
+        {!ts && (
+          <DataRow label="Task Signals" value="No engine projects — score uses billing signals only" />
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// OVERVIEW TAB
+// ══════════════════════════════════════════════════════════════════════════════
+
+function OverviewTab({ vm }: { vm: ClientHealthVM }) {
+  const ts = vm.taskSignals;
+  const completionPct = ts && ts.totalTasks > 0 ? Math.round(ts.completedTasks / ts.totalTasks * 100) : null;
+
+  const renewalColor = (() => {
+    if (vm.daysToRenewal === null) return "var(--rtm-text-muted)";
+    if (vm.daysToRenewal <= RENEWAL_URGENT_DAYS) return "#DC2626";
+    if (vm.daysToRenewal <= 90) return "#D97706";
+    return "#059669";
+  })();
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Score */}
+      <SectionCard title="Health Score">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <HealthScoreGauge score={vm.healthScore} />
+          <div className="flex flex-col gap-3 justify-center">
+            <DataRow label="Health Tier" valueEl={<HealthBadge health={vm.health} />} />
+            <DataRow label="Priority" value={vm.priority} />
+            <DataRow label="MRR" value={vm.mrr > 0 ? fmt$(vm.mrr) : "—"} />
+            <DataRow label="Billing" value={vm.billingStatus} />
+            {vm.daysToRenewal !== null && (
+              <DataRow
+                label="Renewal"
+                valueEl={
+                  <span className="text-xs font-semibold" style={{ color: renewalColor }}>
+                    {vm.daysToRenewal >= 0 ? `${vm.daysToRenewal}d away` : "Overdue"}
+                  </span>
+                }
+              />
+            )}
+            {ts && (
+              <DataRow
+                label="Task Completion"
+                valueEl={
+                  <span className="text-xs font-semibold" style={{ color: completionPct !== null ? scoreColor(completionPct) : "var(--rtm-text-muted)" }}>
+                    {completionPct !== null ? `${completionPct}%` : "—"} ({ts.completedTasks}/{ts.totalTasks})
+                  </span>
+                }
+              />
+            )}
+            {ts && ts.blockedTasks > 0 && (
+              <DataRow
+                label="Blocked Tasks"
+                valueEl={<span className="text-xs font-semibold text-red-600">{ts.blockedTasks}</span>}
+              />
+            )}
+            {ts && ts.overdueTasks > 0 && (
+              <DataRow
+                label="Overdue Tasks"
+                valueEl={<span className="text-xs font-semibold" style={{ color: "#C2410C" }}>{ts.overdueTasks}</span>}
+              />
+            )}
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Notes + Next Action */}
+      <SectionCard title="Account Notes">
+        <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--rtm-text-secondary)" }}>
+          {vm.notes || "No notes."}
+        </p>
+        <div className="rounded-lg border p-3" style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)" }}>
+          <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Next Required Action
+          </p>
+          <p className="text-sm" style={{ color: "var(--rtm-text-primary)" }}>{vm.nextRequiredAction}</p>
+        </div>
+      </SectionCard>
+    </div>
   );
 }
 
@@ -682,74 +722,84 @@ function CommHistoryPanel({ record }: { record: ClientHealthRecord }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 type DrawerTab =
-  | "Overview"| "Health History"| "Projects"| "Communications"| "Call Intelligence"| "Billing"| "Reports"| "Escalations"| "Renewals"| "Expansion"| "AI Summary";
+  | "Overview"
+  | "Health History"
+  | "Billing"
+  | "Projects"
+  | "Communications"
+  | "Escalations"
+  | "AI Summary";
 
 const DRAWER_TABS: DrawerTab[] = [
   "Overview",
   "Health History",
+  "Billing",
   "Projects",
   "Communications",
-  "Call Intelligence",
-  "Billing",
-  "Reports",
   "Escalations",
-  "Renewals",
-  "Expansion",
   "AI Summary",
 ];
 
+const DEFERRED_TABS: DrawerTab[] = ["Escalations", "AI Summary"];
+
 function ClientDetailDrawer({
-  record,
+  vm,
+  engineProjects,
   onClose,
 }: {
-  record: ClientHealthRecord;
+  vm: ClientHealthVM;
+  engineProjects: EngineProject[];
   onClose: () => void;
 }) {
   const [tab, setTab] = useState<DrawerTab>("Overview");
+  const ps = scoreBg(vm.healthScore);
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      {/* Backdrop */}
+      <div className="flex-1 bg-black/40 cursor-pointer" onClick={onClose} />
       <div
-        className="flex-1 bg-black/40 cursor-pointer"onClick={onClose}
-      />
-      {/* Panel */}
-      <div
-        className="w-full max-w-4xl flex flex-col h-full overflow-hidden"style={{ background: "var(--rtm-bg)", boxShadow: "-4px 0 40px rgba(15,28,56,0.18)"}}
+        className="w-full max-w-4xl flex flex-col h-full overflow-hidden"
+        style={{ background: "var(--rtm-bg)", boxShadow: "-4px 0 40px rgba(15,28,56,0.18)" }}
       >
-        {/* Drawer Header */}
+        {/* Header */}
         <div
-          className="flex items-start justify-between p-6 border-b flex-shrink-0"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
+          className="flex items-start justify-between p-6 border-b flex-shrink-0"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
         >
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-3">
-              <h2 className="text-lg font-bold"style={{ color: "var(--rtm-text-primary)"}}>{record.client}</h2>
-              <HealthBadge status={record.healthStatus} />
+          <div className="flex flex-col gap-2 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span
+                className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
+                style={{ background: vm.avatarColor }}
+              >
+                {vm.clientName.charAt(0)}
+              </span>
+              <h2 className="text-lg font-bold" style={{ color: "var(--rtm-text-primary)" }}>{vm.clientName}</h2>
+              <HealthBadge health={vm.health} />
             </div>
             <div className="flex items-center gap-4 flex-wrap">
-              <span className="text-sm"style={{ color: "var(--rtm-text-secondary)"}}>AM: {record.accountManager}</span>
-              <span className="text-sm"style={{ color: "var(--rtm-text-secondary)"}}>{record.industry}</span>
-              <span className="text-sm"style={{ color: "var(--rtm-text-secondary)"}}>{record.location}</span>
-              <span className="text-sm"style={{ color: "var(--rtm-text-secondary)"}}>Since {record.startDate}</span>
+              <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>AM: {vm.assignedAM}</span>
+              <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>{vm.industry}</span>
+              <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Billing: {vm.billingStatus}</span>
             </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              {record.services.map(s => (
-                <Badge key={s} label={s}color="var(--rtm-blue)"border="var(--rtm-blue-light)"/>
+            <div className="flex items-center gap-2 flex-wrap">
+              {vm.activeServices.slice(0, 4).map((s) => (
+                <Badge key={s} label={s} color="var(--rtm-blue)" border="var(--rtm-blue-light)" />
               ))}
+              {vm.activeServices.length > 4 && (
+                <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>+{vm.activeServices.length - 4} more</span>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-3 flex-shrink-0">
             <div className="flex flex-col items-end">
-              <span
-                className="text-3xl font-extrabold"style={{ color: scoreColor(record.healthScore.overall) }}
-              >
-                {record.healthScore.overall}
-              </span>
-              <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>Health Score</span>
+              <span className="text-3xl font-extrabold" style={{ color: ps.text }}>{vm.healthScore}</span>
+              <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Health Score</span>
             </div>
             <button
               onClick={onClose}
-              className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors text-lg font-bold"style={{ color: "var(--rtm-text-muted)"}}
+              className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-gray-100 transition-colors text-lg font-bold"
+              style={{ color: "var(--rtm-text-muted)" }}
             >
               ×
             </button>
@@ -758,64 +808,61 @@ function ClientDetailDrawer({
 
         {/* Tabs */}
         <div
-          className="flex gap-0 border-b overflow-x-auto flex-shrink-0"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
+          className="flex gap-0 border-b overflow-x-auto flex-shrink-0"
+          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
         >
-          {DRAWER_TABS.map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className="px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors"style={{
-                borderBottomColor: tab === t ? "var(--rtm-blue)": "transparent",
-                color: tab === t ? "var(--rtm-blue)": "var(--rtm-text-muted)",
-                background: "transparent",
-              }}
-            >
-              {t}
-            </button>
-          ))}
+          {DRAWER_TABS.map((t) => {
+            const deferred = DEFERRED_TABS.includes(t);
+            return (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className="px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors flex items-center gap-1.5"
+                style={{
+                  borderBottomColor: tab === t ? "var(--rtm-blue)" : "transparent",
+                  color: tab === t ? "var(--rtm-blue)" : "var(--rtm-text-muted)",
+                  background: "transparent",
+                }}
+              >
+                {t}
+                {deferred && (
+                  <span
+                    className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full border"
+                    style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+                  >
+                    Preview
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="flex flex-col gap-6">
-            {tab === "Overview"&& (
-              <>
-                <HealthScoreBreakdownPanel record={record} />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <RenewalRiskPanel record={record} />
-                  <ExpansionOpportunityPanel record={record} />
-                </div>
-              </>
-            )}
-            {tab === "Health History"&& (
-              <SectionCard title="Health Score History">
-                <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
-                  Last reviewed: <strong>{record.lastHealthReview}</strong>
-                </p>
-                <div className="mt-4">
-                  <HealthScoreGauge score={record.healthScore.overall} />
-                </div>
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {SCORE_WEIGHTS.map(({ key, label }) => (
-                    <ScoreBar key={key} score={record.healthScore[key as ScoreKey]} label={label} />
-                  ))}
+            {tab === "Overview" && <OverviewTab vm={vm} />}
+            {tab === "Health History" && <HealthHistoryTab vm={vm} />}
+            {tab === "Billing" && <BillingTab vm={vm} />}
+            {tab === "Projects" && <ProjectsTab vm={vm} engineProjects={engineProjects} />}
+            {tab === "Communications" && <CommunicationsTab vm={vm} />}
+
+            {/* Deferred tabs */}
+            {DEFERRED_TABS.includes(tab) && (
+              <SectionCard
+                title={tab}
+                badge={<PreviewBadge />}
+              >
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <p className="text-sm font-medium" style={{ color: "var(--rtm-text-muted)" }}>
+                    {tab} — Preview Target State
+                  </p>
+                  <p className="text-xs text-center max-w-sm" style={{ color: "var(--rtm-text-muted)" }}>
+                    This view is planned for a future phase. Real data wiring is in progress.
+                  </p>
                 </div>
               </SectionCard>
             )}
-            {tab === "Projects"&& <ProjectHealthPanel record={record} />}
-            {tab === "Communications"&& (
-              <>
-                <CommunicationHealthPanel record={record} />
-                <CommHistoryPanel record={record} />
-              </>
-            )}
-            {tab === "Call Intelligence"&& <CallIntelPanel record={record} />}
-            {tab === "Billing"&& <BillingHealthPanel record={record} />}
-            {tab === "Reports"&& <ReportingHealthPanel record={record} />}
-            {tab === "Escalations"&& <EscalationHealthPanel record={record} />}
-            {tab === "Renewals"&& <RenewalRiskPanel record={record} />}
-            {tab === "Expansion"&& <ExpansionOpportunityPanel record={record} />}
-            {tab === "AI Summary"&& <AISummaryPanel record={record} />}
           </div>
         </div>
       </div>
@@ -824,25 +871,120 @@ function ClientDetailDrawer({
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// CLIENT HEALTH TABLE
+// CLIENT CARD (DASHBOARD VIEW)
 // ══════════════════════════════════════════════════════════════════════════════
 
-function ClientHealthTable({
-  records,
-  onSelect,
-}: {
-  records: ClientHealthRecord[];
-  onSelect: (r: ClientHealthRecord) => void;
-}) {
+function ClientCard({ vm, onClick }: { vm: ClientHealthVM; onClick: () => void }) {
+  const ps = scoreBg(vm.healthScore);
+  const bs = billingStyle(vm.billingStatus);
+  const renewalUrgent = vm.daysToRenewal !== null && vm.daysToRenewal <= RENEWAL_URGENT_DAYS && vm.daysToRenewal >= 0;
+
   return (
-    <div className="overflow-x-auto rounded-xl border"style={{ borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)"}}>
+    <div
+      className="rounded-xl border flex flex-col overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+      onClick={onClick}
+    >
+      {/* Card header */}
+      <div className="p-4 flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span
+            className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
+            style={{ background: vm.avatarColor }}
+          >
+            {vm.clientName.charAt(0)}
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold truncate text-sm" style={{ color: "var(--rtm-text-primary)" }}>{vm.clientName}</p>
+            <p className="text-xs truncate" style={{ color: "var(--rtm-text-muted)" }}>{vm.assignedAM} · {vm.industry}</p>
+          </div>
+        </div>
+        <HealthBadge health={vm.health} />
+      </div>
+
+      {/* Score */}
+      <div
+        className="mx-4 mb-3 rounded-lg border py-3 flex flex-col items-center"
+        style={{ background: ps.bg, borderColor: ps.border }}
+      >
+        <span className="text-4xl font-extrabold leading-none" style={{ color: ps.text }}>{vm.healthScore}</span>
+        <span className="text-xs mt-0.5" style={{ color: ps.text, opacity: 0.8 }}>Health Score</span>
+      </div>
+
+      {/* Key metrics */}
+      <div className="border-t grid grid-cols-3 divide-x" style={{ borderColor: "var(--rtm-border-light)" }}>
+        <div className="px-3 py-2 flex flex-col items-center">
+          <span className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+            {vm.mrr > 0 ? fmt$(vm.mrr) : "—"}
+          </span>
+          <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>MRR</span>
+        </div>
+        <div className="px-3 py-2 flex flex-col items-center">
+          <span className="text-xs font-bold" style={{ color: bs.color }}>{vm.billingStatus}</span>
+          <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>Billing</span>
+        </div>
+        <div className="px-3 py-2 flex flex-col items-center">
+          {renewalUrgent ? (
+            <>
+              <span className="text-xs font-bold text-red-600">{vm.daysToRenewal}d</span>
+              <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>Renewal</span>
+            </>
+          ) : (
+            <>
+              <span className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>{vm.activationStatus === "Active" ? "Active" : "—"}</span>
+              <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>Status</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Task signals if available */}
+      {vm.taskSignals && (
+        <div className="px-4 py-2 border-t flex items-center gap-3" style={{ borderColor: "var(--rtm-border-light)" }}>
+          {vm.taskSignals.blockedTasks > 0 && (
+            <span className="text-[11px]" style={{ color: "#DC2626" }}>
+              {vm.taskSignals.blockedTasks} blocked
+            </span>
+          )}
+          {vm.taskSignals.overdueTasks > 0 && (
+            <span className="text-[11px]" style={{ color: "#C2410C" }}>
+              {vm.taskSignals.overdueTasks} overdue
+            </span>
+          )}
+          {vm.taskSignals.blockedTasks === 0 && vm.taskSignals.overdueTasks === 0 && (
+            <span className="text-[11px]" style={{ color: "#059669" }}>Tasks on track</span>
+          )}
+          <span className="ml-auto text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+            {vm.taskSignals.completedTasks}/{vm.taskSignals.totalTasks} done
+          </span>
+        </div>
+      )}
+
+      {/* Notes */}
+      <div className="px-4 py-3 border-t" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
+        <p className="text-xs italic leading-snug line-clamp-2" style={{ color: "var(--rtm-text-muted)" }}>
+          {vm.notes || "No notes."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CLIENT TABLE (ALL CLIENTS VIEW)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function ClientTable({ vms, onSelect }: { vms: ClientHealthVM[]; onSelect: (v: ClientHealthVM) => void }) {
+  return (
+    <div className="overflow-x-auto rounded-xl border" style={{ borderColor: "var(--rtm-border)", boxShadow: "0 1px 3px rgba(15,28,56,0.05)" }}>
       <table className="min-w-full text-sm">
         <thead>
-          <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)"}}>
-            {["Client", "Account Manager", "Health Score", "Status", "Renewal Risk", "Expansion", "MRR", "ARR", "Projects", "Open Escalations", "Last Comm", "Actions"].map(h => (
+          <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
+            {["Client", "AM", "Score", "Health", "Billing", "MRR", "Tasks", "Renewal", "Actions"].map((h) => (
               <th
                 key={h}
-                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}
+                className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap"
+                style={{ color: "var(--rtm-text-muted)" }}
               >
                 {h}
               </th>
@@ -850,64 +992,77 @@ function ClientHealthTable({
           </tr>
         </thead>
         <tbody>
-          {records.map((r, i) => {
-            const ps = scoreBg(r.healthScore.overall);
+          {vms.map((vm, i) => {
+            const ps = scoreBg(vm.healthScore);
+            const bs = billingStyle(vm.billingStatus);
+            const renewalUrgent = vm.daysToRenewal !== null && vm.daysToRenewal <= RENEWAL_URGENT_DAYS && vm.daysToRenewal >= 0;
+
             return (
               <tr
-                key={r.clientId}
-                className="hover:bg-blue-50 cursor-pointer transition-colors"style={{ background: i % 2 === 0 ? "var(--rtm-surface)": "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border-light)"}}
-                onClick={() => onSelect(r)}
+                key={vm.id}
+                className="hover:bg-blue-50 cursor-pointer transition-colors"
+                style={{
+                  background: i % 2 === 0 ? "var(--rtm-surface)" : "var(--rtm-bg)",
+                  borderBottom: "1px solid var(--rtm-border-light)",
+                }}
+                onClick={() => onSelect(vm)}
               >
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <div className="flex flex-col">
-                    <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{r.client}</span>
-                    <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{r.industry}</span>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
+                      style={{ background: vm.avatarColor }}
+                    >
+                      {vm.clientName.charAt(0)}
+                    </span>
+                    <div>
+                      <p className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{vm.clientName}</p>
+                      <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{vm.industry}</p>
+                    </div>
                   </div>
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{r.accountManager}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{vm.assignedAM}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <span
-                    className="text-lg font-extrabold"style={{ color: ps.text }}
-                  >
-                    {r.healthScore.overall}
-                  </span>
+                  <span className="text-lg font-extrabold" style={{ color: ps.text }}>{vm.healthScore}</span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <HealthBadge status={r.healthStatus} />
+                  <HealthBadge health={vm.health} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <RiskBadge risk={r.renewalRisk.riskLevel} />
+                  <Badge label={vm.billingStatus} bg={bs.bg} color={bs.color} border={bs.border} />
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                  {vm.mrr > 0 ? fmt$(vm.mrr) : "—"}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  {r.expansionOpportunity.hasOpportunity ? (
-                    <Badge label={`+${fmt$(r.expansionOpportunity.revenuePotential)}`}color="#059669"border="#A7F3D0"/>
+                  {vm.taskSignals ? (
+                    <div className="text-xs">
+                      <span style={{ color: vm.taskSignals.blockedTasks > 0 ? "#DC2626" : "var(--rtm-text-muted)" }}>
+                        {vm.taskSignals.blockedTasks} blocked
+                      </span>
+                      {" · "}
+                      <span style={{ color: vm.taskSignals.overdueTasks > 0 ? "#C2410C" : "var(--rtm-text-muted)" }}>
+                        {vm.taskSignals.overdueTasks} overdue
+                      </span>
+                    </div>
                   ) : (
-                    <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>None</span>
+                    <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No engine data</span>
                   )}
                 </td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fmt$(r.billingSignals.mrr)}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{fmt$(r.billingSignals.arr)}</td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{r.projectSignals.blockedTasks > 0 ? (
-                  <Badge label={`${r.projectSignals.blockedTasks} blocked`}color="#DC2626"border="#FECACA"/>
-                ) : (
-                  <Badge label="Clear"bg="#ECFDF5"color="#059669"border="#A7F3D0"/>
-                )}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  {r.escalationSignals.openEscalations > 0 ? (
-                    <Badge label={`${r.escalationSignals.openEscalations} open`}color="#DC2626"border="#FECACA"/>
+                  {vm.daysToRenewal !== null ? (
+                    <span className="text-xs font-semibold" style={{ color: renewalUrgent ? "#DC2626" : vm.daysToRenewal <= 90 ? "#D97706" : "#059669" }}>
+                      {vm.daysToRenewal >= 0 ? `${vm.daysToRenewal}d` : "Past due"}
+                    </span>
                   ) : (
-                    <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>None</span>
+                    <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</span>
                   )}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
-                  {r.communicationSignals.lastContact}
-                  <br />
-                  <span style={{ color: "var(--rtm-text-muted)"}}>{r.communicationSignals.daysSinceContact}d ago</span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <button
-                    className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
-                    onClick={e => { e.stopPropagation(); onSelect(r); }}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors hover:opacity-80"
+                    style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}
+                    onClick={(e) => { e.stopPropagation(); onSelect(vm); }}
                   >
                     View
                   </button>
@@ -922,234 +1077,18 @@ function ClientHealthTable({
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// INTERVENTION CENTER
+// DEFERRED VIEW PLACEHOLDER
 // ══════════════════════════════════════════════════════════════════════════════
 
-function InterventionCenter({ onSelectClient }: { onSelectClient: (id: string) => void }) {
-  const items = INTERVENTION_QUEUE.filter(i => i.status !== "Resolved");
-
-  const statusStyle = (s: string) => {
-    switch (s) {
-      case "Open":       return { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"};
-      case "In Progress":return { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A"};
-      case "Escalated":  return { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA"};
-      case "Resolved":   return { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"};
-      default:           return { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0"};
-    }
-  };
-
+function DeferredViewPlaceholder({ title, description }: { title: string; description: string }) {
   return (
-    <SectionCard title={`Client Intervention Center — ${items.length} Active`}>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--rtm-border)"}}>
-              {["Client", "Reason", "Risk Level", "Assigned Owner", "Recommended Action", "Due Date", "Status", "Action"].map(h => (
-                <th key={h} className="pb-3 pr-4 text-left text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {items.map(item => {
-              const ss = statusStyle(item.status);
-              const rs = riskStyle(item.riskLevel);
-              return (
-                <tr
-                  key={item.clientId}
-                  className="hover:bg-blue-50 cursor-pointer"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}
-                  onClick={() => onSelectClient(item.clientId)}
-                >
-                  <td className="py-3 pr-4 whitespace-nowrap font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{item.client}</td>
-                  <td className="py-3 pr-4 text-xs max-w-xs"style={{ color: "var(--rtm-text-secondary)"}}>{item.reason}</td>
-                  <td className="py-3 pr-4 whitespace-nowrap">
-                    <Badge label={item.riskLevel} bg={rs.bg} color={rs.color} border={rs.border} />
-                  </td>
-                  <td className="py-3 pr-4 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{item.assignedOwner}</td>
-                  <td className="py-3 pr-4 text-xs max-w-xs"style={{ color: "var(--rtm-text-secondary)"}}>{item.recommendedAction}</td>
-                  <td className="py-3 pr-4 whitespace-nowrap text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{item.dueDate}</td>
-                  <td className="py-3 pr-4 whitespace-nowrap">
-                    <Badge label={item.status} bg={ss.bg} color={ss.color} border={ss.border} />
-                  </td>
-                  <td className="py-3 whitespace-nowrap">
-                    <button
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
-                      onClick={e => { e.stopPropagation(); onSelectClient(item.clientId); }}
-                    >
-                      Open
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </SectionCard>
-  );
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// EXECUTIVE HEALTH DASHBOARD
-// ══════════════════════════════════════════════════════════════════════════════
-
-function ExecutiveDashboard({ records }: { records: ClientHealthRecord[] }) {
-  const s = computePortfolioSummary(records);
-
-  const topRisks = records
-    .filter(r => r.healthStatus === "At Risk"|| r.healthStatus === "Critical")
-    .sort((a, b) => b.billingSignals.mrr - a.billingSignals.mrr)
-    .slice(0, 5);
-
-  const deptBottlenecks: Record<string, number> = {};
-  records.forEach(r => {
-    r.projectSignals.departmentDelays.forEach(d => {
-      deptBottlenecks[d] = (deptBottlenecks[d] ?? 0) + 1;
-    });
-  });
-
-  const renewalsAtRisk = records.filter(r =>
-    (r.renewalRisk.riskLevel === "High"|| r.renewalRisk.riskLevel === "Critical") &&
-    r.renewalRisk.daysToRenewal <= 90
-  );
-
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Portfolio KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-        <KpiCard label="Portfolio Health Score"value={s.avgScore} sub="Average across 30 clients"accent={scoreColor(s.avgScore)} />
-        <KpiCard label="Total MRR"value={fmt$(s.totalMRR)} sub="Active portfolio"/>
-        <KpiCard label="Revenue At Risk"value={fmt$(s.revenueAtRisk)} sub="High + Critical risk MRR"accent="#DC2626"/>
-        <KpiCard label="Expansion Forecast"value={`+${fmt$(s.expansionRevenue)}`} sub={`${s.expansionCount} opportunities`} accent="#059669"/>
-        <KpiCard label="Critical Clients"value={s.critical} sub="Immediate intervention required"accent="#DC2626"/>
-        <KpiCard label="At Risk Clients"value={s.atRisk} sub="Monitoring required"accent="#EA580C"/>
-        <KpiCard label="Open Escalations"value={s.openEscalations} sub="Across all accounts"accent={s.openEscalations > 0 ? "#DC2626": "#059669"} />
-        <KpiCard label="Active Interventions"value={s.interventionCount} sub="Open intervention items"accent={s.interventionCount > 0 ? "#D97706": "#059669"} />
-      </div>
-
-      {/* Status Distribution */}
-      <SectionCard title="Portfolio Health Distribution">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
-          {([
-            { label: "Healthy", count: s.healthy, color: "#059669"},
-            { label: "Monitor", count: s.monitor, color: "#D97706"},
-            { label: "At Risk", count: s.atRisk, color: "#EA580C"},
-            { label: "Critical", count: s.critical, color: "#DC2626"},
-          ] as const).map(({ label, count, color }) => (
-            <div
-              key={label}
-              className="flex flex-col items-center gap-2 p-4 rounded-xl border"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)"}}
-            >
-              <span className="text-3xl font-extrabold"style={{ color }}>{count}</span>
-              <span className="text-xs font-semibold uppercase tracking-wide"style={{ color }}>{label}</span>
-              <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
-                {Math.round((count / s.total) * 100)}% of portfolio
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className="h-3 rounded-full overflow-hidden flex gap-0.5">
-          {[
-            { pct: s.healthy, color: "#10B981"},
-            { pct: s.monitor, color: "#F59E0B"},
-            { pct: s.atRisk, color: "#F97316"},
-            { pct: s.critical, color: "#EF4444"},
-          ].map(({ pct, color }, i) => (
-            <div
-              key={i}
-              className="h-3 first:rounded-l-full last:rounded-r-full"style={{ width: `${(pct / s.total) * 100}%`, background: color }}
-            />
-          ))}
-        </div>
-      </SectionCard>
-
-      {/* Top Risks + Renewals At Risk */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <SectionCard title="Top Risks by MRR">
-          {topRisks.length === 0 ? (
-            <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No at-risk or critical clients.</p>
-          ) : (
-            <div className="flex flex-col divide-y"style={{ borderColor: "var(--rtm-border-light)"}}>
-              {topRisks.map(r => (
-                <div key={r.clientId} className="py-3 flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{r.client}</p>
-                    <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{r.accountManager}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <HealthBadge status={r.healthStatus} />
-                    <span className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{fmt$(r.billingSignals.mrr)}/mo</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-
-        <SectionCard title="Renewals At Risk (Next 90 Days)">
-          {renewalsAtRisk.length === 0 ? (
-            <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No high-risk renewals in the next 90 days.</p>
-          ) : (
-            <div className="flex flex-col divide-y"style={{ borderColor: "var(--rtm-border-light)"}}>
-              {renewalsAtRisk.map(r => (
-                <div key={r.clientId} className="py-3 flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{r.client}</p>
-                    <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>Renewal: {r.renewalRisk.contractEndDate}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <RiskBadge risk={r.renewalRisk.riskLevel} />
-                    <span className="text-xs"style={{ color: r.renewalRisk.daysToRenewal <= 30 ? "#DC2626": "#D97706"}}>
-                      {r.renewalRisk.daysToRenewal}d
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </SectionCard>
-      </div>
-
-      {/* Department Bottlenecks */}
-      <SectionCard title="Department Bottlenecks">
-        {Object.keys(deptBottlenecks).length === 0 ? (
-          <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No department bottlenecks detected.</p>
-        ) : (
-          <div className="flex flex-wrap gap-3">
-            {Object.entries(deptBottlenecks)
-              .sort(([, a], [, b]) => b - a)
-              .map(([dept, count]) => (
-                <div
-                  key={dept}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border"style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)"}}
-                >
-                  <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{dept}</span>
-                  <Badge label={`${count} client${count > 1 ? "s": ""}`}color="#DC2626"border="#FECACA"/>
-                </div>
-              ))}
-          </div>
-        )}
-      </SectionCard>
-
-      {/* Recommended Actions */}
-      <SectionCard title="Portfolio Recommended Actions">
-        <ul className="flex flex-col gap-2">
-          {[
-            s.critical > 0 && `Immediate director-level intervention required for ${s.critical} critical client${s.critical > 1 ? "s": ""}.`,
-            s.openEscalations > 0 && `Resolve ${s.openEscalations} open escalation${s.openEscalations > 1 ? "s": ""} across the portfolio.`,
-            renewalsAtRisk.length > 0 && `${renewalsAtRisk.length} renewal${renewalsAtRisk.length > 1 ? "s": ""} at high/critical risk expire within 90 days — immediate action required.`,
-            s.expansionCount > 0 && `${s.expansionCount} expansion opportunities identified — total potential revenue: +${fmt$(s.expansionRevenue)}/mo.`,
-            `Review all ${s.monitor} monitor accounts to prevent escalation to At Risk.`,
-            "Conduct monthly QBRs for all healthy accounts to maintain trajectory.",
-          ].filter(Boolean).map((action, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
-              <span className="mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0"style={{ background: "var(--rtm-blue)"}} />
-              {action}
-            </li>
-          ))}
-        </ul>
-      </SectionCard>
+    <div
+      className="rounded-xl border p-12 flex flex-col items-center justify-center gap-4 text-center"
+      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+    >
+      <PreviewBadge />
+      <p className="text-base font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{title}</p>
+      <p className="text-sm max-w-md" style={{ color: "var(--rtm-text-secondary)" }}>{description}</p>
     </div>
   );
 }
@@ -1158,220 +1097,249 @@ function ExecutiveDashboard({ records }: { records: ClientHealthRecord[] }) {
 // MAIN PAGE
 // ══════════════════════════════════════════════════════════════════════════════
 
-const HEALTH_FILTERS: Array<"All"| HealthStatus> = ["All", "Healthy", "Monitor", "At Risk", "Critical"];
-type PageView = "dashboard"| "table"| "intervention"| "executive";
+type PageView = "dashboard" | "table" | "intervention" | "executive";
+type HealthFilter = "All" | HealthStatus;
+
+const HEALTH_FILTERS: HealthFilter[] = ["All", "Excellent", "Good", "At Risk", "Critical"];
 
 export default function ClientHealthPage() {
-  const [activeFilter, setActiveFilter] = useState<"All"| HealthStatus>("All");
-  const [selectedRecord, setSelectedRecord] = useState<ClientHealthRecord | null>(null);
+  // ── State ────────────────────────────────────────────────────────────────
+  const [clients, setClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+  const [engineProjects, setEngineProjects] = useState<EngineProject[]>([]);
+  const [engineTasks, setEngineTasks] = useState<EngineTask[]>([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<PageView>("dashboard");
+  const [filter, setFilter] = useState<HealthFilter>("All");
   const [search, setSearch] = useState("");
+  const [selectedVM, setSelectedVM] = useState<ClientHealthVM | null>(null);
 
-  const summary = useMemo(() => computePortfolioSummary(CLIENT_HEALTH_RECORDS), []);
+  // ── Fetch real data on mount ─────────────────────────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const [mcRes, engRes] = await Promise.all([
+          fetch("/api/master-clients"),
+          fetch("/api/engine"),
+        ]);
+        const [mcData, engData] = await Promise.all([
+          mcRes.json() as Promise<{ clients: MasterClient[] }>,
+          engRes.json() as Promise<{ projects: EngineProject[]; tasks: EngineTask[] }>,
+        ]);
+        if (cancelled) return;
+        if (Array.isArray(mcData.clients) && mcData.clients.length > 0) {
+          setClients(mcData.clients as MasterClient[]);
+        }
+        if (Array.isArray(engData.projects)) setEngineProjects(engData.projects);
+        if (Array.isArray(engData.tasks)) setEngineTasks(engData.tasks);
+      } catch {
+        // keep MASTER_CLIENTS seed on error
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    void load();
+    return () => { cancelled = true; };
+  }, []);
 
-  const filtered = useMemo(() => {
-    let result = CLIENT_HEALTH_RECORDS;
-    if (activeFilter !== "All") result = result.filter(r => r.healthStatus === activeFilter);
+  // ── Build per-client task map ─────────────────────────────────────────────
+  const tasksByClientId = useMemo<Map<string, EngineTask[]>>(() => {
+    const projectsByClientId = new Map<string, string[]>(); // clientId → [projectId]
+    for (const p of engineProjects) {
+      if (p.clientId) {
+        const arr = projectsByClientId.get(p.clientId) ?? [];
+        arr.push(p.id);
+        projectsByClientId.set(p.clientId, arr);
+      }
+    }
+    const tasksByClientId = new Map<string, EngineTask[]>();
+    for (const t of engineTasks) {
+      // Find which clientId owns this task's project
+      for (const [clientId, projIds] of projectsByClientId.entries()) {
+        if (projIds.includes(t.projectId)) {
+          const arr = tasksByClientId.get(clientId) ?? [];
+          arr.push(t);
+          tasksByClientId.set(clientId, arr);
+          break;
+        }
+      }
+    }
+    return tasksByClientId;
+  }, [engineProjects, engineTasks]);
+
+  // ── Build engineProjectsByClientId ───────────────────────────────────────
+  const engineProjectsByClientId = useMemo<Map<string, EngineProject[]>>(() => {
+    const m = new Map<string, EngineProject[]>();
+    for (const p of engineProjects) {
+      if (p.clientId) {
+        const arr = m.get(p.clientId) ?? [];
+        arr.push(p);
+        m.set(p.clientId, arr);
+      }
+    }
+    return m;
+  }, [engineProjects]);
+
+  // ── Build view models ────────────────────────────────────────────────────
+  const allVMs = useMemo(() => buildVM(clients, tasksByClientId), [clients, tasksByClientId]);
+
+  const filteredVMs = useMemo(() => {
+    let result = allVMs;
+    if (filter !== "All") result = result.filter((v) => v.health === filter);
     if (search.trim()) {
       const q = search.toLowerCase();
-      result = result.filter(r =>
-        r.client.toLowerCase().includes(q) ||
-        r.accountManager.toLowerCase().includes(q) ||
-        r.industry.toLowerCase().includes(q)
+      result = result.filter(
+        (v) =>
+          v.clientName.toLowerCase().includes(q) ||
+          v.assignedAM.toLowerCase().includes(q) ||
+          v.industry.toLowerCase().includes(q),
       );
     }
     return result;
-  }, [activeFilter, search]);
+  }, [allVMs, filter, search]);
 
-  const openDrawer = (r: ClientHealthRecord) => setSelectedRecord(r);
-  const closeDrawer = () => setSelectedRecord(null);
+  // ── Portfolio summary from real VMs ───────────────────────────────────────
+  const summary = useMemo(() => {
+    const excellent = allVMs.filter((v) => v.health === "Excellent").length;
+    const good = allVMs.filter((v) => v.health === "Good").length;
+    const atRisk = allVMs.filter((v) => v.health === "At Risk").length;
+    const critical = allVMs.filter((v) => v.health === "Critical").length;
+    const totalMRR = allVMs.reduce((s, v) => s + v.mrr, 0);
+    const atRiskMRR = allVMs.filter((v) => v.health === "At Risk" || v.health === "Critical").reduce((s, v) => s + v.mrr, 0);
+    const avgScore = allVMs.length > 0 ? Math.round(allVMs.reduce((s, v) => s + v.healthScore, 0) / allVMs.length) : 0;
+    const renewalsSoon = allVMs.filter((v) => v.daysToRenewal !== null && v.daysToRenewal >= 0 && v.daysToRenewal <= 90).length;
+    return { excellent, good, atRisk, critical, total: allVMs.length, totalMRR, atRiskMRR, avgScore, renewalsSoon };
+  }, [allVMs]);
 
-  const openDrawerById = (id: string) => {
-    const r = CLIENT_HEALTH_RECORDS.find(c => c.clientId === id);
-    if (r) setSelectedRecord(r);
-  };
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const openDrawer = (vm: ClientHealthVM) => setSelectedVM(vm);
+  const closeDrawer = () => setSelectedVM(null);
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // RENDER
+  // ══════════════════════════════════════════════════════════════════════════
 
   return (
-    <div className="min-h-screen"style={{ background: "var(--rtm-bg)"}}>
+    <div className="min-h-screen" style={{ background: "var(--rtm-bg)" }}>
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-        {/* ── Page Header ───────────────────────────────────────────────────── */}
+        {/* ── Page Header ─────────────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold"style={{ color: "var(--rtm-text-primary)"}}>
-              Client Health Engine
+            <h1 className="text-2xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              Client Health
             </h1>
-            <p className="mt-1 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
-              Central client success monitoring — aggregating signals from projects, tasks, billing, communications, call intelligence, reporting, escalations, renewals, and expansion.
+            <p className="mt-1 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+              Real health scores computed from billing, activation, and task signals.
+              {loading && <span className="ml-2 text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading live data…</span>}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {([
-              { key: "dashboard",    label: "Dashboard"},
-              { key: "table",        label: "All Clients"},
-              { key: "intervention", label: `Interventions (${INTERVENTION_QUEUE.filter(i => i.status !== "Resolved").length})` },
-              { key: "executive",    label: "Executive View"},
-            ] as const).map(({ key, label }) => (
+            {(
+              [
+                { key: "dashboard" as const, label: "Dashboard" },
+                { key: "table" as const, label: "All Clients" },
+                { key: "intervention" as const, label: "Interventions", deferred: true },
+                { key: "executive" as const, label: "Executive View", deferred: true },
+              ] as const
+            ).map(({ key, label, deferred }: { key: PageView; label: string; deferred?: boolean }) => (
               <button
                 key={key}
                 onClick={() => setView(key)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold transition-colors"style={{
-                  background: view === key ? "var(--rtm-blue)": "var(--rtm-surface)",
-                  color: view === key ? "#fff": "var(--rtm-text-secondary)",
+                className="px-4 py-2 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5"
+                style={{
+                  background: view === key ? "var(--rtm-blue)" : "var(--rtm-surface)",
+                  color: view === key ? "#fff" : "var(--rtm-text-secondary)",
                   border: "1px solid",
-                  borderColor: view === key ? "var(--rtm-blue)": "var(--rtm-border)",
+                  borderColor: view === key ? "var(--rtm-blue)" : "var(--rtm-border)",
                 }}
               >
                 {label}
+                {deferred && (
+                  <span
+                    className="text-[9px] font-semibold px-1 py-0.5 rounded-full border"
+                    style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+                  >
+                    Preview
+                  </span>
+                )}
               </button>
             ))}
           </div>
         </div>
 
-        {/* ── KPI Row ────────────────────────────────────────────────────────── */}
+        {/* ── KPI Row ─────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          <KpiCard label="Healthy"value={summary.healthy} sub={`${Math.round((summary.healthy / summary.total) * 100)}%`} accent="#059669"/>
-          <KpiCard label="Monitor"value={summary.monitor} sub={`${Math.round((summary.monitor / summary.total) * 100)}%`} accent="#D97706"/>
-          <KpiCard label="At Risk"value={summary.atRisk} sub={`${Math.round((summary.atRisk / summary.total) * 100)}%`} accent="#EA580C"/>
-          <KpiCard label="Critical"value={summary.critical} sub={`${Math.round((summary.critical / summary.total) * 100)}%`} accent="#DC2626"/>
-          <KpiCard label="Renewal Opportunities"value={CLIENT_HEALTH_RECORDS.filter(r => r.renewalRisk.daysToRenewal <= 90).length} sub="Next 90 days"accent="var(--rtm-blue)"/>
-          <KpiCard label="Expansion Opportunities"value={summary.expansionCount} sub={`+${fmt$(summary.expansionRevenue)}/mo potential`} accent="#059669"/>
-          <KpiCard label="Requiring Intervention"value={summary.interventionCount} sub="Active items"accent={summary.interventionCount > 0 ? "#DC2626": "#059669"} />
-          <KpiCard label="Portfolio Health Score"value={summary.avgScore} sub="Weighted average"accent={scoreColor(summary.avgScore)} />
+          <KpiCard label="Excellent" value={summary.excellent} sub={`${summary.total > 0 ? Math.round(summary.excellent / summary.total * 100) : 0}%`} accent="#059669" />
+          <KpiCard label="Good" value={summary.good} sub={`${summary.total > 0 ? Math.round(summary.good / summary.total * 100) : 0}%`} accent="#14B8A6" />
+          <KpiCard label="At Risk" value={summary.atRisk} sub={`${summary.total > 0 ? Math.round(summary.atRisk / summary.total * 100) : 0}%`} accent="#EA580C" />
+          <KpiCard label="Critical" value={summary.critical} sub={`${summary.total > 0 ? Math.round(summary.critical / summary.total * 100) : 0}%`} accent="#DC2626" />
+          <KpiCard label="Total MRR" value={fmt$(summary.totalMRR)} sub="Active portfolio" />
+          <KpiCard label="MRR at Risk" value={fmt$(summary.atRiskMRR)} sub="At Risk + Critical" accent={summary.atRiskMRR > 0 ? "#DC2626" : "#059669"} />
+          <KpiCard label="Renewals (90d)" value={summary.renewalsSoon} sub="Coming up" accent="var(--rtm-blue)" />
+          <KpiCard label="Portfolio Score" value={summary.avgScore} sub="Avg health score" accent={scoreColor(summary.avgScore)} />
         </div>
 
-        {/* ── Dashboard View ──────────────────────────────────────────────── */}
-        {view === "dashboard"&& (
+        {/* ── Dashboard View ───────────────────────────────────────────────── */}
+        {view === "dashboard" && (
           <>
-            {/* Filters + Search */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex gap-2 flex-wrap">
-                {HEALTH_FILTERS.map(f => (
+                {HEALTH_FILTERS.map((f) => (
                   <button
                     key={f}
-                    onClick={() => setActiveFilter(f)}
-                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"style={{
-                      background: activeFilter === f ? "var(--rtm-text-primary)": "var(--rtm-surface)",
-                      color: activeFilter === f ? "#fff": "var(--rtm-text-secondary)",
+                    onClick={() => setFilter(f)}
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
+                    style={{
+                      background: filter === f ? "var(--rtm-text-primary)" : "var(--rtm-surface)",
+                      color: filter === f ? "#fff" : "var(--rtm-text-secondary)",
                       border: "1px solid",
-                      borderColor: activeFilter === f ? "var(--rtm-text-primary)": "var(--rtm-border)",
+                      borderColor: filter === f ? "var(--rtm-text-primary)" : "var(--rtm-border)",
                     }}
                   >
-                    {f} {f !== "All"&& `(${CLIENT_HEALTH_RECORDS.filter(r => r.healthStatus === f).length})`}
+                    {f} {f !== "All" && `(${allVMs.filter((v) => v.health === f).length})`}
                   </button>
                 ))}
               </div>
               <input
-                type="text"placeholder="Search clients, managers, industries..."value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="flex-1 min-w-48 px-4 py-2 rounded-lg text-sm border outline-none"style={{
-                  background: "var(--rtm-surface)",
-                  borderColor: "var(--rtm-border)",
-                  color: "var(--rtm-text-primary)",
-                }}
+                type="text"
+                placeholder="Search clients, managers, industries…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 min-w-48 px-4 py-2 rounded-lg text-sm border outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
               />
             </div>
 
-            {/* Cards Grid */}
-            {filtered.length === 0 ? (
+            {filteredVMs.length === 0 ? (
               <div className="flex items-center justify-center py-16">
-                <p className="text-sm"style={{ color: "var(--rtm-text-muted)"}}>No clients match the selected filter.</p>
+                <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>No clients match the selected filter.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {filtered.map(record => {
-                  const ps = scoreBg(record.healthScore.overall);
-                  return (
-                    <div
-                      key={record.clientId}
-                      className="rounded-xl border flex flex-col gap-0 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
-                      onClick={() => openDrawer(record)}
-                    >
-                      {/* Card Header */}
-                      <div className="p-4 flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="font-semibold truncate text-sm"style={{ color: "var(--rtm-text-primary)"}}>{record.client}</p>
-                          <p className="text-xs truncate"style={{ color: "var(--rtm-text-muted)"}}>{record.accountManager} · {record.industry}</p>
-                        </div>
-                        <HealthBadge status={record.healthStatus} />
-                      </div>
-
-                      {/* Score */}
-                      <div
-                        className="mx-4 mb-3 rounded-lg border py-3 flex flex-col items-center"style={{ background: ps.bg, borderColor: ps.border }}
-                      >
-                        <span className="text-4xl font-extrabold leading-none"style={{ color: ps.text }}>
-                          {record.healthScore.overall}
-                        </span>
-                        <span className="text-xs mt-0.5"style={{ color: ps.text, opacity: 0.8 }}>Overall Health Score</span>
-                      </div>
-
-                      {/* Score bars */}
-                      <div className="px-4 pb-3 flex flex-col gap-2">
-                        {SCORE_WEIGHTS.slice(0, 4).map(({ key, label }) => (
-                          <ScoreBar
-                            key={key}
-                            score={record.healthScore[key as ScoreKey]}
-                            label={label}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Footer stats */}
-                      <div
-                        className="border-t grid grid-cols-3 divide-x"style={{ borderColor: "var(--rtm-border-light)"}}
-                      >
-                        <div className="px-3 py-2 flex flex-col items-center">
-                          <span className="text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{fmt$(record.billingSignals.mrr)}</span>
-                          <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>MRR</span>
-                        </div>
-                        <div className="px-3 py-2 flex flex-col items-center">
-                          {record.escalationSignals.openEscalations > 0 ? (
-                            <>
-                              <span className="text-xs font-bold text-red-600">{record.escalationSignals.openEscalations}</span>
-                              <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>Escalation{record.escalationSignals.openEscalations > 1 ? "s": ""}</span>
-                            </>
-                          ) : (
-                            <>
-                              <span className="text-xs font-bold"style={{ color: "#059669"}}>Clear</span>
-                              <span className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>Escalations</span>
-                            </>
-                          )}
-                        </div>
-                        <div className="px-3 py-2 flex flex-col items-center">
-                          <RiskBadge risk={record.renewalRisk.riskLevel} />
-                          <span className="text-[10px] mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>Renewal</span>
-                        </div>
-                      </div>
-
-                      {/* AI Insight */}
-                      <div className="px-4 py-3 border-t"style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)"}}>
-                        <p className="text-xs italic leading-snug line-clamp-2"style={{ color: "var(--rtm-text-muted)"}}>
-                          {record.aiSummary.overview.substring(0, 100)}...
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+                {filteredVMs.map((vm) => (
+                  <ClientCard key={vm.id} vm={vm} onClick={() => openDrawer(vm)} />
+                ))}
               </div>
             )}
           </>
         )}
 
-        {/* ── Table View ─────────────────────────────────────────────────────── */}
-        {view === "table"&& (
+        {/* ── Table View ──────────────────────────────────────────────────── */}
+        {view === "table" && (
           <>
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex gap-2 flex-wrap">
-                {HEALTH_FILTERS.map(f => (
+                {HEALTH_FILTERS.map((f) => (
                   <button
                     key={f}
-                    onClick={() => setActiveFilter(f)}
-                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"style={{
-                      background: activeFilter === f ? "var(--rtm-text-primary)": "var(--rtm-surface)",
-                      color: activeFilter === f ? "#fff": "var(--rtm-text-secondary)",
+                    onClick={() => setFilter(f)}
+                    className="px-3 py-1.5 rounded-full text-xs font-semibold transition-colors"
+                    style={{
+                      background: filter === f ? "var(--rtm-text-primary)" : "var(--rtm-surface)",
+                      color: filter === f ? "#fff" : "var(--rtm-text-secondary)",
                       border: "1px solid",
-                      borderColor: activeFilter === f ? "var(--rtm-text-primary)": "var(--rtm-border)",
+                      borderColor: filter === f ? "var(--rtm-text-primary)" : "var(--rtm-border)",
                     }}
                   >
                     {f}
@@ -1379,30 +1347,40 @@ export default function ClientHealthPage() {
                 ))}
               </div>
               <input
-                type="text"placeholder="Search..."value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="flex-1 min-w-48 px-4 py-2 rounded-lg text-sm border outline-none"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
+                type="text"
+                placeholder="Search…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 min-w-48 px-4 py-2 rounded-lg text-sm border outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
               />
             </div>
-            <ClientHealthTable records={filtered} onSelect={openDrawer} />
+            <ClientTable vms={filteredVMs} onSelect={openDrawer} />
           </>
         )}
 
-        {/* ── Intervention View ─────────────────────────────────────────────── */}
-        {view === "intervention"&& (
-          <InterventionCenter onSelectClient={openDrawerById} />
+        {/* ── Deferred Views ───────────────────────────────────────────────── */}
+        {view === "intervention" && (
+          <DeferredViewPlaceholder
+            title="Client Intervention Queue"
+            description="Automated intervention tracking, risk escalation, and owner assignment will be wired to real engine data in a future phase."
+          />
         )}
-
-        {/* ── Executive View ────────────────────────────────────────────────── */}
-        {view === "executive"&& (
-          <ExecutiveDashboard records={CLIENT_HEALTH_RECORDS} />
+        {view === "executive" && (
+          <DeferredViewPlaceholder
+            title="Executive Dashboard"
+            description="Portfolio-level health distribution, MRR-at-risk charts, department bottleneck analysis, and executive KPIs are planned for a future phase."
+          />
         )}
-
       </div>
 
-      {/* ── Client Detail Drawer ──────────────────────────────────────────── */}
-      {selectedRecord && (
-        <ClientDetailDrawer record={selectedRecord} onClose={closeDrawer} />
+      {/* ── Client Detail Drawer ─────────────────────────────────────────── */}
+      {selectedVM && (
+        <ClientDetailDrawer
+          vm={selectedVM}
+          engineProjects={engineProjectsByClientId.get(selectedVM.id) ?? []}
+          onClose={closeDrawer}
+        />
       )}
     </div>
   );

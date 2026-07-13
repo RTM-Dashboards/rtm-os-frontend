@@ -2173,15 +2173,26 @@ function GhlSyncIssuesPanel() {
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0">
                   {(["Resolve", "Ignore", "Manual Override"] as GhlSyncIssueAction[]).map((action) => (
-                    <button key={action}
-                      onClick={() => { if (action === "Ignore") setDismissed((d) => [...d, issue.id]); }}
-                      className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"style={{
-                        background: action === "Resolve"? "#ECFDF5": action === "Manual Override"? "#EDE9FE": "var(--rtm-bg)",
-                        color: action === "Resolve"? "#059669": action === "Manual Override"? "#7C3AED": "var(--rtm-text-secondary)",
-                        borderColor: action === "Resolve"? "#A7F3D0": action === "Manual Override"? "#DDD6FE": "var(--rtm-border)",
-                      }}>
-                      {action}
-                    </button>
+                    action === "Ignore" ? (
+                      <button key={action}
+                        onClick={() => setDismissed((d) => [...d, issue.id])}
+                        className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"
+                        style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
+                        {action}
+                      </button>
+                    ) : (
+                      <button key={action}
+                        disabled
+                        title="Not yet available"
+                        className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border opacity-40 cursor-not-allowed"
+                        style={{
+                          background: action === "Resolve" ? "#ECFDF5" : "#EDE9FE",
+                          color: action === "Resolve" ? "#059669" : "#7C3AED",
+                          borderColor: action === "Resolve" ? "#A7F3D0" : "#DDD6FE",
+                        }}>
+                        {action}
+                      </button>
+                    )
                   ))}
                 </div>
               </div>
@@ -3760,6 +3771,25 @@ function SalesPipelinePageInner() {
       .catch(() => {/* keep defaults */});
   }, []);
 
+  // ── Hydrate file-backed opportunities created via Leads → Create Opportunity ─
+  // Reads from data/sales-opportunities.json via /api/sales-opportunities and
+  // merges new records into opportunityRecords state so Leads-created opportunities
+  // appear here alongside MOCK_OPPORTUNITY_RECORDS without touching either mock set.
+  useEffect(() => {
+    fetch("/api/sales-opportunities")
+      .then((r) => r.ok ? r.json() as Promise<{ records: OpportunityRecord[] }> : Promise.reject(r.status))
+      .then(({ records }) => {
+        if (!Array.isArray(records) || records.length === 0) return;
+        setOpportunityRecords((prev) => {
+          const existingIds = new Set(prev.map((o) => o.id));
+          const newOnes = records.filter((o) => !existingIds.has(o.id));
+          return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
+        });
+      })
+      .catch((err) => console.error("[Pipeline] Failed to hydrate lead-created opportunities:", err));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // followUpQueue is built after mergedOpportunities is computed below
   // Placeholder — real queue built after mergedOpportunities
 
@@ -3960,7 +3990,15 @@ function SalesPipelinePageInner() {
       )}
       <div>
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>Sales</p>
-        <h1 className="text-2xl font-medium tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Pipeline</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-medium tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Pipeline</h1>
+          <span
+            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+            style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+          >
+            Preview — Target State
+          </span>
+        </div>
         <p className="text-sm mt-1 max-w-2xl" style={{ color: "var(--rtm-text-muted)" }}>
           Manage open opportunities through audit, proposal, negotiation, and billing handoff.
         </p>

@@ -14,6 +14,7 @@
 //                                                  (upsert: insert or replace by id)
 // PATCH /api/onboarding-records?id=<id>          → body: Partial<AMOnboardingRecord>
 //                                                  → { record } | 404
+// DELETE /api/onboarding-records?id=<id>         → { ok: true } | 404
 
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
@@ -202,6 +203,32 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   try {
     writeRecords(records);
     return NextResponse.json({ record });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
+
+// ── DELETE (remove by id) ──────────────────────────────────────────────────────
+
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ error: "?id= required for DELETE" }, { status: 400 });
+  }
+
+  const records = readRecords();
+  const idx = records.findIndex((r) => r.id === id);
+  if (idx === -1) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  records.splice(idx, 1);
+
+  try {
+    writeRecords(records);
+    return NextResponse.json({ ok: true });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

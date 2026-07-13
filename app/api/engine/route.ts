@@ -17,6 +17,9 @@
 //                                              (appends each array to the store)
 // PATCH /api/engine?resource=tasks&id=<id>  → body: Partial<Task> — updates a single task
 // PATCH /api/engine?resource=projects&id=<id> → body: Partial<Project> — updates a single project
+// DELETE /api/engine?resource=projects&id=<id>  → deletes project + its milestones + its tasks
+// DELETE /api/engine?resource=tasks&id=<id>     → deletes a single task
+// DELETE /api/engine?resource=milestones&id=<id> → deletes a single milestone
 
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
@@ -151,6 +154,48 @@ export async function PATCH(req: NextRequest) {
     store.projects[idx] = { ...store.projects[idx], ...patch, updatedAt: new Date().toISOString() };
     writeStore(store);
     return NextResponse.json({ project: store.projects[idx] });
+  }
+
+  return NextResponse.json({ error: "unsupported resource" }, { status: 400 });
+}
+
+// ── DELETE — remove records ─────────────────────────────────────────────────────
+
+export async function DELETE(req: NextRequest) {
+  const resource = req.nextUrl.searchParams.get("resource");
+  const id       = req.nextUrl.searchParams.get("id");
+
+  if (!resource || !id) {
+    return NextResponse.json({ error: "resource and id query params required" }, { status: 400 });
+  }
+
+  const store = readStore();
+
+  if (resource === "projects") {
+    const projectExists = store.projects.some((p) => p.id === id);
+    if (!projectExists) return NextResponse.json({ error: "project not found" }, { status: 404 });
+    // Remove project + all its milestones + all its tasks
+    store.projects   = store.projects.filter((p) => p.id !== id);
+    store.milestones = store.milestones.filter((m) => m.projectId !== id);
+    store.tasks      = store.tasks.filter((t) => t.projectId !== id);
+    writeStore(store);
+    return NextResponse.json({ ok: true, deleted: { projectId: id } });
+  }
+
+  if (resource === "tasks") {
+    const exists = store.tasks.some((t) => t.id === id);
+    if (!exists) return NextResponse.json({ error: "task not found" }, { status: 404 });
+    store.tasks = store.tasks.filter((t) => t.id !== id);
+    writeStore(store);
+    return NextResponse.json({ ok: true, deleted: { taskId: id } });
+  }
+
+  if (resource === "milestones") {
+    const exists = store.milestones.some((m) => m.id === id);
+    if (!exists) return NextResponse.json({ error: "milestone not found" }, { status: 404 });
+    store.milestones = store.milestones.filter((m) => m.id !== id);
+    writeStore(store);
+    return NextResponse.json({ ok: true, deleted: { milestoneId: id } });
   }
 
   return NextResponse.json({ error: "unsupported resource" }, { status: 400 });

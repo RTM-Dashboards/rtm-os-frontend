@@ -35,6 +35,16 @@ export interface HandoffRecord {
   readyToSubmit: boolean;
   submittedAt?: string;
   receivedBy?: string;
+  /** True once Sales clicks "Submit to Billing Team" — makes the handoff visible in Billing's queue */
+  submittedToBilling?: boolean;
+  /** ISO timestamp of when Sales submitted to Billing */
+  submittedToBillingAt?: string;
+  /** True once Billing clicks "Process & Create Client" — removes from Billing's pending queue */
+  processed?: boolean;
+  /** ISO timestamp of when Billing processed the handoff */
+  processedAt?: string;
+  /** The MASTER_CLIENTS id created when Billing processed this handoff */
+  processedClientId?: string;
 }
 
 // ─── Handoff Number Generator ─────────────────────────────────────────────────

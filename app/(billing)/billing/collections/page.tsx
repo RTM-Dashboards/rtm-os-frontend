@@ -4,10 +4,21 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
-import { collections, invoices } from "@/lib/billing/action-center-data";
+import { collections as collectionsData, invoices } from "@/lib/billing/action-center-data";
 import type { CollectionStatus } from "@/lib/billing/action-center-data";
 
 const workspace = getWorkspace("billing")!;
+
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
 
 type BadgeVariant = "success"| "error"| "warning"| "info"| "neutral"| "pending";
 
@@ -42,34 +53,50 @@ function Td({ children, muted }: { children: React.ReactNode; muted?: boolean })
   );
 }
 
-function ActionBtn({ label, onClick, variant = "secondary"}: { label: string; onClick: () => void; variant?: "primary"| "secondary"| "danger"}) {
-  const base = "text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors cursor-pointer";
+function ActionBtn({ label, onClick, variant = "secondary", disabled: isDisabled}: { label: string; onClick: () => void; variant?: "primary"| "secondary"| "danger"; disabled?: boolean}) {
+  const base = "text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors";
+  const disabledClass = isDisabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer";
   const styles: Record<string, string> = {
     primary:   "bg-[#1B4FD8] text-white border-transparent hover:opacity-90",
     secondary: "bg-white text-[var(--rtm-text-primary)] border-[var(--rtm-border)] hover:bg-[var(--rtm-bg)]",
     danger:    "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA] hover:bg-[#FEE2E2]",
   };
-  return <button className={`${base} ${styles[variant]}`} onClick={onClick}>{label}</button>;
+  return <button disabled={isDisabled} title={isDisabled ? "Not yet available" : undefined} className={`${base} ${disabledClass} ${styles[variant]}`} onClick={isDisabled ? undefined : onClick}>{label}</button>;
 }
 
-// KPI computations
-const totalOutstanding = collections.reduce((s, c) => s + c.outstandingAmount, 0);
-const highRisk = collections.filter((c) => c.daysOverdue >= 30);
+// KPI computations (derived from seed data; updated reactively from local state)
+const initialTotalOutstanding = collectionsData.reduce((s, c) => s + c.outstandingAmount, 0);
 const overdue = invoices.filter((i) => i.status === "Overdue");
-const escalated = collections.filter((c) => c.collectionStatus === "Escalated");
+const initialHighRiskCount = collectionsData.filter((c) => c.daysOverdue >= 30).length;
+const initialEscalatedCount = collectionsData.filter((c) => c.collectionStatus === "Escalated").length;
 
 const allStatuses: CollectionStatus[] = ["Pending", "Reminder Sent", "Contacted", "Payment Arrangement", "Escalated", "Resolved"];
 
 export default function CollectionsPage() {
+  const [items, setItems] = useState(collectionsData);
   const [actionLog, setActionLog] = useState<string[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<CollectionStatus | "All">("All");
   const [notes, setNotes] = useState<Record<string, string>>({});
+
+  // Derived KPIs from live local state
+  const totalOutstanding = items.reduce((s, c) => s + c.outstandingAmount, 0);
+  const highRisk = items.filter((c) => c.daysOverdue >= 30);
+  const escalated = items.filter((c) => c.collectionStatus === "Escalated");
 
   function log(msg: string) {
     setActionLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 14)]);
   }
 
-  const filtered = selectedFilter === "All"? collections : collections.filter((c) => c.collectionStatus === selectedFilter);
+  function markResolved(id: string, client: string, amount: number) {
+    setItems((prev) =>
+      prev.map((c) =>
+        c.id === id ? { ...c, collectionStatus: "Resolved" as CollectionStatus } : c
+      )
+    );
+    log(`Resolved: ${client} $${amount.toLocaleString()}`);
+  }
+
+  const filtered = selectedFilter === "All" ? items : items.filter((c) => c.collectionStatus === selectedFilter);
 
   return (
     <div className="space-y-8">
@@ -79,15 +106,18 @@ export default function CollectionsPage() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>
           {workspace.name} / Collections
         </p>
-        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-          Collections Dashboard
-        </h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
+            Collections Dashboard
+          </h1>
+          <PreviewBadge />
+        </div>
         <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
           Overdue accounts, collection statuses, assigned follow-ups, and resolution actions.
         </p>
       </div>
 
-      {/* KPIs */}
+      {/* KPIs — derived from live local state so they update when Mark Resolved is clicked */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           title="Total Outstanding"value={`$${totalOutstanding.toLocaleString()}`}
@@ -170,10 +200,10 @@ export default function CollectionsPage() {
                   <Td muted>{c.nextFollowUp}</Td>
                   <Td>
                     <div className="flex gap-1.5 flex-wrap">
-                      <ActionBtn label="Send Reminder"onClick={() => log(`Reminder sent to ${c.client}`)} />
-                      <ActionBtn label="Log Contact"onClick={() => log(`Contact logged: ${c.client}`)} />
-                      <ActionBtn label="Payment Plan"onClick={() => log(`Payment plan created: ${c.client}`)} />
-                      <ActionBtn label="Escalate"variant="danger"onClick={() => log(`Escalated: ${c.client}`)} />
+                      <ActionBtn label="Send Reminder" disabled onClick={() => log(`Reminder sent to ${c.client}`)} />
+                      <ActionBtn label="Log Contact" disabled onClick={() => log(`Contact logged: ${c.client}`)} />
+                      <ActionBtn label="Payment Plan" disabled onClick={() => log(`Payment plan created: ${c.client}`)} />
+                      <ActionBtn label="Escalate" variant="danger" disabled onClick={() => log(`Escalated: ${c.client}`)} />
                     </div>
                   </Td>
                 </tr>
@@ -186,7 +216,7 @@ export default function CollectionsPage() {
       {/* Collection Cards Detail */}
       <SectionWrapper title="Collection Detail Cards"description="Per-account collection details with notes">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {collections.map((c) => (
+          {items.map((c) => (
             <div
               key={c.id}
               className="rounded-xl border p-5 space-y-4"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)"}}
@@ -211,9 +241,13 @@ export default function CollectionsPage() {
                 className="w-full text-xs px-2.5 py-2 rounded-lg border resize-none"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
               />
               <div className="flex flex-wrap gap-1.5">
-                <ActionBtn label="Send Reminder"onClick={() => log(`Reminder sent: ${c.client}`)} />
-                <ActionBtn label="Mark Resolved"variant="primary"onClick={() => log(`Resolved: ${c.client} $${c.outstandingAmount}`)} />
-                <ActionBtn label="Escalate"variant="danger"onClick={() => log(`Escalated: ${c.client}`)} />
+                <ActionBtn label="Send Reminder" disabled onClick={() => log(`Reminder sent: ${c.client}`)} />
+                <ActionBtn
+                  label="Mark Resolved"
+                  variant="primary"
+                  onClick={() => markResolved(c.id, c.client, c.outstandingAmount)}
+                />
+                <ActionBtn label="Escalate" variant="danger" disabled onClick={() => log(`Escalated: ${c.client}`)} />
               </div>
             </div>
           ))}

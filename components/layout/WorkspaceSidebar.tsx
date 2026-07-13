@@ -401,10 +401,10 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
             href="/admin"className="flex items-center gap-2 py-1 focus:outline-none"onClick={onClose}
           >
             <Image
-              src="/rtm-logo.png"alt="Real Time Marketing"width={144}
+              src="/rtm-logo.png" alt="Real Time Marketing" width={144}
               height={36}
               priority
-              className="object-contain"style={{ filter: "brightness(1.1) saturate(0.9)"}}
+              className="object-contain" style={{ filter: "brightness(1.1) saturate(0.9)", width: 144, height: "auto" }}
             />
           </Link>
           <button

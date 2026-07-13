@@ -22,6 +22,17 @@ function contractStatusVariant(s: string): BadgeVariant {
   }
 }
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
 function Th({ children }: { children: React.ReactNode }) {
   return (
     <th className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2.5 whitespace-nowrap border-b"
@@ -327,7 +338,10 @@ export default function RecurringRevenuePage() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>
           {workspace.name} / Recurring Revenue
         </p>
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Recurring Revenue</h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Recurring Revenue</h1>
+          <PreviewBadge />
+        </div>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
           MRR, ARR, active contracts, upcoming renewals, at-risk revenue, and projected revenue.
         </p>

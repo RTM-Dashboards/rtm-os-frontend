@@ -915,74 +915,50 @@ function ActivityTab() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TAB: Workflow
+//
+// Shows real task origin data only (source type, blueprint id, department, service).
+// The "Automation Context" section that previously showed fabricated notification /
+// escalation / milestone text has been removed — those fields have no real backing
+// system. This tab is not shown for Department Member role.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function WorkflowTab({ task }: { task: WorkspaceTask }) {
   return (
     <div>
-      <Section title="Workflow Origin">
+      <Section title="Task Origin">
         <FieldRow label="Source Type">{task.source}</FieldRow>
-        {task.workflowSource && <FieldRow label="Workflow">{task.workflowSource}</FieldRow>}
-        {task.blueprintSource && <FieldRow label="Blueprint">{task.blueprintSource}</FieldRow>}
+        {task.blueprintSource && <FieldRow label="Blueprint ID">{task.blueprintSource}</FieldRow>}
         <FieldRow label="Department">{task.department}</FieldRow>
         <FieldRow label="Service">{task.service}</FieldRow>
+        <FieldRow label="Project">{task.project}</FieldRow>
       </Section>
 
-      <Section title="Automation Context">
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {[
-            {
-              label: "Automation Trigger",
-              value: task.workflowSource
-                ? `Triggered by: ${task.workflowSource}`
-                : task.blueprintSource
-                  ? `Blueprint template: ${task.blueprintSource}`
-                  : "Manually created — no automation trigger",
-              icon: "T",
-              color: "#1B4FD8",
-            },
-            {
-              label: "Related Notification",
-              value: "Assignee notified via system notification on task creation",
-              icon: "N",
-              color: "#0891b2",
-            },
-            {
-              label: "Related Escalation Rule",
-              value: "Escalation triggers if task is overdue by 2+ days with no status update",
-              icon: "E",
-              color: "#dc2626",
-            },
-            {
-              label: "Linked Project Milestone",
-              value: `Milestone: ${task.project} — delivery checkpoint`,
-              icon: "M",
-              color: "#7c3aed",
-            },
-          ].map(item => (
-            <div key={item.label} style={{
-              display: "flex", gap: 10, padding: "10px 12px",
-              background: COLORS.bg, border: `1px solid ${COLORS.border}`,
-              borderRadius: 7, alignItems: "flex-start",
-            }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: 6,
-                background: item.color + "18", border: `1px solid ${item.color}40`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11, fontWeight: 800, color: item.color, flexShrink: 0,
-              }}>
-                {item.icon}
-              </div>
-              <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  {item.label}
-                </div>
-                <div style={{ fontSize: 12, color: COLORS.primary, marginTop: 2, lineHeight: 1.5 }}>
-                  {item.value}
-                </div>
-              </div>
-            </div>
-          ))}
+      <Section title="About Task Origin">
+        <div style={{
+          background: COLORS.bg, border: `1px solid ${COLORS.border}`,
+          borderRadius: 7, padding: "10px 12px", fontSize: 12,
+          color: COLORS.secondary, lineHeight: 1.6,
+        }}>
+          {task.source === "Task Blueprint" && (
+            <>
+              <strong style={{ color: COLORS.primary }}>Task Blueprint:</strong> This task was
+              generated from a task blueprint template{task.blueprintSource ? ` (${task.blueprintSource})` : ""}.{" "}
+              Blueprint templates are managed in the Global Projects &amp; Tasks module.
+            </>
+          )}
+          {task.source === "Workflow Automation" && (
+            <>
+              <strong style={{ color: COLORS.primary }}>Workflow Automation:</strong> This task
+              was created automatically by a workflow trigger in the Global Projects &amp; Tasks
+              module. The triggering workflow is configured at the project level.
+            </>
+          )}
+          {task.source === "Manual Task" && (
+            <>
+              <strong style={{ color: COLORS.primary }}>Manual Task:</strong> This task was
+              created manually in the Global Projects &amp; Tasks module.
+            </>
+          )}
         </div>
       </Section>
 
@@ -991,12 +967,9 @@ function WorkflowTab({ task }: { task: WorkspaceTask }) {
           background: "#f0f9ff", border: "1px solid #bae6fd",
           borderRadius: 7, padding: "10px 12px", fontSize: 12, color: "#0c4a6e", lineHeight: 1.5,
         }}>
-          This task originates from the{" "}
-          <a href="/projects/tasks" style={{ color: "#0369a1", fontWeight: 700 }}>
-            Global Projects &amp; Tasks
-          </a>{" "}
-          module. Workflow automation, blueprints, notifications, and escalation rules
-          are configured globally. This workspace view provides a filtered working interface only.
+          This task originates from the Global Projects &amp; Tasks module.
+          Task creation, ownership, and blueprint/workflow assignment are managed globally.
+          This workspace view provides a filtered working interface only.
         </div>
       </Section>
     </div>
@@ -1015,7 +988,7 @@ interface WorkspaceTaskDrawerProps {
   onToast?: (msg: string) => void;
 }
 
-const TABS: { id: TabId; label: string }[] = [
+const ALL_TABS: { id: TabId; label: string; minRole?: WorkspaceUserRole }[] = [
   { id: "overview",      label: "Overview"      },
   { id: "checklist",     label: "Checklist"     },
   { id: "notes",         label: "Notes"         },
@@ -1023,8 +996,26 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "dependencies",  label: "Dependencies"  },
   { id: "files",         label: "Files"         },
   { id: "activity",      label: "Activity"      },
-  { id: "workflow",      label: "Workflow"       },
+  // Workflow tab: Department Lead and above only.
+  // Shows real task origin data (source, blueprint id, department, service).
+  // Not shown to Department Members — origin metadata is not actionable at that level
+  // and the previous fabricated automation/escalation content has been removed.
+  { id: "workflow",      label: "Workflow",      minRole: "department-lead" },
 ];
+
+const ROLE_RANK: Record<WorkspaceUserRole, number> = {
+  "department-member": 0,
+  "department-lead":   1,
+  "manager":           2,
+  "executive":         3,
+};
+
+function getVisibleTabs(userRole: WorkspaceUserRole) {
+  return ALL_TABS.filter(tab => {
+    if (!tab.minRole) return true;
+    return ROLE_RANK[userRole] >= ROLE_RANK[tab.minRole];
+  });
+}
 
 export default function WorkspaceTaskDrawer({
   task,
@@ -1033,9 +1024,13 @@ export default function WorkspaceTaskDrawer({
   onStatusUpdate,
   onToast,
 }: WorkspaceTaskDrawerProps) {
+  const visibleTabs = getVisibleTabs(userCtx.role);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [localStatus, setLocalStatus] = useState<string>(task.status);
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  // If the active tab becomes unavailable due to role (e.g. role switcher), fall back to overview.
+  const safeActiveTab = visibleTabs.some(t => t.id === activeTab) ? activeTab : "overview";
 
   // Close on Escape
   useEffect(() => {
@@ -1161,8 +1156,8 @@ export default function WorkspaceTaskDrawer({
           background: COLORS.surface, borderBottom: `2px solid ${COLORS.border}`,
         }}>
           <div style={{ display: "flex", minWidth: "max-content", padding: "0 16px" }}>
-            {TABS.map((tab) => {
-              const isActive = activeTab === tab.id;
+            {visibleTabs.map((tab) => {
+              const isActive = safeActiveTab === tab.id;
               return (
                 <button
                   key={tab.id}
@@ -1185,7 +1180,7 @@ export default function WorkspaceTaskDrawer({
 
         {/* ── Tab content ── */}
         <div style={{ flex: 1, overflowY: "auto", padding: "20px 20px" }}>
-          {activeTab === "overview" && (
+          {safeActiveTab === "overview" && (
             <OverviewTab
               task={task}
               userCtx={userCtx}
@@ -1194,13 +1189,13 @@ export default function WorkspaceTaskDrawer({
               onAction={handleAction}
             />
           )}
-          {activeTab === "checklist" && <ChecklistTab />}
-          {activeTab === "notes" && <NotesTab userCtx={userCtx} />}
-          {activeTab === "comments" && <CommentsTab userCtx={userCtx} />}
-          {activeTab === "dependencies" && <DependenciesTab />}
-          {activeTab === "files" && <FilesTab />}
-          {activeTab === "activity" && <ActivityTab />}
-          {activeTab === "workflow" && <WorkflowTab task={task} />}
+          {safeActiveTab === "checklist" && <ChecklistTab />}
+          {safeActiveTab === "notes" && <NotesTab userCtx={userCtx} />}
+          {safeActiveTab === "comments" && <CommentsTab userCtx={userCtx} />}
+          {safeActiveTab === "dependencies" && <DependenciesTab />}
+          {safeActiveTab === "files" && <FilesTab />}
+          {safeActiveTab === "activity" && <ActivityTab />}
+          {safeActiveTab === "workflow" && <WorkflowTab task={task} />}
         </div>
 
         {/* ── Footer ── */}

@@ -74,6 +74,8 @@ export interface AMOnboardingRecord {
   id: string;
   clientId: string;
   status: OnboardingIntakeStatus;
+  /** When set by AM, auto-derivation is bypassed; null = auto-derived. */
+  statusOverride: OnboardingIntakeStatus | null;
   salesPrefill: SalesPrefillData;
   fieldAssignments: Record<string, FieldAssignment>;
   createdAt: string;
@@ -202,8 +204,12 @@ function generateId(): string {
 
 export function deriveRecordStatus(
   current: OnboardingIntakeStatus,
-  assignments: Record<string, FieldAssignment>
+  assignments: Record<string, FieldAssignment>,
+  statusOverride?: OnboardingIntakeStatus | null
 ): OnboardingIntakeStatus {
+  // Manual override beats auto-derivation entirely.
+  if (statusOverride != null) return statusOverride;
+
   const values = Object.values(assignments);
 
   const hasPendingClient = values.some((a) => a.status === "pending-client");
@@ -285,6 +291,7 @@ export async function createOnboardingRecord(
     id: generateId(),
     clientId,
     status: "AM In Progress",
+    statusOverride: null,
     salesPrefill,
     fieldAssignments,
     createdAt: now,
@@ -352,7 +359,7 @@ export async function setFieldAssignment(
   const newRecord: AMOnboardingRecord = {
     ...record,
     fieldAssignments: newAssignments,
-    status: deriveRecordStatus(record.status, newAssignments),
+    status: deriveRecordStatus(record.status, newAssignments, record.statusOverride),
     updatedAt: now,
   };
 
@@ -401,6 +408,108 @@ export async function simulateClientResponse(
     value,
     clientRespondedAt: now,
   });
+}
+
+/**
+ * Sets (or clears) a manual status override for a record.
+ * When override is null, auto-derivation resumes on the next field mutation.
+ */
+export async function setStatusOverride(
+  recordId: string,
+  override: OnboardingIntakeStatus | null
+): Promise<AMOnboardingRecord | undefined> {
+  const record = await getOnboardingRecordById(recordId);
+  if (!record) return undefined;
+
+  const now = new Date().toISOString();
+  // Recompute auto-derived status now (used only if clearing override)
+  const autoStatus = deriveRecordStatus(record.status, record.fieldAssignments, null);
+  const newRecord: AMOnboardingRecord = {
+    ...record,
+    statusOverride: override,
+    // Use the override if set, otherwise revert to freshly-derived auto status
+    status: override ?? autoStatus,
+    updatedAt: now,
+  };
+
+  await apiFetch("/api/onboarding-records", {
+    method: "POST",
+    body: JSON.stringify(newRecord),
+  });
+
+  return newRecord;
+}
+
+/**
+ * Bulk-transitions every field still in "unset" status to "pending-client".
+ * Fields already in am-filled, am-filling, pending-client, or client-responded
+ * are untouched. Returns the number of fields that were transitioned.
+ */
+export async function bulkMarkUnsetPendingClient(
+  recordId: string
+): Promise<{ transitionedCount: number }> {
+  const record = await getOnboardingRecordById(recordId);
+  if (!record) return { transitionedCount: 0 };
+
+  const now = new Date().toISOString();
+  const updated = { ...record.fieldAssignments };
+  let count = 0;
+
+  for (const key of Object.keys(updated)) {
+    if (updated[key].status === "unset") {
+      updated[key] = {
+        ...updated[key],
+        status: "pending-client",
+        sentToClientAt: now,
+        assignedAt: now,
+      };
+      count++;
+    }
+  }
+
+  if (count === 0) return { transitionedCount: 0 };
+
+  const newRecord: AMOnboardingRecord = {
+    ...record,
+    fieldAssignments: updated,
+    status: deriveRecordStatus(record.status, updated, record.statusOverride),
+    updatedAt: now,
+  };
+
+  await apiFetch("/api/onboarding-records", {
+    method: "POST",
+    body: JSON.stringify(newRecord),
+  });
+
+  return { transitionedCount: count };
+}
+
+/**
+ * Marks an onboarding record as complete/closed.
+ * Sets status = "Complete" and statusOverride = "Complete" so the status is
+ * pinned and not re-derived by future field mutations.
+ * Does NOT force any field transitions — field state is persisted as-is.
+ */
+export async function completeOnboardingRecord(
+  recordId: string
+): Promise<AMOnboardingRecord | undefined> {
+  const record = await getOnboardingRecordById(recordId);
+  if (!record) return undefined;
+
+  const now = new Date().toISOString();
+  const newRecord: AMOnboardingRecord = {
+    ...record,
+    status: "Complete",
+    statusOverride: "Complete",
+    updatedAt: now,
+  };
+
+  await apiFetch("/api/onboarding-records", {
+    method: "POST",
+    body: JSON.stringify(newRecord),
+  });
+
+  return newRecord;
 }
 
 export async function markSentToClient(id: string): Promise<void> {

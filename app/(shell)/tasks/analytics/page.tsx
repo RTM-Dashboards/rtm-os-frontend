@@ -2,6 +2,17 @@
 
 import Link from "next/link";
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
 // 
 // Task Analytics — Placeholder
 // Route: /tasks/analytics
@@ -43,9 +54,12 @@ export default function TaskAnalyticsPage() {
               Analytics
             </p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-            Task Analytics
-          </h1>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
+              Task Analytics
+            </h1>
+            <PreviewBadge />
+          </div>
           <p className="text-sm mt-1 max-w-xl"style={{ color: "var(--rtm-text-secondary)"}}>
             Performance metrics, completion rates, SLA trends, and operational insights across all task modules.
           </p>

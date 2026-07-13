@@ -10,6 +10,17 @@ import {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+function PreviewBadge() {
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+    >
+      Preview — Target State
+    </span>
+  );
+}
+
 const COMMUNICATION_TYPES: CommunicationType[] = [
   "Call Summary",
   "Meeting Notes",
@@ -139,6 +150,7 @@ export default function CommunicationsPage() {
             <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
               Client Communications
             </h1>
+            <div className="mt-2"><PreviewBadge /></div>
             <p className="mt-1 text-sm text-gray-500">
               Complete log of client interactions, follow-ups, and open concerns.
             </p>
