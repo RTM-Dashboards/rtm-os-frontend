@@ -368,7 +368,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
 
   const linkStyle = (active: boolean): React.CSSProperties =>
     active
-      ? { background: "rgba(59,110,245,0.22)", color: "#ffffff", boxShadow: "inset 2px 0 0 #3B6EF5"}
+      ? { background: "var(--rtm-sidebar-active)", color: "#ffffff", boxShadow: "inset 2px 0 0 var(--rtm-blue-mid)"}
       : { color: "var(--rtm-sidebar-text)"};
 
   return (
@@ -376,7 +376,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
       {/* Mobile backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-20 backdrop-blur-sm lg:hidden"style={{ background: "rgba(14,32,85,0.55)"}}
+          className="fixed inset-0 z-20 backdrop-blur-sm lg:hidden"style={{ background: "rgba(35,31,32,0.55)"}}
           onClick={onClose}
           aria-hidden="true"/>
       )}
@@ -525,7 +525,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
                                   onClick={onClose}
                                   className="block px-2 py-2 rounded-lg text-sm font-medium transition-all duration-150"style={
                                     childActive
-                                      ? { background: "rgba(59,110,245,0.22)", color: "#ffffff", boxShadow: "inset 2px 0 0 #3B6EF5"}
+                                      ? { background: "var(--rtm-sidebar-active)", color: "#ffffff", boxShadow: "inset 2px 0 0 var(--rtm-blue-mid)"}
                                       : { color: "var(--rtm-sidebar-text)"}
                                   }
                                   onMouseEnter={(e) => {
@@ -572,8 +572,8 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
                       {item.badge && (
                         <span
                           className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"style={{
-                            background: active ? "rgba(122,171,255,0.25)": "rgba(27,79,216,0.35)",
-                            color:      active ? "#BFDFFF": "#93C5FD",
+                            background: active ? "rgba(41,148,210,0.25)" : "rgba(29,112,159,0.35)",
+                            color:      active ? "#a8d4f0" : "#7ab9d8",
                           }}
                         >
                           {item.badge}
@@ -597,7 +597,7 @@ export default function WorkspaceSidebar({ workspace, open, onClose }: Workspace
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <div
-              className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow"style={{ background: "linear-gradient(135deg, #1B4FD8, #3B6EF5)"}}
+              className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow"style={{ background: "linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%)"}}
             >
               A
             </div>

@@ -11,7 +11,7 @@ const CURRENT_USER = {
   id:         "current-user",
   name:       "You",
   initials:   "YO",
-  color:      "#1B4FD8",
+  color:      "#1d709f",
   department: "Account Management",
 };
 

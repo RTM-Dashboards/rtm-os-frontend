@@ -365,7 +365,10 @@ export function runRecommendationEngine(
     // Determine final priority using priority ranking rules
     const priority = applyPriorityRankingRules(rule.group, rule.severity);
 
-    const recId = `rec-${rule.id}-${Date.now()}-${recommendations.length}`;
+    // Use a deterministic ID based on rule + audit so the ID is stable across
+    // Step3 remounts (navigation back then forward). A timestamp-based ID would
+    // produce new IDs every mount, making saved approvedRecommendations stale.
+    const recId = `rec-${rule.id}-${auditResult.id}`;
     ruleIdToRecId.set(rule.id, recId);
 
     const rec: RecommendationItem = {
@@ -552,7 +555,8 @@ export function runRecommendationEngine(
       : "Draft";
 
   return {
-    id: `recs-${auditResult.id}-${Date.now()}`,
+    // Deterministic result ID so repeated calls for the same audit produce the same ID.
+    id: `recs-${auditResult.id}`,
     sourceAuditId: auditResult.id,
     sourceIntakeId: auditResult.intakeId,
     goalIds: auditResult.goalIds,

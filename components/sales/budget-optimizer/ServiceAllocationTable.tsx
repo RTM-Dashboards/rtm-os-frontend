@@ -315,47 +315,20 @@ function ServiceRow({
           </span>
         </td>
 
-        {/* Monthly Subtotal — computed from line items */}
+        {/* Monthly Price — editable for recurring services */}
         <td className="px-4 py-3">
           {item.isRecurring ? (
-            <div>
-              <span
-                className="text-sm font-bold"
-                style={{ color: "var(--rtm-text-primary)" }}
-              >
-                {formatUSD(computedMonthlySubtotal)}
-              </span>
-              <p
-                className="text-[10px] mt-0.5"
-                style={{ color: "var(--rtm-text-muted)" }}
-              >
-                computed
-              </p>
-            </div>
-          ) : (
-            <span
-              className="text-sm"
-              style={{ color: "var(--rtm-text-muted)" }}
-            >
-              {formatUSD(0)}
-            </span>
-          )}
-        </td>
-
-        {/* Setup Fee */}
-        <td className="px-4 py-3">
-          {def?.setupFeeEditable ? (
             <input
               type="number"
-              value={item.setupFee}
+              value={item.unitMonthlyPrice}
               min={0}
               step={50}
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => {
                 e.stopPropagation();
-                const fee = parseFloat(e.target.value);
-                if (!isNaN(fee) && fee >= 0) {
-                  onUpdate(item.serviceId, { setupFee: fee });
+                const price = parseFloat(e.target.value);
+                if (!isNaN(price) && price >= 0) {
+                  onUpdate(item.serviceId, { unitMonthlyPrice: price });
                 }
               }}
               className="px-2 py-1.5 rounded border text-sm outline-none w-28"
@@ -370,9 +343,33 @@ function ServiceRow({
               className="text-sm"
               style={{ color: "var(--rtm-text-muted)" }}
             >
-              {formatUSD(item.setupFee)}
+              {formatUSD(0)}
             </span>
           )}
+        </td>
+
+        {/* Setup Fee — editable for all service rows */}
+        <td className="px-4 py-3">
+          <input
+            type="number"
+            value={item.setupFee}
+            min={0}
+            step={50}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              e.stopPropagation();
+              const fee = parseFloat(e.target.value);
+              if (!isNaN(fee) && fee >= 0) {
+                onUpdate(item.serviceId, { setupFee: fee });
+              }
+            }}
+            className="px-2 py-1.5 rounded border text-sm outline-none w-28"
+            style={{
+              background: "var(--rtm-bg)",
+              borderColor: "var(--rtm-border)",
+              color: "var(--rtm-text-primary)",
+            }}
+          />
         </td>
 
         {/* Monthly Subtotal col (was "Monthly Subtotal" — now shows line-item computed total) */}

@@ -13,7 +13,7 @@ const CATEGORIES: IntegrationCategory[] = [
 ];
 
 const CATEGORY_COLOR: Record<IntegrationCategory, { dot: string; bg: string; border: string }> = {
-  "CRM":           { dot: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE"},
+  "CRM":           { dot: "#1d709f", bg: "#EFF6FF", border: "#BFDBFE"},
   "Call Tracking": { dot: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
   "Analytics":     { dot: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
   "Advertising":   { dot: "#EA580C", bg: "#FFF7ED", border: "#FED7AA"},

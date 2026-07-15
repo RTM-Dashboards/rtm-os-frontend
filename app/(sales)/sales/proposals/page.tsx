@@ -3,6 +3,11 @@
 import React, { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import {
+  buildContractFromProposal,
+  createContract,
+  fetchContractByProposalId,
+} from "@/lib/sales/contracts-store";
 import dynamic from "next/dynamic";
 const ProposalWizard = dynamic(
   () => import("@/components/sales/proposal-wizard/ProposalWizard").then(m => ({ default: m.ProposalWizard })),
@@ -572,7 +577,7 @@ function Btn({
   children, onClick, variant = "default", size = "sm"
 }: {
   children: React.ReactNode;
-  onClick?: () => void;
+  onClick?: (() => void) | (() => Promise<void>) | ((e?: React.MouseEvent) => void) | ((e?: React.MouseEvent) => Promise<void>);
   variant?: "default"| "primary"| "success"| "danger"| "warning";
   size?: "xs"| "sm";
 }) {
@@ -687,21 +692,172 @@ function ProposalToastBanner({ message }: { message: string }) {
   );
 }
 
-function ProposalTable({ proposals, onSelect, onEdit, onResume }: {
+// ── Generate Contract Button ──────────────────────────────────────────────────
+// Creates a real contract record from an Accepted proposal via the contracts API,
+// then navigates to the Contracts page where the new record will be visible.
+
+function GenerateContractButton({
+  proposal,
+  onGenerate,
+}: {
+  proposal: Proposal;
+  onGenerate: (p: Proposal) => void;
+}) {
+  const [loading, setLoading] = React.useState(false);
+  const [done, setDone] = React.useState(false);
+
+  async function handleClick() {
+    if (loading || done) return;
+    setLoading(true);
+    try {
+      // Check if a contract already exists for this proposal
+      const existing = await fetchContractByProposalId(proposal.id);
+      if (!existing) {
+        // Build from proposal data and persist
+        const record = buildContractFromProposal({
+          id: proposal.id,
+          clientInfo: {
+            name: proposal.client,
+            businessName: proposal.client,
+            contactName: proposal.owner ?? "",
+            contactEmail: proposal.info?.client ?? "",
+            contactPhone: "",
+          },
+          approvedRecommendationServiceNames: proposal.services as string[],
+          recurringTotal: proposal.recurringTotal,
+          budgetResult: {
+            totalMonthly: proposal.recurringTotal,
+            totalSetup: proposal.setupTotal,
+          },
+          contract: { term: proposal.contract?.term },
+          owner: proposal.owner,
+        });
+        await createContract(record);
+      }
+      setDone(true);
+      onGenerate(proposal);
+    } catch {
+      // Non-fatal: navigate anyway
+      onGenerate(proposal);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Btn
+      size="xs"
+      variant="success"
+      onClick={() => void handleClick()}
+    >
+      {loading ? "Creating…" : done ? "Created ✓" : "Contract"}
+    </Btn>
+  );
+}
+
+function ProposalTable({ proposals, onSelect, onEdit, onResume, onSend, onGenerateContract }: {
   proposals: Proposal[];
   onSelect: (p: Proposal) => void;
   onEdit: (p: Proposal) => void;
   onResume?: (p: Proposal) => void;
+  onSend?: (p: Proposal) => void;
+  onGenerateContract?: (p: Proposal) => void;
 }) {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<ProposalStatus | "All">("All");
   const { toast, showToast } = useProposalToast();
 
-  function handleDownloadPdf(p: Proposal) {
+  async function handleDownloadPdf(p: Proposal) {
     showToast("Preparing proposal PDF...");
-    setTimeout(() => {
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const ml = 20, mr = 20, cw = pageWidth - ml - mr;
+      let y = 20;
+      const pb = (needed: number) => { if (y + needed > pageHeight - 20) { doc.addPage(); y = 20; } };
+      const pw = (text: string, x: number, mw: number, lh: number) => {
+        const lines = doc.splitTextToSize(text, mw) as string[];
+        lines.forEach((line: string) => { pb(lh); doc.text(line, x, y); y += lh; });
+      };
+      // Title
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(15, 23, 42);
+      doc.text(p.name, ml, y); y += 8;
+      // Status + date
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(100, 116, 139);
+      doc.text(`Status: ${p.status}   |   Created: ${p.createdDate}   |   Owner: ${p.owner}`, ml, y); y += 6;
+      // Divider
+      doc.setDrawColor(203, 213, 225); doc.line(ml, y, pageWidth - mr, y); y += 8;
+      // Client info
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Client Information", ml, y); y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+      doc.text(`Client: ${p.client}`, ml, y); y += 5;
+      doc.text(`Opportunity: ${p.info.opportunity}`, ml, y); y += 5;
+      doc.text(`Proposal Date: ${p.info.proposalDate}   |   Expires: ${p.info.expirationDate}`, ml, y); y += 8;
+      // Services
+      pb(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Services Included", ml, y); y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+      p.services.forEach(s => { pb(6); doc.text(`• ${s}`, ml + 4, y); y += 5; });
+      y += 3;
+      // Line items
+      pb(12);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Line Items", ml, y); y += 6;
+      p.lineItems.forEach(li => {
+        pb(12);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(30, 41, 59);
+        doc.text(li.name, ml + 2, y); y += 5;
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(100, 116, 139);
+        const fees = [li.setupFee > 0 ? `Setup: $${li.setupFee.toLocaleString()}` : "", li.recurringFee > 0 ? `Recurring: $${li.recurringFee.toLocaleString()}/mo` : ""].filter(Boolean).join("   ");
+        if (fees) { doc.text(fees, ml + 4, y); y += 4; }
+      });
+      y += 3;
+      // Pricing summary
+      pb(20);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Pricing Summary", ml, y); y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+      doc.text(`Setup Fees: $${p.setupTotal.toLocaleString()}`, ml, y); y += 5;
+      doc.text(`Monthly Recurring: $${p.recurringTotal.toLocaleString()}/mo`, ml, y); y += 5;
+      doc.setFont("helvetica", "bold"); doc.setTextColor(4, 120, 87);
+      doc.text(`Total Value: $${p.totalValue.toLocaleString()}`, ml, y); y += 6;
+      // Contract
+      pb(20);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Contract Details", ml, y); y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+      doc.text(`Term: ${p.contract.term}   |   Start: ${p.contract.startDate}   |   End: ${p.contract.endDate || "TBD"}`, ml, y); y += 5;
+      doc.text(`Auto-Renew: ${p.contract.autoRenew ? "Yes" : "No"}   |   Notice: ${p.contract.noticePeriod}`, ml, y); y += 5;
+      if (p.contract.cancellationTerms) { pb(10); pw(p.contract.cancellationTerms, ml, cw, 5); }
+      // AI Summary
+      if (p.aiSummary) {
+        pb(20);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+        doc.text("Executive Summary", ml, y); y += 6;
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+        doc.text(`Package: ${p.aiSummary.recommendedPackage}`, ml, y); y += 5;
+        doc.text(`Revenue Opportunity: ${p.aiSummary.revenueOpportunity}`, ml, y); y += 5;
+        doc.text(`Complexity: ${p.aiSummary.complexity}`, ml, y); y += 5;
+        pb(10); pw(`Expected Impact: ${p.aiSummary.expectedImpact}`, ml, cw, 5);
+      }
+      // Footer
+      const totalPages = (doc.internal as unknown as { getNumberOfPages: () => number }).getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
+        doc.text(`${p.name} — Confidential`, ml, pageHeight - 10);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - mr - 20, pageHeight - 10);
+      }
+      doc.save(`${p.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.pdf`);
       showToast(`Proposal PDF downloaded — ${p.name}.pdf`);
-    }, 1500);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      showToast("PDF export failed. Please try again.");
+    }
   }
 
   const filtered = useMemo(() => proposals.filter(p => {
@@ -766,9 +922,12 @@ function ProposalTable({ proposals, onSelect, onEdit, onResume }: {
                     {p.status === "Draft" && onResume && (
                       <Btn size="xs"variant="warning"onClick={() => onResume(p)}>Resume</Btn>
                     )}
+                    {(p.status === "Draft" || p.status === "Internal Review") && onSend && (
+                      <Btn size="xs"variant="success"onClick={() => void onSend(p)}>Send</Btn>
+                    )}
                     <Btn size="xs"variant="default"onClick={() => onEdit(p)}>Edit</Btn>
-                    {p.status === "Accepted"&& (
-                      <Btn size="xs"variant="success"onClick={() => alert(`[Mock] Generating contract for ${p.name}`)}>Contract</Btn>
+                    {p.status === "Accepted"&& onGenerateContract && (
+                      <GenerateContractButton proposal={p} onGenerate={onGenerateContract} />
                     )}
                   </div>
                 </td>
@@ -1705,10 +1864,11 @@ function DrawerPricingSummary({ proposal }: { proposal: Proposal }) {
 
 type DrawerTab = "overview" | "services" | "lineitems" | "pricing" | "activity";
 
-function ProposalDetailDrawer({ proposal, onClose, onEdit }: {
+function ProposalDetailDrawer({ proposal, onClose, onEdit, onSend }: {
   proposal: Proposal;
   onClose: () => void;
   onEdit: (p: Proposal) => void;
+  onSend?: (p: Proposal) => void;
 }) {
   const [tab, setTab] = useState<DrawerTab>("overview");
   const [activityNote, setActivityNote] = useState("");
@@ -1717,11 +1877,88 @@ function ProposalDetailDrawer({ proposal, onClose, onEdit }: {
   );
   const { toast, showToast } = useProposalToast();
 
-  function handleDownloadPdf() {
+  async function handleDownloadPdf() {
     showToast("Preparing proposal PDF...");
-    setTimeout(() => {
-      showToast(`Proposal PDF downloaded - ${proposal.name}.pdf`);
-    }, 1500);
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const ml = 20, mr = 20, cw = pageWidth - ml - mr;
+      let y = 20;
+      const pb = (needed: number) => { if (y + needed > pageHeight - 20) { doc.addPage(); y = 20; } };
+      const pw = (text: string, x: number, mw: number, lh: number) => {
+        const lines = doc.splitTextToSize(text, mw) as string[];
+        lines.forEach((line: string) => { pb(lh); doc.text(line, x, y); y += lh; });
+      };
+      const p = proposal;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18); doc.setTextColor(15, 23, 42);
+      doc.text(p.name, ml, y); y += 8;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(100, 116, 139);
+      doc.text(`Status: ${p.status}   |   Created: ${p.createdDate}   |   Owner: ${p.owner}`, ml, y); y += 6;
+      doc.setDrawColor(203, 213, 225); doc.line(ml, y, pageWidth - mr, y); y += 8;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Client Information", ml, y); y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+      doc.text(`Client: ${p.client}`, ml, y); y += 5;
+      doc.text(`Opportunity: ${p.info.opportunity}`, ml, y); y += 5;
+      doc.text(`Proposal Date: ${p.info.proposalDate}   |   Expires: ${p.info.expirationDate}`, ml, y); y += 8;
+      pb(10);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Services Included", ml, y); y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+      p.services.forEach(s => { pb(6); doc.text(`• ${s}`, ml + 4, y); y += 5; });
+      y += 3;
+      pb(12);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Line Items", ml, y); y += 6;
+      p.lineItems.forEach(li => {
+        pb(12);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(30, 41, 59);
+        doc.text(li.name, ml + 2, y); y += 5;
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(100, 116, 139);
+        const fees = [li.setupFee > 0 ? `Setup: $${li.setupFee.toLocaleString()}` : "", li.recurringFee > 0 ? `Recurring: $${li.recurringFee.toLocaleString()}/mo` : ""].filter(Boolean).join("   ");
+        if (fees) { doc.text(fees, ml + 4, y); y += 4; }
+      });
+      y += 3;
+      pb(20);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Pricing Summary", ml, y); y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+      doc.text(`Setup Fees: $${p.setupTotal.toLocaleString()}`, ml, y); y += 5;
+      doc.text(`Monthly Recurring: $${p.recurringTotal.toLocaleString()}/mo`, ml, y); y += 5;
+      doc.setFont("helvetica", "bold"); doc.setTextColor(4, 120, 87);
+      doc.text(`Total Value: $${p.totalValue.toLocaleString()}`, ml, y); y += 6;
+      pb(20);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+      doc.text("Contract Details", ml, y); y += 6;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+      doc.text(`Term: ${p.contract.term}   |   Start: ${p.contract.startDate}   |   End: ${p.contract.endDate || "TBD"}`, ml, y); y += 5;
+      doc.text(`Auto-Renew: ${p.contract.autoRenew ? "Yes" : "No"}   |   Notice: ${p.contract.noticePeriod}`, ml, y); y += 5;
+      if (p.contract.cancellationTerms) { pb(10); pw(p.contract.cancellationTerms, ml, cw, 5); }
+      if (p.aiSummary) {
+        pb(20);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(30, 41, 59);
+        doc.text("Executive Summary", ml, y); y += 6;
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(71, 85, 105);
+        doc.text(`Package: ${p.aiSummary.recommendedPackage}`, ml, y); y += 5;
+        doc.text(`Revenue Opportunity: ${p.aiSummary.revenueOpportunity}`, ml, y); y += 5;
+        doc.text(`Complexity: ${p.aiSummary.complexity}`, ml, y); y += 5;
+        pb(10); pw(`Expected Impact: ${p.aiSummary.expectedImpact}`, ml, cw, 5);
+      }
+      const totalPages = (doc.internal as unknown as { getNumberOfPages: () => number }).getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(148, 163, 184);
+        doc.text(`${p.name} — Confidential`, ml, pageHeight - 10);
+        doc.text(`Page ${i} of ${totalPages}`, pageWidth - mr - 20, pageHeight - 10);
+      }
+      doc.save(`${p.name.replace(/[^a-z0-9]/gi, "-").toLowerCase()}.pdf`);
+      showToast(`Proposal PDF downloaded — ${p.name}.pdf`);
+    } catch (err) {
+      console.error("PDF generation failed:", err);
+      showToast("PDF export failed. Please try again.");
+    }
   }
 
   function handleAddNote() {
@@ -1766,6 +2003,9 @@ function ProposalDetailDrawer({ proposal, onClose, onEdit }: {
             </div>
             <div className="flex gap-2 flex-shrink-0">
               <Btn variant="default" onClick={handleDownloadPdf}>Download PDF</Btn>
+              {(proposal.status === "Draft" || proposal.status === "Internal Review") && onSend && (
+                <Btn variant="success" onClick={() => void onSend(proposal)}>Send Proposal</Btn>
+              )}
               <Btn variant="primary" onClick={() => onEdit(proposal)}>Edit Proposal</Btn>
               <button
                 type="button"
@@ -2118,7 +2358,171 @@ function ProposalBuilderView({ initial, onBack }: {
 // Main Page
 //
 
-type PageView = "dashboard"| "builder"| "detail"| "proposal-builder"| "wizard";
+type PageView = "dashboard" | "builder" | "detail" | "proposal-builder" | "wizard";
+
+// ─── Real proposals type (from API store) ─────────────────────────────────────
+// Wizard-completed and draft proposals from /api/sales-proposals, shaped into
+// the Proposal interface so the existing table/drawer UI works unchanged.
+
+interface SalesProposalApiRecord {
+  id: string;
+  status: string;
+  opportunityId: string | null;
+  leadId: string | null;
+  currentStep: number;
+  completedSteps: number[];
+  clientInfo: {
+    name: string;
+    businessName: string;
+    industry: string;
+    location: string;
+    website: string;
+    leadSource: string;
+    contactName: string;
+    contactEmail: string;
+    contactPhone: string;
+    notes: string;
+  };
+  selectedGoals: string[];
+  auditMode: string | null;
+  selectedAuditId: string | null;
+  auditResult: unknown;
+  approvedRecommendations: string[];
+  approvedRecommendationServiceNames: string[];
+  lineItems: unknown[];
+  discountPercentage: number;
+  discount: unknown;
+  budgetResult: unknown;
+  proposalDocument: unknown;
+  createdAt: string;
+  updatedAt: string;
+  lastSavedAt: string | null;
+  sentAt: string | null;
+  [key: string]: unknown;
+}
+
+// Map wizard status to ProposalStatus for the table/badge display
+function mapWizardStatus(s: string): ProposalStatus {
+  if (s === "complete") return "Pending Approval";
+  if (s === "sent") return "Sent";
+  if (s === "accepted") return "Accepted";
+  if (s === "rejected") return "Rejected";
+  if (s === "in-progress") return "Internal Review";
+  return "Draft"; // "draft"
+}
+
+// Shape an API record into the Proposal interface the existing UI expects
+function apiRecordToProposal(r: SalesProposalApiRecord): Proposal {
+  const serviceNames = (r.approvedRecommendationServiceNames ?? []) as string[];
+  const goals = (r.selectedGoals ?? []) as string[];
+  const services: ServiceCategory[] = (
+    [...serviceNames, ...goals].filter((s) =>
+      ["SEO", "GBP", "PPC", "Meta Ads", "Website", "Content", "Reporting", "LSA"].includes(s)
+    ) as ServiceCategory[]
+  ).filter((v, i, a) => a.indexOf(v) === i);
+
+  // Budget from budgetResult or line item totals
+  const budgetResult = r.budgetResult as {
+    grandTotalMonthly?: number;
+    totalSetupFees?: number;
+    totalOneTimeProjects?: number;
+  } | null;
+
+  const lineItemsRaw = (r.lineItems ?? []) as Array<{
+    setupFee?: number;
+    basePrice?: number;
+    adjustedPrice?: number;
+    quantity?: number;
+    id?: string;
+    name?: string;
+    department?: string;
+    category?: string;
+    recurringFee?: number;
+  }>;
+
+  const computedRecurring = budgetResult?.grandTotalMonthly ?? lineItemsRaw.reduce(
+    (sum, li) => sum + ((li.adjustedPrice ?? li.basePrice ?? li.recurringFee ?? 0) * (li.quantity ?? 1)), 0
+  );
+  const computedSetup = (budgetResult?.totalSetupFees ?? 0) + (budgetResult?.totalOneTimeProjects ?? 0);
+  const contractMonths = 12;
+
+  const createdDate = r.createdAt
+    ? new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "—";
+
+  const discount = r.discount as { type?: string; value?: number; promoCode?: string; managerApproval?: boolean; approved?: boolean } | null;
+
+  return {
+    id: r.id,
+    name: r.clientInfo?.businessName
+      ? `${r.clientInfo.businessName} — Proposal`
+      : `Proposal ${r.id.slice(-6)}`,
+    client: r.clientInfo?.businessName || r.clientInfo?.name || "Unknown Client",
+    owner: r.clientInfo?.contactName || "—",
+    services,
+    lineItems: lineItemsRaw.map((li) => ({
+      id: li.id ?? "",
+      name: li.name ?? "",
+      department: (li.department ?? "SEO") as Department,
+      category: (li.category ?? "SEO") as ServiceCategory,
+      setupFee: li.setupFee ?? 0,
+      recurringFee: li.recurringFee ?? li.adjustedPrice ?? li.basePrice ?? 0,
+      quantity: li.quantity ?? 1,
+      deliveryStandard: "Standard" as DeliveryStandard,
+      taskBlueprint: "",
+      dependencies: [],
+      status: "Active" as LineItemStatus,
+      firstResponse: "1 business day",
+      targetDays: 10,
+      clientUpdateFreq: "Weekly",
+      escalationDays: 14,
+      recurringTasks: [],
+      generatedTasks: 0,
+      generatedMilestones: 0,
+      generatedDeliverables: 0,
+    })),
+    setupTotal: computedSetup,
+    recurringTotal: computedRecurring,
+    totalValue: computedSetup + computedRecurring * contractMonths,
+    status: mapWizardStatus(r.status ?? "draft"),
+    createdDate,
+    discount: {
+      type: (discount?.type ?? "None") as DiscountType,
+      value: discount?.value ?? 0,
+      promoCode: discount?.promoCode ?? "",
+      managerApproval: discount?.managerApproval ?? false,
+      approved: discount?.approved ?? false,
+    },
+    contract: {
+      term: "12 Month",
+      customMonths: 12,
+      startDate: "",
+      endDate: "",
+      noticePeriod: "30 days",
+      autoRenew: false,
+      cancellationTerms: "30-day written notice required",
+    },
+    info: {
+      client: r.clientInfo?.businessName || r.clientInfo?.name || "Unknown",
+      opportunity: r.opportunityId ?? r.id,
+      owner: r.clientInfo?.contactName || "—",
+      proposalDate: createdDate,
+      expirationDate: "",
+    },
+    aiSummary: {
+      recommendedPackage: services.join(" + ") || "Custom Package",
+      revenueOpportunity: `$${Math.round(computedRecurring).toLocaleString()}/mo`,
+      riskFactors: [],
+      complexity: "Medium",
+      resourceRequirements: services.join(", ") || "—",
+      expectedImpact: r.selectedGoals?.join(", ") || "—",
+    },
+    activityTimeline: [
+      { date: createdDate, event: "Proposal created via wizard", user: r.clientInfo?.contactName || "—" },
+      ...(r.sentAt ? [{ date: new Date(r.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), event: "Proposal sent to client", user: r.clientInfo?.contactName || "—" }] : []),
+    ],
+  };
+}
 
 function ProposalsPageInner() {
   const searchParams = useSearchParams();
@@ -2129,9 +2533,64 @@ function ProposalsPageInner() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [wizardInitialState, setWizardInitialState] = useState<Partial<ProposalWizardState> | undefined>(undefined);
 
+  // ── Real proposals from API store ─────────────────────────────────────────
+  const [apiProposals, setApiProposals] = useState<Proposal[]>([]);
+  const [apiLoading, setApiLoading] = useState(false);
+
+  const loadApiProposals = React.useCallback(async () => {
+    setApiLoading(true);
+    try {
+      const res = await fetch("/api/sales-proposals");
+      if (res.ok) {
+        const data = (await res.json()) as { records: SalesProposalApiRecord[] };
+        setApiProposals((data.records ?? []).map(apiRecordToProposal));
+      }
+    } catch {
+      // Silently fall back to mock data only
+    } finally {
+      setApiLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadApiProposals();
+  }, [loadApiProposals]);
+
+  // Merge: real API records take precedence; mock records fill the rest.
+  // API records are identified by id; mock records never have the same id format.
+  const allProposals = React.useMemo<Proposal[]>(() => {
+    const apiIds = new Set(apiProposals.map((p) => p.id));
+    const mockOnly = MOCK_PROPOSALS.filter((p) => !apiIds.has(p.id));
+    return [...apiProposals, ...mockOnly];
+  }, [apiProposals]);
+
+  // ── Send Proposal ─────────────────────────────────────────────────────────
+  // Persists a real status transition (Draft/Internal Review → Sent) and
+  // refreshes the list so the new status is immediately visible.
+  const handleSendProposal = React.useCallback(async (p: Proposal) => {
+    // Only API-backed proposals can be sent via this path
+    // (mock proposals are display-only; they have no server record)
+    try {
+      const sentAt = new Date().toISOString();
+      await fetch("/api/sales-proposals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: p.id, status: "sent", sentAt }),
+      });
+      await loadApiProposals();
+      if (selectedProposal?.id === p.id) {
+        setSelectedProposal((prev) =>
+          prev ? { ...prev, status: "Sent" } : prev
+        );
+      }
+    } catch {
+      // Non-fatal: show a note to the user
+    }
+  }, [loadApiProposals, selectedProposal]);
+
   // Read URL params to determine wizard mode
   useEffect(() => {
-    // Wrapped in void IIFE to allow async/await for leadId context fetch.
+    // Wrapped in void IIFE to allow async/await for leadId/opportunityId context fetch.
     void (async () => {
     const isNew = searchParams.get("new") === "true";
     const resumeId = searchParams.get("resume");
@@ -2141,68 +2600,113 @@ function ProposalsPageInner() {
     const leadId = searchParams.get("leadId");
     if (isNew) {
       setView("wizard");
-      // If auditId is present, pre-populate wizard to open Step 2 in
-      // "Use Existing Audit" mode with the audit already selected.
       if (auditId) {
         setWizardInitialState({
           currentStep: 2 as const,
           selectedAuditId: auditId,
           auditMode: "existing" as const,
-          // Store the auditId and auditType so Step2Audit can pre-select it
-          // We embed it in a custom field via the wizard state extension
-          // @ts-ignore – preselectedAuditId is read by Step2Audit on mount
           preselectedAuditId: auditId,
-          // @ts-ignore
           preselectedAuditType: auditType ?? undefined,
-          // @ts-ignore
-          ...(opportunityId ? { linkedOpportunityId: opportunityId } : {}),
+          ...(opportunityId ? { opportunityId } : {}),
         });
       } else if (opportunityId) {
-        // Pre-fill wizard with opportunity context; look up in sessionStorage if pipeline page stored it
-        let oppData: { businessName?: string; contactName?: string; notes?: string } = {};
+        // Pre-fill from real sales-opportunities store first, then fall back
+        // to sessionStorage (set by Pipeline page) for richer context.
+        let oppData: {
+          businessName?: string;
+          contactName?: string;
+          contactEmail?: string;
+          contactPhone?: string;
+          tradeType?: string;
+          leadSource?: string;
+          serviceInterest?: string[];
+          discoveryNotes?: string;
+        } = {};
         try {
-          const stored = sessionStorage.getItem(`rtm-opp-${opportunityId}`);
-          if (stored) oppData = JSON.parse(stored);
+          // 1. Try the real API store
+          const oppRes = await fetch("/api/sales-opportunities");
+          if (oppRes.ok) {
+            const oppJson = (await oppRes.json()) as {
+              records: {
+                id: string;
+                businessName?: string;
+                contactName?: string;
+                contactEmail?: string;
+                contactPhone?: string;
+                tradeType?: string;
+                leadSource?: string;
+                serviceInterest?: string[];
+                discoveryNotes?: string;
+              }[];
+            };
+            const match = oppJson.records.find((r) => r.id === opportunityId);
+            if (match) {
+              oppData = {
+                businessName: match.businessName,
+                contactName: match.contactName,
+                contactEmail: match.contactEmail,
+                contactPhone: match.contactPhone,
+                tradeType: match.tradeType,
+                leadSource: match.leadSource,
+                serviceInterest: match.serviceInterest,
+                discoveryNotes: match.discoveryNotes,
+              };
+            }
+          }
+          // 2. Fall back to sessionStorage (Pipeline page may have stored richer data)
+          if (!oppData.businessName && typeof sessionStorage !== "undefined") {
+            const stored = sessionStorage.getItem(`rtm-opp-${opportunityId}`);
+            if (stored) {
+              const parsed = JSON.parse(stored) as typeof oppData;
+              oppData = { ...parsed, ...oppData };
+            }
+          }
         } catch { /* ignore */ }
         setWizardInitialState({
-          // @ts-ignore
-          linkedOpportunityId: opportunityId,
-          ...(oppData.businessName ? {
-            clientInfo: {
-              name: "",
-              businessName: oppData.businessName ?? "",
-              industry: "",
-              location: "",
-              website: "",
-              leadSource: "",
-              contactName: oppData.contactName ?? "",
-              contactEmail: "",
-              contactPhone: "",
-              notes: oppData.notes ?? `Linked from opportunity ${opportunityId}`,
-            },
-          } : {
-            clientInfo: {
-              name: "",
-              businessName: "",
-              industry: "",
-              location: "",
-              website: "",
-              leadSource: "",
-              contactName: "",
-              contactEmail: "",
-              contactPhone: "",
-              notes: `Linked from opportunity ${opportunityId}`,
-            },
-          }),
+          opportunityId,
+          clientInfo: {
+            name: "",
+            businessName: oppData.businessName ?? "",
+            industry: oppData.tradeType ?? "",
+            location: "",
+            website: "",
+            leadSource: oppData.leadSource ?? "",
+            contactName: oppData.contactName ?? "",
+            contactEmail: oppData.contactEmail ?? "",
+            contactPhone: oppData.contactPhone ?? "",
+            notes: [
+              oppData.discoveryNotes ?? "",
+              `Linked from opportunity ${opportunityId}`,
+            ].filter(Boolean).join("\n"),
+          },
+          ...(oppData.serviceInterest?.length
+            ? { selectedGoals: oppData.serviceInterest }
+            : {}),
         });
       } else if (leadId) {
-        // Intake path: /sales/intake?leadId=X redirected here with leadId preserved.
-        // Fetch the lead's persisted state to pre-populate wizard context.
-        let leadContext: { businessName?: string; contactName?: string; notes?: string; assignedRep?: string } = {};
+        // Fetch lead context from real leads-status store
+        let leadContext: {
+          businessName?: string;
+          contactName?: string;
+          notes?: string;
+          assignedRep?: string;
+          industry?: string;
+          leadSource?: string;
+        } = {};
         try {
           const res = await fetch("/api/leads-status");
           if (res.ok) {
-            const data = await res.json() as { records: { leadId: string; businessName?: string; name?: string; notes?: string; assignedRep?: string }[] };
+            const data = (await res.json()) as {
+              records: {
+                leadId: string;
+                businessName?: string;
+                name?: string;
+                notes?: string;
+                assignedRep?: string;
+                industry?: string;
+                leadSource?: string;
+              }[];
+            };
             const record = data.records.find((r) => r.leadId === leadId);
             if (record) {
               leadContext = {
@@ -2210,41 +2714,53 @@ function ProposalsPageInner() {
                 contactName: record.name,
                 notes: record.notes,
                 assignedRep: record.assignedRep,
+                industry: record.industry,
+                leadSource: record.leadSource,
               };
             }
           }
         } catch { /* ignore — wizard opens with empty state */ }
         setWizardInitialState({
-          // @ts-ignore
-          linkedLeadId: leadId,
           clientInfo: {
             name: "",
             businessName: leadContext.businessName ?? "",
-            industry: "",
+            industry: leadContext.industry ?? "",
             location: "",
             website: "",
-            leadSource: "",
+            leadSource: leadContext.leadSource ?? "",
             contactName: leadContext.contactName ?? "",
             contactEmail: "",
             contactPhone: "",
             notes: leadContext.notes ?? `Linked from lead ${leadId}`,
           },
-        });
+        } as Partial<ProposalWizardState> & { linkedLeadId?: string });
       } else {
         setWizardInitialState(undefined);
       }
     } else if (resumeId) {
-      // Load draft from localStorage
+      // Load draft from API first, then fall back to localStorage
       let initial: Partial<ProposalWizardState> | undefined;
       try {
-        const saved = localStorage.getItem(`rtm-proposal-draft-${resumeId}`);
-        if (saved) {
-          initial = JSON.parse(saved);
-        } else {
+        const res = await fetch("/api/sales-proposals");
+        if (res.ok) {
+          const data = (await res.json()) as { records: SalesProposalApiRecord[] };
+          const match = data.records.find((r) => r.id === resumeId);
+          if (match) {
+            initial = match as unknown as Partial<ProposalWizardState>;
+          }
+        }
+      } catch { /* ignore */ }
+      if (!initial) {
+        try {
+          const saved = localStorage.getItem(`rtm-proposal-draft-${resumeId}`);
+          if (saved) {
+            initial = JSON.parse(saved);
+          } else {
+            initial = { wizardId: resumeId };
+          }
+        } catch {
           initial = { wizardId: resumeId };
         }
-      } catch {
-        initial = { wizardId: resumeId };
       }
       setWizardInitialState(initial);
       setView("wizard");
@@ -2260,22 +2776,11 @@ function ProposalsPageInner() {
     setDrawerOpen(true);
   }
 
-  function openBuilder(_p: Proposal | null) {
-    // Legacy builder - now unreachable; all edits route through wizard resume
-    setDrawerOpen(false);
-    setView("proposal-builder");
-  }
-
-  function openProposalBuilder() {
-    setDrawerOpen(false);
-    setView("proposal-builder");
-  }
-
   function resumeWizardDraft(p: Proposal) {
     setDrawerOpen(false);
-    // Pre-populate wizard state from flat proposal record so the wizard opens
-    // with as much context as possible rather than blank.
-    const wizardId = `wizard-prop-${p.id}`;
+    // For API-backed proposals: use their real id as wizardId
+    // For mock proposals: derive a wizardId from the proposal id
+    const wizardId = p.id.startsWith("wizard-") ? p.id : `wizard-prop-${p.id}`;
     const prefilledState = {
       wizardId,
       status: "draft" as const,
@@ -2298,6 +2803,7 @@ function ProposalsPageInner() {
       selectedAuditId: null,
       auditResult: null,
       approvedRecommendations: p.services as string[],
+      approvedRecommendationServiceNames: p.services as string[],
       lineItems: p.lineItems.map(li => ({
         id: li.id,
         name: li.name,
@@ -2312,11 +2818,20 @@ function ProposalsPageInner() {
         type: "service" as const,
       })),
       discountPercentage: p.discount.type === "Percentage" || p.discount.type === "Promo Code" ? p.discount.value : 0,
+      discount: {
+        type: "none" as const,
+        value: p.discount.type === "Percentage" ? p.discount.value : 0,
+        label: "",
+        authorizationNote: "",
+      },
       budgetResult: null,
       proposalDocument: null,
       lastSavedAt: new Date().toISOString(),
       intakeRecord: null,
       opportunityId: p.info.opportunity,
+      aiAuditResult: null,
+      preselectedAuditId: null,
+      preselectedAuditType: null,
     };
     try {
       localStorage.setItem(`rtm-proposal-draft-${wizardId}`, JSON.stringify(prefilledState));
@@ -2331,9 +2846,16 @@ function ProposalsPageInner() {
     resumeWizardDraft(p);
   }
 
+  // handleGenerateContract — creates a real contract from an Accepted proposal
+  // then navigates to /sales/contracts so the user sees the new record.
+  function handleGenerateContract(_p: Proposal) {
+    router.push("/sales/contracts");
+  }
+
   function backToDashboard() {
     setView("dashboard");
     setEditingProposal(null);
+    void loadApiProposals();
   }
 
   // Show wizard full-screen when in wizard mode
@@ -2343,10 +2865,11 @@ function ProposalsPageInner() {
         initialState={wizardInitialState}
         onComplete={() => {
           setView("dashboard");
+          void loadApiProposals();
           router.push("/sales/proposals");
         }}
         onSaveDraft={(s) => {
-          // Persist the draft so resume works; save before navigating away
+          // Also save to localStorage so resume works offline
           try {
             const id = s?.wizardId ?? wizardInitialState?.wizardId;
             if (id) {
@@ -2356,10 +2879,12 @@ function ProposalsPageInner() {
             // ignore storage errors
           }
           setView("dashboard");
+          void loadApiProposals();
           router.push("/sales/proposals");
         }}
         onExit={() => {
           setView("dashboard");
+          void loadApiProposals();
           router.push("/sales/proposals");
         }}
       />
@@ -2371,12 +2896,12 @@ function ProposalsPageInner() {
       {/* Page Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "#059669"}}>
+          <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "#059669" }}>
             Sales
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl font-medium"style={{ color: "var(--rtm-text-primary)"}}>
-              {view === "builder"? (editingProposal ? `Edit: ${editingProposal.name}` : "New Proposal") : "Proposals"}
+            <h1 className="text-xl font-medium" style={{ color: "var(--rtm-text-primary)" }}>
+              {view === "builder" ? (editingProposal ? `Edit: ${editingProposal.name}` : "New Proposal") : "Proposals"}
             </h1>
             <span
               className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
@@ -2385,13 +2910,13 @@ function ProposalsPageInner() {
               Preview — Target State
             </span>
           </div>
-          <p className="mt-1 text-sm"style={{ color: "var(--rtm-text-muted)"}}>
+          <p className="mt-1 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
             Build and send client proposals.
           </p>
         </div>
-        {view === "dashboard"&& (
+        {view === "dashboard" && (
           <div className="flex gap-2">
-            <Btn variant="primary"onClick={() => router.push("/sales/proposals?new=true")}>+ New Proposal</Btn>
+            <Btn variant="primary" onClick={() => router.push("/sales/proposals?new=true")}>+ New Proposal</Btn>
             <Link href="/sales">
               <Btn variant="default">← Sales Dashboard</Btn>
             </Link>
@@ -2399,57 +2924,45 @@ function ProposalsPageInner() {
         )}
       </div>
 
-
-
-      {/*  Proposal Builder (EPIC 08.5)  */}
-      {view === "proposal-builder"&& (
+      {/* Proposal Builder (EPIC 08.5) */}
+      {view === "proposal-builder" && (
         <div className="space-y-6">
-          {/* Back navigation */}
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: "#059669"}}>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "#059669" }}>
                 Sales · Proposal Builder
               </p>
-              <h1 className="text-xl font-bold"style={{ color: "var(--rtm-text-primary)"}}>New Proposal</h1>
-              <p className="mt-1 text-sm"style={{ color: "var(--rtm-text-secondary)"}}>
+              <h1 className="text-xl font-bold" style={{ color: "var(--rtm-text-primary)" }}>New Proposal</h1>
+              <p className="mt-1 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
                 Assemble a structured client-facing proposal from Budget Optimizer output.
               </p>
             </div>
-            <Btn variant="default"onClick={backToDashboard}>← Back to Proposals</Btn>
+            <Btn variant="default" onClick={backToDashboard}>← Back to Proposals</Btn>
           </div>
 
-          {/* Workflow continuity breadcrumb */}
-          <div className="rounded-xl border px-5 py-3 flex items-center gap-2 flex-wrap"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
-            <p className="text-[10px] font-bold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>Workflow:</p>
+          <div className="rounded-xl border px-5 py-3 flex items-center gap-2 flex-wrap" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+            <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Workflow:</p>
             {[
-              { label: "Sales Intake",          href: "/sales/intake" },
-              { label: "Goal-Based Audit",       href: "/sales/audits" },
-              { label: "Recommendation Engine",  href: "/sales/recommendations" },
-              { label: "Budget Optimizer",       href: "/sales/pipeline" },
-              { label: "Proposal Builder",       href: "/sales/proposals", active: true },
-              { label: "Contract Builder",       href: "/sales/contracts" },
+              { label: "Sales Intake",         href: "/sales/intake" },
+              { label: "Goal-Based Audit",      href: "/sales/audits" },
+              { label: "Recommendation Engine", href: "/sales/recommendations" },
+              { label: "Budget Optimizer",      href: "/sales/pipeline" },
+              { label: "Proposal Builder",      href: "/sales/proposals", active: true },
+              { label: "Contract Builder",      href: "/sales/contracts" },
             ].map((step, i, arr) => (
               <React.Fragment key={step.label}>
                 <Link href={step.href}>
-                  <span
-                    className="text-[10px] font-semibold px-2 py-1 rounded border transition-all"
-                    style={{
-                      background: step.active ? "#059669" : "var(--rtm-bg)",
-                      color: step.active ? "#fff" : "var(--rtm-text-muted)",
-                      borderColor: step.active ? "#059669" : "var(--rtm-border)",
-                    }}
-                  >
-                    {step.label}
-                  </span>
+                  <span className="text-[10px] font-semibold px-2 py-1 rounded border transition-all" style={{
+                    background: step.active ? "#059669" : "var(--rtm-bg)",
+                    color: step.active ? "#fff" : "var(--rtm-text-muted)",
+                    borderColor: step.active ? "#059669" : "var(--rtm-border)",
+                  }}>{step.label}</span>
                 </Link>
-                {i < arr.length - 1 && (
-                  <span style={{ color: "var(--rtm-text-muted)" }}>→</span>
-                )}
+                {i < arr.length - 1 && <span style={{ color: "var(--rtm-text-muted)" }}>→</span>}
               </React.Fragment>
             ))}
           </div>
 
-          {/* Proposal Builder Shell */}
           <ProposalBuilderShell
             clientName="New Client"
             preparedBy="Sales Representative"
@@ -2457,14 +2970,10 @@ function ProposalsPageInner() {
             context={{}}
           />
 
-          {/* CTA: Continue to Contract Builder */}
-          <div
-            className="rounded-xl border px-6 py-5 flex items-center justify-between gap-4 flex-wrap"
-            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
-          >
+          <div className="rounded-xl border px-6 py-5 flex items-center justify-between gap-4 flex-wrap" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
             <div>
-              <p className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>Ready to proceed?</p>
-              <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>Once your proposal is complete, continue to the Contract Builder.</p>
+              <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Ready to proceed?</p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Once your proposal is complete, continue to the Contract Builder.</p>
             </div>
             <Link href="/sales/contracts">
               <Btn variant="success">Continue to Contract Builder →</Btn>
@@ -2473,35 +2982,30 @@ function ProposalsPageInner() {
         </div>
       )}
 
-      {/* DEPRECATED - legacy proposal editor, retired.
-           Superseded by ProposalWizard resume mode.
-           Safe to delete in a future cleanup pass.
-           This branch is permanently unreachable: the Edit button and all
-           drawer actions now route through editProposal() → resumeWizardDraft()
-           which navigates to ?resume= and never sets view to "builder". */}
+      {/* DEPRECATED legacy proposal editor */}
       {view === "builder" && false && (
         <ProposalBuilderView initial={editingProposal} onBack={backToDashboard} />
       )}
 
-      {/*  Dashboard View  */}
-      {view === "dashboard"&& (
+      {/* Dashboard View */}
+      {view === "dashboard" && (
         <>
-          {/* KPI Cards */}
-          <DashboardKPIs proposals={MOCK_PROPOSALS} />
-
-          {/* Proposal Table */}
+          {apiLoading && (
+            <div className="text-xs px-2" style={{ color: "var(--rtm-text-muted)" }}>Loading proposals…</div>
+          )}
+          <DashboardKPIs proposals={allProposals} />
           <ProposalTable
-            proposals={MOCK_PROPOSALS}
+            proposals={allProposals}
             onSelect={openDetail}
             onEdit={editProposal}
             onResume={resumeWizardDraft}
+            onSend={handleSendProposal}
+            onGenerateContract={handleGenerateContract}
           />
-
-
         </>
       )}
 
-      {/*  Proposal Detail Drawer  */}
+      {/* Proposal Detail Drawer */}
       {drawerOpen && selectedProposal && (
         <ProposalDetailDrawer
           proposal={selectedProposal}
@@ -2510,15 +3014,12 @@ function ProposalsPageInner() {
             setDrawerOpen(false);
             editProposal(p);
           }}
+          onSend={handleSendProposal}
         />
       )}
     </div>
   );
 }
-
-//
-// Root export with Suspense boundary (required for useSearchParams)
-//
 
 export default function ProposalsPage() {
   return (

@@ -6,113 +6,69 @@ import { useRouter } from "next/navigation";
 import { getWorkspace } from "@/lib/workspaces";
 import ContractBuilderShell from "@/components/sales/contract-builder/ContractBuilderShell";
 import { getOrCreateHandoffForContract } from "@/lib/sales/handoff-store";
+import {
+  fetchAllContracts,
+  hydrateContracts,
+  type SalesContractRecord,
+  type SalesContractStatus,
+} from "@/lib/sales/contracts-store";
 
 const workspace = getWorkspace("sales")!;
 
-// ── Mock signed contracts ──────────────────────────────────────────────────────
-// These are contracts in Signed status that are eligible for Request Invoice.
+// ── Status display helpers ─────────────────────────────────────────────────────
 
-type ContractStatus = "Draft" | "Sent" | "Signed" | "Expired" | "Cancelled";
-
-interface ContractRecord {
-  id: string;
-  client: string;
-  services: string;
-  monthlyValue: string;
-  termLength: string;
-  signedDate: string;
-  assignedRep: string;
-  status: ContractStatus;
-}
-
-const MOCK_CONTRACTS: ContractRecord[] = [
-  {
-    id: "CTR-2025-0041",
-    client: "Summit Landscaping",
-    services: "SEO, GBP, Reporting",
-    monthlyValue: "$2,400/mo",
-    termLength: "12 months",
-    signedDate: "Jun 1, 2025",
-    assignedRep: "Jordan M.",
-    status: "Signed",
-  },
-  {
-    id: "CTR-2025-0042",
-    client: "Metro Dental Group",
-    services: "SEO, GBP, PPC, Reporting",
-    monthlyValue: "$4,500/mo",
-    termLength: "12 months",
-    signedDate: "Jun 5, 2025",
-    assignedRep: "Jordan M.",
-    status: "Signed",
-  },
-  {
-    id: "CTR-2025-0043",
-    client: "Coastal Wellness Spa",
-    services: "Meta Ads, SEO, Creative",
-    monthlyValue: "$3,800/mo",
-    termLength: "12 months",
-    signedDate: "Jun 8, 2025",
-    assignedRep: "Sarah K.",
-    status: "Signed",
-  },
-  {
-    id: "CTR-2025-0038",
-    client: "Harbor Auto Group",
-    services: "PPC, Meta Ads, Reporting",
-    monthlyValue: "$5,000/mo",
-    termLength: "24 months",
-    signedDate: "May 28, 2025",
-    assignedRep: "Mike T.",
-    status: "Draft",
-  },
-  {
-    id: "CTR-2025-0039",
-    client: "Blue Ridge Plumbing",
-    services: "GBP, LSA",
-    monthlyValue: "$1,300/mo",
-    termLength: "Month-to-Month",
-    signedDate: "—",
-    assignedRep: "Sarah K.",
-    status: "Sent",
-  },
-];
-
-const STATUS_STYLES: Record<ContractStatus, { bg: string; text: string; border: string }> = {
-  Draft:     { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB" },
-  Sent:      { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE" },
-  Signed:    { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0" },
-  Expired:   { bg: "#F3F4F6", text: "#9CA3AF", border: "#D1D5DB" },
-  Cancelled: { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3" },
+const STATUS_STYLES: Record<
+  SalesContractStatus,
+  { bg: string; text: string; border: string; label: string }
+> = {
+  draft:     { bg: "#F3F4F6", text: "#6B7280", border: "#D1D5DB", label: "Draft" },
+  sent:      { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", label: "Sent" },
+  signed:    { bg: "#F0FDF4", text: "#15803D", border: "#BBF7D0", label: "Signed" },
+  expired:   { bg: "#F3F4F6", text: "#9CA3AF", border: "#D1D5DB", label: "Expired" },
+  cancelled: { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3", label: "Cancelled" },
 };
 
-function RequestInvoiceButton({ contractId, contract }: { contractId: string; contract: ContractRecord }) {
+// ── Request Invoice Button ─────────────────────────────────────────────────────
+// Preserved exactly from the original implementation — uses the existing
+// real file-backed handoff-store integration unchanged.
+
+function RequestInvoiceButton({
+  contractId,
+  contract,
+}: {
+  contractId: string;
+  contract: SalesContractRecord;
+}) {
   const router = useRouter();
   const [creating, setCreating] = React.useState(false);
 
   async function handleClick() {
     if (creating) return;
     setCreating(true);
-    // Build summary fields from contract data
+    // Build summary fields from real contract data
     const summaryFields: Record<string, string> = {
-      "client-name": contract.client,
-      "contract-number": contract.id,
-      "services-sold": contract.services,
+      "client-name": contract.clientName,
+      "contract-number": contract.contractNumber,
+      "services-sold": contract.services.join(", "),
       "monthly-recurring-revenue": contract.monthlyValue,
-      "payment-terms": "Net 15",
+      "payment-terms": contract.paymentTerm === "net-15"
+        ? "Net 15"
+        : contract.paymentTerm === "net-45"
+        ? "Net 45"
+        : contract.paymentTerm === "upon-receipt"
+        ? "Due Upon Receipt"
+        : "Net 30",
       "term-length": contract.termLength,
       "setup-fees": "$0",
     };
     try {
-      // Get or create the handoff record for this contract (file-backed, async)
       const handoff = await getOrCreateHandoffForContract(
         contractId,
-        contract.client,
-        contract.id,
+        contract.clientName,
+        contract.contractNumber,
         contract.assignedRep,
         summaryFields
       );
-      // Route to the specific handoff detail view
       router.push(`/sales/handoffs?handoffId=${handoff.id}&action=request-invoice`);
     } finally {
       setCreating(false);
@@ -131,7 +87,251 @@ function RequestInvoiceButton({ contractId, contract }: { contractId: string; co
   );
 }
 
+// ── Contract Detail Panel ──────────────────────────────────────────────────────
+// Shown when the user clicks "View" on a row. Renders the selected contract's
+// real content above the ContractBuilderShell, which is also seeded with the
+// same real data.
+
+function ContractDetailPanel({
+  contract,
+  onClose,
+}: {
+  contract: SalesContractRecord;
+  onClose: () => void;
+}) {
+  const s = STATUS_STYLES[contract.status];
+
+  return (
+    <div
+      className="rounded-xl border overflow-hidden"
+      style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+    >
+      {/* Detail header */}
+      <div
+        className="px-5 py-4 border-b flex items-start justify-between gap-4"
+        style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}
+      >
+        <div className="flex items-center gap-3 flex-wrap">
+          <span
+            className="font-mono text-sm font-bold"
+            style={{ color: "var(--rtm-text-primary)" }}
+          >
+            {contract.contractNumber}
+          </span>
+          <span
+            className="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+            style={{ background: s.bg, color: s.text, borderColor: s.border }}
+          >
+            {s.label}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
+          style={{
+            background: "var(--rtm-surface)",
+            color: "var(--rtm-text-muted)",
+            borderColor: "var(--rtm-border)",
+          }}
+        >
+          ✕ Close
+        </button>
+      </div>
+
+      {/* Contract summary */}
+      <div className="px-5 py-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 border-b" style={{ borderColor: "var(--rtm-border)" }}>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Client
+          </p>
+          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+            {contract.clientName}
+          </p>
+          {contract.contactName && contract.contactName !== contract.clientName && (
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
+              {contract.contactName}
+            </p>
+          )}
+          {contract.contactEmail && (
+            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+              {contract.contactEmail}
+            </p>
+          )}
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Services
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {contract.services.length > 0 ? (
+              contract.services.map((s) => (
+                <p key={s} className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+                  • {s}
+                </p>
+              ))
+            ) : (
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</p>
+            )}
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Monthly Value
+          </p>
+          <p className="text-sm font-bold" style={{ color: "#059669" }}>
+            {contract.monthlyValue}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Term / Payment
+          </p>
+          <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+            {contract.termLength}
+          </p>
+          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+            {contract.paymentTerm === "net-15"
+              ? "Net 15"
+              : contract.paymentTerm === "net-45"
+              ? "Net 45"
+              : contract.paymentTerm === "upon-receipt"
+              ? "Upon receipt"
+              : "Net 30"}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Assigned Rep
+          </p>
+          <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+            {contract.assignedRep || "—"}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Signed Date
+          </p>
+          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+            {contract.signedDate
+              ? new Date(contract.signedDate).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "—"}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Created
+          </p>
+          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+            {new Date(contract.createdAt).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Originating Proposal
+          </p>
+          <p className="text-xs font-mono" style={{ color: "var(--rtm-text-muted)" }}>
+            {contract.proposalId.slice(0, 18)}…
+          </p>
+        </div>
+      </div>
+
+      {/* Investment summary */}
+      {contract.investmentSummary && (
+        <div className="px-5 py-3 border-b" style={{ borderColor: "var(--rtm-border)" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>
+            Investment Summary
+          </p>
+          <pre
+            className="text-xs whitespace-pre-wrap"
+            style={{ color: "var(--rtm-text-secondary)", fontFamily: "inherit" }}
+          >
+            {contract.investmentSummary}
+          </pre>
+        </div>
+      )}
+
+      {/* Contract Builder seeded with real data */}
+      <div style={{ minHeight: 700 }}>
+        <ContractBuilderShell
+          clientName={contract.clientName}
+          preparedBy={contract.assignedRep || "Sales Representative"}
+          templateId="standard"
+          context={{
+            services: contract.services,
+            investmentSummary: contract.investmentSummary,
+            proposalId: contract.proposalId,
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Empty state ────────────────────────────────────────────────────────────────
+
+function EmptyContractsState() {
+  return (
+    <div className="rounded-xl border overflow-hidden mx-1" style={{ borderColor: "var(--rtm-border)" }}>
+      <div
+        className="px-5 py-4 border-b"
+        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+      >
+        <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Contracts</p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+          No contracts yet. Generate a contract from an accepted proposal.
+        </p>
+      </div>
+      <div className="px-5 py-10 text-center">
+        <p className="text-sm font-semibold mb-2" style={{ color: "var(--rtm-text-secondary)" }}>
+          No contracts found
+        </p>
+        <p className="text-xs mb-4" style={{ color: "var(--rtm-text-muted)" }}>
+          Open an Accepted proposal on the Proposals page and click <strong>Contract</strong> to generate the first record.
+        </p>
+        <Link
+          href="/sales/proposals"
+          className="inline-flex px-4 py-2 rounded-lg font-bold text-sm border"
+          style={{ background: "#059669", color: "#fff", borderColor: "#047857" }}
+        >
+          Go to Proposals →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
+
 export default function SalesContractsPage() {
+  const [contracts, setContracts] = React.useState<SalesContractRecord[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [selectedContract, setSelectedContract] = React.useState<SalesContractRecord | null>(null);
+
+  // Load real contract records on mount
+  React.useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const records = await fetchAllContracts();
+        hydrateContracts(records);
+        if (!cancelled) setContracts(records);
+      } catch {
+        // Store unavailable — show empty state
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   return (
     <div className="flex flex-col gap-6 h-full">
       {/* Page header */}
@@ -252,83 +452,216 @@ export default function SalesContractsPage() {
         </div>
       </div>
 
-      {/* Signed Contracts — Request Invoice */}
-      <div className="rounded-xl border overflow-hidden mx-1" style={{ borderColor: "var(--rtm-border)" }}>
-        <div
-          className="px-5 py-4 border-b flex items-center justify-between"
-          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
-        >
-          <div>
-            <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Contracts</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-              Signed contracts are eligible for Request Invoice. Click to submit to Billing.
-            </p>
+      {/* Contracts table — real records */}
+      {loading ? (
+        <div className="px-2 py-4 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+          Loading contracts…
+        </div>
+      ) : contracts.length === 0 ? (
+        <EmptyContractsState />
+      ) : (
+        <div className="rounded-xl border overflow-hidden mx-1" style={{ borderColor: "var(--rtm-border)" }}>
+          <div
+            className="px-5 py-4 border-b flex items-center justify-between"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          >
+            <div>
+              <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                Contracts
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                Signed contracts are eligible for Request Invoice. Click View to open a
+                contract in the builder below.
+              </p>
+            </div>
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+              style={{ background: "#F0FDF4", color: "#15803D", borderColor: "#BBF7D0" }}
+            >
+              {contracts.length} record{contracts.length !== 1 ? "s" : ""}
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table
+              className="w-full text-xs"
+              style={{ borderCollapse: "collapse", minWidth: "800px" }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    background: "var(--rtm-bg)",
+                    borderBottom: "1px solid var(--rtm-border)",
+                  }}
+                >
+                  {[
+                    "Contract #",
+                    "Client",
+                    "Services",
+                    "Monthly Value",
+                    "Term",
+                    "Signed Date",
+                    "Rep",
+                    "Status",
+                    "Actions",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
+                      style={{ color: "var(--rtm-text-muted)" }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {contracts.map((contract, i) => {
+                  const st = STATUS_STYLES[contract.status];
+                  const isSelected = selectedContract?.id === contract.id;
+                  return (
+                    <tr
+                      key={contract.id}
+                      style={{
+                        borderBottom: "1px solid var(--rtm-border-light)",
+                        background: isSelected
+                          ? "#F0FDF4"
+                          : i % 2 === 0
+                          ? "transparent"
+                          : "var(--rtm-surface)",
+                      }}
+                    >
+                      <td
+                        className="px-4 py-3 font-mono font-semibold"
+                        style={{ color: "var(--rtm-text-primary)" }}
+                      >
+                        {contract.contractNumber}
+                      </td>
+                      <td
+                        className="px-4 py-3 font-semibold"
+                        style={{ color: "var(--rtm-text-primary)" }}
+                      >
+                        {contract.clientName}
+                      </td>
+                      <td
+                        className="px-4 py-3"
+                        style={{ color: "var(--rtm-text-secondary)" }}
+                      >
+                        {contract.services.slice(0, 3).join(", ")}
+                        {contract.services.length > 3
+                          ? ` +${contract.services.length - 3}`
+                          : ""}
+                      </td>
+                      <td
+                        className="px-4 py-3 font-bold"
+                        style={{ color: "#059669" }}
+                      >
+                        {contract.monthlyValue}
+                      </td>
+                      <td
+                        className="px-4 py-3 whitespace-nowrap"
+                        style={{ color: "var(--rtm-text-muted)" }}
+                      >
+                        {contract.termLength}
+                      </td>
+                      <td
+                        className="px-4 py-3 whitespace-nowrap"
+                        style={{ color: "var(--rtm-text-muted)" }}
+                      >
+                        {contract.signedDate
+                          ? new Date(contract.signedDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "—"}
+                      </td>
+                      <td
+                        className="px-4 py-3"
+                        style={{ color: "var(--rtm-text-secondary)" }}
+                      >
+                        {contract.assignedRep}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                          style={{
+                            background: st.bg,
+                            color: st.text,
+                            borderColor: st.border,
+                          }}
+                        >
+                          {st.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1.5">
+                          {contract.status === "signed" && (
+                            <RequestInvoiceButton
+                              contractId={contract.id}
+                              contract={contract}
+                            />
+                          )}
+                          <button
+                            onClick={() =>
+                              setSelectedContract(
+                                isSelected ? null : contract
+                              )
+                            }
+                            className="text-xs font-semibold px-2 py-1 rounded-lg border transition-all hover:opacity-80"
+                            style={{
+                              background: isSelected ? "#2563EB" : "var(--rtm-bg)",
+                              color: isSelected ? "#fff" : "var(--rtm-text-secondary)",
+                              borderColor: isSelected ? "#1D4ED8" : "var(--rtm-border)",
+                            }}
+                          >
+                            {isSelected ? "Close" : "View"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs" style={{ borderCollapse: "collapse", minWidth: "800px" }}>
-            <thead>
-              <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)" }}>
-                {["Contract #", "Client", "Services", "Monthly Value", "Term", "Signed Date", "Rep", "Status", "Actions"].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {MOCK_CONTRACTS.map((contract, i) => {
-                const s = STATUS_STYLES[contract.status];
-                return (
-                  <tr key={contract.id} style={{ borderBottom: "1px solid var(--rtm-border-light)", background: i % 2 === 0 ? "transparent" : "var(--rtm-surface)" }}>
-                    <td className="px-4 py-3 font-mono font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{contract.id}</td>
-                    <td className="px-4 py-3 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{contract.client}</td>
-                    <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{contract.services}</td>
-                    <td className="px-4 py-3 font-bold" style={{ color: "#059669" }}>{contract.monthlyValue}</td>
-                    <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{contract.termLength}</td>
-                    <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{contract.signedDate}</td>
-                    <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{contract.assignedRep}</td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border" style={{ background: s.bg, color: s.text, borderColor: s.border }}>
-                        {contract.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-1.5">
-                        {contract.status === "Signed" && (
-                          <RequestInvoiceButton contractId={contract.id} contract={contract} />
-                        )}
-                        <button
-                          disabled
-                          title="Not yet available"
-                          className="text-xs font-semibold px-2 py-1 rounded-lg border opacity-40 cursor-not-allowed"
-                          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}
-                        >
-                          View
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
 
-      {/* Contract Builder */}
-      <div
-        className="rounded-xl border overflow-hidden flex-1 mx-1"
-        style={{
-          borderColor: "var(--rtm-border)",
-          background: "var(--rtm-surface)",
-          minHeight: 700,
-        }}
-      >
-        <ContractBuilderShell
-          clientName="New Client"
-          preparedBy="Sales Representative"
-          templateId="standard"
-        />
-      </div>
+      {/* Contract detail + builder — shown when a row is selected */}
+      {selectedContract && (
+        <div className="mx-1">
+          <ContractDetailPanel
+            contract={selectedContract}
+            onClose={() => setSelectedContract(null)}
+          />
+        </div>
+      )}
+
+      {/* Default Contract Builder — shown when no row is selected and there are contracts */}
+      {!selectedContract && contracts.length > 0 && (
+        <div
+          className="rounded-xl border overflow-hidden flex-1 mx-1"
+          style={{
+            borderColor: "var(--rtm-border)",
+            background: "var(--rtm-surface)",
+            minHeight: 700,
+          }}
+        >
+          <div
+            className="px-5 py-3 border-b"
+            style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}
+          >
+            <p className="text-xs font-bold" style={{ color: "var(--rtm-text-muted)" }}>
+              Select a row above to open a contract in the builder, or use the builder below for a new draft.
+            </p>
+          </div>
+          <ContractBuilderShell
+            clientName="New Client"
+            preparedBy="Sales Representative"
+            templateId="standard"
+          />
+        </div>
+      )}
 
       {/* Billing Handoff CTA */}
       <div

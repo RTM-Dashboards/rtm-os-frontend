@@ -173,9 +173,16 @@ export function buildLineItemsFromRecommendations(
   recommendedServiceLabels: string[]
 ): BudgetLineItem[] {
   const items: BudgetLineItem[] = [];
+  // Track which BudgetServiceIds have already been added so that a single
+  // service never appears twice in the table even if two recommendation labels
+  // map to the same id (e.g. legacy draft keys) or if the caller passes
+  // duplicate labels. Each distinct BudgetServiceId should appear at most once.
+  const seen = new Set<BudgetServiceId>();
   for (const label of recommendedServiceLabels) {
     const budgetId = RECOMMENDATION_TO_BUDGET_MAP[label];
     if (!budgetId) continue;
+    if (seen.has(budgetId)) continue;
+    seen.add(budgetId);
     try {
       items.push(buildLineItemFromService(budgetId));
     } catch {

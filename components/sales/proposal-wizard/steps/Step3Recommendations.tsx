@@ -42,12 +42,14 @@ function PriorityBadge({ priority }: { priority: string }) {
 function RecommendationCard({
   rec,
   status,
+  onApprove,
   onFuturePhase,
   onOptional,
   onRemove,
 }: {
   rec: RecommendationItem;
   status: WizardRecStatus;
+  onApprove: () => void;
   onFuturePhase: () => void;
   onOptional: () => void;
   onRemove: () => void;
@@ -207,14 +209,27 @@ function RecommendationCard({
             </button>
             {menuOpen && (
               <div
-                className="absolute right-0 top-full mt-1 rounded-xl border shadow-lg z-20 overflow-hidden min-w-[180px]"
+                className="absolute right-0 top-full mt-1 rounded-xl border shadow-lg z-20 overflow-hidden min-w-[200px]"
                 style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
               >
-                {[
-                  { label: "Mark as Future Phase", action: onFuturePhase, color: "#1D4ED8" },
-                  { label: "Mark as Optional", action: onOptional, color: "#6D28D9" },
+                {([
+                  // Show "Promote to Approved" for any non-approved card
+                  status !== "approved"
+                    ? { label: "✓ Promote to Approved", action: onApprove, color: "#15803D" }
+                    : null,
+                  // Show "Mark as Future Phase" when not already future-phase
+                  status !== "future-phase"
+                    ? { label: "Mark as Future Phase", action: onFuturePhase, color: "#1D4ED8" }
+                    : null,
+                  // Show "Mark as Optional" when not already optional
+                  status !== "optional"
+                    ? { label: "Mark as Optional", action: onOptional, color: "#6D28D9" }
+                    : null,
+                  // Remove is always available
                   { label: "Remove", action: onRemove, color: "#DC2626" },
-                ].map((item) => (
+                ] as ({ label: string; action: () => void; color: string } | null)[]).filter(
+                  (item): item is { label: string; action: () => void; color: string } => item !== null
+                ).map((item) => (
                   <button
                     key={item.label}
                     type="button"
@@ -246,8 +261,12 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
   const generated = useRef(false);
 
   // Hybrid audit notification state
+  // Only the "pending department reviews" banner is shown for existing-audit mode.
+  // The "finalized" resync banner is suppressed: it was firing simultaneously with
+  // the pending banner (same condition) producing a contradictory pair of messages.
+  // If department-review finalization is implemented in the future, gate it on a
+  // real event (e.g. auditResult.departmentReviewComplete === true).
   const [hybridBannerDismissed, setHybridBannerDismissed] = useState(false);
-  const [hybridResyncDismissed, setHybridResyncDismissed] = useState(false);
 
   // Generate recommendations when audit result is available.
   // Main recommendation groups (Critical Fixes, Quick Wins, Required Foundation,
@@ -266,7 +285,17 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
         // selections (resuming a draft or navigating back then forward).
         // On the very first visit (no previously saved IDs), auto-approve ALL.
         const previouslyApproved = new Set(state.approvedRecommendations);
-        const hasExistingSelections = previouslyApproved.size > 0;
+
+        // hasExistingSelections is true only when at least one saved ID actually
+        // matches a rec in this generation. With deterministic IDs (Fix: rec IDs
+        // are now stable across remounts) this handles navigation back+forward
+        // correctly. It also safely handles old drafts with stale IDs: if no
+        // saved ID matches, matchCount === 0 and we fall back to auto-approve.
+        const matchCount = r.recommendations.filter((rec) =>
+          previouslyApproved.has(rec.id)
+        ).length;
+        const hasExistingSelections =
+          previouslyApproved.size > 0 && matchCount > 0;
 
         const statuses: Record<string, WizardRecStatus> = {};
         r.recommendations.forEach((rec) => {
@@ -277,7 +306,7 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
               ? "approved"
               : "future-phase";
           } else {
-            // First visit: auto-approve main recommendation groups.
+            // First visit (or stale-draft fallback): auto-approve main groups.
             // Optional Future Phase recommendations start as future-phase —
             // they are not included in the default approved set.
             const defaultStatus: WizardRecStatus =
@@ -417,30 +446,10 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
         </div>
       )}
 
-      {/* Hybrid resync notification */}
-      {!hybridResyncDismissed && state.auditMode === "existing" && (
-        <div
-          className="rounded-xl border px-5 py-4 flex items-start justify-between gap-4"
-          style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
-        >
-          <div>
-            <p className="text-sm font-semibold" style={{ color: "#15803D" }}>
-              Department review finalized. Recommendations may be affected.
-            </p>
-            <p className="text-xs mt-0.5" style={{ color: "#166534" }}>
-              Return to Step 2 to view updated findings and re-proceed to apply the latest results.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setHybridResyncDismissed(true)}
-            className="flex-shrink-0 text-xs font-bold px-2 py-1 rounded border"
-            style={{ background: "#F0FDF4", color: "#15803D", borderColor: "#BBF7D0" }}
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
+      {/* Hybrid resync notification: removed — was showing simultaneously with
+          the pending-reviews banner (same auditMode === "existing" condition),
+          producing contradictory "pending" vs "finalized" messages. Suppressed
+          until a real department-review-complete event can gate it. */}
 
       {/* Audit context bar */}
       <div
@@ -501,6 +510,7 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
                 key={rec.id}
                 rec={rec}
                 status={recStatuses[rec.id] ?? "approved"}
+                onApprove={() => setRecStatus(rec.id, "approved")}
                 onFuturePhase={() => setRecStatus(rec.id, "future-phase")}
                 onOptional={() => setRecStatus(rec.id, "optional")}
                 onRemove={() => setRecStatus(rec.id, "removed")}

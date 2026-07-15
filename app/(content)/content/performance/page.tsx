@@ -9,6 +9,7 @@ import PerformanceFilters, {
   type PerformanceFilterState,
 } from "@/components/performance/PerformanceFilters";
 import { getWorkspace } from "@/lib/workspaces";
+import { useEnabledKpis } from "@/lib/hooks/useEnabledKpis";
 
 const workspace = getWorkspace("content")!;
 
@@ -313,26 +314,26 @@ const uploadColumns: Column<UploadItem>[] = [
 //  Quick Actions 
 
 const quickActions: QuickAction[] = [
-  { label: "Add Content Item",        description: "Create a new content task",         icon: "", color: "bg-blue-50 text-blue-600",   onClick: () => alert("[Mock] Add Content Item") },
-  { label: "Mark Uploaded",           description: "Update upload status to Uploaded",  icon: "", color: "bg-green-50 text-green-600", onClick: () => alert("[Mock] Mark Uploaded") },
-  { label: "Request SEO Review",      description: "Send content to SEO team",          icon: "", color: "bg-purple-50 text-purple-600", onClick: () => alert("[Mock] Request SEO Review") },
-  { label: "Request Client Approval", description: "Send to client for sign-off",       icon: "", color: "bg-amber-50 text-amber-600",  onClick: () => alert("[Mock] Request Client Approval") },
-  { label: "Open SEO Task",           description: "Navigate to linked SEO task",       icon: "", color: "bg-sky-50 text-sky-600",     onClick: () => alert("[Mock] Open SEO Task") },
-  { label: "View Published URL",      description: "Open live page in browser",         icon: "", color: "bg-indigo-50 text-indigo-600", onClick: () => alert("[Mock] View Published URL") },
+  { label: "Add Content Item",        description: "Create a new content task",         icon: "", color: "bg-blue-50 text-blue-600",   disabled: true, disabledReason: "Not yet available — coming at launch" },
+  { label: "Mark Uploaded",           description: "Update upload status to Uploaded",  icon: "", color: "bg-green-50 text-green-600", disabled: true, disabledReason: "Not yet available — coming at launch" },
+  { label: "Request SEO Review",      description: "Send content to SEO team",          icon: "", color: "bg-purple-50 text-purple-600", disabled: true, disabledReason: "Not yet available — coming at launch" },
+  { label: "Request Client Approval", description: "Send to client for sign-off",       icon: "", color: "bg-amber-50 text-amber-600",  disabled: true, disabledReason: "Not yet available — coming at launch" },
+  { label: "Open SEO Task",           description: "Navigate to linked SEO task",       icon: "", color: "bg-sky-50 text-sky-600",     disabled: true, disabledReason: "Not yet available — coming at launch" },
+  { label: "View Published URL",      description: "Open live page in browser",         icon: "", color: "bg-indigo-50 text-indigo-600", disabled: true, disabledReason: "Not yet available — coming at launch" },
 ];
 
 //  KPI Data 
 
 const kpiData = [
-  { title: "Pages Published",               value: "47",   trend: "up"as const, trendValue: "+6",    iconBg: "#EFF6FF", iconColor: "#2563EB"},
-  { title: "Blogs Published",               value: "112",  trend: "up"as const, trendValue: "+18",   iconBg: "#F5F3FF", iconColor: "#7C3AED"},
-  { title: "Pending Uploads",               value: "14",   trend: "down"as const, trendValue: "-3",    iconBg: "#FFFBEB", iconColor: "#D97706"},
-  { title: "Uploads Completed",             value: "38",   trend: "up"as const, trendValue: "+9",    iconBg: "#ECFDF5", iconColor: "#059669"},
-  { title: "Awaiting SEO Approval",         value: "7",    trend: "neutral"as const, trendValue: "",   iconBg: "#F0FDF4", iconColor: "#16A34A"},
-  { title: "Awaiting Client Approval",      value: "5",    trend: "neutral"as const, trendValue: "",   iconBg: "#FFF7ED", iconColor: "#EA580C"},
-  { title: "Avg. Engagement Rate",          value: "3.8%", trend: "up"as const, trendValue: "+0.4%", iconBg: "#F0F9FF", iconColor: "#0284C7"},
-  { title: "Organic Leads From Content",    value: "83",   trend: "up"as const, trendValue: "+14",   iconBg: "#ECFDF5", iconColor: "#059669"},
-  { title: "Booked Leads From Content",     value: "29",   trend: "up"as const, trendValue: "+7",    iconBg: "#FFF1F2", iconColor: "#E11D48"},
+  { kpiId: "content-pages-published",        title: "Pages Published",               value: "47",   trend: "up"as const, trendValue: "+6",    iconBg: "#EFF6FF", iconColor: "#2563EB"},
+  { kpiId: "content-blogs-published",        title: "Blogs Published",               value: "112",  trend: "up"as const, trendValue: "+18",   iconBg: "#F5F3FF", iconColor: "#7C3AED"},
+  { kpiId: "content-pending-uploads",        title: "Pending Uploads",               value: "14",   trend: "down"as const, trendValue: "-3",    iconBg: "#FFFBEB", iconColor: "#D97706"},
+  { kpiId: "content-uploads-completed",      title: "Uploads Completed",             value: "38",   trend: "up"as const, trendValue: "+9",    iconBg: "#ECFDF5", iconColor: "#059669"},
+  { kpiId: "content-awaiting-seo-approval",  title: "Awaiting SEO Approval",         value: "7",    trend: "neutral"as const, trendValue: "",   iconBg: "#F0FDF4", iconColor: "#16A34A"},
+  { kpiId: "content-awaiting-client-approval", title: "Awaiting Client Approval",    value: "5",    trend: "neutral"as const, trendValue: "",   iconBg: "#FFF7ED", iconColor: "#EA580C"},
+  { kpiId: "content-avg-engagement-rate",    title: "Avg. Engagement Rate",          value: "3.8%", trend: "up"as const, trendValue: "+0.4%", iconBg: "#F0F9FF", iconColor: "#0284C7"},
+  { kpiId: "content-organic-leads",          title: "Organic Leads From Content",    value: "83",   trend: "up"as const, trendValue: "+14",   iconBg: "#ECFDF5", iconColor: "#059669"},
+  { kpiId: "content-booked-leads",           title: "Booked Leads From Content",     value: "29",   trend: "up"as const, trendValue: "+7",    iconBg: "#FFF1F2", iconColor: "#E11D48"},
 ];
 
 const engagementMetrics = [
@@ -383,6 +384,9 @@ export default function ContentPerformancePage() {
   const [filters, setFilters] = useState<PerformanceFilterState>(DEFAULT_FILTERS);
   const [extra, setExtra] = useState<ExtraFilterState>(DEFAULT_EXTRA);
   const [activeTab, setActiveTab] = useState<"engagement"| "upload">("engagement");
+  const { isEnabled } = useEnabledKpis("content");
+
+  const enabledKpiData = kpiData.filter((k) => isEnabled(k.kpiId));
 
   const setExtra_ = <K extends keyof ExtraFilterState>(k: K, v: ExtraFilterState[K]) =>
     setExtra((prev) => ({ ...prev, [k]: v }));
@@ -485,16 +489,22 @@ export default function ContentPerformancePage() {
       </div>
 
       {/*  KPI Cards  */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-        {kpiData.slice(0, 5).map((k) => (
-          <KpiCard key={k.title} title={k.title} value={k.value} trend={k.trend} trendValue={k.trendValue} iconBg={k.iconBg} iconColor={k.iconColor} trendLabel="vs prev period"/>
-        ))}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
-        {kpiData.slice(5).map((k) => (
-          <KpiCard key={k.title} title={k.title} value={k.value} trend={k.trend} trendValue={k.trendValue || undefined} iconBg={k.iconBg} iconColor={k.iconColor} trendLabel="vs prev period"/>
-        ))}
-      </div>
+      {enabledKpiData.length > 0 && (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
+            {enabledKpiData.slice(0, 5).map((k) => (
+              <KpiCard key={k.kpiId} title={k.title} value={k.value} trend={k.trend} trendValue={k.trendValue} iconBg={k.iconBg} iconColor={k.iconColor} trendLabel="vs prev period"/>
+            ))}
+          </div>
+          {enabledKpiData.length > 5 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+              {enabledKpiData.slice(5).map((k) => (
+                <KpiCard key={k.kpiId} title={k.title} value={k.value} trend={k.trend} trendValue={k.trendValue || undefined} iconBg={k.iconBg} iconColor={k.iconColor} trendLabel="vs prev period"/>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {/*  Quick Actions  */}
       <SectionWrapper title="Quick Actions"description="Common content workflow operations">
@@ -600,7 +610,7 @@ export default function ContentPerformancePage() {
       <div className="flex gap-2 flex-wrap">
         <Link href={workspace.dashboardRoute} className="rtm-btn-secondary text-sm inline-flex items-center gap-1">← Dashboard</Link>
         <Link href="/content/tasks" className="rtm-btn-secondary text-sm inline-flex items-center gap-1">Tasks →</Link>
-        <Link href="/content/queue" className="rtm-btn-primary text-sm inline-flex items-center gap-1">Work Queue →</Link>
+
       </div>
     </div>
   );

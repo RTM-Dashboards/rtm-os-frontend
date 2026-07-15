@@ -123,13 +123,13 @@ export default function DepartmentsIndexPage() {
                   {/* Stats row */}
                   <div className="flex items-center gap-4 text-xs"style={{ color: "var(--rtm-text-muted)"}}>
                     <span>
-                      <span className="font-semibold"style={{ color: dept.accentColor }}>{dept.kpis.length}</span> KPIs
+                      <span className="font-semibold"style={{ color: "var(--rtm-text-primary)" }}>{dept.kpis.length}</span> KPIs
                     </span>
                     <span>
-                      <span className="font-semibold"style={{ color: dept.accentColor }}>{dept.integrations.length}</span> Integrations
+                      <span className="font-semibold"style={{ color: "var(--rtm-text-primary)" }}>{dept.integrations.length}</span> Integrations
                     </span>
                     <span>
-                      <span className="font-semibold"style={{ color: dept.accentColor }}>{dept.modules.filter((m) => m.enabled).length}</span> Modules
+                      <span className="font-semibold"style={{ color: "var(--rtm-text-primary)" }}>{dept.modules.filter((m) => m.enabled).length}</span> Modules
                     </span>
                   </div>
 
@@ -141,7 +141,7 @@ export default function DepartmentsIndexPage() {
                       .map((m) => (
                         <span
                           key={m.id}
-                          className="text-[10px] px-1.5 py-0.5 rounded font-medium"style={{ background: `${dept.accentColor}12`, color: dept.accentColor }}
+                          className="text-[10px] px-1.5 py-0.5 rounded font-medium"style={{ background: "var(--rtm-bg-secondary)", color: "var(--rtm-text-muted)" }}
                         >
                           {m.label}
                         </span>

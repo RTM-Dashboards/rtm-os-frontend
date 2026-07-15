@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { WorkspaceTask, WorkspaceTaskStatus } from "./WorkspaceTaskPage";
+import type { AMOnboardingRecord } from "@/lib/mock/am-onboarding-store";
+import { ONBOARDING_FIELD_SCHEMA, ONBOARDING_SECTIONS } from "@/lib/mock/am-onboarding-field-schema";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WorkspaceTaskDrawer
@@ -39,7 +41,8 @@ type TabId =
   | "dependencies"
   | "files"
   | "activity"
-  | "workflow";
+  | "workflow"
+  | "client-context";
 
 // ── Status options for update ─────────────────────────────────────────────────
 
@@ -72,7 +75,7 @@ const COLORS = {
   primary:  "var(--rtm-text-primary, #1e293b)",
   secondary:"var(--rtm-text-secondary, #475569)",
   muted:    "var(--rtm-text-muted, #94a3b8)",
-  blue:     "var(--rtm-blue, #1B4FD8)",
+  blue:     "var(--rtm-blue, #1d709f)",
   blueBg:   "var(--rtm-blue-xlight, #eff6ff)",
 };
 
@@ -167,7 +170,7 @@ interface ActionBtnProps {
 function ActionBtn({ label, variant = "default", onClick, disabled }: ActionBtnProps) {
   const styles: Record<string, React.CSSProperties> = {
     default: { background: COLORS.bg, border: `1px solid ${COLORS.border}`, color: COLORS.secondary },
-    primary: { background: "#1B4FD8", border: "1px solid #1B4FD8", color: "#fff" },
+    primary: { background: "#1d709f", border: "1px solid #1d709f", color: "#fff" },
     danger:  { background: "#fee2e2", border: "1px solid #fca5a5", color: "#b91c1c" },
     warning: { background: "#fef3c7", border: "1px solid #fcd34d", color: "#b45309" },
   };
@@ -546,7 +549,7 @@ function NotesTab({ userCtx }: { userCtx: WorkspaceUserContext }) {
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
                   <span style={{
-                    width: 24, height: 24, borderRadius: "50%", background: "#1B4FD8",
+                    width: 24, height: 24, borderRadius: "50%", background: "#1d709f",
                     color: "#fff", fontSize: 10, fontWeight: 700,
                     display: "flex", alignItems: "center", justifyContent: "center",
                     flexShrink: 0,
@@ -589,7 +592,7 @@ interface CommentEntry {
   color: string;
 }
 
-const AVATAR_COLORS = ["#1B4FD8", "#059669", "#d97706", "#dc2626", "#7c3aed", "#0891b2"];
+const AVATAR_COLORS = ["#1d709f", "#059669", "#d97706", "#dc2626", "#7c3aed", "#0891b2"];
 
 const MOCK_COMMENTS: CommentEntry[] = [
   {
@@ -598,7 +601,7 @@ const MOCK_COMMENTS: CommentEntry[] = [
     dept: "Account Management",
     body: "Starting on this now. Client confirmed the scope hasn't changed from the original brief.",
     timestamp: "Jun 3 · 9:15 AM",
-    color: "#1B4FD8",
+    color: "#1d709f",
   },
   {
     id: "cm-2",
@@ -914,6 +917,220 @@ function ActivityTab() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TAB: Client Context
+//
+// Live-fetched client onboarding record context.
+// Fetches MASTER_CLIENTS to resolve clientId by name, then fetches the
+// onboarding record via /api/onboarding-records?clientId=<id>.
+// No department-specific tagging fabricated — general "Client Context" only,
+// consistent with the AM task detail view approach established today.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function buildOnboardingGroups(record: AMOnboardingRecord) {
+  return ONBOARDING_SECTIONS.map((sec) => {
+    const sectionFields = ONBOARDING_FIELD_SCHEMA.filter((f) => f.section === sec.id);
+    const fields = sectionFields
+      .map((f) => ({
+        label: f.label,
+        value: record.fieldAssignments[f.id]?.value ?? "",
+      }))
+      .filter((r) => r.value.trim().length > 0);
+    return { id: sec.id, label: sec.label, fields };
+  }).filter((s) => s.fields.length > 0);
+}
+
+function ClientContextTab({ clientName }: { clientName: string }) {
+  const [onboardingRecord, setOnboardingRecord] = useState<AMOnboardingRecord | null | "loading">("loading");
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set(["client-basics", "engagement-setup", "am-internal"]),
+  );
+  const [clientFound, setClientFound] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!clientName) {
+      setOnboardingRecord(null);
+      setClientFound(false);
+      return;
+    }
+    // Step 1: find clientId by name from master-clients
+    fetch("/api/master-clients")
+      .then((r) => r.ok ? r.json() as Promise<{ clients: { id: string; clientName: string }[] }> : null)
+      .then((data) => {
+        if (!data) { setOnboardingRecord(null); setClientFound(false); return; }
+        const match = data.clients.find(
+          (c) => c.clientName.toLowerCase() === clientName.toLowerCase()
+        );
+        if (!match) { setOnboardingRecord(null); setClientFound(false); return; }
+        setClientFound(true);
+        // Step 2: fetch onboarding record by clientId
+        return fetch(`/api/onboarding-records?clientId=${encodeURIComponent(match.id)}`, { cache: "no-store" })
+          .then((r) => r.ok ? r.json() as Promise<{ record: AMOnboardingRecord | null }> : null)
+          .then((onbData) => {
+            setOnboardingRecord(onbData?.record ?? null);
+          });
+      })
+      .catch(() => { setOnboardingRecord(null); setClientFound(false); });
+  }, [clientName]);
+
+  function toggleSection(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  return (
+    <div>
+      {/* Honest disclaimer — no dept-specific tagging fabricated */}
+      <div style={{
+        background: "#f0f9ff", border: "1px solid #bae6fd",
+        borderRadius: 8, padding: "10px 14px", marginBottom: 16,
+        fontSize: 11, color: "#0c4a6e", lineHeight: 1.5,
+      }}>
+        <strong>Client Context</strong> — live-fetched from the onboarding record.
+        All sections are general (no department-specific filtering — no real tagging
+        exists in the schema). Context is the same regardless of which department views it.
+      </div>
+
+      {onboardingRecord === "loading" && (
+        <div style={{ padding: "20px 0", textAlign: "center", fontSize: 12, color: COLORS.muted }}>
+          Loading client context…
+        </div>
+      )}
+
+      {onboardingRecord !== "loading" && clientFound === false && (
+        <div style={{
+          background: COLORS.bg, border: `1px solid ${COLORS.border}`,
+          borderRadius: 8, padding: "14px 16px",
+        }}>
+          <p style={{ fontSize: 12, color: COLORS.secondary, margin: 0 }}>
+            No MASTER_CLIENTS record found matching client name &ldquo;{clientName}&rdquo;.
+            Client context is unavailable for this task.
+          </p>
+        </div>
+      )}
+
+      {onboardingRecord !== "loading" && clientFound === true && onboardingRecord === null && (
+        <div style={{
+          background: COLORS.bg, border: `1px solid ${COLORS.border}`,
+          borderRadius: 8, padding: "14px 16px",
+        }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: COLORS.muted, marginBottom: 4 }}>
+            Client Onboarding Record
+          </p>
+          <p style={{ fontSize: 12, color: COLORS.secondary, margin: 0 }}>
+            No onboarding record found for this client. The record may not have been created yet.
+          </p>
+        </div>
+      )}
+
+      {onboardingRecord && onboardingRecord !== "loading" && (() => {
+        const groups = buildOnboardingGroups(onboardingRecord);
+        const totalFields = Object.values(onboardingRecord.fieldAssignments).length;
+        const filledFields = Object.values(onboardingRecord.fieldAssignments).filter(
+          (a) => a.value.trim().length > 0,
+        ).length;
+
+        return (
+          <div style={{
+            background: COLORS.surface, border: `1px solid ${COLORS.border}`,
+            borderRadius: 10, overflow: "hidden",
+          }}>
+            {/* Header */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 12, padding: "14px 16px",
+              background: COLORS.bg, borderBottom: `1px solid ${COLORS.border}`,
+            }}>
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: COLORS.muted, margin: 0 }}>
+                  Client Onboarding Record
+                </p>
+                <p style={{ fontSize: 11, marginTop: 2, color: COLORS.muted, margin: "2px 0 0" }}>
+                  {filledFields} of {totalFields} fields filled · Status: {onboardingRecord.status}
+                </p>
+              </div>
+              <a
+                href={`/account-management/onboarding/${onboardingRecord.id}/record`}
+                style={{
+                  flexShrink: 0, padding: "5px 10px", borderRadius: 6,
+                  background: COLORS.blue, color: "#fff",
+                  fontSize: 10, fontWeight: 700, textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                View Full Record →
+              </a>
+            </div>
+
+            {/* Sections */}
+            {groups.length === 0 && (
+              <div style={{ padding: "14px 16px", fontSize: 12, color: COLORS.muted }}>
+                No fields filled in yet.
+              </div>
+            )}
+            {groups.map((sec) => {
+              const isOpen = expanded.has(sec.id);
+              return (
+                <div key={sec.id} style={{ borderBottom: `1px solid ${COLORS.border}` }}>
+                  <button
+                    onClick={() => toggleSection(sec.id)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center",
+                      justifyContent: "space-between", padding: "10px 16px",
+                      background: "transparent", border: "none", cursor: "pointer",
+                      textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = COLORS.bg)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: COLORS.primary }}>{sec.label}</span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, padding: "1px 6px",
+                        borderRadius: 8, background: COLORS.blueBg, color: COLORS.blue,
+                      }}>
+                        {sec.fields.length} field{sec.fields.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 11, color: COLORS.muted }}>{isOpen ? "▲" : "▼"}</span>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: "4px 16px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+                      {sec.fields.map((row) => (
+                        <div key={row.label} style={{
+                          borderRadius: 7, padding: "10px 12px",
+                          background: COLORS.bg, border: `1px solid ${COLORS.border}`,
+                        }}>
+                          <div style={{
+                            fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+                            letterSpacing: "0.06em", color: COLORS.muted, marginBottom: 4,
+                          }}>
+                            {row.label}
+                          </div>
+                          <div style={{
+                            fontSize: 12, color: COLORS.primary,
+                            whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.6,
+                          }}>
+                            {row.value}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TAB: Workflow
 //
 // Shows real task origin data only (source type, blueprint id, department, service).
@@ -996,6 +1213,9 @@ const ALL_TABS: { id: TabId; label: string; minRole?: WorkspaceUserRole }[] = [
   { id: "dependencies",  label: "Dependencies"  },
   { id: "files",         label: "Files"         },
   { id: "activity",      label: "Activity"      },
+  // Client Context tab: all roles — general onboarding context, live-fetched,
+  // no department-specific fabrication.
+  { id: "client-context", label: "Client Context" },
   // Workflow tab: Department Lead and above only.
   // Shows real task origin data (source, blueprint id, department, service).
   // Not shown to Department Members — origin metadata is not actionable at that level
@@ -1195,6 +1415,7 @@ export default function WorkspaceTaskDrawer({
           {safeActiveTab === "dependencies" && <DependenciesTab />}
           {safeActiveTab === "files" && <FilesTab />}
           {safeActiveTab === "activity" && <ActivityTab />}
+          {safeActiveTab === "client-context" && <ClientContextTab clientName={task.client} />}
           {safeActiveTab === "workflow" && <WorkflowTab task={task} />}
         </div>
 

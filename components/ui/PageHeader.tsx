@@ -125,7 +125,7 @@ export default function PageHeader({
                     ? {
                         background: "var(--rtm-blue)",
                         color: "#fff",
-                        boxShadow: "0 1px 3px rgba(27,79,216,0.25)",
+                        boxShadow: "0 1px 3px rgba(29,112,159,0.25)",
                       }
                     : {
                         background: "var(--rtm-surface)",

@@ -190,6 +190,15 @@ export const googleAdsDeptReports: DeptReport[] = [
   { id: "ga003", client: "Premier Law Group",     reportingPeriod: "May 2025", owner: "Ana P.",   status: "Draft",          qaStatus: "Not Started", sendStatus: "Pending", dueDate: "Jun 12, 2025", lastUpdated: "Jun 2, 2025",  nextAction: "Add campaign data"},
 ];
 
+// ── Web Development & Design Department Reports ─────────────────────────────────
+export const webDevDeptReports: DeptReport[] = [
+  { id: "wd001", client: "Summit Landscaping",    reportingPeriod: "May 2025", owner: "Chris L.", status: "In Progress",  qaStatus: "Not Started", sendStatus: "Pending",   dueDate: "Jun 10, 2025", lastUpdated: "Jun 3, 2025",  nextAction: "Add project milestones"},
+  { id: "wd002", client: "Apex Roofing Co.",      reportingPeriod: "May 2025", owner: "Chris L.", status: "Ready for QA", qaStatus: "In Queue",    sendStatus: "Pending",   dueDate: "Jun 8, 2025",  lastUpdated: "Jun 5, 2025",  nextAction: "QA review"},
+  { id: "wd003", client: "Pacific Dental",        reportingPeriod: "May 2025", owner: "Maya R.",  status: "Sent",         qaStatus: "Approved",    sendStatus: "Sent",      dueDate: "Jun 1, 2025",  lastUpdated: "Jun 1, 2025",  nextAction: "Archive"},
+  { id: "wd004", client: "Harbor Auto Group",     reportingPeriod: "May 2025", owner: "Chris L.", status: "Draft",        qaStatus: "Not Started", sendStatus: "Pending",   dueDate: "Jun 12, 2025", lastUpdated: "Jun 2, 2025",  nextAction: "Add design deliverables"},
+  { id: "wd005", client: "Blue Ridge Plumbing",   reportingPeriod: "May 2025", owner: "Maya R.",  status: "Overdue",      qaStatus: "Not Started", sendStatus: "Pending",   dueDate: "May 30, 2025", lastUpdated: "May 28, 2025", nextAction: "Escalate — overdue"},
+];
+
 // ── LSA Department Reports ─────────────────────────────────────────────────────
 export const lsaDeptReports: DeptReport[] = [
   { id: "l001", client: "Metro Dental",           reportingPeriod: "May 2025", owner: "Dana R.", status: "Draft",           qaStatus: "Not Started", sendStatus: "Pending", dueDate: "Jun 10, 2025", lastUpdated: "Jun 1, 2025", nextAction: "Add LSA lead data"},

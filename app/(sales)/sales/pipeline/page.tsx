@@ -1715,21 +1715,24 @@ function getStageCfg(stage: PipelineStage): StageConfig {
 function calcKPIs(ops: Opportunity[]) {
   const won = ops.filter((o) => o.stage === "Closed Won");
   const lost = ops.filter((o) => o.stage === "Closed Lost");
-  const open = ops.filter((o) => o.stage !== "Closed Won"&& o.stage !== "Closed Lost");
+  const open = ops.filter((o) => o.stage !== "Closed Won" && o.stage !== "Closed Lost");
   const active = ops.filter((o) => o.stage !== "Closed Lost");
-  const pipelineValue = open.reduce((s, o) => s + o.estimatedValue, 0);
-  const weightedRevenue = active.reduce((s, o) => s + (o.estimatedValue * o.probability) / 100, 0);
+  // estimatedValue and probability are optional on the unified record; fall back to estimatedMonthlyValue / 0
+  const ev = (o: Opportunity) => (o.estimatedValue ?? (o as unknown as {estimatedMonthlyValue?: number}).estimatedMonthlyValue ?? 0);
+  const prob = (o: Opportunity) => (o.probability ?? 0);
+  const pipelineValue = open.reduce((s, o) => s + ev(o), 0);
+  const weightedRevenue = active.reduce((s, o) => s + (ev(o) * prob(o)) / 100, 0);
   const avgDealSize = open.length ? Math.round(pipelineValue / open.length) : 0;
   const totalClosed = won.length + lost.length;
   const winRate = totalClosed ? Math.round((won.length / totalClosed) * 100) : 0;
-  const closingThisMonth = open.filter((o) => o.closingMonth === "Jan 2025").length;
-  const affiliateRev = won.filter((o) => o.leadSource === "Affiliate").reduce((s, o) => s + o.estimatedValue, 0);
+  const closingThisMonth = open.filter((o) => (o as {closingMonth?: string}).closingMonth === "Jan 2025").length;
+  const affiliateRev = won.filter((o) => o.leadSource === "Affiliate").reduce((s, o) => s + ev(o), 0);
   // GHL sync KPIs
   const allOps = ops;
-  const ghlSynced = allOps.filter((o) => o.ghl.ghlSyncStatus === "Synced").length;
-  const ghlPending = allOps.filter((o) => o.ghl.ghlSyncStatus === "Pending Sync").length;
-  const ghlFailed = allOps.filter((o) => o.ghl.ghlSyncStatus === "Sync Failed").length;
-  const ghlManual = allOps.filter((o) => o.ghl.ghlSyncStatus === "Manual Override").length;
+  const ghlSynced = allOps.filter((o) => (o.ghl?.ghlSyncStatus ?? "Not Connected") === "Synced").length;
+  const ghlPending = allOps.filter((o) => (o.ghl?.ghlSyncStatus ?? "Not Connected") === "Pending Sync").length;
+  const ghlFailed = allOps.filter((o) => (o.ghl?.ghlSyncStatus ?? "Not Connected") === "Sync Failed").length;
+  const ghlManual = allOps.filter((o) => (o.ghl?.ghlSyncStatus ?? "Not Connected") === "Manual Override").length;
   return {
     openCount: open.length, pipelineValue,
     weightedRevenue: Math.round(weightedRevenue),
@@ -3401,7 +3404,11 @@ function PipelineAnalytics({ opportunities }: { opportunities: Opportunity[] }) 
 
 type ViewMode = "kanban"| "table"| "analytics";
 
-const MOCK_OPPORTUNITY_RECORDS: OpportunityRecord[] = [
+// MOCK_OPPORTUNITY_RECORDS removed — data/sales-opportunities.json is now the
+// sole source of truth for the Opportunities sub-tab. Seed data was migrated
+// via scripts/seed-opportunities.mjs.
+
+const _REMOVED_MOCK_OPPORTUNITY_RECORDS_PLACEHOLDER = [
   {
     id: "opp-mock-001",
     opportunityNumber: "OPP-2025-1001",
@@ -3617,7 +3624,8 @@ const MOCK_OPPORTUNITY_RECORDS: OpportunityRecord[] = [
     activeWizardId: null,
     intakeRecord: null,
   },
-];
+] as const;
+void _REMOVED_MOCK_OPPORTUNITY_RECORDS_PLACEHOLDER;
 
 // ── Stalled Deals mock data ───────────────────────────────────────────────────
 interface StalledDeal {
@@ -3731,7 +3739,9 @@ function SalesPipelinePageInner() {
   const [drawerOpp, setDrawerOpp] = useState<Opportunity | null>(null);
   const [detailOpp, setDetailOpp] = useState<Opportunity | null>(null);
   const [pipelineTab, setPipelineTab] = useState<"opportunities" | "pipeline">("opportunities");
-  const [opportunityRecords, setOpportunityRecords] = useState<OpportunityRecord[]>(MOCK_OPPORTUNITY_RECORDS);
+  // Loaded from /api/sales-opportunities (data/sales-opportunities.json) — sole source of truth.
+  // Starts empty; hydrated by useEffect below so the file-backed store is always the primary source.
+  const [opportunityRecords, setOpportunityRecords] = useState<OpportunityRecord[]>([]);
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState<{ oppId?: string } | null>(null);
   const [showAuditPicker, setShowAuditPicker] = useState(false);
@@ -3771,22 +3781,28 @@ function SalesPipelinePageInner() {
       .catch(() => {/* keep defaults */});
   }, []);
 
-  // ── Hydrate file-backed opportunities created via Leads → Create Opportunity ─
-  // Reads from data/sales-opportunities.json via /api/sales-opportunities and
-  // merges new records into opportunityRecords state so Leads-created opportunities
-  // appear here alongside MOCK_OPPORTUNITY_RECORDS without touching either mock set.
+  // ── Load all opportunities from the real file-backed store ─────────────────
+  // data/sales-opportunities.json via /api/sales-opportunities is the sole
+  // source of truth. Replaces the old MOCK_OPPORTUNITY_RECORDS seed entirely.
+  // On mount: fetch all records and hydrate both opportunityRecords and commLogs.
   useEffect(() => {
     fetch("/api/sales-opportunities")
       .then((r) => r.ok ? r.json() as Promise<{ records: OpportunityRecord[] }> : Promise.reject(r.status))
       .then(({ records }) => {
-        if (!Array.isArray(records) || records.length === 0) return;
-        setOpportunityRecords((prev) => {
-          const existingIds = new Set(prev.map((o) => o.id));
-          const newOnes = records.filter((o) => !existingIds.has(o.id));
-          return newOnes.length > 0 ? [...newOnes, ...prev] : prev;
-        });
+        if (!Array.isArray(records)) return;
+        setOpportunityRecords(records);
+        // Hydrate commLogs from the loaded records so the comm log panel
+        // shows persisted entries from the file store immediately.
+        setCommLogs(
+          Object.fromEntries(
+            records.map((r) => [
+              r.id,
+              r.communicationLog ?? { opportunityId: r.id, entries: [] },
+            ])
+          )
+        );
       })
-      .catch((err) => console.error("[Pipeline] Failed to hydrate lead-created opportunities:", err));
+      .catch((err) => console.error("[Pipeline] Failed to load opportunities:", err));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -3823,8 +3839,21 @@ function SalesPipelinePageInner() {
   }
 
   function handleChangeStage(oppId: string, stage: PipelineStage) {
+    // Optimistic local update
     setStageOverrides(prev => ({ ...prev, [oppId]: stage }));
+    // Also update opportunityRecords so both sub-tabs reflect the change
+    setOpportunityRecords(prev =>
+      prev.map(r => r.id === oppId ? { ...r, stage, updatedAt: new Date().toISOString() } : r)
+    );
     addPipelineToast(`Stage updated to ${stage}`, "success");
+    // Persist via real API — survives refresh
+    fetch("/api/sales-opportunities", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: oppId, stage, updatedAt: new Date().toISOString() }),
+    }).catch((err) =>
+      console.error("[Pipeline] Failed to persist stage change:", err)
+    );
   }
 
   function handleCreateFollowUpSubmit(form: CreateFollowUpForm) {
@@ -3833,7 +3862,7 @@ function SalesPipelinePageInner() {
       subject: `${form.type} Follow-Up`,
       dueDate: form.dueDate || "TBD",
       status: "Upcoming",
-      owner: OPPORTUNITIES.find(o => o.id === form.opportunityId)?.assignedRep ?? "Sales Rep",
+      owner: opportunityRecords.find(o => o.id === form.opportunityId)?.assignedRep ?? mergedOpportunities.find(o => o.id === form.opportunityId)?.assignedRep ?? "Sales Rep",
     };
     setExtraFollowUps(prev => ({
       ...prev,
@@ -3890,16 +3919,11 @@ function SalesPipelinePageInner() {
   }
 
   // Communication log state: keyed by OpportunityRecord id for the OpportunityRecord list
-  const [commLogs, setCommLogs] = useState<Record<string, CommunicationLog>>(
-    Object.fromEntries(
-      MOCK_OPPORTUNITY_RECORDS.map((r) => [
-        r.id,
-        r.communicationLog ?? { opportunityId: r.id, entries: [] },
-      ])
-    )
-  );
+  // commLogs is hydrated by the load useEffect above (starts empty).
+  const [commLogs, setCommLogs] = useState<Record<string, CommunicationLog>>({});
 
   function handleAddCommLogEntry(opportunityId: string, entry: CommunicationLogEntry) {
+    // 1. Optimistic local update
     setCommLogs((prev) => {
       const existing = prev[opportunityId] ?? { opportunityId, entries: [] };
       return {
@@ -3910,18 +3934,45 @@ function SalesPipelinePageInner() {
         },
       };
     });
+    // 2. Persist via PATCH — send the full updated communicationLog so the
+    //    file store reflects the new entry after refresh.
+    setOpportunityRecords((prev) => {
+      const opp = prev.find((o) => o.id === opportunityId);
+      if (!opp) return prev;
+      const updatedLog: CommunicationLog = {
+        opportunityId,
+        entries: [entry, ...(opp.communicationLog?.entries ?? [])],
+      };
+      const updated = { ...opp, communicationLog: updatedLog, updatedAt: new Date().toISOString() };
+      // Fire-and-forget PATCH
+      fetch("/api/sales-opportunities", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: opportunityId, communicationLog: updatedLog }),
+      }).catch((err) =>
+        console.error("[Pipeline] Failed to persist comm log entry:", err)
+      );
+      return prev.map((o) => o.id === opportunityId ? updated : o);
+    });
   }
 
-  // Merge stage overrides into opportunities list
-  const mergedOpportunities = HOME_SERVICES_OPPORTUNITIES.map(o => ({
+  // ── Unified mergedOpportunities: single source of truth from data/sales-opportunities.json ──
+  // Merges opportunityRecords (real store) with stage overrides, wizard ids, and extra follow-ups.
+  // Both the Kanban board and the Opportunities sub-tab draw from this list.
+  // The old HOME_SERVICES_OPPORTUNITIES mock array is fully retired.
+  const mergedOpportunities = opportunityRecords.map(o => ({
     ...o,
+    // Apply any in-flight stage override (already persisted via API in handleChangeStage)
     stage: stageOverrides[o.id] ?? o.stage,
-    activeWizardId: wizardIds[o.id],
-    followUps: [...o.followUps, ...(extraFollowUps[o.id] ?? [])],
+    activeWizardId: wizardIds[o.id] ?? o.activeWizardId ?? undefined,
+    // Merge extra in-session follow-ups with stored follow-ups
+    followUps: [...(o.followUps ?? []), ...(extraFollowUps[o.id] ?? [])],
+    // Ensure estimatedValue alias for Kanban KPI calculations
+    estimatedValue: o.estimatedValue ?? o.estimatedMonthlyValue ?? 0,
   })) as (Opportunity & { activeWizardId?: string })[];
 
 
-  const allReps = Array.from(new Set(HOME_SERVICES_OPPORTUNITIES.map((o) => o.assignedRep))).sort();
+  const allReps = Array.from(new Set(opportunityRecords.map((o) => o.assignedRep).filter(Boolean))).sort();
   const allSources: LeadSource[] = ["Direct", "Affiliate", "Partner", "Website", "Google Ads", "Meta Ads", "LSA"];
   const allPriorities: Priority[] = ["Low", "Medium", "High", "Urgent"];
   const allSyncStatuses: GhlSyncStatus[] = ["Synced", "Pending Sync", "Sync Failed", "Manual Override", "Not Connected"];
@@ -3929,21 +3980,21 @@ function SalesPipelinePageInner() {
   const followUpQueue = buildFollowUpQueue(mergedOpportunities);
 
   const filtered = mergedOpportunities.filter((o) => {
-    const src = filterSource === "All"|| o.leadSource === filterSource;
-    const rep = filterRep === "All"|| o.assignedRep === filterRep;
-    const pri = filterPriority === "All"|| o.priority === filterPriority;
-    const syn = filterSync === "All"|| o.ghl.ghlSyncStatus === filterSync;
+    const src = filterSource === "All" || o.leadSource === filterSource;
+    const rep = filterRep === "All" || o.assignedRep === filterRep;
+    const pri = filterPriority === "All" || o.priority === filterPriority;
+    const syn = filterSync === "All" || (o.ghl?.ghlSyncStatus ?? "Not Connected") === filterSync;
     return src && rep && pri && syn;
   });
 
   const kpis = calcKPIs(filtered);
-  const hasFilters = filterSource !== "All"|| filterRep !== "All"|| filterPriority !== "All"|| filterSync !== "All";
+  const hasFilters = filterSource !== "All" || filterRep !== "All" || filterPriority !== "All" || filterSync !== "All";
 
-  const allNotifications = mergedOpportunities.flatMap((o) => o.notifications);
+  const allNotifications = mergedOpportunities.flatMap((o) => o.notifications ?? []);
   const unreadCount = allNotifications.filter((n) => !n.read).length;
-  const overdueTasks = mergedOpportunities.flatMap((o) => o.tasks).filter((t) => t.status === "Overdue").length;
-  const overdueFollowUps = mergedOpportunities.flatMap((o) => o.followUps).filter((f) => f.status === "Overdue").length;
-  const handoffsInProgress = mergedOpportunities.filter((o) => o.handoff.status !== "Not Started").length;
+  const overdueTasks = mergedOpportunities.flatMap((o) => o.tasks ?? []).filter((t) => t.status === "Overdue").length;
+  const overdueFollowUps = mergedOpportunities.flatMap((o) => o.followUps ?? []).filter((f) => f.status === "Overdue").length;
+  const handoffsInProgress = mergedOpportunities.filter((o) => (o.handoff?.status ?? "Not Started") !== "Not Started").length;
 
   return (
     <div className="space-y-7">
@@ -3982,7 +4033,13 @@ function SalesPipelinePageInner() {
       {showCreateOpportunityModal && (
         <CreateOpportunityModal
           onCreated={(opp) => {
+            // Add to local records state
             setOpportunityRecords((prev) => [opp, ...prev]);
+            // Seed its commLog slot in local state
+            setCommLogs((prev) => ({
+              ...prev,
+              [opp.id]: opp.communicationLog ?? { opportunityId: opp.id, entries: [] },
+            }));
             setShowCreateOpportunityModal(false);
           }}
           onClose={() => setShowCreateOpportunityModal(false)}
@@ -4547,8 +4604,17 @@ function SalesPipelinePageInner() {
                   key={opp.id}
                   opportunity={opp}
                   onStageChange={(id, stage) => {
+                    // 1. Optimistic local update
                     setOpportunityRecords((prev) =>
                       prev.map((o) => o.id === id ? updateOpportunityStage(o, stage) : o)
+                    );
+                    // 2. Persist via PATCH so stage survives refresh
+                    fetch("/api/sales-opportunities", {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ id, stage, updatedAt: new Date().toISOString() }),
+                    }).catch((err) =>
+                      console.error("[Pipeline] Failed to persist stage change:", err)
                     );
                   }}
                   onStartProposal={(id) => {

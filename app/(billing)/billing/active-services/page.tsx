@@ -4,153 +4,161 @@
  * Active Services — Billing Source of Truth
  *
  * Subscriptions are billing records. This page shows the full set of
- * active client subscriptions. Data is drawn from clients in the master
- * client roster (MASTER_CLIENTS) to ensure alignment — no separate dataset.
+ * active client subscriptions derived from MASTER_CLIENTS.activeServices[].
  *
- * 18 subscriptions across a realistic status mix:
- *   Active, At Risk, Pausing, New
+ * DATA SOURCE: /api/master-clients (file-backed, cross-route-group reliable)
+ * Seed: MASTER_CLIENTS in-memory singleton (hydrated on mount from the API)
+ *
+ * EDIT PATH: Client Portfolio › Update Billing Fields (UpdateStatusModal)
+ *   — the only place to edit a client's activeServices, via patchMasterClient().
+ *
+ * Each client.activeServices entry becomes one row. MRR is shared from the
+ * client's monthlyValue (divided evenly across their services). Status is
+ * derived from clientHealth / billingStatus (Billing-owned field).
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
+import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
+import { fetchMasterClients } from "@/lib/mock/master-clients-api";
+import { inferServiceType } from "@/lib/billing/service-utils";
+import type { MasterClient, HealthStatus, BillingStatus } from "@/lib/mock/master-clients";
 
 const workspace = getWorkspace("billing")!;
 
-type ServiceStatus = "Active" | "At Risk" | "Pausing" | "New";
+// ── Derived service row type ──────────────────────────────────────────────────
+
+type ServiceStatus = "Active" | "At Risk" | "Critical" | "Pausing" | "New";
 type BadgeVariant = "success" | "error" | "warning" | "info" | "neutral" | "pending";
 
 function statusVariant(s: ServiceStatus): BadgeVariant {
   switch (s) {
-    case "Active":  return "success";
-    case "At Risk": return "error";
-    case "Pausing": return "warning";
-    case "New":     return "info";
-    default:        return "neutral";
+    case "Active":   return "success";
+    case "At Risk":  return "warning";
+    case "Critical": return "error";
+    case "Pausing":  return "warning";
+    case "New":      return "info";
+    default:         return "neutral";
   }
 }
 
-interface ActiveService {
-  id: string;
+/** Derive a user-facing service status from client-level billing + health fields. */
+function deriveServiceStatus(
+  health: HealthStatus,
+  billingStatus: BillingStatus,
+  activationStatus: MasterClient["activationStatus"],
+): ServiceStatus {
+  if (health === "Critical") return "Critical";
+  if (health === "At Risk" || billingStatus === "Overdue") return "At Risk";
+  if (billingStatus === "Pending" && activationStatus === "Not Started") return "New";
+  if (billingStatus === "Pending") return "Pausing";
+  return "Active";
+}
+
+interface ServiceRow {
+  rowKey: string;         // unique key per row
+  clientId: string;
   client: string;
-  plan: string;
+  serviceName: string;
   serviceType: string;
-  mrr: string;
+  /** Per-service MRR = floor(monthlyValue / serviceCount). Last service gets the remainder. */
   mrrValue: number;
   status: ServiceStatus;
   billingOwner: string;
-  startDate: string;
+  industry: string;
 }
 
-/**
- * 18 subscriptions derived from the master client roster.
- * Clients: Apex Roofing, Pacific Dental, Sunbelt HVAC, Harbor Auto Group,
- *          Blue Ridge Plumbing, Nova MedSpa, Pinnacle Chiropractic,
- *          Ironclad Security, Coastal Wellness, Frontier Logistics,
- *          Eastside Veterinary, Ridgeline Construction, Capital Contractors,
- *          Clearwater Insurance, Summit Fitness, Desert Solar,
- *          Greenleaf Landscaping (new), Bright Vision Optometry (new)
- */
-const ACTIVE_SERVICES: ActiveService[] = [
-  {
-    id: "svc-01", client: "Apex Roofing Solutions",    plan: "Full-Service SEO",         serviceType: "SEO",               mrr: "$2,400/mo",  mrrValue: 2400,  status: "Active",   billingOwner: "Lisa P.",   startDate: "Jan 2024",
-  },
-  {
-    id: "svc-02", client: "Apex Roofing Solutions",    plan: "Meta Ads Management",      serviceType: "Paid Advertising",  mrr: "$1,800/mo",  mrrValue: 1800,  status: "Active",   billingOwner: "Lisa P.",   startDate: "Mar 2024",
-  },
-  {
-    id: "svc-03", client: "Pacific Dental Group",       plan: "Paid Advertising Bundle",  serviceType: "Paid Advertising",  mrr: "$3,800/mo",  mrrValue: 3800,  status: "Active",   billingOwner: "Sarah K.",  startDate: "Feb 2024",
-  },
-  {
-    id: "svc-04", client: "Pacific Dental Group",       plan: "Yelp Ads Management",      serviceType: "Local Ads",         mrr: "$800/mo",    mrrValue: 800,   status: "Active",   billingOwner: "Sarah K.",  startDate: "Apr 2024",
-  },
-  {
-    id: "svc-05", client: "Sunbelt HVAC & Air",         plan: "SEO & GBP Retainer",       serviceType: "SEO",               mrr: "$1,200/mo",  mrrValue: 1200,  status: "At Risk",  billingOwner: "Lisa P.",   startDate: "Mar 2024",
-  },
-  {
-    id: "svc-06", client: "Harbor Auto Group",           plan: "Full-Service Bundle",       serviceType: "Full-Service",      mrr: "$5,000/mo",  mrrValue: 5000,  status: "Pausing",  billingOwner: "Sarah K.",  startDate: "Jul 2024",
-  },
-  {
-    id: "svc-07", client: "Blue Ridge Plumbing Co.",    plan: "Starter SEO",              serviceType: "SEO",               mrr: "$800/mo",    mrrValue: 800,   status: "New",      billingOwner: "Lisa P.",   startDate: "May 2025",
-  },
-  {
-    id: "svc-08", client: "Blue Ridge Plumbing Co.",    plan: "Website Build (One-Time)", serviceType: "Web Development",   mrr: "$700/mo",    mrrValue: 700,   status: "New",      billingOwner: "Lisa P.",   startDate: "May 2025",
-  },
-  {
-    id: "svc-09", client: "Nova MedSpa & Aesthetics",   plan: "SEO + Content Bundle",     serviceType: "SEO",               mrr: "$2,800/mo",  mrrValue: 2800,  status: "Active",   billingOwner: "Lisa P.",   startDate: "Sep 2024",
-  },
-  {
-    id: "svc-10", client: "Nova MedSpa & Aesthetics",   plan: "Google Ads Management",    serviceType: "Paid Advertising",  mrr: "$2,200/mo",  mrrValue: 2200,  status: "Active",   billingOwner: "Lisa P.",   startDate: "Sep 2024",
-  },
-  {
-    id: "svc-11", client: "Pinnacle Chiropractic",       plan: "SEO + Review Management",  serviceType: "SEO",               mrr: "$1,600/mo",  mrrValue: 1600,  status: "Active",   billingOwner: "Sarah K.",  startDate: "Oct 2024",
-  },
-  {
-    id: "svc-12", client: "Ironclad Security Systems",   plan: "Multi-Channel Paid Ads",   serviceType: "Paid Advertising",  mrr: "$3,200/mo",  mrrValue: 3200,  status: "Active",   billingOwner: "Lisa P.",   startDate: "Jan 2024",
-  },
-  {
-    id: "svc-13", client: "Coastal Wellness Center",     plan: "SEO + Email Marketing",    serviceType: "SEO",               mrr: "$1,800/mo",  mrrValue: 1800,  status: "Active",   billingOwner: "Sarah K.",  startDate: "Nov 2024",
-  },
-  {
-    id: "svc-14", client: "Frontier Logistics Inc.",     plan: "SEO + LinkedIn Ads",       serviceType: "SEO",               mrr: "$2,400/mo",  mrrValue: 2400,  status: "Active",   billingOwner: "Lisa P.",   startDate: "Dec 2024",
-  },
-  {
-    id: "svc-15", client: "Eastside Veterinary Clinic",  plan: "Local SEO + Content",      serviceType: "SEO",               mrr: "$1,400/mo",  mrrValue: 1400,  status: "Active",   billingOwner: "Sarah K.",  startDate: "Feb 2024",
-  },
-  {
-    id: "svc-16", client: "Ridgeline Construction LLC",  plan: "SEO / GBP Retainer",       serviceType: "SEO",               mrr: "$1,200/mo",  mrrValue: 1200,  status: "Active",   billingOwner: "Sarah K.",  startDate: "May 2025",
-  },
-  {
-    id: "svc-17", client: "Capital Contractors Group",   plan: "SEO + Website Maintenance", serviceType: "SEO",              mrr: "$1,600/mo",  mrrValue: 1600,  status: "At Risk",  billingOwner: "Lisa P.",   startDate: "Oct 2024",
-  },
-  {
-    id: "svc-18", client: "Desert Solar Energy",         plan: "Meta Ads + SEO Bundle",    serviceType: "Paid Advertising",  mrr: "$2,600/mo",  mrrValue: 2600,  status: "At Risk",  billingOwner: "Sarah K.",  startDate: "Jul 2024",
-  },
-];
+/** Expand a MasterClient into one ServiceRow per activeServices entry. */
+function expandClientToRows(c: MasterClient): ServiceRow[] {
+  if (c.activeServices.length === 0) return [];
+  const count = c.activeServices.length;
+  const perService = Math.floor(c.monthlyValue / count);
+  const remainder = c.monthlyValue - perService * count;
+  const derivedStatus = deriveServiceStatus(c.clientHealth, c.billingStatus, c.activationStatus);
 
-const allStatuses: (ServiceStatus | "All")[] = ["All", "Active", "At Risk", "Pausing", "New"];
-const allServiceTypes = ["All", ...Array.from(new Set(ACTIVE_SERVICES.map((s) => s.serviceType)))];
+  return c.activeServices.map((svcName, idx) => ({
+    rowKey: `${c.id}__${idx}`,
+    clientId: c.id,
+    client: c.clientName,
+    serviceName: svcName,
+    serviceType: inferServiceType(svcName),
+    // last service gets any remaining cents to match the total exactly
+    mrrValue: idx === count - 1 ? perService + remainder : perService,
+    status: derivedStatus,
+    billingOwner: c.billingOwner,
+    industry: c.industry,
+  }));
+}
+
+// ── Service type set — derived from real rows ─────────────────────────────────
+
+const allStatuses: (ServiceStatus | "All")[] = ["All", "Active", "At Risk", "Critical", "Pausing", "New"];
+
+// ── Table primitives ──────────────────────────────────────────────────────────
+
+function Th({ children }: { children: React.ReactNode }) {
+  return (
+    <th className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2 whitespace-nowrap border-b"
+      style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-alt, #F9FAFB)" }}>
+      {children}
+    </th>
+  );
+}
+
+function Td({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
+  return (
+    <td className="px-3 py-2.5 text-sm whitespace-nowrap border-b"
+      style={{ color: muted ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)", borderColor: "var(--rtm-border-light)" }}>
+      {children}
+    </td>
+  );
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function BillingServicesPage() {
+  const [clients, setClients] = useState<MasterClient[]>(MASTER_CLIENTS);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ServiceStatus | "All">("All");
   const [typeFilter, setTypeFilter] = useState("All");
 
-  const filtered = ACTIVE_SERVICES.filter((s) => {
+  // Hydrate from file-backed API (handles cross-route-group edits from Client Portfolio)
+  useEffect(() => {
+    fetchMasterClients()
+      .then((live) => setClients(live))
+      .catch(() => { /* keep seed */ });
+  }, []);
+
+  // Expand all clients into service rows (only clients with at least one service)
+  const allRows: ServiceRow[] = clients.flatMap(expandClientToRows);
+
+  // Derive service types for filter dropdown
+  const allServiceTypes = ["All", ...Array.from(new Set(allRows.map((r) => r.serviceType))).sort()];
+
+  const filtered = allRows.filter((r) => {
     const matchesSearch =
       search.trim() === "" ||
-      s.client.toLowerCase().includes(search.toLowerCase()) ||
-      s.plan.toLowerCase().includes(search.toLowerCase()) ||
-      s.serviceType.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "All" || s.status === statusFilter;
-    const matchesType = typeFilter === "All" || s.serviceType === typeFilter;
+      r.client.toLowerCase().includes(search.toLowerCase()) ||
+      r.serviceName.toLowerCase().includes(search.toLowerCase()) ||
+      r.serviceType.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "All" || r.status === statusFilter;
+    const matchesType = typeFilter === "All" || r.serviceType === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const totalMRR = filtered.reduce((s, svc) => s + svc.mrrValue, 0);
-  const activeCount = ACTIVE_SERVICES.filter((s) => s.status === "Active").length;
-  const atRiskCount = ACTIVE_SERVICES.filter((s) => s.status === "At Risk").length;
-  const newCount = ACTIVE_SERVICES.filter((s) => s.status === "New").length;
-  const pausingCount = ACTIVE_SERVICES.filter((s) => s.status === "Pausing").length;
+  const totalMRR = filtered.reduce((s, r) => s + r.mrrValue, 0);
 
-  function Th({ children }: { children: React.ReactNode }) {
-    return (
-      <th className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2 whitespace-nowrap border-b"
-        style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-alt, #F9FAFB)" }}>
-        {children}
-      </th>
-    );
-  }
+  // KPI counts from ALL rows (unfiltered)
+  const activeCount   = allRows.filter((r) => r.status === "Active").length;
+  const atRiskCount   = allRows.filter((r) => r.status === "At Risk").length;
+  const criticalCount = allRows.filter((r) => r.status === "Critical").length;
+  const newCount      = allRows.filter((r) => r.status === "New").length;
+  const pausingCount  = allRows.filter((r) => r.status === "Pausing").length;
 
-  function Td({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
-    return (
-      <td className="px-3 py-2.5 text-sm whitespace-nowrap border-b"
-        style={{ color: muted ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)", borderColor: "var(--rtm-border-light)" }}>
-        {children}
-      </td>
-    );
-  }
+  // Unique client count
+  const uniqueClientCount = new Set(allRows.map((r) => r.clientId)).size;
 
   return (
     <div className="space-y-6">
@@ -159,32 +167,46 @@ export default function BillingServicesPage() {
         <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>{workspace.name}</p>
         <div className="flex items-center gap-2 flex-wrap">
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Active Services</h1>
-          <span
-            className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
-            style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
-          >
-            Preview — Target State
-          </span>
         </div>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
-          All current client service subscriptions — {ACTIVE_SERVICES.length} subscriptions across the master client roster.
-          Billing is the source of truth for active services.
+          All current client service subscriptions — {allRows.length} subscription{allRows.length !== 1 ? "s" : ""} across {uniqueClientCount} client{uniqueClientCount !== 1 ? "s" : ""}.
+          Derived from <strong>MASTER_CLIENTS.activeServices[]</strong>. Billing is the source of truth for active services.
+        </p>
+      </div>
+
+      {/* Data-source notice */}
+      <div className="rounded-lg border px-4 py-3 flex items-start gap-3" style={{ background: "#F0FDF4", borderColor: "#A7F3D0" }}>
+        <svg width="16" height="16" className="flex-shrink-0 mt-0.5" fill="none" stroke="#059669" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p className="text-sm" style={{ color: "#065F46" }}>
+          <span className="font-bold">Real data.</span>{" "}
+          Rows are derived live from <code className="font-mono text-xs">MASTER_CLIENTS.activeServices[]</code>.
+          To add, remove, or change a client&apos;s services, use{" "}
+          <Link href="/billing/client-portfolio" className="font-bold underline">Client Portfolio → Update Billing Fields</Link>.
+          Changes persist immediately via <code className="font-mono text-xs">patchMasterClient()</code> and are reflected here on reload.
         </p>
       </div>
 
       {/* KPI Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total Subscriptions", value: ACTIVE_SERVICES.length, color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE" },
-          { label: "Active",              value: activeCount,             color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
-          { label: "At Risk",             value: atRiskCount,             color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-          { label: "New",                 value: newCount,                color: "#0891B2", bg: "#F0F9FF", border: "#BAE6FD" },
+          { label: "Total Subscriptions", value: allRows.length,    color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE" },
+          { label: "Active",              value: activeCount,        color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
+          { label: "At Risk",             value: atRiskCount,        color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
+          { label: "Critical",            value: criticalCount,      color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
         ].map(({ label, value, color, bg, border }) => (
           <div key={label} className="rounded-xl border p-4 flex flex-col gap-1" style={{ background: bg, borderColor: border }}>
             <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color }}>{label}</span>
             <span className="text-3xl font-black" style={{ color }}>{value}</span>
           </div>
         ))}
+        {newCount > 0 && (
+          <div className="rounded-xl border p-4 flex flex-col gap-1" style={{ background: "#F0F9FF", borderColor: "#BAE6FD" }}>
+            <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#0891B2" }}>New</span>
+            <span className="text-3xl font-black" style={{ color: "#0891B2" }}>{newCount}</span>
+          </div>
+        )}
         {pausingCount > 0 && (
           <div className="rounded-xl border p-4 flex flex-col gap-1" style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}>
             <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#D97706" }}>Pausing</span>
@@ -195,7 +217,7 @@ export default function BillingServicesPage() {
 
       {/* Filters + Table */}
       <SectionWrapper
-        title={`Active Services (${filtered.length} of ${ACTIVE_SERVICES.length})`}
+        title={`Active Services (${filtered.length} of ${allRows.length})`}
         description={`MRR shown: $${totalMRR.toLocaleString()}/mo`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
@@ -235,37 +257,52 @@ export default function BillingServicesPage() {
             <thead>
               <tr>
                 <Th>Client</Th>
-                <Th>Plan / Service</Th>
+                <Th>Service</Th>
                 <Th>Type</Th>
-                <Th>MRR</Th>
+                <Th>MRR (pro-rated)</Th>
                 <Th>Status</Th>
                 <Th>Billing Owner</Th>
-                <Th>Start Date</Th>
+                <Th>Industry</Th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3 py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>
-                    No services match your filters.
+                    {allRows.length === 0
+                      ? "No clients have active services yet. Add services via Client Portfolio → Update Billing Fields."
+                      : "No services match your filters."}
                   </td>
                 </tr>
-              ) : filtered.map((svc) => (
-                <tr key={svc.id}
+              ) : filtered.map((row) => (
+                <tr key={row.rowKey}
                   className="transition-colors"
-                  style={{ background: svc.status === "At Risk" ? "#FFF7F7" : svc.status === "New" ? "#F0F9FF" : "var(--rtm-bg)" }}
+                  style={{
+                    background:
+                      row.status === "Critical" ? "#FFF1F2" :
+                      row.status === "At Risk"  ? "#FFFBEB" :
+                      row.status === "New"      ? "#F0F9FF" :
+                      "var(--rtm-bg)",
+                  }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "var(--rtm-bg-alt, #F9FAFB)"; }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLTableRowElement).style.background =
-                      svc.status === "At Risk" ? "#FFF7F7" : svc.status === "New" ? "#F0F9FF" : "var(--rtm-bg)";
+                      row.status === "Critical" ? "#FFF1F2" :
+                      row.status === "At Risk"  ? "#FFFBEB" :
+                      row.status === "New"      ? "#F0F9FF" :
+                      "var(--rtm-bg)";
                   }}>
-                  <Td><span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{svc.client}</span></Td>
-                  <Td>{svc.plan}</Td>
-                  <Td muted>{svc.serviceType}</Td>
-                  <Td><span className="font-bold" style={{ color: "#059669" }}>{svc.mrr}</span></Td>
-                  <Td><StatusBadge variant={statusVariant(svc.status)} label={svc.status} size="sm" /></Td>
-                  <Td muted>{svc.billingOwner}</Td>
-                  <Td muted>{svc.startDate}</Td>
+                  <Td><span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{row.client}</span></Td>
+                  <Td>{row.serviceName}</Td>
+                  <Td muted>{row.serviceType}</Td>
+                  <Td>
+                    <span className="font-bold" style={{ color: "#059669" }}>
+                      ${row.mrrValue.toLocaleString()}/mo
+                    </span>
+                  </Td>
+                  <Td><StatusBadge variant={statusVariant(row.status)} label={row.status} size="sm" /></Td>
+                  <Td muted>{row.billingOwner}</Td>
+                  <Td muted>{row.industry}</Td>
                 </tr>
               ))}
             </tbody>
@@ -275,7 +312,7 @@ export default function BillingServicesPage() {
         {/* MRR Summary */}
         <div className="mt-4 flex items-center justify-between px-1">
           <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-            Showing {filtered.length} subscription{filtered.length !== 1 ? "s" : ""}
+            Showing {filtered.length} subscription{filtered.length !== 1 ? "s" : ""} across {new Set(filtered.map((r) => r.clientId)).size} client{new Set(filtered.map((r) => r.clientId)).size !== 1 ? "s" : ""}
           </p>
           <p className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
             MRR shown: <span style={{ color: "#059669" }}>${totalMRR.toLocaleString()}/mo</span>
@@ -284,9 +321,10 @@ export default function BillingServicesPage() {
       </SectionWrapper>
 
       {/* Footer */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Link href={workspace.dashboardRoute} className="rtm-btn-secondary text-sm">← Dashboard</Link>
-        <Link href="/billing/recurring-revenue" className="rtm-btn-primary text-sm">Recurring Revenue →</Link>
+        <Link href="/billing/client-portfolio" className="rtm-btn-primary text-sm">Edit Services (Client Portfolio) →</Link>
+        <Link href="/billing/recurring-revenue" className="rtm-btn-secondary text-sm">Recurring Revenue →</Link>
         <Link href="/billing/invoices" className="rtm-btn-secondary text-sm">Invoices →</Link>
       </div>
     </div>

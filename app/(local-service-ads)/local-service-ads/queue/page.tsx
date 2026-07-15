@@ -1,41 +1,6 @@
-"use client";
-import Link from "next/link";
-import { SectionWrapper, StatusBadge } from "@/components/ui";
-import { getWorkspace } from "@/lib/workspaces";
+import { redirect } from "next/navigation";
 
-const workspace = getWorkspace("local-service-ads")!;
-const items = [
-  { title: "Setup LSA — Blue Ridge Plumbing",    client: "Blue Ridge",  assignee: "Mike T.",   due: "Jun 7",  status: "info"as const, label: "In Progress"},
-  { title: "Review management — Apex Roofing",  client: "Apex Roofing",assignee: "Sarah K.",  due: "Jun 8",  status: "pending"as const, label: "Queued"},
-  { title: "Budget review — Harbor Auto",        client: "Harbor Auto", assignee: "Mike T.",   due: "Jun 9",  status: "pending"as const, label: "Queued"},
-  { title: "Dispute — Summit Landscaping",       client: "Summit",      assignee: "Sarah K.",  due: "Jun 6",  status: "warning"as const, label: "Overdue"},
-  { title: "Verification — Metro Dental",        client: "Metro Dental",assignee: "Alex R.",   due: "Jun 10", status: "pending"as const, label: "Queued"},
-];
-export default function LsaQueuePage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest mb-1"style={{ color: workspace.accentColor }}>{workspace.name}</p>
-        <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>LSA Work Queue</h1>
-        <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>Active LSA tasks in progress.</p>
-      </div>
-      <SectionWrapper title="LSA Queue"description={`${items.length} items`}>
-        <div className="space-y-2">
-          {items.map((item) => (
-            <div key={item.title} className="flex items-center justify-between p-3 rounded-lg border"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)"}}>
-              <div>
-                <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{item.title}</p>
-                <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{item.client} · {item.assignee} · Due {item.due}</p>
-              </div>
-              <StatusBadge variant={item.status} label={item.label} size="sm"/>
-            </div>
-          ))}
-        </div>
-      </SectionWrapper>
-      <div className="flex gap-2">
-        <Link href={workspace.dashboardRoute} className="rtm-btn-secondary text-sm inline-flex items-center gap-1">← Dashboard</Link>
-        <Link href={workspace.tasksRoute}     className="rtm-btn-primary  text-sm inline-flex items-center gap-1">Tasks →</Link>
-      </div>
-    </div>
-  );
+// Work Queue has been removed. Redirect to Local Service Ads Tasks.
+export default function LocalServiceAdsQueueRedirect() {
+  redirect("/local-service-ads/tasks");
 }

@@ -11,12 +11,19 @@ import type { DiscountType } from "./types";
 
 export type BudgetServiceId =
   | "seo"
+  | "seo-setup"
+  | "seo-technical"
+  | "seo-local"
   | "seo-ai-search"
   | "gbp"
+  | "gbp-optimization"
   | "ppc"
+  | "ppc-setup"
   | "lsa"
   | "meta-ads"
-  | "website";
+  | "meta-ads-setup"
+  | "website"
+  | "website-maintenance";
 
 export type QuantityUnit = "location" | "campaign" | "flat" | "page";
 
@@ -43,10 +50,11 @@ export interface BudgetServiceDefinition {
 // ─── Service Catalog ──────────────────────────────────────────────────────────
 
 export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
+  // ── SEO ──────────────────────────────────────────────────────────────────
   {
     id: "seo",
     catalogId: "svc-seo-monthly",
-    label: "SEO Management",
+    label: "SEO Monthly Management",
     description:
       "Full monthly SEO including technical audits, content optimization, and link building.",
     quantityUnit: "location",
@@ -57,6 +65,57 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 800,
     maxMonthlyPrice: 3500,
     setupFeeEditable: true,
+    department: "SEO",
+    isRecurring: true,
+  },
+  {
+    id: "seo-setup",
+    catalogId: "svc-seo-onboarding",
+    label: "SEO Setup & Onboarding",
+    description:
+      "Full SEO audit, keyword strategy, and technical baseline before ongoing management begins.",
+    quantityUnit: "flat",
+    quantityOptions: [1],
+    defaultQuantity: 1,
+    defaultMonthlyPrice: 0,
+    defaultSetupFee: 1500,
+    minMonthlyPrice: 0,
+    maxMonthlyPrice: 0,
+    setupFeeEditable: true,
+    department: "SEO",
+    isRecurring: false,
+  },
+  {
+    id: "seo-technical",
+    catalogId: "svc-technical-seo",
+    label: "Technical SEO Fix",
+    description:
+      "One-time technical SEO remediation for crawl errors, indexation issues, and structural problems.",
+    quantityUnit: "flat",
+    quantityOptions: [1],
+    defaultQuantity: 1,
+    defaultMonthlyPrice: 0,
+    defaultSetupFee: 1200,
+    minMonthlyPrice: 0,
+    maxMonthlyPrice: 0,
+    setupFeeEditable: true,
+    department: "SEO",
+    isRecurring: false,
+  },
+  {
+    id: "seo-local",
+    catalogId: "svc-local-seo",
+    label: "Local SEO Management",
+    description:
+      "Local SEO strategy targeting map pack visibility and multi-location organic reach.",
+    quantityUnit: "location",
+    quantityOptions: [1, 2, 3, 4, 5],
+    defaultQuantity: 1,
+    defaultMonthlyPrice: 1000,
+    defaultSetupFee: 0,
+    minMonthlyPrice: 600,
+    maxMonthlyPrice: 2500,
+    setupFeeEditable: false,
     department: "SEO",
     isRecurring: true,
   },
@@ -77,40 +136,77 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     department: "SEO",
     isRecurring: true,
   },
+  // ── GBP ──────────────────────────────────────────────────────────────────
   {
     id: "gbp",
     catalogId: "svc-gbp-monthly",
-    label: "Google Business Profile",
+    label: "GBP Monthly Management",
     description:
-      "Google Business Profile optimization, weekly posting, and review management.",
+      "Ongoing GBP management including posts, review responses, and photo updates.",
     quantityUnit: "location",
     quantityOptions: [1, 2, 3, 4, 5],
     defaultQuantity: 1,
-    defaultMonthlyPrice: 400,
-    defaultSetupFee: 200,
+    defaultMonthlyPrice: 500,
+    defaultSetupFee: 0,
     minMonthlyPrice: 300,
     maxMonthlyPrice: 800,
-    setupFeeEditable: true,
+    setupFeeEditable: false,
     department: "GBP",
     isRecurring: true,
   },
   {
+    id: "gbp-optimization",
+    catalogId: "svc-gbp-optimization",
+    label: "GBP Optimization",
+    description:
+      "One-time GBP profile optimization to maximize local pack visibility.",
+    quantityUnit: "location",
+    quantityOptions: [1, 2, 3, 4, 5],
+    defaultQuantity: 1,
+    defaultMonthlyPrice: 0,
+    defaultSetupFee: 350,
+    minMonthlyPrice: 0,
+    maxMonthlyPrice: 0,
+    setupFeeEditable: true,
+    department: "GBP",
+    isRecurring: false,
+  },
+  // ── PPC ──────────────────────────────────────────────────────────────────
+  {
     id: "ppc",
     catalogId: "svc-ppc-monthly",
-    label: "Google Ads / PPC",
+    label: "Google Ads Monthly Management",
     description:
-      "Paid search campaign management including restructure, ongoing optimization, and bi-weekly reporting.",
+      "Ongoing Google Ads campaign management, optimization, and reporting.",
     quantityUnit: "campaign",
     quantityOptions: [1, 2, 3],
     defaultQuantity: 1,
     defaultMonthlyPrice: 800,
-    defaultSetupFee: 500,
+    defaultSetupFee: 0,
     minMonthlyPrice: 600,
     maxMonthlyPrice: 3000,
-    setupFeeEditable: true,
+    setupFeeEditable: false,
     department: "PPC",
     isRecurring: true,
   },
+  {
+    id: "ppc-setup",
+    catalogId: "svc-ppc-setup",
+    label: "Google Ads Campaign Setup",
+    description:
+      "Full Google Ads campaign build from scratch with proper structure, tracking, and keywords.",
+    quantityUnit: "campaign",
+    quantityOptions: [1, 2, 3],
+    defaultQuantity: 1,
+    defaultMonthlyPrice: 0,
+    defaultSetupFee: 1200,
+    minMonthlyPrice: 0,
+    maxMonthlyPrice: 0,
+    setupFeeEditable: true,
+    department: "PPC",
+    isRecurring: false,
+  },
+  // ── LSA ───────────────────────────────────────────────────────────────────
   {
     id: "lsa",
     catalogId: "svc-lsa",
@@ -128,27 +224,46 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     department: "LSA",
     isRecurring: true,
   },
+  // ── Meta Ads ──────────────────────────────────────────────────────────────
   {
     id: "meta-ads",
     catalogId: "svc-meta-monthly",
-    label: "Meta Ads",
+    label: "Meta Ads Monthly Management",
     description:
-      "Facebook and Instagram ad campaign management for lead generation and brand awareness.",
+      "Ongoing Meta Ads management across Facebook and Instagram.",
     quantityUnit: "campaign",
     quantityOptions: [1, 2, 3],
     defaultQuantity: 1,
     defaultMonthlyPrice: 800,
-    defaultSetupFee: 400,
+    defaultSetupFee: 0,
     minMonthlyPrice: 600,
     maxMonthlyPrice: 2500,
-    setupFeeEditable: true,
+    setupFeeEditable: false,
     department: "Meta Ads",
     isRecurring: true,
   },
   {
+    id: "meta-ads-setup",
+    catalogId: "svc-meta-setup",
+    label: "Meta Ads Campaign Setup",
+    description:
+      "Full Meta Ads account setup including audiences, pixels, and campaign structure.",
+    quantityUnit: "campaign",
+    quantityOptions: [1, 2, 3],
+    defaultQuantity: 1,
+    defaultMonthlyPrice: 0,
+    defaultSetupFee: 900,
+    minMonthlyPrice: 0,
+    maxMonthlyPrice: 0,
+    setupFeeEditable: true,
+    department: "Meta Ads",
+    isRecurring: false,
+  },
+  // ── Website ───────────────────────────────────────────────────────────────
+  {
     id: "website",
     catalogId: "svc-web-redesign",
-    label: "Website",
+    label: "Website Redesign",
     description:
       "Full website build or redesign with mobile-first, conversion-optimized design and CMS setup.",
     quantityUnit: "page",
@@ -161,6 +276,23 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     setupFeeEditable: true,
     department: "Web Development",
     isRecurring: false,
+  },
+  {
+    id: "website-maintenance",
+    catalogId: "svc-web-maintenance",
+    label: "Website Maintenance",
+    description:
+      "Ongoing website maintenance, security updates, and minor content changes.",
+    quantityUnit: "flat",
+    quantityOptions: [1],
+    defaultQuantity: 1,
+    defaultMonthlyPrice: 250,
+    defaultSetupFee: 0,
+    minMonthlyPrice: 150,
+    maxMonthlyPrice: 500,
+    setupFeeEditable: false,
+    department: "Web Development",
+    isRecurring: true,
   },
 ];
 
@@ -176,6 +308,32 @@ export function getBudgetServiceById(
 // Maps Recommendation Engine service label strings to BudgetServiceId.
 
 export const RECOMMENDATION_TO_BUDGET_MAP: Record<string, BudgetServiceId> = {
+  // ── Exact service names from SERVICE_CATALOG in recommendation-config.ts ──
+  // Each recommendation service name maps to its own distinct BudgetServiceId
+  // so that multiple approved recommendations never collapse to the same entry.
+  // SEO
+  "SEO Monthly Management": "seo",
+  "SEO Setup & Onboarding": "seo-setup",
+  "Technical SEO Fix": "seo-technical",
+  "Local SEO Management": "seo-local",
+  // AI Search
+  "AI Search Visibility": "seo-ai-search",
+  // GBP — distinct: one-time optimization vs ongoing monthly management
+  "GBP Optimization": "gbp-optimization",
+  "GBP Monthly Management": "gbp",
+  // PPC / Google Ads — distinct: one-time setup vs ongoing management
+  "Google Ads Campaign Setup": "ppc-setup",
+  "Google Ads Monthly Management": "ppc",
+  // LSA
+  "LSA Management": "lsa",
+  // Meta Ads — distinct: one-time setup vs ongoing management
+  "Meta Ads Campaign Setup": "meta-ads-setup",
+  "Meta Ads Monthly Management": "meta-ads",
+  // Website — distinct: redesign (one-time) vs maintenance (recurring)
+  "Website Redesign": "website",
+  "Website Maintenance": "website-maintenance",
+  // Tracking/pixel → no matching budget service; intentionally unmapped
+  // ── Legacy keys kept for old drafts that stored these names ───────────────
   "SEO": "seo",
   "SEO AI Search Visibility": "seo-ai-search",
   "Google Business Profile": "gbp",

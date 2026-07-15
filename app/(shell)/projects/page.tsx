@@ -607,12 +607,6 @@ export default function GlobalProjectsPage() {
                 <h1 className="text-2xl font-black" style={{ color: "var(--rtm-text-primary)" }}>
                   Global Projects &amp; Tasks Engine
                 </h1>
-                <span
-                  className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider"
-                  style={{ background: "var(--rtm-blue)", color: "white" }}
-                >
-                  v1
-                </span>
               </div>
               <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
                 Single source of truth for projects, milestones, blueprints, tasks, and department assignments.
@@ -634,24 +628,6 @@ export default function GlobalProjectsPage() {
                 + New Project
               </button>
             </div>
-          </div>
-
-          {/* Architecture flow */}
-          <div
-            className="flex flex-wrap items-center gap-1.5 mb-5 px-4 py-3 rounded-xl text-xs font-semibold overflow-x-auto"
-            style={{ background: "var(--rtm-blue-xlight)", border: "1px solid #BFDBFE" }}
-          >
-            {["Project","Milestones","Task Blueprints","Generated Tasks","Assigned Department","Assigned User","Workspace Views"].map((step, i, arr) => (
-              <span key={step} className="flex items-center gap-1.5 whitespace-nowrap">
-                <span
-                  className="px-2 py-1 rounded-lg"
-                  style={{ background: "white", color: "var(--rtm-blue)", border: "1px solid #BFDBFE" }}
-                >
-                  {step}
-                </span>
-                {i < arr.length - 1 && <span style={{ color: "var(--rtm-blue)" }}>→</span>}
-              </span>
-            ))}
           </div>
 
           {/* View tabs */}

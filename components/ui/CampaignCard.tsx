@@ -33,7 +33,7 @@ export default function CampaignCard({ campaign: c }: CampaignCardProps) {
       }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor = "var(--rtm-blue)";
-        (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 8px rgba(27,79,216,0.1)";
+        (e.currentTarget as HTMLDivElement).style.boxShadow = "0 2px 8px rgba(29,112,159,0.1)";
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLDivElement).style.borderColor = "var(--rtm-border)";

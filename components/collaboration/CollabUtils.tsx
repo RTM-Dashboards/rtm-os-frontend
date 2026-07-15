@@ -167,7 +167,7 @@ export function formatFileSize(kb: number): string {
 // ── Mention badge ─────────────────────────────────────────────────────────────
 
 export function MentionBadge({ label, kind }: { label: string; kind: string }) {
-  const color = kind === "user"? "#1B4FD8": kind === "department"? "#7C3AED": "#059669";
+  const color = kind === "user"? "#1d709f": kind === "department"? "#7C3AED": "#059669";
   return (
     <span
       className="inline-flex items-center px-1.5 py-0 rounded text-[11px] font-semibold"style={{ background: `${color}18`, color }}

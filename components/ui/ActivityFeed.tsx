@@ -20,9 +20,9 @@ const typeChar: Record<ActivityItem["type"], string> = {
 const typeDotColor: Record<ActivityItem["type"], string> = {
   task:     "#10B981",
   alert:    "#EF4444",
-  report:   "#1B4FD8",
+  report:   "#1d709f",
   campaign: "#7C3AED",
-  client:   "#3B6EF5",
+  client:   "#2994d2",
   system:   "#94A3B8",
 };
 

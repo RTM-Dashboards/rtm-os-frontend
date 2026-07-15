@@ -186,6 +186,37 @@ export interface MasterClient {
   activationChecklist: ActivationChecklist;
   recentEvents: RecentEvent[];
 
+  // ── Stripe groundwork — Billing-owned (live wiring deferred to launch) ──────
+  //
+  // These fields are schema groundwork only. No Stripe SDK is installed, no real
+  // network calls are made. All clients start with stripeSyncStatus: "Not Connected"
+  // and null IDs. The live wiring (already designed, waiting on real API keys) will
+  // populate these fields when it goes live at launch.
+  //
+  // stripeCustomerId:    Stripe Customer object — the top-level entity Stripe uses
+  //                      to associate all billing objects with a client.
+  // stripeInvoiceId:     Stripe Invoice object — represents a single one-time invoice
+  //                      (e.g. setup fee, contract start). This is a DIFFERENT Stripe
+  //                      object type from a Subscription.
+  // stripeSubscriptionId: Stripe Subscription object — represents the recurring monthly
+  //                      billing agreement. Fundamentally different from an Invoice.
+  //                      When live: cancel via stripe.subscriptions.cancel(id) at
+  //                      terminal cancellationStatus; sync via webhooks.
+  // stripeSyncStatus:    Lightweight status. "Not Connected" until live wiring runs.
+  //
+  // ── FUTURE LIVE INTEGRATION HOOK ──────────────────────────────────────────────
+  // When connecting Stripe at launch:
+  //   1. Create Stripe Customer → populate stripeCustomerId, set stripeSyncStatus: "Connected"
+  //   2. One-time invoice → create Stripe Invoice → populate stripeInvoiceId
+  //   3. Recurring billing → create Stripe Subscription → populate stripeSubscriptionId
+  //   4. Webhook handler (stripe signature verified) updates these fields on payment/cancel events
+  //   5. On cancellationStatus reaching "Cancelled": call stripe.subscriptions.cancel(stripeSubscriptionId)
+  // ──────────────────────────────────────────────────────────────────────────────
+  stripeCustomerId: string | null;
+  stripeInvoiceId: string | null;
+  stripeSubscriptionId: string | null;
+  stripeSyncStatus: "Not Connected" | "Connected";
+
   // ── Affiliate (Sales-managed) ─────────────────────────────────────────────
   referralSource?: string;
   affiliateName?: string;
@@ -236,6 +267,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     avatarColor: "#6366f1",
     referralSource: "Direct",
     commissionStatus: "Not Applicable",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc002",
@@ -276,6 +312,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     affiliateName: "Brandon Ellis",
     referralRevenue: "$2,000/mo",
     commissionStatus: "Paid",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc003",
@@ -316,6 +357,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     affiliateName: "Maria Santos",
     referralRevenue: "$5,150/mo",
     commissionStatus: "Pending",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc004",
@@ -352,6 +398,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "New client — onboarded May 2025. Website build in progress.",
     avatarColor: "#3b82f6",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc005",
@@ -388,6 +439,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "At-risk due to content package dispute. Ad performance strong.",
     avatarColor: "#ef4444",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc006",
@@ -423,6 +479,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Inbound lead from referral. Strong fit.",
     avatarColor: "#84cc16",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc007",
@@ -459,6 +520,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "High-value prospect. Proposal sent. Awaiting partner sign-off.",
     avatarColor: "#8b5cf6",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc008",
@@ -495,6 +561,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Contract signed. Invoice sent. Waiting for payment to start onboarding.",
     avatarColor: "#06b6d4",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc009",
@@ -531,6 +602,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Invoice paid. Clearance pending before AM assignment.",
     avatarColor: "#f97316",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc010",
@@ -567,6 +643,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "All pre-conditions met. Ready for onboarding kickoff.",
     avatarColor: "#0ea5e9",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc011",
@@ -603,6 +684,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Onboarding in progress. Waiting on GBP access from client.",
     avatarColor: "#78716c",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc012",
@@ -639,6 +725,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Top-performing account. Upsell opportunity: email marketing.",
     avatarColor: "#ec4899",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc013",
@@ -675,6 +766,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Cancellation requested. Director retention call scheduled for June 3.",
     avatarColor: "#dc2626",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc014",
@@ -711,6 +807,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Client moving in-house. Offboarding in progress. Friendly exit.",
     avatarColor: "#94a3b8",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc015",
@@ -747,6 +848,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Stable account. Google Ads performing well.",
     avatarColor: "#14b8a6",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc016",
@@ -783,6 +889,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Invoice 15 days overdue. No contact response. Escalating.",
     avatarColor: "#854d0e",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc017",
@@ -819,6 +930,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Low-maintenance, high-satisfaction account.",
     avatarColor: "#22c55e",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc018",
@@ -855,6 +971,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Renewal in 30 days. Client hinted at adding two new locations.",
     avatarColor: "#1d4ed8",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc019",
@@ -891,6 +1012,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "Solid retention. Email marketing exceeding benchmarks.",
     avatarColor: "#a855f7",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id: "mc020",
@@ -927,6 +1053,11 @@ export const MASTER_CLIENTS: MasterClient[] = [
     ],
     notes: "B2B client. LinkedIn driving strong pipeline results.",
     avatarColor: "#0891b2",
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ────────
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
 ];
 

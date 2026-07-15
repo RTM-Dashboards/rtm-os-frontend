@@ -347,6 +347,76 @@ export default function RecurringRevenuePage() {
         </p>
       </div>
 
+      {/* ── Stripe Subscription Billing (groundwork — not yet live) ──────────────
+           FUTURE LIVE INTEGRATION HOOK (Recurring Revenue):
+           When Stripe is connected at launch:
+             - Each RecurringContract row maps to a Stripe Subscription object
+               (stripe.subscriptions.create / retrieve / cancel)
+             - stripeSubscriptionId on MASTER_CLIENTS links to the recurring billing contract
+             - "Connect to Stripe" action: creates Stripe Customer + Subscription,
+               sets stripeCustomerId + stripeSubscriptionId + stripeSyncStatus: "Connected"
+             - Webhook events (customer.subscription.updated, invoice.payment_succeeded,
+               invoice.payment_failed) update contract status in real time
+             - This section should display live subscription status fetched from Stripe
+           ────────────────────────────────────────────────────────────────────── */}
+      <div className="rounded-xl border p-5" style={{ background: "#F8FAFC", borderColor: "#E2E8F0" }}>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            {/* Stripe "S" icon */}
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "#6772E5" }}>
+              <svg width="14" height="14" viewBox="0 0 12 12" fill="none">
+                <path d="M5.15 4.42c0-.42.34-.58.9-.58.8 0 1.82.24 2.62.67V2.74A6.96 6.96 0 005.9 2.25c-1.85 0-3.09.97-3.09 2.59 0 2.53 3.48 2.12 3.48 3.21 0 .5-.43.66-.97.66-.84 0-1.9-.35-2.74-.82v1.8c.93.4 1.87.57 2.74.57 1.88 0 3.18-.93 3.18-2.57C8.5 5.09 5.15 5.57 5.15 4.42z" fill="white"/>
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-bold" style={{ color: "#0F172A" }}>Stripe Subscription Billing</p>
+              <p className="text-xs mt-0.5" style={{ color: "#64748B" }}>
+                Recurring contracts will sync to Stripe Subscriptions at launch. All clients currently show "Not Connected."
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full border" style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}>
+              Coming at launch
+            </span>
+            <div className="relative group">
+              <button
+                disabled
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border cursor-not-allowed opacity-60"
+                style={{ background: "#F8FAFC", borderColor: "#CBD5E1", color: "#64748B" }}
+              >
+                Connect to Stripe
+              </button>
+              <div
+                className="absolute bottom-full right-0 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ whiteSpace: "nowrap" }}
+              >
+                <div className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg"
+                  style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+                  Not yet available — coming at launch
+                  <div className="absolute top-full right-3 border-4 border-transparent"
+                    style={{ borderTopColor: "#1E293B" }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 pt-3 border-t flex items-center gap-4 flex-wrap" style={{ borderColor: "#E2E8F0" }}>
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: "#94A3B8" }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: "#CBD5E1" }} />
+            Stripe Customers: Not Connected
+          </div>
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: "#94A3B8" }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: "#CBD5E1" }} />
+            Active Subscriptions: 0 synced
+          </div>
+          <div className="flex items-center gap-1.5 text-xs" style={{ color: "#94A3B8" }}>
+            <span className="w-2 h-2 rounded-full" style={{ background: "#CBD5E1" }} />
+            Webhook: Not configured
+          </div>
+        </div>
+      </div>
+
       {/* KPIs */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard title="MRR"                value={`$${totalMRR.toLocaleString()}`}         trend="up"     trendValue="11.2%" iconBg="#ECFDF5" iconColor="#059669"

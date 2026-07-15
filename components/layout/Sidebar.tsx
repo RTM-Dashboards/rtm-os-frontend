@@ -70,7 +70,6 @@ const navItems: NavItem[] = [
     section: "overview",
     badge: "124",
     children: [
-      { label: "Project Management",    href: "/projects"},
       { label: "Task Blueprints",        href: "/tasks/templates"},
       { label: "Activation Rules",      href: "/tasks/activation-rules"},
       { label: "Activation Engine",     href: "/tasks/activation-engine"},
@@ -90,7 +89,6 @@ const navItems: NavItem[] = [
     section: "operations",
     children: [
       { label: "Workflow Engine",          href: "/admin/workflows"},
-      { label: "Projects & Tasks",         href: "/projects"},
       { label: "Reporting & Intelligence", href: "/reporting"},
     ],
   },
@@ -115,6 +113,7 @@ const navItems: NavItem[] = [
     children: [
       { label: "Web Development", href: "/web-development-design/web-development"},
       { label: "Design",          href: "/web-development-design/design"},
+      { label: "Reports",         href: "/web-development-design/reports"},
     ],
   },
   {
@@ -206,18 +205,18 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
   const linkStyle = (isActive: boolean): React.CSSProperties =>
     isActive
-      ? { background: "rgba(59,110,245,0.22)", color: "#ffffff", boxShadow: "inset 2px 0 0 #3B6EF5"}
+      ? { background: "var(--rtm-sidebar-active)", color: "#ffffff", boxShadow: "inset 2px 0 0 var(--rtm-blue-mid)"}
       : { color: "var(--rtm-sidebar-text)"};
 
   const iconColor = (isActive: boolean) =>
-    isActive ? "#7AABFF": "rgba(200,213,238,0.7)";
+    isActive ? "#a8d4f0": "rgba(200,213,222,0.7)";
 
   return (
     <>
       {/* Mobile backdrop */}
       {open && (
         <div
-          className="fixed inset-0 z-20 backdrop-blur-sm lg:hidden"style={{ background: "rgba(14,32,85,0.55)"}}
+          className="fixed inset-0 z-20 backdrop-blur-sm lg:hidden"style={{ background: "rgba(35,31,32,0.55)"}}
           onClick={onClose}
           aria-hidden="true"/>
       )}
@@ -292,7 +291,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"style={linkStyle(isActive)}
                               onMouseEnter={(e) => {
                                 if (!isActive) {
-                                  e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                                  e.currentTarget.style.background = "var(--rtm-sidebar-hover)";
                                   e.currentTarget.style.color = "#ffffff";
                                 }
                               }}
@@ -330,12 +329,12 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                                         onClick={() => onClose()}
                                         className="block px-2 py-2 rounded-lg text-sm font-medium transition-all duration-150"style={
                                           isChildActive
-                                            ? { background: "rgba(59,110,245,0.22)", color: "#ffffff", boxShadow: "inset 2px 0 0 #3B6EF5"}
+                                            ? { background: "var(--rtm-sidebar-active)", color: "#ffffff", boxShadow: "inset 2px 0 0 var(--rtm-blue-mid)"}
                                             : { color: "var(--rtm-sidebar-text)"}
                                         }
                                         onMouseEnter={(e) => {
                                           if (!isChildActive) {
-                                            e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                                            e.currentTarget.style.background = "var(--rtm-sidebar-hover)";
                                             e.currentTarget.style.color = "#ffffff";
                                           }
                                         }}
@@ -361,7 +360,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150"style={linkStyle(isActive)}
                             onMouseEnter={(e) => {
                               if (!isActive) {
-                                e.currentTarget.style.background = "rgba(255,255,255,0.07)";
+                                e.currentTarget.style.background = "var(--rtm-sidebar-hover)";
                                 e.currentTarget.style.color = "#ffffff";
                               }
                             }}
@@ -386,7 +385,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                             {item.href === "/notifications"&& notifBadge ? (
                               <span
                                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"style={{
-                                  background: isActive ? "rgba(239,68,68,0.25)": "rgba(220,38,38,0.75)",
+                                  background: isActive ? "rgba(239,68,68,0.25)" : "rgba(220,38,38,0.75)",
                                   color:      isActive ? "#FECACA": "#FFFFFF",
                                 }}
                               >
@@ -395,8 +394,8 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                             ) : item.badge ? (
                               <span
                                 className="text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"style={{
-                                  background: isActive ? "rgba(122,171,255,0.25)": "rgba(27,79,216,0.35)",
-                                  color:      isActive ? "#BFDFFF": "#93C5FD",
+                                  background: isActive ? "rgba(41,148,210,0.25)" : "rgba(29,112,159,0.35)",
+                  color:      isActive ? "#a8d4f0" : "#7ab9d8",
                                 }}
                               >
                                 {item.badge}
@@ -422,7 +421,7 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <div
-              className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow"style={{ background: "linear-gradient(135deg, #1B4FD8, #3B6EF5)"}}
+              className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow"style={{ background: "linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%)"}}
             >
               A
             </div>

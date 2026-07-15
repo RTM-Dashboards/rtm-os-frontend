@@ -19,7 +19,7 @@ function svcVariant(s: ServiceStatusLevel): StatusVariant {
 }
 
 const SERVICE_COLORS: Record<string, string> = {
-  SEO:       "#1B4FD8",
+  SEO:       "#1d709f",
   "Meta Ads":"#7C3AED",
   PPC:       "#D97706",
   GBP:       "#059669",

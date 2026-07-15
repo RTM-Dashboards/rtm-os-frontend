@@ -60,7 +60,11 @@
       "notes": "High-value client. Storm season drives spike in leads.",
       "avatarColor": "#6366f1",
       "referralSource": "Direct",
-      "commissionStatus": "Not Applicable"
+      "commissionStatus": "Not Applicable",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc002",
@@ -122,7 +126,11 @@
       "referralSource": "Affiliate",
       "affiliateName": "Brandon Ellis",
       "referralRevenue": "$2,000/mo",
-      "commissionStatus": "Paid"
+      "commissionStatus": "Paid",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc003",
@@ -186,7 +194,11 @@
       "referralSource": "Affiliate",
       "affiliateName": "Maria Santos",
       "referralRevenue": "$5,150/mo",
-      "commissionStatus": "Pending"
+      "commissionStatus": "Pending",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc004",
@@ -244,7 +256,11 @@
         }
       ],
       "notes": "New client \u2014 onboarded May 2025. Website build in progress.",
-      "avatarColor": "#3b82f6"
+      "avatarColor": "#3b82f6",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc005",
@@ -302,7 +318,11 @@
         }
       ],
       "notes": "At-risk due to content package dispute. Ad performance strong.",
-      "avatarColor": "#ef4444"
+      "avatarColor": "#ef4444",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc006",
@@ -352,7 +372,11 @@
         }
       ],
       "notes": "Inbound lead from referral. Strong fit.",
-      "avatarColor": "#84cc16"
+      "avatarColor": "#84cc16",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc007",
@@ -407,7 +431,11 @@
         }
       ],
       "notes": "High-value prospect. Proposal sent. Awaiting partner sign-off.",
-      "avatarColor": "#8b5cf6"
+      "avatarColor": "#8b5cf6",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc008",
@@ -462,7 +490,11 @@
         }
       ],
       "notes": "Contract signed. Invoice sent. Waiting for payment to start onboarding.",
-      "avatarColor": "#06b6d4"
+      "avatarColor": "#06b6d4",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc009",
@@ -517,7 +549,11 @@
         }
       ],
       "notes": "Invoice paid. Clearance pending before AM assignment.",
-      "avatarColor": "#f97316"
+      "avatarColor": "#f97316",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc010",
@@ -576,7 +612,11 @@
         }
       ],
       "notes": "All pre-conditions met. Ready for onboarding kickoff.",
-      "avatarColor": "#0ea5e9"
+      "avatarColor": "#0ea5e9",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc011",
@@ -633,7 +673,11 @@
         }
       ],
       "notes": "Onboarding in progress. Waiting on GBP access from client.",
-      "avatarColor": "#78716c"
+      "avatarColor": "#78716c",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc012",
@@ -693,7 +737,11 @@
         }
       ],
       "notes": "Top-performing account. Upsell opportunity: email marketing.",
-      "avatarColor": "#ec4899"
+      "avatarColor": "#ec4899",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc013",
@@ -751,7 +799,11 @@
         }
       ],
       "notes": "Cancellation requested. Director retention call scheduled for June 3.",
-      "avatarColor": "#dc2626"
+      "avatarColor": "#dc2626",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc014",
@@ -806,7 +858,11 @@
         }
       ],
       "notes": "Client moving in-house. Offboarding in progress. Friendly exit.",
-      "avatarColor": "#94a3b8"
+      "avatarColor": "#94a3b8",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc015",
@@ -865,7 +921,11 @@
         }
       ],
       "notes": "Stable account. Google Ads performing well.",
-      "avatarColor": "#14b8a6"
+      "avatarColor": "#14b8a6",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc016",
@@ -924,7 +984,11 @@
         }
       ],
       "notes": "Invoice 15 days overdue. No contact response. Escalating.",
-      "avatarColor": "#854d0e"
+      "avatarColor": "#854d0e",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc017",
@@ -982,7 +1046,11 @@
         }
       ],
       "notes": "Low-maintenance, high-satisfaction account.",
-      "avatarColor": "#22c55e"
+      "avatarColor": "#22c55e",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc018",
@@ -1042,7 +1110,11 @@
         }
       ],
       "notes": "Renewal in 30 days. Client hinted at adding two new locations.",
-      "avatarColor": "#1d4ed8"
+      "avatarColor": "#1d4ed8",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc019",
@@ -1101,7 +1173,11 @@
         }
       ],
       "notes": "Solid retention. Email marketing exceeding benchmarks.",
-      "avatarColor": "#a855f7"
+      "avatarColor": "#a855f7",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     },
     {
       "id": "mc020",
@@ -1161,7 +1237,11 @@
         }
       ],
       "notes": "B2B client. LinkedIn driving strong pipeline results.",
-      "avatarColor": "#0891b2"
+      "avatarColor": "#0891b2",
+      "stripeCustomerId": null,
+      "stripeInvoiceId": null,
+      "stripeSubscriptionId": null,
+      "stripeSyncStatus": "Not Connected"
     }
   ]
 }

@@ -22,7 +22,7 @@ function priorityColor(p: OnboardingQueueItem["priority"]) {
   switch (p) {
     case "Critical": return "#DC2626";
     case "High":     return "#D97706";
-    case "Medium":   return "#1B4FD8";
+    case "Medium":   return "#1d709f";
     case "Low":      return "#94A3B8";
   }
 }
@@ -38,7 +38,7 @@ export default function OnboardingQueue({ items }: Props) {
       {/* ── Summary stats ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Payment Confirmed", count: paymentConfirmed.length, color: "#1B4FD8", bg: "var(--rtm-blue-xlight)", border: "var(--rtm-blue-light)"},
+          { label: "Payment Confirmed", count: paymentConfirmed.length, color: "#1d709f", bg: "var(--rtm-blue-xlight)", border: "var(--rtm-blue-light)"},
           { label: "Awaiting Launch",   count: awaitingLaunch.length,   color: "#D97706",  bg: "#FFFBEB",              border: "#FDE68A"},
           { label: "Ready to Launch",   count: readyToLaunch.length,    color: "#059669",  bg: "#ECFDF5",              border: "#A7F3D0"},
           { label: "Blocked Launches",  count: blocked.length,          color: "#DC2626",  bg: "#FEF2F2",              border: "#FECACA"},

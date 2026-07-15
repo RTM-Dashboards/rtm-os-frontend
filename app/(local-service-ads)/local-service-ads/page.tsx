@@ -18,7 +18,6 @@ const accounts = [
 const quickLinks = [
   { label: "LSA Dashboard", href: "/local-service-ads",             icon: "", description: "LSA overview",          accent: "#B45309"},
   { label: "Tasks",         href: "/local-service-ads/tasks",        icon: "", description: "LSA task queue",        accent: "#1B4FD8"},
-  { label: "Work Queue",    href: "/local-service-ads/queue",        icon: "", description: "Active work",           accent: "#059669"},
   { label: "Clients",       href: "/local-service-ads/clients",      icon: "", description: "LSA clients",           accent: "#7C3AED"},
   { label: "Performance",   href: "/local-service-ads/performance",  icon: "", description: "Lead & budget metrics", accent: "#D97706"},
   { label: "Reports",       href: "/local-service-ads/reports",      icon: "", description: "LSA reports",           accent: "#0891B2"},

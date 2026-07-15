@@ -64,17 +64,17 @@ export default function AccountManagerView({ tasks }: Props) {
             {allUnread.map((n) => (
               <div
                 key={n.id}
-                className="flex items-start gap-3 p-3 rounded-xl"style={{ background: "#EBF0FD", border: "1px solid #BFDBFE"}}
+                className="flex items-start gap-3 p-3 rounded-xl"style={{ background: "#d0e8f5", border: "1px solid #BFDBFE"}}
               >
                 
                 <div className="flex-1">
-                  <p className="text-xs font-semibold"style={{ color: "#1B4FD8"}}>{n.message}</p>
+                  <p className="text-xs font-semibold"style={{ color: "#1d709f"}}>{n.message}</p>
                   <p className="text-[10px] mt-0.5"style={{ color: "#5A6A85"}}>
                     {n.taskName} · {relativeTime(n.timestamp)}
                   </p>
                 </div>
                 <span
-                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold"style={{ background: "#1B4FD8", color: "#fff"}}
+                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold"style={{ background: "#1d709f", color: "#fff"}}
                 >
                   {n.type}
                 </span>
@@ -203,7 +203,7 @@ export default function AccountManagerView({ tasks }: Props) {
                 </div>
                 <div className="flex items-center gap-2">
                   {t.comments.length > 0 && (
-                    <span className="text-[10px] px-2 py-0.5 rounded"style={{ background: "#EBF0FD", color: "#1B4FD8"}}>
+                    <span className="text-[10px] px-2 py-0.5 rounded"style={{ background: "#d0e8f5", color: "#1d709f"}}>
                       {t.comments.length}
                     </span>
                   )}

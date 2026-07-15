@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import type { AuditResult } from "@/lib/sales/audit-engine";
 import type { BudgetLineItem, BudgetResult } from "@/lib/sales/budget-engine";
 import type { ProposalDocument } from "@/lib/sales/proposal-engine";
@@ -67,6 +67,36 @@ interface ProposalWizardProps {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STORAGE_PREFIX = "rtm-proposal-draft-";
+
+// ─── API persistence helpers ──────────────────────────────────────────────────
+
+async function saveProposalToApi(state: ProposalWizardState): Promise<void> {
+  try {
+    await fetch("/api/sales-proposals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: state.wizardId,
+        ...state,
+        updatedAt: new Date().toISOString(),
+      }),
+    });
+  } catch {
+    // Network errors are non-fatal — localStorage copy remains as fallback
+  }
+}
+
+async function loadProposalFromApi(wizardId: string): Promise<ProposalWizardState | null> {
+  try {
+    const res = await fetch("/api/sales-proposals");
+    if (!res.ok) return null;
+    const data = (await res.json()) as { records: (ProposalWizardState & { id: string })[] };
+    const record = data.records.find((r) => r.id === wizardId);
+    return record ?? null;
+  } catch {
+    return null;
+  }
+}
 
 const WIZARD_STEPS = [
   { number: 1, label: "Client & Goals" },
@@ -217,24 +247,48 @@ export function ProposalWizard({
     };
   });
 
-  // ── Draft persistence ──────────────────────────────────────────────────────
+  // Track whether the initial API hydration has run
+  const apiHydrated = useRef(false);
+
+  // On mount: attempt to load state from API (handles server-persisted drafts
+  // and cross-device recovery). Merges API record over localStorage snapshot
+  // so the newer record wins.
+  useEffect(() => {
+    if (apiHydrated.current) return;
+    apiHydrated.current = true;
+    void loadProposalFromApi(state.wizardId).then((apiRecord) => {
+      if (!apiRecord) return;
+      const apiTime =
+        apiRecord.lastSavedAt ??
+        ((apiRecord as unknown as Record<string, string>).updatedAt ?? null);
+      const localTime = state.lastSavedAt;
+      if (apiTime && (!localTime || new Date(apiTime) > new Date(localTime))) {
+        setState((prev) => ({ ...prev, ...apiRecord }));
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Draft persistence ────────────────────────────────────────────
 
   const saveToDraft = useCallback((s: ProposalWizardState) => {
     if (typeof window === "undefined") return;
+    const toSave: ProposalWizardState = {
+      ...s,
+      lastSavedAt: new Date().toISOString(),
+    };
+    // 1. localStorage (fast, synchronous, survives refresh without network)
     try {
-      const toSave: ProposalWizardState = {
-        ...s,
-        lastSavedAt: new Date().toISOString(),
-      };
       localStorage.setItem(
         `${STORAGE_PREFIX}${s.wizardId}`,
         JSON.stringify(toSave)
       );
-      return toSave;
     } catch {
-      // Ignore storage errors
+      // Ignore storage quota errors
     }
-    return s;
+    // 2. API (async, fire-and-forget, persists to file-backed server store)
+    void saveProposalToApi(toSave);
+    return toSave;
   }, []);
 
   // Save on unmount
@@ -308,7 +362,9 @@ export function ProposalWizard({
       completedSteps: [1, 2, 3, 4, 5],
       lastSavedAt: new Date().toISOString(),
     };
-    // Clear draft from storage
+    // Persist completed proposal to API store
+    void saveProposalToApi(finalState);
+    // Clear draft from localStorage (server record remains)
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem(`${STORAGE_PREFIX}${state.wizardId}`);

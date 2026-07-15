@@ -44,7 +44,7 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     departmentType: "service",
     status: "active",
     owner: "Alex R.",
-    accentColor: "#2563EB",
+    accentColor: "#1d709f",
     baseRoute: "/departments/seo",
     workspaceSlug: "seo-local",
 
@@ -317,7 +317,7 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     departmentType: "service",
     status: "active",
     owner: "Mike T.",
-    accentColor: "#7C3AED",
+    accentColor: "#2994d2",
     baseRoute: "/departments/meta-ads",
     workspaceSlug: "paid-advertising",
 
@@ -408,7 +408,7 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     departmentType: "service",
     status: "active",
     owner: "Alex R.",
-    accentColor: "#7C3AED",
+    accentColor: "#2994d2",
     baseRoute: "/departments/content",
     workspaceSlug: "content",
 
@@ -497,7 +497,7 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     departmentType: "service",
     status: "active",
     owner: "Chris D.",
-    accentColor: "#0891B2",
+    accentColor: "#2994d2",
     baseRoute: "/departments/design",
     workspaceSlug: "web-development-design",
 
@@ -586,7 +586,7 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     departmentType: "service",
     status: "active",
     owner: "Chris D.",
-    accentColor: "#0F766E",
+    accentColor: "#1d709f",
     baseRoute: "/departments/reporting",
     workspaceSlug: "reporting",
 
@@ -678,7 +678,7 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     departmentType: "core",
     status: "active",
     owner: "Chris D.",
-    accentColor: "#374151",
+    accentColor: "#5A6A85",
     baseRoute: "/departments/it-security",
     workspaceSlug: "it-security",
 
@@ -766,7 +766,7 @@ export const DEPARTMENT_CONFIGS: DepartmentConfig[] = [
     departmentType: "service",
     status: "active",
     owner: "Jordan M.",
-    accentColor: "#6D28D9",
+    accentColor: "#2994d2",
     baseRoute: "/departments/ai-automation",
     workspaceSlug: undefined,
 

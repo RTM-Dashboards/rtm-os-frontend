@@ -2069,13 +2069,30 @@ export default function AuditIntelligenceCenterPage() {
           >
             New Audit
           </button>
-          <button
-            className="text-sm px-3 py-2 rounded-lg font-semibold border"
-            style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}
-            onClick={() => alert("[Mock] Exporting Audits...")}
-          >
-            Export
-          </button>
+          <div className="relative group inline-block">
+            <button
+              disabled
+              className="text-sm px-3 py-2 rounded-lg font-semibold border opacity-50 cursor-not-allowed"
+              style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}
+            >
+              Export
+            </button>
+            <div
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{ whiteSpace: "nowrap" }}
+            >
+              <div
+                className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg"
+                style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}
+              >
+                Not yet available — coming at launch
+                <div
+                  className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+                  style={{ borderTopColor: "#1E293B" }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

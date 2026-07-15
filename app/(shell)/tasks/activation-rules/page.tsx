@@ -1794,9 +1794,9 @@ export default function ActivationRulesPage() {
       <div
         className="rounded-xl overflow-hidden"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
       >
-        <div className="overflow-x-auto">
+        <div className="overflow-x-scroll">
           <table className="w-full text-sm min-w-[1100px]">
-            <thead>
+            <thead className="sticky top-0 z-10">
               <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)"}}>
                 {[
                   "#",

@@ -18,7 +18,6 @@ const systems = [
 const quickLinks = [
   { label: "IT Dashboard", href: "/it-security",             icon: "", description: "IT overview",         accent: "#374151"},
   { label: "Tasks",        href: "/it-security/tasks",        icon: "", description: "IT task queue",       accent: "#1B4FD8"},
-  { label: "Work Queue",   href: "/it-security/queue",        icon: "", description: "Active tickets",      accent: "#059669"},
   { label: "Systems",      href: "/it-security/systems",      icon: "", description: "System monitoring",   accent: "#0891B2"},
   { label: "Security",     href: "/it-security/security",     icon: "", description: "Security posture",    accent: "#DC2626"},
   { label: "Reports",      href: "/it-security/reports",      icon: "", description: "IT reports",          accent: "#7C3AED"},

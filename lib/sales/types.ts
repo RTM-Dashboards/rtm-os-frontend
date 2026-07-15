@@ -832,9 +832,164 @@ export interface CommunicationLog {
   entries: CommunicationLogEntry[];
 }
 
-// ─── Opportunity Record ───────────────────────────────────────────────────────
+// ─── Kanban / Pipeline Sub-Types ──────────────────────────────────────────────
+// These types extend OpportunityRecord to support the Kanban board's richer
+// display. They are stored directly on the opportunity record and never
+// fabricated — each is either real data or "Not Started" / deferred defaults.
+
+export type KanbanAuditStatus =
+  | "Not Started" | "Requested" | "In Progress" | "Completed" | "Reviewed";
+
+export type KanbanProposalStatus =
+  | "Not Started" | "Drafting" | "Sent" | "Viewed" | "Approved" | "Rejected";
+
+export type KanbanFollowUpStatus =
+  | "Upcoming" | "Due Today" | "Overdue" | "Completed" | "Cancelled";
+
+export type KanbanHandoffStatus =
+  | "Not Started" | "Initiated" | "Billing Sent" | "Invoice Created" | "Activated";
+
+export type KanbanBillingRequestStatus =
+  | "Pending" | "Submitted" | "Approved" | "Rejected";
+
+export type KanbanInvoiceStatus =
+  | "Not Created" | "Drafted" | "Sent" | "Paid";
+
+export type KanbanActivationStatus =
+  | "Not Started" | "In Progress" | "Live";
+
+export type KanbanCommissionModel =
+  | "Flat Fee" | "Percentage" | "Tiered" | "None";
+
+export type KanbanTaskStatus =
+  | "Open" | "In Progress" | "Completed" | "Overdue";
+
+export type KanbanGhlSyncStatus =
+  | "Synced" | "Pending Sync" | "Sync Failed" | "Manual Override" | "Not Connected";
+
+export type KanbanGhlOpportunityStatus =
+  | "open" | "won" | "lost" | "abandoned";
+
+export interface KanbanAuditIntegration {
+  status: KanbanAuditStatus;
+  assignedAuditor: string;
+  dueDate: string;
+  findingsSummary: string;
+}
+
+export interface KanbanProposalIntegration {
+  status: KanbanProposalStatus;
+  proposalValue: number;
+  sentDate: string;
+  viewedDate: string;
+  approvalStatus: string;
+}
+
+export interface KanbanFollowUp {
+  id: string;
+  subject: string;
+  dueDate: string;
+  status: KanbanFollowUpStatus;
+  owner: string;
+}
+
+export interface KanbanHandoffIntegration {
+  status: KanbanHandoffStatus;
+  billingRequestStatus: KanbanBillingRequestStatus;
+  invoiceStatus: KanbanInvoiceStatus;
+  activationStatus: KanbanActivationStatus;
+}
+
+export interface KanbanAffiliateAttribution {
+  affiliateName: string;
+  referralSource: string;
+  referralCode: string;
+  commissionModel: KanbanCommissionModel;
+  potentialCommission: number;
+  revenueAttribution: number;
+}
+
+export interface KanbanTask {
+  id: string;
+  title: string;
+  status: KanbanTaskStatus;
+  owner: string;
+  dueDate: string;
+}
+
+export interface KanbanNotification {
+  id: string;
+  type: string;
+  message: string;
+  date: string;
+  read: boolean;
+}
+
+export type KanbanWorkflowStep =
+  | "Lead" | "Audit" | "Proposal" | "Negotiation" | "Approved" | "Handoff" | "Billing";
+
+export interface KanbanWorkflowEvent {
+  step: KanbanWorkflowStep;
+  completedAt: string;
+  completedBy: string;
+  notes: string;
+}
+
+export type KanbanActivityType =
+  | "Lead Created" | "Discovery Scheduled" | "Audit Requested" | "Audit Completed"
+  | "Proposal Drafted" | "Proposal Sent" | "Follow Up Completed"
+  | "Negotiation Updated" | "Note Added" | "Stage Changed";
+
+export type KanbanNoteCategory =
+  | "Discovery" | "Audit" | "Proposal" | "Negotiation" | "Follow-Up" | "General";
+
+export interface KanbanActivity {
+  date: string;
+  type: KanbanActivityType;
+  user: string;
+  notes: string;
+}
+
+export interface KanbanNote {
+  date: string;
+  author: string;
+  note: string;
+  category: KanbanNoteCategory;
+}
+
+export interface KanbanNextStep {
+  action: string;
+  owner: string;
+  dueDate: string;
+  priority: string;
+}
+
+export interface KanbanGhlFields {
+  ghlOpportunityId: string;
+  ghlContactId: string;
+  ghlPipelineId: string;
+  ghlPipelineName: string;
+  ghlStageId: string;
+  ghlStageName: string;
+  ghlAssignedUserId: string;
+  ghlAssignedUserName: string;
+  ghlOpportunityStatus: KanbanGhlOpportunityStatus;
+  ghlMonetaryValue: number;
+  ghlSource: string;
+  ghlCreatedAt: string;
+  ghlUpdatedAt: string;
+  ghlLastActivityAt: string;
+  ghlSyncStatus: KanbanGhlSyncStatus;
+  ghlSyncError: string;
+}
+
+// ─── Extended Opportunity Record (Unified / Kanban-capable) ──────────────────
+// Superset of OpportunityRecord that includes all Kanban display fields.
+// Both the Kanban board and the Opportunities sub-tab use this single type.
+// All extended fields are optional so existing lighter records remain valid.
 
 export interface OpportunityRecord {
+  // ── Core fields (Opportunities sub-tab + Leads flow) ──
   id: string;
   opportunityNumber: string;
   leadId: string | null;
@@ -859,4 +1014,47 @@ export interface OpportunityRecord {
   intakeRecord: Partial<HomeServicesIntakeRecord> | null;
   communicationLog: CommunicationLog;
   activeWizardId: string | null;
+
+  // ── Extended Kanban display fields (all optional) ──
+  // These are populated by the seed migration and maintained on the record.
+  industry?: string;
+  website?: string;
+  primaryContact?: string;
+  email?: string;
+  phone?: string;
+  affiliateSource?: string;
+  estimatedValue?: number;           // monthly value alias used by Kanban
+  monthlyValue?: number;
+  contractLength?: string;
+  probability?: number;
+  daysInStage?: number;
+  nextAction?: string;
+  closingMonth?: string;
+  opportunityScore?: number;
+  forecastMonth?: string;
+  forecastQuarter?: string;
+
+  // ── Sub-feature objects ──
+  // audit: stored display metadata; links to /sales/audits (honestly deferred live query)
+  audit?: KanbanAuditIntegration;
+  // proposal: stored display metadata; links to /sales/proposals (honestly deferred live query)
+  proposal?: KanbanProposalIntegration;
+  // followUps: stored per-opportunity follow-up list
+  followUps?: KanbanFollowUp[];
+  // handoff: stored display metadata; links to /sales/handoffs
+  handoff?: KanbanHandoffIntegration;
+  // affiliate: stored attribution data; links to /sales/affiliates
+  affiliate?: KanbanAffiliateAttribution;
+  // tasks: stored task list on the opportunity record (no live query — pending-sales-tasks is empty)
+  tasks?: KanbanTask[];
+  // notifications: stored notification list (no real notification system exists — honestly deferred)
+  notifications?: KanbanNotification[];
+  // workflowEvents: stored workflow history
+  workflowEvents?: KanbanWorkflowEvent[];
+  // recentActivities, notes, nextSteps: stored activity/notes/steps
+  recentActivities?: KanbanActivity[];
+  notes?: KanbanNote[];
+  nextSteps?: KanbanNextStep[];
+  // ghl: GHL display fields (sync is Coming Soon across all GHL surfaces)
+  ghl?: KanbanGhlFields;
 }

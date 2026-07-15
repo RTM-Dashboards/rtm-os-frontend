@@ -9,13 +9,13 @@ import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 const sparkData = [42, 45, 40, 48, 52, 50, 55, 58, 61, 59, 64, 68];
 
 const activityItems: ActivityItem[] = [
-  { id: "1", actor: "Jordan M.", action: "completed deliverable for", target: "Apex Roofing — May Report",    timestamp: "2 min ago",  type: "task",     avatarColor: "#1B4FD8"},
+  { id: "1", actor: "Jordan M.", action: "completed deliverable for", target: "Apex Roofing — May Report",    timestamp: "2 min ago",  type: "task",     avatarColor: "#1d709f"},
   { id: "2", actor: "Sarah K.",  action: "flagged at-risk client",   target: "Sunbelt HVAC",                  timestamp: "15 min ago", type: "alert",    avatarColor: "#D97706"},
-  { id: "3", actor: "System",    action: "generated monthly report for", target: "Pacific Dental",           timestamp: "1h ago",     type: "report",   avatarColor: "#3B6EF5"},
-  { id: "4", actor: "Mike T.",   action: "launched campaign",         target: "Summer Sale — Harbor Auto",    timestamp: "2h ago",     type: "campaign", avatarColor: "#7C3AED"},
+  { id: "3", actor: "System",    action: "generated monthly report for", target: "Pacific Dental",           timestamp: "1h ago",     type: "report",   avatarColor: "#2994d2"},
+  { id: "4", actor: "Mike T.",   action: "launched campaign",         target: "Summer Sale — Harbor Auto",    timestamp: "2h ago",     type: "campaign", avatarColor: "#5A6A85"},
   { id: "5", actor: "Alex R.",   action: "onboarded new client",      target: "Blue Ridge Plumbing",          timestamp: "3h ago",     type: "client",   avatarColor: "#059669"},
-  { id: "6", actor: "Jordan M.", action: "updated SEO rankings for",  target: "Summit Landscaping",           timestamp: "4h ago",     type: "task",     avatarColor: "#1B4FD8"},
-  { id: "7", actor: "System",    action: "sent invoice reminder to",  target: "Green Valley Pools",           timestamp: "5h ago",     type: "system",   avatarColor: "#64748B"},
+  { id: "6", actor: "Jordan M.", action: "updated SEO rankings for",  target: "Summit Landscaping",           timestamp: "4h ago",     type: "task",     avatarColor: "#1d709f"},
+  { id: "7", actor: "System",    action: "sent invoice reminder to",  target: "Green Valley Pools",           timestamp: "5h ago",     type: "system",   avatarColor: "#9AAABB"},
 ];
 
 const alerts: AlertItem[] = [
@@ -25,25 +25,25 @@ const alerts: AlertItem[] = [
 ];
 
 const quickActions: QuickAction[] = [
-  { label: "New Report",   description: "Generate a client report", color: "bg-blue-50 text-blue-700"},
-  { label: "Add Client",   description: "Onboard a new account",    icon: "", color: "bg-emerald-50 text-emerald-700"},
-  { label: "New Campaign", description: "Launch paid media",         icon: "", color: "var(--rtm-bg) text-violet-700"},
-  { label: "View Tasks",   description: "Open task manager",         icon: "",  color: "bg-blue-50 text-blue-700"},
-  { label: "Send Invoice", description: "Billing & payments",        icon: "", color: "var(--rtm-bg) text-amber-700"},
-  { label: "Run Audit",    description: "SEO / GBP audit",           icon: "", color: "var(--rtm-bg) text-rose-700"},
+  { label: "New Report",   description: "Generate a client report", color: "bg-[var(--rtm-bg-secondary)] text-[var(--rtm-text-secondary)]"},
+  { label: "Add Client",   description: "Onboard a new account",    icon: "", color: "bg-[var(--rtm-bg-secondary)] text-[var(--rtm-text-secondary)]"},
+  { label: "New Campaign", description: "Launch paid media",         icon: "", color: "bg-[var(--rtm-bg-secondary)] text-[var(--rtm-text-secondary)]"},
+  { label: "View Tasks",   description: "Open task manager",         icon: "",  color: "bg-[var(--rtm-bg-secondary)] text-[var(--rtm-text-secondary)]"},
+  { label: "Send Invoice", description: "Billing & payments",        icon: "", color: "bg-[var(--rtm-bg-secondary)] text-[var(--rtm-text-secondary)]"},
+  { label: "Run Audit",    description: "SEO / GBP audit",           icon: "", color: "bg-[var(--rtm-bg-secondary)] text-[var(--rtm-text-secondary)]"},
 ];
 
 const team: TeamMember[] = [
-  { name: "Jordan M.", role: "Sr. Account Manager", status: "online",  clients: 28, tasks: 14, avatarColor: "#1B4FD8"},
-  { name: "Sarah K.",  role: "Account Manager",     status: "online",  clients: 24, tasks: 9,  avatarColor: "#D97706"},
-  { name: "Mike T.",   role: "Paid Media Lead",      status: "away",    clients: 18, tasks: 21, avatarColor: "#7C3AED"},
+  { name: "Jordan M.", role: "Sr. Account Manager", status: "online",  clients: 28, tasks: 14, avatarColor: "#1d709f"},
+  { name: "Sarah K.",  role: "Account Manager",     status: "online",  clients: 24, tasks: 9,  avatarColor: "#2994d2"},
+  { name: "Mike T.",   role: "Paid Media Lead",      status: "away",    clients: 18, tasks: 21, avatarColor: "#5A6A85"},
   { name: "Alex R.",   role: "Content Manager",      status: "online",  clients: 31, tasks: 17, avatarColor: "#059669"},
-  { name: "Lisa P.",   role: "SEO Specialist",        status: "offline", clients: 22, tasks: 8,  avatarColor: "#EC4899"},
+  { name: "Lisa P.",   role: "SEO Specialist",        status: "offline", clients: 22, tasks: 8,  avatarColor: "#9AAABB"},
 ];
 
 const deliverableSegments = [
-  { label: "Completed",   value: 67, color: "#10B981"},
-  { label: "In Progress", value: 21, color: "#1B4FD8"},
+  { label: "Completed",   value: 67, color: "#059669"},
+  { label: "In Progress", value: 21, color: "#1d709f"},
   { label: "Blocked",     value: 8,  color: "#D97706"},
   { label: "Overdue",     value: 4,  color: "#EF4444"},
 ];
@@ -121,24 +121,18 @@ export default function AdminPage() {
         {[
           {
             href:        "/admin/users",
-            icon:        "",
             title:       "Users",
             description: "Manage team members, roles, and client assignments.",
-            accent:      "#1B4FD8",
           },
           {
             href:        "/admin/workspaces",
-            icon:        "",
             title:       "Workspaces",
             description: "View department workspaces, admins, member counts, and access matrix.",
-            accent:      "#059669",
           },
           {
             href:        "/admin/settings",
-            icon:        "",
             title:       "Settings",
             description: "System config, role architecture, and permission matrix.",
-            accent:      "#7C3AED",
           },
         ].map((card) => (
           <Link
@@ -146,23 +140,18 @@ export default function AdminPage() {
             href={card.href}
             className="group flex items-start gap-4 p-5 rounded-xl border transition-all duration-150"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.borderColor = card.accent;
-              (e.currentTarget as HTMLAnchorElement).style.background   = `${card.accent}08`;
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--rtm-blue)";
+              (e.currentTarget as HTMLAnchorElement).style.background   = "var(--rtm-blue-xlight)";
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--rtm-border)";
               (e.currentTarget as HTMLAnchorElement).style.background   = "var(--rtm-surface)";
             }}
           >
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"style={{ background: `${card.accent}18` }}
-            >
-              {card.icon}
-            </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{card.title}</p>
               <p className="text-xs mt-0.5 leading-relaxed"style={{ color: "var(--rtm-text-secondary)"}}>{card.description}</p>
-              <p className="text-xs mt-2 font-semibold"style={{ color: card.accent }}>Open →</p>
+              <p className="text-xs mt-2 font-semibold"style={{ color: "var(--rtm-blue)" }}>Open →</p>
             </div>
           </Link>
         ))}
@@ -185,20 +174,19 @@ export default function AdminPage() {
               href={ws.dashboardRoute}
               className="group flex flex-col items-start gap-2 p-4 rounded-lg border transition-all duration-150"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)"}}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = ws.accentColor;
-                (e.currentTarget as HTMLAnchorElement).style.background = `${ws.accentColor}08`;
+                (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--rtm-blue)";
+                (e.currentTarget as HTMLAnchorElement).style.background = "var(--rtm-blue-xlight)";
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--rtm-border-light)";
                 (e.currentTarget as HTMLAnchorElement).style.background = "var(--rtm-bg)";
               }}
             >
-              <span className="text-2xl">{ws.icon}</span>
               <div className="min-w-0 w-full">
                 <p className="text-sm font-semibold leading-tight truncate"style={{ color: "var(--rtm-text-primary)"}}>
                   {ws.name}
                 </p>
-                <p className="text-[10px] mt-1 font-semibold"style={{ color: ws.accentColor }}>Enter →</p>
+                <p className="text-[10px] mt-1 font-semibold"style={{ color: "var(--rtm-blue)" }}>Enter →</p>
               </div>
             </Link>
           ))}
@@ -232,7 +220,7 @@ export default function AdminPage() {
           }
         />
         <KpiCard
-          title="Avg. Client Score"value="8.7 / 10"trend="up"trendValue="0.3"iconBg="#F5F3FF"iconColor="#7C3AED"icon={
+          title="Avg. Client Score"value="8.7 / 10"trend="up"trendValue="0.3"icon={
             <svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24">
               <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
             </svg>

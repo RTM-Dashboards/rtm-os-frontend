@@ -32,8 +32,8 @@ export default function WorkspaceQuickLinks({ links, title = "Quick Access"}: Wo
               borderColor: "var(--rtm-border-light)",
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLAnchorElement).style.borderColor = link.accent ?? "#1B4FD8";
-              (e.currentTarget as HTMLAnchorElement).style.background = `${link.accent ?? "#1B4FD8"}08`;
+              (e.currentTarget as HTMLAnchorElement).style.borderColor = link.accent ?? "#1d709f";
+              (e.currentTarget as HTMLAnchorElement).style.background = `${link.accent ?? "#1d709f"}08`;
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--rtm-border-light)";

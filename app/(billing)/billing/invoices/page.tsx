@@ -201,6 +201,52 @@ function Toast({ message, variant, onDismiss }: { message: string; variant: "suc
   );
 }
 
+// ─── Stripe Connection Indicator ──────────────────────────────────────────────
+//
+// FUTURE LIVE INTEGRATION HOOK (Invoices page):
+// When the Stripe integration goes live at launch:
+//   - Replace this indicator with live stripeSyncStatus from the matching MASTER_CLIENTS record
+//   - "Connect to Stripe" should call: POST /api/stripe/connect-customer { clientId, clientName }
+//     which calls stripe.customers.create() and persists stripeCustomerId + stripeSyncStatus: "Connected"
+//   - For one-time invoices, also create a Stripe Invoice via stripe.invoices.create()
+//     and populate stripeInvoiceId on the matching MASTER_CLIENTS record
+//   - Webhook handler (verified stripe signature) should update invoice/payment status in real time
+//
+// All MASTER_CLIENTS records currently have stripeSyncStatus: "Not Connected" and null IDs.
+// This component renders the honest "Not Connected" state that will be replaced by live data.
+
+function StripeConnectIndicator() {
+  return (
+    <div className="relative inline-block group">
+      <button
+        disabled
+        className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-md border cursor-not-allowed opacity-70"
+        style={{ background: "#F8FAFC", borderColor: "#E2E8F0", color: "#64748B" }}
+        aria-label="Stripe connection not yet available"
+      >
+        {/* Stripe "S" icon */}
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <rect width="12" height="12" rx="2" fill="#6772E5" />
+          <path d="M5.15 4.42c0-.42.34-.58.9-.58.8 0 1.82.24 2.62.67V2.74A6.96 6.96 0 005.9 2.25c-1.85 0-3.09.97-3.09 2.59 0 2.53 3.48 2.12 3.48 3.21 0 .5-.43.66-.97.66-.84 0-1.9-.35-2.74-.82v1.8c.93.4 1.87.57 2.74.57 1.88 0 3.18-.93 3.18-2.57C8.5 5.09 5.15 5.57 5.15 4.42z" fill="white"/>
+        </svg>
+        Not Connected
+      </button>
+      {/* Tooltip */}
+      <div
+        className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+        style={{ whiteSpace: "nowrap" }}
+      >
+        <div className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg"
+          style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+          Not yet available — coming at launch
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+            style={{ borderTopColor: "#1E293B" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Record Payment Modal ─────────────────────────────────────────────────────
 
 function RecordPaymentModal({ invoice, onClose, onSave }: {
@@ -590,6 +636,35 @@ function InvoiceDetailDrawer({ invoice, onClose }: { invoice: InvoiceRow | null;
               Generated from Sales Handoff — auto-client creation triggers on payment.
             </div>
           )}
+
+          {/* ── Stripe Connection (groundwork — not yet live) ──────────────────────
+              FUTURE LIVE INTEGRATION HOOK (Invoice Drawer):
+              When Stripe is connected at launch:
+                - Display stripeInvoiceId from the matching MASTER_CLIENTS record
+                - "Connect to Stripe" creates a Stripe Invoice and sets stripeInvoiceId
+                - Show payment status synced from Stripe webhook events
+                - Link directly to the Stripe Dashboard invoice URL
+              ──────────────────────────────────────────────────────────────────── */}
+          <div className="rounded-xl border p-4 space-y-3" style={{ borderColor: "#E2E8F0", background: "#F8FAFC" }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wide mb-0.5" style={{ color: "#64748B" }}>Stripe Invoice</p>
+                <p className="text-xs" style={{ color: "#94A3B8" }}>One-time invoice sync · Stripe not yet connected</p>
+              </div>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border" style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}>
+                Coming at launch
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#94A3B8" }}>
+                <span className="w-2 h-2 rounded-full inline-block" style={{ background: "#CBD5E1" }} />
+                Not Connected
+              </div>
+              <span className="text-xs" style={{ color: "#CBD5E1" }}>·</span>
+              <span className="text-xs font-mono" style={{ color: "#94A3B8" }}>Stripe Customer ID: —</span>
+            </div>
+            <StripeConnectIndicator />
+          </div>
         </div>
       ),
     },
@@ -804,6 +879,15 @@ export default function BillingInvoicesPage() {
         onboardingStatus: "Not Started",
         renewalDate: "—",
         renewalStatus: "N/A",
+        // ── Stripe groundwork (schema only — live wiring deferred to launch) ──────
+        // FUTURE LIVE INTEGRATION HOOK: when Stripe integration goes live,
+        // auto-created clients should have a Stripe Customer created here:
+        //   const customer = await stripe.customers.create({ email, name: clientName });
+        //   stripeCustomerId = customer.id; stripeSyncStatus = "Connected";
+        stripeCustomerId: null,
+        stripeInvoiceId: null,
+        stripeSubscriptionId: null,
+        stripeSyncStatus: "Not Connected" as const,
         // Computed
         clientHealth: "Good",
         priority: "High",
@@ -1236,6 +1320,7 @@ export default function BillingInvoicesPage() {
                 <Th>Payment Status</Th>
                 <Th>Due Date</Th>
                 <Th>Billing Owner</Th>
+                <Th>Stripe</Th>
                 <Th>Priority Action</Th>
                 <Th>⋮</Th>
               </tr>
@@ -1270,6 +1355,7 @@ export default function BillingInvoicesPage() {
                   <Td><StatusBadge variant={paymentStatusVariant(inv.paymentStatus)} label={inv.paymentStatus} size="sm" /></Td>
                   <Td muted>{inv.dueDate}</Td>
                   <Td muted>{inv.billingOwner}</Td>
+                  <Td><StripeConnectIndicator /></Td>
                   <Td>{getPrimaryActionButton(inv)}</Td>
                   <Td><ContextMenu actions={getInvoiceMenuActions(inv)} /></Td>
                 </tr>

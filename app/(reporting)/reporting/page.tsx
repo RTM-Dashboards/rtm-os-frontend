@@ -4,6 +4,13 @@ import { useState } from "react";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { WorkspaceHeader } from "@/components/workspace";
 import { getWorkspace } from "@/lib/workspaces";
+import {
+  useReports,
+  reportStatusVariant as liveReportStatusVariant,
+  qaStatusVariant as liveQaStatusVariant,
+  amStatusVariant as liveAmStatusVariant,
+  deliveryStatusVariant as liveDeliveryStatusVariant,
+} from "@/lib/reporting/useReports";
 
 const workspace = getWorkspace("reporting")!;
 
@@ -267,6 +274,7 @@ type ActiveSection =
 export default function ReportingDashboard() {
   const [activeSection, setActiveSection] = useState<ActiveSection>("queue");
   const [selectedSections, setSelectedSections] = useState<string[]>(builderSections);
+  const { records: liveReports, loading: reportsLoading, updateReportStatus } = useReports();
 
   const toggleSection = (s: string) => {
     setSelectedSections((prev) =>
@@ -461,37 +469,54 @@ export default function ReportingDashboard() {
         </nav>
       </div>
 
-      {/*  Report Queue  */}
-      {activeSection === "queue"&& (
-        <SectionWrapper title="Report Queue"description="All active client reports and their current workflow status">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[1400px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                  {["Client", "Account Manager", "Report Type", "Reporting Period", "Report Owner", "Due Date", "Report Status", "QA Status", "AM Review Status", "Client Delivery Status", "Next Action"].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {reportQueueData.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                    <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.client}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.am}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.type}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.period}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.owner}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap font-medium"style={{ color: row.due === "May 30"|| row.due === "May 31"? "#DC2626": "var(--rtm-text-secondary)"}}>{row.due}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={reportStatusColor[row.status] ?? "neutral"} label={row.status} size="sm"/></td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={qaStatusVariant[row.qa] ?? "neutral"} label={row.qa} size="sm"/></td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={amStatusVariant[row.amReview] ?? "neutral"} label={row.amReview} size="sm"/></td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={deliveryStatusVariant[row.delivery] ?? "neutral"} label={row.delivery} size="sm"/></td>
-                    <td className="py-2.5 px-3 whitespace-nowrap text-xs font-medium"style={{ color: "var(--rtm-blue)"}}>{row.next}</td>
+      {/*  Report Queue — wired to live data  */}
+      {activeSection === "queue" && (
+        <SectionWrapper title="Report Queue" description="All active client reports and their current workflow status">
+          {reportsLoading ? (
+            <div className="py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading reports…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[1400px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                    {["Client", "Account Manager", "Report Type", "Reporting Period", "Report Owner", "Due Date", "Report Status", "QA Status", "AM Review Status", "Client Delivery Status", "Next Action"].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {liveReports.map((row) => {
+                    const nextAction =
+                      row.status === "Not Started" ? "Begin data gathering" :
+                      row.status === "Data Gathering" ? "Complete data pull" :
+                      row.status === "Waiting For Department Input" ? "Chase dept team" :
+                      row.status === "Drafting" ? "Submit for QA" :
+                      row.status === "QA Review" ? "Complete QA" :
+                      row.status === "Needs Revision" ? "Apply QA revisions" :
+                      row.status === "Overdue" ? "Escalate to owner" :
+                      row.status === "AM Review" ? "AM to approve" :
+                      row.status === "Ready To Send" ? "Send to client" :
+                      row.status === "Sent" ? "—" : "—";
+                    return (
+                      <tr key={row.reportId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                        <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.clientName}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.amId}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.reportType}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.period}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.ownerId}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap font-medium" style={{ color: row.status === "Overdue" ? "#DC2626" : "var(--rtm-text-secondary)" }}>{row.dueDate}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveReportStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm" /></td>
+                        <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveQaStatusVariant[row.qaStatus] ?? "neutral"} label={row.qaStatus} size="sm" /></td>
+                        <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveAmStatusVariant[row.amStatus] ?? "neutral"} label={row.amStatus} size="sm" /></td>
+                        <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveDeliveryStatusVariant[row.deliveryStatus] ?? "neutral"} label={row.deliveryStatus} size="sm" /></td>
+                        <td className="py-2.5 px-3 whitespace-nowrap text-xs font-medium" style={{ color: "var(--rtm-blue)" }}>{nextAction}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionWrapper>
       )}
 
@@ -528,36 +553,61 @@ export default function ReportingDashboard() {
         </SectionWrapper>
       )}
 
-      {/*  QA Workflow  */}
-      {activeSection === "qa"&& (
-        <SectionWrapper title="QA Workflow"description="Quality assurance tracking for all reports in review">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[900px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                  {["Report", "Client", "QA Owner", "QA Status", "Issues Found", "Revision Owner", "Due Date", "Approval Status"].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {qaData.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                    <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.report}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.client}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.qaOwner}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={qaStatusVariant[row.qaStatus] ?? "neutral"} label={row.qaStatus} size="sm"/></td>
-                    <td className="py-2.5 px-3 text-center font-semibold"style={{ color: row.issues > 0 ? "#DC2626": "#16A34A"}}>{row.issues}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.revOwner}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.due}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <StatusBadge variant={row.approval === "Approved"? "success": "pending"} label={row.approval} size="sm"/>
-                    </td>
+      {/*  QA Workflow — wired to live data  */}
+      {activeSection === "qa" && (
+        <SectionWrapper title="QA Workflow" description="Quality assurance tracking for all reports in review">
+          {reportsLoading ? (
+            <div className="py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[1000px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                    {["Report", "Client", "QA Owner", "QA Status", "AM Review Status", "Due Date", "Actions"].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {liveReports.map((row) => (
+                    <tr key={row.reportId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                      <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.reportName}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.clientName}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.ownerId}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveQaStatusVariant[row.qaStatus] ?? "neutral"} label={row.qaStatus} size="sm" /></td>
+                      <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveAmStatusVariant[row.amStatus] ?? "neutral"} label={row.amStatus} size="sm" /></td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.dueDate}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <div className="flex gap-1.5">
+                          {row.qaStatus !== "Approved" && (
+                            <button
+                              onClick={() => void updateReportStatus(row.reportId, { qaStatus: "Approved", status: "AM Review", amStatus: row.amStatus === "Approved By AM" ? row.amStatus : "Pending AM Review" })}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+                            >Approve</button>
+                          )}
+                          {row.qaStatus !== "Issues Found" && (
+                            <button
+                              onClick={() => void updateReportStatus(row.reportId, { qaStatus: "Issues Found", status: "Needs Revision" })}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#DC2626", background: "#DC262615", borderColor: "#DC262640" }}
+                            >Issues Found</button>
+                          )}
+                          {row.qaStatus !== "Revision Requested" && (
+                            <button
+                              onClick={() => void updateReportStatus(row.reportId, { qaStatus: "Revision Requested", status: "Needs Revision" })}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#D97706", background: "#D9770615", borderColor: "#D9770640" }}
+                            >Request Revision</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionWrapper>
       )}
 
@@ -591,38 +641,59 @@ export default function ReportingDashboard() {
         </SectionWrapper>
       )}
 
-      {/*  Client Delivery Workflow  */}
-      {activeSection === "delivery"&& (
-        <SectionWrapper title="Client Delivery Workflow"description="Track report delivery, client feedback, and follow-up requirements">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[900px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                  {["Client", "Report", "Delivery Method", "Send Date", "Delivery Status", "Client Feedback", "Follow-up Required"].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {deliveryData.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                    <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.client}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.report}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.method}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.sent}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={deliveryStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm"/></td>
-                    <td className="py-2.5 px-3 text-xs"style={{ color: "var(--rtm-text-muted)"}}>{row.feedback || "—"}</td>
-                    <td className="py-2.5 px-3 text-center">
-                      {row.followUp
-                        ? <span className="text-xs font-semibold px-2 py-0.5 rounded-full"style={{ background: "#FEF2F2", color: "#DC2626"}}>Yes</span>
-                        : <span className="text-xs font-semibold px-2 py-0.5 rounded-full"style={{ background: "#F0FDF4", color: "#16A34A"}}>No</span>
-                      }
-                    </td>
+      {/*  Client Delivery Workflow — wired to live data  */}
+      {activeSection === "delivery" && (
+        <SectionWrapper title="Client Delivery Workflow" description="Track report delivery, client feedback, and follow-up requirements">
+          {reportsLoading ? (
+            <div className="py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[1000px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                    {["Client", "Report", "Delivery Method", "Delivery Status", "Actions"].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {liveReports.map((row) => (
+                    <tr key={row.reportId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                      <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.clientName}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.reportName}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.deliveryMethod}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveDeliveryStatusVariant[row.deliveryStatus] ?? "neutral"} label={row.deliveryStatus} size="sm" /></td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <div className="flex gap-1.5">
+                          {(row.deliveryStatus === "Ready To Send" || row.status === "Ready To Send") && (
+                            <button
+                              onClick={() => void updateReportStatus(row.reportId, { deliveryStatus: "Sent", status: "Sent" })}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+                            >Mark Sent</button>
+                          )}
+                          {row.deliveryStatus === "Sent" && (
+                            <button
+                              onClick={() => void updateReportStatus(row.reportId, { deliveryStatus: "Viewed" })}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#2563EB", background: "#2563EB15", borderColor: "#2563EB40" }}
+                            >Mark Viewed</button>
+                          )}
+                          {(row.deliveryStatus === "Sent" || row.deliveryStatus === "Viewed") && (
+                            <button
+                              onClick={() => void updateReportStatus(row.reportId, { deliveryStatus: "Follow-up Needed" })}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#D97706", background: "#D9770615", borderColor: "#D9770640" }}
+                            >Follow-up Needed</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionWrapper>
       )}
 

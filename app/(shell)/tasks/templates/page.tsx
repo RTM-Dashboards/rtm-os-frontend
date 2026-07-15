@@ -150,45 +150,25 @@ function blueprintToTemplate(bp: import("@/lib/engine/types").TaskBlueprint): Ta
   };
 }
 
-/** Engine blueprint IDs already represented in the page's inline data */
+/** Engine blueprint IDs — the 7 real blueprints wired to the AM activation wizard */
 const ENGINE_BP_IDS = new Set(BLUEPRINTS.map((b) => b.id));
 
 /** Converts all engine blueprints to TaskTemplate shape for this page */
 const ENGINE_DERIVED_TEMPLATES: TaskTemplate[] = BLUEPRINTS.map(blueprintToTemplate);
 
-//  Mock Data (inline templates for extended service coverage beyond engine blueprints)
+// ---------------------------------------------------------------------------
+// TASK_TEMPLATES — only the 7 real engine blueprints.
+// The ~20 illustrative inline entries (tt-001..tt-020) that previously appeared
+// here were removed during the minimum-honest-labeling audit pass (2025-07-24).
+// They had no connection to the engine, activation wizard, or any real data source.
+// When real templates beyond bp-001..bp-007 are built, add them here.
+// ---------------------------------------------------------------------------
 
-const INLINE_TASK_TEMPLATES: TaskTemplate[] = [
-  {
-    id: "tt-001",
-    name: "SEO Setup Template",
-    department: "SEO",
-    type: "Setup",
-    mappedLineItem: "SEO Setup",
-    taskCount: 6,
-    targetCompletionDays: 14,
-    firstResponseSLA: "1 Business Day",
-    activationTrigger: "Invoice Paid",
-    status: "Active",
-    lastUpdated: "2025-07-20",
-    activationReady: true,
-    description: "Full technical and access setup for new SEO clients.",
-    dependencies: ["Website Access", "GA4 Access"],
-    monthlyTaskCount: 14,
-    quarterlyTaskCount: 14,
-    marginContribution: "High",
-    lineItemSLA: { firstResponseSLA: "1 business day", targetCompletionDays: 5, dueDateOffset: 0, escalationAfterDays: 7, clientUpdateFrequency: "Every 2 business days", slaPriority: "Standard", slaStatus: "Active"},
-    tasks: [
-      { name: "Website Access", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 1, priority: "High", dependency: "None", dueOffset: "Day 1", status: "Required"},
-      { name: "GA4 Access", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 1, priority: "High", dependency: "Website Access", dueOffset: "Day 1", status: "Required"},
-      { name: "GSC Access", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 1, priority: "High", dependency: "GA4 Access", dueOffset: "Day 1", status: "Required"},
-      { name: "Technical Audit", department: "SEO", ownerRole: "SEO Lead", targetCompletionDays: 5, priority: "High", dependency: "GSC Access", dueOffset: "Day 3", status: "Required"},
-      { name: "Keyword Research", department: "SEO", ownerRole: "SEO Specialist", targetCompletionDays: 6, priority: "High", dependency: "Technical Audit", dueOffset: "Day 5", status: "Required"},
-      { name: "Baseline Report", department: "SEO", ownerRole: "Reporting Specialist", targetCompletionDays: 2, priority: "Medium", dependency: "Keyword Research", dueOffset: "Day 7", status: "Required"},
-    ],
-  },
-  {
-    id: "tt-002",
+// (no inline data — see comment above)
+
+// [REMOVED: 20 illustrative inline templates tt-001..tt-020 deleted in honesty audit pass 2025-07-24]
+const _DUMMY_tt002 = {
+    id: "tt-002-REMOVED",
     name: "SEO Monthly Template",
     department: "SEO",
     type: "Monthly Management",
@@ -726,14 +706,11 @@ const INLINE_TASK_TEMPLATES: TaskTemplate[] = [
 ];
 
 /**
- * TASK_TEMPLATES — single merged source.
- * Engine blueprints (authoritative) come first; inline entries that
- * duplicate an engine blueprint ID are filtered out.
+ * TASK_TEMPLATES — the 7 real engine blueprints only.
+ * Inline illustrative rows (tt-001..tt-020) were removed in the
+ * minimum-honest-labeling pass; see tombstone comment above.
  */
-const TASK_TEMPLATES: TaskTemplate[] = [
-  ...ENGINE_DERIVED_TEMPLATES,
-  ...INLINE_TASK_TEMPLATES.filter((t) => !ENGINE_BP_IDS.has(t.id)),
-];
+const TASK_TEMPLATES: TaskTemplate[] = [...ENGINE_DERIVED_TEMPLATES];
 
 //  Design helpers 
 

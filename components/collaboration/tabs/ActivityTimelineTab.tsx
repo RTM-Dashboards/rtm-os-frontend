@@ -10,11 +10,11 @@ interface Props {
 // Short labels used in the dot/icon — no emoji
 const EVENT_CONFIG: Record<ActivityEventType, { abbr: string; color: string; label: string }> = {
   "Task Created":        { abbr: "TC", color: "#059669", label: "Task created"},
-  "Task Assigned":       { abbr: "TA", color: "#1B4FD8", label: "Task assigned"},
+  "Task Assigned":       { abbr: "TA", color: "#1d709f", label: "Task assigned"},
   "Task Reassigned":     { abbr: "TR", color: "#D97706", label: "Task reassigned"},
   "Status Changed":      { abbr: "SC", color: "#0891B2", label: "Status changed"},
   "Comment Added":       { abbr: "CA", color: "#7C3AED", label: "Comment added"},
-  "Attachment Uploaded": { abbr: "AU", color: "#1B4FD8", label: "File uploaded"},
+  "Attachment Uploaded": { abbr: "AU", color: "#1d709f", label: "File uploaded"},
   "Approval Requested":  { abbr: "AR", color: "#D97706", label: "Approval requested"},
   "Approval Completed":  { abbr: "AC", color: "#059669", label: "Approval completed"},
   "Dependency Added":    { abbr: "DA", color: "#6B7280", label: "Dependency added"},

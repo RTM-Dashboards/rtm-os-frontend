@@ -18,7 +18,6 @@ const activity: ActivityItem[] = [
 const quickLinks = [
   { label: "Dashboard",    href: "/content",             icon: "", description: "Content overview",     accent: "#7C3AED"},
   { label: "Tasks",        href: "/content/tasks",        icon: "", description: "Open deliverables",    accent: "#1B4FD8"},
-  { label: "Work Queue",   href: "/content/queue",        icon: "", description: "Content work queue",   accent: "#059669"},
   { label: "Clients",      href: "/content/clients",      icon: "", description: "Content clients",      accent: "#0891B2"},
   { label: "Performance",  href: "/content/performance",  icon: "", description: "Output metrics",       accent: "#D97706"},
   { label: "Reports",      href: "/content/reports",      icon: "", description: "Client reports",       accent: "#059669"},
@@ -43,7 +42,7 @@ export default function ContentDashboard() {
           <ActivityFeed items={activity} />
           <div className="mt-4 flex gap-2">
             <Link href="/content/tasks" className="rtm-btn-primary text-sm inline-flex items-center gap-1">View Tasks →</Link>
-            <Link href="/content/queue" className="rtm-btn-secondary text-sm inline-flex items-center gap-1">Work Queue →</Link>
+
           </div>
         </SectionWrapper>
 

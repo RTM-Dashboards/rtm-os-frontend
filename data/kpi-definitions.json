@@ -1,0 +1,654 @@
+{
+  "definitions": [
+    {
+      "id": "content-pages-published",
+      "name": "Pages Published",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Total number of pages published in the current period."
+    },
+    {
+      "id": "content-blogs-published",
+      "name": "Blogs Published",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Total blog posts published."
+    },
+    {
+      "id": "content-pending-uploads",
+      "name": "Pending Uploads",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Content items drafted and waiting to be uploaded."
+    },
+    {
+      "id": "content-uploads-completed",
+      "name": "Uploads Completed",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Content items successfully uploaded in the current period."
+    },
+    {
+      "id": "content-awaiting-seo-approval",
+      "name": "Awaiting SEO Approval",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Content items pending SEO team review."
+    },
+    {
+      "id": "content-awaiting-client-approval",
+      "name": "Awaiting Client Approval",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Content items awaiting client sign-off."
+    },
+    {
+      "id": "content-avg-engagement-rate",
+      "name": "Avg. Engagement Rate",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Average engagement rate across all published content."
+    },
+    {
+      "id": "content-organic-leads",
+      "name": "Organic Leads From Content",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Total organic leads attributable to content."
+    },
+    {
+      "id": "content-booked-leads",
+      "name": "Booked Leads From Content",
+      "category": "Campaign",
+      "departments": [
+        "content"
+      ],
+      "enabled": true,
+      "description": "Booked leads attributable to content."
+    },
+    {
+      "id": "webdev-projects-completed",
+      "name": "Projects Completed",
+      "category": "Campaign",
+      "departments": [
+        "web-development-design"
+      ],
+      "enabled": true,
+      "description": "Number of web/design projects completed in the period."
+    },
+    {
+      "id": "webdev-avg-turnaround",
+      "name": "Avg. Turnaround",
+      "category": "Campaign",
+      "departments": [
+        "web-development-design"
+      ],
+      "enabled": true,
+      "description": "Average number of days to complete a project."
+    },
+    {
+      "id": "webdev-on-time-rate",
+      "name": "On-Time Rate",
+      "category": "Campaign",
+      "departments": [
+        "web-development-design"
+      ],
+      "enabled": true,
+      "description": "Percentage of projects delivered on or before deadline."
+    },
+    {
+      "id": "webdev-avg-revisions",
+      "name": "Avg. Revisions",
+      "category": "Campaign",
+      "departments": [
+        "web-development-design"
+      ],
+      "enabled": true,
+      "description": "Average number of revision rounds per project."
+    },
+    {
+      "id": "seo-avg-visibility",
+      "name": "Avg. Local Visibility",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Average local search visibility score across all clients."
+    },
+    {
+      "id": "seo-map-pack-appearances",
+      "name": "Map Pack Appearances",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Total map pack appearances across all tracked keywords."
+    },
+    {
+      "id": "seo-review-velocity",
+      "name": "Review Velocity",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "New reviews per month across all client profiles."
+    },
+    {
+      "id": "seo-gbp-views",
+      "name": "GBP Views",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Google Business Profile views month-to-date."
+    },
+    {
+      "id": "seo-organic-traffic",
+      "name": "Organic Traffic",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Total organic search traffic across all clients."
+    },
+    {
+      "id": "seo-organic-leads",
+      "name": "Organic Leads",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Leads generated from organic search."
+    },
+    {
+      "id": "seo-top-keyword-rank",
+      "name": "Top Keyword Rank",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Best ranking position for the primary target keyword."
+    },
+    {
+      "id": "seo-tech-score",
+      "name": "Tech SEO Score",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Technical SEO health score (0\u2013100)."
+    },
+    {
+      "id": "seo-gbp-calls",
+      "name": "GBP Calls",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Calls generated via Google Business Profile."
+    },
+    {
+      "id": "seo-gbp-direction-requests",
+      "name": "GBP Direction Requests",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Direction requests via Google Business Profile."
+    },
+    {
+      "id": "seo-local-visibility-score",
+      "name": "Local Visibility Score",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Composite local visibility score (0\u2013100)."
+    },
+    {
+      "id": "seo-yelp-profile-views",
+      "name": "Yelp Profile Views",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Total Yelp profile views across all client listings."
+    },
+    {
+      "id": "seo-yelp-listing-health",
+      "name": "Yelp Listing Health Score",
+      "category": "Campaign",
+      "departments": [
+        "seo-local"
+      ],
+      "enabled": true,
+      "description": "Composite health score for Yelp listing completeness (0\u2013100)."
+    },
+    {
+      "id": "paid-total-spend",
+      "name": "Total Spend",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Total ad spend across all channels."
+    },
+    {
+      "id": "paid-total-leads",
+      "name": "Total Leads",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Total leads generated from paid advertising."
+    },
+    {
+      "id": "paid-qualified-leads",
+      "name": "Qualified Leads",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Leads passing the qualification threshold."
+    },
+    {
+      "id": "paid-calls",
+      "name": "Calls",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Total calls from paid ad campaigns."
+    },
+    {
+      "id": "paid-form-submissions",
+      "name": "Form Submissions",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Total form submissions from paid ad campaigns."
+    },
+    {
+      "id": "paid-booked-leads",
+      "name": "Booked Leads",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Leads that converted to booked appointments."
+    },
+    {
+      "id": "paid-cpl",
+      "name": "Cost Per Lead (CPL)",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Total spend divided by total leads."
+    },
+    {
+      "id": "paid-cost-per-qualified",
+      "name": "Cost Per Qualified Lead",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Total spend divided by qualified leads."
+    },
+    {
+      "id": "paid-meta-ctr",
+      "name": "Meta Avg CTR",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Average click-through rate for Meta Ads campaigns."
+    },
+    {
+      "id": "paid-meta-cpm",
+      "name": "Meta Avg CPM",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Average cost per 1000 impressions for Meta Ads."
+    },
+    {
+      "id": "paid-meta-frequency",
+      "name": "Meta Ad Frequency",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Average number of times a user sees an ad \u2014 fatigue indicator."
+    },
+    {
+      "id": "paid-google-ctr",
+      "name": "Google Avg CTR",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Average click-through rate for Google Ads campaigns."
+    },
+    {
+      "id": "paid-google-cpc",
+      "name": "Google Avg CPC",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Average cost per click for Google Ads."
+    },
+    {
+      "id": "paid-google-impression-share",
+      "name": "Google Search Impression Share",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Percentage of available impressions captured."
+    },
+    {
+      "id": "paid-google-quality-score",
+      "name": "Google Avg Quality Score",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Average Quality Score across all Google Ads campaigns (1\u201310)."
+    },
+    {
+      "id": "paid-budget",
+      "name": "Budget",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Total allocated ad budget for the period."
+    },
+    {
+      "id": "paid-budget-utilization",
+      "name": "Budget Utilization",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Percentage of allocated ad budget spent."
+    },
+    {
+      "id": "paid-conversion-rate",
+      "name": "Conversion Rate",
+      "category": "Campaign",
+      "departments": [
+        "paid-advertising"
+      ],
+      "enabled": true,
+      "description": "Percentage of leads that converted to booked appointments."
+    },
+    {
+      "id": "reporting-on-time-rate",
+      "name": "On-Time Rate",
+      "category": "Campaign",
+      "departments": [
+        "reporting"
+      ],
+      "enabled": true,
+      "description": "Percentage of reports delivered on or before due date."
+    },
+    {
+      "id": "reporting-avg-turnaround",
+      "name": "Avg. Turnaround",
+      "category": "Campaign",
+      "departments": [
+        "reporting"
+      ],
+      "enabled": true,
+      "description": "Average days from report request to delivery."
+    },
+    {
+      "id": "reporting-reports-per-month",
+      "name": "Reports / Month",
+      "category": "Campaign",
+      "departments": [
+        "reporting"
+      ],
+      "enabled": true,
+      "description": "Total reports produced in the month."
+    },
+    {
+      "id": "reporting-client-approval-rate",
+      "name": "Client Approval Rate",
+      "category": "Campaign",
+      "departments": [
+        "reporting"
+      ],
+      "enabled": true,
+      "description": "Percentage of reports approved by clients without revision."
+    },
+    {
+      "id": "lsa-monthly-leads",
+      "name": "Monthly Leads",
+      "category": "Campaign",
+      "departments": [
+        "local-service-ads"
+      ],
+      "enabled": true,
+      "description": "Total leads generated via Local Service Ads."
+    },
+    {
+      "id": "lsa-cost-per-lead",
+      "name": "Cost Per Lead",
+      "category": "Campaign",
+      "departments": [
+        "local-service-ads"
+      ],
+      "enabled": true,
+      "description": "Average cost per lead from LSA campaigns."
+    },
+    {
+      "id": "lsa-budget-utilization",
+      "name": "Budget Utilization",
+      "category": "Campaign",
+      "departments": [
+        "local-service-ads"
+      ],
+      "enabled": true,
+      "description": "Percentage of allocated LSA budget spent."
+    },
+    {
+      "id": "lsa-avg-lead-quality",
+      "name": "Avg. Lead Quality Score",
+      "category": "Campaign",
+      "departments": [
+        "local-service-ads"
+      ],
+      "enabled": true,
+      "description": "Average quality rating of LSA leads (1\u201310)."
+    },
+    {
+      "id": "people-tasks-completed",
+      "name": "Tasks Completed",
+      "category": "People",
+      "departments": [
+        "all"
+      ],
+      "enabled": true,
+      "description": "Total tasks completed by the team in the period."
+    },
+    {
+      "id": "people-on-time-completion-rate",
+      "name": "On-Time Completion Rate",
+      "category": "People",
+      "departments": [
+        "all"
+      ],
+      "enabled": true,
+      "description": "Percentage of tasks completed on or before their due date."
+    },
+    {
+      "id": "people-utilization-workload",
+      "name": "Utilization / Workload",
+      "category": "People",
+      "departments": [
+        "all"
+      ],
+      "enabled": true,
+      "description": "Ratio of active tasks to capacity for each team member."
+    },
+    {
+      "id": "people-sla-compliance",
+      "name": "SLA Compliance",
+      "category": "People",
+      "departments": [
+        "all"
+      ],
+      "enabled": true,
+      "description": "Percentage of tasks completed within their SLA window."
+    },
+    {
+      "id": "people-avg-task-turnaround",
+      "name": "Avg. Task Turnaround",
+      "category": "People",
+      "departments": [
+        "all"
+      ],
+      "enabled": true,
+      "description": "Average time from task creation to completion."
+    },
+    {
+      "id": "it-open-tickets",
+      "name": "Open Tickets",
+      "category": "Campaign",
+      "departments": [
+        "it-security"
+      ],
+      "enabled": true,
+      "description": "Number of open IT support tickets currently in queue."
+    },
+    {
+      "id": "it-systems-monitored",
+      "name": "Systems Monitored",
+      "category": "Campaign",
+      "departments": [
+        "it-security"
+      ],
+      "enabled": true,
+      "description": "Total number of systems under active monitoring."
+    },
+    {
+      "id": "it-security-score",
+      "name": "Security Score",
+      "category": "Campaign",
+      "departments": [
+        "it-security"
+      ],
+      "enabled": true,
+      "description": "Overall security posture score (0\u2013100)."
+    },
+    {
+      "id": "it-ssl-renewals-due",
+      "name": "SSL Renewals Due",
+      "category": "Campaign",
+      "departments": [
+        "it-security"
+      ],
+      "enabled": true,
+      "description": "Number of SSL certificates due for renewal within 30 days."
+    },
+    {
+      "id": "it-uptime-rate",
+      "name": "Uptime Rate",
+      "category": "Campaign",
+      "departments": [
+        "it-security"
+      ],
+      "enabled": true,
+      "description": "Average uptime percentage across all monitored systems."
+    },
+    {
+      "id": "it-avg-resolution-time",
+      "name": "Avg. Resolution Time",
+      "category": "Campaign",
+      "departments": [
+        "it-security"
+      ],
+      "enabled": true,
+      "description": "Average time to resolve an IT support ticket."
+    },
+    {
+      "id": "it-security-incidents",
+      "name": "Security Incidents",
+      "category": "Campaign",
+      "departments": [
+        "it-security"
+      ],
+      "enabled": true,
+      "description": "Total number of security incidents reported this period."
+    },
+    {
+      "id": "it-patch-compliance",
+      "name": "Patch Compliance",
+      "category": "Campaign",
+      "departments": [
+        "it-security"
+      ],
+      "enabled": true,
+      "description": "Percentage of systems current on required security patches."
+    }
+  ]
+}

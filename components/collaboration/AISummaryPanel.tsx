@@ -167,7 +167,7 @@ export default function AISummaryPanel({ summary, taskName, projectName }: Props
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between gap-3 px-5 py-4"style={{ background: "linear-gradient(135deg, #1B4FD8 0%, #3B82F6 100%)", color: "#fff"}}
+        className="flex items-center justify-between gap-3 px-5 py-4"style={{ background: "linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%)", color: "#fff"}}
       >
         <div className="flex items-center gap-2">
           <AIBrainIcon />

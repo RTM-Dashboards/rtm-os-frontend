@@ -29,6 +29,7 @@ import { apiMarkCleared, fetchMasterClients, upsertMasterClient } from "@/lib/mo
 import { fetchSalesHandoffs, markHandoffProcessed } from "@/lib/sales/sales-handoffs-api";
 import type { HandoffRecord } from "@/lib/sales/handoff-engine";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
+import BillingChangeRequestsPanel from "@/components/billing/BillingChangeRequestsPanel";
 
 const workspace = getWorkspace("billing")!;
 
@@ -274,6 +275,14 @@ function buildClientFromHandoff(handoff: HandoffRecord): MasterClient {
         action: `Client record created from Sales handoff ${handoff.handoffNumber}`,
       },
     ],
+    // ── Stripe groundwork (schema only — live wiring deferred to launch) ──────
+    // FUTURE LIVE INTEGRATION HOOK: when Stripe goes live, create Stripe Customer here:
+    //   const customer = await stripe.customers.create({ email, name: clientName });
+    //   stripeCustomerId = customer.id; stripeSyncStatus = "Connected";
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected" as const,
   };
 }
 
@@ -610,6 +619,9 @@ export default function BillingActivationPage() {
           onToast={showToast}
         />
       )}
+
+      {/* AM Change Requests — Billing Approval Queue */}
+      <BillingChangeRequestsPanel onToast={showToast} />
 
       {/* Activation Table */}
       {pendingClearance.length === 0 ? (

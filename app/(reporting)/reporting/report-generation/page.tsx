@@ -4,6 +4,7 @@ import { useState } from "react";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { WorkspaceHeader } from "@/components/workspace";
 import { getWorkspace } from "@/lib/workspaces";
+import { useReports } from "@/lib/reporting/useReports";
 
 const workspace = getWorkspace("reporting")!;
 
@@ -253,6 +254,7 @@ const REPORT_TYPES: Array<ReportType | "All"> = [
 ];
 
 export default function ReportGenerationPage() {
+  const { records: liveReports, updateReportStatus } = useReports();
   const [filterType, setFilterType] = useState<ReportType | "All">("All");
   const [filterStatus, setFilterStatus] = useState<GenerationStatus | "All">("All");
   const [selectedJob, setSelectedJob] = useState<ReportJob | null>(null);
@@ -532,12 +534,57 @@ export default function ReportGenerationPage() {
                       ))}
                     </div>
 
-                    {/* Actions */}
+                    {/* Actions — only Submit to QA and Deliver to Client are wired; others remain mock */}
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {!selectedJob.draftReady && <button className="text-xs font-semibold px-3 py-2 rounded-lg border"style={{ color: "#7C3AED", background: "#7C3AED15", borderColor: "#7C3AED40"}}>Run AI Analysis</button>}
-                      {selectedJob.draftReady && selectedJob.qaStatus === "Pending"&& <button className="text-xs font-semibold px-3 py-2 rounded-lg border"style={{ color: "#D97706", background: "#D9770615", borderColor: "#D9770640"}}>Submit to QA</button>}
-                      {selectedJob.status === "Ready to Deliver"&& <button className="text-xs font-semibold px-3 py-2 rounded-lg border"style={{ color: "#059669", background: "#05966915", borderColor: "#05966940"}}>Deliver to Client</button>}
-                      <button className="text-xs font-semibold px-3 py-2 rounded-lg border"style={{ color: "#2563EB", background: "#2563EB15", borderColor: "#2563EB40"}}>Preview Draft</button>
+                      {!selectedJob.draftReady && (
+                        <button
+                          className="text-xs font-semibold px-3 py-2 rounded-lg border"
+                          style={{ color: "#7C3AED", background: "#7C3AED15", borderColor: "#7C3AED40" }}
+                        >Run AI Analysis</button>
+                      )}
+                      {selectedJob.draftReady && selectedJob.qaStatus === "Pending" && (() => {
+                        // Find the matching live record to wire this button
+                        const liveRec = liveReports.find(
+                          (r) => r.reportName === selectedJob.name || r.clientName === selectedJob.client
+                        );
+                        return (
+                          <button
+                            className="text-xs font-semibold px-3 py-2 rounded-lg border transition-all hover:opacity-90"
+                            style={{ color: "#D97706", background: "#D9770615", borderColor: "#D9770640" }}
+                            onClick={() => {
+                              if (liveRec) {
+                                void updateReportStatus(liveRec.reportId, {
+                                  qaStatus: "Pending QA",
+                                  status: "QA Review",
+                                });
+                              }
+                            }}
+                          >Submit to QA</button>
+                        );
+                      })()}
+                      {selectedJob.status === "Ready to Deliver" && (() => {
+                        const liveRec = liveReports.find(
+                          (r) => r.reportName === selectedJob.name || r.clientName === selectedJob.client
+                        );
+                        return (
+                          <button
+                            className="text-xs font-semibold px-3 py-2 rounded-lg border transition-all hover:opacity-90"
+                            style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+                            onClick={() => {
+                              if (liveRec) {
+                                void updateReportStatus(liveRec.reportId, {
+                                  deliveryStatus: "Sent",
+                                  status: "Sent",
+                                });
+                              }
+                            }}
+                          >Deliver to Client</button>
+                        );
+                      })()}
+                      <button
+                        className="text-xs font-semibold px-3 py-2 rounded-lg border"
+                        style={{ color: "#2563EB", background: "#2563EB15", borderColor: "#2563EB40" }}
+                      >Preview Draft</button>
                     </div>
                   </div>
                 </SectionWrapper>

@@ -627,12 +627,47 @@ export function BudgetSummaryPanel({
 
   // ─── Package Total View ─────────────────────────────────────────────────────
 
+  // ── By-department breakdown for Package Total view ─────────────────────────
+  const departmentGroups = React.useMemo(() => {
+    const map = new Map<string, { monthly: number; setup: number; oneTime: number }>();
+    for (const item of lineItems) {
+      const existing = map.get(item.department) ?? { monthly: 0, setup: 0, oneTime: 0 };
+      if (item.isRecurring) {
+        map.set(item.department, {
+          ...existing,
+          monthly: existing.monthly + item.monthlySubtotal,
+          setup: existing.setup + item.setupSubtotal,
+        });
+      } else {
+        map.set(item.department, {
+          ...existing,
+          oneTime: existing.oneTime + item.setupSubtotal,
+        });
+      }
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1].monthly - a[1].monthly);
+  }, [lineItems]);
+
   return (
     <div className="space-y-4">
       <h2 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
         {BUDGET_VIEW_LABELS.packageTotal}
       </h2>
 
+      {lineItems.length === 0 ? (
+        <div
+          className="rounded-lg border p-6 text-center"
+          style={{
+            background: "var(--rtm-surface)",
+            borderColor: "var(--rtm-border)",
+          }}
+        >
+          <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+            No services added. Add services above to view the package total.
+          </p>
+        </div>
+      ) : (
+        <>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Recurring / Monthly block */}
         <div
@@ -813,6 +848,67 @@ export function BudgetSummaryPanel({
         )}
       </div>
 
+      {/* Department breakdown */}
+      {departmentGroups.length > 0 && (
+        <div
+          className="rounded-lg border overflow-hidden"
+          style={{
+            background: "var(--rtm-surface)",
+            borderColor: "var(--rtm-border)",
+          }}
+        >
+          <div
+            className="px-5 py-3 border-b"
+            style={{
+              background: "var(--rtm-bg)",
+              borderColor: "var(--rtm-border)",
+            }}
+          >
+            <p
+              className="text-xs font-bold uppercase tracking-wider"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              By Department
+            </p>
+          </div>
+          <div className="divide-y" style={{ borderColor: "var(--rtm-border)" }}>
+            {departmentGroups.map(([dept, totals]) => (
+              <div
+                key={dept}
+                className="flex items-center justify-between px-5 py-3"
+              >
+                <div>
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--rtm-text-primary)" }}
+                  >
+                    {dept}
+                  </p>
+                  {(totals.setup > 0 || totals.oneTime > 0) && (
+                    <p
+                      className="text-xs mt-0.5"
+                      style={{ color: "var(--rtm-text-muted)" }}
+                    >
+                      {totals.setup > 0 && `${formatUSD(totals.setup)} setup`}
+                      {totals.setup > 0 && totals.oneTime > 0 && " · "}
+                      {totals.oneTime > 0 && `${formatUSD(totals.oneTime)} one-time`}
+                    </p>
+                  )}
+                </div>
+                <span
+                  className="text-sm font-bold"
+                  style={{ color: "var(--rtm-text-primary)" }}
+                >
+                  {totals.monthly > 0
+                    ? formatUSD(totals.monthly) + "/mo"
+                    : formatUSD(totals.setup + totals.oneTime) + " one-time"}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Discount section */}
       <DiscountSection
         discount={discount}
@@ -820,6 +916,8 @@ export function BudgetSummaryPanel({
         totalMonthlyRecurring={totalMonthlyRecurring}
         totalSetupFees={totalSetupFees}
       />
+        </>
+      )}
     </div>
   );
 }

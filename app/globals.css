@@ -6,61 +6,64 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ──────────────────────────────────────────────
-   Real Time Marketing — RTM Blue Enterprise Design System
-   Primary Blue:   #1B4FD8  (RTM core blue)
-   Blue Dark:      #1340B0  (hover states)
-   Blue Light:     #EBF0FD  (tints, backgrounds)
-   Blue Mid:       #3B6EF5  (gradient end)
-   Surface:        #F7F9FC  (page background)
-   Card:           #FFFFFF  (card backgrounds)
-   Border:         #E4E8F0  (card / input borders)
-   Text Primary:   #0F1C38  (headings)
-   Text Secondary: #5A6A85  (labels)
-   Text Muted:     #9AAABB  (captions)
-   Sidebar BG:     #0E2055  (deep RTM navy-blue)
-   Sidebar Text:   #C8D5EE  (sidebar labels)
+   Real Time Marketing — Confirmed Brand Kit
+   Charcoal / Dark:    #231f20  (primary text, headings, sidebar bg)
+   Primary Teal/Blue:  #1d709f  (primary brand blue — buttons, links, active states)
+   Gold / Amber:       #fdb713  (accent — highlights, warnings, CTAs)
+   Secondary Blue:     #2994d2  (secondary brand blue — gradients, info states)
+   White:              #FFFFFF  (surfaces, cards)
+   Surface BG:         #F7F9FC  (page background)
+   Border:             #E4E8F0  (card / input borders)
+   Text Secondary:     #5A6A85  (labels)
+   Text Muted:         #9AAABB  (captions)
 ────────────────────────────────────────────── */
 
 :root {
   --background: #F7F9FC;
-  --foreground: #0F1C38;
+  --foreground: #231f20;
 
-  /* RTM Blue palette */
-  --rtm-blue:           #1B4FD8;
-  --rtm-blue-dark:      #1340B0;
-  --rtm-blue-mid:       #3B6EF5;
-  --rtm-blue-light:     #EBF0FD;
-  --rtm-blue-xlight:    #F4F7FF;
+  /* ── Primary brand colors ── */
+  --rtm-blue:           #1d709f;   /* primary teal/blue  */
+  --rtm-blue-dark:      #165a82;   /* hover/pressed state */
+  --rtm-blue-mid:       #2994d2;   /* secondary blue — gradient end, info */
+  --rtm-blue-light:     #d0e8f5;   /* tint — icon backgrounds, highlights */
+  --rtm-blue-xlight:    #edf5fb;   /* very light tint — hover backgrounds */
 
-  /* Sidebar */
-  --rtm-sidebar-bg:     #0E2055;
+  /* ── Accent ── */
+  --rtm-accent:         #fdb713;   /* gold/amber accent */
+  --rtm-accent-dark:    #e09f00;   /* accent hover */
+  --rtm-accent-light:   #fef3cd;   /* accent tint */
+
+  /* ── Sidebar ── */
+  --rtm-sidebar-bg:     #231f20;   /* charcoal sidebar */
   --rtm-sidebar-hover:  rgba(255,255,255,0.07);
-  --rtm-sidebar-active: rgba(59,110,245,0.22);
+  --rtm-sidebar-active: rgba(29,112,159,0.28);
   --rtm-sidebar-border: rgba(255,255,255,0.08);
-  --rtm-sidebar-text:   #C8D5EE;
+  --rtm-sidebar-text:   #c8d5de;
 
-  /* Surfaces */
+  /* ── Surfaces ── */
   --rtm-surface:        #FFFFFF;
   --rtm-bg:             #F7F9FC;
+  --rtm-bg-secondary:   #EEF2F7;   /* secondary background for inputs, nested panels */
   --rtm-border:         #E4E8F0;
   --rtm-border-light:   #EEF1F7;
 
-  /* Text */
-  --rtm-text-primary:   #0F1C38;
-  --rtm-text-secondary: #5A6A85;
-  --rtm-text-muted:     #9AAABB;
+  /* ── Text ── */
+  --rtm-text-primary:   #231f20;   /* charcoal — headings, body */
+  --rtm-text-secondary: #5A6A85;   /* labels */
+  --rtm-text-muted:     #9AAABB;   /* captions */
 
-  /* Status colors (unchanged — readable on light) */
+  /* ── Status colors (readable on light) ── */
   --rtm-success:        #059669;
   --rtm-warning:        #D97706;
   --rtm-danger:         #DC2626;
-  --rtm-info:           #2563EB;
+  --rtm-info:           #2994d2;   /* aligned to brand secondary blue */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-montserrat);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -72,17 +75,17 @@ body {
 body {
   background: var(--rtm-bg);
   color: var(--rtm-text-primary);
-  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
+  font-family: var(--font-sans, "Montserrat", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── RTM Blue active nav item ── */
+/* ── RTM active nav item ── */
 .rtm-nav-active {
   background: var(--rtm-sidebar-active);
   color: #ffffff;
 }
 
-/* ── RTM blue pulse for live indicator ── */
+/* ── RTM pulse for live indicator ── */
 @keyframes rtm-pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.45; }
@@ -96,10 +99,10 @@ body {
   background: var(--rtm-surface);
   border: 1px solid var(--rtm-border);
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(15,28,56,0.06), 0 1px 2px rgba(15,28,56,0.04);
+  box-shadow: 0 1px 3px rgba(35,31,32,0.06), 0 1px 2px rgba(35,31,32,0.04);
 }
 
-/* ── Blue gradient button ── */
+/* ── Primary button ── */
 .rtm-btn-primary {
   background: linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%);
   color: #ffffff;
@@ -110,11 +113,11 @@ body {
   border: none;
   cursor: pointer;
   transition: opacity 0.15s, box-shadow 0.15s;
-  box-shadow: 0 2px 6px rgba(27,79,216,0.3);
+  box-shadow: 0 2px 6px rgba(29,112,159,0.3);
 }
 .rtm-btn-primary:hover {
   opacity: 0.92;
-  box-shadow: 0 4px 12px rgba(27,79,216,0.38);
+  box-shadow: 0 4px 12px rgba(29,112,159,0.38);
 }
 
 /* ── Outlined secondary button ── */

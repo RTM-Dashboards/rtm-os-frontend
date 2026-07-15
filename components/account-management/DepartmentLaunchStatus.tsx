@@ -18,7 +18,7 @@ function deptStatusVariant(s: DeptStatus): StatusVariant {
 }
 
 const DEPT_COLORS: Record<string, string> = {
-  SEO:          "#1B4FD8",
+  SEO:          "#1d709f",
   GBP:          "#059669",
   "Meta Ads":   "#7C3AED",
   PPC:          "#D97706",

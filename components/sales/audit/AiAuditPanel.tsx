@@ -478,19 +478,132 @@ export function AiAuditPanel({
           </div>
         )}
 
-        {(servicesWithFindings.length === 0 || allServicesAllDismissed) && (
-          <div
-            className="rounded-xl border p-6 text-center space-y-2"
-            style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
-          >
-            <p className="text-sm font-semibold" style={{ color: "#15803D" }}>
-              No significant issues found for this website. The site appears well-optimized.
-            </p>
-            <p className="text-xs" style={{ color: "#15803D", opacity: 0.8 }}>
-              Proceed to recommendations to see available services based on intake data.
-            </p>
-          </div>
-        )}
+        {/* PageSpeed-only or standalone findings (not attached to a serviceResult) */}
+        {(() => {
+          const serviceResultFindingIds = new Set(
+            result.serviceResults.flatMap((sr) => sr.findings.map((f) => f.id))
+          );
+          const standaloneFindingsVisible = result.allFindings
+            .filter(
+              (f) =>
+                !serviceResultFindingIds.has(f.id) &&
+                !dismissedFindingIds.includes(f.id)
+            );
+          if (standaloneFindingsVisible.length === 0) return null;
+          return (
+            <div
+              className="rounded-xl border"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+            >
+              <div className="px-6 py-4 border-b" style={{ borderColor: "var(--rtm-border)" }}>
+                <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                  Additional Findings
+                </p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                  PageSpeed and performance findings outside the service categories above.
+                </p>
+              </div>
+              <div className="p-5 space-y-3">
+                {standaloneFindingsVisible.map((f) => {
+                  const severityColors: Record<string, { bg: string; color: string; border: string }> = {
+                    critical: { bg: "#FEF2F2", color: "#DC2626", border: "#FECACA" },
+                    high:     { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
+                    medium:   { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
+                    low:      { bg: "#F0FDF4", color: "#15803D", border: "#BBF7D0" },
+                  };
+                  const sc = severityColors[f.severity] ?? severityColors.medium;
+                  return (
+                    <div
+                      key={f.id}
+                      className="rounded-lg border p-4 space-y-2"
+                      style={{ background: sc.bg, borderColor: sc.border }}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-semibold" style={{ color: sc.color }}>
+                          {f.title}
+                        </p>
+                        <span
+                          className="flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize"
+                          style={{ background: sc.bg, color: sc.color, borderColor: sc.border }}
+                        >
+                          {f.severity}
+                        </span>
+                      </div>
+                      <p className="text-xs" style={{ color: sc.color, opacity: 0.85 }}>
+                        {f.description}
+                      </p>
+                      {f.recommendation && (
+                        <p className="text-xs font-semibold" style={{ color: sc.color }}>
+                          → {f.recommendation}
+                        </p>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDismissFinding(f.id)}
+                        className="text-[11px] font-bold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
+                        style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* "No issues" message — only shown when score is genuinely good AND all findings dismissed/absent */}
+        {(servicesWithFindings.length === 0 || allServicesAllDismissed) && (() => {
+          // Only show the optimized message when score is actually good (≥71).
+          // Score=0 means parse failure or error — show an honest status instead.
+          if (result.overallScore === 0) {
+            return (
+              <div
+                className="rounded-xl border p-6 text-center space-y-2"
+                style={{ background: "#FFF7ED", borderColor: "#FED7AA" }}
+              >
+                <p className="text-sm font-semibold" style={{ color: "#C2410C" }}>
+                  AI analysis returned no scored service results.
+                </p>
+                <p className="text-xs" style={{ color: "#92400E" }}>
+                  The AI response may be incomplete. Check PageSpeed findings above, or use
+                  Intake Audit for findings derived from intake data.
+                </p>
+              </div>
+            );
+          }
+          if (result.overallScore < 71) {
+            // Score is poor/fair but no service-level findings — still findings exist from PageSpeed etc.
+            // Show a neutral note rather than "well optimized"
+            return (
+              <div
+                className="rounded-xl border p-6 text-center space-y-2"
+                style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}
+              >
+                <p className="text-sm font-semibold" style={{ color: "#D97706" }}>
+                  AI found a score of {result.overallScore} — review findings above for details.
+                </p>
+                <p className="text-xs" style={{ color: "#92400E" }}>
+                  Proceed to recommendations to see service options based on this audit.
+                </p>
+              </div>
+            );
+          }
+          return (
+            <div
+              className="rounded-xl border p-6 text-center space-y-2"
+              style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
+            >
+              <p className="text-sm font-semibold" style={{ color: "#15803D" }}>
+                No significant issues found for this website. The site appears well-optimized.
+              </p>
+              <p className="text-xs" style={{ color: "#15803D", opacity: 0.8 }}>
+                Proceed to recommendations to see available services based on intake data.
+              </p>
+            </div>
+          );
+        })()}
       </div>
     );
   }

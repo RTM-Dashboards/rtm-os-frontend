@@ -33,6 +33,7 @@ import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import { MASTER_CLIENTS, computeHealth, computePriority } from "@/lib/mock/master-clients";
 import { patchMasterClient, upsertMasterClient, fetchMasterClients } from "@/lib/mock/master-clients-api";
+import { SERVICE_PRESETS } from "@/lib/billing/service-utils";
 import type {
   MasterClient,
   BillingStatus,
@@ -254,6 +255,14 @@ function AddClientModal({ onClose, onAdd }: {
       notes: "",
       activationChecklist: { invoicePaid: false, billingCleared: false, contractConfirmed: true, servicesConfirmed: true, clientContactVerified: true, amAssigned: false, onboardingRecordCreated: false, activationTasksCreated: false, kickoffNeeded: true, kickoffCallCompleted: false },
       recentEvents: [{ date: new Date().toISOString().slice(0, 10), actor: form.billingOwner, action: "Client record created by Billing" }],
+      // ── Stripe groundwork (schema only — live wiring deferred to launch) ──────
+      // FUTURE LIVE INTEGRATION HOOK: when Stripe goes live, create Stripe Customer here:
+      //   const customer = await stripe.customers.create({ email, name: clientName });
+      //   stripeCustomerId = customer.id; stripeSyncStatus = "Connected";
+      stripeCustomerId: null,
+      stripeInvoiceId: null,
+      stripeSubscriptionId: null,
+      stripeSyncStatus: "Not Connected" as const,
     };
     onAdd(newClient);
     onClose();
@@ -316,7 +325,7 @@ function AddClientModal({ onClose, onAdd }: {
   );
 }
 
-// ─── Update Invoice/Payment Status Modal ─────────────────────────────────────
+// ─── Update Invoice/Payment/Services Modal ───────────────────────────────────
 
 function UpdateStatusModal({ client, onClose, onUpdate }: {
   client: MasterClient;
@@ -328,6 +337,9 @@ function UpdateStatusModal({ client, onClose, onUpdate }: {
   const [payment, setPayment] = useState<PaymentStatus>(client.paymentStatus);
   const [cancellation, setCancellation] = useState<CancellationStatus>(client.cancellationStatus);
   const [updown, setUpdown] = useState<UpgradeDowngradeStatus>(client.upgradeDowngradeStatus);
+  // activeServices editing state
+  const [services, setServices] = useState<string[]>(client.activeServices);
+  const [serviceInput, setServiceInput] = useState("");
 
   const billingOptions: BillingStatus[] = ["Pending", "Paid", "Overdue", "Cleared", "Closed"];
   const invoiceOptions: InvoiceStatus[] = ["Not Issued", "Draft", "Sent — Awaiting Payment", "Overdue 15d", "Overdue 30d", "Final invoice issued", "Paid"];
@@ -335,8 +347,35 @@ function UpdateStatusModal({ client, onClose, onUpdate }: {
   const cancellationOptions: CancellationStatus[] = ["None", "Requested", "In Review", "Approved", "Cancelled"];
   const updownOptions: UpgradeDowngradeStatus[] = ["None", "Upgrade Requested", "Downgrade Requested", "Approved", "Completed"];
 
+  // SERVICE_PRESETS imported from @/lib/billing/service-utils
+
+  function addService(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed || services.includes(trimmed)) return;
+    setServices((prev) => [...prev, trimmed]);
+    setServiceInput("");
+  }
+
+  function removeService(name: string) {
+    setServices((prev) => prev.filter((s) => s !== name));
+  }
+
+  function handleServiceInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addService(serviceInput);
+    }
+  }
+
   function handleSave() {
-    const patch: Partial<MasterClient> = { billingStatus: billing, invoiceStatus: invoice, paymentStatus: payment, cancellationStatus: cancellation, upgradeDowngradeStatus: updown };
+    const patch: Partial<MasterClient> = {
+      billingStatus: billing,
+      invoiceStatus: invoice,
+      paymentStatus: payment,
+      cancellationStatus: cancellation,
+      upgradeDowngradeStatus: updown,
+      activeServices: services,
+    };
     // Re-compute health and priority from updated fields
     patch.clientHealth = computeHealth({ billingStatus: billing, paymentStatus: payment, cancellationStatus: cancellation, activationStatus: client.activationStatus });
     patch.priority = computePriority(patch.clientHealth, billing);
@@ -346,7 +385,7 @@ function UpdateStatusModal({ client, onClose, onUpdate }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" style={{ border: "1px solid var(--rtm-border)" }}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-y-auto" style={{ border: "1px solid var(--rtm-border)", maxHeight: "90vh" }}>
         <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--rtm-border-light)" }}>
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: workspace.accentColor }}>Update Billing Fields</p>
@@ -377,6 +416,79 @@ function UpdateStatusModal({ client, onClose, onUpdate }: {
               </select>
             </div>
           ))}
+
+          {/* ── Active Services Editor ──────────────────────────────────────── */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+              Active Services
+            </label>
+            <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+              These are the source of truth for Active Services. Changes persist immediately via patchMasterClient.
+            </p>
+
+            {/* Current tags */}
+            <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-lg border" style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)" }}>
+              {services.length === 0 && (
+                <span className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>No active services — add below</span>
+              )}
+              {services.map((svc) => (
+                <span
+                  key={svc}
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border"
+                  style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1B4FD8" }}
+                >
+                  {svc}
+                  <button
+                    type="button"
+                    onClick={() => removeService(svc)}
+                    className="ml-0.5 text-blue-400 hover:text-red-500 transition-colors leading-none"
+                    aria-label={`Remove ${svc}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+
+            {/* Preset quick-add chips */}
+            <div className="flex flex-wrap gap-1">
+              {SERVICE_PRESETS.filter((p) => !services.includes(p)).map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => addService(preset)}
+                  className="text-[11px] font-medium px-2 py-0.5 rounded-full border transition-colors"
+                  style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)", background: "var(--rtm-surface)" }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--rtm-bg-alt, #F9FAFB)"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--rtm-surface)"; }}
+                >
+                  + {preset}
+                </button>
+              ))}
+            </div>
+
+            {/* Free-text add */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Custom service name, press Enter to add…"
+                value={serviceInput}
+                onChange={(e) => setServiceInput(e.target.value)}
+                onKeyDown={handleServiceInputKeyDown}
+                className="flex-1 text-sm px-3 py-1.5 rounded-lg border focus:outline-none"
+                style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)" }}
+              />
+              <button
+                type="button"
+                onClick={() => addService(serviceInput)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
+                style={{ background: "var(--rtm-blue)" }}
+              >
+                Add
+              </button>
+            </div>
+          </div>
+
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 text-sm font-semibold py-2 rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
               Cancel

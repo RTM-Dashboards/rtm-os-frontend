@@ -49,10 +49,11 @@ export function Step4Budget({ state, onUpdate, approvedServiceNames }: Step4Budg
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync line items and budget result whenever they change
-  function handleLineItemsChange(items: BudgetLineItem[]) {
+  // Sync line items and budget result whenever they change.
+  // The shell pre-computes the result using effectiveLineItems (with line-item
+  // subtotals applied), so we accept it directly instead of recomputing here.
+  function handleLineItemsChange(items: BudgetLineItem[], result: BudgetResult) {
     setLineItems(items);
-    const result = computeBudget(items, discountPercentage);
     onUpdate({ lineItems: items, budgetResult: result });
   }
 
@@ -163,7 +164,7 @@ function BudgetOptimizerShellWrapper({
    *  state.approvedRecommendationServiceNames to avoid the setState batching
    *  race where Step 4 mounts before Step 3's onUpdate has been processed. */
   approvedServiceNames?: string[];
-  onLineItemsChange: (items: BudgetLineItem[]) => void;
+  onLineItemsChange: (items: BudgetLineItem[], result: BudgetResult) => void;
   onDiscountChange: (discount: number) => void;
   discount: ProposalDiscount;
   onProposalDiscountChange: (discount: ProposalDiscount) => void;
@@ -211,6 +212,7 @@ function BudgetOptimizerShellWrapper({
       clientName={state.clientInfo.businessName || state.clientInfo.name}
       discount={discount}
       onDiscountChange={onProposalDiscountChange}
+      onLineItemsChange={onLineItemsChange}
     />
   );
 }

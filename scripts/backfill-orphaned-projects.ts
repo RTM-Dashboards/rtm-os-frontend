@@ -133,6 +133,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     recentEvents: [],
     referralSource: "Direct",
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc002",
@@ -175,6 +180,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     affiliateName:  "Brandon Ellis",
     referralRevenue: "$2,000/mo",
     commissionStatus: "Paid",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc003",
@@ -216,6 +226,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     referralSource: "Affiliate",
     affiliateName:  "Maria Santos",
     commissionStatus: "Pending",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc005",
@@ -255,6 +270,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc012",
@@ -294,6 +314,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc013",
@@ -333,6 +358,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc014",
@@ -375,6 +405,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc015",
@@ -414,6 +449,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc016",
@@ -453,6 +493,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc017",
@@ -492,6 +537,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc018",
@@ -531,6 +581,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc019",
@@ -570,6 +625,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
   {
     id:             "mc020",
@@ -609,6 +669,11 @@ const ORPHANED_CLIENTS: MasterClient[] = [
     },
     recentEvents: [],
     commissionStatus: "Not Applicable",
+    // Stripe groundwork (schema only — live wiring deferred to launch)
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected",
   },
 ];
 

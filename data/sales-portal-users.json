@@ -1,0 +1,92 @@
+{
+  "records": [
+    {
+      "id": "pu-001",
+      "affiliateId": "aff-002",
+      "portalUser": "Sarah Chen",
+      "email": "sarah@chendigital.com",
+      "lastLogin": "Jun 2, 2025",
+      "status": "Active",
+      "role": "Partner Admin",
+      "createdAt": "2024-03-05T09:00:00Z",
+      "updatedAt": "2025-06-02T09:00:00Z"
+    },
+    {
+      "id": "pu-002",
+      "affiliateId": "aff-009",
+      "portalUser": "Carlos Mendez",
+      "email": "carlos@mendezassoc.com",
+      "lastLogin": "Jun 1, 2025",
+      "status": "Active",
+      "role": "Partner Admin",
+      "createdAt": "2023-07-08T09:00:00Z",
+      "updatedAt": "2025-06-01T09:00:00Z"
+    },
+    {
+      "id": "pu-003",
+      "affiliateId": "aff-001",
+      "portalUser": "Marcus Williams",
+      "email": "marcus@williamslandscaping.com",
+      "lastLogin": "May 30, 2025",
+      "status": "Active",
+      "role": "Affiliate Member",
+      "createdAt": "2024-01-12T09:00:00Z",
+      "updatedAt": "2025-05-30T09:00:00Z"
+    },
+    {
+      "id": "pu-004",
+      "affiliateId": "aff-007",
+      "portalUser": "Robert Kim",
+      "email": "rkim@kimlawpartners.com",
+      "lastLogin": "May 25, 2025",
+      "status": "Active",
+      "role": "Partner Admin",
+      "createdAt": "2023-09-10T09:00:00Z",
+      "updatedAt": "2025-05-25T09:00:00Z"
+    },
+    {
+      "id": "pu-005",
+      "affiliateId": "aff-014",
+      "portalUser": "Monica Patel",
+      "email": "monica@patelhealthnet.com",
+      "lastLogin": "Jun 1, 2025",
+      "status": "Active",
+      "role": "Partner Admin",
+      "createdAt": "2024-05-22T09:00:00Z",
+      "updatedAt": "2025-06-01T09:00:00Z"
+    },
+    {
+      "id": "pu-006",
+      "affiliateId": "aff-010",
+      "portalUser": "Patricia Nguyen",
+      "email": "patricia@nguyenbiz.com",
+      "lastLogin": "—",
+      "status": "Invited",
+      "role": "Affiliate Member",
+      "createdAt": "2023-10-03T09:00:00Z",
+      "updatedAt": "2023-10-03T09:00:00Z"
+    },
+    {
+      "id": "pu-007",
+      "affiliateId": "aff-022",
+      "portalUser": "Olivia Bennett",
+      "email": "olivia@bennettcoach.net",
+      "lastLogin": "—",
+      "status": "Invited",
+      "role": "Affiliate Member",
+      "createdAt": "2025-02-07T09:00:00Z",
+      "updatedAt": "2025-02-07T09:00:00Z"
+    },
+    {
+      "id": "pu-008",
+      "affiliateId": "aff-013",
+      "portalUser": "Trevor Nash",
+      "email": "trevor@nashtechv.com",
+      "lastLogin": "Feb 8, 2025",
+      "status": "Disabled",
+      "role": "Affiliate Member",
+      "createdAt": "2023-12-05T09:00:00Z",
+      "updatedAt": "2025-03-05T09:00:00Z"
+    }
+  ]
+}

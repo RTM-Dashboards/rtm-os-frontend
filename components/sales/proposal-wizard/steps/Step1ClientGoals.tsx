@@ -833,7 +833,7 @@ function CompetitorFields({
       <FieldLabel>Competitors (max 3)</FieldLabel>
       {competitors.map((comp, index) => (
         <div
-          key={index}
+          key={`competitor-${index}-${comp.name || index}`}
           className="rounded-lg border p-3 space-y-2"
           style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}
         >

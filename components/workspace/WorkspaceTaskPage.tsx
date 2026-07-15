@@ -345,7 +345,7 @@ interface WorkspaceTaskPageProps {
 export default function WorkspaceTaskPage({
   workspaceName,
   tasks: initialTasks,
-  accentColor = "var(--rtm-blue, #1B4FD8)",
+  accentColor = "var(--rtm-blue, #1d709f)",
   userRole: initialRole = "department-member",
 }: WorkspaceTaskPageProps) {
   const [filters, setFilters] = useState<Filters>({
@@ -501,9 +501,9 @@ export default function WorkspaceTaskPage({
                 style={{
                   padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
                   cursor: "pointer",
-                  background: mockRole === opt.value ? "#1B4FD8" : "var(--rtm-bg, #f8fafc)",
+                  background: mockRole === opt.value ? "#1d709f" : "var(--rtm-bg, #f8fafc)",
                   color: mockRole === opt.value ? "#fff" : "var(--rtm-text-secondary, #475569)",
-                  border: `1px solid ${mockRole === opt.value ? "#1B4FD8" : "var(--rtm-border, #e2e8f0)"}`,
+                  border: `1px solid ${mockRole === opt.value ? "#1d709f" : "var(--rtm-border, #e2e8f0)"}`,
                 }}
               >
                 {opt.label}

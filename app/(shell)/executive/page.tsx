@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useDeptTaskStats } from "@/lib/hooks/useDeptTaskStats";
 
 function PreviewBadge() {
   return (
@@ -459,8 +460,22 @@ function buildDrawerProps(kind: DrawerKind): {
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 
+/**
+ * Maps mock departmentPerformance[].name → real engine DepartmentName.
+ * Only entries that differ need to appear here; identical names are looked up
+ * directly. Departments with no engine counterpart (e.g. "Operations") are
+ * not listed and will simply keep their mock task counts.
+ */
+const MOCK_NAME_TO_ENGINE_KEY: Record<string, string> = {
+  // Mock "Creative" corresponds to engine "Design"
+  "Creative":            "Design",
+  // Mock "IT Support & Hosting" corresponds to engine "IT & Security"
+  "IT Support & Hosting": "IT & Security",
+};
+
 export default function ExecutiveCommandCenterPage() {
   const [drawerKind, setDrawerKind] = useState<DrawerKind | null>(null);
+  const { stats: liveTaskStats, loading: taskStatsLoading } = useDeptTaskStats();
   const drawerOpen = drawerKind !== null;
   const drawerProps = drawerKind ? buildDrawerProps(drawerKind) : null;
 
@@ -860,80 +875,135 @@ export default function ExecutiveCommandCenterPage() {
         description="Projects, tasks, escalations, KPI status, and bottlenecks across all departments"
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
+          <table className="w-full min-w-[960px]">
             <thead>
               <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
-                {["Department", "Projects", "Open Tasks", "Overdue", "Escalations", "KPI Status", "Health", "Bottleneck"].map((h) => (
-                  <th
-                    key={h}
-                    className="text-left px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide"
-                    style={{ color: "var(--rtm-text-muted)" }}
-                  >
-                    {h}
-                  </th>
-                ))}
+                {["Department", "Projects", "Open Tasks", "Overdue", "SLA %", "Escalations", "KPI Status", "Health", "Bottleneck"].map((h) => {
+                  const isLive = h === "Open Tasks" || h === "Overdue" || h === "SLA %";
+                  return (
+                    <th
+                      key={h}
+                      className="text-left px-3 py-2.5 text-[11px] font-bold uppercase tracking-wide"
+                      style={{ color: isLive ? "var(--rtm-blue)" : "var(--rtm-text-muted)" }}
+                    >
+                      <span className="inline-flex items-center gap-1">
+                        {h}
+                        {isLive && (
+                          <span
+                            className="px-1 py-0.5 rounded text-[9px] font-bold normal-case"
+                            style={{ background: "#EFF6FF", color: "var(--rtm-blue)", border: "1px solid #BFDBFE" }}
+                          >
+                            Live
+                          </span>
+                        )}
+                      </span>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
-              {departmentPerformance.map((dept) => (
-                <tr
-                  key={dept.slug}
-                  className="transition-colors"
-                  style={{ borderBottom: "1px solid var(--rtm-border-light)" }}
-                  onMouseEnter={(e) => (e.currentTarget as HTMLTableRowElement).style.background = "var(--rtm-bg)"}
-                  onMouseLeave={(e) => (e.currentTarget as HTMLTableRowElement).style.background = "transparent"}
-                >
-                  <td className="px-3 py-3">
-                    <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
-                      {dept.name}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>{dept.projects}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>{dept.openTasks}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span
-                      className="text-sm font-semibold"
-                      style={{ color: dept.overdueTasks > 5 ? "#DC2626" : dept.overdueTasks > 2 ? "#F59E0B" : "var(--rtm-text-secondary)" }}
-                    >
-                      {dept.overdueTasks}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span
-                      className="text-sm font-semibold"
-                      style={{ color: dept.escalations > 1 ? "#DC2626" : dept.escalations > 0 ? "#F59E0B" : "var(--rtm-text-secondary)" }}
-                    >
-                      {dept.escalations}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">{kpiStatusBadge(dept.kpiStatus)}</td>
-                  <td className="px-3 py-3">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
-                      <span className="w-2 h-2 rounded-full" style={{ background: healthDot(dept.health) }} />
-                      <span style={{ color: "var(--rtm-text-secondary)" }}>{healthLabel(dept.health)}</span>
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 max-w-[220px]">
-                    {dept.bottleneck ? (
-                      <button
-                        onClick={() => setDrawerKind({ type: "bottleneck", dept: dept.slug })}
-                        className="text-xs leading-snug text-left transition-colors hover:underline"
-                        style={{ color: "#B45309" }}
+              {departmentPerformance.map((dept) => {
+                // Resolve the engine key for this mock row (handles name mismatches)
+                const engineKey = MOCK_NAME_TO_ENGINE_KEY[dept.name] ?? dept.name;
+                const live = liveTaskStats.get(engineKey);
+                // Use live values when available; fall back to mock while loading or for
+                // departments that have no engine counterpart (e.g. "Operations").
+                const openTasks    = live?.openTasks    ?? dept.openTasks;
+                const overdueTasks = live?.overdueTasks ?? dept.overdueTasks;
+                const slaCompliance = live?.slaCompliance ?? (dept.openTasks > 0 ? Math.round(((dept.openTasks - dept.overdueTasks) / dept.openTasks) * 100) : 100);
+                const slaColor = slaCompliance < 80 ? "#DC2626" : slaCompliance < 90 ? "#D97706" : "#059669";
+
+                return (
+                  <tr
+                    key={dept.slug}
+                    className="transition-colors"
+                    style={{ borderBottom: "1px solid var(--rtm-border-light)" }}
+                    onMouseEnter={(e) => (e.currentTarget as HTMLTableRowElement).style.background = "var(--rtm-bg)"}
+                    onMouseLeave={(e) => (e.currentTarget as HTMLTableRowElement).style.background = "transparent"}
+                  >
+                    <td className="px-3 py-3">
+                      <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                        {dept.name}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>{dept.projects}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      {taskStatsLoading ? (
+                        <span className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>…</span>
+                      ) : (
+                        <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{openTasks}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      {taskStatsLoading ? (
+                        <span className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>…</span>
+                      ) : (
+                        <span
+                          className="text-sm font-semibold"
+                          style={{ color: overdueTasks > 5 ? "#DC2626" : overdueTasks > 2 ? "#F59E0B" : "var(--rtm-text-secondary)" }}
+                        >
+                          {overdueTasks}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      {taskStatsLoading ? (
+                        <span className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>…</span>
+                      ) : (
+                        <span className="text-sm font-bold" style={{ color: slaColor }}>
+                          {slaCompliance}%
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      <span
+                        className="text-sm font-semibold"
+                        style={{ color: dept.escalations > 1 ? "#DC2626" : dept.escalations > 0 ? "#F59E0B" : "var(--rtm-text-secondary)" }}
                       >
-                        {dept.bottleneck}
-                      </button>
-                    ) : (
-                      <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>None</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                        {dept.escalations}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">{kpiStatusBadge(dept.kpiStatus)}</td>
+                    <td className="px-3 py-3">
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold">
+                        <span className="w-2 h-2 rounded-full" style={{ background: healthDot(dept.health) }} />
+                        <span style={{ color: "var(--rtm-text-secondary)" }}>{healthLabel(dept.health)}</span>
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 max-w-[220px]">
+                      {dept.bottleneck ? (
+                        <button
+                          onClick={() => setDrawerKind({ type: "bottleneck", dept: dept.slug })}
+                          className="text-xs leading-snug text-left transition-colors hover:underline"
+                          style={{ color: "#B45309" }}
+                        >
+                          {dept.bottleneck}
+                        </button>
+                      ) : (
+                        <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>None</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
+        </div>
+        {/* Footnote clarifying which columns are live vs mock */}
+        <div className="mt-3 flex items-center gap-2 px-1">
+          <span
+            className="px-1.5 py-0.5 rounded text-[9px] font-bold"
+            style={{ background: "#EFF6FF", color: "var(--rtm-blue)", border: "1px solid #BFDBFE" }}
+          >
+            Live
+          </span>
+          <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+            Open Tasks, Overdue, and SLA % are sourced from the engine store in real time.
+            Projects, Escalations, KPI Status, Health, and Bottleneck are indicative estimates — real data in a future phase.
+          </span>
         </div>
       </SectionWrapper>
 

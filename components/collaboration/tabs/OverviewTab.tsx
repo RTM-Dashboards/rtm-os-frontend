@@ -163,10 +163,10 @@ export default function OverviewTab({ collab }: Props) {
         <Section title="Notifications">
           <div className="space-y-2">
             {unreadNotifs.map((n) => (
-              <div key={n.id} className="flex items-start gap-2 p-2 rounded-lg"style={{ background: "#EBF0FD"}}>
+              <div key={n.id} className="flex items-start gap-2 p-2 rounded-lg"style={{ background: "#d0e8f5"}}>
                 
                 <div>
-                  <p className="text-xs font-medium"style={{ color: "#1B4FD8"}}>{n.message}</p>
+                  <p className="text-xs font-medium"style={{ color: "#1d709f"}}>{n.message}</p>
                   <p className="text-[10px]"style={{ color: "#5A6A85"}}>{relativeTime(n.timestamp)}</p>
                 </div>
               </div>

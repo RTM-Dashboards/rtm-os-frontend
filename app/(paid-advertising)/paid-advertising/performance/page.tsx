@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   KpiCard,
   SectionWrapper,
@@ -18,6 +19,7 @@ import PerformanceFilters, {
 } from "@/components/performance/PerformanceFilters";
 import type { PerformanceFilterState } from "@/components/performance/PerformanceFilters";
 import { getWorkspace } from "@/lib/workspaces";
+import { useEnabledKpis } from "@/lib/hooks/useEnabledKpis";
 
 const workspace = getWorkspace("paid-advertising")!;
 
@@ -89,14 +91,7 @@ const trendData: TrendRow[] = [
 const combinedSpendTrend = trendData.map((d) => d.metaSpend + d.googleSpend);
 const combinedLeadsTrend = trendData.map((d) => d.metaLeads + d.googleLeads);
 
-const quickActions: QuickAction[] = [
-  { label: "Budget Overview",     description: "Rebalance Meta vs Google", icon: "",  color: "bg-blue-100 text-blue-600"},
-  { label: "Cross-Channel Report",description: "Combined performance PDF",  icon: "", color: "bg-purple-100 text-purple-600"},
-  { label: "Lead Quality Sweep",  description: "Review lead quality score", color: "bg-emerald-100 text-emerald-600"},
-  { label: "Creative Audit",      description: "Check fatigue across ads",  icon: "", color: "bg-amber-100 text-amber-600"},
-  { label: "Audience Analysis",   description: "Overlap and reach check",   icon: "", color: "bg-red-100 text-red-600"},
-  { label: "Client Report Pack",  description: "All-channel report",        icon: "", color: "bg-slate-100 text-slate-600"},
-];
+// quickActions is built inside the component so it can capture router
 
 //  Columns 
 
@@ -136,7 +131,18 @@ const channelColumns: Column<ChannelRow>[] = [
 //  Page 
 
 export default function PaidAdPerformancePage() {
+  const router = useRouter();
+  const { isEnabled } = useEnabledKpis("paid-advertising");
   const [filters, setFilters] = useState<PerformanceFilterState>(DEFAULT_FILTERS);
+
+  const quickActions: QuickAction[] = [
+    { label: "Budget Overview",     description: "Rebalance Meta vs Google", icon: "",  color: "bg-blue-100 text-blue-600",   disabled: true, disabledReason: "Not yet available" },
+    { label: "Cross-Channel Report",description: "View paid ads reports",    icon: "", color: "bg-purple-100 text-purple-600", onClick: () => router.push("/paid-advertising/reports") },
+    { label: "Lead Quality Sweep",  description: "Review lead quality score",         color: "bg-emerald-100 text-emerald-600", disabled: true, disabledReason: "Not yet available" },
+    { label: "Creative Audit",      description: "Check fatigue across ads",  icon: "", color: "bg-amber-100 text-amber-600",  disabled: true, disabledReason: "Not yet available" },
+    { label: "Audience Analysis",   description: "Overlap and reach check",   icon: "", color: "bg-red-100 text-red-600",      disabled: true, disabledReason: "Not yet available" },
+    { label: "Client Report Pack",  description: "View all-channel reports",  icon: "", color: "bg-slate-100 text-slate-600",  onClick: () => router.push("/paid-advertising/reports") },
+  ];
 
   const filteredChannels = useMemo(() => {
     if (filters.service === "all") return allChannels;
@@ -205,54 +211,54 @@ export default function PaidAdPerformancePage() {
 
       {/* KPI Row 1: Spend + Leads */}
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-        <KpiCard
+        {isEnabled("paid-total-spend") && <KpiCard
           title="Total Spend"value={`$${totals.spend.toLocaleString()}`}
           trend="up"trendValue="+7%"trendLabel={compLabel ?? "vs last period"}
           iconBg="#FEF2F2"iconColor="#DC2626"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-        />
-        <KpiCard
+        />}
+        {isEnabled("paid-total-leads") && <KpiCard
           title="Total Leads"value={totals.leads.toString()}
           trend="up"trendValue="+14%"trendLabel={compLabel ?? "vs last period"}
           iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>}
-        />
-        <KpiCard
+        />}
+        {isEnabled("paid-qualified-leads") && <KpiCard
           title="Qualified Leads"value={totals.qualified.toString()}
           trend="up"trendValue="+10%"trendLabel={compLabel ?? "vs last period"}
           iconBg="var(--rtm-blue-light)"iconColor="var(--rtm-blue)"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-        />
+        />}
       </div>
 
       {/* KPI Row 2: Conversions */}
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
-        <KpiCard
+        {isEnabled("paid-calls") && <KpiCard
           title="Calls"value={totals.calls.toString()}
           trend="up"trendValue="+11%"trendLabel={compLabel ?? "vs last period"}
           iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>}
-        />
-        <KpiCard
+        />}
+        {isEnabled("paid-form-submissions") && <KpiCard
           title="Form Submissions"value={totals.forms.toString()}
           trend="up"trendValue="+16%"trendLabel={compLabel ?? "vs last period"}
           iconBg="var(--rtm-blue-light)"iconColor="var(--rtm-blue)"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>}
-        />
-        <KpiCard
+        />}
+        {isEnabled("paid-booked-leads") && <KpiCard
           title="Booked Leads"value={totals.booked.toString()}
           trend="up"trendValue="+19%"trendLabel={compLabel ?? "vs last period"}
           iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>}
-        />
+        />}
       </div>
 
       {/* KPI Row 3: Efficiency */}
       <div className="grid grid-cols-2 xl:grid-cols-2 gap-4">
-        <KpiCard
+        {isEnabled("paid-cpl") && <KpiCard
           title="Combined Cost Per Lead (CPL)"value={`$${totals.cpl.toFixed(2)}`}
           trend="down"trendValue="-$2.90"trendLabel={compLabel ?? "vs last period"}
           iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
-        />
-        <KpiCard
+        />}
+        {isEnabled("paid-cost-per-qualified") && <KpiCard
           title="Combined Cost Per Qualified Lead"value={`$${totals.costPerQual.toFixed(2)}`}
           trend="down"trendValue="-$4.80"trendLabel={compLabel ?? "vs last period"}
           iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>}
-        />
+        />}
       </div>
 
       {/* Combined Trends */}

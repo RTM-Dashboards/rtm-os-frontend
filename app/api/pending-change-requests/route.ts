@@ -5,10 +5,12 @@
 // Mirrors the pending-cancellation-requests pattern exactly so that
 // AM-submitted change requests are file-backed and cross-route-group reliable.
 //
-// GET  /api/pending-change-requests         → { records: PendingChangeRequest[] }
-// POST /api/pending-change-requests         → body: AddChangeRequestPayload
-//                                             → { record: PendingChangeRequest }
-//                                             (server assigns id, submittedDate, status)
+// GET   /api/pending-change-requests         → { records: PendingChangeRequest[] }
+// POST  /api/pending-change-requests         → body: AddChangeRequestPayload
+//                                              → { record: PendingChangeRequest }
+//                                              (server assigns id, submittedDate, status)
+// PATCH /api/pending-change-requests         → body: { id: string, billingApprovalStatus: "Pending"|"Approved"|"Rejected", status?: PendingChangeRequestStatus }
+//                                              → { record: PendingChangeRequest }
 
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
@@ -109,6 +111,52 @@ function nextId(existing: PendingChangeRequest[]): string {
 export async function GET(): Promise<NextResponse> {
   const records = readRecords();
   return NextResponse.json({ records });
+}
+
+// ── PATCH ────────────────────────────────────────────────────────────────────
+
+export interface PatchChangeRequestPayload {
+  id: string;
+  billingApprovalStatus?: "Pending" | "Approved" | "Rejected";
+  status?: PendingChangeRequestStatus;
+}
+
+export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const payload = body as PatchChangeRequestPayload;
+  if (!payload || typeof payload.id !== "string") {
+    return NextResponse.json({ error: "Body must include id" }, { status: 400 });
+  }
+
+  const records = readRecords();
+  const idx = records.findIndex((r) => r.id === payload.id);
+  if (idx === -1) {
+    return NextResponse.json({ error: `Record not found: ${payload.id}` }, { status: 404 });
+  }
+
+  const updated: PendingChangeRequest = { ...records[idx] };
+
+  if (payload.billingApprovalStatus !== undefined) {
+    updated.billingApprovalStatus = payload.billingApprovalStatus;
+  }
+  if (payload.status !== undefined) {
+    updated.status = payload.status;
+  }
+
+  records[idx] = updated;
+
+  try {
+    writeRecords(records);
+    return NextResponse.json({ record: updated });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
 
 // ── POST ─────────────────────────────────────────────────────────────────────

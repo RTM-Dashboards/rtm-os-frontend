@@ -12,7 +12,7 @@ const CURRENT_USER = {
   id:       "current-user",
   name:     "You",
   initials: "YO",
-  color:    "#1B4FD8",
+  color:    "#1d709f",
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -27,7 +27,7 @@ function renderBody(body: string) {
   const parts = body.split(/(@\S[^@]*?)(?=\s@|\s|$)/g);
   return parts.map((part, i) =>
     part.startsWith("@") ? (
-      <span key={i} className="font-semibold rounded px-0.5" style={{ color: "#1B4FD8", background: "#EBF0FD" }}>
+      <span key={i} className="font-semibold rounded px-0.5" style={{ color: "#1d709f", background: "#d0e8f5" }}>
         {part}
       </span>
     ) : (

@@ -639,6 +639,51 @@ function ClientProfilePanel({ vm }: { vm: RenewalVM }) {
           </div>
         ))}
 
+        {/* ── Stripe Subscription (groundwork — not yet live) ──────────────────────
+             FUTURE LIVE INTEGRATION HOOK (Renewals / ClientProfilePanel):
+             When Stripe is connected at launch:
+               - Display stripeSubscriptionId from the matching MASTER_CLIENTS record
+               - Status = current subscription status fetched from Stripe
+                 (stripe.subscriptions.retrieve(stripeSubscriptionId))
+               - "Sync Renewal to Stripe" should update subscription billing period:
+                 stripe.subscriptions.update(id, { billing_cycle_anchor: renewalDate })
+               - This is where AM confirms that a renewed subscription is active in Stripe
+             ────────────────────────────────────────────────────────────────────── */}
+        <div className="rounded-xl border p-4 space-y-2" style={{ borderColor: "#E2E8F0", background: "#F8FAFC" }}>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "#64748B" }}>Stripe Subscription</p>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border" style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}>
+              Coming at launch
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-xs" style={{ color: "#94A3B8" }}>
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#CBD5E1" }} />
+              Not Connected — Stripe Subscription ID: —
+            </div>
+            <div className="relative group">
+              <button
+                disabled
+                className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md border cursor-not-allowed opacity-60"
+                style={{ background: "#F8FAFC", borderColor: "#CBD5E1", color: "#64748B" }}
+              >
+                Sync to Stripe
+              </button>
+              <div
+                className="absolute bottom-full right-0 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ whiteSpace: "nowrap" }}
+              >
+                <div className="rounded-lg px-3 py-1.5 text-[11px] font-medium shadow-lg"
+                  style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+                  Not yet available — coming at launch
+                  <div className="absolute top-full right-3 border-4 border-transparent"
+                    style={{ borderTopColor: "#1E293B" }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Services */}
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">

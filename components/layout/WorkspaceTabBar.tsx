@@ -22,10 +22,9 @@ export default function WorkspaceTabBar({ workspace }: WorkspaceTabBarProps) {
     >
       {/* Workspace identity strip */}
       <div className="flex items-center gap-3 px-1 pt-4 pb-3">
-        <span className="text-2xl">{workspace.icon}</span>
         <div>
           <p
-            className="text-[10px] font-bold uppercase tracking-widest"style={{ color: workspace.accentColor }}
+            className="text-[10px] font-bold uppercase tracking-widest"style={{ color: "var(--rtm-text-muted)" }}
           >
             Workspace
           </p>

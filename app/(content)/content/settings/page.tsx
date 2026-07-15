@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { KpiSettingsSection } from "@/components/settings/KpiSettingsSection";
 
 const teamMembers = [
   { name: "Elena H.", role: "Department Head", access: "Full Access", status: "Active", clients: 11, lastActive: "Today, 8:45 AM"},
@@ -160,6 +161,8 @@ export default function ContentSettingsPage() {
           ))}
         </div>
       </div>
+
+      <KpiSettingsSection departmentSlug="content" />
     </div>
   );
 }
