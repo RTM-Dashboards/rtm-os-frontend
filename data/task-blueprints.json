@@ -1,0 +1,166 @@
+{
+  "blueprints": [
+    {
+      "id": "bp-001",
+      "name": "SEO Launch Blueprint",
+      "department": "SEO",
+      "servicePackage": "SEO Only",
+      "mappedLineItem": "SEO Management",
+      "description": "Full SEO launch sequence: access collection, audit, keyword research, on-page, reporting setup.",
+      "activationTrigger": "Invoice Paid",
+      "estimatedTotalHours": 18,
+      "isActive": true,
+      "lastUpdated": "2025-07-01",
+      "version": "1.2",
+      "tasks": [
+        { "id": "bpt-001-1", "name": "Collect GA4 & GSC Access",   "department": "Account Management", "ownerRole": "Account Manager",  "estimatedHours": 0.5, "priority": "Urgent", "dueDaysOffset": 1,  "description": "Request and collect GA4, GSC, and website admin access from client." },
+        { "id": "bpt-001-2", "name": "Technical SEO Audit",         "department": "SEO",                "ownerRole": "SEO Lead",          "estimatedHours": 4,   "priority": "High",   "dueDaysOffset": 5,  "dependsOnId": "bpt-001-1", "description": "Full Screaming Frog audit, Core Web Vitals, crawl errors." },
+        { "id": "bpt-001-3", "name": "Competitor Analysis",         "department": "SEO",                "ownerRole": "SEO Specialist",    "estimatedHours": 3,   "priority": "High",   "dueDaysOffset": 8,  "dependsOnId": "bpt-001-1", "description": "Semrush competitor gap analysis for top 3 competitors." },
+        { "id": "bpt-001-4", "name": "Keyword Research & Map",      "department": "SEO",                "ownerRole": "SEO Specialist",    "estimatedHours": 4,   "priority": "High",   "dueDaysOffset": 12, "dependsOnId": "bpt-001-3", "description": "Build keyword map, cluster by page, assign targets." },
+        { "id": "bpt-001-5", "name": "On-Page Optimization",        "department": "SEO",                "ownerRole": "SEO Specialist",    "estimatedHours": 4,   "priority": "High",   "dueDaysOffset": 18, "dependsOnId": "bpt-001-4", "description": "Meta titles, H1s, schema, internal linking." },
+        { "id": "bpt-001-6", "name": "SEO Reporting Setup",         "department": "Reporting",          "ownerRole": "Reporting Analyst", "estimatedHours": 2,   "priority": "Medium", "dueDaysOffset": 21, "dependsOnId": "bpt-001-2", "description": "Connect AgencyAnalytics, build monthly SEO report template." }
+      ]
+    },
+    {
+      "id": "bp-002",
+      "name": "GBP Launch Blueprint",
+      "department": "GBP",
+      "servicePackage": "SEO + GBP",
+      "mappedLineItem": "GBP Management",
+      "description": "Google Business Profile setup, optimization, and monthly management cadence.",
+      "activationTrigger": "Invoice Paid",
+      "estimatedTotalHours": 8,
+      "isActive": true,
+      "lastUpdated": "2025-07-01",
+      "version": "1.0",
+      "tasks": [
+        { "id": "bpt-002-1", "name": "Collect GBP Admin Access",   "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 0.5, "priority": "Urgent", "dueDaysOffset": 1 },
+        { "id": "bpt-002-2", "name": "GBP Profile Audit",           "department": "GBP",                "ownerRole": "SEO Specialist",  "estimatedHours": 2,   "priority": "High",   "dueDaysOffset": 5,  "dependsOnId": "bpt-002-1" },
+        { "id": "bpt-002-3", "name": "GBP Profile Optimization",   "department": "GBP",                "ownerRole": "SEO Specialist",  "estimatedHours": 3,   "priority": "High",   "dueDaysOffset": 10, "dependsOnId": "bpt-002-2" },
+        { "id": "bpt-002-4", "name": "GBP Photo Upload",            "department": "GBP",                "ownerRole": "SEO Specialist",  "estimatedHours": 1,   "priority": "Medium", "dueDaysOffset": 12, "dependsOnId": "bpt-002-3" },
+        { "id": "bpt-002-5", "name": "Monthly GBP Review Setup",   "department": "GBP",                "ownerRole": "SEO Lead",        "estimatedHours": 1,   "priority": "Low",    "dueDaysOffset": 14 }
+      ]
+    },
+    {
+      "id": "bp-003",
+      "name": "PPC Launch Blueprint",
+      "department": "PPC",
+      "servicePackage": "PPC + Landing Page",
+      "mappedLineItem": "Google Ads Management",
+      "description": "Google Ads campaign build, conversion tracking, and ongoing optimization setup.",
+      "activationTrigger": "Invoice Paid",
+      "estimatedTotalHours": 14,
+      "isActive": true,
+      "lastUpdated": "2025-07-05",
+      "version": "2.1",
+      "tasks": [
+        { "id": "bpt-003-1", "name": "Collect Google Ads Access",   "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 0.5, "priority": "Urgent", "dueDaysOffset": 1 },
+        { "id": "bpt-003-2", "name": "Campaign Strategy Brief",     "department": "PPC",                "ownerRole": "PPC Specialist",  "estimatedHours": 2,   "priority": "High",   "dueDaysOffset": 4,  "dependsOnId": "bpt-003-1" },
+        { "id": "bpt-003-3", "name": "Campaign Structure Build",    "department": "PPC",                "ownerRole": "PPC Specialist",  "estimatedHours": 4,   "priority": "High",   "dueDaysOffset": 8,  "dependsOnId": "bpt-003-2" },
+        { "id": "bpt-003-4", "name": "Ad Copy Creation",            "department": "PPC",                "ownerRole": "PPC Specialist",  "estimatedHours": 3,   "priority": "High",   "dueDaysOffset": 10, "dependsOnId": "bpt-003-3" },
+        { "id": "bpt-003-5", "name": "Conversion Tracking Setup",  "department": "PPC",                "ownerRole": "PPC Specialist",  "estimatedHours": 2,   "priority": "High",   "dueDaysOffset": 12, "dependsOnId": "bpt-003-3" },
+        { "id": "bpt-003-6", "name": "Campaign QA & Launch",        "department": "PPC",                "ownerRole": "PPC Specialist",  "estimatedHours": 2,   "priority": "Urgent", "dueDaysOffset": 14, "dependsOnId": "bpt-003-5" }
+      ]
+    },
+    {
+      "id": "bp-004",
+      "name": "Client Onboarding Blueprint",
+      "department": "Account Management",
+      "servicePackage": "Custom",
+      "mappedLineItem": "Account Management",
+      "description": "Universal onboarding sequence fired for every new client regardless of service.",
+      "activationTrigger": "Contract Signed",
+      "estimatedTotalHours": 5,
+      "isActive": true,
+      "lastUpdated": "2025-07-10",
+      "version": "3.0",
+      "tasks": [
+        { "id": "bpt-004-1", "name": "Assign Account Manager",        "department": "Account Management", "ownerRole": "Operations Lead", "estimatedHours": 0.25, "priority": "Urgent", "dueDaysOffset": 1 },
+        { "id": "bpt-004-2", "name": "Send Welcome Email & Form",     "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 0.5,  "priority": "High",   "dueDaysOffset": 1,  "dependsOnId": "bpt-004-1" },
+        { "id": "bpt-004-3", "name": "Schedule Kickoff Call",         "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 0.25, "priority": "High",   "dueDaysOffset": 2,  "dependsOnId": "bpt-004-2" },
+        { "id": "bpt-004-4", "name": "Conduct Kickoff Call",          "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 1,    "priority": "High",   "dueDaysOffset": 5,  "dependsOnId": "bpt-004-3" },
+        { "id": "bpt-004-5", "name": "Complete Onboarding Checklist", "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 1,    "priority": "Medium", "dueDaysOffset": 7,  "dependsOnId": "bpt-004-4" },
+        { "id": "bpt-004-6", "name": "First 30-Day Check-In",         "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 1,    "priority": "Medium", "dueDaysOffset": 30, "dependsOnId": "bpt-004-5" }
+      ]
+    },
+    {
+      "id": "bp-005",
+      "name": "Monthly Reporting Blueprint",
+      "department": "Reporting",
+      "servicePackage": "Reporting Only",
+      "mappedLineItem": "Monthly Reporting",
+      "description": "Monthly reporting delivery: data pull, dashboard update, client delivery.",
+      "activationTrigger": "Invoice Paid",
+      "estimatedTotalHours": 6,
+      "isActive": true,
+      "lastUpdated": "2025-07-01",
+      "version": "1.1",
+      "tasks": [
+        { "id": "bpt-005-1", "name": "Pull GA4 & GSC Data",        "department": "Reporting", "ownerRole": "Reporting Analyst", "estimatedHours": 1,   "priority": "High",   "dueDaysOffset": 2 },
+        { "id": "bpt-005-2", "name": "Pull Ad Platform Data",      "department": "Reporting", "ownerRole": "Reporting Analyst", "estimatedHours": 1,   "priority": "High",   "dueDaysOffset": 2 },
+        { "id": "bpt-005-3", "name": "Build Report Dashboard",     "department": "Reporting", "ownerRole": "Reporting Analyst", "estimatedHours": 2,   "priority": "High",   "dueDaysOffset": 4,  "dependsOnId": "bpt-005-1" },
+        { "id": "bpt-005-4", "name": "QA & Review",                "department": "Reporting", "ownerRole": "Account Manager",   "estimatedHours": 1,   "priority": "Medium", "dueDaysOffset": 5,  "dependsOnId": "bpt-005-3" },
+        { "id": "bpt-005-5", "name": "Deliver Report to Client",   "department": "Reporting", "ownerRole": "Account Manager",   "estimatedHours": 0.5, "priority": "High",   "dueDaysOffset": 5,  "dependsOnId": "bpt-005-4" }
+      ]
+    },
+    {
+      "id": "bp-006",
+      "name": "Meta Ads Launch Blueprint",
+      "department": "Meta Ads",
+      "servicePackage": "Custom",
+      "mappedLineItem": "Meta Ads Management",
+      "description": "Facebook/Instagram Business Manager setup, pixel, creative brief, campaign launch.",
+      "activationTrigger": "Invoice Paid",
+      "estimatedTotalHours": 12,
+      "isActive": true,
+      "lastUpdated": "2025-07-08",
+      "version": "1.0",
+      "tasks": [
+        { "id": "bpt-006-1", "name": "Business Manager Setup",      "department": "Meta Ads",  "ownerRole": "Meta Ads Specialist", "estimatedHours": 1, "priority": "Urgent", "dueDaysOffset": 2 },
+        { "id": "bpt-006-2", "name": "Meta Pixel Installation",     "department": "Meta Ads",  "ownerRole": "Meta Ads Specialist", "estimatedHours": 2, "priority": "High",   "dueDaysOffset": 4,  "dependsOnId": "bpt-006-1" },
+        { "id": "bpt-006-3", "name": "Creative Brief",              "department": "Meta Ads",  "ownerRole": "Meta Ads Specialist", "estimatedHours": 2, "priority": "High",   "dueDaysOffset": 6 },
+        { "id": "bpt-006-4", "name": "Ad Creative Production",     "department": "Design",     "ownerRole": "Designer",            "estimatedHours": 4, "priority": "High",   "dueDaysOffset": 12, "dependsOnId": "bpt-006-3" },
+        { "id": "bpt-006-5", "name": "Campaign Launch & QA",       "department": "Meta Ads",  "ownerRole": "Meta Ads Specialist", "estimatedHours": 2, "priority": "Urgent", "dueDaysOffset": 14, "dependsOnId": "bpt-006-4" }
+      ]
+    },
+    {
+      "id": "bp-007",
+      "name": "Website Build Blueprint",
+      "department": "Web Development",
+      "servicePackage": "Website Build",
+      "mappedLineItem": "Website Redesign",
+      "description": "Discovery, wireframes, design, development, QA, launch.",
+      "activationTrigger": "Contract Signed",
+      "estimatedTotalHours": 60,
+      "isActive": true,
+      "lastUpdated": "2025-06-15",
+      "version": "2.0",
+      "tasks": [
+        { "id": "bpt-007-1", "name": "Discovery & Requirements",   "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 3,  "priority": "High",   "dueDaysOffset": 3 },
+        { "id": "bpt-007-2", "name": "Wireframes",                 "department": "Design",             "ownerRole": "Designer",         "estimatedHours": 8,  "priority": "High",   "dueDaysOffset": 10, "dependsOnId": "bpt-007-1" },
+        { "id": "bpt-007-3", "name": "Client Wireframe Approval",  "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 1,  "priority": "High",   "dueDaysOffset": 14, "dependsOnId": "bpt-007-2" },
+        { "id": "bpt-007-4", "name": "Visual Design",              "department": "Design",             "ownerRole": "Designer",         "estimatedHours": 12, "priority": "High",   "dueDaysOffset": 22, "dependsOnId": "bpt-007-3" },
+        { "id": "bpt-007-5", "name": "Client Design Approval",     "department": "Account Management", "ownerRole": "Account Manager", "estimatedHours": 1,  "priority": "High",   "dueDaysOffset": 26, "dependsOnId": "bpt-007-4" },
+        { "id": "bpt-007-6", "name": "WordPress Development",      "department": "Web Development",    "ownerRole": "Developer",        "estimatedHours": 20, "priority": "High",   "dueDaysOffset": 45, "dependsOnId": "bpt-007-5" },
+        { "id": "bpt-007-7", "name": "QA & Testing",               "department": "Web Development",    "ownerRole": "Developer",        "estimatedHours": 4,  "priority": "High",   "dueDaysOffset": 50, "dependsOnId": "bpt-007-6" },
+        { "id": "bpt-007-8", "name": "SEO Setup on New Site",      "department": "SEO",                "ownerRole": "SEO Specialist",   "estimatedHours": 4,  "priority": "High",   "dueDaysOffset": 55, "dependsOnId": "bpt-007-7" },
+        { "id": "bpt-007-9", "name": "Site Launch",                "department": "Web Development",    "ownerRole": "Developer",        "estimatedHours": 2,  "priority": "Urgent", "dueDaysOffset": 60, "dependsOnId": "bpt-007-8" }
+      ]
+    }
+  ],
+  "serviceMapping": {
+    "seo / gbp":          "bp-001",
+    "seo":                "bp-001",
+    "gbp":                "bp-002",
+    "google ads":         "bp-003",
+    "ppc":                "bp-003",
+    "meta ads":           "bp-006",
+    "facebook ads":       "bp-006",
+    "website build":      "bp-007",
+    "website redesign":   "bp-007",
+    "monthly reporting":  "bp-005",
+    "reporting":          "bp-005",
+    "account management": "bp-004",
+    "onboarding":         "bp-004"
+  }
+}

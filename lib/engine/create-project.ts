@@ -29,8 +29,7 @@
 // name but do not generate blueprint tasks — identical behaviour to the wizard.
 // =============================================================================
 
-import type { Project, Task, Milestone, DepartmentName } from "./types";
-import { BLUEPRINTS } from "./mock-data";
+import type { Project, Task, Milestone, DepartmentName, TaskBlueprint } from "./types";
 import {
   createOnboardingRecord,
   updateOnboardingRecord,
@@ -47,9 +46,84 @@ export function genId(prefix: string): string {
   return `${prefix}-${ts}-${rnd}`;
 }
 
-// ── Service → Blueprint ID mapping ───────────────────────────────────────────
-// Exact copy of SERVICE_TO_BLUEPRINT from the wizard page (single source of
-// truth lives here; wizard page re-exports / delegates to this module).
+// ── Blueprint store access ───────────────────────────────────────────────────
+// Reads from /api/task-blueprints — the single source of truth for blueprints
+// and the SERVICE_TO_BLUEPRINT activation mapping.
+//
+// Two helpers are exported for callers that need sync fallbacks or testing:
+//   fetchBlueprintStore() — async fetch from the API
+//   blueprintIdsForServices() — derives blueprint IDs from service names
+
+export interface BlueprintStore {
+  blueprints: TaskBlueprint[];
+  serviceMapping: Record<string, string>;
+}
+
+/**
+ * Fetch blueprints + serviceMapping from the file-backed API store.
+ * Falls back to an empty store on fetch failure so the wizard degrades
+ * gracefully rather than crashing.
+ */
+export async function fetchBlueprintStore(): Promise<BlueprintStore> {
+  try {
+    // In server context (Node.js) we read the JSON file directly to avoid
+    // an HTTP round-trip to ourselves.  In browser context the absolute URL
+    // is required; we derive it from NEXT_PUBLIC_BASE_URL when set.
+    if (typeof window === "undefined") {
+      // Server-side: direct file read (same logic as the API route)
+      const fs = await import("fs");
+      const path = await import("path");
+      const DATA_FILE = path.join(process.cwd(), "data", "task-blueprints.json");
+      const raw = fs.readFileSync(DATA_FILE, "utf-8");
+      const parsed = JSON.parse(raw) as Partial<BlueprintStore>;
+      return {
+        blueprints: (parsed.blueprints ?? []) as TaskBlueprint[],
+        serviceMapping: parsed.serviceMapping ?? {},
+      };
+    } else {
+      // Client-side: HTTP fetch
+      const base = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+      const res = await fetch(`${base}/api/task-blueprints`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return (await res.json()) as BlueprintStore;
+    }
+  } catch (err) {
+    console.error("[create-project] fetchBlueprintStore failed:", err);
+    return { blueprints: [], serviceMapping: {} };
+  }
+}
+
+/**
+ * Derive the set of blueprint IDs for a list of contracted services.
+ * bp-004 (Client Onboarding) is always included, matching wizard behaviour.
+ *
+ * Pass serviceMapping from fetchBlueprintStore() so the lookup uses the
+ * live store rather than any hardcoded table.
+ */
+export function blueprintIdsForServices(
+  services: string[],
+  serviceMapping: Record<string, string>,
+): string[] {
+  const ids = new Set<string>();
+  ids.add("bp-004"); // always include onboarding
+  for (const svc of services) {
+    const key = svc.toLowerCase().trim();
+    for (const [pattern, bpId] of Object.entries(serviceMapping)) {
+      if (key.includes(pattern)) {
+        ids.add(bpId);
+        break;
+      }
+    }
+  }
+  return Array.from(ids);
+}
+
+/**
+ * Legacy sync export — kept so any existing callers that pass a mapping
+ * explicitly still compile.  Prefer blueprintIdsForServices(services, mapping)
+ * with a live-fetched mapping.
+ * @deprecated Use blueprintIdsForServices(services, serviceMapping) instead.
+ */
 export const SERVICE_TO_BLUEPRINT: Record<string, string> = {
   "seo / gbp":          "bp-001",
   "seo":                "bp-001",
@@ -65,23 +139,6 @@ export const SERVICE_TO_BLUEPRINT: Record<string, string> = {
   "account management": "bp-004",
   "onboarding":         "bp-004",
 };
-
-/** Derive the set of blueprint IDs for a list of contracted services.
- *  bp-004 (Client Onboarding) is always included, matching wizard behaviour. */
-export function blueprintIdsForServices(services: string[]): string[] {
-  const ids = new Set<string>();
-  ids.add("bp-004"); // always
-  for (const svc of services) {
-    const key = svc.toLowerCase().trim();
-    for (const [pattern, bpId] of Object.entries(SERVICE_TO_BLUEPRINT)) {
-      if (key.includes(pattern)) {
-        ids.add(bpId);
-        break;
-      }
-    }
-  }
-  return Array.from(ids);
-}
 
 // ── Project name derivation ───────────────────────────────────────────────────
 export function deriveProjectName(clientName: string, services: string[]): string {
@@ -202,9 +259,13 @@ export async function createEngineProject(
   const tasks: Task[]     = [onboardingTask];
 
   // ── Blueprint tasks ──────────────────────────────────────────────────────────
-  const bpIds = explicitBlueprintIds ?? blueprintIdsForServices(services);
+  // Load blueprints from the file-backed store (single source of truth).
+  const { blueprints: liveBlueprints, serviceMapping: liveMapping } =
+    await fetchBlueprintStore();
+  const bpIds =
+    explicitBlueprintIds ?? blueprintIdsForServices(services, liveMapping);
   for (const bpId of bpIds) {
-    const bp = BLUEPRINTS.find((b) => b.id === bpId);
+    const bp = liveBlueprints.find((b) => b.id === bpId);
     if (!bp) continue;
     for (const bpt of bp.tasks) {
       const tid = genId("tsk-wizard");

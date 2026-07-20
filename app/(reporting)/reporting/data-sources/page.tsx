@@ -27,136 +27,138 @@ interface DataConnector {
   dataTypes: string[];
 }
 
-//  Mock Data 
+//  Connector Catalogue — honest state: all "Not Connected"
+// Real OAuth credentials are required to activate each connector.
+// Status is "Not Connected" for all until OAuth is configured.
 const connectors: DataConnector[] = [
   {
     id: "c-001",
     name: "Google Analytics 4",
     category: "Analytics",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 6:00 AM",
-    owner: "Jake T.",
-    clientsUsing: 38,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["SEO", "Website", "PPC"],
     description: "Website traffic, sessions, conversions, and user behavior data.",
-    syncFrequency: "Daily at 6:00 AM",
+    syncFrequency: "Daily (when connected)",
     dataTypes: ["Sessions", "Conversions", "Traffic Sources", "Goal Completions"],
   },
   {
     id: "c-002",
     name: "Google Ads",
     category: "Advertising",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 6:30 AM",
-    owner: "Leo S.",
-    clientsUsing: 24,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["PPC"],
     description: "Google Ads campaign performance, spend, ROAS, and conversion data.",
-    syncFrequency: "Daily at 6:30 AM",
+    syncFrequency: "Daily (when connected)",
     dataTypes: ["Impressions", "Clicks", "Spend", "Conversions", "ROAS", "Quality Score"],
   },
   {
     id: "c-003",
     name: "Meta Ads",
     category: "Advertising",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 7:00 AM",
-    owner: "Dana W.",
-    clientsUsing: 18,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["Meta Ads"],
     description: "Facebook and Instagram campaign metrics, audience data, and creative performance.",
-    syncFrequency: "Daily at 7:00 AM",
+    syncFrequency: "Daily (when connected)",
     dataTypes: ["Impressions", "Reach", "CTR", "CPC", "Conversions", "Ad Sets"],
   },
   {
     id: "c-004",
     name: "Google Search Console",
     category: "Analytics",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 6:15 AM",
-    owner: "Jake T.",
-    clientsUsing: 35,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["SEO"],
     description: "Organic search performance, keyword impressions, CTR, and indexing status.",
-    syncFrequency: "Daily at 6:15 AM",
+    syncFrequency: "Daily (when connected)",
     dataTypes: ["Queries", "Impressions", "CTR", "Average Position", "Index Coverage"],
   },
   {
     id: "c-005",
     name: "Google Business Profile",
     category: "Analytics",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 8:00 AM",
-    owner: "Nina P.",
-    clientsUsing: 31,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["GBP"],
     description: "GBP listing performance, review data, search impressions, and call tracking.",
-    syncFrequency: "Daily at 8:00 AM",
+    syncFrequency: "Daily (when connected)",
     dataTypes: ["Views", "Searches", "Direction Requests", "Calls", "Reviews"],
   },
   {
     id: "c-006",
     name: "Local Services Ads",
     category: "Advertising",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 9:00 AM",
-    owner: "Ryan B.",
-    clientsUsing: 14,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["LSA"],
     description: "LSA lead volume, cost per lead, lead quality scores, and dispute data.",
-    syncFrequency: "Daily at 9:00 AM",
+    syncFrequency: "Daily (when connected)",
     dataTypes: ["Leads", "Cost Per Lead", "Lead Status", "Disputes", "Budget Utilization"],
   },
   {
     id: "c-007",
     name: "Call Tracking Provider",
     category: "Call Tracking",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 5:00 AM",
-    owner: "Mia K.",
-    clientsUsing: 42,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["SEO", "PPC", "GBP", "LSA", "Meta Ads"],
     description: "Dynamic call tracking, recording, transcription, and attribution data.",
-    syncFrequency: "Every hour",
+    syncFrequency: "Hourly (when connected)",
     dataTypes: ["Call Volume", "Duration", "Source", "Campaign", "Recording URL", "Transcript"],
   },
   {
     id: "c-008",
     name: "CRM Provider",
     category: "CRM",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 6:00 AM",
-    owner: "Chris L.",
-    clientsUsing: 29,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["AI Automation", "Account Management"],
     description: "Lead pipeline, contact records, deal stages, and client account data.",
-    syncFrequency: "Daily at 6:00 AM",
+    syncFrequency: "Daily (when connected)",
     dataTypes: ["Contacts", "Deals", "Pipeline Stages", "Activities", "Revenue"],
   },
   {
     id: "c-009",
     name: "Google Sheets",
     category: "Custom API",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — 8:30 AM",
-    owner: "Mia K.",
-    clientsUsing: 47,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["SEO", "GBP", "PPC", "Meta Ads", "LSA", "Yelp"],
     description: "Manual data entry bridge for departments that export data to shared sheets.",
-    syncFrequency: "On demand",
+    syncFrequency: "On demand (when connected)",
     dataTypes: ["Custom Metrics", "Manual Inputs", "Department Exports"],
   },
   {
     id: "c-010",
     name: "OpenAI",
     category: "AI",
-    status: "Connected",
-    lastSync: "Jun 7, 2025 — Continuous",
-    owner: "Jake T.",
-    clientsUsing: 47,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["AI Automation", "Call Intelligence", "Report Generation"],
-    description: "AI classification, call analysis, report drafting, and insights generation.",
-    syncFrequency: "On demand",
+    description: "AI classification, call analysis, report drafting, and insights generation. Requires API key configuration.",
+    syncFrequency: "On demand (when connected)",
     dataTypes: ["Call Classifications", "Summaries", "Sentiment Scores", "Draft Reports"],
   },
   {
@@ -176,13 +178,13 @@ const connectors: DataConnector[] = [
     id: "c-012",
     name: "Yelp Ads",
     category: "Advertising",
-    status: "Error",
-    lastSync: "Jun 5, 2025 — 7:00 AM",
-    owner: "Mia K.",
-    clientsUsing: 8,
+    status: "Disconnected",
+    lastSync: "—",
+    owner: "Unassigned",
+    clientsUsing: 0,
     servicesUsing: ["Yelp"],
     description: "Yelp advertising performance, review metrics, and profile impressions.",
-    syncFrequency: "Daily at 7:00 AM",
+    syncFrequency: "Daily (when connected)",
     dataTypes: ["Impressions", "Clicks", "Reviews", "Rating Trends"],
   },
 ];
@@ -228,9 +230,8 @@ export default function DataSourcesPage() {
   });
 
   const connected = connectors.filter((c) => c.status === "Connected").length;
-  const errors = connectors.filter((c) => c.status === "Error").length;
   const pending = connectors.filter((c) => c.status === "Pending Setup").length;
-  const totalClients = Math.max(...connectors.map((c) => c.clientsUsing));
+  const notConnected = connectors.filter((c) => c.status === "Disconnected").length;
 
   return (
     <div className="space-y-6">
@@ -238,23 +239,41 @@ export default function DataSourcesPage() {
         workspace={workspace}
         subtitle="Manage all data source connectors powering automated report generation and call intelligence."/>
 
+      {/* OAuth Groundwork Banner */}
+      <div
+        className="flex items-start gap-3 rounded-xl border px-4 py-3"
+        style={{ background: "#FFFBEB", borderColor: "#D9770640" }}
+      >
+        <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "#D97706" }}>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+        <div>
+          <span className="text-xs font-bold" style={{ color: "#92400E" }}>Connectors Require OAuth Configuration — Not Yet Active</span>
+          <p className="text-xs mt-0.5" style={{ color: "#92400E" }}>
+            Each connector requires OAuth app credentials and authorization from the respective platform (Google, Meta, Yelp, etc.).
+            All connectors show their honest <strong>Not Connected</strong> status. Sync, Configure, and Troubleshoot actions are available
+            once OAuth credentials are configured. The connector catalogue and data type schema are real groundwork ready for integration.
+          </p>
+        </div>
+      </div>
+
       {/* KPI Row */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
-          title="Total Connectors"value={String(connectors.length)}
-          subtitle="Across all categories"iconBg="#EFF6FF"iconColor="#1D4ED8"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
+          title="Total Connectors" value={String(connectors.length)}
+          subtitle="Across all categories" iconBg="#EFF6FF" iconColor="#1D4ED8" icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>}
         />
         <KpiCard
-          title="Connected"value={String(connected)}
-          subtitle="Active data feeds"iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+          title="Not Connected" value={String(notConnected)}
+          subtitle="OAuth required" iconBg="#F9FAFB" iconColor="#6B7280" icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M18.364 5.636a9 9 0 010 12.728M5.636 5.636a9 9 0 000 12.728M9 12h.01M15 12h.01"/></svg>}
         />
         <KpiCard
-          title="Connector Errors"value={String(errors)}
-          subtitle="Require attention"iconBg="#FEF2F2"iconColor="#DC2626"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>}
+          title="Active" value={String(connected)}
+          subtitle="Live data feeds" iconBg="#ECFDF5" iconColor="#059669" icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
         />
         <KpiCard
-          title="Pending Setup"value={String(pending)}
-          subtitle="Not yet configured"iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+          title="Pending Setup" value={String(pending)}
+          subtitle="Not yet configured" iconBg="#FFFBEB" iconColor="#D97706" icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
         />
       </div>
 
@@ -284,7 +303,10 @@ export default function DataSourcesPage() {
           ))}
         </div>
         <button
-          className="ml-auto text-xs font-semibold px-4 py-2 rounded-lg border transition-all"style={{ color: "#0F766E", background: "#0F766E15", borderColor: "#0F766E40"}}
+          disabled
+          className="ml-auto text-xs font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
+          style={{ color: "#0F766E", background: "#0F766E15", borderColor: "#0F766E40" }}
+          title="Coming when OAuth credentials are configured"
         >
           Add Connector
         </button>
@@ -425,10 +447,25 @@ export default function DataSourcesPage() {
                   </div>
 
                   <div className="flex gap-2 flex-wrap pt-2">
-                    <button className="text-xs font-semibold px-3 py-2 rounded-lg border"style={{ color: "#0F766E", background: "#0F766E15", borderColor: "#0F766E40"}}>Sync Now</button>
-                    <button className="text-xs font-semibold px-3 py-2 rounded-lg border"style={{ color: "#2563EB", background: "#2563EB15", borderColor: "#2563EB40"}}>Configure</button>
-                    {selectedConnector.status === "Error"&& (
-                      <button className="text-xs font-semibold px-3 py-2 rounded-lg border"style={{ color: "#DC2626", background: "#DC262615", borderColor: "#DC262640"}}>Troubleshoot</button>
+                    <button
+                      disabled
+                      className="text-xs font-semibold px-3 py-2 rounded-lg border opacity-40 cursor-not-allowed"
+                      style={{ color: "#0F766E", background: "#0F766E15", borderColor: "#0F766E40" }}
+                      title="Coming when OAuth is configured"
+                    >Sync Now</button>
+                    <button
+                      disabled
+                      className="text-xs font-semibold px-3 py-2 rounded-lg border opacity-40 cursor-not-allowed"
+                      style={{ color: "#2563EB", background: "#2563EB15", borderColor: "#2563EB40" }}
+                      title="Coming when OAuth is configured"
+                    >Configure</button>
+                    {selectedConnector.status === "Error" && (
+                      <button
+                        disabled
+                        className="text-xs font-semibold px-3 py-2 rounded-lg border opacity-40 cursor-not-allowed"
+                        style={{ color: "#DC2626", background: "#DC262615", borderColor: "#DC262640" }}
+                        title="Coming when OAuth is configured"
+                      >Troubleshoot</button>
                     )}
                   </div>
                 </div>

@@ -9,6 +9,8 @@ import {
   deptReviewStatusVariant,
   type ReportRecord,
 } from "@/lib/reporting/useReports";
+import { useDateRangeFilter } from "@/lib/reporting/useDateRangeFilter";
+import { DateRangeFilter } from "@/components/reporting/DateRangeFilter";
 
 const workspace = getWorkspace("reporting")!;
 
@@ -46,6 +48,9 @@ export default function DepartmentReviewPage() {
   const [filterStatus, setFilterStatus] = useState<DeptReviewStatus | "All">("All");
   const [selectedItem, setSelectedItem] = useState<ReportRecord | null>(null);
 
+  // Date-range filter (filters by createdAt on real report records)
+  const dateFilter = useDateRangeFilter();
+
   // Keep selectedItem in sync with live data
   const selectedLive = selectedItem
     ? records.find((r) => r.reportId === selectedItem.reportId) ?? selectedItem
@@ -55,6 +60,7 @@ export default function DepartmentReviewPage() {
     const dept = deptFromReportType(r.reportType);
     if (filterDept !== "All" && dept !== filterDept) return false;
     if (filterStatus !== "All" && r.deptReviewStatus !== filterStatus) return false;
+    if (!dateFilter.filterByDate(r.createdAt)) return false;
     return true;
   });
 
@@ -113,7 +119,19 @@ export default function DepartmentReviewPage() {
         <KpiCard title="Revision Requested" value={String(kpis.revisionRequested)} subtitle="Needs correction" iconBg="#FFFBEB" iconColor="#D97706" icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>} />
       </div>
 
-      {/* Filters + Actions */}
+      {/* Date range filter — applies to all Department Review records by createdAt */}
+      <DateRangeFilter
+        dateRange={dateFilter.dateRange}
+        setDateRange={dateFilter.setDateRange}
+        customStart={dateFilter.customStart}
+        setCustomStart={dateFilter.setCustomStart}
+        customEnd={dateFilter.customEnd}
+        setCustomEnd={dateFilter.setCustomEnd}
+        resultCount={loading ? undefined : filtered.length}
+        totalCount={loading ? undefined : records.length}
+      />
+
+      {/* Dept / Status filters + action buttons */}
       <div className="flex flex-wrap gap-3 items-center">
         <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="rounded-lg px-2 py-1.5 text-xs border outline-none" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-secondary)" }}>
           {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}

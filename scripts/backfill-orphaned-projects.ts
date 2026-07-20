@@ -79,7 +79,7 @@ function writeStore(store: StoreFile): void {
 }
 
 // ── Shared project-creation logic (same function as AM wizard) ────────────────
-import { createEngineProject, blueprintIdsForServices } from "../lib/engine/create-project";
+import { createEngineProject, blueprintIdsForServices, SERVICE_TO_BLUEPRINT } from "../lib/engine/create-project";
 import type { MasterClient } from "../lib/mock/master-clients";
 
 // ── The 13 orphaned client IDs ────────────────────────────────────────────────
@@ -717,7 +717,7 @@ async function main() {
     console.log(`         services: [${serviceLabel}]`);
 
     // Derive blueprint IDs exactly as the wizard does
-    const bpIds = blueprintIdsForServices(client.activeServices);
+    const bpIds = blueprintIdsForServices(client.activeServices, SERVICE_TO_BLUEPRINT);
     console.log(`         blueprints: [${bpIds.join(", ")}]`);
 
     // Call the shared project-creation function (identical to wizard)

@@ -9,6 +9,8 @@ import type { StatusVariant } from "@/components/ui";
 
 export type PermLevel = "full"| "partial"| "own"| "none";
 
+export type SeoTeam = "On-Page SEO" | "Off-Page SEO";
+
 export interface TeamMemberRow {
   user: string;
   initials: string;
@@ -21,6 +23,10 @@ export interface TeamMemberRow {
   assignedClients: string[];
   lastActive: string;
   department?: string;
+  /** SEO & Local only — which sub-team this member belongs to */
+  seoTeam?: SeoTeam;
+  /** SEO & Local only — marks the designated lead for their sub-team */
+  isTeamLead?: boolean;
 }
 
 export interface RoleDef {
@@ -1007,6 +1013,7 @@ export const seoLocalMembers: TeamMemberRow[] = [
     statusVariant: "success",
     assignedClients: ["— (All)"],
     lastActive: "Today, 7:58 AM",
+    // Division Head — oversees both teams; no sub-team assignment
   },
   {
     user: "Carlos Mendez",
@@ -1019,6 +1026,8 @@ export const seoLocalMembers: TeamMemberRow[] = [
     statusVariant: "success",
     assignedClients: ["Pacific Dental", "Summit Landscaping", "Harbor Auto Group"],
     lastActive: "Today, 8:00 AM",
+    seoTeam: "On-Page SEO",
+    isTeamLead: true,
   },
   {
     user: "Nia Adeyemi",
@@ -1031,6 +1040,8 @@ export const seoLocalMembers: TeamMemberRow[] = [
     statusVariant: "success",
     assignedClients: ["Apex Roofing", "Green Valley Dental"],
     lastActive: "Today, 9:30 AM",
+    seoTeam: "Off-Page SEO",
+    isTeamLead: true,
   },
   {
     user: "Drew Holloway",
@@ -1043,6 +1054,7 @@ export const seoLocalMembers: TeamMemberRow[] = [
     statusVariant: "success",
     assignedClients: ["Metro Dental", "Blue Ridge Plumbing"],
     lastActive: "Today, 8:45 AM",
+    seoTeam: "Off-Page SEO",
   },
   {
     user: "Tasha Morris",
@@ -1055,6 +1067,7 @@ export const seoLocalMembers: TeamMemberRow[] = [
     statusVariant: "neutral",
     assignedClients: ["— (Read-only)"],
     lastActive: "1 week ago",
+    seoTeam: "On-Page SEO",
   },
 ];
 

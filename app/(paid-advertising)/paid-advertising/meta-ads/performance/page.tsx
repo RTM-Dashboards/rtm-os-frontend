@@ -27,6 +27,7 @@ const workspace = getWorkspace("paid-advertising")!;
 interface MetaCampaignRow extends Record<string, unknown> {
   client: string;
   campaign: string;
+  budget: number;
   spend: number;
   leads: number;
   qualifiedLeads: number;
@@ -47,6 +48,7 @@ const allCampaigns: MetaCampaignRow[] = [
   {
     client: "Harbor Auto Group",
     campaign: "Summer Sale — Traffic",
+    budget: 4000,
     spend: 3200,
     leads: 124,
     qualifiedLeads: 72,
@@ -65,6 +67,7 @@ const allCampaigns: MetaCampaignRow[] = [
   {
     client: "Apex Roofing Co.",
     campaign: "Storm Season Lead Gen",
+    budget: 2200,
     spend: 1800,
     leads: 89,
     qualifiedLeads: 54,
@@ -83,6 +86,7 @@ const allCampaigns: MetaCampaignRow[] = [
   {
     client: "Sunbelt HVAC",
     campaign: "Brand Awareness Q2",
+    budget: 1200,
     spend: 900,
     leads: 31,
     qualifiedLeads: 16,
@@ -101,6 +105,7 @@ const allCampaigns: MetaCampaignRow[] = [
   {
     client: "Metro Dental",
     campaign: "New Patient Promo (Meta)",
+    budget: 1500,
     spend: 1200,
     leads: 42,
     qualifiedLeads: 26,
@@ -119,6 +124,7 @@ const allCampaigns: MetaCampaignRow[] = [
   {
     client: "Summit Landscaping",
     campaign: "Spring Services",
+    budget: 850,
     spend: 650,
     leads: 22,
     qualifiedLeads: 13,
@@ -270,10 +276,14 @@ export default function MetaAdsPerformancePage() {
       forms: filteredCampaigns.reduce((s, r) => s + r.formSubmissions, 0),
       booked: filteredCampaigns.reduce((s, r) => s + r.bookedLeads, 0),
     };
+    const budget = filteredCampaigns.reduce((s, r) => s + r.budget, 0);
     return {
       ...t,
+      budget,
       cpl: t.leads > 0 ? t.spend / t.leads : 0,
       costPerQual: t.qualified > 0 ? t.spend / t.qualified : 0,
+      budgetUtilization: budget > 0 ? Math.round((t.spend / budget) * 100) : 0,
+      conversionRate: t.leads > 0 ? ((t.booked / t.leads) * 100) : 0,
       avgCtr: filteredCampaigns.reduce((s, r) => s + r.ctr, 0) / (filteredCampaigns.length || 1),
       avgCpm: filteredCampaigns.reduce((s, r) => s + r.cpm, 0) / (filteredCampaigns.length || 1),
       avgFreq: filteredCampaigns.reduce((s, r) => s + r.frequency, 0) / (filteredCampaigns.length || 1),
@@ -383,7 +393,30 @@ export default function MetaAdsPerformancePage() {
         />}
       </div>
 
-      {/* Row 4: CPM, Frequency, Creative Fatigue */}
+      {/* KPI Row 4: Budget + Conversion */}
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+        {isEnabled("paid-budget") && <KpiCard
+          title="Budget"value={`$${totals.budget.toLocaleString()}`}
+          trend="neutral"trendValue="Allocated"trendLabel="this period"
+          iconBg="#F0FDF4"iconColor="#16A34A"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>}
+        />}
+        {isEnabled("paid-budget-utilization") && <KpiCard
+          title="Budget Utilization"value={`${totals.budgetUtilization}%`}
+          trend={totals.budgetUtilization >= 90 ? "up" : totals.budgetUtilization >= 70 ? "neutral" : "down"}
+          trendValue={totals.budgetUtilization >= 90 ? "Near limit" : totals.budgetUtilization >= 70 ? "On track" : "Under-paced"}
+          trendLabel={`$${totals.spend.toLocaleString()} of $${totals.budget.toLocaleString()} spent`}
+          iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
+        />}
+        {isEnabled("paid-conversion-rate") && <KpiCard
+          title="Conversion Rate"value={`${totals.conversionRate.toFixed(1)}%`}
+          trend={totals.conversionRate >= 10 ? "up" : "down"}
+          trendValue={totals.conversionRate >= 10 ? "+1.4%" : "-0.6%"}
+          trendLabel={compLabel ?? "vs last period"}
+          iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>}
+        />}
+      </div>
+
+      {/* Row 5: CPM, Frequency, Creative Fatigue */}
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
         {isEnabled("paid-meta-cpm") && <KpiCard
           title="Avg CPM"value={`$${totals.avgCpm.toFixed(2)}`}

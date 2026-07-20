@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { BLUEPRINTS } from "@/lib/engine/mock-data";
 
 // 
 // Task Blueprints (formerly Task Template Library)
@@ -72,27 +71,52 @@ interface TaskTemplate {
 }
 
 // ---------------------------------------------------------------------------
-// Engine adapter — derive TaskTemplate entries from engine BLUEPRINTS.
-// The page's inline TASK_TEMPLATES are kept for extended display fields
-// (monthly counts, SLA details) that go beyond the engine schema.
-// Engine blueprints are merged first so they are always the authoritative source.
+// Adapter: BlueprintApiRecord → TaskTemplate
+// Blueprints come from /api/task-blueprints (file-backed, single source of truth).
 // ---------------------------------------------------------------------------
 
-function blueprintToTemplate(bp: import("@/lib/engine/types").TaskBlueprint): TaskTemplate {
-  // Map engine dept → page-local Department
-  const deptMap: Record<string, Department> = {
-    "SEO": "SEO",
-    "GBP": "GBP",
-    "PPC": "Paid Advertising",
-    "Meta Ads": "Meta Ads",
-    "Reporting": "Reporting",
-    "Web Development": "Web Development",
-    "Design": "Creative",
-    "Account Management": "Account Management",
-  };
-  const dept: Department = (deptMap[bp.department] as Department) ?? "Account Management";
+interface BlueprintApiTask {
+  id: string;
+  name: string;
+  department: string;
+  ownerRole: string;
+  estimatedHours: number;
+  priority: string;
+  dependsOnId?: string;
+  dueDaysOffset: number;
+  description?: string;
+}
 
-  // Infer TemplateType from blueprint name
+interface BlueprintApiRecord {
+  id: string;
+  name: string;
+  department: string;
+  servicePackage: string;
+  mappedLineItem: string;
+  description: string;
+  activationTrigger: string;
+  estimatedTotalHours: number;
+  tasks: BlueprintApiTask[];
+  isActive: boolean;
+  lastUpdated: string;
+  version: string;
+}
+
+const DEPT_MAP: Record<string, Department> = {
+  "SEO":                "SEO",
+  "GBP":                "GBP",
+  "PPC":                "Paid Advertising",
+  "Meta Ads":           "Meta Ads",
+  "Reporting":          "Reporting",
+  "Web Development":    "Web Development",
+  "Design":             "Creative",
+  "Account Management": "Account Management",
+  "Billing":            "Billing",
+};
+
+function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
+  const dept: Department = DEPT_MAP[bp.department] ?? "Account Management";
+
   let type: TemplateType = "Setup";
   const lname = bp.name.toLowerCase();
   if (lname.includes("onboard")) type = "Onboarding";
@@ -100,7 +124,6 @@ function blueprintToTemplate(bp: import("@/lib/engine/types").TaskBlueprint): Ta
   else if (lname.includes("monthly")) type = "Monthly Management";
   else if (lname.includes("build") || lname.includes("website")) type = "Setup";
 
-  // Infer ActivationTrigger
   let trigger: ActivationTrigger = "Invoice Paid";
   const at = bp.activationTrigger.toLowerCase();
   if (at.includes("contract") || at.includes("signed")) trigger = "Contract Signed";
@@ -108,7 +131,7 @@ function blueprintToTemplate(bp: import("@/lib/engine/types").TaskBlueprint): Ta
 
   const tasks: TemplateTask[] = bp.tasks.map((bpt) => ({
     name: bpt.name,
-    department: (deptMap[bpt.department] as Department) ?? dept,
+    department: DEPT_MAP[bpt.department] ?? dept,
     ownerRole: bpt.ownerRole,
     targetCompletionDays: bpt.dueDaysOffset,
     priority: bpt.priority === "Urgent" ? "High" : (bpt.priority as TaskPriority),
@@ -150,30 +173,567 @@ function blueprintToTemplate(bp: import("@/lib/engine/types").TaskBlueprint): Ta
   };
 }
 
-/** Engine blueprint IDs — the 7 real blueprints wired to the AM activation wizard */
-const ENGINE_BP_IDS = new Set(BLUEPRINTS.map((b) => b.id));
-
-/** Converts all engine blueprints to TaskTemplate shape for this page */
-const ENGINE_DERIVED_TEMPLATES: TaskTemplate[] = BLUEPRINTS.map(blueprintToTemplate);
-
 // ---------------------------------------------------------------------------
-// TASK_TEMPLATES — only the 7 real engine blueprints.
-// The ~20 illustrative inline entries (tt-001..tt-020) that previously appeared
-// here were removed during the minimum-honest-labeling audit pass (2025-07-24).
-// They had no connection to the engine, activation wizard, or any real data source.
-// When real templates beyond bp-001..bp-007 are built, add them here.
+// CreateTemplateModal
+// Collects all TaskBlueprint fields, including task checklist builder and
+// service-mapping entries (Activation Mapping concept).
+// On save: POST /api/task-blueprints and call onCreated(newTemplate).
 // ---------------------------------------------------------------------------
 
-// (no inline data — see comment above)
+interface TaskRowDraft {
+  _key: string;
+  name: string;
+  department: string;
+  ownerRole: string;
+  estimatedHours: number;
+  priority: string;
+  dueDaysOffset: number;
+  description: string;
+  dependsOnId: string;
+}
 
-// [REMOVED: 20 illustrative inline templates tt-001..tt-020 deleted in honesty audit pass 2025-07-24]
+function CreateTemplateModal({
+  onClose,
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: (t: TaskTemplate) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-/**
- * TASK_TEMPLATES — the 7 real engine blueprints only.
- * Inline illustrative rows (tt-001..tt-020) were removed in the
- * minimum-honest-labeling pass; see tombstone comment above.
- */
-const TASK_TEMPLATES: TaskTemplate[] = [...ENGINE_DERIVED_TEMPLATES];
+  // Header fields
+  const [name, setName] = useState("");
+  const [department, setDepartment] = useState<string>("Account Management");
+  const [servicePackage, setServicePackage] = useState("Custom");
+  const [mappedLineItem, setMappedLineItem] = useState("");
+  const [description, setDescription] = useState("");
+  const [activationTrigger, setActivationTrigger] = useState("Invoice Paid");
+  const [estimatedTotalHours, setEstimatedTotalHours] = useState(0);
+  const [version, setVersion] = useState("1.0");
+  const [isActive, setIsActive] = useState(true);
+
+  // Service mapping entries (Activation Mapping)
+  const [serviceMappingInput, setServiceMappingInput] = useState("");
+  const [serviceMappings, setServiceMappings] = useState<string[]>([]);
+
+  // Task checklist rows
+  const [taskRows, setTaskRows] = useState<TaskRowDraft[]>([]);
+
+  const addTaskRow = () => {
+    setTaskRows((prev) => [
+      ...prev,
+      {
+        _key: `new-${Date.now()}-${Math.random()}`,
+        name: "",
+        department,
+        ownerRole: "",
+        estimatedHours: 1,
+        priority: "High",
+        dueDaysOffset: 1,
+        description: "",
+        dependsOnId: "",
+      },
+    ]);
+  };
+
+  const updateTaskRow = (key: string, field: keyof TaskRowDraft, value: string | number) => {
+    setTaskRows((prev) =>
+      prev.map((r) => (r._key === key ? { ...r, [field]: value } : r))
+    );
+  };
+
+  const removeTaskRow = (key: string) => {
+    setTaskRows((prev) => prev.filter((r) => r._key !== key));
+  };
+
+  const moveTaskRow = (key: string, dir: -1 | 1) => {
+    setTaskRows((prev) => {
+      const idx = prev.findIndex((r) => r._key === key);
+      if (idx < 0) return prev;
+      const next = idx + dir;
+      if (next < 0 || next >= prev.length) return prev;
+      const arr = [...prev];
+      [arr[idx], arr[next]] = [arr[next], arr[idx]];
+      return arr;
+    });
+  };
+
+  const addServiceMapping = () => {
+    const v = serviceMappingInput.trim().toLowerCase();
+    if (v && !serviceMappings.includes(v)) {
+      setServiceMappings((prev) => [...prev, v]);
+    }
+    setServiceMappingInput("");
+  };
+
+  const removeServiceMapping = (key: string) => {
+    setServiceMappings((prev) => prev.filter((k) => k !== key));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim()) { setError("Template name is required."); return; }
+    if (!mappedLineItem.trim()) { setError("Mapped line item is required."); return; }
+    setSaving(true);
+    setError("");
+
+    const today = new Date().toISOString().split("T")[0];
+    const bpId = `bp-${Date.now().toString(16)}`;
+
+    const newBlueprint: BlueprintApiRecord = {
+      id: bpId,
+      name: name.trim(),
+      department,
+      servicePackage,
+      mappedLineItem: mappedLineItem.trim(),
+      description: description.trim(),
+      activationTrigger,
+      estimatedTotalHours,
+      isActive,
+      lastUpdated: today,
+      version: version.trim() || "1.0",
+      tasks: taskRows.map((r, i) => ({
+        id: `${bpId}-t${i + 1}`,
+        name: r.name.trim() || `Task ${i + 1}`,
+        department: r.department,
+        ownerRole: r.ownerRole.trim() || "Team Member",
+        estimatedHours: Number(r.estimatedHours) || 1,
+        priority: r.priority,
+        dueDaysOffset: Number(r.dueDaysOffset) || 1,
+        description: r.description.trim() || undefined,
+        dependsOnId: r.dependsOnId.trim() || undefined,
+      })),
+    };
+
+    try {
+      const res = await fetch("/api/task-blueprints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          blueprint: newBlueprint,
+          serviceMappings,
+        }),
+      });
+      if (!res.ok) {
+        const j = (await res.json()) as { error?: string };
+        throw new Error(j.error ?? `HTTP ${res.status}`);
+      }
+      const tpl = blueprintToTemplate(newBlueprint);
+      onCreated(tpl);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const DEPT_OPTIONS: string[] = [
+    "Account Management", "SEO", "GBP", "PPC", "Meta Ads",
+    "Reporting", "Web Development", "Design", "Content",
+    "Billing", "Sales", "AI Automation", "IT & Security",
+  ];
+  const TRIGGER_OPTIONS = [
+    "Invoice Paid", "Contract Signed", "Client Activated",
+    "Proposal Approved", "Upsell Approved", "Renewal Signed",
+    "Cancellation Requested", "Offboarding Approved",
+  ];
+  const PRIORITY_OPTIONS = ["Urgent", "High", "Medium", "Low"];
+  const SP_OPTIONS = [
+    "Custom", "SEO Only", "SEO + GBP", "PPC + Landing Page",
+    "Full Service", "Reporting Only", "Website Build", "AI Automation",
+    "Upsell", "Renewal",
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex justify-end"
+      style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="h-full w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl"
+        style={{ background: "var(--rtm-surface)" }}
+      >
+        {/* Header */}
+        <div
+          className="flex items-start justify-between px-6 py-5"
+          style={{ borderBottom: "1px solid var(--rtm-border)", background: "#EFF6FF" }}
+        >
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#1D4ED8" }}>
+              New Task Template
+            </div>
+            <h2 className="text-lg font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
+              Create Task Blueprint
+            </h2>
+            <p className="text-xs mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+              Defines tasks generated when a matching service is activated.
+              Immediately usable by the AM Activation Wizard.
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="ml-4 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg hover:opacity-70"
+            style={{ background: "rgba(0,0,0,0.08)", color: "var(--rtm-text-primary)" }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+
+          {/* ── Core fields ── */}
+          <section className="space-y-4">
+            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Template Details</div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Template Name *</label>
+                <input
+                  type="text" value={name} onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. LSA Launch Blueprint"
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Department *</label>
+                <select
+                  value={department} onChange={(e) => setDepartment(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                >
+                  {DEPT_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Service Package</label>
+                <select
+                  value={servicePackage} onChange={(e) => setServicePackage(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                >
+                  {SP_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Mapped Line Item *</label>
+                <input
+                  type="text" value={mappedLineItem} onChange={(e) => setMappedLineItem(e.target.value)}
+                  placeholder="e.g. LSA Management"
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Activation Trigger</label>
+                <select
+                  value={activationTrigger} onChange={(e) => setActivationTrigger(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                >
+                  {TRIGGER_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Est. Total Hours</label>
+                <input
+                  type="number" min={0} step={0.5}
+                  value={estimatedTotalHours}
+                  onChange={(e) => setEstimatedTotalHours(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Version</label>
+                <input
+                  type="text" value={version} onChange={(e) => setVersion(e.target.value)}
+                  placeholder="1.0"
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                />
+              </div>
+
+              <div className="col-span-2">
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Description</label>
+                <textarea
+                  rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe what this blueprint covers..."
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                />
+              </div>
+
+              <div className="col-span-2 flex items-center gap-2">
+                <input
+                  type="checkbox" id="isActive" checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                  className="w-4 h-4 accent-blue-600"
+                />
+                <label htmlFor="isActive" className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                  Active (immediately usable by the Activation Wizard)
+                </label>
+              </div>
+            </div>
+          </section>
+
+          {/* ── Activation Mapping (SERVICE_TO_BLUEPRINT) ── */}
+          <section className="space-y-3">
+            <div>
+              <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Activation Mapping</div>
+              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
+                Add service name keys (lowercase) that should activate this blueprint.
+                E.g. <code className="font-mono bg-blue-50 px-1 rounded">lsa</code>,&nbsp;
+                <code className="font-mono bg-blue-50 px-1 rounded">local service ads</code>.
+                The AM Wizard matches contracted service names against these keys.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={serviceMappingInput}
+                onChange={(e) => setServiceMappingInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addServiceMapping()}
+                placeholder="e.g. lsa or local service ads"
+                className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+              />
+              <button
+                type="button"
+                onClick={addServiceMapping}
+                className="px-3 py-2 rounded-lg text-sm font-bold"
+                style={{ background: "var(--rtm-blue)", color: "#fff" }}
+              >
+                + Add
+              </button>
+            </div>
+            {serviceMappings.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {serviceMappings.map((k) => (
+                  <span
+                    key={k}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold"
+                    style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}
+                  >
+                    {k}
+                    <button
+                      type="button"
+                      onClick={() => removeServiceMapping(k)}
+                      className="ml-1 opacity-60 hover:opacity-100 font-black text-sm"
+                    >×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {serviceMappings.length === 0 && (
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                No mappings added. Template will still appear in the table but won&apos;t
+                auto-activate from service names until mappings are set.
+              </p>
+            )}
+          </section>
+
+          {/* ── Task Checklist Builder ── */}
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Task Checklist</div>
+                <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
+                  Tasks generated when this blueprint is activated. Add, remove, and reorder rows.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addTaskRow}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                style={{ background: "var(--rtm-blue)", color: "#fff" }}
+              >
+                + Add Task
+              </button>
+            </div>
+
+            {taskRows.length === 0 && (
+              <div
+                className="rounded-xl p-6 text-center"
+                style={{ background: "var(--rtm-bg)", border: "2px dashed var(--rtm-border)" }}
+              >
+                <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+                  No tasks yet. Click &ldquo;+ Add Task&rdquo; to build the checklist.
+                </p>
+              </div>
+            )}
+
+            {taskRows.map((row, i) => (
+              <div
+                key={row._key}
+                className="rounded-xl p-4 space-y-3"
+                style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-black w-5 text-center" style={{ color: "var(--rtm-text-muted)" }}>
+                    {i + 1}
+                  </span>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={row.name}
+                      onChange={(e) => updateTaskRow(row._key, "name", e.target.value)}
+                      placeholder="Task name"
+                      className="w-full px-3 py-1.5 rounded-lg text-sm font-semibold outline-none"
+                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => moveTaskRow(row._key, -1)}
+                    disabled={i === 0}
+                    className="w-7 h-7 rounded flex items-center justify-center text-sm opacity-60 hover:opacity-100 disabled:opacity-20"
+                    style={{ background: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    title="Move up"
+                  >↑</button>
+                  <button
+                    type="button"
+                    onClick={() => moveTaskRow(row._key, 1)}
+                    disabled={i === taskRows.length - 1}
+                    className="w-7 h-7 rounded flex items-center justify-center text-sm opacity-60 hover:opacity-100 disabled:opacity-20"
+                    style={{ background: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    title="Move down"
+                  >↓</button>
+                  <button
+                    type="button"
+                    onClick={() => removeTaskRow(row._key)}
+                    className="w-7 h-7 rounded flex items-center justify-center text-sm text-red-500 hover:bg-red-50"
+                    title="Remove task"
+                  >×</button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 pl-7">
+                  <div>
+                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Department</label>
+                    <select
+                      value={row.department}
+                      onChange={(e) => updateTaskRow(row._key, "department", e.target.value)}
+                      className="w-full px-2 py-1 rounded text-xs outline-none"
+                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    >
+                      {DEPT_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Owner Role</label>
+                    <input
+                      type="text"
+                      value={row.ownerRole}
+                      onChange={(e) => updateTaskRow(row._key, "ownerRole", e.target.value)}
+                      placeholder="e.g. SEO Specialist"
+                      className="w-full px-2 py-1 rounded text-xs outline-none"
+                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Priority</label>
+                    <select
+                      value={row.priority}
+                      onChange={(e) => updateTaskRow(row._key, "priority", e.target.value)}
+                      className="w-full px-2 py-1 rounded text-xs outline-none"
+                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    >
+                      {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Est. Hours</label>
+                    <input
+                      type="number" min={0.25} step={0.25}
+                      value={row.estimatedHours}
+                      onChange={(e) => updateTaskRow(row._key, "estimatedHours", Number(e.target.value))}
+                      className="w-full px-2 py-1 rounded text-xs outline-none"
+                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Due Day Offset</label>
+                    <input
+                      type="number" min={0}
+                      value={row.dueDaysOffset}
+                      onChange={(e) => updateTaskRow(row._key, "dueDaysOffset", Number(e.target.value))}
+                      className="w-full px-2 py-1 rounded text-xs outline-none"
+                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Depends On (task ID)</label>
+                    <input
+                      type="text"
+                      value={row.dependsOnId}
+                      onChange={(e) => updateTaskRow(row._key, "dependsOnId", e.target.value)}
+                      placeholder="Optional"
+                      className="w-full px-2 py-1 rounded text-xs outline-none"
+                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Description (optional)</label>
+                    <input
+                      type="text"
+                      value={row.description}
+                      onChange={(e) => updateTaskRow(row._key, "description", e.target.value)}
+                      placeholder="What does this task involve?"
+                      className="w-full px-2 py-1 rounded text-xs outline-none"
+                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </section>
+
+          {error && (
+            <div className="rounded-lg px-4 py-3 text-sm font-semibold" style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
+              {error}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div
+          className="px-6 py-4 flex items-center gap-3 flex-wrap"
+          style={{ borderTop: "1px solid var(--rtm-border)" }}
+        >
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="px-5 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-50"
+            style={{ background: "var(--rtm-blue)" }}
+          >
+            {saving ? "Saving..." : "Create Template"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-sm font-semibold"
+            style={{ color: "var(--rtm-text-muted)" }}
+          >
+            Cancel
+          </button>
+          <span className="ml-auto text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+            {taskRows.length} task{taskRows.length !== 1 ? "s" : ""} · {serviceMappings.length} service mapping{serviceMappings.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 //  Design helpers 
 
@@ -707,6 +1267,25 @@ function TemplateDrawer({
 //  Main Page 
 
 export default function TaskTemplatesPage() {
+  // ── Live data from /api/task-blueprints ───────────────────────────────────
+  const [TASK_TEMPLATES, setTaskTemplates] = useState<TaskTemplate[]>([]);
+  const [loadError, setLoadError] = useState("");
+
+  const loadTemplates = useCallback(async () => {
+    try {
+      const res = await fetch("/api/task-blueprints");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = (await res.json()) as { blueprints: BlueprintApiRecord[] };
+      setTaskTemplates(data.blueprints.map(blueprintToTemplate));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Failed to load templates.");
+    }
+  }, []);
+
+  useEffect(() => { void loadTemplates(); }, [loadTemplates]);
+
+  // ── UI state ──────────────────────────────────────────────────────────────
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDept, setFilterDept] = useState<Department | "All">("All");
@@ -772,6 +1351,12 @@ export default function TaskTemplatesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Load error banner */}
+      {loadError && (
+        <div className="rounded-xl px-4 py-3 text-sm font-semibold" style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
+          Failed to load templates: {loadError}
+        </div>
+      )}
       {/*  Page header  */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
@@ -794,6 +1379,7 @@ export default function TaskTemplatesPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white transition-opacity hover:opacity-90"style={{ background: "var(--rtm-blue)"}}
+            onClick={() => setShowCreateModal(true)}
           >
             + New Task Template
           </button>
@@ -1569,6 +2155,16 @@ export default function TaskTemplatesPage() {
         <TemplateDrawer
           template={selectedTemplate}
           onClose={() => setSelectedTemplate(null)}
+        />
+      )}
+
+      {/*  Create Template Modal  */}
+      {showCreateModal && (
+        <CreateTemplateModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={(newTemplate) => {
+            setTaskTemplates((prev) => [...prev, newTemplate]);
+          }}
         />
       )}
     </div>

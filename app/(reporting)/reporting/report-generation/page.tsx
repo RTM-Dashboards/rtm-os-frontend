@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { WorkspaceHeader } from "@/components/workspace";
 import { getWorkspace } from "@/lib/workspaces";
@@ -260,16 +260,74 @@ export default function ReportGenerationPage() {
   const [selectedJob, setSelectedJob] = useState<ReportJob | null>(null);
   const [activeTab, setActiveTab] = useState<"queue"| "workflow"| "new">("queue");
 
+  // Live clients for the Generate New Report form dropdown
+  const [liveClients, setLiveClients] = useState<{ id: string; clientName: string }[]>([]);
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/master-clients", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { clients: { id: string; clientName: string; currentStatus?: string }[] };
+        setLiveClients(
+          data.clients
+            .filter((c) => c.currentStatus !== "Inactive")
+            .map((c) => ({ id: c.id, clientName: c.clientName }))
+        );
+      } catch { /* leave empty */ }
+    })();
+  }, []);
+
+  const [genDraftSaving, setGenDraftSaving] = useState(false);
+  const [genDraftSaved, setGenDraftSaved] = useState<string | null>(null);
+
   const [builderForm, setBuilderForm] = useState({
     name: "",
+    clientId: "",
     client: "",
-    reportType: "Client Report"as ReportType,
+    reportType: "Client Report" as ReportType,
     period: "",
     owner: "",
     assignedAM: "",
     dueDate: "",
     sections: [] as string[],
   });
+
+  async function handleGenSaveDraft() {
+    if (!builderForm.clientId || !builderForm.name.trim()) return;
+    setGenDraftSaving(true);
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: builderForm.clientId,
+          clientName: builderForm.client,
+          reportName: builderForm.name,
+          reportType: builderForm.reportType,
+          period: builderForm.period,
+          ownerId: builderForm.owner,
+          amId: builderForm.assignedAM,
+          dueDate: builderForm.dueDate,
+          deliveryMethod: "Email",
+          status: "Draft",
+          qaStatus: "Pending QA",
+          deptReviewStatus: "Pending Assignment",
+          amStatus: "Pending AM Review",
+          deliveryStatus: "Not Ready",
+          progressPct: 0,
+          draftReady: false,
+          aiStatus: "Pending",
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { record: { reportId: string } };
+        setGenDraftSaved(data.record.reportId);
+        setBuilderForm({ name: "", clientId: "", client: "", reportType: "Client Report", period: "", owner: "", assignedAM: "", dueDate: "", sections: [] });
+      }
+    } finally {
+      setGenDraftSaving(false);
+    }
+  }
 
   const allSections = [
     "Executive Summary",
@@ -534,12 +592,14 @@ export default function ReportGenerationPage() {
                       ))}
                     </div>
 
-                    {/* Actions — only Submit to QA and Deliver to Client are wired; others remain mock */}
+                    {/* Actions — Submit to QA and Deliver to Client are wired; AI-dependent buttons are honestly disabled */}
                     <div className="flex flex-wrap gap-2 pt-1">
                       {!selectedJob.draftReady && (
                         <button
-                          className="text-xs font-semibold px-3 py-2 rounded-lg border"
+                          disabled
+                          className="text-xs font-semibold px-3 py-2 rounded-lg border opacity-40 cursor-not-allowed"
                           style={{ color: "#7C3AED", background: "#7C3AED15", borderColor: "#7C3AED40" }}
+                          title="Coming when AI pipeline is configured — requires AI/LLM credentials"
                         >Run AI Analysis</button>
                       )}
                       {selectedJob.draftReady && selectedJob.qaStatus === "Pending" && (() => {
@@ -582,8 +642,10 @@ export default function ReportGenerationPage() {
                         );
                       })()}
                       <button
-                        className="text-xs font-semibold px-3 py-2 rounded-lg border"
+                        disabled
+                        className="text-xs font-semibold px-3 py-2 rounded-lg border opacity-40 cursor-not-allowed"
                         style={{ color: "#2563EB", background: "#2563EB15", borderColor: "#2563EB40" }}
+                        title="Coming when AI pipeline is configured — requires AI/LLM credentials"
                       >Preview Draft</button>
                     </div>
                   </div>
@@ -638,79 +700,161 @@ export default function ReportGenerationPage() {
       )}
 
       {/*  Generate New Report  */}
-      {activeTab === "new"&& (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Form */}
-          <SectionWrapper title="Report Configuration"description="Configure and launch a new report generation job">
-            <div className="space-y-4">
-              {[
-                { label: "Report Name", key: "name", placeholder: "e.g. Apex Roofing — SEO May 2025"},
-                { label: "Client", key: "client", placeholder: "Select client…"},
-                { label: "Reporting Period", key: "period", placeholder: "e.g. May 2025"},
-                { label: "Report Owner", key: "owner", placeholder: "Select report owner…"},
-                { label: "Assigned AM", key: "assignedAM", placeholder: "Select account manager…"},
-                { label: "Due Date", key: "dueDate", placeholder: "Jun 7, 2025"},
-              ].map((field) => (
-                <div key={field.key}>
-                  <label className="block text-xs font-semibold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}>{field.label}</label>
+      {activeTab === "new" && (
+        <div className="space-y-4">
+          {/* AI pipeline honest notice */}
+          <div className="flex items-start gap-3 rounded-xl border px-4 py-3" style={{ background: "#F0F9FF", borderColor: "#0369A140" }}>
+            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "#0369A1" }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-xs" style={{ color: "#0C4A6E" }}>
+              <strong>Save Draft</strong> creates a real report record in the Report Queue (wired to the Phase 1 reports store).
+              <strong> Run AI Analysis</strong> and <strong>Generate Report</strong> require AI/LLM credentials — coming when the AI pipeline is configured.
+            </p>
+          </div>
+
+          {/* Draft saved confirmation */}
+          {genDraftSaved && (
+            <div className="flex items-center gap-3 rounded-xl border px-4 py-3" style={{ background: "#ECFDF5", borderColor: "#05966940" }}>
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "#059669" }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-xs font-bold" style={{ color: "#065F46" }}>Draft saved (ID: {genDraftSaved}) — visible in Report Queue on the main Reporting page.</span>
+              <button onClick={() => setGenDraftSaved(null)} className="ml-auto text-xs" style={{ color: "#065F46" }}>×</button>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Form */}
+            <SectionWrapper title="Report Configuration" description="Fill in the details below — Save Draft creates a real record in the Report Queue">
+              <div className="space-y-4">
+                {/* Report Name */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Report Name</label>
                   <input
-                    type="text"placeholder={field.placeholder}
-                    value={(builderForm as unknown as Record<string, string>)[field.key]}
-                    onChange={(e) => setBuilderForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border text-sm outline-none"style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-secondary)"}}
+                    type="text" placeholder="e.g. Apex Roofing — SEO May 2025"
+                    value={builderForm.name}
+                    onChange={(e) => setBuilderForm((prev) => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-sm outline-none" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-secondary)" }}
                   />
                 </div>
-              ))}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide mb-1"style={{ color: "var(--rtm-text-muted)"}}>Report Type</label>
-                <select
-                  value={builderForm.reportType}
-                  onChange={(e) => setBuilderForm((prev) => ({ ...prev, reportType: e.target.value as ReportType }))}
-                  className="w-full px-3 py-2 rounded-lg border text-sm outline-none"style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-secondary)"}}
-                >
-                  {(["Client Report", "Department Report", "Executive Report", "QBR Report", "Renewal Report", "Call Analysis Report"] as ReportType[]).map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
+
+                {/* Client — real dropdown */}
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Client</label>
+                  <select
+                    value={builderForm.clientId}
+                    onChange={(e) => {
+                      const sel = e.target;
+                      const opt = sel.options[sel.selectedIndex];
+                      setBuilderForm((prev) => ({ ...prev, clientId: sel.value, client: opt.text }));
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border text-sm outline-none" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-secondary)" }}
+                  >
+                    <option value="">Select client…</option>
+                    {liveClients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.clientName}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Period, Owner, AM, Due Date */}
+                {[
+                  { label: "Reporting Period", key: "period",      placeholder: "e.g. May 2025" },
+                  { label: "Report Owner",    key: "owner",       placeholder: "e.g. Jake T." },
+                  { label: "Assigned AM",     key: "assignedAM",  placeholder: "e.g. Sarah M." },
+                  { label: "Due Date",        key: "dueDate",     placeholder: "e.g. Jun 7, 2025" },
+                ].map((field) => (
+                  <div key={field.key}>
+                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>{field.label}</label>
+                    <input
+                      type="text" placeholder={field.placeholder}
+                      value={(builderForm as unknown as Record<string, string>)[field.key]}
+                      onChange={(e) => setBuilderForm((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border text-sm outline-none" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-secondary)" }}
+                    />
+                  </div>
+                ))}
+
+                <div>
+                  <label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Report Type</label>
+                  <select
+                    value={builderForm.reportType}
+                    onChange={(e) => setBuilderForm((prev) => ({ ...prev, reportType: e.target.value as ReportType }))}
+                    className="w-full px-3 py-2 rounded-lg border text-sm outline-none" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-secondary)" }}
+                  >
+                    {(["Client Report", "Department Report", "Executive Report", "QBR Report", "Renewal Report", "Call Analysis Report"] as ReportType[]).map((t) => (
+                      <option key={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-          </SectionWrapper>
+            </SectionWrapper>
 
-          {/* Section Selector */}
-          <SectionWrapper title="Report Sections"description="Select sections to include in this report">
-            <div className="space-y-2 mb-4">
-              {allSections.map((section) => (
-                <button
-                  key={section}
-                  onClick={() => toggleSection(section)}
-                  className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"style={{
-                    borderColor: builderForm.sections.includes(section) ? "#0F766E": "var(--rtm-border-light)",
-                    background: builderForm.sections.includes(section) ? "#0F766E15": "var(--rtm-bg-secondary)",
-                    color: builderForm.sections.includes(section) ? "#0F766E": "var(--rtm-text-secondary)",
-                  }}
-                >
-                  <span>{section}</span>
-                  <span>{builderForm.sections.includes(section) ? "": "+"}</span>
-                </button>
-              ))}
-            </div>
+            {/* Section Selector + Actions */}
+            <SectionWrapper title="Report Sections" description="Select sections to include in this report">
+              <div className="space-y-2 mb-4">
+                {allSections.map((section) => (
+                  <button
+                    key={section}
+                    onClick={() => toggleSection(section)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"
+                    style={{
+                      borderColor: builderForm.sections.includes(section) ? "#0F766E" : "var(--rtm-border-light)",
+                      background: builderForm.sections.includes(section) ? "#0F766E15" : "var(--rtm-bg-secondary)",
+                      color: builderForm.sections.includes(section) ? "#0F766E" : "var(--rtm-text-secondary)",
+                    }}
+                  >
+                    <span>{section}</span>
+                    <span>{builderForm.sections.includes(section) ? "" : "+"}</span>
+                  </button>
+                ))}
+              </div>
 
-            <div className="flex flex-wrap gap-2 pt-2">
-              {[
-                { label: "Save Draft", color: "#6B7280"},
-                { label: "Run AI Analysis", color: "#7C3AED"},
-                { label: "Generate Report", color: "#0F766E"},
-                { label: "Submit for QA", color: "#16A34A"},
-              ].map((btn) => (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {/* Save Draft — real: wired to POST /api/reports */}
                 <button
-                  key={btn.label}
-                  className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all"style={{ color: btn.color, background: `${btn.color}15`, borderColor: `${btn.color}40` }}
+                  onClick={() => void handleGenSaveDraft()}
+                  disabled={genDraftSaving || !builderForm.clientId || !builderForm.name.trim()}
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ color: "#6B7280", background: "#6B728015", borderColor: "#6B728040" }}
+                  title={!builderForm.clientId || !builderForm.name.trim() ? "Enter a report name and select a client first" : ""}
                 >
-                  {btn.label}
+                  {genDraftSaving ? "Saving…" : "Save Draft"}
                 </button>
-              ))}
-            </div>
-          </SectionWrapper>
+
+                {/* Run AI Analysis — requires AI pipeline */}
+                <button
+                  disabled
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
+                  style={{ color: "#7C3AED", background: "#7C3AED15", borderColor: "#7C3AED40" }}
+                  title="Coming when AI pipeline is configured — requires AI/LLM credentials"
+                >
+                  Run AI Analysis
+                </button>
+
+                {/* Generate Report — requires AI pipeline */}
+                <button
+                  disabled
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
+                  style={{ color: "#0F766E", background: "#0F766E15", borderColor: "#0F766E40" }}
+                  title="Coming when AI pipeline is configured — requires AI/LLM credentials"
+                >
+                  Generate Report
+                </button>
+
+                {/* Submit for QA — only after draft is saved */}
+                <button
+                  disabled={!genDraftSaved}
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ color: "#16A34A", background: "#16A34A15", borderColor: "#16A34A40" }}
+                  title={!genDraftSaved ? "Save Draft first, then submit for QA" : ""}
+                >
+                  Submit for QA
+                </button>
+              </div>
+            </SectionWrapper>
+          </div>
         </div>
       )}
     </div>

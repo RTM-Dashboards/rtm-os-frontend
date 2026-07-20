@@ -2238,7 +2238,7 @@ function OpportunityDetailDrawer({
 }) {
   const [activityLog] = useState([
     ...MOCK_ACTIVITY_LOG,
-    ...opp.recentActivities.map(a => ({ date: a.date, event: a.notes || a.type, user: a.user })),
+    ...(opp.recentActivities ?? []).map(a => ({ date: a.date, event: a.notes || a.type, user: a.user })),
   ]);
   const hasWizard = !!(opp as Opportunity & { activeWizardId?: string }).activeWizardId;
   const wizardId = (opp as Opportunity & { activeWizardId?: string }).activeWizardId;
@@ -2274,7 +2274,7 @@ function OpportunityDetailDrawer({
               ["Est. Monthly Value", fmtCurrency(opp.estimatedValue) + "/mo"],
               ["Expected Close", opp.expectedCloseDate],
               ["Contract Length", opp.contractLength],
-              ["GHL Sync", opp.ghl.ghlSyncStatus],
+              ...(opp.ghl ? [["GHL Sync", opp.ghl.ghlSyncStatus]] : []),
             ].map(([k, v]) => (
               <div key={k}>
                 <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
@@ -2284,7 +2284,7 @@ function OpportunityDetailDrawer({
           </div>
 
           {/* Services */}
-          {opp.audit.findingsSummary && opp.audit.findingsSummary !== "—" && (
+          {opp.audit?.findingsSummary && opp.audit.findingsSummary !== "—" && (
             <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
               <p className="text-[10px] font-bold uppercase tracking-wide mb-2" style={{ color: "var(--rtm-text-muted)" }}>Audit Findings</p>
               <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{opp.audit.findingsSummary}</p>
@@ -2455,7 +2455,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
               <StageBadge stage={opp.stage} />
               <PriorityBadge priority={opp.priority} />
               <LeadSourceBadge source={opp.leadSource} />
-              <GhlSyncBadge status={opp.ghl.ghlSyncStatus} />
+              {opp.ghl && <GhlSyncBadge status={opp.ghl.ghlSyncStatus} />}
             </div>
           </div>
           <button onClick={onClose}
@@ -2502,7 +2502,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                     <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>{opp.affiliateSource}</span>
                   ) : "—"} />
                   <DrawerField label="Assigned Sales Rep"value={opp.assignedRep} />
-                  <DrawerField label="GHL Source"value={opp.ghl.ghlSource || "—"} />
+                  <DrawerField label="GHL Source"value={opp.ghl?.ghlSource || "—"} />
                 </div>
               </DrawerSection>
             </>
@@ -2515,9 +2515,11 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 <DrawerField label="Opportunity Name"value={`${opp.businessName} — ${opp.stage}`} />
                 <DrawerField label="Current Stage"value={<StageBadge stage={opp.stage} />} />
                 <DrawerField label="GHL Stage"value={
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border"style={{ background: "#ECFEFF", color: "#0891B2", borderColor: "#A5F3FC"}}>{opp.ghl.ghlStageName}</span>
+                  opp.ghl
+                    ? <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border"style={{ background: "#ECFEFF", color: "#0891B2", borderColor: "#A5F3FC"}}>{opp.ghl.ghlStageName}</span>
+                    : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>
                 } />
-                <DrawerField label="GHL Sync"value={<GhlSyncBadge status={opp.ghl.ghlSyncStatus} />} />
+                <DrawerField label="GHL Sync"value={opp.ghl ? <GhlSyncBadge status={opp.ghl.ghlSyncStatus} /> : <span style={{ color: "var(--rtm-text-muted)"}}>Not Connected</span>} />
                 <DrawerField label="Opportunity Score"value={
                   <div className="flex items-center gap-2">
                     <div className="flex-1 h-2 rounded-full overflow-hidden"style={{ background: "var(--rtm-border)"}}>
@@ -2567,7 +2569,9 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                   <DrawerField label="Forecast Quarter"value={opp.forecastQuarter} />
                   <DrawerField label="Expected Close Date"value={opp.expectedCloseDate} />
                   <DrawerField label="GHL Monetary Value"value={
-                    <span className="font-bold"style={{ color: "#0891B2"}}>{fmtCurrency(opp.ghl.ghlMonetaryValue)}/mo</span>
+                    opp.ghl
+                      ? <span className="font-bold"style={{ color: "#0891B2"}}>{fmtCurrency(opp.ghl.ghlMonetaryValue)}/mo</span>
+                      : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>
                   } />
                 </div>
               </DrawerSection>
@@ -2587,15 +2591,15 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
           {/* SALES ACTIVITY */}
           {activeTab === "Sales Activity"&& (
             <DrawerSection title="Activity Timeline">
-              {opp.recentActivities.length === 0 ? (
+              {(opp.recentActivities ?? []).length === 0 ? (
                 <p className="text-xs text-center py-4"style={{ color: "var(--rtm-text-muted)"}}>No activity recorded.</p>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {[...opp.recentActivities].reverse().map((activity, idx) => (
+                  {[...(opp.recentActivities ?? [])].reverse().map((activity, idx) => (
                     <div key={idx} className="flex gap-3">
                       <div className="flex flex-col items-center">
                         <span className="text-base leading-none">{ACTIVITY_ICON[activity.type]}</span>
-                        {idx < opp.recentActivities.length - 1 && (
+                        {idx < (opp.recentActivities ?? []).length - 1 && (
                           <div className="w-px flex-1 mt-1"style={{ background: "var(--rtm-border)"}} />
                         )}
                       </div>
@@ -2619,11 +2623,11 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
           {/* NEXT STEPS */}
           {activeTab === "Next Steps"&& (
             <DrawerSection title="Required Actions">
-              {opp.nextSteps.length === 0 ? (
+              {(opp.nextSteps ?? []).length === 0 ? (
                 <p className="text-xs text-center py-4"style={{ color: "var(--rtm-text-muted)"}}>No next steps defined.</p>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {opp.nextSteps.map((step, idx) => {
+                  {(opp.nextSteps ?? []).map((step, idx) => {
                     const pc = PRIORITY_CONFIG[step.priority];
                     return (
                       <div key={idx} className="flex items-start gap-3 p-3 rounded-lg border"style={{ background: pc.bg, borderColor: pc.border }}>
@@ -2647,11 +2651,11 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
           {/* NOTES */}
           {activeTab === "Notes"&& (
             <DrawerSection title="Notes">
-              {opp.notes.length === 0 ? (
+              {(opp.notes ?? []).length === 0 ? (
                 <p className="text-xs text-center py-4"style={{ color: "var(--rtm-text-muted)"}}>No notes recorded.</p>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {[...opp.notes].reverse().map((note, idx) => {
+                  {[...(opp.notes ?? [])].reverse().map((note, idx) => {
                     const nc = NOTE_CATEGORY_CONFIG[note.category];
                     return (
                       <div key={idx} className="p-3 rounded-lg border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
@@ -2683,6 +2687,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
 
           {/* AUDIT INTEGRATION */}
           {activeTab === "Audit"&& (
+            opp.audit ? (
             <IntegrationCard
               title="Audit Integration"href="/sales/audits"hrefLabel="Open Audits"status={opp.audit.status}
               statusCfg={AUDIT_STATUS_CONFIG[opp.audit.status]}
@@ -2698,10 +2703,16 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 <DrawerField label="Findings Summary"value={opp.audit.findingsSummary} />
               </div>
             </IntegrationCard>
+            ) : (
+              <div className="rounded-xl border p-6 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No audit linked to this opportunity.</p>
+              </div>
+            )
           )}
 
           {/* PROPOSAL INTEGRATION */}
           {activeTab === "Proposal"&& (
+            opp.proposal ? (
             <IntegrationCard
               title="Proposal Integration"href="/sales/proposals"hrefLabel="Open Proposals"status={opp.proposal.status}
               statusCfg={PROPOSAL_STATUS_CONFIG[opp.proposal.status]}
@@ -2718,13 +2729,20 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 <DrawerField label="Approval Status"value={opp.proposal.approvalStatus} />
               </div>
             </IntegrationCard>
+            ) : (
+              <div className="rounded-xl border p-6 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No proposal linked to this opportunity.</p>
+              </div>
+            )
           )}
 
           {/* FOLLOW UPS */}
-          {activeTab === "Follow Ups"&& (
+          {activeTab === "Follow Ups"&& (() => {
+            const fus = opp.followUps ?? [];
+            return (
             <IntegrationCard
-              title="Follow Up Integration"href="/sales/followups"hrefLabel="Open Follow Ups"status={opp.followUps.some((f) => f.status === "Overdue") ? "Overdue": opp.followUps.some((f) => f.status === "Upcoming") ? "Upcoming": "Completed"}
-              statusCfg={opp.followUps.some((f) => f.status === "Overdue") ? FOLLOW_UP_STATUS_CONFIG["Overdue"] : FOLLOW_UP_STATUS_CONFIG["Upcoming"]}
+              title="Follow Up Integration"href="/sales/followups"hrefLabel="Open Follow Ups"status={fus.some((f) => f.status === "Overdue") ? "Overdue": fus.some((f) => f.status === "Upcoming") ? "Upcoming": "Completed"}
+              statusCfg={fus.some((f) => f.status === "Overdue") ? FOLLOW_UP_STATUS_CONFIG["Overdue"] : FOLLOW_UP_STATUS_CONFIG["Upcoming"]}
               actions={[
                 { label: "Open Follow Ups", href: "/sales/followups"},
                 { label: "Create Follow Up", href: "/sales/followups"},
@@ -2732,23 +2750,23 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
             >
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div className="p-2 rounded-lg border text-center"style={{ background: "#EFF6FF", borderColor: "#BFDBFE"}}>
-                  <p className="text-lg font-bold"style={{ color: "#2563EB"}}>{opp.followUps.filter((f) => f.status === "Upcoming").length}</p>
+                  <p className="text-lg font-bold"style={{ color: "#2563EB"}}>{fus.filter((f) => f.status === "Upcoming").length}</p>
                   <p className="text-[10px] font-semibold"style={{ color: "#2563EB"}}>Upcoming</p>
                 </div>
                 <div className="p-2 rounded-lg border text-center"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
-                  <p className="text-lg font-bold"style={{ color: "#DC2626"}}>{opp.followUps.filter((f) => f.status === "Overdue").length}</p>
+                  <p className="text-lg font-bold"style={{ color: "#DC2626"}}>{fus.filter((f) => f.status === "Overdue").length}</p>
                   <p className="text-[10px] font-semibold"style={{ color: "#DC2626"}}>Overdue</p>
                 </div>
                 <div className="p-2 rounded-lg border text-center"style={{ background: "#ECFDF5", borderColor: "#A7F3D0"}}>
-                  <p className="text-lg font-bold"style={{ color: "#059669"}}>{opp.followUps.filter((f) => f.status === "Completed").length}</p>
+                  <p className="text-lg font-bold"style={{ color: "#059669"}}>{fus.filter((f) => f.status === "Completed").length}</p>
                   <p className="text-[10px] font-semibold"style={{ color: "#059669"}}>Completed</p>
                 </div>
               </div>
-              {opp.followUps.length === 0 ? (
+              {fus.length === 0 ? (
                 <p className="text-xs text-center py-2"style={{ color: "var(--rtm-text-muted)"}}>No follow-ups scheduled.</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {opp.followUps.map((fu) => (
+                  {fus.map((fu) => (
                     <div key={fu.id} className="flex items-center justify-between p-2 rounded-lg border"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)"}}>
                       <div>
                         <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fu.subject}</p>
@@ -2760,10 +2778,12 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 </div>
               )}
             </IntegrationCard>
-          )}
+            );
+          })()}
 
           {/* HANDOFF */}
           {activeTab === "Handoff"&& (
+            opp.handoff ? (
             <IntegrationCard
               title="Handoff Integration"href="/sales/handoffs"hrefLabel="Open Handoffs"status={opp.handoff.status}
               statusCfg={HANDOFF_STATUS_CONFIG[opp.handoff.status]}
@@ -2797,10 +2817,16 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 } />
               </div>
             </IntegrationCard>
+            ) : (
+              <div className="rounded-xl border p-6 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No handoff record linked to this opportunity.</p>
+              </div>
+            )
           )}
 
           {/* AFFILIATE */}
           {activeTab === "Affiliate"&& (
+            opp.affiliate ? (
             <IntegrationCard
               title="Affiliate Attribution"href="/sales/affiliates"hrefLabel="Open Affiliates"status={opp.affiliate.commissionModel !== "None"? "Active": "No Affiliate"}
               statusCfg={opp.affiliate.commissionModel !== "None"? { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"} : { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0"}}
@@ -2819,33 +2845,40 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 </div>
               )}
             </IntegrationCard>
+            ) : (
+              <div className="rounded-xl border p-6 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>No affiliate attribution for this opportunity.</p>
+              </div>
+            )
           )}
 
           {/* TASKS */}
-          {activeTab === "Tasks"&& (
+          {activeTab === "Tasks"&& (() => {
+            const taskList = opp.tasks ?? [];
+            return (
             <IntegrationCard
-              title="Task Integration"href="/tasks"hrefLabel="Open Tasks"status={`${opp.tasks.filter((t) => t.status === "Open"|| t.status === "In Progress").length} Open`}
+              title="Task Integration"href="/tasks"hrefLabel="Open Tasks"status={`${taskList.filter((t) => t.status === "Open"|| t.status === "In Progress").length} Open`}
               statusCfg={{ color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE"}}
             >
               <div className="grid grid-cols-3 gap-3 mb-3">
                 <div className="p-2 rounded-lg border text-center"style={{ background: "#EFF6FF", borderColor: "#BFDBFE"}}>
-                  <p className="text-lg font-bold"style={{ color: "#2563EB"}}>{opp.tasks.filter((t) => t.status === "Open"|| t.status === "In Progress").length}</p>
+                  <p className="text-lg font-bold"style={{ color: "#2563EB"}}>{taskList.filter((t) => t.status === "Open"|| t.status === "In Progress").length}</p>
                   <p className="text-[10px] font-semibold"style={{ color: "#2563EB"}}>Open</p>
                 </div>
                 <div className="p-2 rounded-lg border text-center"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
-                  <p className="text-lg font-bold"style={{ color: "#DC2626"}}>{opp.tasks.filter((t) => t.status === "Overdue").length}</p>
+                  <p className="text-lg font-bold"style={{ color: "#DC2626"}}>{taskList.filter((t) => t.status === "Overdue").length}</p>
                   <p className="text-[10px] font-semibold"style={{ color: "#DC2626"}}>Overdue</p>
                 </div>
                 <div className="p-2 rounded-lg border text-center"style={{ background: "#ECFDF5", borderColor: "#A7F3D0"}}>
-                  <p className="text-lg font-bold"style={{ color: "#059669"}}>{opp.tasks.filter((t) => t.status === "Completed").length}</p>
+                  <p className="text-lg font-bold"style={{ color: "#059669"}}>{taskList.filter((t) => t.status === "Completed").length}</p>
                   <p className="text-[10px] font-semibold"style={{ color: "#059669"}}>Completed</p>
                 </div>
               </div>
-              {opp.tasks.length === 0 ? (
+              {taskList.length === 0 ? (
                 <p className="text-xs text-center py-2"style={{ color: "var(--rtm-text-muted)"}}>No tasks for this opportunity.</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {opp.tasks.map((task) => (
+                  {taskList.map((task) => (
                     <div key={task.id} className="flex items-center justify-between p-2 rounded-lg border"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)"}}>
                       <div>
                         <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{task.title}</p>
@@ -2857,19 +2890,22 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 </div>
               )}
             </IntegrationCard>
-          )}
+            );
+          })()}
 
           {/* NOTIFICATIONS */}
-          {activeTab === "Notifications"&& (
+          {activeTab === "Notifications"&& (() => {
+            const notifList = opp.notifications ?? [];
+            return (
             <IntegrationCard
-              title="Notifications"href="/notifications"hrefLabel="Open Notifications"status={`${opp.notifications.filter((n) => !n.read).length} Unread`}
-              statusCfg={{ color: opp.notifications.some((n) => !n.read) ? "#DC2626": "#059669", bg: opp.notifications.some((n) => !n.read) ? "#FEF2F2": "#ECFDF5", border: opp.notifications.some((n) => !n.read) ? "#FECACA": "#A7F3D0"}}
+              title="Notifications"href="/notifications"hrefLabel="Open Notifications"status={`${notifList.filter((n) => !n.read).length} Unread`}
+              statusCfg={{ color: notifList.some((n) => !n.read) ? "#DC2626": "#059669", bg: notifList.some((n) => !n.read) ? "#FEF2F2": "#ECFDF5", border: notifList.some((n) => !n.read) ? "#FECACA": "#A7F3D0"}}
             >
-              {opp.notifications.length === 0 ? (
+              {notifList.length === 0 ? (
                 <p className="text-xs text-center py-2"style={{ color: "var(--rtm-text-muted)"}}>No notifications for this opportunity.</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {[...opp.notifications].reverse().map((notif) => (
+                  {[...notifList].reverse().map((notif) => (
                     <div key={notif.id} className="flex items-start gap-3 p-2 rounded-lg border"style={{ background: notif.read ? "var(--rtm-bg)": "#EFF6FF", borderColor: notif.read ? "var(--rtm-border)": "#BFDBFE"}}>
                       <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"style={{ background: notif.read ? "#CBD5E1": "#2563EB"}} />
                       <div className="flex-1">
@@ -2884,19 +2920,22 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 </div>
               )}
             </IntegrationCard>
-          )}
+            );
+          })()}
 
           {/* WORKFLOW */}
-          {activeTab === "Workflow"&& (
+          {activeTab === "Workflow"&& (() => {
+            const wfEvents = opp.workflowEvents ?? [];
+            return (
             <IntegrationCard
-              title="Workflow Integration"href="/admin/workflows"hrefLabel="Open Workflows"status={opp.workflowEvents.length > 0 ? `${opp.workflowEvents.length} Steps` : "Not Started"}
+              title="Workflow Integration"href="/admin/workflows"hrefLabel="Open Workflows"status={wfEvents.length > 0 ? `${wfEvents.length} Steps` : "Not Started"}
               statusCfg={{ color: "#0891B2", bg: "#ECFEFF", border: "#A5F3FC"}}
               actions={[{ label: "Open Workflow", href: "/admin/workflows"}]}
             >
               {/* Flow diagram */}
               <div className="flex flex-wrap gap-1 mb-4">
                 {(["Lead", "Audit", "Proposal", "Negotiation", "Approved", "Handoff", "Billing"] as WorkflowStep[]).map((step, idx, arr) => {
-                  const done = opp.workflowEvents.some((e) => e.step === step);
+                  const done = wfEvents.some((e) => e.step === step);
                   return (
                     <React.Fragment key={step}>
                       <div className="flex items-center gap-1">
@@ -2914,11 +2953,11 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                   );
                 })}
               </div>
-              {opp.workflowEvents.length === 0 ? (
+              {wfEvents.length === 0 ? (
                 <p className="text-xs text-center py-2"style={{ color: "var(--rtm-text-muted)"}}>No workflow events recorded.</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {[...opp.workflowEvents].reverse().map((ev, idx) => (
+                  {[...wfEvents].reverse().map((ev, idx) => (
                     <div key={idx} className="flex items-start gap-3 p-2 rounded-lg border"style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)"}}>
                       <span className="text-base leading-none mt-0.5">{WORKFLOW_STEP_ICONS[ev.step]}</span>
                       <div className="flex-1 min-w-0">
@@ -2933,10 +2972,12 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 </div>
               )}
             </IntegrationCard>
-          )}
+            );
+          })()}
 
           {/* GHL SYNC TAB */}
           {activeTab === "GHL Sync"&& (
+            opp.ghl ? (
             <div className="space-y-4">
               <div className="rounded-xl border p-4 flex items-center gap-3"style={{ background: "#ECFEFF", borderColor: "#A5F3FC"}}>
                 
@@ -2999,6 +3040,12 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                 <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>GHL sync is managed automatically. No manual actions required at this stage.</p>
               </div>
             </div>
+            ) : (
+              <div className="rounded-xl border p-6 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+                <p className="text-xs font-semibold mb-1"style={{ color: "var(--rtm-text-muted)"}}>Not Connected to GHL</p>
+                <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>This opportunity has no GHL sync data. It may be a Phase 1 record not yet imported from GoHighLevel.</p>
+              </div>
+            )
           )}
 
         </div>
@@ -3064,10 +3111,12 @@ function OpportunityCard({
         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"style={{ background: stageCfg.bg, color: stageCfg.color }}>{opp.probability}%</span>
       </div>
       {/* GHL Sync Row */}
-      <div className="flex items-center justify-between gap-1 flex-wrap">
-        <GhlSyncBadge status={opp.ghl.ghlSyncStatus} />
-        <span className="text-[10px] font-semibold"style={{ color: "#0891B2"}}>{opp.ghl.ghlStageName}</span>
-      </div>
+      {opp.ghl && (
+        <div className="flex items-center justify-between gap-1 flex-wrap">
+          <GhlSyncBadge status={opp.ghl.ghlSyncStatus} />
+          <span className="text-[10px] font-semibold"style={{ color: "#0891B2"}}>{opp.ghl.ghlStageName}</span>
+        </div>
+      )}
       <div className="flex flex-wrap gap-1">
         <LeadSourceBadge source={opp.leadSource} />
         {(opp.leadSource === "Affiliate"|| opp.leadSource === "Partner") && opp.affiliateSource !== "—"&& (
@@ -3138,7 +3187,8 @@ function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp,
           {opportunities.map((opp, rowIdx) => {
             const sc = getStageCfg(opp.stage);
             const wr = Math.round((opp.estimatedValue * opp.probability) / 100);
-            const la = opp.recentActivities[opp.recentActivities.length - 1];
+            const ra = opp.recentActivities ?? [];
+            const la = ra.length > 0 ? ra[ra.length - 1] : undefined;
             return (
               <tr key={opp.id} className="hover:opacity-90 transition-opacity cursor-pointer"style={{ background: rowIdx % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}
                 onClick={() => onView(opp)}>
@@ -3156,17 +3206,19 @@ function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp,
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}><StageBadge stage={opp.stage} /></td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}>
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"style={{ background: "#ECFEFF", color: "#0891B2", borderColor: "#A5F3FC"}}>{opp.ghl.ghlStageName}</span>
+                  {opp.ghl
+                    ? <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"style={{ background: "#ECFEFF", color: "#0891B2", borderColor: "#A5F3FC"}}>{opp.ghl.ghlStageName}</span>
+                    : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}>
-                  <code className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{opp.ghl.ghlOpportunityId}</code>
+                  {opp.ghl ? <code className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{opp.ghl.ghlOpportunityId}</code> : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
                 </td>
-                <td className="px-3 py-2.5 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)", borderRight: "1px solid var(--rtm-border)"}}>{opp.ghl.ghlAssignedUserName}</td>
+                <td className="px-3 py-2.5 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)", borderRight: "1px solid var(--rtm-border)"}}>{opp.ghl?.ghlAssignedUserName ?? "—"}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}>
-                  <span className="text-[10px]"style={{ color: "var(--rtm-text-secondary)"}}>{opp.ghl.ghlSource}</span>
+                  <span className="text-[10px]"style={{ color: "var(--rtm-text-secondary)"}}>{opp.ghl?.ghlSource ?? "—"}</span>
                 </td>
-                <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}><GhlSyncBadge status={opp.ghl.ghlSyncStatus} /></td>
-                <td className="px-3 py-2.5 whitespace-nowrap text-[10px]"style={{ color: "var(--rtm-text-muted)", borderRight: "1px solid var(--rtm-border)"}}>{opp.ghl.ghlUpdatedAt.split("T")[0]}</td>
+                <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}>{opp.ghl ? <GhlSyncBadge status={opp.ghl.ghlSyncStatus} /> : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}</td>
+                <td className="px-3 py-2.5 whitespace-nowrap text-[10px]"style={{ color: "var(--rtm-text-muted)", borderRight: "1px solid var(--rtm-border)"}}>{opp.ghl?.ghlUpdatedAt?.split("T")[0] ?? "—"}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap font-bold"style={{ color: sc.color, borderRight: "1px solid var(--rtm-border)"}}>{fmtCurrency(opp.estimatedValue)}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}>
                   <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{opp.probability}%</span>
@@ -3663,7 +3715,8 @@ interface PipelineFollowUp {
 function buildFollowUpQueue(opps: Opportunity[]): PipelineFollowUp[] {
   const items: PipelineFollowUp[] = [];
   for (const opp of opps) {
-    for (const fu of opp.followUps) {
+    const activities = opp.recentActivities ?? [];
+    for (const fu of (opp.followUps ?? [])) {
       items.push({
         id: fu.id,
         contact: opp.clientName,
@@ -3672,8 +3725,8 @@ function buildFollowUpQueue(opps: Opportunity[]): PipelineFollowUp[] {
         assignedRep: opp.assignedRep,
         priority: opp.priority,
         dueDate: fu.dueDate,
-        lastContact: opp.recentActivities.length > 0
-          ? opp.recentActivities[opp.recentActivities.length - 1].date
+        lastContact: activities.length > 0
+          ? activities[activities.length - 1].date
           : "—",
         stage: opp.stage,
         relatedType: "pipeline",

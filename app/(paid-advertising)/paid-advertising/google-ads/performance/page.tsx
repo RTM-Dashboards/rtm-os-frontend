@@ -27,6 +27,7 @@ const workspace = getWorkspace("paid-advertising")!;
 interface GoogleCampaignRow extends Record<string, unknown> {
   client: string;
   campaign: string;
+  budget: number;
   spend: number;
   leads: number;
   qualifiedLeads: number;
@@ -47,6 +48,7 @@ const allCampaigns: GoogleCampaignRow[] = [
   {
     client: "Apex Roofing Co.",
     campaign: "Storm Season — Search",
+    budget: 2200,
     spend: 1800,
     leads: 62,
     qualifiedLeads: 41,
@@ -65,6 +67,7 @@ const allCampaigns: GoogleCampaignRow[] = [
   {
     client: "Harbor Auto Group",
     campaign: "Brand Search — Auto",
+    budget: 3500,
     spend: 2800,
     leads: 71,
     qualifiedLeads: 44,
@@ -83,6 +86,7 @@ const allCampaigns: GoogleCampaignRow[] = [
   {
     client: "Pacific Dental",
     campaign: "New Patient — Search",
+    budget: 1200,
     spend: 1000,
     leads: 38,
     qualifiedLeads: 24,
@@ -101,6 +105,7 @@ const allCampaigns: GoogleCampaignRow[] = [
   {
     client: "Summit Landscaping",
     campaign: "Landscaping Services",
+    budget: 1000,
     spend: 800,
     leads: 24,
     qualifiedLeads: 14,
@@ -119,6 +124,7 @@ const allCampaigns: GoogleCampaignRow[] = [
   {
     client: "Metro Dental",
     campaign: "Dental Implants Search",
+    budget: 800,
     spend: 600,
     leads: 14,
     qualifiedLeads: 8,
@@ -266,10 +272,14 @@ export default function GoogleAdsPerformancePage() {
       forms: filteredCampaigns.reduce((s, r) => s + r.formSubmissions, 0),
       booked: filteredCampaigns.reduce((s, r) => s + r.bookedLeads, 0),
     };
+    const budget = filteredCampaigns.reduce((s, r) => s + r.budget, 0);
     return {
       ...t,
+      budget,
       cpl: t.leads > 0 ? t.spend / t.leads : 0,
       costPerQual: t.qualified > 0 ? t.spend / t.qualified : 0,
+      budgetUtilization: budget > 0 ? Math.round((t.spend / budget) * 100) : 0,
+      conversionRate: t.leads > 0 ? ((t.booked / t.leads) * 100) : 0,
       avgCtr: filteredCampaigns.reduce((s, r) => s + r.ctr, 0) / (filteredCampaigns.length || 1),
       avgCpc: filteredCampaigns.reduce((s, r) => s + r.cpc, 0) / (filteredCampaigns.length || 1),
       avgImpShare: Math.round(
@@ -384,7 +394,30 @@ export default function GoogleAdsPerformancePage() {
         />}
       </div>
 
-      {/* KPI Row 4: Search-specific */}
+      {/* KPI Row 4: Budget + Conversion */}
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+        {isEnabled("paid-budget") && <KpiCard
+          title="Budget"value={`$${totals.budget.toLocaleString()}`}
+          trend="neutral"trendValue="Allocated"trendLabel="this period"
+          iconBg="#F0FDF4"iconColor="#16A34A"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>}
+        />}
+        {isEnabled("paid-budget-utilization") && <KpiCard
+          title="Budget Utilization"value={`${totals.budgetUtilization}%`}
+          trend={totals.budgetUtilization >= 90 ? "up" : totals.budgetUtilization >= 70 ? "neutral" : "down"}
+          trendValue={totals.budgetUtilization >= 90 ? "Near limit" : totals.budgetUtilization >= 70 ? "On track" : "Under-paced"}
+          trendLabel={`$${totals.spend.toLocaleString()} of $${totals.budget.toLocaleString()} spent`}
+          iconBg="#FFFBEB"iconColor="#D97706"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
+        />}
+        {isEnabled("paid-conversion-rate") && <KpiCard
+          title="Conversion Rate"value={`${totals.conversionRate.toFixed(1)}%`}
+          trend={totals.conversionRate >= 10 ? "up" : "down"}
+          trendValue={totals.conversionRate >= 10 ? "+1.2%" : "-0.8%"}
+          trendLabel={compLabel ?? "vs last period"}
+          iconBg="#ECFDF5"iconColor="#059669"icon={<svg className="w-5 h-5"fill="none"stroke="currentColor"viewBox="0 0 24 24"><path strokeLinecap="round"strokeLinejoin="round"strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>}
+        />}
+      </div>
+
+      {/* KPI Row 5: Search-specific */}
       <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
         {isEnabled("paid-google-cpc") && <KpiCard
           title="Avg CPC"value={`$${totals.avgCpc.toFixed(2)}`}

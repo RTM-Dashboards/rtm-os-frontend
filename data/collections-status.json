@@ -1,1 +1,14 @@
-{"records":[]}
+{
+  "records": [
+    {
+      "clientId": "mc016",
+      "collectionStatus": "Payment Arrangement",
+      "notes": "",
+      "contactLog": [],
+      "paymentPlanDetails": "Payment arrangement initiated.",
+      "lastContactDate": "2026-07-15",
+      "nextFollowUp": "",
+      "updatedAt": "2026-07-15T14:56:43.200Z"
+    }
+  ]
+}

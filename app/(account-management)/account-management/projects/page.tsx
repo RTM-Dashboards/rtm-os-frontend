@@ -322,7 +322,7 @@ function ActivationWizard({
 
   // Auto-matched blueprint IDs from services
   const autoMatchedBpIds = useMemo(
-    () => blueprintIdsForServices(state.selectedServices),
+    () => blueprintIdsForServices(state.selectedServices, SERVICE_TO_BLUEPRINT),
     [state.selectedServices]
   );
 

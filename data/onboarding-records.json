@@ -24,9 +24,10 @@
         },
         "clientName": {
           "fieldId": "clientName",
-          "status": "am-filling",
+          "status": "pending-client",
           "value": "Blue Ridge Plumbing Co.",
-          "assignedAt": "2026-07-11T09:10:29.659Z"
+          "assignedAt": "2026-07-15T20:07:58.619Z",
+          "sentToClientAt": "2026-07-15T20:07:58.606Z"
         },
         "clientEmail": {
           "fieldId": "clientEmail",
@@ -86,10 +87,10 @@
         },
         "primaryContact": {
           "fieldId": "primaryContact",
-          "status": "am-filling",
+          "status": "pending-client",
           "value": "",
-          "assignedAt": "2026-07-11T09:12:41.927Z",
-          "sentToClientAt": "2025-05-08T00:00:00.000Z"
+          "assignedAt": "2026-07-15T20:07:59.912Z",
+          "sentToClientAt": "2026-07-15T20:07:59.897Z"
         },
         "phone": {
           "fieldId": "phone",
@@ -108,9 +109,9 @@
         "businessSize": {
           "fieldId": "businessSize",
           "status": "pending-client",
-          "value": "",
-          "assignedAt": "2026-07-09T00:00:00.000Z",
-          "sentToClientAt": "2026-07-09T00:00:00.000Z"
+          "value": "2–5 employees",
+          "assignedAt": "2026-07-15T20:08:07.436Z",
+          "sentToClientAt": "2026-07-15T20:08:07.426Z"
         },
         "serviceStartTargetDate": {
           "fieldId": "serviceStartTargetDate",
@@ -197,7 +198,7 @@
         }
       },
       "createdAt": "2025-05-08T00:00:00.000Z",
-      "updatedAt": "2026-07-13T14:48:02.081Z",
+      "updatedAt": "2026-07-15T20:08:07.448Z",
       "projectId": "proj-am-mc004"
     },
     {

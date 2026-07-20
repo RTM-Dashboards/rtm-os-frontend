@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { WorkspaceHeader } from "@/components/workspace";
 import { getWorkspace } from "@/lib/workspaces";
+import { useDateRangeFilter } from "@/lib/reporting/useDateRangeFilter";
+import { DateRangeFilter } from "@/components/reporting/DateRangeFilter";
 import {
   useReports,
   reportStatusVariant as liveReportStatusVariant,
@@ -11,6 +13,32 @@ import {
   amStatusVariant as liveAmStatusVariant,
   deliveryStatusVariant as liveDeliveryStatusVariant,
 } from "@/lib/reporting/useReports";
+import {
+  useReportInputs,
+  inputStatusVariant as liveInputStatusVariant,
+} from "@/lib/reporting/useReportInputs";
+import {
+  useReportTemplates,
+  templateStatusVariant as liveTemplateStatusVariant,
+  type ReportTemplate,
+  type TemplateFormData,
+} from "@/lib/reporting/useReportTemplates";
+import {
+  useReportSchedules,
+  scheduleStatusVariant as liveScheduleStatusVariant,
+  computeNextDueDate,
+  formatNextDueDate,
+  sendDayLabel,
+  type ReportSchedule,
+  type ScheduleFormData,
+  type ScheduleFrequency,
+  type ScheduleDeliveryMethod,
+} from "@/lib/reporting/useReportSchedules";
+import {
+  useReportAutomationRules,
+  ruleStatusVariant as liveRuleStatusVariant,
+} from "@/lib/reporting/useReportAutomationRules";
+import { REPRESENTATIVE_TOTAL_MRR, REPRESENTATIVE_TOTAL_MRR_TREND } from "@/lib/reporting/mock-mrr";
 
 const workspace = getWorkspace("reporting")!;
 
@@ -53,27 +81,7 @@ const reportStatusColor: Record<string, "success"| "warning"| "error"| "info"| "
   "Overdue":                         "error",
 };
 
-//  Department Inputs mock data 
-const deptInputsData = [
-  { client: "Metro Dental",      dept: "LSA",                inputNeeded: "May performance data",  owner: "Ryan B.",    due: "Jun 5",  status: "Pending",    blocker: "API delay",           notes: "Escalated to LSA lead"},
-  { client: "Apex Roofing",      dept: "SEO",                inputNeeded: "Keyword ranking export",owner: "Jake T.",    due: "Jun 6",  status: "Received",   blocker: "—",                   notes: ""},
-  { client: "Harbor Auto",       dept: "GBP",                inputNeeded: "Review summary",        owner: "Nina P.",    due: "Jun 7",  status: "Pending",    blocker: "Access issue",        notes: "Pending credential fix"},
-  { client: "Pacific Dental",    dept: "Paid Advertising",   inputNeeded: "Ad spend report",       owner: "Mia K.",     due: "Jun 5",  status: "Received",   blocker: "—",                   notes: ""},
-  { client: "Summit Landscaping",dept: "Yelp",               inputNeeded: "Review stats",          owner: "Leo S.",     due: "May 30", status: "Overdue",    blocker: "Owner unavailable",   notes: "Overdue — chase immediately"},
-  { client: "BlueSky HVAC",      dept: "Meta Ads",           inputNeeded: "Campaign metrics",      owner: "Dana W.",    due: "Jun 6",  status: "In Progress",blocker: "—",                   notes: ""},
-  { client: "Prestige Auto",     dept: "Google Ads",         inputNeeded: "ROAS breakdown",        owner: "Chris L.",   due: "Jun 9",  status: "Pending",    blocker: "—",                   notes: ""},
-  { client: "Urban Dental",      dept: "Content",            inputNeeded: "Blog publish proof",    owner: "Sarah M.",   due: "Jun 11", status: "Pending",    blocker: "—",                   notes: ""},
-  { client: "Skyline Roofing",   dept: "Web Development",    inputNeeded: "Speed report",          owner: "Tom R.",     due: "Jun 4",  status: "Received",   blocker: "—",                   notes: ""},
-  { client: "Coastal Plumbing",  dept: "Billing",            inputNeeded: "Invoice confirmation",  owner: "Dana W.",    due: "Jun 1",  status: "Received",   blocker: "—",                   notes: ""},
-  { client: "Apex Roofing",      dept: "Account Management", inputNeeded: "AM notes / strategy",  owner: "Sarah M.",   due: "Jun 6",  status: "In Progress",blocker: "—",                   notes: ""},
-];
-
-const inputStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
-  "Received":    "success",
-  "In Progress": "info",
-  "Pending":     "pending",
-  "Overdue":     "error",
-};
+// Department Inputs data is now real — loaded from /api/report-inputs via useReportInputs hook
 
 //  QA Workflow mock data 
 const qaData = [
@@ -95,24 +103,8 @@ const qaStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pe
   "Rejected":             "error",
 };
 
-//  AM Review mock data 
-const amReviewData = [
-  { client: "BlueSky HVAC",      report: "Monthly Meta Ads",   am: "Tom R.",    status: "In Review",           notes: "Checking spend allocation", due: "Jun 6",  next: "AM to approve"},
-  { client: "Pacific Dental",    report: "Monthly Paid Ads",   am: "Chris L.",  status: "Pending AM Review",   notes: "",                          due: "Jun 5",  next: "Awaiting QA completion"},
-  { client: "Apex Roofing",      report: "Monthly SEO",        am: "Sarah M.",  status: "Pending AM Review",   notes: "",                          due: "Jun 7",  next: "QA must approve first"},
-  { client: "Skyline Roofing",   report: "Monthly Web Dev",    am: "Chris L.",  status: "Approved By AM",      notes: "Looks great",               due: "Jun 4",  next: "Send to client"},
-  { client: "Metro Dental",      report: "Monthly LSA",        am: "Sarah M.",  status: "Revision Requested",  notes: "Fix LSA numbers",           due: "Jun 10", next: "Owner to revise"},
-  { client: "Prestige Auto",     report: "Monthly Google Ads", am: "Dana W.",   status: "Pending AM Review",   notes: "",                          due: "Jun 9",  next: "In data gathering"},
-  { client: "Urban Dental",      report: "Monthly Content",    am: "Sarah M.",  status: "Revision Requested",  notes: "Need updated blog links",   due: "Jun 11", next: "QA revision first"},
-];
-
-const amStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
-  "Pending AM Review":   "neutral",
-  "In Review":           "info",
-  "Approved By AM":      "success",
-  "Revision Requested":  "warning",
-  "Ready For Client":    "success",
-};
+// AM Review mock data removed — Tab 4 now uses live useReports data
+// (same source as the /reporting/am-review sub-page)
 
 //  Client Delivery mock data 
 const deliveryData = [
@@ -133,26 +125,9 @@ const deliveryStatusVariant: Record<string, "success"| "warning"| "error"| "info
   "Follow-up Needed":  "warning",
 };
 
-//  Report Template Library mock data 
-const templateLibraryData = [
-  { name: "SEO Monthly Report",         dept: "SEO",              sections: "Exec Summary, Keyword Rankings, Traffic, Backlinks, Completed Work, Next Steps", freq: "Monthly",   owner: "Jake T.",   status: "Active",   lastModified: "May 15, 2025"},
-  { name: "GBP Monthly Report",         dept: "GBP",              sections: "Exec Summary, Review Metrics, GBP Posts, Listing Health, Recommendations",        freq: "Monthly",   owner: "Nina P.",   status: "Active",   lastModified: "May 10, 2025"},
-  { name: "Yelp Monthly Report",        dept: "Yelp",             sections: "Exec Summary, Review Summary, Rating Trends, Competitor Snapshot, Next Steps",     freq: "Monthly",   owner: "Mia K.",    status: "Active",   lastModified: "May 8, 2025"},
-  { name: "Paid Advertising Report",    dept: "Paid Advertising", sections: "Exec Summary, Spend Overview, ROAS, Conversions, Campaign Breakdown, Recs",        freq: "Monthly",   owner: "Leo S.",    status: "Active",   lastModified: "May 20, 2025"},
-  { name: "Meta Ads Report",            dept: "Meta Ads",         sections: "Exec Summary, Impressions, CTR, CPC, Conversion Events, Creative Performance",     freq: "Monthly",   owner: "Dana W.",   status: "Active",   lastModified: "May 18, 2025"},
-  { name: "Google Ads Report",          dept: "Google Ads",       sections: "Exec Summary, Quality Score, Impressions, CPC, Conversions, Campaign Health",      freq: "Monthly",   owner: "Leo S.",    status: "Active",   lastModified: "May 22, 2025"},
-  { name: "LSA Report",                 dept: "LSA",              sections: "Exec Summary, Lead Volume, Cost Per Lead, Lead Quality, Disputes, Next Steps",      freq: "Monthly",   owner: "Ryan B.",   status: "Active",   lastModified: "May 12, 2025"},
-  { name: "Executive Client Summary",   dept: "Multi",            sections: "Portfolio Health, Revenue Snapshot, KPI Summary, Highlights, Risks, Next Actions",  freq: "Monthly",   owner: "Sarah M.",  status: "Active",   lastModified: "May 25, 2025"},
-  { name: "Multi-Service Monthly Report",dept: "Multi",           sections: "Exec Summary, All Channel KPIs, Completed Work, Open Tasks, Risks, Next Month Plan",freq: "Monthly",   owner: "Chris L.",  status: "Draft",    lastModified: "Jun 1, 2025"},
-];
+// Template Library data is now real — loaded from /api/report-templates via useReportTemplates hook
 
-const templateStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
-  "Active":   "success",
-  "Draft":    "warning",
-  "Archived": "neutral",
-};
-
-//  Report Builder mock form state 
+//  Report Builder — section list 
 const builderSections = [
   "Executive Summary",
   "KPI Summary",
@@ -163,6 +138,20 @@ const builderSections = [
   "Recommendations",
   "Next Month Plan",
 ];
+
+// Report Builder — empty form state
+const emptyBuilderForm = {
+  reportName: "",
+  clientId: "",
+  clientName: "",
+  period: "",
+  templateId: "",
+  templateName: "",
+  deptSources: "",
+  owner: "",
+  assignedAM: "",
+  dueDate: "",
+};
 
 //  Reporting Calendar mock data 
 const calendarData = [
@@ -192,26 +181,7 @@ const calendarStatusVariant: Record<string, "success"| "warning"| "error"| "info
   "Ready To Send":           "pending",
 };
 
-//  Scheduled Reporting mock data 
-const scheduledData = [
-  { client: "Apex Roofing",        template: "SEO Monthly Report",          freq: "Monthly",   sendDay: "1st of month", am: "Sarah M.",  delivery: "Email",          status: "Active"},
-  { client: "Pacific Dental",      template: "Paid Advertising Report",     freq: "Monthly",   sendDay: "5th of month", am: "Chris L.",  delivery: "Email + Portal", status: "Active"},
-  { client: "Harbor Auto",         template: "GBP Monthly Report",          freq: "Monthly",   sendDay: "7th of month", am: "Tom R.",    delivery: "Email",          status: "Active"},
-  { client: "Metro Dental",        template: "LSA Report",                  freq: "Monthly",   sendDay: "10th of month",am: "Sarah M.",  delivery: "Client Portal",  status: "Active"},
-  { client: "Coastal Plumbing",    template: "Yelp Monthly Report",         freq: "Monthly",   sendDay: "1st of month", am: "Chris L.",  delivery: "Client Portal",  status: "Active"},
-  { client: "BlueSky HVAC",        template: "Meta Ads Report",             freq: "Monthly",   sendDay: "6th of month", am: "Tom R.",    delivery: "Email",          status: "Active"},
-  { client: "Prestige Auto",       template: "Google Ads Report",           freq: "Monthly",   sendDay: "9th of month", am: "Dana W.",   delivery: "Email",          status: "Active"},
-  { client: "Summit Landscaping",  template: "SEO Monthly Report",          freq: "Monthly",   sendDay: "3rd of month", am: "Dana W.",   delivery: "Manual Send",    status: "Paused"},
-  { client: "Urban Dental",        template: "Multi-Service Monthly Report",freq: "Monthly",   sendDay: "11th of month",am: "Sarah M.",  delivery: "Email + Portal", status: "Active"},
-  { client: "Skyline Roofing",     template: "Executive Client Summary",    freq: "Quarterly", sendDay: "End of quarter",am: "Chris L.", delivery: "Email",          status: "Active"},
-  { client: "Harbor Auto",         template: "Executive Client Summary",    freq: "Quarterly", sendDay: "End of quarter",am: "Tom R.",   delivery: "Manual Send",    status: "Active"},
-];
-
-const scheduleStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
-  "Active": "success",
-  "Paused": "warning",
-  "Inactive": "neutral",
-};
+// Scheduled Reporting data now loaded from /api/report-schedules via useReportSchedules hook
 
 //  Executive Reports mock data 
 const execPortfolioData = [
@@ -239,23 +209,7 @@ const execHealthVariant: Record<string, "success"| "warning"| "error"| "info"| "
   "At Risk":  "error",
 };
 
-//  Report Automation Rules mock data 
-const automationRules = [
-  { rule: "Auto-Draft on Period End",          trigger: "Monthly reporting period closes",               action: "Generate draft report from template",            status: "Active"},
-  { rule: "Submit to QA When Inputs Complete", trigger: "All department inputs marked Received",        action: "Automatically submit report to QA queue",        status: "Active"},
-  { rule: "Notify AM on QA Approval",          trigger: "QA status set to Approved",                   action: "Send AM notification — report ready for review",  status: "Active"},
-  { rule: "Mark Ready to Send on AM Approval", trigger: "AM Review status set to Approved By AM",      action: "Set delivery status to Ready To Send",           status: "Active"},
-  { rule: "Create Follow-up Task on Send",     trigger: "Report delivery status set to Sent",          action: "Auto-create 7-day client follow-up task",        status: "Active"},
-  { rule: "Escalate Overdue Reports",          trigger: "Report due date passes with no QA submission",action: "Flag as Overdue, notify report owner and AM",    status: "Active"},
-  { rule: "Chase Dept Input After 48h",        trigger: "Dept input Pending > 48 hours past due",      action: "Send automated chase email to dept owner",      status: "Active"},
-  { rule: "Disable Schedule on Pause",         trigger: "Client status set to Paused",                 action: "Suspend scheduled report generation",            status: "Active"},
-];
-
-const autoRuleStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
-  "Active":   "success",
-  "Inactive": "neutral",
-  "Paused":   "warning",
-};
+// Automation rules data is now real — loaded from /api/report-automation-rules via useReportAutomationRules hook
 
 //  Reporting Health Dashboard mock data 
 const healthMetrics = [
@@ -274,13 +228,260 @@ type ActiveSection =
 export default function ReportingDashboard() {
   const [activeSection, setActiveSection] = useState<ActiveSection>("queue");
   const [selectedSections, setSelectedSections] = useState<string[]>(builderSections);
+
+  // ── Shared date-range filter ────────────────────────────────────────────────
+  // One filter instance for the entire main dashboard — applies to all real,
+  // timestamped tabs simultaneously (Queue, Dept Inputs, QA, AM Review,
+  // Delivery, Scheduled Reporting, Automation summary).
+  const dashboardDateFilter = useDateRangeFilter();
+
+  // ── Report Builder (Tab 7) — real interactive state ───────────────────────
+  const [builderForm, setBuilderForm] = useState(emptyBuilderForm);
+  const [builderSaving, setBuilderSaving] = useState(false);
+  const [builderSaved, setBuilderSaved] = useState<string | null>(null); // reportId after save
+
+  async function handleBuilderSaveDraft() {
+    if (!builderForm.clientId || !builderForm.reportName.trim()) return;
+    setBuilderSaving(true);
+    try {
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: builderForm.clientId,
+          clientName: builderForm.clientName,
+          reportName: builderForm.reportName,
+          reportType: builderForm.templateName || "Client Report",
+          period: builderForm.period,
+          ownerId: builderForm.owner,
+          amId: builderForm.assignedAM,
+          dueDate: builderForm.dueDate,
+          deliveryMethod: "Email",
+          status: "Draft",
+          qaStatus: "Pending QA",
+          deptReviewStatus: "Pending Assignment",
+          amStatus: "Pending AM Review",
+          deliveryStatus: "Not Ready",
+          progressPct: 0,
+          draftReady: false,
+          aiStatus: "Pending",
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { record: { reportId: string } };
+        setBuilderSaved(data.record.reportId);
+        // Reset form after save
+        setBuilderForm(emptyBuilderForm);
+        setSelectedSections(builderSections);
+      }
+    } finally {
+      setBuilderSaving(false);
+    }
+  }
   const { records: liveReports, loading: reportsLoading, updateReportStatus } = useReports();
+
+  // ── Department Inputs Center (Tab 2) — real data ──────────────────────────
+  const { inputs: liveInputs, loading: inputsLoading, markReceived } = useReportInputs();
+
+  // ── Template Library (Tab 6) — real data ──────────────────────────────────
+  const {
+    templates: liveTemplates,
+    loading: templatesLoading,
+    createTemplate,
+    updateTemplate,
+    archiveTemplate,
+    cloneTemplate,
+  } = useReportTemplates();
+
+  // Template CRUD modal state
+  type TemplateModal =
+    | { mode: "none" }
+    | { mode: "create" }
+    | { mode: "edit"; template: ReportTemplate }
+    | { mode: "clone"; template: ReportTemplate }
+    | { mode: "archive"; template: ReportTemplate };
+  const [templateModal, setTemplateModal] = useState<TemplateModal>({ mode: "none" });
+
+  // Shared template form state (create + edit)
+  const emptyForm: TemplateFormData = {
+    name: "",
+    version: "v1.0",
+    department: "SEO",
+    sections: [],
+    dataConnections: [],
+    frequency: "Monthly",
+    owner: "",
+    status: "Draft",
+    description: "",
+  };
+  const [templateForm, setTemplateForm] = useState<TemplateFormData>(emptyForm);
+  const [templateSaving, setTemplateSaving] = useState(false);
+
+  function openCreateModal() {
+    setTemplateForm(emptyForm);
+    setTemplateModal({ mode: "create" });
+  }
+  function openEditModal(tmpl: ReportTemplate) {
+    setTemplateForm({
+      name: tmpl.name,
+      version: tmpl.version,
+      department: tmpl.department,
+      sections: [...tmpl.sections],
+      dataConnections: [...tmpl.dataConnections],
+      frequency: tmpl.frequency,
+      owner: tmpl.owner,
+      status: tmpl.status,
+      description: tmpl.description,
+    });
+    setTemplateModal({ mode: "edit", template: tmpl });
+  }
+  function closeTemplateModal() {
+    setTemplateModal({ mode: "none" });
+    setTemplateForm(emptyForm);
+  }
+
+  async function handleTemplateSave() {
+    if (!templateForm.name.trim()) return;
+    setTemplateSaving(true);
+    try {
+      if (templateModal.mode === "create") {
+        await createTemplate(templateForm);
+      } else if (templateModal.mode === "edit") {
+        await updateTemplate(templateModal.template.templateId, templateForm);
+      }
+      closeTemplateModal();
+    } finally {
+      setTemplateSaving(false);
+    }
+  }
+
+  async function handleClone(tmpl: ReportTemplate) {
+    await cloneTemplate(tmpl.templateId);
+  }
+
+  async function handleArchive(tmpl: ReportTemplate) {
+    setTemplateModal({ mode: "none" });
+    await archiveTemplate(tmpl.templateId);
+  }
+
+  // ── Scheduled Reporting (Tab 9) — real data ───────────────────────────────
+  const {
+    schedules: liveSchedules,
+    loading: schedulesLoading,
+    createSchedule,
+    updateSchedule,
+    toggleStatus: toggleScheduleStatus,
+    removeSchedule,
+  } = useReportSchedules();
+
+  // ── Automation Rules (Tab 11) — real data ──────────────────────────────────
+  const {
+    rules: liveAutomationRules,
+    loading: rulesLoading,
+  } = useReportAutomationRules();
+
+  // Lightweight client list for schedule form dropdowns
+  const [liveClientsForSchedule, setLiveClientsForSchedule] = useState<
+    { id: string; clientName: string }[]
+  >([]);
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/master-clients", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          clients: { id: string; clientName: string; currentStatus?: string }[];
+        };
+        setLiveClientsForSchedule(
+          data.clients
+            .filter((c) => c.currentStatus !== "Inactive")
+            .map((c) => ({ id: c.id, clientName: c.clientName }))
+        );
+      } catch {
+        // fallback: leave empty
+      }
+    })();
+  }, []);
+
+  type ScheduleModal =
+    | { mode: "none" }
+    | { mode: "create" }
+    | { mode: "edit"; schedule: ReportSchedule }
+    | { mode: "delete"; schedule: ReportSchedule };
+  const [scheduleModal, setScheduleModal] = useState<ScheduleModal>({ mode: "none" });
+
+  const emptyScheduleForm: ScheduleFormData = {
+    clientId: "",
+    clientName: "",
+    templateId: "",
+    templateName: "",
+    frequency: "Monthly",
+    sendDay: "1",
+    deliveryMethod: "Email",
+    assignedAM: "",
+    status: "Active",
+    notes: "",
+  };
+  const [scheduleForm, setScheduleForm] = useState<ScheduleFormData>(emptyScheduleForm);
+  const [scheduleSaving, setScheduleSaving] = useState(false);
+
+  function openScheduleCreateModal() {
+    setScheduleForm(emptyScheduleForm);
+    setScheduleModal({ mode: "create" });
+  }
+  function openScheduleEditModal(sched: ReportSchedule) {
+    setScheduleForm({
+      clientId: sched.clientId,
+      clientName: sched.clientName,
+      templateId: sched.templateId,
+      templateName: sched.templateName,
+      frequency: sched.frequency,
+      sendDay: sched.sendDay,
+      deliveryMethod: sched.deliveryMethod,
+      assignedAM: sched.assignedAM,
+      status: sched.status,
+      notes: sched.notes,
+    });
+    setScheduleModal({ mode: "edit", schedule: sched });
+  }
+  function closeScheduleModal() {
+    setScheduleModal({ mode: "none" });
+    setScheduleForm(emptyScheduleForm);
+  }
+
+  async function handleScheduleSave() {
+    if (!scheduleForm.clientId.trim() || !scheduleForm.templateId.trim()) return;
+    setScheduleSaving(true);
+    try {
+      if (scheduleModal.mode === "create") {
+        await createSchedule(scheduleForm);
+      } else if (scheduleModal.mode === "edit") {
+        await updateSchedule(scheduleModal.schedule.scheduleId, scheduleForm);
+      }
+      closeScheduleModal();
+    } finally {
+      setScheduleSaving(false);
+    }
+  }
+
+  async function handleScheduleDelete(sched: ReportSchedule) {
+    setScheduleModal({ mode: "none" });
+    await removeSchedule(sched.scheduleId);
+  }
 
   const toggleSection = (s: string) => {
     setSelectedSections((prev) =>
       prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
     );
   };
+
+  // ── Date-filtered derived datasets ─────────────────────────────────────────
+  // These are purely additive — they never fabricate or alter records, only
+  // narrow which real records are displayed based on the shared date filter.
+  const filteredReports  = liveReports.filter((r) => dashboardDateFilter.filterByDate(r.createdAt));
+  const filteredInputs   = liveInputs.filter((inp) => dashboardDateFilter.filterByDate(inp.createdAt));
+  const filteredSchedules = liveSchedules.filter((s) => dashboardDateFilter.filterByDate(s.createdAt));
+  const filteredRules    = liveAutomationRules.filter((r) => dashboardDateFilter.filterByDate(r.createdAt));
 
   const tabs: { id: ActiveSection; label: string }[] = [
     { id: "queue",           label: "Report Queue"},
@@ -451,6 +652,16 @@ export default function ReportingDashboard() {
         </div>
       </SectionWrapper>
 
+      {/*  Shared Date-Range Filter — applies to all real-data tabs at once  */}
+      <DateRangeFilter
+        dateRange={dashboardDateFilter.dateRange}
+        setDateRange={dashboardDateFilter.setDateRange}
+        customStart={dashboardDateFilter.customStart}
+        setCustomStart={dashboardDateFilter.setCustomStart}
+        customEnd={dashboardDateFilter.customEnd}
+        setCustomEnd={dashboardDateFilter.setCustomEnd}
+      />
+
       {/*  Section Tabs  */}
       <div className="border-b"style={{ borderColor: "var(--rtm-border-light)"}}>
         <nav className="-mb-px flex gap-1 overflow-x-auto">
@@ -485,7 +696,7 @@ export default function ReportingDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {liveReports.map((row) => {
+                  {filteredReports.map((row) => {
                     const nextAction =
                       row.status === "Not Started" ? "Begin data gathering" :
                       row.status === "Data Gathering" ? "Complete data pull" :
@@ -520,36 +731,61 @@ export default function ReportingDashboard() {
         </SectionWrapper>
       )}
 
-      {/*  Department Inputs Center  */}
-      {activeSection === "deptInputs"&& (
-        <SectionWrapper title="Department Inputs Center"description="Track required data inputs from all departments for active reports">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[1000px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                  {["Client", "Department", "Input Needed", "Owner", "Due Date", "Status", "Blocker", "Notes"].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {deptInputsData.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                    <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.client}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}>{row.dept}</span>
-                    </td>
-                    <td className="py-2.5 px-3"style={{ color: "var(--rtm-text-secondary)"}}>{row.inputNeeded}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.owner}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap font-medium"style={{ color: row.status === "Overdue"? "#DC2626": "var(--rtm-text-secondary)"}}>{row.due}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={inputStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm"/></td>
-                    <td className="py-2.5 px-3 text-xs"style={{ color: row.blocker !== "—"? "#DC2626": "var(--rtm-text-muted)"}}>{row.blocker}</td>
-                    <td className="py-2.5 px-3 text-xs"style={{ color: "var(--rtm-text-muted)"}}>{row.notes || "—"}</td>
+      {/*  Department Inputs Center — wired to real data  */}
+      {activeSection === "deptInputs" && (
+        <SectionWrapper title="Department Inputs Center" description="Track required data inputs from all departments for active reports">
+          {inputsLoading ? (
+            <div className="py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading inputs…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[1100px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                    {["Client", "Linked Report", "Department", "Input Needed", "Owner", "Due Date", "Status", "Blocker", "Notes", "Action"].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredInputs.map((row) => {
+                    const linkedReport = liveReports.find((r) => r.reportId === row.reportId);
+                    return (
+                      <tr key={row.inputId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                        <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.clientName}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                          {linkedReport ? linkedReport.reportName : row.reportId}
+                        </td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}>{row.department}</span>
+                        </td>
+                        <td className="py-2.5 px-3" style={{ color: "var(--rtm-text-secondary)" }}>{row.inputNeeded}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.owner}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap font-medium" style={{ color: row.status === "Overdue" ? "#DC2626" : "var(--rtm-text-secondary)" }}>{row.dueDate}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveInputStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm" /></td>
+                        <td className="py-2.5 px-3 text-xs" style={{ color: row.blocker ? "#DC2626" : "var(--rtm-text-muted)" }}>{row.blocker || "—"}</td>
+                        <td className="py-2.5 px-3 text-xs" style={{ color: "var(--rtm-text-muted)" }}>{row.notes || "—"}</td>
+                        <td className="py-2.5 px-3 whitespace-nowrap">
+                          {row.status !== "Received" ? (
+                            <button
+                              onClick={() => void markReceived(row.inputId)}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+                            >
+                              Mark Received
+                            </button>
+                          ) : (
+                            <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                              {row.receivedAt ? `Received ${new Date(row.receivedAt).toLocaleDateString()}` : "Received"}
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionWrapper>
       )}
 
@@ -569,7 +805,7 @@ export default function ReportingDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {liveReports.map((row) => (
+                  {filteredReports.map((row) => (
                     <tr key={row.reportId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
                       <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.reportName}</td>
                       <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.clientName}</td>
@@ -611,33 +847,86 @@ export default function ReportingDashboard() {
         </SectionWrapper>
       )}
 
-      {/*  AM Review Workflow  */}
-      {activeSection === "amReview"&& (
-        <SectionWrapper title="AM Review Workflow"description="Account manager review pipeline for approved QA reports">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[900px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                  {["Client", "Report", "Assigned AM", "Review Status", "AM Notes", "Due Date", "Next Action"].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {amReviewData.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                    <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.client}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.report}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.am}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={amStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm"/></td>
-                    <td className="py-2.5 px-3 text-xs"style={{ color: "var(--rtm-text-muted)"}}>{row.notes || "—"}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.due}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap text-xs font-medium"style={{ color: "var(--rtm-blue)"}}>{row.next}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/*  AM Review Workflow — live data, same source as /reporting/am-review sub-page  */}
+      {activeSection === "amReview" && (
+        <SectionWrapper
+          title="AM Review Workflow"
+          description="Account manager review pipeline — live data, same source as the AM Review sub-page"
+        >
+          {/* Link to full AM Review sub-page */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+              Showing {reportsLoading ? "…" : filteredReports.length}{filteredReports.length !== liveReports.length ? ` of ${liveReports.length}` : ""} reports. For filters, per-AM summary, and delivery scheduling, use the full AM Review page.
+            </p>
+            <a
+              href="/reporting/am-review"
+              className="text-xs font-semibold px-3 py-2 rounded-lg border transition-all hover:opacity-90"
+              style={{ color: "#6D28D9", background: "#6D28D915", borderColor: "#6D28D940", textDecoration: "none" }}
+            >
+              → Full AM Review
+            </a>
           </div>
+
+          {reportsLoading ? (
+            <div className="py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[1000px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                    {["Client", "Report", "Assigned AM", "Review Status", "Delivery Status", "Due Date", "Actions"].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReports.map((row) => (
+                    <tr key={row.reportId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                      <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.clientName}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.reportName}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.amId}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <StatusBadge variant={liveAmStatusVariant[row.amStatus] ?? "neutral"} label={row.amStatus} size="sm" />
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <StatusBadge variant={liveDeliveryStatusVariant[row.deliveryStatus] ?? "neutral"} label={row.deliveryStatus} size="sm" />
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.dueDate}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <div className="flex gap-1.5">
+                          {row.amStatus !== "Approved By AM" && (
+                            <button
+                              onClick={() =>
+                                void updateReportStatus(row.reportId, {
+                                  amStatus: "Approved By AM",
+                                  deliveryStatus: "Ready To Send",
+                                  status: "Ready To Send",
+                                })
+                              }
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+                            >AM Approve</button>
+                          )}
+                          {row.amStatus !== "Revision Requested" && (
+                            <button
+                              onClick={() =>
+                                void updateReportStatus(row.reportId, {
+                                  amStatus: "Revision Requested",
+                                  status: "Needs Revision",
+                                })
+                              }
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#D97706", background: "#D9770615", borderColor: "#D9770640" }}
+                            >Request Revision</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionWrapper>
       )}
 
@@ -657,7 +946,7 @@ export default function ReportingDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {liveReports.map((row) => (
+                  {filteredReports.map((row) => (
                     <tr key={row.reportId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
                       <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.clientName}</td>
                       <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.reportName}</td>
@@ -697,156 +986,572 @@ export default function ReportingDashboard() {
         </SectionWrapper>
       )}
 
-      {/*  Report Template Library  */}
-      {activeSection === "templateLibrary"&& (
-        <SectionWrapper title="Report Template Library"description="Manage reusable report templates across all departments and service lines">
-          <div className="flex justify-end gap-2 mb-4">
-            {["Create Template", "Clone Template", "Edit Template", "Archive Template"].map((action) => (
-              <button
-                key={action}
-                className="text-xs font-semibold px-3 py-2 rounded-lg border transition-all hover:opacity-90"style={{ color: "var(--rtm-blue)", background: "var(--rtm-blue-light)", borderColor: "var(--rtm-blue)40"}}
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[1100px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                  {["Template Name", "Department Source", "Included Sections", "Frequency", "Owner", "Status", "Last Modified"].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
+      {/*  Report Template Library — wired to real data  */}
+      {activeSection === "templateLibrary" && (
+        <SectionWrapper title="Report Template Library" description="Manage reusable report templates across all departments and service lines">
+
+          {/* Template CRUD modal (Create / Edit) */}
+          {(templateModal.mode === "create" || templateModal.mode === "edit") && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.45)" }}
+              onClick={(e) => { if (e.target === e.currentTarget) closeTemplateModal(); }}
+            >
+              <div className="rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-4" style={{ background: "var(--rtm-bg-secondary)", border: "1px solid var(--rtm-border-light)" }}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {templateModal.mode === "create" ? "Create Template" : "Edit Template"}
+                  </h2>
+                  <button onClick={closeTemplateModal} className="text-xl leading-none" style={{ color: "var(--rtm-text-muted)" }}>×</button>
+                </div>
+
+                <div className="space-y-3">
+                  {[
+                    { label: "Template Name", key: "name" as const, placeholder: "e.g. SEO Monthly Report" },
+                    { label: "Version", key: "version" as const, placeholder: "e.g. v1.0" },
+                    { label: "Owner", key: "owner" as const, placeholder: "e.g. Jake T." },
+                    { label: "Description", key: "description" as const, placeholder: "Brief description of this template" },
+                  ].map((field) => (
+                    <div key={field.key} className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{field.label}</label>
+                      <input
+                        type="text"
+                        placeholder={field.placeholder}
+                        value={templateForm[field.key] as string}
+                        onChange={(e) => setTemplateForm((f) => ({ ...f, [field.key]: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                      />
+                    </div>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                {templateLibraryData.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                    <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.name}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}>{row.dept}</span>
-                    </td>
-                    <td className="py-2.5 px-3 text-xs max-w-xs"style={{ color: "var(--rtm-text-secondary)"}}>{row.sections}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.freq}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.owner}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={templateStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm"/></td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{row.lastModified}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Department</label>
+                      <select
+                        value={templateForm.department}
+                        onChange={(e) => setTemplateForm((f) => ({ ...f, department: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                      >
+                        {["SEO", "GBP", "Yelp", "Paid Advertising", "Meta Ads", "Google Ads", "LSA", "Content", "Web Development", "Multi"].map((d) => (
+                          <option key={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Frequency</label>
+                      <select
+                        value={templateForm.frequency}
+                        onChange={(e) => setTemplateForm((f) => ({ ...f, frequency: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                      >
+                        {["Weekly", "Monthly", "Quarterly", "Annual", "On Demand"].map((f) => (
+                          <option key={f}>{f}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Status</label>
+                    <select
+                      value={templateForm.status}
+                      onChange={(e) => setTemplateForm((f) => ({ ...f, status: e.target.value as "Active" | "Draft" | "Archived" }))}
+                      className="w-full px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                    >
+                      {["Draft", "Active", "Archived"].map((s) => (
+                        <option key={s}>{s}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Sections (comma-separated)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Executive Summary, KPI Summary, Recommendations"
+                      value={templateForm.sections.join(", ")}
+                      onChange={(e) =>
+                        setTemplateForm((f) => ({
+                          ...f,
+                          sections: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                        }))
+                      }
+                      className="w-full px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Data Connections (comma-separated)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. GA4, GSC, AgencyAnalytics"
+                      value={templateForm.dataConnections.join(", ")}
+                      onChange={(e) =>
+                        setTemplateForm((f) => ({
+                          ...f,
+                          dataConnections: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                        }))
+                      }
+                      className="w-full px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    onClick={closeTemplateModal}
+                    className="text-xs font-semibold px-4 py-2 rounded-lg border"
+                    style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "transparent" }}
+                  >Cancel</button>
+                  <button
+                    onClick={() => void handleTemplateSave()}
+                    disabled={templateSaving || !templateForm.name.trim()}
+                    className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90 disabled:opacity-50"
+                    style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+                  >
+                    {templateSaving ? "Saving…" : templateModal.mode === "create" ? "Create Template" : "Save Changes"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Archive confirmation modal */}
+          {templateModal.mode === "archive" && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.45)" }}
+              onClick={(e) => { if (e.target === e.currentTarget) closeTemplateModal(); }}
+            >
+              <div className="rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 space-y-4" style={{ background: "var(--rtm-bg-secondary)", border: "1px solid var(--rtm-border-light)" }}>
+                <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Archive Template?</h2>
+                <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+                  “{templateModal.template.name}” will be archived and hidden from active use. You can restore it later.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <button onClick={closeTemplateModal} className="text-xs font-semibold px-4 py-2 rounded-lg border" style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "transparent" }}>Cancel</button>
+                  <button
+                    onClick={() => void handleArchive(templateModal.template)}
+                    className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+                    style={{ color: "#DC2626", background: "#DC262615", borderColor: "#DC262640" }}
+                  >Archive Template</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Action bar */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+              {templatesLoading ? "Loading…" : `${liveTemplates.filter((t) => t.status !== "Archived").length} active templates`}
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={openCreateModal}
+                className="text-xs font-semibold px-3 py-2 rounded-lg border transition-all hover:opacity-90"
+                style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+              >+ Create Template</button>
+            </div>
           </div>
+
+          {templatesLoading ? (
+            <div className="py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading templates…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[1200px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                    {["Template Name", "Dept", "Version", "Sections", "Connections", "Frequency", "Owner", "Status", "Uses", "Updated", "Actions"].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {liveTemplates.map((tmpl) => (
+                    <tr key={tmpl.templateId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                      <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{tmpl.name}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}>{tmpl.department}</span>
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-xs font-mono" style={{ color: "var(--rtm-text-muted)" }}>{tmpl.version}</td>
+                      <td className="py-2.5 px-3 text-xs max-w-[180px] truncate" style={{ color: "var(--rtm-text-secondary)" }} title={tmpl.sections.join(", ")}>
+                        {tmpl.sections.join(", ") || "—"}
+                      </td>
+                      <td className="py-2.5 px-3 text-xs max-w-[140px] truncate" style={{ color: "var(--rtm-text-secondary)" }} title={tmpl.dataConnections.join(", ")}>
+                        {tmpl.dataConnections.join(", ") || "—"}
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{tmpl.frequency}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{tmpl.owner}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveTemplateStatusVariant[tmpl.status] ?? "neutral"} label={tmpl.status} size="sm" /></td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-xs font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{tmpl.usageCount}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                        {new Date(tmpl.updatedAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => openEditModal(tmpl)}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                            style={{ color: "var(--rtm-blue)", background: "var(--rtm-blue-light)", borderColor: "var(--rtm-blue)40" }}
+                          >Edit</button>
+                          <button
+                            onClick={() => void handleClone(tmpl)}
+                            className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                            style={{ color: "#7C3AED", background: "#7C3AED15", borderColor: "#7C3AED40" }}
+                          >Clone</button>
+                          {tmpl.status !== "Archived" && (
+                            <button
+                              onClick={() => setTemplateModal({ mode: "archive", template: tmpl })}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                              style={{ color: "#DC2626", background: "#DC262615", borderColor: "#DC262640" }}
+                            >Archive</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionWrapper>
       )}
 
-      {/*  Report Builder  */}
-      {activeSection === "reportBuilder"&& (
-        <SectionWrapper title="Report Builder"description="Build and configure a new client report from template with custom sections">
+      {/*  Report Builder — Tab 7, genuinely interactive  */}
+      {activeSection === "reportBuilder" && (
+        <SectionWrapper title="Report Builder" description="Build and configure a new client report — fill the form and Save Draft to create a real record in the Report Queue">
+
+          {/* Success banner after Save Draft */}
+          {builderSaved && (
+            <div className="flex items-center gap-3 mb-4 rounded-xl border px-4 py-3" style={{ background: "#ECFDF5", borderColor: "#05966940" }}>
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "#059669" }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <span className="text-xs font-bold" style={{ color: "#065F46" }}>Draft saved!</span>
+                <span className="text-xs ml-1" style={{ color: "#065F46" }}>Report record created (ID: {builderSaved}) — visible in Report Queue above.</span>
+              </div>
+              <button onClick={() => setBuilderSaved(null)} className="ml-auto text-xs" style={{ color: "#065F46" }}>×</button>
+            </div>
+          )}
+
+          {/* AI pipeline honest notice */}
+          <div className="flex items-start gap-3 mb-4 rounded-xl border px-4 py-3" style={{ background: "#F0F9FF", borderColor: "#0369A140" }}>
+            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "#0369A1" }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-xs" style={{ color: "#0C4A6E" }}>
+              <strong>Save Draft</strong> creates a real report record in the Report Queue. <strong>Generate Report</strong> and <strong>Preview Report</strong> require the AI pipeline — available when AI credentials are configured.
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Form Fields */}
+            {/* Left: Form Fields — all genuinely interactive */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>Report Details</h3>
-              {[
-                { label: "Report Name",       placeholder: "e.g. Apex Roofing — SEO May 2025"},
-                { label: "Client",            placeholder: "Select client…"},
-                { label: "Reporting Period",  placeholder: "e.g. May 2025"},
-                { label: "Template",          placeholder: "Select template…"},
-                { label: "Department Sources",placeholder: "SEO, GBP, Paid Ads…"},
-                { label: "Report Owner",      placeholder: "Select report owner…"},
-                { label: "Assigned AM",       placeholder: "Select account manager…"},
-                { label: "Due Date",          placeholder: "Jun 7, 2025"},
-              ].map((field) => (
-                <div key={field.label} className="space-y-1">
-                  <label className="text-xs font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>{field.label}</label>
-                  <input
-                    type="text"placeholder={field.placeholder}
-                    className="w-full px-3 py-2 rounded-lg border text-sm"style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)"}}
-                    readOnly
-                  />
-                </div>
-              ))}
+              <h3 className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Report Details</h3>
+
+              {/* Report Name */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Report Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Apex Roofing — SEO May 2025"
+                  value={builderForm.reportName}
+                  onChange={(e) => setBuilderForm((f) => ({ ...f, reportName: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                />
+              </div>
+
+              {/* Client — real dropdown from MASTER_CLIENTS */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Client</label>
+                <select
+                  value={builderForm.clientId}
+                  onChange={(e) => {
+                    const sel = e.target;
+                    const opt = sel.options[sel.selectedIndex];
+                    setBuilderForm((f) => ({ ...f, clientId: sel.value, clientName: opt.text }));
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                >
+                  <option value="">Select client…</option>
+                  {liveClientsForSchedule.map((c) => (
+                    <option key={c.id} value={c.id}>{c.clientName}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Reporting Period */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Reporting Period</label>
+                <input
+                  type="text"
+                  placeholder="e.g. May 2025"
+                  value={builderForm.period}
+                  onChange={(e) => setBuilderForm((f) => ({ ...f, period: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                />
+              </div>
+
+              {/* Template — real dropdown from report-templates */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Template</label>
+                <select
+                  value={builderForm.templateId}
+                  onChange={(e) => {
+                    const sel = e.target;
+                    const opt = sel.options[sel.selectedIndex];
+                    setBuilderForm((f) => ({ ...f, templateId: sel.value, templateName: opt.text }));
+                  }}
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                >
+                  <option value="">Select template…</option>
+                  {liveTemplates
+                    .filter((t) => t.status !== "Archived")
+                    .map((t) => (
+                      <option key={t.templateId} value={t.templateId}>{t.name}</option>
+                    ))}
+                </select>
+              </div>
+
+              {/* Department Sources */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Department Sources</label>
+                <input
+                  type="text"
+                  placeholder="SEO, GBP, Paid Ads…"
+                  value={builderForm.deptSources}
+                  onChange={(e) => setBuilderForm((f) => ({ ...f, deptSources: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                />
+              </div>
+
+              {/* Report Owner */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Report Owner</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Jake T."
+                  value={builderForm.owner}
+                  onChange={(e) => setBuilderForm((f) => ({ ...f, owner: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                />
+              </div>
+
+              {/* Assigned AM */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Assigned AM</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Sarah M."
+                  value={builderForm.assignedAM}
+                  onChange={(e) => setBuilderForm((f) => ({ ...f, assignedAM: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                />
+              </div>
+
+              {/* Due Date */}
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Due Date</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Jun 7, 2025"
+                  value={builderForm.dueDate}
+                  onChange={(e) => setBuilderForm((f) => ({ ...f, dueDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                />
+              </div>
             </div>
 
-            {/* Right: Section Selector */}
+            {/* Right: Section Selector + Actions */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>Report Sections</h3>
-              <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>Toggle sections to include in this report</p>
+              <h3 className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Report Sections</h3>
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Toggle sections to include in this report</p>
               <div className="space-y-2">
                 {builderSections.map((section) => (
                   <button
                     key={section}
                     onClick={() => toggleSection(section)}
-                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-all"style={{
-                      borderColor: selectedSections.includes(section) ? "var(--rtm-blue)": "var(--rtm-border-light)",
-                      background: selectedSections.includes(section) ? "var(--rtm-blue-light)": "var(--rtm-bg-secondary)",
-                      color: selectedSections.includes(section) ? "var(--rtm-blue)": "var(--rtm-text-secondary)",
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-lg border text-sm font-medium transition-all"
+                    style={{
+                      borderColor: selectedSections.includes(section) ? "var(--rtm-blue)" : "var(--rtm-border-light)",
+                      background: selectedSections.includes(section) ? "var(--rtm-blue-light)" : "var(--rtm-bg-secondary)",
+                      color: selectedSections.includes(section) ? "var(--rtm-blue)" : "var(--rtm-text-secondary)",
                     }}
                   >
                     <span>{section}</span>
-                    <span className="text-lg leading-none">{selectedSections.includes(section) ? "": "+"}</span>
+                    <span className="text-lg leading-none">{selectedSections.includes(section) ? "" : "+"}</span>
                   </button>
                 ))}
               </div>
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-2 pt-2">
-                {[
-                  { label: "Save Draft",       color: "#6B7280", bg: "#6B728015"},
-                  { label: "Generate Report",  color: "#0F766E", bg: "#0F766E15"},
-                  { label: "Preview Report",   color: "#0891B2", bg: "#0891B215"},
-                  { label: "Submit For QA",    color: "#16A34A", bg: "#16A34A15"},
-                ].map((btn) => (
-                  <button
-                    key={btn.label}
-                    className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"style={{ color: btn.color, background: btn.bg, borderColor: `${btn.color}40` }}
-                  >
-                    {btn.label}
-                  </button>
-                ))}
+                {/* Save Draft — real: POST to /api/reports with status Draft */}
+                <button
+                  onClick={() => void handleBuilderSaveDraft()}
+                  disabled={builderSaving || !builderForm.clientId || !builderForm.reportName.trim()}
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ color: "#6B7280", background: "#6B728015", borderColor: "#6B728040" }}
+                  title={!builderForm.clientId || !builderForm.reportName.trim() ? "Enter a report name and select a client first" : ""}
+                >
+                  {builderSaving ? "Saving…" : "Save Draft"}
+                </button>
+
+                {/* Generate Report — requires AI pipeline */}
+                <button
+                  disabled
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
+                  style={{ color: "#0F766E", background: "#0F766E15", borderColor: "#0F766E40" }}
+                  title="Coming when AI pipeline is configured — requires AI/LLM credentials"
+                >
+                  Generate Report
+                </button>
+
+                {/* Preview Report — requires AI pipeline */}
+                <button
+                  disabled
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border opacity-40 cursor-not-allowed"
+                  style={{ color: "#0891B2", background: "#0891B215", borderColor: "#0891B240" }}
+                  title="Coming when AI pipeline is configured — requires AI/LLM credentials"
+                >
+                  Preview Report
+                </button>
+
+                {/* Submit For QA — only available after Save Draft */}
+                <button
+                  disabled={!builderSaved}
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ color: "#16A34A", background: "#16A34A15", borderColor: "#16A34A40" }}
+                  title={!builderSaved ? "Save Draft first, then submit for QA" : ""}
+                >
+                  Submit For QA
+                </button>
               </div>
             </div>
           </div>
         </SectionWrapper>
       )}
 
-      {/*  Reporting Calendar  */}
-      {activeSection === "calendar"&& (
+      {/*  Reporting Calendar — Tab 8  */}
+      {activeSection === "calendar" && (
         <div className="space-y-4">
-          {/* Calendar Summary Cards */}
-          <div className="grid grid-cols-2 xl:grid-cols-5 gap-4">
-            {[
-              { label: "Upcoming Reports",          value: "8",  color: "#2563EB", bg: "#EFF6FF"},
-              { label: "Reports Due This Week",      value: "4",  color: "#D97706", bg: "#FFFBEB"},
-              { label: "Reports Due This Month",     value: "11", color: "#7C3AED", bg: "#F5F3FF"},
-              { label: "Overdue Reports",            value: "2",  color: "#DC2626", bg: "#FEF2F2"},
-              { label: "Sent Reports",               value: "3",  color: "#059669", bg: "#ECFDF5"},
-            ].map((card) => (
-              <div key={card.label} className="rounded-xl border p-4"style={{ borderColor: "var(--rtm-border-light)", background: card.bg }}>
-                <div className="text-2xl font-bold"style={{ color: card.color }}>{card.value}</div>
-                <div className="text-xs font-medium mt-1"style={{ color: card.color }}>{card.label}</div>
-              </div>
-            ))}
-          </div>
+          {/* Upcoming from real schedules */}
+          {(() => {
+            const activeSchedules = liveSchedules.filter((s) => s.status === "Active");
+            const today = new Date();
+            const thirtyDaysOut = new Date(today);
+            thirtyDaysOut.setDate(thirtyDaysOut.getDate() + 30);
+            const upcoming = activeSchedules
+              .map((s) => ({
+                sched: s,
+                nextDue: computeNextDueDate(s),
+              }))
+              .filter(({ nextDue }) => nextDue <= thirtyDaysOut)
+              .sort((a, b) => a.nextDue.getTime() - b.nextDue.getTime());
 
-          <SectionWrapper title="Reporting Calendar"description="View all upcoming, due, overdue, and sent reports by date">
+            const dueThisWeek = upcoming.filter(({ nextDue }) => {
+              const diff = Math.ceil((nextDue.getTime() - today.getTime()) / 86400000);
+              return diff <= 7;
+            });
+
+            return (
+              <>
+                {/* Summary cards derived from real schedule data */}
+                <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+                  {[
+                    { label: "Active Schedules",       value: String(activeSchedules.length),    color: "#2563EB", bg: "#EFF6FF" },
+                    { label: "Due Within 7 Days",       value: String(dueThisWeek.length),         color: "#D97706", bg: "#FFFBEB" },
+                    { label: "Due Within 30 Days",      value: String(upcoming.length),            color: "#7C3AED", bg: "#F5F3FF" },
+                    { label: "Paused Schedules",        value: String(liveSchedules.filter((s) => s.status === "Paused").length), color: "#6B7280", bg: "#F9FAFB" },
+                  ].map((card) => (
+                    <div key={card.label} className="rounded-xl border p-4" style={{ borderColor: "var(--rtm-border-light)", background: card.bg }}>
+                      <div className="text-2xl font-bold" style={{ color: card.color }}>{card.value}</div>
+                      <div className="text-xs font-medium mt-1" style={{ color: card.color }}>{card.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Upcoming schedule-derived dates — real data */}
+                {upcoming.length > 0 && (
+                  <SectionWrapper
+                    title="Upcoming Report Dates (from Schedules)"
+                    description="Next due dates derived from active schedule configurations — reflects real schedule data"
+                  >
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm min-w-[800px]">
+                        <thead>
+                          <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                            {["Next Due Date", "Client", "Report Template", "Frequency", "Delivery", "Assigned AM"].map((h) => (
+                              <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {upcoming.map(({ sched, nextDue }) => {
+                            const diff = Math.ceil((nextDue.getTime() - today.getTime()) / 86400000);
+                            const isUrgent = diff <= 3;
+                            const isSoon = diff <= 7;
+                            return (
+                              <tr key={sched.scheduleId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                                <td className="py-2.5 px-3 whitespace-nowrap font-medium" style={{ color: isUrgent ? "#DC2626" : isSoon ? "#D97706" : "var(--rtm-text-primary)" }}>
+                                  {formatNextDueDate(nextDue)}
+                                  {isUrgent && <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ background: "#FEF2F2", color: "#DC2626" }}>Urgent</span>}
+                                  {!isUrgent && isSoon && <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full" style={{ background: "#FFFBEB", color: "#D97706" }}>Soon</span>}
+                                </td>
+                                <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{sched.clientName}</td>
+                                <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{sched.templateName}</td>
+                                <td className="py-2.5 px-3 whitespace-nowrap">
+                                  <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}>{sched.frequency}</span>
+                                </td>
+                                <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{sched.deliveryMethod}</td>
+                                <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{sched.assignedAM || "—"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </SectionWrapper>
+                )}
+              </>
+            );
+          })()}
+
+          {/* Legacy active-report-instances calendar — mock data, still useful */}
+          <SectionWrapper title="Active Report Instances" description="Current report queue instances by due date (from Report Queue)">
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[900px]">
                 <thead>
-                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
+                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
                     {["Date", "Client", "Report Type", "Owner", "Status", "Next Action"].map((h) => (
-                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {calendarData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((row, i) => (
-                    <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                      <td className="py-2.5 px-3 whitespace-nowrap font-medium"style={{ color: row.status === "Overdue"? "#DC2626": "var(--rtm-text-primary)"}}>{row.date}</td>
-                      <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.client}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.type}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.owner}</td>
-                      <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={calendarStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm"/></td>
-                      <td className="py-2.5 px-3 whitespace-nowrap text-xs font-medium"style={{ color: "var(--rtm-blue)"}}>{row.next}</td>
+                    <tr key={i} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                      <td className="py-2.5 px-3 whitespace-nowrap font-medium" style={{ color: row.status === "Overdue" ? "#DC2626" : "var(--rtm-text-primary)" }}>{row.date}</td>
+                      <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.client}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.type}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.owner}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={calendarStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm" /></td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-xs font-medium" style={{ color: "var(--rtm-blue)" }}>{row.next}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -856,48 +1561,318 @@ export default function ReportingDashboard() {
         </div>
       )}
 
-      {/*  Scheduled Reporting  */}
-      {activeSection === "scheduled"&& (
-        <SectionWrapper title="Scheduled Reporting"description="Configure automatic report generation and delivery schedules per client">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[1000px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                  {["Client", "Report Template", "Frequency", "Send Day", "Assigned AM", "Delivery Method", "Status"].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {scheduledData.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                    <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.client}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.template}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap">
-                      <span className="text-xs font-medium px-2 py-0.5 rounded-full"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}>{row.freq}</span>
-                    </td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.sendDay}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.am}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{row.delivery}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={scheduleStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm"/></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/*  Scheduled Reporting — Tab 9, wired to real data  */}
+      {activeSection === "scheduled" && (
+        <div className="space-y-4">
+          {/* ── Honest note: config only, no auto-triggering yet ───────────── */}
+          <div
+            className="flex items-start gap-3 rounded-xl border px-4 py-3"
+            style={{ background: "#FFFBEB", borderColor: "#D9770640" }}
+          >
+            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "#D97706" }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div>
+              <span className="text-xs font-bold" style={{ color: "#92400E" }}>Schedule Configuration Only — No Auto-Triggering Yet</span>
+              <p className="text-xs mt-0.5" style={{ color: "#92400E" }}>
+                Schedules configured here are real and persisted, but automatic report generation on schedule is
+                <strong> not yet implemented</strong>. That capability depends on the Report Generation pipeline
+                being complete (planned for Phase 5). Use these schedules to plan and configure delivery cadences;
+                reports must still be generated and sent manually for now.
+              </p>
+            </div>
           </div>
 
-          {/* Frequency Legend */}
-          <div className="mt-4 flex flex-wrap gap-3">
-            <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-muted)"}}>Frequencies:</p>
-            {["Weekly", "Bi-weekly", "Monthly", "Quarterly"].map((f) => (
-              <span key={f} className="text-xs px-2 py-0.5 rounded-full border"style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)"}}>{f}</span>
-            ))}
-            <p className="text-xs font-semibold ml-4"style={{ color: "var(--rtm-text-muted)"}}>Delivery Methods:</p>
-            {["Email", "Client Portal", "Manual Send"].map((m) => (
-              <span key={m} className="text-xs px-2 py-0.5 rounded-full border"style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)"}}>{m}</span>
-            ))}
-          </div>
-        </SectionWrapper>
+          {/* Schedule Create/Edit Modal */}
+          {(scheduleModal.mode === "create" || scheduleModal.mode === "edit") && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.45)" }}
+              onClick={(e) => { if (e.target === e.currentTarget) closeScheduleModal(); }}
+            >
+              <div className="rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 space-y-4" style={{ background: "var(--rtm-bg-secondary)", border: "1px solid var(--rtm-border-light)" }}>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {scheduleModal.mode === "create" ? "Create Schedule" : "Edit Schedule"}
+                  </h2>
+                  <button onClick={closeScheduleModal} className="text-xl leading-none" style={{ color: "var(--rtm-text-muted)" }}>×</button>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Client selector */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Client</label>
+                    <select
+                      value={scheduleForm.clientId}
+                      onChange={(e) => {
+                        const sel = e.target;
+                        const opt = sel.options[sel.selectedIndex];
+                        setScheduleForm((f) => ({
+                          ...f,
+                          clientId: sel.value,
+                          clientName: opt.text,
+                        }));
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                    >
+                      <option value="">Select a client…</option>
+                      {liveClientsForSchedule.map((c) => (
+                        <option key={c.id} value={c.id}>{c.clientName}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Template selector */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Report Template</label>
+                    <select
+                      value={scheduleForm.templateId}
+                      onChange={(e) => {
+                        const sel = e.target;
+                        const opt = sel.options[sel.selectedIndex];
+                        setScheduleForm((f) => ({
+                          ...f,
+                          templateId: sel.value,
+                          templateName: opt.text,
+                        }));
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                    >
+                      <option value="">Select a template…</option>
+                      {liveTemplates
+                        .filter((t) => t.status !== "Archived")
+                        .map((t) => (
+                          <option key={t.templateId} value={t.templateId}>{t.name}</option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Frequency */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Frequency</label>
+                      <select
+                        value={scheduleForm.frequency}
+                        onChange={(e) => setScheduleForm((f) => ({ ...f, frequency: e.target.value as ScheduleFrequency }))}
+                        className="w-full px-3 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                      >
+                        {(["Weekly", "Bi-weekly", "Monthly", "Quarterly"] as ScheduleFrequency[]).map((f) => (
+                          <option key={f}>{f}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Send Day */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+                        {scheduleForm.frequency === "Weekly" || scheduleForm.frequency === "Bi-weekly"
+                          ? "Send Weekday"
+                          : "Send Day (1–31 or \"last\")"}
+                      </label>
+                      {scheduleForm.frequency === "Weekly" || scheduleForm.frequency === "Bi-weekly" ? (
+                        <select
+                          value={scheduleForm.sendDay}
+                          onChange={(e) => setScheduleForm((f) => ({ ...f, sendDay: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg border text-sm"
+                          style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                        >
+                          {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map((d) => (
+                            <option key={d}>{d}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          placeholder='e.g. 1, 15, last'
+                          value={scheduleForm.sendDay}
+                          onChange={(e) => setScheduleForm((f) => ({ ...f, sendDay: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg border text-sm"
+                          style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Delivery Method */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Delivery Method</label>
+                      <select
+                        value={scheduleForm.deliveryMethod}
+                        onChange={(e) => setScheduleForm((f) => ({ ...f, deliveryMethod: e.target.value as ScheduleDeliveryMethod }))}
+                        className="w-full px-3 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                      >
+                        {(["Email", "Client Portal", "Email + Portal", "Manual Send"] as ScheduleDeliveryMethod[]).map((d) => (
+                          <option key={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Status */}
+                    <div className="space-y-1">
+                      <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Status</label>
+                      <select
+                        value={scheduleForm.status}
+                        onChange={(e) => setScheduleForm((f) => ({ ...f, status: e.target.value as "Active" | "Paused" }))}
+                        className="w-full px-3 py-2 rounded-lg border text-sm"
+                        style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Paused">Paused</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Assigned AM */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Assigned AM</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sarah M."
+                      value={scheduleForm.assignedAM}
+                      onChange={(e) => setScheduleForm((f) => ({ ...f, assignedAM: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                    />
+                  </div>
+
+                  {/* Notes */}
+                  <div className="space-y-1">
+                    <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Notes (optional)</label>
+                    <input
+                      type="text"
+                      placeholder="Any notes about this schedule…"
+                      value={scheduleForm.notes}
+                      onChange={(e) => setScheduleForm((f) => ({ ...f, notes: e.target.value }))}
+                      className="w-full px-3 py-2 rounded-lg border text-sm"
+                      style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)", background: "var(--rtm-bg-secondary)" }}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    onClick={closeScheduleModal}
+                    className="text-xs font-semibold px-4 py-2 rounded-lg border"
+                    style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "transparent" }}
+                  >Cancel</button>
+                  <button
+                    onClick={() => void handleScheduleSave()}
+                    disabled={scheduleSaving || !scheduleForm.clientId.trim() || !scheduleForm.templateId.trim()}
+                    className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90 disabled:opacity-50"
+                    style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+                  >
+                    {scheduleSaving ? "Saving…" : scheduleModal.mode === "create" ? "Create Schedule" : "Save Changes"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Delete confirmation modal */}
+          {scheduleModal.mode === "delete" && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.45)" }}
+              onClick={(e) => { if (e.target === e.currentTarget) closeScheduleModal(); }}
+            >
+              <div className="rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 space-y-4" style={{ background: "var(--rtm-bg-secondary)", border: "1px solid var(--rtm-border-light)" }}>
+                <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Delete Schedule?</h2>
+                <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+                  The schedule for <strong>{scheduleModal.schedule.clientName}</strong> ({scheduleModal.schedule.templateName}) will be permanently deleted.
+                </p>
+                <div className="flex justify-end gap-2">
+                  <button onClick={closeScheduleModal} className="text-xs font-semibold px-4 py-2 rounded-lg border" style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "transparent" }}>Cancel</button>
+                  <button
+                    onClick={() => void handleScheduleDelete(scheduleModal.schedule)}
+                    className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-90"
+                    style={{ color: "#DC2626", background: "#DC262615", borderColor: "#DC262640" }}
+                  >Delete Schedule</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <SectionWrapper title="Scheduled Reporting" description="Real schedule configurations per client — create, edit, pause/resume, or delete">
+            {/* Action bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                {schedulesLoading
+                  ? "Loading…"
+                  : `${filteredSchedules.filter((s) => s.status === "Active").length} active / ${filteredSchedules.filter((s) => s.status === "Paused").length} paused${filteredSchedules.length !== liveSchedules.length ? ` (${filteredSchedules.length} of ${liveSchedules.length} total)` : ""}`}
+              </div>
+              <button
+                onClick={openScheduleCreateModal}
+                className="text-xs font-semibold px-3 py-2 rounded-lg border transition-all hover:opacity-90"
+                style={{ color: "#059669", background: "#05966915", borderColor: "#05966940" }}
+              >+ Create Schedule</button>
+            </div>
+
+            {schedulesLoading ? (
+              <div className="py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading schedules…</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[1200px]">
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                      {["Client", "Report Template", "Frequency", "Send Day", "Next Due", "Assigned AM", "Delivery", "Status", "Actions"].map((h) => (
+                        <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSchedules.map((row) => {
+                      const nextDue = computeNextDueDate(row);
+                      return (
+                        <tr key={row.scheduleId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)", opacity: row.status === "Paused" ? 0.65 : 1 }}>
+                          <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.clientName}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.templateName}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)" }}>{row.frequency}</span>
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{sendDayLabel(row.frequency, row.sendDay)}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap font-medium" style={{ color: row.status === "Paused" ? "var(--rtm-text-muted)" : "var(--rtm-text-secondary)" }}>
+                            {row.status === "Paused" ? "—" : formatNextDueDate(nextDue)}
+                          </td>
+                          <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.assignedAM || "—"}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{row.deliveryMethod}</td>
+                          <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveScheduleStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm" /></td>
+                          <td className="py-2.5 px-3 whitespace-nowrap">
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => openScheduleEditModal(row)}
+                                className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                                style={{ color: "var(--rtm-blue)", background: "var(--rtm-blue-light)", borderColor: "var(--rtm-blue)40" }}
+                              >Edit</button>
+                              <button
+                                onClick={() => void toggleScheduleStatus(row.scheduleId)}
+                                className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                                style={{
+                                  color: row.status === "Active" ? "#D97706" : "#059669",
+                                  background: row.status === "Active" ? "#D9770615" : "#05966915",
+                                  borderColor: row.status === "Active" ? "#D9770640" : "#05966940",
+                                }}
+                              >{row.status === "Active" ? "Pause" : "Resume"}</button>
+                              <button
+                                onClick={() => setScheduleModal({ mode: "delete", schedule: row })}
+                                className="text-xs font-semibold px-2.5 py-1 rounded-lg border transition-all hover:opacity-90"
+                                style={{ color: "#DC2626", background: "#DC262615", borderColor: "#DC262640" }}
+                              >Delete</button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SectionWrapper>
+        </div>
       )}
 
       {/*  Executive Reports  */}
@@ -949,18 +1924,18 @@ export default function ReportingDashboard() {
           </SectionWrapper>
 
           {/* Revenue / Billing Snapshot */}
-          <SectionWrapper title="Revenue / Billing Snapshot"description="Monthly revenue and billing health across all accounts">
+          <SectionWrapper title="Revenue / Billing Snapshot" description="Monthly revenue and billing health across all accounts — representative preview data">
             <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
               {[
-                { label: "Total MRR",          value: "$35,200", trend: "+$2,100 MoM", color: "#059669", bg: "#ECFDF5"},
-                { label: "Invoices Sent",       value: "47",      trend: "All clients", color: "#2563EB", bg: "#EFF6FF"},
-                { label: "Invoices Overdue",    value: "3",       trend: "-1 MoM",      color: "#DC2626", bg: "#FEF2F2"},
-                { label: "Renewal This Month",  value: "2",       trend: "Jun 2025",    color: "#D97706", bg: "#FFFBEB"},
+                { label: "Total MRR",          value: REPRESENTATIVE_TOTAL_MRR,       trend: REPRESENTATIVE_TOTAL_MRR_TREND, color: "#059669", bg: "#ECFDF5"},
+                { label: "Invoices Sent",       value: "47",                           trend: "All clients",                  color: "#2563EB", bg: "#EFF6FF"},
+                { label: "Invoices Overdue",    value: "3",                            trend: "-1 MoM",                       color: "#DC2626", bg: "#FEF2F2"},
+                { label: "Renewal This Month",  value: "2",                            trend: "Jun 2025",                     color: "#D97706", bg: "#FFFBEB"},
               ].map((card) => (
-                <div key={card.label} className="rounded-xl border p-4"style={{ borderColor: "var(--rtm-border-light)", background: card.bg }}>
-                  <div className="text-xs font-semibold uppercase tracking-wide mb-1"style={{ color: card.color }}>{card.label}</div>
-                  <div className="text-2xl font-bold"style={{ color: card.color }}>{card.value}</div>
-                  <div className="text-xs mt-1"style={{ color: card.color }}>{card.trend}</div>
+                <div key={card.label} className="rounded-xl border p-4" style={{ borderColor: "var(--rtm-border-light)", background: card.bg }}>
+                  <div className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: card.color }}>{card.label}</div>
+                  <div className="text-2xl font-bold" style={{ color: card.color }}>{card.value}</div>
+                  <div className="text-xs mt-1" style={{ color: card.color }}>{card.trend}</div>
                 </div>
               ))}
             </div>
@@ -1054,30 +2029,72 @@ export default function ReportingDashboard() {
         </div>
       )}
 
-      {/*  Report Automation Rules  */}
-      {activeSection === "automation"&& (
-        <SectionWrapper title="Report Automation Rules"description="Automated triggers and actions that drive the report production workflow">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[800px]">
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                  {["Rule", "Trigger", "Action", "Status"].map((h) => (
-                    <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {automationRules.map((row, i) => (
-                  <tr key={i} className="hover:bg-slate-50/50 transition-colors"style={{ borderBottom: "1px solid var(--rtm-border-light)"}}>
-                    <td className="py-2.5 px-3 font-semibold whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{row.rule}</td>
-                    <td className="py-2.5 px-3 text-xs max-w-xs"style={{ color: "var(--rtm-text-secondary)"}}>{row.trigger}</td>
-                    <td className="py-2.5 px-3 text-xs max-w-xs"style={{ color: "var(--rtm-text-secondary)"}}>{row.action}</td>
-                    <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={autoRuleStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm"/></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/*  Report Automation Rules — Tab 11: live data, canonical UI at /reporting/automation  */}
+      {activeSection === "automation" && (
+        <SectionWrapper
+          title="Report Automation Rules"
+          description="Automation rule definitions — same real data as the full Automation Rules page"
+        >
+          {/* Deferral notice */}
+          <div
+            className="flex items-start gap-3 rounded-xl border px-4 py-3 mb-4"
+            style={{ background: "#FFFBEB", borderColor: "#D9770640" }}
+          >
+            <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: "#D97706" }}>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div>
+              <span className="text-xs font-bold" style={{ color: "#92400E" }}>Rule Definitions Only — Automatic Event-Driven Execution Not Yet Implemented</span>
+              <p className="text-xs mt-0.5" style={{ color: "#92400E" }}>
+                Rules below are real and persisted. Automatic triggering when events occur is not yet implemented. Use the full Automation Rules page to Create, Edit, Pause/Resume, Delete, and Run Now.
+              </p>
+            </div>
           </div>
+
+          {/* Link to canonical sub-page */}
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+              Showing {rulesLoading ? "…" : filteredRules.length}{filteredRules.length !== liveAutomationRules.length ? ` of ${liveAutomationRules.length}` : ""} rules ({filteredRules.filter(r => r.category === "Workflow").length} Workflow + {filteredRules.filter(r => r.category === "Scheduled").length} Scheduled). Create, Edit, and Run actions available on the full page.
+            </p>
+            <a
+              href="/reporting/automation"
+              className="text-xs font-semibold px-3 py-2 rounded-lg border transition-all hover:opacity-90"
+              style={{ color: "#7C3AED", background: "#7C3AED15", borderColor: "#7C3AED40", textDecoration: "none" }}
+            >
+              → Full Automation Rules
+            </a>
+          </div>
+
+          {rulesLoading ? (
+            <div className="py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading rules…</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[900px]">
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+                    {["Rule", "Category", "Trigger", "Action", "Status", "Last Run", "Runs"].map((h) => (
+                      <th key={h} className="text-left py-2.5 px-3 text-xs font-semibold uppercase tracking-wide whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRules.map((row) => (
+                    <tr key={row.ruleId} className="hover:bg-slate-50/50 transition-colors" style={{ borderBottom: "1px solid var(--rtm-border-light)", opacity: row.status === "Paused" ? 0.7 : 1 }}>
+                      <td className="py-2.5 px-3 font-semibold whitespace-nowrap" style={{ color: "var(--rtm-text-primary)" }}>{row.name}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: row.category === "Workflow" ? "#F5F3FF" : "#EFF6FF", color: row.category === "Workflow" ? "#7C3AED" : "#1D4ED8" }}>{row.category}</span>
+                      </td>
+                      <td className="py-2.5 px-3 text-xs max-w-[160px]" style={{ color: "var(--rtm-text-secondary)" }}>{row.trigger}</td>
+                      <td className="py-2.5 px-3 text-xs max-w-[180px]" style={{ color: "var(--rtm-text-secondary)" }}>{row.action}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap"><StatusBadge variant={liveRuleStatusVariant[row.status] ?? "neutral"} label={row.status} size="sm" /></td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-xs" style={{ color: "var(--rtm-text-muted)" }}>{row.lastRun || "—"}</td>
+                      <td className="py-2.5 px-3 text-center text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>{row.runsTotal}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </SectionWrapper>
       )}
 

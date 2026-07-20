@@ -10,6 +10,8 @@ import {
   deliveryStatusVariant,
   type ReportRecord,
 } from "@/lib/reporting/useReports";
+import { useDateRangeFilter } from "@/lib/reporting/useDateRangeFilter";
+import { DateRangeFilter } from "@/components/reporting/DateRangeFilter";
 
 const workspace = getWorkspace("reporting")!;
 
@@ -30,6 +32,9 @@ export default function AMReviewPage() {
   const [filterStatus, setFilterStatus] = useState<AMReviewStatus | "All">("All");
   const [selectedItem, setSelectedItem] = useState<ReportRecord | null>(null);
 
+  // Date-range filter (filters by createdAt on real report records)
+  const dateFilter = useDateRangeFilter();
+
   // Keep selectedItem in sync with live data
   const selectedLive = selectedItem
     ? records.find((r) => r.reportId === selectedItem.reportId) ?? selectedItem
@@ -38,6 +43,7 @@ export default function AMReviewPage() {
   const filtered = records.filter((r) => {
     if (filterAM !== "All" && r.amId !== filterAM) return false;
     if (filterStatus !== "All" && r.amStatus !== filterStatus) return false;
+    if (!dateFilter.filterByDate(r.createdAt)) return false;
     return true;
   });
 
@@ -109,7 +115,19 @@ export default function AMReviewPage() {
         <KpiCard title="Delivered" value={String(kpis.delivered)} subtitle="Sent to client" iconBg="#ECFDF5" iconColor="#059669" icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>} />
       </div>
 
-      {/* Filters */}
+      {/* Date range filter — applies to all AM Review records by createdAt */}
+      <DateRangeFilter
+        dateRange={dateFilter.dateRange}
+        setDateRange={dateFilter.setDateRange}
+        customStart={dateFilter.customStart}
+        setCustomStart={dateFilter.setCustomStart}
+        customEnd={dateFilter.customEnd}
+        setCustomEnd={dateFilter.setCustomEnd}
+        resultCount={loading ? undefined : filtered.length}
+        totalCount={loading ? undefined : records.length}
+      />
+
+      {/* Status / AM filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <select value={filterAM} onChange={(e) => setFilterAM(e.target.value)} className="rounded-lg px-2 py-1.5 text-xs border outline-none" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-secondary)" }}>
           {AMS.map((a) => <option key={a}>{a}</option>)}

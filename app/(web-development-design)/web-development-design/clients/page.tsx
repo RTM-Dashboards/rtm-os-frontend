@@ -2,34 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { SectionWrapper, StatusBadge } from "@/components/ui";
+import { SectionWrapper } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import { DeptRoleToggle, type DeptRole } from "@/components/dept-role-toggle";
 import DeptClientDetailDrawer, { type DeptClientRecord } from "@/components/dept/DeptClientDetailDrawer";
+import DeptClientCard from "@/components/dept/DeptClientCard";
 
 const workspace = getWorkspace("web-development-design")!;
 
 // Services that belong to Web Development & Design
 const WD_SERVICES = ["Website Build", "Website Maintenance"];
-
-function healthToVariant(health?: string): "success" | "info" | "warning" | "pending" {
-  switch (health) {
-    case "Excellent":
-    case "Good":
-      return "success";
-    case "Fair":
-      return "warning";
-    case "At Risk":
-      return "pending";
-    default:
-      return "info";
-  }
-}
-
-function healthLabel(health?: string, status?: string): string {
-  if (status === "Inactive" || status === "Churned") return "Inactive";
-  return health ?? status ?? "Active";
-}
 
 export default function WDClientsPage() {
   const [clients, setClients] = useState<DeptClientRecord[]>([]);
@@ -94,37 +76,14 @@ export default function WDClientsPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {clients.map((c) => (
-              <button
+              <DeptClientCard
                 key={c.id}
-                onClick={() => setSelectedClient(c)}
-                className="p-4 rounded-xl border flex flex-col gap-2 text-left w-full transition-shadow hover:shadow-md"
-                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", cursor: "pointer" }}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{c.clientName}</p>
-                  <StatusBadge
-                    variant={healthToVariant(c.clientHealth)}
-                    label={healthLabel(c.clientHealth, c.currentStatus)}
-                    size="sm"
-                  />
-                </div>
-                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                  {(c.activeServices ?? []).filter((s) => WD_SERVICES.includes(s)).join(" · ")}
-                </p>
-                {c.assignedAM && (
-                  <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>AM: {c.assignedAM}</p>
-                )}
-                {/* Monthly value — Manager view only */}
-                {role === "manager" && c.monthlyValue !== undefined && (
-                  <p className="text-base font-bold mt-1" style={{ color: workspace.accentColor }}>
-                    ${c.monthlyValue.toLocaleString()}
-                    <span className="text-xs font-normal ml-1" style={{ color: "var(--rtm-text-muted)" }}>/mo</span>
-                  </p>
-                )}
-                <p className="text-[10px] mt-auto pt-1" style={{ color: workspace.accentColor }}>
-                  Click to view details →
-                </p>
-              </button>
+                client={c}
+                role={role}
+                accentColor={workspace.accentColor}
+                deptServices={WD_SERVICES}
+                onClick={setSelectedClient}
+              />
             ))}
           </div>
         )}
