@@ -200,6 +200,7 @@ export const workspaces: WorkspaceConfig[] = [
       { label: "Clients",               href: "/seo-local/clients"},
       { label: "Local Performance",     href: "/seo-local/performance"},
       { label: "Organic Performance",   href: "/seo-local/organic-performance"},
+      { label: "Keyword Rankings",      href: "/seo-local/keyword-rankings"},
     ],
   },
 

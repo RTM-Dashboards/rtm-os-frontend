@@ -9,6 +9,10 @@ import { CreateOpportunityModal } from "@/components/sales/opportunity/CreateOpp
 import type { OpportunityRecord } from "@/lib/sales/types";
 import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
 import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
+import { useDateRangeFilter } from "@/lib/reporting/useDateRangeFilter";
+import { SalesLeadsDateRangeFilter } from "@/components/sales/leads/DateRangeFilter";
+import { GhlSyncModal } from "@/components/sales/leads/GhlSyncModal";
+import type { LeadGhlSyncState } from "@/components/sales/leads/GhlSyncModal";
 
 const workspace = getWorkspace("sales")!;
 
@@ -17,7 +21,7 @@ const workspace = getWorkspace("sales")!;
 type LeadStage =
   | "New Lead"| "Contact Attempted"| "Contacted"| "Discovery Scheduled"| "Discovery Complete"| "Qualified"| "Disqualified";
 
-type GHLSyncStatus = "Synced"| "Pending Sync"| "Sync Failed"| "Manual Override";
+type GHLSyncStatus = "Synced"| "Pending Sync"| "Sync Failed"| "Manual Override"| "Not Connected";
 
 type OpportunityReadiness =
   | "Not Ready"| "Discovery Complete"| "Budget Discussed"| "Decision Maker Identified"| "Business Need Identified"| "Qualified"| "Ready For Opportunity";
@@ -64,6 +68,11 @@ interface Lead {
   // Persisted overlay fields
   disqualified?: boolean;
   disqualifiedReason?: string;
+  // GHL overlay fields — written by /api/ghl/sync-lead, hydrated from leads-status
+  ghlContactIdReal?: string;     // real GHL ID (overrides the static ghlContactId)
+  ghlSyncStatusReal?: string;    // real sync status from API
+  ghlSyncError?: string;
+  ghlLastSyncedAt?: string;
 }
 
 // LeadStatusRecord mirrors the API shape
@@ -81,10 +90,19 @@ interface LeadStatusRecord {
   businessName?: string;
   industry?: string;
   leadSource?: string;
+  // GHL sync overlay fields (written by /api/ghl/sync-lead)
+  ghlContactId?: string;
+  ghlSyncStatus?: string;
+  ghlSyncError?: string;
+  ghlLastSyncedAt?: string;
   updatedAt: string;
 }
 
-//  Mock Data ──────────────────────────────────────────────────────────────────
+//  Seed Data ─────────────────────────────────────────────────────────────────
+// NOTE: The authoritative lead store is now data/leads.json (served by
+// /api/leads). The LEADS array below is kept as a fallback seed for SSR/build
+// type safety but is not used as the runtime source — the page fetches from
+// /api/leads on mount and replaces this initial state.
 
 const LEADS: Lead[] = [
   {
@@ -677,6 +695,11 @@ function applyOverride(lead: Lead, record: LeadStatusRecord | undefined): Lead {
     ...(record.businessName       !== undefined ? { businessName: record.businessName }           : {}),
     ...(record.industry           !== undefined ? { industry: record.industry }                   : {}),
     ...(record.leadSource         !== undefined ? { leadSource: record.leadSource as LeadSource } : {}),
+    // GHL overlay fields — real sync state from /api/ghl/sync-lead
+    ...(record.ghlContactId    !== undefined ? { ghlContactIdReal: record.ghlContactId }    : {}),
+    ...(record.ghlSyncStatus   !== undefined ? { ghlSyncStatusReal: record.ghlSyncStatus } : {}),
+    ...(record.ghlSyncError    !== undefined ? { ghlSyncError: record.ghlSyncError }        : {}),
+    ...(record.ghlLastSyncedAt !== undefined ? { ghlLastSyncedAt: record.ghlLastSyncedAt } : {}),
   };
 }
 
@@ -697,6 +720,7 @@ const GHL_SYNC_CONFIG: Record<GHLSyncStatus, { color?: string; bg?: string; icon
   "Pending Sync":    { color: "#D97706", bg: "#FFFBEB"},
   "Sync Failed":     { color: "#DC2626", bg: "#FEF2F2", icon: "✕"},
   "Manual Override": { color: "#7C3AED", bg: "#F5F3FF"},
+  "Not Connected":   { color: "#64748B", bg: "#F8FAFC", icon: "○"},
 };
 
 const READINESS_CONFIG: Record<OpportunityReadiness, { color?: string; bg?: string; order: number }> = {
@@ -1264,7 +1288,8 @@ type ActiveModal =
   | { type: "moveStage"; lead: Lead }
   | { type: "addNote"; lead: Lead }
   | { type: "disqualify"; lead: Lead }
-  | { type: "createFollowUp"; lead: Lead };
+  | { type: "createFollowUp"; lead: Lead }
+  | { type: "ghlSync"; lead: Lead };
 
 //  Drawer Component ───────────────────────────────────────────────────────────
 
@@ -1315,6 +1340,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
     { label: "Create Follow-Up", modal: "createFollowUp" },
     { label: "Move Stage", modal: "moveStage" },
     { label: "Add Note", modal: "addNote" },
+    { label: "Sync to GHL", modal: "ghlSync" },
   ];
 
   return (
@@ -1462,42 +1488,85 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
           )}
 
           {/* GHL CONTACT */}
-          {activeTab === "ghl" && (
-            <>
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>GHL Contact Details</h3>
-                  {ghlSyncBadge(lead.ghlSyncStatus)}
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    ["GHL Contact ID", lead.ghlContactId],
-                    ["Assigned User", lead.ghlAssignedUser],
-                    ["Lead Source", lead.ghlSource],
-                    ["Contact Status", lead.ghlContactStatus],
-                    ["GHL Created Date", lead.ghlCreatedDate],
-                    ["Last Activity", lead.ghlLastActivityDate],
-                    ["Sync Status", lead.ghlSyncStatus],
-                  ].map(([k, v]) => (
-                    <div key={k} className="rounded-lg p-3 border"
-                      style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
-                      <p className="text-sm font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>{v}</p>
+          {activeTab === "ghl" && (() => {
+            // Compute live GHL state: overlay fields take priority over static mock data
+            const liveContactId = lead.ghlContactIdReal ?? lead.ghlContactId;
+            const liveSyncStatus = (lead.ghlSyncStatusReal ?? lead.ghlSyncStatus) as GHLSyncStatus;
+            const hasRealContactId =
+              liveContactId &&
+              !liveContactId.startsWith("GHL-CON-") &&
+              liveContactId !== "—";
+            const displayStatus: GHLSyncStatus | "Not Connected" = hasRealContactId ? liveSyncStatus : "Not Connected";
+            const lastSynced = lead.ghlLastSyncedAt
+              ? new Date(lead.ghlLastSyncedAt).toLocaleString()
+              : "Not yet synced";
+
+            return (
+              <>
+                {/* Live GHL sync status banner */}
+                <section>
+                  <div
+                    className="rounded-xl border p-4 flex items-center justify-between gap-3 mb-4"
+                    style={{
+                      background: displayStatus === "Synced" ? "#ECFEFF" : displayStatus === "Sync Failed" ? "#FEF2F2" : "var(--rtm-surface)",
+                      borderColor: displayStatus === "Synced" ? "#A5F3FC" : displayStatus === "Sync Failed" ? "#FECACA" : "var(--rtm-border)",
+                    }}
+                  >
+                    <div className="flex-1">
+                      <p className="text-xs font-bold mb-1" style={{ color: "var(--rtm-text-muted)" }}>GHL Sync Status</p>
+                      {ghlSyncBadge(displayStatus)}
+                      {lead.ghlSyncError && displayStatus === "Sync Failed" && (
+                        <p className="text-xs mt-1" style={{ color: "#DC2626" }}>{lead.ghlSyncError}</p>
+                      )}
+                      <p className="text-[10px] mt-1" style={{ color: "var(--rtm-text-muted)" }}>Last synced: {lastSynced}</p>
                     </div>
-                  ))}
-                </div>
-              </section>
-              <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>GHL Contact Tags</h3>
-                <div className="flex flex-wrap gap-2">
-                  {lead.ghlContactTags.map(tag => (
-                    <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-semibold"
-                      style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>{tag}</span>
-                  ))}
-                </div>
-              </section>
-            </>
-          )}
+                    <button
+                      onClick={() => onAction({ type: "ghlSync", lead })}
+                      className="text-xs px-3 py-1.5 rounded-lg font-bold flex-shrink-0"
+                      style={{
+                        background: displayStatus === "Sync Failed" ? "#DC2626" : "#0891B2",
+                        color: "#fff",
+                      }}
+                    >
+                      {displayStatus === "Synced" ? "Re-sync" : displayStatus === "Sync Failed" ? "Retry Sync" : "Sync to GHL"}
+                    </button>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>GHL Contact Details</h3>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      ["GHL Contact ID", hasRealContactId ? liveContactId : (lead.ghlContactId + " (mock)")],
+                      ["Assigned User", lead.ghlAssignedUser],
+                      ["Lead Source", lead.ghlSource],
+                      ["Contact Status", lead.ghlContactStatus],
+                      ["GHL Created Date", lead.ghlCreatedDate],
+                      ["Last Activity", lead.ghlLastActivityDate],
+                      ["Sync Status", displayStatus],
+                    ].map(([k, v]) => (
+                      <div key={k} className="rounded-lg p-3 border"
+                        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>{k}</p>
+                        <p className="text-sm font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>{v as string}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+                <section>
+                  <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>GHL Contact Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {lead.ghlContactTags.map(tag => (
+                      <span key={tag} className="text-xs px-2.5 py-1 rounded-full font-semibold"
+                        style={{ background: "#EFF6FF", color: "#2563EB", border: "1px solid #BFDBFE" }}>{tag}</span>
+                    ))}
+                  </div>
+                </section>
+              </>
+            );
+          })()}
 
           {/* QUALIFICATION */}
           {activeTab === "qualification" && (
@@ -2075,27 +2144,77 @@ function SalesLeadsPageInner() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const toastCounter = useRef(0);
-  const [leads, setLeads] = useState<Lead[]>(LEADS);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leadsLoading, setLeadsLoading] = useState(true);
   const [showCustomizeView, setShowCustomizeView] = useState(false);
   const { isVisible, widgetOrder } = useWidgetPreferences("leads");
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
   const [selectedLeadForOpportunity, setSelectedLeadForOpportunity] = useState<{
     id: string; clientName: string; businessName: string; contactName: string;
     contactPhone: string; contactEmail: string; leadSource: string; assignedRep: string; notes: string;
+    // GHL Contact linkage — carried forward to preserve the Lead-to-Opportunity GHL relationship
+    ghlContactIdReal?: string;
+    ghlContactId?: string;
   } | null>(null);
   const [opportunityCreatedLeadIds, setOpportunityCreatedLeadIds] = useState<Set<string>>(new Set());
   const [activeModal, setActiveModal] = useState<ActiveModal | null>(null);
 
-  // Hydrate lead overrides from the file-backed API on mount (seed-then-hydrate pattern)
+  // Date range filter — applied to createdDate; drives KPIs, Lead Stages, and table
+  const {
+    dateRange, setDateRange,
+    customStart, setCustomStart,
+    customEnd, setCustomEnd,
+    filterByDate, reset: resetDateRange,
+  } = useDateRangeFilter();
+
+  // Fetch base lead records from /api/leads then hydrate overlays from /api/leads-status.
+  // This replaces the old static-LEADS + overlay-only pattern.
+  // If /api/leads fails, fall back to the static LEADS seed so the page still renders.
   useEffect(() => {
-    fetch("/api/leads-status")
-      .then(r => r.ok ? r.json() as Promise<{ records: LeadStatusRecord[] }> : Promise.reject(r.status))
-      .then(({ records }) => {
-        if (!Array.isArray(records) || records.length === 0) return;
-        const byId = new Map(records.map(r => [r.leadId, r]));
-        setLeads(prev => prev.map(l => applyOverride(l, byId.get(l.id))));
-      })
-      .catch(err => console.error("[Leads] Failed to hydrate lead status overrides:", err));
+    let cancelled = false;
+
+    async function loadLeads() {
+      setLeadsLoading(true);
+      try {
+        // 1. Fetch canonical lead records
+        const baseRes = await fetch("/api/leads");
+        const baseData = baseRes.ok
+          ? (await baseRes.json() as { records: Lead[] })
+          : { records: LEADS };
+        const baseLeads: Lead[] = Array.isArray(baseData.records) && baseData.records.length > 0
+          ? baseData.records
+          : LEADS;
+
+        if (cancelled) return;
+
+        // 2. Fetch overlay status records and merge
+        try {
+          const statusRes = await fetch("/api/leads-status");
+          if (statusRes.ok) {
+            const { records: statusRecords } = await statusRes.json() as { records: LeadStatusRecord[] };
+            if (Array.isArray(statusRecords) && statusRecords.length > 0) {
+              const byId = new Map(statusRecords.map(r => [r.leadId, r]));
+              if (!cancelled) {
+                setLeads(baseLeads.map(l => applyOverride(l, byId.get(l.id))));
+                return;
+              }
+            }
+          }
+        } catch (overlayErr) {
+          console.error("[Leads] Failed to hydrate lead-status overlays:", overlayErr);
+        }
+
+        if (!cancelled) setLeads(baseLeads);
+      } catch (err) {
+        console.error("[Leads] Failed to load leads from /api/leads, using seed data:", err);
+        if (!cancelled) setLeads(LEADS);
+      } finally {
+        if (!cancelled) setLeadsLoading(false);
+      }
+    }
+
+    void loadLeads();
+    return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -2203,8 +2322,9 @@ function SalesLeadsPageInner() {
   }
 
   function handleRetrySync(leadId: string) {
-    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ghlSyncStatus: "Synced" as GHLSyncStatus } : l));
-    addToast("GHL sync resolved successfully");
+    // Open the real GHL sync modal for this lead instead of faking a fix
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) setActiveModal({ type: "ghlSync", lead });
   }
 
   function handleCreateOpportunityFromLead(lead: Lead) {
@@ -2212,6 +2332,10 @@ function SalesLeadsPageInner() {
       id: lead.id, clientName: lead.name, businessName: lead.businessName,
       contactName: lead.name, contactPhone: lead.phone, contactEmail: lead.email,
       leadSource: lead.leadSource, assignedRep: lead.assignedRep, notes: lead.discoveryNotes,
+      // Carry forward GHL Contact linkage so the opportunity inherits the lead’s
+      // GHL Contact ID, preserving the Lead→Opportunity→GHL Contact chain.
+      ghlContactIdReal: lead.ghlContactIdReal,
+      ghlContactId: lead.ghlContactId,
     });
     setShowCreateOpportunityModal(true);
   }
@@ -2235,7 +2359,10 @@ function SalesLeadsPageInner() {
     addToast("Opportunity created — now visible on Pipeline");
   }
 
-  const filtered = leads.filter(l => {
+  // Date-filtered base: everything that passes the date range filter
+  const dateFilteredLeads = leads.filter(l => filterByDate(l.createdDate));
+
+  const filtered = dateFilteredLeads.filter(l => {
     if (stageFilter !== "All" && l.stage !== stageFilter) return false;
     if (sourceFilter !== "All" && l.leadSource !== sourceFilter) return false;
     if (syncFilter !== "All" && l.ghlSyncStatus !== syncFilter) return false;
@@ -2251,22 +2378,22 @@ function SalesLeadsPageInner() {
     return true;
   });
 
-  // KPI calcs
-  const newLeads = leads.filter(l => l.stage === "New Lead").length;
-  const contactAttempted = leads.filter(l => l.stage === "Contact Attempted").length;
-  const discoveryScheduled = leads.filter(l => l.stage === "Discovery Scheduled").length;
-  const discoveryComplete = leads.filter(l => l.stage === "Discovery Complete").length;
-  const qualifiedLeads = leads.filter(l => l.stage === "Qualified").length;
-  const disqualifiedLeads = leads.filter(l => l.stage === "Disqualified").length;
-  const readyForOpp = leads.filter(l => l.opportunityReadiness === "Ready For Opportunity").length;
-  const ghlSynced = leads.filter(l => l.ghlSyncStatus === "Synced").length;
-  const ghlPending = leads.filter(l => l.ghlSyncStatus === "Pending Sync").length;
-  const ghlFailed = leads.filter(l => l.ghlSyncStatus === "Sync Failed").length;
-  const conversionRate = leads.length > 0 ? Math.round((qualifiedLeads / leads.length) * 100) : 0;
+  // KPI calcs — all based on dateFilteredLeads so they reflect the active date range
+  const newLeads = dateFilteredLeads.filter(l => l.stage === "New Lead").length;
+  const contactAttempted = dateFilteredLeads.filter(l => l.stage === "Contact Attempted").length;
+  const discoveryScheduled = dateFilteredLeads.filter(l => l.stage === "Discovery Scheduled").length;
+  const discoveryComplete = dateFilteredLeads.filter(l => l.stage === "Discovery Complete").length;
+  const qualifiedLeads = dateFilteredLeads.filter(l => l.stage === "Qualified").length;
+  const disqualifiedLeads = dateFilteredLeads.filter(l => l.stage === "Disqualified").length;
+  const readyForOpp = dateFilteredLeads.filter(l => l.opportunityReadiness === "Ready For Opportunity").length;
+  const ghlSynced = dateFilteredLeads.filter(l => l.ghlSyncStatus === "Synced").length;
+  const ghlPending = dateFilteredLeads.filter(l => l.ghlSyncStatus === "Pending Sync").length;
+  const ghlFailed = dateFilteredLeads.filter(l => l.ghlSyncStatus === "Sync Failed").length;
+  const conversionRate = dateFilteredLeads.length > 0 ? Math.round((qualifiedLeads / dateFilteredLeads.length) * 100) : 0;
 
-  const stageCounts = Object.fromEntries(LEAD_STAGES.map(s => [s, leads.filter(l => l.stage === s).length]));
-  const sources = Array.from(new Set(leads.map(l => l.leadSource)));
-  const sourceCounts = Object.fromEntries(sources.map(s => [s, leads.filter(l => l.leadSource === s).length]));
+  const stageCounts = Object.fromEntries(LEAD_STAGES.map(s => [s, dateFilteredLeads.filter(l => l.stage === s).length]));
+  const sources = Array.from(new Set(dateFilteredLeads.map(l => l.leadSource)));
+  const sourceCounts = Object.fromEntries(sources.map(s => [s, dateFilteredLeads.filter(l => l.leadSource === s).length]));
 
   return (
     <div className="space-y-6">
@@ -2304,12 +2431,56 @@ function SalesLeadsPageInner() {
       {activeModal?.type === "createFollowUp" && (
         <CreateFollowUpModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleFollowUpCreated} />
       )}
+      {activeModal?.type === "ghlSync" && (
+        <GhlSyncModal
+          lead={{
+            id: activeModal.lead.id,
+            name: activeModal.lead.name,
+            businessName: activeModal.lead.businessName,
+            email: activeModal.lead.email,
+            phone: activeModal.lead.phone,
+            industry: activeModal.lead.industry,
+            leadSource: activeModal.lead.leadSource,
+            assignedRep: activeModal.lead.assignedRep,
+            ghlContactId: activeModal.lead.ghlContactIdReal ?? activeModal.lead.ghlContactId,
+            ghlSyncStatus: activeModal.lead.ghlSyncStatusReal ?? activeModal.lead.ghlSyncStatus,
+            ghlSyncError: activeModal.lead.ghlSyncError,
+            ghlLastSyncedAt: activeModal.lead.ghlLastSyncedAt,
+          }}
+          onClose={() => setActiveModal(null)}
+          onSynced={(result: LeadGhlSyncState) => {
+            const leadId = (activeModal as { type: "ghlSync"; lead: Lead }).lead.id;
+            patchLead(leadId, {
+              ghlContactIdReal: result.ghlContactId,
+              ghlSyncStatusReal: result.ghlSyncStatus,
+              ghlSyncError: result.ghlSyncError,
+              ghlLastSyncedAt: result.ghlLastSyncedAt,
+            });
+            setActiveModal(null);
+            addToast("Lead synced to GHL successfully");
+          }}
+        />
+      )}
 
       {/* Add Lead Modal */}
       {showAddLeadModal && (
         <AddLeadModal
           onClose={() => setShowAddLeadModal(false)}
-          onAdd={newLead => { setLeads(prev => [newLead, ...prev]); setShowAddLeadModal(false); addToast("Lead added successfully"); }}
+          onAdd={async newLead => {
+            // Persist the new lead to data/leads.json via /api/leads
+            try {
+              await fetch("/api/leads", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newLead),
+              });
+            } catch (err) {
+              console.error("[Leads] Failed to persist new lead to /api/leads:", err);
+            }
+            setLeads(prev => [newLead, ...prev]);
+            setShowAddLeadModal(false);
+            addToast("Lead added successfully");
+          }}
         />
       )}
 
@@ -2439,7 +2610,7 @@ function SalesLeadsPageInner() {
           <div>
             <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Lead Stages</h2>
             <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-              {LEADS.length} total leads · {readyForOpp} ready for opportunity
+              {dateFilteredLeads.length} of {leads.length} leads · {readyForOpp} ready for opportunity{dateRange !== "all" ? " · filtered by date" : ""}
             </p>
           </div>
           <Link href="/sales/pipeline" className="rtm-btn-secondary text-xs px-3 py-1.5 flex items-center gap-1">
@@ -2484,6 +2655,20 @@ function SalesLeadsPageInner() {
           );
         })}
       </div>
+
+      {/* Date Range Filter */}
+      <SalesLeadsDateRangeFilter
+        dateRange={dateRange}
+        setDateRange={setDateRange}
+        customStart={customStart}
+        setCustomStart={setCustomStart}
+        customEnd={customEnd}
+        setCustomEnd={setCustomEnd}
+        onReset={resetDateRange}
+        resultCount={filtered.length}
+        totalCount={leads.length}
+        accentColor={workspace.accentColor}
+      />
 
       {/* Search & Filter Bar */}
       <div className="flex items-center gap-3">
@@ -2574,12 +2759,13 @@ function SalesLeadsPageInner() {
                               { label: "Move Stage", modal: "moveStage" as const },
                               { label: "Add Note", modal: "addNote" as const },
                               { label: "Disqualify", modal: "disqualify" as const },
+                              { label: "Sync to GHL", modal: "ghlSync" as const },
                             ] as { label: string; modal: ActiveModal["type"] }[]
                           ).map(action => (
                             <button key={action.label}
                               onClick={e => { e.stopPropagation(); setActiveModal({ type: action.modal, lead } as ActiveModal); }}
                               className="block w-full text-left px-3 py-2 text-xs hover:bg-slate-50 first:rounded-t-lg"
-                              style={{ color: action.modal === "disqualify" ? "#DC2626" : "var(--rtm-text-primary)" }}>
+                              style={{ color: action.modal === "disqualify" ? "#DC2626" : action.modal === "ghlSync" ? "#0891B2" : "var(--rtm-text-primary)" }}>
                               {action.label}
                             </button>
                           ))}
@@ -2604,7 +2790,12 @@ function SalesLeadsPageInner() {
             </tbody>
           </table>
         </div>
-        {filtered.length === 0 && (
+        {leadsLoading && leads.length === 0 && (
+          <div className="py-16 text-center">
+            <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>Loading leads…</p>
+          </div>
+        )}
+        {!leadsLoading && filtered.length === 0 && (
           <div className="py-16 text-center">
             <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No leads match your filters.</p>
             <button onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}

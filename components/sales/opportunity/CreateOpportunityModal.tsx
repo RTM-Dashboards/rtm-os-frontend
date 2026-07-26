@@ -23,6 +23,11 @@ interface LeadData {
   leadSource: string;
   assignedRep: string;
   notes: string;
+  // GHL Contact linkage — carried forward from the Lead when it has already been synced.
+  // ghlContactIdReal takes priority (real GHL ID from a completed sync).
+  // ghlContactId is the static field (may be a mock ID like "GHL-CON-0001").
+  ghlContactIdReal?: string;
+  ghlContactId?: string;
 }
 
 interface CreateOpportunityModalProps {
@@ -148,7 +153,19 @@ export function CreateOpportunityModal({
         assignedRep: form.assignedRep,
         notes: form.discoveryNotes,
       });
-      // Patch extra fields
+
+      // Resolve the real GHL Contact ID to carry forward.
+      // ghlContactIdReal is the genuine GHL ID from a completed sync.
+      // Only use ghlContactId if it looks like a real GHL ID (not a mock).
+      const resolvedGhlContactId =
+        leadData.ghlContactIdReal ||
+        (leadData.ghlContactId &&
+          !leadData.ghlContactId.startsWith("GHL-CON-") &&
+          leadData.ghlContactId !== "—"
+          ? leadData.ghlContactId
+          : undefined);
+
+      // Patch extra fields, including GHL Contact linkage
       opp = {
         ...opp,
         tradeType: form.tradeType,
@@ -156,6 +173,13 @@ export function CreateOpportunityModal({
         estimatedMonthlyValue: parseFloat(form.estimatedMonthlyValue) || 0,
         expectedCloseDate: form.expectedCloseDate,
         priority: form.priority,
+        // Carry forward the real GHL Contact ID so the new opportunity is
+        // linked to the same GHL Contact as the originating Lead.
+        // This prevents duplicate GHL Contact creation when syncing the opportunity.
+        ...(resolvedGhlContactId ? {
+          ghlContactId: resolvedGhlContactId,
+          ghlSynced: false, // opportunity not yet synced to GHL as an Opportunity
+        } : {}),
       };
     } else {
       opp = createOpportunityManual({

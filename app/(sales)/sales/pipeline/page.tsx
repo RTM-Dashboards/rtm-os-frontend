@@ -1605,7 +1605,7 @@ const GHL_SYNC_STATUS_CONFIG: Record<GhlSyncStatus, { color?: string; bg?: strin
 
 //  Helpers 
 
-const LEAD_SOURCE_COLORS: Record<LeadSource, { color?: string; bg?: string; border: string }> = {
+const LEAD_SOURCE_COLORS: Record<string, { color?: string; bg?: string; border: string }> = {
   "Direct":     { color: "#2563EB", bg: "#EFF6FF", border: "#BFDBFE"},
   "Affiliate":  { color: "#059669", bg: "#ECFDF5", border: "#A7F3D0"},
   "Partner":    { color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE"},
@@ -1613,7 +1613,9 @@ const LEAD_SOURCE_COLORS: Record<LeadSource, { color?: string; bg?: string; bord
   "Google Ads": { color: "#EA580C", bg: "#FFF7ED", border: "#FED7AA"},
   "Meta Ads":   { color: "#9333EA", bg: "#FAF5FF", border: "#E9D5FF"},
   "LSA":        { color: "#D97706", bg: "#FFFBEB", border: "#FDE68A"},
+  "Referral":   { color: "#0F766E", bg: "#F0FDFA", border: "#99F6E4"},
 };
+const LEAD_SOURCE_DEFAULT: { color: string; bg: string; border: string } = { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0" };
 
 const PRIORITY_CONFIG: Record<Priority, { color?: string; bg?: string; border: string }> = {
   "Low":    { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0"},
@@ -1744,20 +1746,22 @@ function calcKPIs(ops: Opportunity[]) {
 
 //  Badges 
 
-function StatusBadge({ label, cfg }: { label: string; cfg: { color?: string; bg?: string; border: string } }) {
+const STATUS_BADGE_DEFAULT: { color: string; bg: string; border: string } = { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0" };
+function StatusBadge({ label, cfg }: { label: string; cfg?: { color?: string; bg?: string; border: string } }) {
+  const resolved = cfg ?? STATUS_BADGE_DEFAULT;
   return (
-    <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: cfg.bg, color: cfg.color, borderColor: cfg.border }}>
+    <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: resolved.bg, color: resolved.color, borderColor: resolved.border }}>
       {label}
     </span>
   );
 }
 
 function PriorityBadge({ priority }: { priority: Priority }) {
-  return <StatusBadge label={priority} cfg={PRIORITY_CONFIG[priority]} />;
+  return <StatusBadge label={priority} cfg={PRIORITY_CONFIG[priority] ?? STATUS_BADGE_DEFAULT} />;
 }
 
-function LeadSourceBadge({ source }: { source: LeadSource }) {
-  const c = LEAD_SOURCE_COLORS[source];
+function LeadSourceBadge({ source }: { source: string }) {
+  const c = LEAD_SOURCE_COLORS[source] ?? LEAD_SOURCE_DEFAULT;
   return (
     <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-full border"style={{ background: c.bg, color: c.color, borderColor: c.border }}>
       {source}
@@ -1774,8 +1778,9 @@ function StageBadge({ stage }: { stage: PipelineStage }) {
   );
 }
 
+const GHL_SYNC_STATUS_DEFAULT: { color: string; bg: string; border: string } = { color: "#64748B", bg: "#F8FAFC", border: "#E2E8F0" };
 function GhlSyncBadge({ status }: { status: GhlSyncStatus }) {
-  const c = GHL_SYNC_STATUS_CONFIG[status];
+  const c = GHL_SYNC_STATUS_CONFIG[status] ?? GHL_SYNC_STATUS_DEFAULT;
   const icon = status === "Synced"? "": status === "Pending Sync"? "⏳": status === "Sync Failed"? "": status === "Manual Override"? "": "";
   return (
     <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"style={{ background: c.bg, color: c.color, borderColor: c.border }}>
@@ -2140,9 +2145,59 @@ function GhlPipelineMapping() {
 
 //  GHL Sync Issues Panel 
 
-function GhlSyncIssuesPanel() {
+function GhlSyncIssuesPanel({ onResolve }: { onResolve?: (issue: GhlSyncIssue) => void }) {
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const [resolving, setResolving] = useState<string | null>(null);
+  const [resolveResults, setResolveResults] = useState<Record<string, { ok: boolean; message: string }>>({});
   const visible = GHL_SYNC_ISSUES.filter((i) => !dismissed.includes(i.id));
+
+  async function handleResolve(issue: GhlSyncIssue) {
+    if (resolving) return;
+    setResolving(issue.id);
+    try {
+      // Trigger a real GHL sync for this opportunity via the sync-opportunity route
+      const res = await fetch("/api/ghl/sync-opportunity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          opportunityId: issue.opportunityId,
+          businessName: issue.businessName,
+          // The sync route will use what's in the DB — we just trigger it
+        }),
+      });
+      const data = await res.json() as { ok: boolean; error?: string };
+      setResolveResults(prev => ({
+        ...prev,
+        [issue.id]: { ok: data.ok, message: data.ok ? "Synced to GHL" : (data.error ?? "Sync failed") },
+      }));
+      if (data.ok) {
+        onResolve?.(issue);
+        // Auto-dismiss after successful resolve
+        setTimeout(() => setDismissed(d => [...d, issue.id]), 2000);
+      }
+    } catch (err) {
+      setResolveResults(prev => ({
+        ...prev,
+        [issue.id]: { ok: false, message: err instanceof Error ? err.message : "Network error" },
+      }));
+    } finally {
+      setResolving(null);
+    }
+  }
+
+  function handleManualOverride(issue: GhlSyncIssue) {
+    // Mark as manually overridden — writes a Manual Override status to the record
+    fetch("/api/sales-opportunities", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: issue.opportunityId,
+        ghl: { ghlSyncStatus: "Manual Override", ghlSyncError: `Manually overridden: ${issue.issueType}` },
+        updatedAt: new Date().toISOString(),
+      }),
+    }).catch(console.error);
+    setDismissed(d => [...d, issue.id]);
+  }
 
   return (
     <div className="rounded-xl border overflow-hidden"style={{ borderColor: "#FECACA"}}>
@@ -2161,7 +2216,8 @@ function GhlSyncIssuesPanel() {
       ) : (
         <div className="flex flex-col divide-y"style={{ divideColor: "var(--rtm-border)"} as React.CSSProperties}>
           {visible.map((issue) => {
-            const cfg = GHL_SYNC_ISSUE_TYPE_CONFIG[issue.issueType];
+            const cfg = GHL_SYNC_ISSUE_TYPE_CONFIG[issue.issueType] ?? STATUS_BADGE_DEFAULT;
+            const result = resolveResults[issue.id];
             return (
               <div key={issue.id} className="flex items-start gap-3 p-4"style={{ background: "var(--rtm-surface)"}}>
                 <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"style={{ background: cfg.color }} />
@@ -2173,6 +2229,11 @@ function GhlSyncIssuesPanel() {
                   </div>
                   <p className="text-[11px] leading-relaxed"style={{ color: "var(--rtm-text-secondary)"}}>{issue.description}</p>
                   <p className="text-[10px] mt-1"style={{ color: "var(--rtm-text-muted)"}}>Detected: {issue.detectedAt}</p>
+                  {result && (
+                    <p className="text-[10px] mt-1 font-semibold" style={{ color: result.ok ? "#059669" : "#DC2626" }}>
+                      {result.ok ? "✓" : "✕"} {result.message}
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-1.5 flex-shrink-0">
                   {(["Resolve", "Ignore", "Manual Override"] as GhlSyncIssueAction[]).map((action) => (
@@ -2183,16 +2244,20 @@ function GhlSyncIssuesPanel() {
                         style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
                         {action}
                       </button>
-                    ) : (
+                    ) : action === "Resolve" ? (
                       <button key={action}
-                        disabled
-                        title="Not yet available"
-                        className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border opacity-40 cursor-not-allowed"
-                        style={{
-                          background: action === "Resolve" ? "#ECFDF5" : "#EDE9FE",
-                          color: action === "Resolve" ? "#059669" : "#7C3AED",
-                          borderColor: action === "Resolve" ? "#A7F3D0" : "#DDD6FE",
-                        }}>
+                        onClick={() => handleResolve(issue)}
+                        disabled={resolving === issue.id}
+                        className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80 disabled:opacity-50"
+                        style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>
+                        {resolving === issue.id ? "Syncing…" : action}
+                      </button>
+                    ) : (
+                      // Manual Override — real action: writes Manual Override status to record
+                      <button key={action}
+                        onClick={() => handleManualOverride(issue)}
+                        className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80"
+                        style={{ background: "#EDE9FE", color: "#7C3AED", borderColor: "#DDD6FE" }}>
                         {action}
                       </button>
                     )
@@ -2208,6 +2273,75 @@ function GhlSyncIssuesPanel() {
 }
 
 //  Opportunity Detail Drawer (View Opportunity) 
+
+//  GHL Sync Action Block (used in the GHL Sync tab of OpportunityDetailDrawer) 
+
+function GhlSyncActionBlock({ opp }: { opp: Opportunity }) {
+  const [syncing, setSyncing] = React.useState(false);
+  const [syncResult, setSyncResult] = React.useState<{ ok: boolean; message: string } | null>(null);
+
+  // Allow rendering even when opp.ghl is absent (Not Connected case — will create new GHL Opportunity)
+  const syncStatus = opp.ghl?.ghlSyncStatus ?? "Not Connected";
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncResult(null);
+    try {
+      const res = await fetch("/api/ghl/sync-opportunity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          opportunityId: opp.id,
+          businessName: opp.businessName,
+          estimatedMonthlyValue: opp.estimatedValue ?? (opp as unknown as { estimatedMonthlyValue?: number }).estimatedMonthlyValue ?? 0,
+          stage: opp.stage,
+          leadSource: opp.leadSource,
+          assignedRep: opp.assignedRep,
+          ghlOpportunityId: opp.ghl?.ghlOpportunityId,
+          ghlContactId: (opp as unknown as { ghlContactId?: string }).ghlContactId ?? opp.ghl?.ghlContactId,
+          ghlPipelineId: opp.ghl?.ghlPipelineId,
+        }),
+      });
+      const data = await res.json() as { ok: boolean; error?: string };
+      setSyncResult({ ok: data.ok, message: data.ok ? "Opportunity synced to GHL" : (data.error ?? "Sync failed") });
+    } catch (err) {
+      setSyncResult({ ok: false, message: err instanceof Error ? err.message : "Network error" });
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  const hasError = syncStatus === "Sync Failed" || syncStatus === "Manual Override";
+
+  return (
+    <div className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: hasError ? "#FECACA" : "#A5F3FC"}}>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="text-[11px] font-bold uppercase tracking-wide"style={{ color: "#0891B2"}}>GHL Sync Actions</h4>
+        <GhlSyncBadge status={syncStatus} />
+      </div>
+      {opp.ghl?.ghlSyncError && (
+        <p className="text-xs mb-2" style={{ color: "#DC2626" }}>{opp.ghl.ghlSyncError}</p>
+      )}
+      {syncResult && (
+        <p className="text-xs mb-2 font-semibold" style={{ color: syncResult.ok ? "#059669" : "#DC2626" }}>
+          {syncResult.ok ? "✓" : "✕"} {syncResult.message}
+        </p>
+      )}
+      {!syncResult?.ok && (
+        <div className="flex gap-2">
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className="text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-50"
+            style={{ background: hasError ? "#DC2626" : "#0891B2", color: "#fff", borderColor: hasError ? "#DC2626" : "#0891B2" }}
+          >
+            {syncing ? "Syncing…" : syncStatus === "Synced" ? "Re-sync to GHL" : syncStatus === "Sync Failed" ? "Retry Sync" : "Sync to GHL"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const MOCK_ACTIVITY_LOG = [
   { date: "Jan 8, 2025", event: "Stage updated to current stage", user: "System" },
@@ -2299,7 +2433,7 @@ function OpportunityDetailDrawer({
                 {followUps.slice(0, 4).map(fu => (
                   <div key={fu.id} className="flex items-center justify-between text-xs">
                     <span style={{ color: "var(--rtm-text-secondary)" }}>{fu.subject}</span>
-                    <StatusBadge label={fu.status} cfg={FOLLOW_UP_STATUS_CONFIG[fu.status]} />
+                    <StatusBadge label={fu.status} cfg={FOLLOW_UP_STATUS_CONFIG[fu.status] ?? STATUS_BADGE_DEFAULT} />
                   </div>
                 ))}
               </div>
@@ -2628,7 +2762,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
               ) : (
                 <div className="flex flex-col gap-3">
                   {(opp.nextSteps ?? []).map((step, idx) => {
-                    const pc = PRIORITY_CONFIG[step.priority];
+                    const pc = PRIORITY_CONFIG[step.priority] ?? STATUS_BADGE_DEFAULT;
                     return (
                       <div key={idx} className="flex items-start gap-3 p-3 rounded-lg border"style={{ background: pc.bg, borderColor: pc.border }}>
                         <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0"style={{ background: pc.color }} />
@@ -2656,7 +2790,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
               ) : (
                 <div className="flex flex-col gap-3">
                   {[...(opp.notes ?? [])].reverse().map((note, idx) => {
-                    const nc = NOTE_CATEGORY_CONFIG[note.category];
+                    const nc = NOTE_CATEGORY_CONFIG[note.category] ?? STATUS_BADGE_DEFAULT;
                     return (
                       <div key={idx} className="p-3 rounded-lg border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
                         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
@@ -2690,14 +2824,14 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
             opp.audit ? (
             <IntegrationCard
               title="Audit Integration"href="/sales/audits"hrefLabel="Open Audits"status={opp.audit.status}
-              statusCfg={AUDIT_STATUS_CONFIG[opp.audit.status]}
+              statusCfg={AUDIT_STATUS_CONFIG[opp.audit.status] ?? STATUS_BADGE_DEFAULT}
               actions={[
                 { label: "Open Audit", href: "/sales/audits"},
                 { label: "Create Audit", href: "/sales/audits"},
               ]}
             >
               <div className="grid grid-cols-2 gap-3">
-                <DrawerField label="Audit Status"value={<StatusBadge label={opp.audit.status} cfg={AUDIT_STATUS_CONFIG[opp.audit.status]} />} />
+                <DrawerField label="Audit Status"value={<StatusBadge label={opp.audit.status} cfg={AUDIT_STATUS_CONFIG[opp.audit.status] ?? STATUS_BADGE_DEFAULT} />} />
                 <DrawerField label="Assigned Auditor"value={opp.audit.assignedAuditor} />
                 <DrawerField label="Audit Due Date"value={opp.audit.dueDate} />
                 <DrawerField label="Findings Summary"value={opp.audit.findingsSummary} />
@@ -2715,14 +2849,14 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
             opp.proposal ? (
             <IntegrationCard
               title="Proposal Integration"href="/sales/proposals"hrefLabel="Open Proposals"status={opp.proposal.status}
-              statusCfg={PROPOSAL_STATUS_CONFIG[opp.proposal.status]}
+              statusCfg={PROPOSAL_STATUS_CONFIG[opp.proposal.status] ?? STATUS_BADGE_DEFAULT}
               actions={[
                 { label: "Open Proposal", href: "/sales/proposals"},
                 { label: "Generate Proposal", href: "/sales/proposals"},
               ]}
             >
               <div className="grid grid-cols-2 gap-3">
-                <DrawerField label="Proposal Status"value={<StatusBadge label={opp.proposal.status} cfg={PROPOSAL_STATUS_CONFIG[opp.proposal.status]} />} />
+                <DrawerField label="Proposal Status"value={<StatusBadge label={opp.proposal.status} cfg={PROPOSAL_STATUS_CONFIG[opp.proposal.status] ?? STATUS_BADGE_DEFAULT} />} />
                 <DrawerField label="Proposal Value"value={opp.proposal.proposalValue > 0 ? fmtCurrency(opp.proposal.proposalValue) + "/mo": "—"} />
                 <DrawerField label="Sent Date"value={opp.proposal.sentDate} />
                 <DrawerField label="Viewed Date"value={opp.proposal.viewedDate} />
@@ -2772,7 +2906,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                         <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fu.subject}</p>
                         <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>Due: {fu.dueDate} · {fu.owner}</p>
                       </div>
-                      <StatusBadge label={fu.status} cfg={FOLLOW_UP_STATUS_CONFIG[fu.status]} />
+                      <StatusBadge label={fu.status} cfg={FOLLOW_UP_STATUS_CONFIG[fu.status] ?? STATUS_BADGE_DEFAULT} />
                     </div>
                   ))}
                 </div>
@@ -2786,14 +2920,14 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
             opp.handoff ? (
             <IntegrationCard
               title="Handoff Integration"href="/sales/handoffs"hrefLabel="Open Handoffs"status={opp.handoff.status}
-              statusCfg={HANDOFF_STATUS_CONFIG[opp.handoff.status]}
+              statusCfg={HANDOFF_STATUS_CONFIG[opp.handoff.status] ?? STATUS_BADGE_DEFAULT}
               actions={[
                 { label: "Push To Handoff", href: "/sales/handoffs"},
                 { label: "Open Handoff", href: "/sales/handoffs"},
               ]}
             >
               <div className="grid grid-cols-2 gap-3">
-                <DrawerField label="Handoff Status"value={<StatusBadge label={opp.handoff.status} cfg={HANDOFF_STATUS_CONFIG[opp.handoff.status]} />} />
+                <DrawerField label="Handoff Status"value={<StatusBadge label={opp.handoff.status} cfg={HANDOFF_STATUS_CONFIG[opp.handoff.status] ?? STATUS_BADGE_DEFAULT} />} />
                 <DrawerField label="Billing Request"value={
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"style={{
                       background: opp.handoff.billingRequestStatus === "Approved"? "#DCFCE7": opp.handoff.billingRequestStatus === "Submitted"? "#FFFBEB": "#F8FAFC",
@@ -2884,7 +3018,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                         <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{task.title}</p>
                         <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>Due: {task.dueDate} · {task.owner}</p>
                       </div>
-                      <StatusBadge label={task.status} cfg={TASK_STATUS_CONFIG[task.status]} />
+                      <StatusBadge label={task.status} cfg={TASK_STATUS_CONFIG[task.status] ?? STATUS_BADGE_DEFAULT} />
                     </div>
                   ))}
                 </div>
@@ -3035,15 +3169,13 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                   <p className="text-xs"style={{ color: "#DC2626"}}>{opp.ghl.ghlSyncError}</p>
                 </div>
               )}
-              <div className="rounded-xl border p-4"style={{ background: "var(--rtm-surface)", borderColor: "#A5F3FC"}}>
-                <h4 className="text-[11px] font-bold uppercase tracking-wide mb-1"style={{ color: "#0891B2"}}>GHL Sync Status</h4>
-                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>GHL sync is managed automatically. No manual actions required at this stage.</p>
-              </div>
+              <GhlSyncActionBlock opp={opp} />
             </div>
             ) : (
-              <div className="rounded-xl border p-6 text-center"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
+              <div className="rounded-xl border p-6"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
                 <p className="text-xs font-semibold mb-1"style={{ color: "var(--rtm-text-muted)"}}>Not Connected to GHL</p>
-                <p className="text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>This opportunity has no GHL sync data. It may be a Phase 1 record not yet imported from GoHighLevel.</p>
+                <p className="text-[10px] mb-4"style={{ color: "var(--rtm-text-muted)"}}>This opportunity has no GHL sync data. Click below to push it to GHL as a new Opportunity.</p>
+                <GhlSyncActionBlock opp={opp} />
               </div>
             )
           )}
@@ -3281,20 +3413,20 @@ function PipelineAnalytics({ opportunities }: { opportunities: Opportunity[] }) 
   }).sort((a, b) => b.revenue - a.revenue);
 
   const affiliates = opportunities
-    .filter((o) => o.affiliate.affiliateName !== "—")
+    .filter((o) => o.affiliate?.affiliateName && o.affiliate.affiliateName !== "—")
     .reduce<Record<string, { name: string; count: number; commission: number; attribution: number }>>((acc, o) => {
-      const n = o.affiliate.affiliateName;
+      const n = o.affiliate!.affiliateName;
       if (!acc[n]) acc[n] = { name: n, count: 0, commission: 0, attribution: 0 };
       acc[n].count++;
-      acc[n].commission += o.affiliate.potentialCommission;
-      acc[n].attribution += o.affiliate.revenueAttribution;
+      acc[n].commission += o.affiliate!.potentialCommission;
+      acc[n].attribution += o.affiliate!.revenueAttribution;
       return acc;
     }, {});
   const affiliateRows = Object.values(affiliates).sort((a, b) => b.attribution - a.attribution);
 
   const syncBreakdown: GhlSyncStatus[] = ["Synced", "Pending Sync", "Sync Failed", "Manual Override", "Not Connected"];
   const syncData = syncBreakdown.map((s) => ({
-    status: s, count: opportunities.filter((o) => o.ghl.ghlSyncStatus === s).length, cfg: GHL_SYNC_STATUS_CONFIG[s],
+    status: s, count: opportunities.filter((o) => (o.ghl?.ghlSyncStatus ?? "Not Connected") === s).length, cfg: GHL_SYNC_STATUS_CONFIG[s],
   }));
 
   const won = opportunities.filter((o) => o.stage === "Closed Won").length;
@@ -3327,6 +3459,10 @@ function PipelineAnalytics({ opportunities }: { opportunities: Opportunity[] }) 
           ))}
         </div>
       </div>
+      {/* GHL Sync Issues Panel — Resolve and Manual Override are now wired to real API */}
+      {GHL_SYNC_ISSUES.length > 0 && (
+        <GhlSyncIssuesPanel onResolve={() => { /* toast from within panel */ }} />
+      )}
       <div className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
         <h3 className="text-xs font-bold uppercase tracking-wide mb-4"style={{ color: "var(--rtm-text-muted)"}}>Revenue by Stage</h3>
         <div className="flex flex-col gap-2">
@@ -3795,6 +3931,8 @@ function SalesPipelinePageInner() {
   // Loaded from /api/sales-opportunities (data/sales-opportunities.json) — sole source of truth.
   // Starts empty; hydrated by useEffect below so the file-backed store is always the primary source.
   const [opportunityRecords, setOpportunityRecords] = useState<OpportunityRecord[]>([]);
+  // Track fetch state so the board shows a visible error instead of a silent empty state.
+  const [opportunityLoadState, setOpportunityLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState<{ oppId?: string } | null>(null);
   const [showAuditPicker, setShowAuditPicker] = useState(false);
@@ -3842,8 +3980,12 @@ function SalesPipelinePageInner() {
     fetch("/api/sales-opportunities")
       .then((r) => r.ok ? r.json() as Promise<{ records: OpportunityRecord[] }> : Promise.reject(r.status))
       .then(({ records }) => {
-        if (!Array.isArray(records)) return;
+        if (!Array.isArray(records)) {
+          setOpportunityLoadState("error");
+          return;
+        }
         setOpportunityRecords(records);
+        setOpportunityLoadState("loaded");
         // Hydrate commLogs from the loaded records so the comm log panel
         // shows persisted entries from the file store immediately.
         setCommLogs(
@@ -3855,7 +3997,10 @@ function SalesPipelinePageInner() {
           )
         );
       })
-      .catch((err) => console.error("[Pipeline] Failed to load opportunities:", err));
+      .catch((err) => {
+        console.error("[Pipeline] Failed to load opportunities:", err);
+        setOpportunityLoadState("error");
+      });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -4338,7 +4483,7 @@ function SalesPipelinePageInner() {
                   </thead>
                   <tbody>
                     {visibleFuRows.map((fu, i) => {
-                      const stCfg = FOLLOW_UP_STATUS_CONFIG[fu.status];
+                      const stCfg = FOLLOW_UP_STATUS_CONFIG[fu.status] ?? STATUS_BADGE_DEFAULT;
                       const isCancelled = fu.status === "Cancelled";
                       return (
                         <tr key={fu.id} style={{
@@ -4351,7 +4496,7 @@ function SalesPipelinePageInner() {
                           <td className="px-4 py-3" style={{ color: "var(--rtm-text-muted)" }}>{fu.followUpType}</td>
                           <td className="px-4 py-3" style={{ color: "var(--rtm-text-secondary)" }}>{fu.assignedRep}</td>
                           <td className="px-4 py-3">
-                            <StatusBadge label={fu.priority} cfg={PRIORITY_CONFIG[fu.priority]} />
+                            <StatusBadge label={fu.priority} cfg={PRIORITY_CONFIG[fu.priority] ?? STATUS_BADGE_DEFAULT} />
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{fu.dueDate}</td>
                           <td className="px-4 py-3 whitespace-nowrap" style={{ color: "var(--rtm-text-muted)" }}>{fu.lastContact}</td>
@@ -4447,8 +4592,8 @@ function SalesPipelinePageInner() {
                                       <button key={s}
                                         className="w-full text-left px-3 py-1.5 text-xs rounded-lg mb-0.5 font-semibold"
                                         style={{
-                                          background: fu.status === s ? FOLLOW_UP_STATUS_CONFIG[s].bg : "transparent",
-                                          color: FOLLOW_UP_STATUS_CONFIG[s].color,
+                                          background: fu.status === s ? (FOLLOW_UP_STATUS_CONFIG[s] ?? STATUS_BADGE_DEFAULT).bg : "transparent",
+                                          color: (FOLLOW_UP_STATUS_CONFIG[s] ?? STATUS_BADGE_DEFAULT).color,
                                         }}
                                         onClick={() => {
                                           setFuRows(prev => prev.map(r => r.id === fu.id ? { ...r, status: s } : r));
@@ -4638,7 +4783,36 @@ function SalesPipelinePageInner() {
               New Opportunity
             </button>
           </div>
-          {opportunityRecords.length === 0 ? (
+          {opportunityLoadState === "error" ? (
+            <div
+              className="rounded-xl border p-12 text-center"
+              style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
+              <p className="text-sm font-bold mb-1" style={{ color: "#DC2626" }}>⚠️ Couldn’t load opportunities</p>
+              <p className="text-xs" style={{ color: "#991B1B" }}>There was a problem fetching your pipeline data. Check your connection or contact support.</p>
+              <button
+                onClick={() => {
+                  setOpportunityLoadState("loading");
+                  fetch("/api/sales-opportunities")
+                    .then((r) => r.ok ? r.json() as Promise<{ records: OpportunityRecord[] }> : Promise.reject(r.status))
+                    .then(({ records }) => {
+                      if (!Array.isArray(records)) { setOpportunityLoadState("error"); return; }
+                      setOpportunityRecords(records);
+                      setOpportunityLoadState("loaded");
+                    })
+                    .catch(() => setOpportunityLoadState("error"));
+                }}
+                className="mt-4 text-xs px-4 py-2 rounded-lg font-bold"
+                style={{ background: "#DC2626", color: "#fff" }}>
+                Retry
+              </button>
+            </div>
+          ) : opportunityLoadState === "loading" ? (
+            <div
+              className="rounded-xl border p-12 text-center"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+              <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>Loading opportunities…</p>
+            </div>
+          ) : opportunityRecords.length === 0 ? (
             <div
               className="rounded-xl border p-12 text-center"
               style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
@@ -4763,6 +4937,17 @@ function SalesPipelinePageInner() {
           </div>
         </div>
       </div>
+      {opportunityLoadState === "error" && (
+        <div
+          className="rounded-xl border px-5 py-4 flex items-start gap-3 mb-2"
+          style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
+          <span className="text-lg leading-none mt-0.5">⚠️</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold" style={{ color: "#DC2626" }}>Couldn’t load pipeline data</p>
+            <p className="text-xs mt-0.5" style={{ color: "#991B1B" }}>There was a problem fetching your opportunities. Check your connection or contact support. The board below may be empty or out of date.</p>
+          </div>
+        </div>
+      )}
       {viewMode === "kanban"&& (
         <div>
           <h2 className="text-sm font-bold uppercase tracking-wide mb-4"style={{ color: "var(--rtm-text-muted)"}}>Pipeline Stages · GHL Source</h2>

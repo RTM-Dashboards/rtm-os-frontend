@@ -39,6 +39,11 @@ export interface LeadStatusRecord {
   businessName?: string;
   industry?: string;
   leadSource?: string;
+  // GHL sync fields — written by /api/ghl/sync-lead, never by the client directly
+  ghlContactId?: string;
+  ghlSyncStatus?: string;
+  ghlSyncError?: string;
+  ghlLastSyncedAt?: string;
   // Audit trail
   updatedAt: string;       // ISO-8601, server-assigned
 }
@@ -115,6 +120,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ...(typeof payload.businessName      === "string"   ? { businessName: payload.businessName }               : {}),
     ...(typeof payload.industry          === "string"   ? { industry: payload.industry }                       : {}),
     ...(typeof payload.leadSource        === "string"   ? { leadSource: payload.leadSource }                   : {}),
+    ...(typeof payload.ghlContactId      === "string"   ? { ghlContactId: payload.ghlContactId }               : {}),
+    ...(typeof payload.ghlSyncStatus     === "string"   ? { ghlSyncStatus: payload.ghlSyncStatus }             : {}),
+    ...(typeof payload.ghlSyncError      === "string"   ? { ghlSyncError: payload.ghlSyncError }               : {}),
+    ...(typeof payload.ghlLastSyncedAt   === "string"   ? { ghlLastSyncedAt: payload.ghlLastSyncedAt }         : {}),
     leadId: payload.leadId as string,
     updatedAt: new Date().toISOString(),
   };

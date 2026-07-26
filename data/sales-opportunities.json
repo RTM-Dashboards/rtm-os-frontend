@@ -12,7 +12,7 @@
       "contactEmail": "marcus@summitlandscaping.com",
       "leadSource": "Affiliate",
       "assignedRep": "Jordan M.",
-      "stage": "Discovery Complete",
+      "stage": "Discovery",
       "priority": "High",
       "estimatedMonthlyValue": 2400,
       "expectedCloseDate": "2025-02-14",
@@ -33,7 +33,7 @@
             "id": "log-001-a",
             "opportunityId": "opp-mock-001",
             "type": "call",
-            "title": "Initial discovery call — Jan 10",
+            "title": "Initial discovery call \u2014 Jan 10",
             "summary": "Spoke with Marcus Webb about SEO and GBP goals. He wants to rank top 3 for landscaping in his area. Budget confirmed at $2,400/mo. Very motivated.",
             "fullContent": "",
             "loggedBy": "Jordan M.",
@@ -49,9 +49,9 @@
             "id": "log-001-b",
             "opportunityId": "opp-mock-001",
             "type": "call-transcript",
-            "title": "Follow-up call transcript — Jan 14",
+            "title": "Follow-up call transcript \u2014 Jan 14",
             "summary": "Reviewed proposal pricing. Marcus asked about setup fees. Agreed to waive if contract signed by Jan 20.",
-            "fullContent": "Jordan M.: Hey Marcus, thanks for jumping on a call today.\nMarcus Webb: Of course, I looked over the proposal — looks solid.\nJordan M.: Great. Did you have any questions on the pricing?\nMarcus Webb: Yeah, the setup fee. Is that negotiable?\nJordan M.: For a 12-month commitment we can waive it if you sign by Jan 20.\nMarcus Webb: That works for me. Let me review with my wife and I'll get back to you.\nJordan M.: Sounds great. I'll follow up Friday.",
+            "fullContent": "Jordan M.: Hey Marcus, thanks for jumping on a call today.\nMarcus Webb: Of course, I looked over the proposal \u2014 looks solid.\nJordan M.: Great. Did you have any questions on the pricing?\nMarcus Webb: Yeah, the setup fee. Is that negotiable?\nJordan M.: For a 12-month commitment we can waive it if you sign by Jan 20.\nMarcus Webb: That works for me. Let me review with my wife and I'll get back to you.\nJordan M.: Sounds great. I'll follow up Friday.",
             "loggedBy": "Jordan M.",
             "loggedAt": "2025-01-14T14:00:00Z",
             "participants": [
@@ -77,7 +77,7 @@
       "contactEmail": "priya@blueridgeplumbing.com",
       "leadSource": "Website",
       "assignedRep": "Sarah K.",
-      "stage": "New Opportunity",
+      "stage": "Lead",
       "priority": "Medium",
       "estimatedMonthlyValue": 1800,
       "expectedCloseDate": "2025-02-28",
@@ -99,7 +99,7 @@
             "id": "log-002-a",
             "opportunityId": "opp-mock-002",
             "type": "email",
-            "title": "Intro email sent — Jan 11",
+            "title": "Intro email sent \u2014 Jan 11",
             "summary": "Sent intro email introducing RTM OS services, included case study PDF for home services SEO.",
             "fullContent": "",
             "loggedBy": "Sarah K.",
@@ -280,7 +280,7 @@
       "primaryContact": "James Carter",
       "email": "james@carterhvac.com",
       "phone": "(555) 201-4400",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2200,
       "monthlyValue": 2200,
       "contractLength": "12 months",
@@ -293,15 +293,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -320,9 +320,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -436,7 +436,7 @@
       "primaryContact": "Nina Patel",
       "email": "nina@pateldentalgroup.com",
       "phone": "(555) 302-5511",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 4500,
       "monthlyValue": 4500,
       "contractLength": "12 months",
@@ -449,15 +449,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -476,9 +476,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -585,7 +585,7 @@
       "primaryContact": "Ray Morales",
       "email": "ray@moralesroofing.com",
       "phone": "(555) 403-6622",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1800,
       "monthlyValue": 1800,
       "contractLength": "6 months",
@@ -598,15 +598,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -625,9 +625,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -727,7 +727,7 @@
       "primaryContact": "Priya Sharma",
       "email": "priya@blueridgeplumbing.com",
       "phone": "(555) 504-7733",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1800,
       "monthlyValue": 1800,
       "contractLength": "12 months",
@@ -740,15 +740,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -767,9 +767,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -902,15 +902,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -1057,15 +1057,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -1193,7 +1193,7 @@
       "primaryContact": "Derek Holt",
       "email": "derek@harborautogroup.com",
       "phone": "(555) 807-1066",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 5000,
       "monthlyValue": 5000,
       "contractLength": "24 months",
@@ -1206,15 +1206,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Requested",
-        "assignedAuditor": "—",
+        "assignedAuditor": "\u2014",
         "dueDate": "Jan 18, 2025",
         "findingsSummary": "Awaiting auditor assignment."
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -1233,9 +1233,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -1362,7 +1362,7 @@
       "primaryContact": "Sandra Wu",
       "email": "sandra@wuorthodontics.com",
       "phone": "(555) 908-2177",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 3800,
       "monthlyValue": 3800,
       "contractLength": "12 months",
@@ -1375,15 +1375,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Requested",
-        "assignedAuditor": "—",
+        "assignedAuditor": "\u2014",
         "dueDate": "Jan 20, 2025",
         "findingsSummary": "Request submitted."
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -1402,9 +1402,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -1537,15 +1537,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Requested",
-        "assignedAuditor": "—",
+        "assignedAuditor": "\u2014",
         "dueDate": "Jan 18, 2025",
         "findingsSummary": "Awaiting scope confirmation."
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -1686,7 +1686,7 @@
       "primaryContact": "Amy Thornton",
       "email": "amy@thorntonmedspa.com",
       "phone": "(555) 210-4399",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 4200,
       "monthlyValue": 4200,
       "contractLength": "12 months",
@@ -1706,8 +1706,8 @@
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -1726,9 +1726,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -1880,8 +1880,8 @@
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -2048,8 +2048,8 @@
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -2202,7 +2202,7 @@
       "primaryContact": "Karen Moss",
       "email": "karen@mossveterinary.com",
       "phone": "(555) 513-7622",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2900,
       "monthlyValue": 2900,
       "contractLength": "12 months",
@@ -2222,8 +2222,8 @@
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -2242,9 +2242,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -2363,7 +2363,7 @@
       "primaryContact": "Darnell Brooks",
       "email": "darnell@brooksinsurance.com",
       "phone": "(555) 614-8733",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 3300,
       "monthlyValue": 3300,
       "contractLength": "12 months",
@@ -2383,8 +2383,8 @@
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -2403,9 +2403,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -2544,8 +2544,8 @@
       "proposal": {
         "status": "Drafting",
         "proposalValue": 3500,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -2711,7 +2711,7 @@
       "primaryContact": "Greg Hsu",
       "email": "greg@hsuclean.com",
       "phone": "(555) 816-0955",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1400,
       "monthlyValue": 1400,
       "contractLength": "6 months",
@@ -2731,8 +2731,8 @@
       "proposal": {
         "status": "Drafting",
         "proposalValue": 1400,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -2751,9 +2751,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -2898,8 +2898,8 @@
       "proposal": {
         "status": "Drafting",
         "proposalValue": 2700,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -3052,7 +3052,7 @@
       "primaryContact": "Chris Nakamura",
       "email": "chris@nakamurapc.com",
       "phone": "(555) 118-2177",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1900,
       "monthlyValue": 1900,
       "contractLength": "12 months",
@@ -3092,9 +3092,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -3226,7 +3226,7 @@
       "primaryContact": "Vanessa Cruz",
       "email": "vanessa@cruzcosmetics.com",
       "phone": "(555) 219-3288",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2200,
       "monthlyValue": 2200,
       "contractLength": "12 months",
@@ -3266,9 +3266,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -3400,7 +3400,7 @@
       "primaryContact": "Frank Deluca",
       "email": "frank@delucagutters.com",
       "phone": "(555) 320-4399",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1700,
       "monthlyValue": 1700,
       "contractLength": "12 months",
@@ -3421,7 +3421,7 @@
         "status": "Sent",
         "proposalValue": 1700,
         "sentDate": "Jan 2, 2025",
-        "viewedDate": "—",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -3440,9 +3440,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -3747,7 +3747,7 @@
       "primaryContact": "Elijah Brown",
       "email": "elijah@brownsonsplumbing.com",
       "phone": "(555) 522-6511",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2800,
       "monthlyValue": 2800,
       "contractLength": "12 months",
@@ -3787,9 +3787,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -4106,7 +4106,7 @@
       "primaryContact": "Brett Simmons",
       "email": "brett@simmonsauto.com",
       "phone": "(555) 724-8733",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2400,
       "monthlyValue": 2400,
       "contractLength": "12 months",
@@ -4146,9 +4146,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -4670,7 +4670,7 @@
       "primaryContact": "Natalie Ross",
       "email": "natalie@rossfamilychiro.com",
       "phone": "(555) 127-2177",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2600,
       "monthlyValue": 2600,
       "contractLength": "12 months",
@@ -4710,9 +4710,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -4849,7 +4849,7 @@
       "primaryContact": "Samuel Torres",
       "email": "samuel@torreslandscaping.com",
       "phone": "(555) 228-3288",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 3000,
       "monthlyValue": 3000,
       "contractLength": "12 months",
@@ -4889,9 +4889,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -5355,13 +5355,13 @@
       "primaryContact": "Hugo Vance",
       "email": "hugo@vanceremodeling.com",
       "phone": "(555) 531-6511",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2900,
       "monthlyValue": 2900,
       "contractLength": "12 months",
       "probability": 100,
       "daysInStage": 0,
-      "nextAction": "Live — reporting active",
+      "nextAction": "Live \u2014 reporting active",
       "closingMonth": "Dec 2024",
       "opportunityScore": 100,
       "forecastMonth": "December 2024",
@@ -5387,9 +5387,9 @@
         "activationStatus": "Live"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -5499,7 +5499,7 @@
       "primaryContact": "Patricia Quinn",
       "email": "patricia@quinntax.com",
       "phone": "(555) 632-7622",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1500,
       "monthlyValue": 1500,
       "contractLength": "12 months",
@@ -5539,9 +5539,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -5595,7 +5595,7 @@
           "date": "Dec 5, 2024",
           "type": "Stage Changed",
           "user": "Mike T.",
-          "notes": "Closed Lost — went with competitor."
+          "notes": "Closed Lost \u2014 went with competitor."
         }
       ],
       "notes": [
@@ -5666,7 +5666,7 @@
       "primaryContact": "Kevin Strand",
       "email": "kevin@strandpainting.com",
       "phone": "(555) 733-8733",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1200,
       "monthlyValue": 1200,
       "contractLength": "6 months",
@@ -5706,9 +5706,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -5762,7 +5762,7 @@
           "date": "Nov 20, 2024",
           "type": "Stage Changed",
           "user": "Jordan M.",
-          "notes": "Closed Lost — not ready to invest."
+          "notes": "Closed Lost \u2014 not ready to invest."
         }
       ],
       "notes": [
@@ -5833,7 +5833,7 @@
       "primaryContact": "Brenda Calloway",
       "email": "brenda@callowaymmedspa.com",
       "phone": "(555) 834-9900",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 3600,
       "monthlyValue": 3600,
       "contractLength": "12 months",
@@ -5846,15 +5846,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [],
@@ -5865,9 +5865,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -5959,7 +5959,7 @@
       "primaryContact": "Marcus DeLeon",
       "email": "marcus@deleonroofing.com",
       "phone": "(555) 935-0011",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2200,
       "monthlyValue": 2200,
       "contractLength": "12 months",
@@ -5972,15 +5972,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [],
@@ -5991,9 +5991,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -6085,7 +6085,7 @@
       "primaryContact": "Isabelle Fontaine",
       "email": "isabelle@lakesidepaintingstudio.com",
       "phone": "(555) 136-1122",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1500,
       "monthlyValue": 1500,
       "contractLength": "6 months",
@@ -6098,15 +6098,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -6125,9 +6125,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -6219,7 +6219,7 @@
       "primaryContact": "Wesley Grant",
       "email": "wesley@grantfinancial.com",
       "phone": "(555) 237-2233",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 4800,
       "monthlyValue": 4800,
       "contractLength": "24 months",
@@ -6232,15 +6232,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Requested",
-        "assignedAuditor": "—",
+        "assignedAuditor": "\u2014",
         "dueDate": "Jan 18, 2025",
         "findingsSummary": "Finance SEO scope requested."
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -6259,9 +6259,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -6366,7 +6366,7 @@
       "primaryContact": "Carla Whitfield",
       "email": "carla@harborflooring.com",
       "phone": "(555) 338-3344",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1900,
       "monthlyValue": 1900,
       "contractLength": "12 months",
@@ -6379,15 +6379,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Requested",
-        "assignedAuditor": "—",
+        "assignedAuditor": "\u2014",
         "dueDate": "Jan 17, 2025",
         "findingsSummary": "Flooring SEO scope."
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [],
@@ -6398,9 +6398,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -6448,7 +6448,7 @@
         "ghlUpdatedAt": "2025-01-06T10:30:00Z",
         "ghlLastActivityAt": "2025-01-06T10:30:00Z",
         "ghlSyncStatus": "Sync Failed",
-        "ghlSyncError": "Missing contact_id — cannot sync to GHL CRM record"
+        "ghlSyncError": "Missing contact_id \u2014 cannot sync to GHL CRM record"
       }
     },
     {
@@ -6504,8 +6504,8 @@
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -6637,7 +6637,7 @@
       "primaryContact": "Janet Holloway",
       "email": "janet@greenvalleyhvac.com",
       "phone": "(555) 540-5566",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 2800,
       "monthlyValue": 2800,
       "contractLength": "12 months",
@@ -6658,7 +6658,7 @@
         "status": "Sent",
         "proposalValue": 2800,
         "sentDate": "Jan 8, 2025",
-        "viewedDate": "—",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [
@@ -6677,9 +6677,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -6961,7 +6961,7 @@
       "primaryContact": "Holly Marsh",
       "email": "holly@marshvet.com",
       "phone": "(555) 742-7788",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 3100,
       "monthlyValue": 3100,
       "contractLength": "12 months",
@@ -7001,9 +7001,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -7132,7 +7132,7 @@
       "primaryContact": "Randall Kim",
       "email": "randall@kimdental.com",
       "phone": "(555) 843-8899",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 4200,
       "monthlyValue": 4200,
       "contractLength": "12 months",
@@ -7164,9 +7164,9 @@
         "activationStatus": "Live"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -7268,7 +7268,7 @@
       "primaryContact": "Patricia Diaz",
       "email": "patricia@diazlawfirm.com",
       "phone": "(555) 944-9900",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1800,
       "monthlyValue": 1800,
       "contractLength": "12 months",
@@ -7300,9 +7300,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
@@ -7334,7 +7334,7 @@
           "date": "Oct 25, 2024",
           "type": "Stage Changed",
           "user": "Mike T.",
-          "notes": "Closed Lost — budget freeze."
+          "notes": "Closed Lost \u2014 budget freeze."
         }
       ],
       "notes": [
@@ -7405,7 +7405,7 @@
       "primaryContact": "Vincent Nguyen",
       "email": "vincent@nguyenautodetailing.com",
       "phone": "(555) 145-0011",
-      "affiliateSource": "—",
+      "affiliateSource": "\u2014",
       "estimatedValue": 1400,
       "monthlyValue": 1400,
       "contractLength": "6 months",
@@ -7418,15 +7418,15 @@
       "forecastQuarter": "Q1 2025",
       "audit": {
         "status": "Not Started",
-        "assignedAuditor": "—",
-        "dueDate": "—",
-        "findingsSummary": "—"
+        "assignedAuditor": "\u2014",
+        "dueDate": "\u2014",
+        "findingsSummary": "\u2014"
       },
       "proposal": {
         "status": "Not Started",
         "proposalValue": 0,
-        "sentDate": "—",
-        "viewedDate": "—",
+        "sentDate": "\u2014",
+        "viewedDate": "\u2014",
         "approvalStatus": "Pending"
       },
       "followUps": [],
@@ -7437,9 +7437,9 @@
         "activationStatus": "Not Started"
       },
       "affiliate": {
-        "affiliateName": "—",
-        "referralSource": "—",
-        "referralCode": "—",
+        "affiliateName": "\u2014",
+        "referralSource": "\u2014",
+        "referralCode": "\u2014",
         "commissionModel": "None",
         "potentialCommission": 0,
         "revenueAttribution": 0
