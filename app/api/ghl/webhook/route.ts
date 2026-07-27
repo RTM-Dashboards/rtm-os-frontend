@@ -92,14 +92,39 @@ function mapGhlSourceToLeadSource(contactSource: string | undefined): string {
 }
 
 // ── Helper: derive human-readable location ────────────────────────────────────
+//
+// IMPORTANT: Only reads Contact-level address fields from the payload root.
+// The payload also contains a `location` object — that is the GHL sub-account
+// (RTM's own agency location), NOT the Contact's address.  We never fall back
+// to any field on `payload.location`; if the Contact has no address data we
+// return an empty string so the Lead shows blank rather than the agency address.
+//
+// Priority order (Contact-level only):
+//   1. payload.full_address  — pre-built single string from GHL
+//   2. city + state          — city/state combination
+//   3. address1 alone        — street only
+//   4. "" (empty)            — contact genuinely has no address populated
 
 function deriveLocation(payload: GhlWebhookPayload): string {
-  if (payload.full_address) return payload.full_address;
-  const parts = [payload.city, payload.state].filter(Boolean);
-  if (parts.length > 0) return parts.join(", ");
-  if (payload.location?.fullAddress) return payload.location.fullAddress;
-  const locParts = [payload.location?.city, payload.location?.state].filter(Boolean);
-  return locParts.join(", ");
+  // 1. Prefer full_address if present
+  if (payload.full_address?.trim()) return payload.full_address.trim();
+
+  // 2. city + state (postal_code optional)
+  const city  = payload.city?.trim()  ?? "";
+  const state = payload.state?.trim() ?? "";
+  if (city || state) {
+    const postal = payload.postal_code?.trim() ?? "";
+    const cityState = [city, state].filter(Boolean).join(", ");
+    return postal ? `${cityState} ${postal}` : cityState;
+  }
+
+  // 3. address1 alone
+  if (payload.address1?.trim()) return payload.address1.trim();
+
+  // 4. No contact-level address data — return empty.
+  //    Do NOT fall back to payload.location.* — that is the GHL sub-account
+  //    (agency) address, never the individual Contact's address.
+  return "";
 }
 
 // ── Helper: build new Lead from GHL payload ───────────────────────────────────
@@ -253,7 +278,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             ? payload.company_name.trim() || existing.businessName
             : existing.businessName,
           website:             payload.website    ?? existing.website,
-          location:            deriveLocation(payload) || existing.location,
+          // deriveLocation returns "" when Contact has no address (intentional —
+          // we must not keep a stale wrong address if GHL sends a blank contact).
+          // Only preserve existing if the Contact still has no address at all
+          // AND the existing value looks like a genuine contact address (i.e. was
+          // never the agency placeholder).  In practice: take whatever deriveLocation
+          // produces; if it is empty, prefer empty over a potentially-wrong value.
+          location:            deriveLocation(payload),
           ghlContactId:        ghlContactId       || existing.ghlContactId,
           ghlSource:           payload.contact_source ?? existing.ghlSource,
           ghlLastActivityDate: now.split("T")[0],
