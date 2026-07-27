@@ -1,16 +1,16 @@
 // RTM OS — Leads Status API Route
 //
-// Persistence layer: reads/writes data/leads-status.json (project root).
+// Persistence layer: previously data/leads-status.json (fs.readFileSync/writeFileSync).
+// Now backed by PostgreSQL via Prisma (Supabase in production).
 //
-// Stores lightweight lead state overrides keyed by leadId. The full 30-lead
-// mock array stays in the Leads page component; only user-driven mutations
+// The external API contract is UNCHANGED — same request/response shapes.
+// No frontend code needs to change.
+//
+// Stores lightweight lead state overrides keyed by leadId. The canonical lead
+// record lives in the leads table (/api/leads). Only user-driven mutations
 // (stage, assignedRep, discoveryScheduled/Date/Notes, notes, disqualified,
-// disqualifiedReason, name, businessName, industry, leadSource) are persisted
-// here so they survive page refreshes without a full backend.
-//
-// Follows the exact same upsert-by-id pattern as:
-//   - data/dept-report-status.json  (dept report status overrides)
-//   - data/expansion-opportunity-status.json  (expansion opp status overrides)
+// disqualifiedReason, name, businessName, industry, leadSource) and GHL sync
+// state are persisted here so they survive page refreshes.
 //
 // GET  /api/leads-status           → { records: LeadStatusRecord[] }
 // POST /api/leads-status           → body: { leadId: string; [fields] }
@@ -18,71 +18,75 @@
 //                                    (server assigns/overwrites updatedAt; merges fields)
 
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db/prisma";
+import type { LeadStatus as PrismaLeadStatus } from "@prisma/client";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 export interface LeadStatusRecord {
   leadId: string;
-  // Overridable fields — all optional; only set fields are merged into the lead.
   stage?: string;
   assignedRep?: string;
   discoveryScheduled?: boolean;
   discoveryDate?: string;
   discoveryNotes?: string;
-  notes?: string;          // single free-text note field (appended in client)
+  notes?: string;
   disqualified?: boolean;
   disqualifiedReason?: string;
-  // Editable core fields
   name?: string;
   businessName?: string;
   industry?: string;
   leadSource?: string;
-  // GHL sync fields — written by /api/ghl/sync-lead, never by the client directly
   ghlContactId?: string;
   ghlSyncStatus?: string;
   ghlSyncError?: string;
   ghlLastSyncedAt?: string;
-  // Audit trail
-  updatedAt: string;       // ISO-8601, server-assigned
+  updatedAt: string;
 }
 
-interface StatusFile {
-  records: LeadStatusRecord[];
-}
+// ── DB → LeadStatusRecord mapper ──────────────────────────────────────────────
+// Converts null → undefined so the API response matches the original JSON shape.
 
-// ── File path ──────────────────────────────────────────────────────────────────
-
-const DATA_FILE = path.join(process.cwd(), "data", "leads-status.json");
-
-// ── File I/O ───────────────────────────────────────────────────────────────────
-
-function readRecords(): LeadStatusRecord[] {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as StatusFile;
-    if (!Array.isArray(parsed.records)) throw new Error("bad shape");
-    return parsed.records;
-  } catch {
-    return [];
-  }
-}
-
-function writeRecords(records: LeadStatusRecord[]): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ records }, null, 2), "utf-8");
+function toLeadStatusRecord(row: PrismaLeadStatus): LeadStatusRecord {
+  return {
+    leadId: row.leadId,
+    updatedAt: row.updatedAt,
+    ...(row.stage !== null ? { stage: row.stage } : {}),
+    ...(row.assignedRep !== null ? { assignedRep: row.assignedRep } : {}),
+    ...(row.discoveryScheduled !== null ? { discoveryScheduled: row.discoveryScheduled } : {}),
+    ...(row.discoveryDate !== null ? { discoveryDate: row.discoveryDate } : {}),
+    ...(row.discoveryNotes !== null ? { discoveryNotes: row.discoveryNotes } : {}),
+    ...(row.notes !== null ? { notes: row.notes } : {}),
+    ...(row.disqualified !== null ? { disqualified: row.disqualified } : {}),
+    ...(row.disqualifiedReason !== null ? { disqualifiedReason: row.disqualifiedReason } : {}),
+    ...(row.name !== null ? { name: row.name } : {}),
+    ...(row.businessName !== null ? { businessName: row.businessName } : {}),
+    ...(row.industry !== null ? { industry: row.industry } : {}),
+    ...(row.leadSource !== null ? { leadSource: row.leadSource } : {}),
+    ...(row.ghlContactId !== null ? { ghlContactId: row.ghlContactId } : {}),
+    ...(row.ghlSyncStatus !== null ? { ghlSyncStatus: row.ghlSyncStatus } : {}),
+    ...(row.ghlSyncError !== null ? { ghlSyncError: row.ghlSyncError } : {}),
+    ...(row.ghlLastSyncedAt !== null ? { ghlLastSyncedAt: row.ghlLastSyncedAt } : {}),
+  };
 }
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(): Promise<NextResponse> {
-  const records = readRecords();
-  return NextResponse.json({ records });
+  try {
+    const rows = await prisma.leadStatus.findMany({
+      orderBy: { updatedAt: "desc" },
+    });
+    const records: LeadStatusRecord[] = rows.map(toLeadStatusRecord);
+    return NextResponse.json({ records });
+  } catch (err) {
+    console.error("[leads-status GET] DB error:", err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
 
 // ── POST ───────────────────────────────────────────────────────────────────────
+// Upsert: merge incoming fields on top of existing record (if any).
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: unknown;
@@ -100,14 +104,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const records = readRecords();
+  const leadId = payload.leadId as string;
+  const now = new Date().toISOString();
 
-  // Upsert: merge incoming fields on top of existing record (if any).
-  const existingIdx = records.findIndex((r) => r.leadId === payload.leadId);
-  const existing = existingIdx >= 0 ? records[existingIdx] : { leadId: payload.leadId as string, updatedAt: "" };
-
-  const record: LeadStatusRecord = {
-    ...existing,
+  // Build only the fields that are explicitly provided in the payload.
+  // This preserves the original merge-on-top-of-existing semantics.
+  const updateData: Partial<Omit<PrismaLeadStatus, "leadId">> = {
+    updatedAt: now,
     ...(typeof payload.stage              === "string"  ? { stage: payload.stage }                             : {}),
     ...(typeof payload.assignedRep        === "string"  ? { assignedRep: payload.assignedRep }                 : {}),
     ...(typeof payload.discoveryScheduled === "boolean" ? { discoveryScheduled: payload.discoveryScheduled }   : {}),
@@ -124,20 +127,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ...(typeof payload.ghlSyncStatus     === "string"   ? { ghlSyncStatus: payload.ghlSyncStatus }             : {}),
     ...(typeof payload.ghlSyncError      === "string"   ? { ghlSyncError: payload.ghlSyncError }               : {}),
     ...(typeof payload.ghlLastSyncedAt   === "string"   ? { ghlLastSyncedAt: payload.ghlLastSyncedAt }         : {}),
-    leadId: payload.leadId as string,
-    updatedAt: new Date().toISOString(),
   };
 
-  if (existingIdx >= 0) {
-    records[existingIdx] = record;
-  } else {
-    records.push(record);
-  }
-
   try {
-    writeRecords(records);
+    const row = await prisma.leadStatus.upsert({
+      where: { leadId },
+      update: updateData,
+      create: {
+        leadId,
+        ...updateData,
+      },
+    });
+
+    const record = toLeadStatusRecord(row);
     return NextResponse.json({ record });
   } catch (err) {
+    console.error("[leads-status POST] DB error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

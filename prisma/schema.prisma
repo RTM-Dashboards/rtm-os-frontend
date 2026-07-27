@@ -1,0 +1,244 @@
+// RTM OS — Prisma Schema
+//
+// Provider: PostgreSQL (Supabase)
+// Connection: DATABASE_URL is configured in prisma.config.ts (Prisma 7+).
+//             For local dev, set DATABASE_URL in .env or .env.local.
+//             For production, set DATABASE_URL in Vercel environment variables.
+//
+// Scope of this migration (Phase 1):
+//   - Lead       → was data/leads.json
+//   - LeadStatus → was data/leads-status.json
+//   - Opportunity → was data/sales-opportunities.json
+//
+// All other data/*.json stores remain file-backed (future migration phases).
+//
+// Sub-objects (ghl, audit, proposal, handoff, affiliate, communicationLog) and
+// array fields on Opportunity are stored as Json columns — pragmatic for Phase 1,
+// avoids 12+ relational tables while still persisting all data correctly.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Lead ──────────────────────────────────────────────────────────────────────
+// Maps 1:1 to LeadRecord in data/leads.json.
+// String arrays (ghlContactTags, businessGoals, painPoints, requestedServices)
+// stored as PostgreSQL text arrays.
+
+model Lead {
+  // Primary key — matches the app's string id (e.g. "L001", "LGHL1234567890")
+  id                    String   @id
+
+  // Core contact fields
+  name                  String   @default("")
+  businessName          String   @default("")
+  industry              String   @default("")
+  website               String   @default("")
+  email                 String   @default("")
+  phone                 String   @default("")
+  location              String   @default("")
+
+  // GHL integration fields
+  ghlContactId          String   @default("")
+  ghlAssignedUser       String   @default("")
+  ghlSource             String   @default("")
+  ghlCreatedDate        String   @default("")
+  ghlLastActivityDate   String   @default("")
+  ghlContactTags        String[]
+  ghlContactStatus      String   @default("")
+  ghlSyncStatus         String   @default("")
+  ghlOrigin             Boolean  @default(false)
+  ghlLastSyncedAt       String?
+  ghlSyncError          String?
+
+  // RTM qualification fields
+  leadSource            String   @default("")
+  assignedRep           String   @default("")
+  stage                 String   @default("New Lead")
+  opportunityReadiness  String   @default("Not Ready")
+  discoveryScheduled    Boolean  @default(false)
+  discoveryDate         String   @default("")
+  discoveryNotes        String   @default("")
+
+  // BANT / discovery arrays
+  businessGoals         String[]
+  painPoints            String[]
+  requestedServices     String[]
+  budget                String   @default("Unknown")
+  authority             String   @default("Unknown")
+  need                  String   @default("Low")
+  timeline              String   @default("6+ months")
+
+  // Value & attribution
+  estimatedValue        Int      @default(0)
+  affiliateName         String   @default("—")
+
+  // Display / human dates (kept as strings to match original JSON)
+  createdDate           String   @default("")
+  lastActivity          String   @default("")
+  notes                 String   @default("")
+
+  // Disqualification
+  disqualified          Boolean  @default(false)
+  disqualifiedReason    String?
+
+  // Audit timestamps (ISO-8601 strings)
+  createdAt             String   @default("")
+  updatedAt             String   @default("")
+
+  @@map("leads")
+}
+
+// ── LeadStatus ────────────────────────────────────────────────────────────────
+// Maps 1:1 to LeadStatusRecord in data/leads-status.json.
+// Stores field-level overrides driven by UI actions and GHL sync.
+// Keyed by leadId (not a foreign-key constraint so orphaned overlays don't break).
+
+model LeadStatus {
+  leadId              String   @id
+
+  // Overridable lead fields
+  stage               String?
+  assignedRep         String?
+  discoveryScheduled  Boolean?
+  discoveryDate       String?
+  discoveryNotes      String?
+  notes               String?
+  disqualified        Boolean?
+  disqualifiedReason  String?
+
+  // Editable core fields
+  name                String?
+  businessName        String?
+  industry            String?
+  leadSource          String?
+
+  // GHL sync state — written by /api/ghl/sync-lead, never by client directly
+  ghlContactId        String?
+  ghlSyncStatus       String?
+  ghlSyncError        String?
+  ghlLastSyncedAt     String?
+
+  // Audit
+  updatedAt           String   @default("")
+
+  @@map("lead_statuses")
+}
+
+// ── Opportunity ───────────────────────────────────────────────────────────────
+// Maps 1:1 to OpportunityRecord in data/sales-opportunities.json.
+//
+// Scalar fields are columns; complex nested objects and arrays are Json columns.
+// This avoids 10+ relational tables while keeping all data correctly persisted
+// and queryable enough for Phase 1 (full list fetches + single-record upserts).
+//
+// Json column contents are validated by the app layer (TypeScript types),
+// not by the database.
+
+model Opportunity {
+  // Primary key — matches app's string id (e.g. "opp-mock-001", "O001")
+  id                    String   @id
+
+  opportunityNumber     String   @default("")
+  leadId                String?
+  clientName            String   @default("")
+  businessName          String   @default("")
+  tradeType             String   @default("")
+  contactName           String   @default("")
+  contactPhone          String   @default("")
+  contactEmail          String   @default("")
+  leadSource            String   @default("")
+  assignedRep           String   @default("")
+  stage                 String   @default("")
+  priority              String   @default("")
+  estimatedMonthlyValue Float    @default(0)
+  expectedCloseDate     String   @default("")
+
+  // Array of strings — service interest tags
+  serviceInterest       String[]
+
+  discoveryNotes        String   @default("")
+
+  // Top-level GHL shorthand fields (also reflected in ghl Json)
+  ghlContactId          String   @default("")
+  ghlSynced             Boolean  @default(false)
+
+  // Optional extended scalar fields (present on newer records)
+  industry              String?
+  website               String?
+  primaryContact        String?
+  email                 String?
+  phone                 String?
+  affiliateSource       String?
+  estimatedValue        Float?
+  monthlyValue          Float?
+  contractLength        String?
+  probability           Float?
+  daysInStage           Int?
+  nextAction            String?
+  closingMonth          String?
+  opportunityScore      Float?
+  forecastMonth         String?
+  forecastQuarter       String?
+  activeWizardId        String?
+  intakeRecord          Json?
+
+  // ── Json sub-objects ────────────────────────────────────────────────────────
+  // These preserve the exact nested structure expected by the frontend.
+  // Shape docs are in the field comments; enforced by TypeScript, not DB.
+
+  // ghl: KanbanGhlFields — ghlOpportunityId, ghlContactId, ghlPipelineId, etc.
+  ghl                   Json?
+
+  // audit: { status, assignedAuditor, dueDate, findingsSummary }
+  audit                 Json?
+
+  // proposal: { status, proposalValue, sentDate, viewedDate, approvalStatus }
+  proposal              Json?
+
+  // handoff: { status, billingRequestStatus, invoiceStatus, activationStatus }
+  handoff               Json?
+
+  // affiliate: { affiliateName, referralSource, referralCode, commissionModel,
+  //              potentialCommission, revenueAttribution }
+  affiliate             Json?
+
+  // communicationLog: { opportunityId, entries: CommunicationEntry[] }
+  communicationLog      Json?
+
+  // ── Json array fields ───────────────────────────────────────────────────────
+  // Stored as Json (not String[]) because each item is an object, not a scalar.
+
+  // followUps: FollowUpItem[] — { id, subject, dueDate, status, owner }
+  followUps             Json?
+
+  // tasks: TaskItem[] — { id, title, status, owner, dueDate }
+  tasks                 Json?
+
+  // notifications: NotificationItem[] — { id, type, message, date, read }
+  notifications         Json?
+
+  // workflowEvents: WorkflowEvent[] — { step, completedAt, completedBy, notes }
+  workflowEvents        Json?
+
+  // recentActivities: ActivityItem[] — { date, type, user, notes }
+  recentActivities      Json?
+
+  // notes: NoteItem[] — { date, author, note, category }
+  // Note: JSON array of note objects, distinct from Lead.notes (plain string)
+  notes                 Json?
+
+  // nextSteps: NextStepItem[] — { action, owner, dueDate, priority }
+  nextSteps             Json?
+
+  // Audit timestamps
+  createdAt             String   @default("")
+  updatedAt             String   @default("")
+
+  @@map("opportunities")
+}

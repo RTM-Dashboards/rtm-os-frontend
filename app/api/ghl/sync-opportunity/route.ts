@@ -2,48 +2,37 @@
 //
 // POST /api/ghl/sync-opportunity
 //
+// Persistence layer: previously data/sales-opportunities.json (fs.readFileSync/writeFileSync).
+// Now backed by PostgreSQL via Prisma (Supabase in production).
+//
+// The external API contract is UNCHANGED — same request/response shapes.
+// No frontend code needs to change.
+//
 // Syncs a single RTM Pipeline Opportunity to a GHL Opportunity.
-// - If the opportunity's lead already has a GHL Contact ID (in the
-//   sales-opportunities store), links the GHL Opportunity to that Contact,
-//   preserving the Lead-to-Opportunity linkage from the real sales flow.
-// - If ghlOpportunityId is present on the record, updates the existing
-//   GHL Opportunity; otherwise creates a new one.
+// - If ghlOpportunityId is present, updates the existing GHL Opportunity;
+//   otherwise creates a new one.
 // - Writes the real GHL Opportunity ID, stage name, monetary value, status,
-//   and sync state back into data/sales-opportunities.json.
+//   and sync state back into the opportunities table.
 //
 // Body:
 //   {
-//     opportunityId:      string   — RTM opportunity record id
-//     businessName:       string   — used as GHL opportunity name
-//     estimatedMonthlyValue: number
-//     stage:              string   — RTM stage name (mapped to GHL stage)
+//     opportunityId:      string
+//     businessName:       string
+//     estimatedMonthlyValue?: number
+//     stage?:             string
 //     leadSource?:        string
 //     assignedRep?:       string
-//     // GHL linkage — pass if already known
-//     ghlOpportunityId?:  string   — existing GHL opportunity ID to update
-//     ghlContactId?:      string   — GHL contact to link (from Lead sync)
-//     ghlPipelineId?:     string   — GHL pipeline to place the opportunity in
-//     ghlStageId?:        string   — override: specific GHL stage ID to set
+//     ghlOpportunityId?:  string
+//     ghlContactId?:      string
+//     ghlPipelineId?:     string
+//     ghlStageId?:        string
 //   }
-//
-// Response (success):
-//   {
-//     ok: true
-//     ghlOpportunityId: string
-//     created: boolean
-//     opportunity: GhlOpportunity
-//   }
-//
-// Response (error):
-//   { ok: false; error: string; errorCode: string }
 //
 // CREDENTIALS:
 //   Reads from process.env.GHL_PRIVATE_INTEGRATION_TOKEN + GHL_LOCATION_ID
-//   Never exposed to the client.
 
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db/prisma";
 import {
   createOpportunity,
   updateOpportunity,
@@ -53,62 +42,31 @@ import {
   GhlApiError,
 } from "@/lib/ghl/client";
 import type { KanbanGhlFields } from "@/lib/sales/types";
+import { Prisma } from "@prisma/client";
 
-// ── Sales opportunities file helpers ─────────────────────────────────────────
+// ── DB helper: upsert opportunity GHL status ──────────────────────────────────
 
-interface OpportunityRecord {
-  id: string;
-  [key: string]: unknown;
-}
-
-interface OpportunitiesFile {
-  records: OpportunityRecord[];
-}
-
-const OPPS_FILE = path.join(process.cwd(), "data", "sales-opportunities.json");
-
-function readOpps(): OpportunityRecord[] {
-  try {
-    const raw = fs.readFileSync(OPPS_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as OpportunitiesFile;
-    return Array.isArray(parsed.records) ? parsed.records : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeOpps(records: OpportunityRecord[]): void {
-  const dir = path.dirname(OPPS_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(OPPS_FILE, JSON.stringify({ records }, null, 2), "utf-8");
-}
-
-function upsertOppGhlStatus(
+async function upsertOppGhlStatus(
   opportunityId: string,
   ghlPatch: Partial<KanbanGhlFields> & { ghlSyncError?: string }
-): void {
-  const records = readOpps();
-  const idx = records.findIndex((r) => r.id === opportunityId);
-  if (idx < 0) return; // record not found — nothing to patch
+): Promise<void> {
+  const row = await prisma.opportunity.findUnique({ where: { id: opportunityId } });
+  if (!row) return; // record not found — nothing to patch
 
-  const existing = records[idx];
-  const existingGhl = (existing.ghl ?? {}) as Partial<KanbanGhlFields>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const existingGhl = ((row.ghl ?? {}) as any);
+  const updatedGhl = {
+    ...existingGhl,
+    ...ghlPatch,
+  } as Prisma.InputJsonValue;
 
-  records[idx] = {
-    ...existing,
-    ghl: {
-      ...existingGhl,
-      ...ghlPatch,
-    },
-    updatedAt: new Date().toISOString(),
-  };
-
-  writeOpps(records);
+  await prisma.opportunity.update({
+    where:  { id: opportunityId },
+    data:   { ghl: updatedGhl, updatedAt: new Date().toISOString() },
+  });
 }
 
-// ── RTM Stage → GHL Stage name mapping ──────────────────────────────────────
-// This is a best-effort mapping. If the GHL pipeline has different stage names,
-// the user can override by passing ghlStageId directly.
+// ── RTM Stage → GHL Stage name mapping ───────────────────────────────────────
 
 const RTM_TO_GHL_STAGE: Record<string, string> = {
   "Lead":             "New Lead",
@@ -180,7 +138,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const locationId = process.env.GHL_LOCATION_ID!;
 
   try {
-    // Resolve pipeline: use provided ID, or fall back to the first pipeline in the account
     let pipelineId = input.ghlPipelineId;
     let resolvedPipelineName = "";
     let resolvedStageId = input.ghlStageId;
@@ -195,10 +152,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ? pipelines.find((p) => p.id === pipelineId) ?? pipelines[0]
         : pipelines[0];
 
-      pipelineId = pipeline.id;
+      pipelineId          = pipeline.id;
       resolvedPipelineName = pipeline.name;
 
-      // Map RTM stage to GHL stage name → find matching stage ID
       if (!resolvedStageId && input.stage) {
         const targetGhlStageName = RTM_TO_GHL_STAGE[input.stage] ?? input.stage;
         const matchedStage = pipeline.stages.find(
@@ -212,10 +168,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
-    const oppName = input.businessName;
+    const oppName      = input.businessName;
     const monetaryValue = input.estimatedMonthlyValue ?? 0;
 
-    // Determine GHL opportunity status from RTM stage
     const rtmStage = input.stage ?? "";
     const ghlStatus: "open" | "won" | "lost" | "abandoned" =
       rtmStage.includes("Won") || rtmStage.includes("Approved") || rtmStage.includes("Handoff")
@@ -224,7 +179,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ? "lost"
         : "open";
 
-    // Guard: skip mock contact IDs — only pass real GHL contact IDs
+    // Guard: skip mock contact IDs
     const contactId =
       input.ghlContactId &&
       !input.ghlContactId.startsWith("GHL-CON-") &&
@@ -241,76 +196,65 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       input.ghlOpportunityId &&
       !input.ghlOpportunityId.startsWith("ghl-opp-")
     ) {
-      // Update existing GHL Opportunity
       opportunity = await updateOpportunity(input.ghlOpportunityId, {
-        name: oppName,
+        name:            oppName,
         monetaryValue,
         pipelineStageId: resolvedStageId,
-        status: ghlStatus,
+        status:          ghlStatus,
       });
       ghlOppId = input.ghlOpportunityId;
-      created = false;
+      created  = false;
     } else {
-      // Create new GHL Opportunity
       opportunity = await createOpportunity({
         pipelineId,
         locationId,
-        name: oppName,
+        name:            oppName,
         pipelineStageId: resolvedStageId,
-        status: ghlStatus,
+        status:          ghlStatus,
         contactId,
         monetaryValue,
-        source: input.leadSource,
+        source:          input.leadSource,
       });
       ghlOppId = opportunity.id;
-      created = true;
+      created  = true;
     }
 
-    // Resolve stage name from the opportunity response
     const ghlStageName: string =
       opportunity.pipelineStageName ??
       (input.stage ? RTM_TO_GHL_STAGE[input.stage] ?? input.stage : "Unknown");
 
     const now = new Date().toISOString();
 
-    // Write back real GHL data into sales-opportunities.json
-    upsertOppGhlStatus(input.opportunityId, {
-      ghlOpportunityId: ghlOppId,
-      ghlContactId: contactId ?? (opportunity.contactId ?? ""),
-      ghlPipelineId: pipelineId,
-      ghlPipelineName: resolvedPipelineName || opportunity.pipelineId || pipelineId,
-      ghlStageId: resolvedStageId ?? "",
+    await upsertOppGhlStatus(input.opportunityId, {
+      ghlOpportunityId:     ghlOppId,
+      ghlContactId:         contactId ?? (opportunity.contactId ?? ""),
+      ghlPipelineId:        pipelineId,
+      ghlPipelineName:      resolvedPipelineName || opportunity.pipelineId || pipelineId,
+      ghlStageId:           resolvedStageId ?? "",
       ghlStageName,
-      ghlAssignedUserId: opportunity.assignedTo ?? "",
-      ghlAssignedUserName: input.assignedRep ?? "",
+      ghlAssignedUserId:    opportunity.assignedTo ?? "",
+      ghlAssignedUserName:  input.assignedRep ?? "",
       ghlOpportunityStatus: ghlStatus,
-      ghlMonetaryValue: monetaryValue,
-      ghlSource: input.leadSource ?? "",
-      ghlCreatedAt: opportunity.createdAt ?? now,
-      ghlUpdatedAt: now,
-      ghlLastActivityAt: now,
-      ghlSyncStatus: "Synced",
-      ghlSyncError: "",
+      ghlMonetaryValue:     monetaryValue,
+      ghlSource:            input.leadSource ?? "",
+      ghlCreatedAt:         opportunity.createdAt ?? now,
+      ghlUpdatedAt:         now,
+      ghlLastActivityAt:    now,
+      ghlSyncStatus:        "Synced",
+      ghlSyncError:         "",
     });
 
-    return NextResponse.json({
-      ok: true,
-      ghlOpportunityId: ghlOppId,
-      created,
-      opportunity,
-    });
+    return NextResponse.json({ ok: true, ghlOpportunityId: ghlOppId, created, opportunity });
   } catch (err) {
     const isConfig = err instanceof GhlConfigError;
-    const isApi = err instanceof GhlApiError;
-
-    const message = err instanceof Error ? err.message : "Unknown error";
+    const isApi    = err instanceof GhlApiError;
+    const message  = err instanceof Error ? err.message : "Unknown error";
     const errorCode = isConfig ? "GHL_NOT_CONFIGURED" : isApi ? "GHL_API_ERROR" : "UNKNOWN";
 
-    // Write error state back to the record
-    upsertOppGhlStatus(input.opportunityId!, {
+    await upsertOppGhlStatus(input.opportunityId!, {
       ghlSyncStatus: "Sync Failed",
-      ghlSyncError: message,
-      ghlUpdatedAt: new Date().toISOString(),
+      ghlSyncError:  message,
+      ghlUpdatedAt:  new Date().toISOString(),
     });
 
     return NextResponse.json(
