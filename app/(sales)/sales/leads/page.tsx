@@ -803,6 +803,47 @@ async function persistLeadStatus(leadId: string, patch: Partial<LeadStatusRecord
   });
 }
 
+// ── GHL Stage Tag Sync (fire-and-forget) ──────────────────────────────────────
+//
+// Pushes the new stage to GHL as a Contact tag after a stage change.
+// Always fire-and-forget — the RTM-side save has already happened before this
+// is called.  Failures are logged to console only; the user's action is NOT
+// blocked or rolled back.  The server route writes the error back to
+// lead_statuses.ghlSyncError so the GHL tab in the drawer can surface it.
+
+function pushStageToGhl(lead: Lead, newStage: LeadStage): void {
+  // Resolve the real GHL Contact ID: overlay value (from a previous sync)
+  // takes priority over the static field on the seed record.
+  const ghlContactId = lead.ghlContactIdReal ?? lead.ghlContactId;
+
+  // Fire without awaiting — intentionally non-blocking.
+  fetch("/api/ghl/sync-lead-stage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      leadId: lead.id,
+      ghlContactId,
+      stage: newStage,
+      previousTags: lead.ghlContactTags,
+    }),
+  })
+    .then(async (res) => {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        console.warn(
+          `[GHL Stage Sync] Non-OK response for lead ${lead.id} stage "${newStage}":`,
+          body
+        );
+      }
+    })
+    .catch((err) => {
+      console.warn(
+        `[GHL Stage Sync] Network error for lead ${lead.id} stage "${newStage}":`,
+        err
+      );
+    });
+}
+
 //  Action Modals ──────────────────────────────────────────────────────────────
 
 // Shared modal shell
@@ -956,13 +997,16 @@ function ScheduleDiscoveryModal({ lead, onClose, onSave }: {
 
   async function handleSave() {
     setSaving(true);
+    const newStage: LeadStage = complete ? "Discovery Complete" : "Discovery Scheduled";
     const patch = {
       discoveryScheduled: true,
       discoveryDate: date,
       discoveryNotes: notes,
-      ...(complete ? { stage: "Discovery Complete" as LeadStage } : { stage: "Discovery Scheduled" as LeadStage }),
+      stage: newStage,
     };
     await persistLeadStatus(lead.id, patch);
+    // Fire-and-forget: push the new stage to GHL as a Contact tag.
+    pushStageToGhl(lead, newStage);
     onSave({ discoveryScheduled: true, discoveryDate: date, discoveryNotes: notes });
     setSaving(false);
   }
@@ -1011,6 +1055,9 @@ function MoveStageModal({ lead, onClose, onSave }: {
   async function handleSave() {
     setSaving(true);
     await persistLeadStatus(lead.id, { stage });
+    // Fire-and-forget: push the new stage to GHL as a Contact tag.
+    // The RTM-side save is already done; GHL sync failures are non-blocking.
+    pushStageToGhl(lead, stage);
     onSave(stage);
     setSaving(false);
   }
@@ -1122,6 +1169,8 @@ function DisqualifyModal({ lead, onClose, onSave }: {
       disqualified: true,
       disqualifiedReason: reason || "Not specified",
     });
+    // Fire-and-forget: push Disqualified stage to GHL.
+    pushStageToGhl(lead, "Disqualified");
     onSave(reason || "Not specified");
     setSaving(false);
   }

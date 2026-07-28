@@ -124,6 +124,11 @@ model LeadStatus {
   ghlSyncError        String?
   ghlLastSyncedAt     String?
 
+  // Loop-prevention: timestamp of the last RTM→GHL stage tag push.
+  // Incoming GHL webhook stage changes are ignored when this is < 30 s ago,
+  // preventing echo loops from our own outbound tag writes firing back.
+  ghlLastStagePushedAt String?
+
   // Audit
   updatedAt           String   @default("")
 

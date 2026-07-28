@@ -341,6 +341,38 @@ export async function updateOpportunity(
   return result.opportunity;
 }
 
+// ── Contact Tag Operations ───────────────────────────────────────────────────
+
+/**
+ * Add one or more tags to an existing GHL Contact.
+ * Uses POST /contacts/{id}/tags — additive, does not replace other tags.
+ */
+export async function addContactTags(
+  contactId: string,
+  tags: string[]
+): Promise<void> {
+  if (tags.length === 0) return;
+  await ghlFetch<unknown>(`/contacts/${contactId}/tags`, {
+    method: "POST",
+    body: JSON.stringify({ tags }),
+  });
+}
+
+/**
+ * Remove one or more tags from an existing GHL Contact.
+ * Uses DELETE /contacts/{id}/tags — targeted removal, does not touch other tags.
+ */
+export async function removeContactTags(
+  contactId: string,
+  tags: string[]
+): Promise<void> {
+  if (tags.length === 0) return;
+  await ghlFetch<unknown>(`/contacts/${contactId}/tags`, {
+    method: "DELETE",
+    body: JSON.stringify({ tags }),
+  });
+}
+
 // ── Credential check (non-throwing) ──────────────────────────────────────────
 
 /**

@@ -23,6 +23,10 @@ import { prisma } from "@/lib/db/prisma";
 import type { Lead as PrismaLead } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 import type { LeadRecord } from "@/app/api/leads/route";
+import {
+  stageFromTags,
+  shouldSkipInboundStageUpdate,
+} from "@/lib/ghl/stage-tags";
 
 // ── GHL real payload shape ────────────────────────────────────────────────────
 //
@@ -301,6 +305,59 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
 
       // Sync GHL overlay into lead_statuses table
+      // ── Inbound stage-tag sync ────────────────────────────────────────────
+      // If the webhook's tags contain an rtm-stage-* tag, attempt to update
+      // RTM's Lead stage to match — but ONLY if loop-prevention guards pass.
+      //
+      // Loop prevention (both must pass to allow the update):
+      //   Guard 1: ghlLastStagePushedAt must be > 30 s ago (or never set).
+      //            This blocks echo webhooks from our own outbound pushes.
+      //   Guard 2: The incoming stage must differ from RTM's current stage.
+      //            This is a cheap no-op guard independent of timing.
+      let stageActionNote: string | undefined;
+
+      if (Array.isArray(payload.tags) && payload.tags.length > 0) {
+        const incomingStage = stageFromTags(payload.tags);
+
+        if (incomingStage !== null) {
+          // Fetch the LeadStatus row to check ghlLastStagePushedAt
+          const statusRow = await prisma.leadStatus.findUnique({
+            where: { leadId: existing.id },
+          });
+
+          const skip = shouldSkipInboundStageUpdate(
+            statusRow?.ghlLastStagePushedAt ?? null,
+            incomingStage,
+            existing.stage
+          );
+
+          if (!skip) {
+            // Genuine external stage change — update RTM Lead stage
+            await prisma.lead.update({
+              where: { id: existing.id },
+              data: { stage: incomingStage, updatedAt: now },
+            });
+            await prisma.leadStatus.upsert({
+              where: { leadId: existing.id },
+              update: { stage: incomingStage, updatedAt: now },
+              create: { leadId: existing.id, stage: incomingStage, updatedAt: now },
+            });
+            stageActionNote = `stage updated to "${incomingStage}" from GHL tag`;
+            console.log(
+              `[GHL Webhook] Lead ${existing.id}: stage updated ` +
+              `"${existing.stage}" → "${incomingStage}" from inbound rtm-stage-* tag.`
+            );
+          } else {
+            stageActionNote = `stage update skipped (loop guard or no-op: incoming="${incomingStage}", current="${existing.stage}")`;
+            console.log(
+              `[GHL Webhook] Lead ${existing.id}: inbound stage tag "${incomingStage}" ` +
+              `skipped by loop prevention (current="${existing.stage}", ` +
+              `lastPushedAt=${statusRow?.ghlLastStagePushedAt ?? "none"}).`
+            );
+          }
+        }
+      }
+
       await prisma.leadStatus.upsert({
         where: { leadId: existing.id },
         update: {
@@ -326,6 +383,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         action:       "updated",
         leadId:       existing.id,
         ghlContactId: ghlContactId || existing.ghlContactId,
+        ...(stageActionNote ? { stageNote: stageActionNote } : {}),
       });
     }
 
