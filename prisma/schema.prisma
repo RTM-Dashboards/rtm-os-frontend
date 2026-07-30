@@ -247,3 +247,39 @@ model Opportunity {
 
   @@map("opportunities")
 }
+
+// ── GhlWebhookLog ──────────────────────────────────────────────────────────────────────────────
+// Raw inbound GHL webhook payload capture.
+//
+// Every POST to /api/ghl/webhook is recorded here BEFORE any processing so
+// that the original payload is never lost.  A write failure is non-fatal and
+// cannot block lead ingestion.
+//
+// Postgres only — Vercel's serverless filesystem is read-only so a JSON-file
+// approach silently discards every payload in production.
+
+model GhlWebhookLog {
+  // Auto-incremented surrogate key; no business meaning
+  id              Int      @id @default(autoincrement())
+
+  // Wall-clock timestamp when the webhook was received (ISO-8601)
+  receivedAt      String
+
+  // Full raw request body exactly as received, before any parsing or normalisation
+  rawPayload      Json
+
+  // GHL Contact ID resolved from the payload (empty string when unresolvable)
+  ghlContactId    String   @default("")
+
+  // RTM Lead id created or updated as a result of this webhook (null when skipped)
+  leadId          String?
+
+  // Outcome of processing this webhook
+  // Values: "created" | "updated" | "skipped" | "error"
+  outcome         String   @default("")
+
+  // Human-readable detail about the outcome (e.g. error message, skip reason)
+  outcomeDetail   String   @default("")
+
+  @@map("ghl_webhook_logs")
+}

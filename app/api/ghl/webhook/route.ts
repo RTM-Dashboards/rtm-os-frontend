@@ -27,6 +27,10 @@ import {
   stageFromTags,
   shouldSkipInboundStageUpdate,
 } from "@/lib/ghl/stage-tags";
+import {
+  searchContact,
+  ghlCredentialsConfigured,
+} from "@/lib/ghl/client";
 
 // ── GHL real payload shape ────────────────────────────────────────────────────
 //
@@ -195,6 +199,39 @@ function buildLeadFromGhlPayload(
   };
 }
 
+// ── Fix 4: Raw webhook payload capture helper ───────────────────────────────
+//
+// Writes a row to ghl_webhook_logs.  Wrapped in try/catch so a DB failure
+// is logged but NEVER propagated — capture failure cannot block ingestion.
+
+async function captureWebhookLog(opts: {
+  receivedAt: string;
+  rawPayload: unknown;
+  ghlContactId: string;
+  leadId?: string | null;
+  outcome: "created" | "updated" | "skipped" | "error";
+  outcomeDetail?: string;
+}): Promise<void> {
+  try {
+    await prisma.ghlWebhookLog.create({
+      data: {
+        receivedAt:    opts.receivedAt,
+        rawPayload:    opts.rawPayload as import("@prisma/client").Prisma.InputJsonValue,
+        ghlContactId:  opts.ghlContactId,
+        leadId:        opts.leadId ?? null,
+        outcome:       opts.outcome,
+        outcomeDetail: opts.outcomeDetail ?? "",
+      },
+    });
+  } catch (captureErr) {
+    // Log loudly but never rethrow — inbound lead capture must not be blocked.
+    console.error(
+      "[GHL Webhook] CAPTURE FAILURE — failed to write payload to ghl_webhook_logs:",
+      captureErr
+    );
+  }
+}
+
 // ── POST handler ──────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
@@ -206,7 +243,41 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const now = new Date().toISOString();
-  const ghlContactId = (typeof payload.id === "string" ? payload.id : "").trim();
+  let ghlContactId = (typeof payload.id === "string" ? payload.id : "").trim();
+
+  // ── Fix 1: self-heal empty contact ID via email lookup ───────────────────
+  // When GHL sends an empty id but the payload carries an email, resolve the
+  // real Contact ID from GHL before proceeding.  This covers the confirmed
+  // production case where a Native Webhook action omits the id field.
+  // Rule: fail open — a lookup failure must never block lead ingestion.
+  if (!ghlContactId && payload.email && ghlCredentialsConfigured()) {
+    try {
+      const found = await searchContact(payload.email);
+      if (found?.id) {
+        ghlContactId = found.id;
+        console.log(
+          `[GHL Webhook] Empty id resolved via email lookup: ` +
+          `"${payload.email}" → "${ghlContactId}"`
+        );
+      } else {
+        console.warn(
+          `[GHL Webhook] Empty id, email lookup returned no match for ` +
+          `"${payload.email}" — proceeding without a contact ID.`
+        );
+      }
+    } catch (lookupErr) {
+      console.warn(
+        `[GHL Webhook] Empty id, email lookup threw for "${payload.email}" — ` +
+        `proceeding without a contact ID. Error:`,
+        lookupErr
+      );
+    }
+  } else if (!ghlContactId && !payload.email) {
+    console.warn(
+      `[GHL Webhook] Payload has no id and no email — cannot resolve contact.`
+    );
+  }
+
   const hasOpportunityFields =
     payload.opportunity_name !== undefined ||
     payload.pipeline_id      !== undefined ||
@@ -377,6 +448,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         },
       });
 
+      // Fix 4: capture raw payload — fire-and-forget, never blocks return
+      void captureWebhookLog({
+        receivedAt:   now,
+        rawPayload:   payload,
+        ghlContactId: ghlContactId || existing.ghlContactId,
+        leadId:       existing.id,
+        outcome:      "updated",
+      });
+
       return NextResponse.json({
         ok:           true,
         processed:    true,
@@ -398,10 +478,27 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const newLead = buildLeadFromGhlPayload(payload, ghlContactId, now);
     await prisma.lead.create({ data: newLead });
 
-    console.log(
-      `[GHL Webhook] Created RTM lead ${newLead.id} for GHL Contact ` +
-      `${ghlContactId} (${newLead.name} / ${newLead.businessName})`
-    );
+    if (!ghlContactId) {
+      console.warn(
+        `[GHL Webhook] Lead ${newLead.id} created with EMPTY ghlContactId. ` +
+        `Email: "${payload.email ?? "(none)"}". Stage sync will be unavailable ` +
+        `until the ID is resolved by a subsequent webhook or sync.`
+      );
+    } else {
+      console.log(
+        `[GHL Webhook] Created RTM lead ${newLead.id} for GHL Contact ` +
+        `${ghlContactId} (${newLead.name} / ${newLead.businessName})`
+      );
+    }
+
+    // Fix 4: capture raw payload — fire-and-forget, never blocks return
+    void captureWebhookLog({
+      receivedAt:   now,
+      rawPayload:   payload,
+      ghlContactId,
+      leadId:       newLead.id,
+      outcome:      "created",
+    });
 
     return NextResponse.json({
       ok:          true,
@@ -452,16 +549,44 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           },
         });
 
+        // Fix 4: capture raw payload — fire-and-forget, never blocks return
+        void captureWebhookLog({
+          receivedAt:   now,
+          rawPayload:   payload,
+          ghlContactId: ghlOppId,
+          leadId:       null,
+          outcome:      "updated",
+          outcomeDetail: "opportunity-only update",
+        });
+
         return NextResponse.json({ ok: true, processed: true, action: "opp-updated", ghlOppId });
       }
     }
 
     console.log("[GHL Webhook] Opportunity payload received but no matching RTM opportunity found.");
+    // Fix 4: capture raw payload — fire-and-forget, never blocks return
+    void captureWebhookLog({
+      receivedAt:    now,
+      rawPayload:    payload,
+      ghlContactId:  ghlContactId || "",
+      leadId:        null,
+      outcome:       "skipped",
+      outcomeDetail: "No matching RTM opportunity",
+    });
     return NextResponse.json({ ok: true, processed: false, note: "No matching RTM opportunity" });
   }
 
   // ── Nothing to act on ─────────────────────────────────────────────────────
   console.log("[GHL Webhook] Payload has no contact identifier or opportunity fields — acknowledged, no action.");
+  // Fix 4: capture raw payload — fire-and-forget, never blocks return
+  void captureWebhookLog({
+    receivedAt:    now,
+    rawPayload:    payload,
+    ghlContactId:  ghlContactId || "",
+    leadId:        null,
+    outcome:       "skipped",
+    outcomeDetail: "No actionable fields in payload",
+  });
   return NextResponse.json({
     ok:        true,
     processed: false,

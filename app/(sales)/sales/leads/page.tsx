@@ -807,11 +807,21 @@ async function persistLeadStatus(leadId: string, patch: Partial<LeadStatusRecord
 //
 // Pushes the new stage to GHL as a Contact tag after a stage change.
 // Always fire-and-forget — the RTM-side save has already happened before this
-// is called.  Failures are logged to console only; the user's action is NOT
-// blocked or rolled back.  The server route writes the error back to
-// lead_statuses.ghlSyncError so the GHL tab in the drawer can surface it.
+// is called.  The server route writes the outcome back to lead_statuses.
+// The onResult callback (if provided) fires when the request settles so the
+// caller can surface the outcome to the user without blocking the stage save.
 
-function pushStageToGhl(lead: Lead, newStage: LeadStage): void {
+// Fix 3c: three distinct outcomes that callers can distinguish
+type GhlPushOutcome =
+  | { kind: "pushed"; addedTag: string }
+  | { kind: "skipped"; reason: string }
+  | { kind: "failed"; error: string };
+
+function pushStageToGhl(
+  lead: Lead,
+  newStage: LeadStage,
+  onResult?: (outcome: GhlPushOutcome) => void
+): void {
   // Resolve the real GHL Contact ID: overlay value (from a previous sync)
   // takes priority over the static field on the seed record.
   const ghlContactId = lead.ghlContactIdReal ?? lead.ghlContactId;
@@ -828,19 +838,43 @@ function pushStageToGhl(lead: Lead, newStage: LeadStage): void {
     }),
   })
     .then(async (res) => {
+      // Fix 3c: parse the body regardless of status code
+      const body = await res.json().catch(() => ({} as Record<string, unknown>));
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+        const errMsg =
+          typeof body.error === "string"
+            ? body.error
+            : `HTTP ${res.status}`;
         console.warn(
           `[GHL Stage Sync] Non-OK response for lead ${lead.id} stage "${newStage}":`,
           body
         );
+        onResult?.({ kind: "failed", error: errMsg });
+        return;
       }
+      if (body.skipped === true) {
+        const reason =
+          typeof body.reason === "string"
+            ? body.reason
+            : "Lead not yet synced to GHL";
+        console.warn(
+          `[GHL Stage Sync] Skipped for lead ${lead.id}: ${reason}`
+        );
+        onResult?.({ kind: "skipped", reason });
+        return;
+      }
+      // ok: true, not skipped → pushed
+      const addedTag =
+        typeof body.addedTag === "string" ? body.addedTag : newStage;
+      onResult?.({ kind: "pushed", addedTag });
     })
     .catch((err) => {
+      const errMsg = err instanceof Error ? err.message : "Network error";
       console.warn(
         `[GHL Stage Sync] Network error for lead ${lead.id} stage "${newStage}":`,
         err
       );
+      onResult?.({ kind: "failed", error: errMsg });
     });
 }
 
@@ -985,10 +1019,11 @@ function AssignRepModal({ lead, onClose, onSave }: {
 }
 
 // Schedule / Complete Discovery Modal
-function ScheduleDiscoveryModal({ lead, onClose, onSave }: {
+function ScheduleDiscoveryModal({ lead, onClose, onSave, onGhlResult }: {
   lead: Lead;
   onClose: () => void;
   onSave: (patch: { discoveryScheduled: boolean; discoveryDate: string; discoveryNotes: string }) => void;
+  onGhlResult?: (outcome: GhlPushOutcome) => void;
 }) {
   const [date, setDate] = useState(lead.discoveryDate || "");
   const [notes, setNotes] = useState(lead.discoveryNotes || "");
@@ -1006,7 +1041,8 @@ function ScheduleDiscoveryModal({ lead, onClose, onSave }: {
     };
     await persistLeadStatus(lead.id, patch);
     // Fire-and-forget: push the new stage to GHL as a Contact tag.
-    pushStageToGhl(lead, newStage);
+    // onGhlResult is provided by the parent so the outcome can surface in the UI.
+    pushStageToGhl(lead, newStage, onGhlResult);
     onSave({ discoveryScheduled: true, discoveryDate: date, discoveryNotes: notes });
     setSaving(false);
   }
@@ -1044,10 +1080,11 @@ function ScheduleDiscoveryModal({ lead, onClose, onSave }: {
 }
 
 // Move Stage Modal
-function MoveStageModal({ lead, onClose, onSave }: {
+function MoveStageModal({ lead, onClose, onSave, onGhlResult }: {
   lead: Lead;
   onClose: () => void;
   onSave: (stage: LeadStage) => void;
+  onGhlResult?: (outcome: GhlPushOutcome) => void;
 }) {
   const [stage, setStage] = useState<LeadStage>(lead.stage);
   const [saving, setSaving] = useState(false);
@@ -1057,7 +1094,8 @@ function MoveStageModal({ lead, onClose, onSave }: {
     await persistLeadStatus(lead.id, { stage });
     // Fire-and-forget: push the new stage to GHL as a Contact tag.
     // The RTM-side save is already done; GHL sync failures are non-blocking.
-    pushStageToGhl(lead, stage);
+    // onGhlResult is provided by the parent so the outcome surfaces in the UI.
+    pushStageToGhl(lead, stage, onGhlResult);
     onSave(stage);
     setSaving(false);
   }
@@ -1144,10 +1182,11 @@ function AddNoteModal({ lead, onClose, onSave }: {
 }
 
 // Disqualify Modal
-function DisqualifyModal({ lead, onClose, onSave }: {
+function DisqualifyModal({ lead, onClose, onSave, onGhlResult }: {
   lead: Lead;
   onClose: () => void;
   onSave: (reason: string) => void;
+  onGhlResult?: (outcome: GhlPushOutcome) => void;
 }) {
   const [reason, setReason] = useState(lead.disqualifiedReason || "");
   const [saving, setSaving] = useState(false);
@@ -1170,7 +1209,8 @@ function DisqualifyModal({ lead, onClose, onSave }: {
       disqualifiedReason: reason || "Not specified",
     });
     // Fire-and-forget: push Disqualified stage to GHL.
-    pushStageToGhl(lead, "Disqualified");
+    // onGhlResult is provided by the parent so the outcome surfaces in the UI.
+    pushStageToGhl(lead, "Disqualified", onGhlResult);
     onSave(reason || "Not specified");
     setSaving(false);
   }
@@ -2332,6 +2372,26 @@ function SalesLeadsPageInner() {
     addToast("Lead disqualified");
   }
 
+  // Fix 3d: surface GHL push outcome via the existing toast system.
+  // Called asynchronously after pushStageToGhl settles.
+  // Updates the in-memory ghlSyncStatus so the badge in the table row and
+  // the GHL drawer tab reflect the outcome immediately (before the next
+  // full data re-fetch hydrates from the DB).
+  function handleGhlResult(leadId: string, outcome: GhlPushOutcome) {
+    if (outcome.kind === "pushed") {
+      patchLead(leadId, { ghlSyncStatusReal: "Synced", ghlSyncError: "" } as Partial<Lead>);
+      addToast("GHL sync — stage pushed successfully", "success");
+    } else if (outcome.kind === "skipped") {
+      // RTM stage is saved; GHL push was skipped because no real contact ID exists.
+      // The badge stays as-is (DB-driven); only surface a quiet info toast.
+      addToast("GHL sync skipped — lead has no GHL contact ID yet", "info");
+    } else {
+      // outcome.kind === "failed"
+      patchLead(leadId, { ghlSyncStatusReal: "Sync Failed", ghlSyncError: outcome.error } as Partial<Lead>);
+      addToast(`GHL sync failed — ${outcome.error}`, "danger");
+    }
+  }
+
   function handleFollowUpCreated() {
     setActiveModal(null);
     addToast("Follow-up task created — visible on Sales Tasks");
@@ -2466,16 +2526,31 @@ function SalesLeadsPageInner() {
         <AssignRepModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleAssignRep} />
       )}
       {activeModal?.type === "scheduleDiscovery" && (
-        <ScheduleDiscoveryModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleScheduleDiscovery} />
+        <ScheduleDiscoveryModal
+          lead={activeModal.lead}
+          onClose={() => setActiveModal(null)}
+          onSave={handleScheduleDiscovery}
+          onGhlResult={(outcome) => handleGhlResult(activeModal.lead.id, outcome)}
+        />
       )}
       {activeModal?.type === "moveStage" && (
-        <MoveStageModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleMoveStage} />
+        <MoveStageModal
+          lead={activeModal.lead}
+          onClose={() => setActiveModal(null)}
+          onSave={handleMoveStage}
+          onGhlResult={(outcome) => handleGhlResult(activeModal.lead.id, outcome)}
+        />
       )}
       {activeModal?.type === "addNote" && (
         <AddNoteModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleAddNote} />
       )}
       {activeModal?.type === "disqualify" && (
-        <DisqualifyModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleDisqualify} />
+        <DisqualifyModal
+          lead={activeModal.lead}
+          onClose={() => setActiveModal(null)}
+          onSave={handleDisqualify}
+          onGhlResult={(outcome) => handleGhlResult(activeModal.lead.id, outcome)}
+        />
       )}
       {activeModal?.type === "createFollowUp" && (
         <CreateFollowUpModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleFollowUpCreated} />

@@ -32,6 +32,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   addContactTags,
   removeContactTags,
+  searchContact,
   ghlCredentialsConfigured,
   GhlConfigError,
   GhlApiError,
@@ -90,19 +91,137 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Guard: skip if no real GHL Contact ID
-  const ghlContactId = input.ghlContactId ?? "";
-  const hasRealContactId =
-    ghlContactId &&
-    ghlContactId !== "—" &&
-    !ghlContactId.startsWith("GHL-CON-");
+  // Resolve the real GHL Contact ID.
+  //
+  // The caller (pushStageToGhl on the Leads page) sends the ID it knows about:
+  //   lead.ghlContactIdReal ?? lead.ghlContactId
+  //
+  // For webhook-created leads (ghlOrigin=true), the real GHL Contact ID is
+  // stored in Lead.ghlContactId on the Lead table (written by the webhook
+  // handler at creation time).  However, the front-end Lead object only
+  // receives this field as ghlContactId (the static seed/webhook value) or
+  // ghlContactIdReal (the LeadStatus overlay written by /api/ghl/sync-lead).
+  //
+  // When neither the client-supplied ID nor the LeadStatus overlay is a real
+  // ID, fall back to reading Lead.ghlContactId directly from the DB.  This
+  // covers the webhook-created-lead case where the ID never propagated to the
+  // client's runtime state (e.g. the lead was created before the page was last
+  // loaded, or the LeadStatus overlay was never written).
+
+  let ghlContactId = input.ghlContactId ?? "";
+  const isRealId = (id: string) =>
+    id && id !== "—" && !id.startsWith("GHL-CON-");
+
+  if (!isRealId(ghlContactId)) {
+    // Client didn't supply a real ID — attempt DB fallback.
+    // Check LeadStatus.ghlContactId first (written by /api/ghl/sync-lead),
+    // then Lead.ghlContactId (written by the webhook handler at create time).
+    try {
+      const statusRow = await prisma.leadStatus.findUnique({
+        where: { leadId: input.leadId },
+        select: { ghlContactId: true },
+      });
+      if (statusRow?.ghlContactId && isRealId(statusRow.ghlContactId)) {
+        ghlContactId = statusRow.ghlContactId;
+      } else {
+        const leadRow = await prisma.lead.findUnique({
+          where: { id: input.leadId },
+          select: { ghlContactId: true },
+        });
+        if (leadRow?.ghlContactId && isRealId(leadRow.ghlContactId)) {
+          ghlContactId = leadRow.ghlContactId;
+        }
+      }
+    } catch (dbLookupErr) {
+      console.warn(
+        `[GHL Stage Sync] DB fallback lookup failed for lead ${input.leadId}:`,
+        dbLookupErr
+      );
+    }
+  }
+
+  // Tier 4: email lookup via GHL API (reuses the single searchContact path)
+  // Only attempted when all three DB tiers returned empty/placeholder IDs.
+  if (!isRealId(ghlContactId)) {
+    try {
+      const leadRow = await prisma.lead.findUnique({
+        where: { id: input.leadId },
+        select: { email: true },
+      });
+      const email = leadRow?.email?.trim();
+      if (email) {
+        const found = await searchContact(email);
+        if (found?.id && isRealId(found.id)) {
+          ghlContactId = found.id;
+          console.log(
+            `[GHL Stage Sync] Tier-4 email lookup resolved lead ${input.leadId} ` +
+            `to GHL Contact ID "${ghlContactId}" (email: "${email}") — writing back.`
+          );
+          // Write resolved ID back to both tables so the next call short-circuits.
+          // NEVER clobber user-edited RTM fields — only set GHL metadata.
+          try {
+            await prisma.lead.update({
+              where: { id: input.leadId },
+              data: { ghlContactId },
+            });
+            await prisma.leadStatus.upsert({
+              where: { leadId: input.leadId },
+              update: { ghlContactId },
+              create: { leadId: input.leadId, ghlContactId, updatedAt: new Date().toISOString() },
+            });
+          } catch (writeBackErr) {
+            // Write-back failure is non-fatal; we already have the ID in memory.
+            console.warn(
+              `[GHL Stage Sync] Tier-4 write-back failed for lead ${input.leadId}:`,
+              writeBackErr
+            );
+          }
+        } else {
+          console.warn(
+            `[GHL Stage Sync] Tier-4 email lookup returned no match for ` +
+            `lead ${input.leadId} (email: "${email}").`
+          );
+        }
+      }
+    } catch (tier4Err) {
+      console.warn(
+        `[GHL Stage Sync] Tier-4 email lookup threw for lead ${input.leadId}:`,
+        tier4Err
+      );
+    }
+  }
+
+  const hasRealContactId = isRealId(ghlContactId);
 
   if (!hasRealContactId) {
     // Not yet synced to GHL — nothing to push; not an error.
+    // Fix 3a: write sync status so the skip is visible in the UI.
+    const skipReason = "No real GHL Contact ID — lead has not been synced to GHL yet.";
+    try {
+      await prisma.leadStatus.upsert({
+        where: { leadId: input.leadId },
+        update: {
+          ghlSyncStatus: "Not Synced",
+          ghlSyncError: skipReason,
+          updatedAt: new Date().toISOString(),
+        },
+        create: {
+          leadId: input.leadId,
+          ghlSyncStatus: "Not Synced",
+          ghlSyncError: skipReason,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (skipWriteErr) {
+      console.warn(
+        `[GHL Stage Sync] Failed to write skip status for lead ${input.leadId}:`,
+        skipWriteErr
+      );
+    }
     return NextResponse.json({
       ok: true,
       skipped: true,
-      reason: "No real GHL Contact ID — lead has not been synced to GHL yet.",
+      reason: skipReason,
     });
   }
 
