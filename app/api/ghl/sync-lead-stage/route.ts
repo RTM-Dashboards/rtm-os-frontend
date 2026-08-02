@@ -7,9 +7,11 @@
 //
 // What this does:
 //   1. Validates the lead has a real (non-mock) GHL Contact ID.
-//   2. Removes any existing rtm-stage-* tags from the GHL Contact.
-//   3. Adds the new rtm-stage-<stage> tag.
-//   4. Records `ghlLastStagePushedAt` on the LeadStatus row (loop prevention).
+//   2. Reads the Contact's CURRENT tags from GHL (source of truth).
+//   3. Removes all rtm-stage-* tags from that live set except the one being set.
+//   4. Adds the new rtm-stage-<stage> tag if not already present.
+//   5. Writes the resulting tag list back to Lead.ghlContactTags (mirror re-sync).
+//   6. Records `ghlLastStagePushedAt` on the LeadStatus row (loop prevention).
 //
 // The RTM-side stage change always succeeds first; this sync is fire-and-log.
 // If the GHL API call fails, the RTM stage is already saved and we log the
@@ -20,7 +22,7 @@
 //     leadId:       string   — RTM lead ID
 //     ghlContactId: string   — real GHL Contact ID (not a mock "GHL-CON-*")
 //     stage:        string   — new RTM stage value
-//     previousTags?: string[] — current GHL contact tags (to identify old rtm-stage-*)
+//     previousTags?: string[] — unused by this route; kept for client compat
 //   }
 //
 // Response:
@@ -32,6 +34,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   addContactTags,
   removeContactTags,
+  getContact,
   searchContact,
   ghlCredentialsConfigured,
   GhlConfigError,
@@ -226,22 +229,96 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const newTag = stageToTag(input.stage);
-  const tagsToRemove = existingRtmStageTags(input.previousTags ?? []).filter(
-    (t) => t !== newTag
-  );
-
   const now = new Date().toISOString();
 
+  // ── Step 1: Read current tags from GHL (source of truth) ─────────────────
+  //
+  // RTM's local mirror (lead.ghlContactTags) is unreliable — it goes stale
+  // when a webhook omits the tags field, when tags are edited directly in the
+  // GHL UI, or when any sync is missed.  The confirmed production bug was:
+  // mirror = [] (wiped by a tagless webhook), so tagsToRemove was [] and
+  // removeContactTags was never called while addContactTags still ran,
+  // causing tags to accumulate across stage moves.
+  //
+  // Fix: read live tags from GHL before every stage push.  This costs one
+  // extra GET per stage move and in exchange is immune to a stale mirror.
+  // It also self-heals accumulated tags — any duplicate rtm-stage-* tags
+  // already on the contact are removed on the next stage change.
+  //
+  // Fail-soft: if the GET fails we do NOT fall back to mirror-based removal
+  // (that is the bug we are fixing).  Instead we write ghlSyncError and
+  // return a skipped/failed shape so the UI surfaces it.  The RTM-side stage
+  // change has already been saved by the caller before this route is invoked,
+  // so a failed tag sync never reverts or blocks the user's action.
+
+  let currentGhlTags: string[];
   try {
-    // Step 1: Remove old rtm-stage-* tags (if any)
+    const contact = await getContact(ghlContactId);
+    currentGhlTags = Array.isArray(contact.tags) ? contact.tags : [];
+  } catch (readErr) {
+    const readErrMsg =
+      readErr instanceof Error ? readErr.message : "Unknown error reading GHL contact";
+    const detail = `GHL contact read failed before tag reconciliation: ${readErrMsg}`;
+    console.error(
+      `[GHL Stage Sync] Lead ${input.leadId}: ${detail}`
+    );
+    // Write the error so the UI surfaces it; do NOT revert the RTM stage.
+    try {
+      await prisma.leadStatus.upsert({
+        where: { leadId: input.leadId },
+        update:  { ghlSyncStatus: "Sync Failed", ghlSyncError: detail, updatedAt: now },
+        create:  { leadId: input.leadId, ghlContactId, ghlSyncStatus: "Sync Failed", ghlSyncError: detail, updatedAt: now },
+      });
+    } catch (dbErr) {
+      console.error("[GHL Stage Sync] Failed to write read-error state to DB:", dbErr);
+    }
+    return NextResponse.json(
+      { ok: false, error: detail, errorCode: "GHL_READ_FAILED" },
+      { status: 502 }
+    );
+  }
+
+  // ── Step 2: Reconcile rtm-stage-* tags ───────────────────────────────────
+  //
+  // From the live GHL tag list:
+  //   - Remove every rtm-stage-* tag that is NOT the tag we are setting.
+  //   - Add the new tag only if it is not already present.
+  //
+  // This is additive-safe: non-rtm-stage-* tags (e.g. "Landscaping",
+  // "Google Ads") are completely untouched.
+
+  const tagsToRemove = existingRtmStageTags(currentGhlTags).filter(
+    (t) => t !== newTag
+  );
+  const alreadyHasNewTag = currentGhlTags.includes(newTag);
+
+  try {
+    // Step 3: Remove stale rtm-stage-* tags (if any)
     if (tagsToRemove.length > 0) {
       await removeContactTags(ghlContactId, tagsToRemove);
     }
 
-    // Step 2: Add the new rtm-stage-* tag
-    await addContactTags(ghlContactId, [newTag]);
+    // Step 4: Add the new rtm-stage-* tag (skip if already present)
+    if (!alreadyHasNewTag) {
+      await addContactTags(ghlContactId, [newTag]);
+    }
 
-    // Step 3: Record the push timestamp for loop prevention
+    // Step 5: Rebuild the expected post-reconciliation tag list and write it
+    // back to Lead.ghlContactTags so the RTM mirror re-syncs.  Without this
+    // the mirror keeps drifting and the next stage push would face the same
+    // stale-mirror problem.
+    const reconciledTags = [
+      ...currentGhlTags.filter(
+        (t) => !tagsToRemove.includes(t)
+      ),
+      ...(alreadyHasNewTag ? [] : [newTag]),
+    ];
+    await prisma.lead.update({
+      where: { id: input.leadId },
+      data:  { ghlContactTags: reconciledTags, updatedAt: now },
+    });
+
+    // Step 6: Record the push timestamp for loop prevention
     await prisma.leadStatus.upsert({
       where: { leadId: input.leadId },
       update: {
@@ -262,7 +339,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     console.log(
       `[GHL Stage Sync] Lead ${input.leadId} → stage "${input.stage}" → tag "${newTag}" ` +
-        `(removed: ${tagsToRemove.join(", ") || "none"})`
+        `(removed: ${tagsToRemove.join(", ") || "none"}, ` +
+        `alreadyPresent: ${alreadyHasNewTag}, mirrorUpdated: true)`
     );
 
     return NextResponse.json({

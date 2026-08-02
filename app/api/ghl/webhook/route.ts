@@ -344,35 +344,101 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         `ghlContactId: ${ghlContactId || "n/a"}) — updating GHL metadata only.`
       );
 
+      // ── Sparse update: ABSENT ≠ EMPTY ──────────────────────────────────────
+      //
+      // GHL webhook triggers send different field sets depending on which
+      // workflow action fired.  A trigger that omits a field entirely must
+      // NEVER overwrite the existing RTM value — absence is not an instruction
+      // to clear.
+      //
+      // Rule applied per-field:
+      //   • Key absent from payload  → field is NOT included in the update
+      //                                object, so Prisma never touches the column.
+      //   • Key present with a value → write it.
+      //   • Key present but empty    → conservative default: do NOT overwrite a
+      //                                non-empty RTM value.  GHL does genuinely
+      //                                send empty strings when a user clears a
+      //                                field, but GHL also sends empty values
+      //                                spuriously (confirmed: id arriving as ""
+      //                                for contacts that have one).  Until we
+      //                                have a reliable signal that an empty value
+      //                                is intentional, we protect existing data.
+      //
+      //   Exception — ghlContactId: always falls back to existing when the
+      //   resolved id is empty; we never blank the stored contact linkage.
+      //
+      // Implementation strategy (F5): build an updateData object that only
+      // includes keys whose source field was present in the payload.  Fewer
+      // keys sent to Prisma = fewer ways to accidentally clobber.
+
+      // Always-written GHL housekeeping fields (these are RTM-internal, never
+      // GHL-sourced, so writing them unconditionally is correct):
+      const updateData: Prisma.LeadUpdateInput = {
+        ghlContactId:        ghlContactId || existing.ghlContactId,
+        ghlLastActivityDate: now.split("T")[0],
+        ghlSyncStatus:       "Synced",
+        ghlLastSyncedAt:     now,
+        ghlSyncError:        "",
+        updatedAt:           now,
+      };
+
+      // email — absent: skip; present+empty: skip (spurious-empty protection);
+      // present+non-empty: write.
+      if (payload.email) {
+        updateData.email = payload.email;
+      }
+
+      // phone — same policy as email.
+      if (payload.phone) {
+        updateData.phone = payload.phone;
+      }
+
+      // company_name → businessName — absent or empty: skip.
+      if (payload.company_name?.trim()) {
+        updateData.businessName = payload.company_name.trim();
+      }
+
+      // website — absent or empty: skip.
+      if (payload.website) {
+        updateData.website = payload.website;
+      }
+
+      // location — derived from Contact-level address fields.  Only write when
+      // at least one address field is present in the payload (signals GHL
+      // intentionally included address data).  deriveLocation may still return
+      // "" if those fields are present but blank — that is acceptable (user
+      // cleared address fields).  What we must NOT do is call deriveLocation on
+      // a payload that has NO address keys and overwrite a real location with "".
+      const hasAddressFields =
+        payload.full_address !== undefined ||
+        payload.city         !== undefined ||
+        payload.state        !== undefined ||
+        payload.address1     !== undefined ||
+        payload.postal_code  !== undefined;
+      if (hasAddressFields) {
+        updateData.location = deriveLocation(payload);
+      }
+
+      // contact_source → ghlSource — absent or empty: skip.
+      if (payload.contact_source) {
+        updateData.ghlSource = payload.contact_source;
+      }
+
+      // tags → ghlContactTags
+      // absent: skip entirely — do NOT touch existing tags.
+      // present+empty array ([]): skip — an empty tags array from GHL is
+      //   indistinguishable from "trigger didn't include tags" vs "user removed
+      //   all tags".  Conservative: preserve existing until we have positive
+      //   evidence of an intentional clear.
+      // present+non-empty: write the full tag list from GHL.
+      if (Array.isArray(payload.tags) && payload.tags.length > 0) {
+        updateData.ghlContactTags = payload.tags;
+      }
+      // ghlContactStatus: keep existing — webhook doesn't send this
+
       await prisma.lead.update({
         where: { id: existing.id },
-        data: {
-          email:               payload.email      ?? existing.email,
-          phone:               payload.phone      ?? existing.phone,
-          businessName:        payload.company_name
-            ? payload.company_name.trim() || existing.businessName
-            : existing.businessName,
-          website:             payload.website    ?? existing.website,
-          // deriveLocation returns "" when Contact has no address (intentional —
-          // we must not keep a stale wrong address if GHL sends a blank contact).
-          // Only preserve existing if the Contact still has no address at all
-          // AND the existing value looks like a genuine contact address (i.e. was
-          // never the agency placeholder).  In practice: take whatever deriveLocation
-          // produces; if it is empty, prefer empty over a potentially-wrong value.
-          location:            deriveLocation(payload),
-          ghlContactId:        ghlContactId       || existing.ghlContactId,
-          ghlSource:           payload.contact_source ?? existing.ghlSource,
-          ghlLastActivityDate: now.split("T")[0],
-          ghlContactTags:
-            Array.isArray(payload.tags) && payload.tags.length > 0
-              ? payload.tags
-              : existing.ghlContactTags,
-          // ghlContactStatus: keep existing — webhook doesn't send this
-          ghlSyncStatus:       "Synced",
-          ghlLastSyncedAt:     now,
-          ghlSyncError:        "",
-          updatedAt:           now,
-        },
+        data: updateData,
       });
 
       // Sync GHL overlay into lead_statuses table
