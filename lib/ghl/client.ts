@@ -189,17 +189,20 @@ export interface GhlUpdateOpportunityInput {
 // ── Contact Operations ────────────────────────────────────────────────────────
 
 /**
- * Search for a GHL Contact by email or name within the configured location.
- * Returns the first match, or null if no match found.
+ * Search for a GHL Contact by exact email within the configured location.
+ * Uses GET /contacts/search/duplicate — purpose-built for exact email/phone lookup.
+ * Returns the matching contact, or null if no contact matches.
+ * A no-match is NOT an error; only genuine API failures (network, auth, 5xx) throw.
  */
 export async function searchContact(query: string): Promise<GhlContact | null> {
   const { locationId } = getCredentials();
 
-  const result = await ghlFetch<{ contacts: GhlContact[] }>("/contacts/search", {
-    params: { q: query, locationId },
-  });
+  const result = await ghlFetch<{ contact: GhlContact | null }>(
+    "/contacts/search/duplicate",
+    { params: { locationId, email: query } }
+  );
 
-  return result.contacts?.[0] ?? null;
+  return result.contact ?? null;
 }
 
 /**
@@ -251,8 +254,13 @@ export async function upsertContact(
         const updated = await updateContact(found.id, input);
         return { contact: updated, created: false };
       }
-    } catch {
-      // If search fails, fall through to create
+    } catch (searchErr) {
+      // If search fails, fall through to create — but log so it is never invisible.
+      console.warn(
+        `[GHL upsertContact] searchContact threw for email "${input.email}" — ` +
+        `falling through to create. Error:`,
+        searchErr
+      );
     }
   }
 
