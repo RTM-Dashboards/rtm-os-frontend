@@ -67,21 +67,46 @@ async function upsertOppGhlStatus(
 }
 
 // ── RTM Stage → GHL Stage name mapping ───────────────────────────────────────
-
+//
+// This map exists as an explicit translation layer even though the current
+// GHL test pipeline ("RTM OS TEST (do not use)") uses the same stage names as
+// RTM. Reasons to keep it explicit rather than falling through directly:
+//
+//   1. A future production pipeline may use different stage names (e.g. the
+//      existing "Sales Management" pipeline uses "Closed Won" / "Closed Lost"
+//      but also has different intermediate names). Keeping the map means a
+//      pipeline swap requires only updating this map, not the route logic.
+//
+//   2. It makes every expected RTM stage an explicit, auditable contract.
+//      If a new RTM stage is added but not mapped, it fails loudly (see the
+//      strict lookup below) rather than silently going to the wrong column.
+//
+// Rules:
+//   - Every key is an RTM stage name exactly as stored in the DB.
+//   - Every value is the corresponding GHL stage name in the configured
+//     pipeline (GHL_OPPORTUNITY_PIPELINE_ID).
+//   - "New Opportunity" maps to "New Opportunity" (position 0 in the test
+//     pipeline). Once B4 changes new-opp creation to "Lead", the only source
+//     of "New Opportunity" is existing DB records from before that change.
+//   - "Closed Won" and "Closed Lost" are real GHL stage names in this
+//     pipeline. The GHL opportunity STATUS (open/won/lost) is set separately
+//     via the ghlStatus calculation below — the two are complementary.
+//
 const RTM_TO_GHL_STAGE: Record<string, string> = {
-  "Lead":             "New Lead",
-  "Discovery":        "Appointment Booked",
+  "New Opportunity":  "New Opportunity",
+  "Lead":             "Lead",
+  "Discovery":        "Discovery",
   "Qualified":        "Qualified",
   "Audit Requested":  "Audit Requested",
-  "Audit In Progress":"Audit Requested",
-  "Proposal Draft":   "Proposal Sent",
+  "Audit In Progress":"Audit In Progress",
+  "Proposal Draft":   "Proposal Draft",
   "Proposal Sent":    "Proposal Sent",
   "Negotiation":      "Negotiation",
-  "Verbal Approval":  "Won",
-  "Proposal Approved":"Won",
-  "Sales Handoff":    "Won",
-  "Closed Won":       "Won",
-  "Closed Lost":      "Lost",
+  "Verbal Approval":  "Verbal Approval",
+  "Proposal Approved":"Proposal Approved",
+  "Sales Handoff":    "Sales Handoff",
+  "Closed Won":       "Closed Won",
+  "Closed Lost":      "Closed Lost",
 };
 
 // ── Input type ────────────────────────────────────────────────────────────────
@@ -138,34 +163,70 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const locationId = process.env.GHL_LOCATION_ID!;
 
   try {
-    let pipelineId = input.ghlPipelineId;
+    // ── Pipeline resolution ──────────────────────────────────────────────────────────
+    // Priority: (1) ghlPipelineId from request body, (2) GHL_OPPORTUNITY_PIPELINE_ID env,
+    // (3) loud failure — no silent fallback to whichever pipeline happens to be first.
+    let pipelineId: string =
+      input.ghlPipelineId ||
+      process.env.GHL_OPPORTUNITY_PIPELINE_ID ||
+      "";
+
+    if (!pipelineId) {
+      throw new Error(
+        "Pipeline not configured: supply ghlPipelineId in the request body or set " +
+        "GHL_OPPORTUNITY_PIPELINE_ID in environment variables."
+      );
+    }
+
     let resolvedPipelineName = "";
     let resolvedStageId = input.ghlStageId;
 
-    if (!pipelineId || !resolvedStageId) {
+    if (!resolvedStageId) {
+      // We need stage details — fetch the pipeline list and locate the configured pipeline.
       const pipelines = await listPipelines();
-      if (pipelines.length === 0) {
-        throw new Error("No GHL pipelines found in this location. Create a pipeline in GHL first.");
+
+      const pipeline = pipelines.find((p) => p.id === pipelineId);
+      if (!pipeline) {
+        throw new Error(
+          `Pipeline id "${pipelineId}" was not found in the GHL location. ` +
+          `Check GHL_OPPORTUNITY_PIPELINE_ID (or the ghlPipelineId in the request body). ` +
+          `Available pipeline ids: ${pipelines.map((p) => `${p.id} (${p.name})`).join(", ") || "none"}.`
+        );
       }
 
-      const pipeline = pipelineId
-        ? pipelines.find((p) => p.id === pipelineId) ?? pipelines[0]
-        : pipelines[0];
-
-      pipelineId          = pipeline.id;
+      pipelineId           = pipeline.id;
       resolvedPipelineName = pipeline.name;
 
-      if (!resolvedStageId && input.stage) {
-        const targetGhlStageName = RTM_TO_GHL_STAGE[input.stage] ?? input.stage;
+      if (input.stage) {
+        // Look up the RTM stage in the explicit translation map.
+        // The map is an auditable contract: every known RTM stage is listed.
+        // An unmapped stage is a CONFIGURATION ERROR — fail loudly rather than
+        // silently landing the opportunity in the wrong column.
+        if (!(input.stage in RTM_TO_GHL_STAGE)) {
+          throw new Error(
+            `RTM stage "${input.stage}" is not in RTM_TO_GHL_STAGE. ` +
+            `Add a mapping entry in app/api/ghl/sync-opportunity/route.ts before syncing.`
+          );
+        }
+
+        const targetGhlStageName = RTM_TO_GHL_STAGE[input.stage];
         const matchedStage = pipeline.stages.find(
           (s) => s.name.toLowerCase() === targetGhlStageName.toLowerCase()
         );
-        resolvedStageId = matchedStage?.id ?? pipeline.stages[0]?.id;
-      }
 
-      if (!resolvedStageId && pipeline.stages.length > 0) {
-        resolvedStageId = pipeline.stages[0].id;
+        if (!matchedStage) {
+          throw new Error(
+            `RTM stage "${input.stage}" maps to GHL stage name "${targetGhlStageName}" ` +
+            `but that stage does not exist in pipeline "${pipeline.name}" (${pipeline.id}). ` +
+            `Existing stages: ${pipeline.stages.map((s) => `"${s.name}"`).join(", ") || "none"}.`
+          );
+        }
+
+        resolvedStageId = matchedStage.id;
       }
+      // If no stage was supplied, resolvedStageId stays undefined — GHL will
+      // place the opportunity in the pipeline default. That is acceptable for
+      // the GhlSyncIssuesPanel caller which does not know the current stage.
     }
 
     const oppName      = input.businessName;
@@ -219,9 +280,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       created  = true;
     }
 
+    // The map values are now real GHL stage names, so RTM_TO_GHL_STAGE[input.stage]
+    // is the correct display name. Fall back to input.stage itself if somehow absent.
     const ghlStageName: string =
       opportunity.pipelineStageName ??
-      (input.stage ? RTM_TO_GHL_STAGE[input.stage] ?? input.stage : "Unknown");
+      (input.stage ? (RTM_TO_GHL_STAGE[input.stage] ?? input.stage) : "Unknown");
 
     const now = new Date().toISOString();
 
