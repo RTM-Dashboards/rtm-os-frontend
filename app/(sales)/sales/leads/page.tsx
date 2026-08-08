@@ -1895,8 +1895,13 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
                 Create Opportunity →
               </button>
             ) : (
+              // Gate: lead.stage === "Qualified" is the correct guard.
+              // opportunityReadiness tracks interim progress but a lead can reach
+              // "Ready For Opportunity" before the stage is formally moved to Qualified;
+              // using the stage as the gate prevents premature opportunity creation.
               <button className="rtm-btn-primary text-xs px-3 py-1.5" disabled={!isQualified}
                 style={{ opacity: isQualified ? 1 : 0.4 }}
+                title={isQualified ? undefined : "Available once the lead is Qualified"}
                 onClick={isQualified ? () => onCreateOpportunity(lead) : undefined}>
                 Create Opportunity
               </button>
@@ -2893,10 +2898,18 @@ function SalesLeadsPageInner() {
                               {action.label}
                             </button>
                           ))}
+                          {/* Gate: disabled unless lead.stage === "Qualified" — same boundary as the drawer footer. */}
                           <button
                             className="block w-full text-left px-3 py-2 text-xs font-bold"
-                            style={{ color: "#059669", background: opportunityCreatedLeadIds.has(lead.id) ? "#F0FDF4" : "#ECFDF5" }}
-                            onClick={e => { e.stopPropagation(); handleCreateOpportunityFromLead(lead); }}>
+                            style={{
+                              color: lead.stage === "Qualified" ? "#059669" : "var(--rtm-text-muted)",
+                              background: opportunityCreatedLeadIds.has(lead.id) ? "#F0FDF4" : lead.stage === "Qualified" ? "#ECFDF5" : "transparent",
+                              opacity: lead.stage === "Qualified" ? 1 : 0.4,
+                              cursor: lead.stage === "Qualified" ? "pointer" : "default",
+                            }}
+                            disabled={lead.stage !== "Qualified"}
+                            title={lead.stage !== "Qualified" ? "Available once the lead is Qualified" : undefined}
+                            onClick={e => { e.stopPropagation(); if (lead.stage === "Qualified") handleCreateOpportunityFromLead(lead); }}>
                             {opportunityCreatedLeadIds.has(lead.id) ? "Create Another Opportunity" : "Create Opportunity"}
                           </button>
                           <Link href={`/sales/intake?leadId=${lead.id}`}

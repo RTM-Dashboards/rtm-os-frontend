@@ -45,7 +45,7 @@ export function createOpportunityFromLead(leadData: {
     contactEmail: leadData.contactEmail,
     leadSource: leadData.leadSource,
     assignedRep: leadData.assignedRep,
-    stage: "Lead", // first real stage in the RTM pipeline (previously "New Opportunity", which is not in the stage menu)
+    stage: "Sales Intake", // Pipeline module starts here; Lead module owned the preceding stages (Lead → Qualified)
     priority: "Medium",
     estimatedMonthlyValue: 0,
     expectedCloseDate: "",
@@ -80,7 +80,7 @@ export function createOpportunityManual(
     contactEmail: data.contactEmail ?? "",
     leadSource: data.leadSource ?? "",
     assignedRep: data.assignedRep ?? "",
-    stage: "Lead", // first real stage in the RTM pipeline (previously "New Opportunity", which is not in the stage menu)
+    stage: "Sales Intake", // Pipeline module starts here; Lead module owned the preceding stages (Lead → Qualified)
     priority: data.priority ?? "Medium",
     estimatedMonthlyValue: data.estimatedMonthlyValue ?? 0,
     expectedCloseDate: data.expectedCloseDate ?? "",

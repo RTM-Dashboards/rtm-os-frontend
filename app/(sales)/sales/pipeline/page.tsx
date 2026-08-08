@@ -3665,7 +3665,7 @@ const _REMOVED_MOCK_OPPORTUNITY_RECORDS_PLACEHOLDER = [
     contactEmail: "priya@blueridgeplumbing.com",
     leadSource: "Website",
     assignedRep: "Sarah K.",
-    stage: "New Opportunity",
+    stage: "Sales Intake",
     priority: "Medium",
     estimatedMonthlyValue: 1800,
     expectedCloseDate: "2025-02-28",

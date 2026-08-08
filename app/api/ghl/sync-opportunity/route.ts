@@ -85,18 +85,16 @@ async function upsertOppGhlStatus(
 //   - Every key is an RTM stage name exactly as stored in the DB.
 //   - Every value is the corresponding GHL stage name in the configured
 //     pipeline (GHL_OPPORTUNITY_PIPELINE_ID).
-//   - "New Opportunity" maps to "New Opportunity" (position 0 in the test
-//     pipeline). Once B4 changes new-opp creation to "Lead", the only source
-//     of "New Opportunity" is existing DB records from before that change.
+//   - "Lead", "Discovery", "Qualified", and "New Opportunity" are NOT mapped
+//     here — they were removed from the Pipeline module. The Lead module owns
+//     those stages. An Opportunity is created only after a lead is Qualified,
+//     so the Pipeline starts at "Sales Intake".
 //   - "Closed Won" and "Closed Lost" are real GHL stage names in this
 //     pipeline. The GHL opportunity STATUS (open/won/lost) is set separately
 //     via the ghlStatus calculation below — the two are complementary.
 //
 const RTM_TO_GHL_STAGE: Record<string, string> = {
-  "New Opportunity":  "New Opportunity",
-  "Lead":             "Lead",
-  "Discovery":        "Discovery",
-  "Qualified":        "Qualified",
+  "Sales Intake":     "Sales Intake",
   "Audit Requested":  "Audit Requested",
   "Audit In Progress":"Audit In Progress",
   "Proposal Draft":   "Proposal Draft",
