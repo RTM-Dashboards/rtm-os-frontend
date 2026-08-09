@@ -69,7 +69,6 @@ interface LeadRecord {
   leadSource: string;
   assignedRep: string;
   stage: string;
-  opportunityReadiness: string;
   discoveryScheduled: boolean;
   discoveryDate: string;
   discoveryNotes: string;
@@ -177,7 +176,6 @@ async function main() {
           leadSource: lead.leadSource ?? "",
           assignedRep: lead.assignedRep ?? "",
           stage: lead.stage ?? "New Lead",
-          opportunityReadiness: lead.opportunityReadiness ?? "Not Ready",
           discoveryScheduled: lead.discoveryScheduled ?? false,
           discoveryDate: lead.discoveryDate ?? "",
           discoveryNotes: lead.discoveryNotes ?? "",

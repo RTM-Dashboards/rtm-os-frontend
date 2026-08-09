@@ -60,7 +60,6 @@ model Lead {
   leadSource            String   @default("")
   assignedRep           String   @default("")
   stage                 String   @default("New Lead")
-  opportunityReadiness  String   @default("Not Ready")
   discoveryScheduled    Boolean  @default(false)
   discoveryDate         String   @default("")
   discoveryNotes        String   @default("")

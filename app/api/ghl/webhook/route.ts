@@ -176,7 +176,6 @@ function buildLeadFromGhlPayload(
     leadSource,
     assignedRep:          "",
     stage:                "New Lead",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled:   false,
     discoveryDate:        "",
     discoveryNotes:       "",
@@ -337,7 +336,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       //   stage, assignedRep, notes, discoveryScheduled, discoveryDate,
       //   discoveryNotes, businessGoals, painPoints, requestedServices,
       //   budget, authority, need, timeline, estimatedValue, affiliateName,
-      //   opportunityReadiness, industry
+      //   industry
 
       console.log(
         `[GHL Webhook] Existing lead matched (RTM id: ${existing.id}, ` +

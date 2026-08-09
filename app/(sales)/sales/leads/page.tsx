@@ -23,8 +23,10 @@ type LeadStage =
 
 type GHLSyncStatus = "Synced"| "Pending Sync"| "Sync Failed"| "Manual Override"| "Not Connected";
 
-type OpportunityReadiness =
-  | "Not Ready"| "Discovery Complete"| "Budget Discussed"| "Decision Maker Identified"| "Business Need Identified"| "Qualified"| "Ready For Opportunity";
+// Derived opportunity state — computed from lead.stage + opportunities table.
+// Nothing stored. PENDING = not Qualified. READY = Qualified + no opportunity.
+// CREATED = an opportunity row exists for this lead.
+type OppState = "Pending" | "Ready" | "Created";
 
 type LeadSource =
   | "Website"| "Google Ads"| "Meta Ads"| "GBP"| "LSA"| "Referral"| "Affiliate"| "Partner"| "Direct"| "Outbound";
@@ -49,7 +51,6 @@ interface Lead {
   leadSource: LeadSource;
   assignedRep: string;
   stage: LeadStage;
-  opportunityReadiness: OpportunityReadiness;
   discoveryScheduled: boolean;
   discoveryDate: string;
   discoveryNotes: string;
@@ -113,7 +114,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-01", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Landscaping", "Affiliate", "Austin"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Affiliate", assignedRep: "Jordan M.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-10",
     discoveryNotes: "Owner is motivated, has budget, wants full SEO + GBP package.",
     businessGoals: ["Increase local leads by 40%", "Dominate Google Maps in Austin"],
@@ -132,7 +132,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-05", ghlLastActivityDate: "2024-12-16", ghlContactTags: ["Plumbing", "Denver"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Website", assignedRep: "Sarah K.", stage: "Discovery Scheduled",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: true, discoveryDate: "2024-12-20",
     discoveryNotes: "",
     businessGoals: ["More emergency calls", "Rank #1 for Denver plumber"],
@@ -151,7 +150,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-15", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Automotive", "High Value", "San Diego"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Outbound", assignedRep: "Mike T.", stage: "Discovery Complete",
-    opportunityReadiness: "Business Need Identified",
     discoveryScheduled: true, discoveryDate: "2024-11-28",
     discoveryNotes: "Large dealership group. Wants PPC, Meta, and full reporting stack.",
     businessGoals: ["Drive 200+ leads/mo from digital", "Beat Toyota dealership on Google"],
@@ -170,7 +168,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-08", ghlLastActivityDate: "2024-12-14", ghlContactTags: ["Pest Control", "Partner", "Seattle"],
     ghlContactStatus: "Active", ghlSyncStatus: "Pending Sync",
     leadSource: "Partner", assignedRep: "Alex R.", stage: "Discovery Scheduled",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: true, discoveryDate: "2024-12-22",
     discoveryNotes: "",
     businessGoals: ["Grow commercial flooring contracts", "Rank for flooring install near Seattle"],
@@ -189,7 +186,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-28", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Dental", "Affiliate", "Chicago", "Multi-Location"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Affiliate", assignedRep: "Jordan M.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-08",
     discoveryNotes: "3-location dental group. Strong budget. Wants SEO + GBP + PPC.",
     businessGoals: ["Fill schedule for all 3 locations", "Rank top 3 in Chicago dental"],
@@ -208,7 +204,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-01", ghlLastActivityDate: "2024-12-10", ghlContactTags: ["Solar", "High Score", "Phoenix"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Google Ads", assignedRep: "Sarah K.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-11-20",
     discoveryNotes: "Rapid growth company. Wants LSA + PPC + SEO.",
     businessGoals: ["10x lead volume", "Expand to Tucson market"],
@@ -227,7 +222,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-10", ghlLastActivityDate: "2024-12-13", ghlContactTags: ["Pool", "Seasonal", "Scottsdale"],
     ghlContactStatus: "Active", ghlSyncStatus: "Pending Sync",
     leadSource: "Referral", assignedRep: "Alex R.", stage: "Discovery Scheduled",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: true, discoveryDate: "2024-12-19",
     discoveryNotes: "",
     businessGoals: ["Book summer installs 6 months out", "Rank for pool installation Phoenix"],
@@ -246,7 +240,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-20", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["DSO", "Affiliate", "High Value", "Bay Area"],
     ghlContactStatus: "Active", ghlSyncStatus: "Sync Failed",
     leadSource: "Affiliate", assignedRep: "Mike T.", stage: "Discovery Complete",
-    opportunityReadiness: "Qualified",
     discoveryScheduled: true, discoveryDate: "2024-12-05",
     discoveryNotes: "DSO with 7 locations. Massive opportunity. Full marketing stack.",
     businessGoals: ["Fill 7 offices to capacity", "Dominate Bay Area dental market"],
@@ -265,7 +258,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-18", ghlLastActivityDate: "2024-12-14", ghlContactTags: ["Wellness", "Affiliate", "San Diego"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Affiliate", assignedRep: "Jordan M.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-11-30",
     discoveryNotes: "Premium spa. Wants Meta Ads + SEO. Strong budget.",
     businessGoals: ["Fill appointment book 4 weeks out", "Build Instagram following"],
@@ -284,7 +276,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-07", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Dental", "Affiliate", "Boulder"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Affiliate", assignedRep: "Sarah K.", stage: "Discovery Scheduled",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: true, discoveryDate: "2024-12-21",
     discoveryNotes: "",
     businessGoals: ["Grow new patient count by 30%", "Rank top 3 in Boulder dental"],
@@ -303,7 +294,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-12", ghlLastActivityDate: "2024-12-16", ghlContactTags: ["HVAC", "Boston", "Meta"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Meta Ads", assignedRep: "Alex R.", stage: "Contacted",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
     businessGoals: ["Grow gym membership by 50%", "Build local brand awareness"],
@@ -322,7 +312,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-25", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Roofing", "LSA", "Los Angeles", "High Budget"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "LSA", assignedRep: "Mike T.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-02",
     discoveryNotes: "Roofing contractor. Wants LSA + PPC domination. Ready to move.",
     businessGoals: ["Dominate LSA for roofing in LA", "50+ inbound calls/mo"],
@@ -341,7 +330,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-14", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Chiropractic", "GBP", "Portland"],
     ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
     leadSource: "GBP", assignedRep: "Jordan M.", stage: "New Lead",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
     businessGoals: ["More new patient appointments"],
@@ -360,7 +348,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-10", ghlLastActivityDate: "2024-12-16", ghlContactTags: ["Roofing", "Google Ads", "Dallas", "Storm"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Google Ads", assignedRep: "Sarah K.", stage: "Discovery Complete",
-    opportunityReadiness: "Budget Discussed",
     discoveryScheduled: true, discoveryDate: "2024-11-25",
     discoveryNotes: "Storm damage roofing. Seasonal spikes. Wants LSA + PPC domination.",
     businessGoals: ["100 calls in storm season", "Rank top LSA for Dallas roofing"],
@@ -379,7 +366,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-01", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["HVAC", "Referral", "Phoenix"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Referral", assignedRep: "Alex R.", stage: "Discovery Complete",
-    opportunityReadiness: "Business Need Identified",
     discoveryScheduled: true, discoveryDate: "2024-12-09",
     discoveryNotes: "Family-owned HVAC. Ready to scale. Wants SEO + GBP + PPC.",
     businessGoals: ["Rank #1 for AC repair Phoenix", "Book out install schedule 3 months ahead"],
@@ -398,7 +384,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-08", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Pool & Spa", "High Value", "Beverly Hills", "Meta"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Meta Ads", assignedRep: "Mike T.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-11-22",
     discoveryNotes: "High-end pool and spa company. Wants Meta + SEO + GBP to drive installs.",
     businessGoals: ["Fill install schedule 8 weeks out", "Rank #1 for pool installation Beverly Hills"],
@@ -417,7 +402,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-13", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Pest Control", "Seattle"],
     ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
     leadSource: "Website", assignedRep: "Jordan M.", stage: "Contact Attempted",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
     businessGoals: ["More recurring service accounts"],
@@ -436,7 +420,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-09", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Construction", "Outbound", "Las Vegas"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Outbound", assignedRep: "Mike T.", stage: "Contacted",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
     businessGoals: ["More commercial contracts", "Build local brand"],
@@ -455,7 +438,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-15", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Landscaping", "Meta", "Minneapolis"],
     ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
     leadSource: "Meta Ads", assignedRep: "Alex R.", stage: "New Lead",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
     businessGoals: ["Grow seasonal residential accounts"],
@@ -474,7 +456,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-29", ghlLastActivityDate: "2024-12-14", ghlContactTags: ["Pest Control", "Affiliate", "Atlanta", "Multi-Location"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Affiliate", assignedRep: "Sarah K.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-06",
     discoveryNotes: "Multi-location pest control. Strong budget. Wants SEO + GBP package.",
     businessGoals: ["Grow recurring service accounts across 4 locations", "Rank top 5 in Atlanta pest control"],
@@ -493,7 +474,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-27", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Home Health", "Referral", "Virginia Beach"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Referral", assignedRep: "Alex R.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-05",
     discoveryNotes: "Home health agency serving seniors. Wants SEO + GBP to attract family inquiries.",
     businessGoals: ["100+ family inquiries per month", "Rank for in-home care in Hampton Roads"],
@@ -512,7 +492,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-28", ghlLastActivityDate: "2024-12-15", ghlContactTags: ["Plumbing", "Partner", "Bellevue", "High Value"],
     ghlContactStatus: "Active", ghlSyncStatus: "Manual Override",
     leadSource: "Partner", assignedRep: "Jordan M.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-04",
     discoveryNotes: "Full-service plumbing company. Wants SEO + LSA + GBP. Strong pipeline.",
     businessGoals: ["Rank for plumber near Bellevue", "Drive emergency call volume"],
@@ -531,7 +510,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-26", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Electrical", "LSA", "Salt Lake City"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "LSA", assignedRep: "Mike T.", stage: "Discovery Complete",
-    opportunityReadiness: "Decision Maker Identified",
     discoveryScheduled: true, discoveryDate: "2024-12-03",
     discoveryNotes: "Master electrician. Wants LSA + PPC. Competitor already running LSA.",
     businessGoals: ["Top LSA ranking in SLC", "Emergency call volume"],
@@ -550,7 +528,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-30", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["HVAC", "Google Ads", "Nashville"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Google Ads", assignedRep: "Alex R.", stage: "Discovery Complete",
-    opportunityReadiness: "Budget Discussed",
     discoveryScheduled: true, discoveryDate: "2024-12-08",
     discoveryNotes: "Fast-growing HVAC company. Wants PPC + SEO + LSA to dominate Nashville.",
     businessGoals: ["Fill install and service schedule year-round", "Rank for HVAC Nashville"],
@@ -569,7 +546,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-20", ghlLastActivityDate: "2024-12-03", ghlContactTags: ["Roofing", "Outbound", "Disqualified"],
     ghlContactStatus: "Inactive", ghlSyncStatus: "Synced",
     leadSource: "Outbound", assignedRep: "Jordan M.", stage: "Disqualified",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
     businessGoals: [], painPoints: [],
@@ -588,7 +564,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-03", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Lawn Care", "Google Ads", "Nashville"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Google Ads", assignedRep: "Alex R.", stage: "Discovery Complete",
-    opportunityReadiness: "Business Need Identified",
     discoveryScheduled: true, discoveryDate: "2024-12-10",
     discoveryNotes: "Regional lawn care company. Wants to expand into Murfreesboro and Brentwood.",
     businessGoals: ["Expand to 3 new markets", "Rank for lawn care in Nashville suburbs"],
@@ -607,7 +582,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-22", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Security", "Outbound", "Austin"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Outbound", assignedRep: "Mike T.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-12-01",
     discoveryNotes: "Commercial security installs. Wants PPC + SEO. Good pipeline potential.",
     businessGoals: ["100 new commercial accounts/year", "Rank for security systems Austin"],
@@ -626,7 +600,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-15", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Painting", "Website", "Atlanta"],
     ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
     leadSource: "Website", assignedRep: "Alex R.", stage: "New Lead",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: false, discoveryDate: "",
     discoveryNotes: "",
     businessGoals: ["Book more residential and commercial paint jobs"],
@@ -645,7 +618,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-11-14", ghlLastActivityDate: "2024-12-17", ghlContactTags: ["Home Services", "Affiliate", "San Jose", "Multi-Service"],
     ghlContactStatus: "Active", ghlSyncStatus: "Synced",
     leadSource: "Affiliate", assignedRep: "Sarah K.", stage: "Qualified",
-    opportunityReadiness: "Ready For Opportunity",
     discoveryScheduled: true, discoveryDate: "2024-11-29",
     discoveryNotes: "Multi-service home services company. High-growth area. Wants SEO + GBP + PPC.",
     businessGoals: ["Grow service volume 40% in next 6 months", "Rank #1 for home services San Jose"],
@@ -664,7 +636,6 @@ const LEADS: Lead[] = [
     ghlCreatedDate: "2024-12-11", ghlLastActivityDate: "2024-12-16", ghlContactTags: ["Electrical", "Meta", "Minneapolis"],
     ghlContactStatus: "Active", ghlSyncStatus: "Sync Failed",
     leadSource: "Meta Ads", assignedRep: "Sarah K.", stage: "Discovery Scheduled",
-    opportunityReadiness: "Not Ready",
     discoveryScheduled: true, discoveryDate: "2024-12-22",
     discoveryNotes: "",
     businessGoals: ["Book more residential electrical jobs", "Rank for electrician Minneapolis"],
@@ -723,15 +694,14 @@ const GHL_SYNC_CONFIG: Record<GHLSyncStatus, { color?: string; bg?: string; icon
   "Not Connected":   { color: "#64748B", bg: "#F8FAFC", icon: "○"},
 };
 
-const READINESS_CONFIG: Record<OpportunityReadiness, { color?: string; bg?: string; order: number }> = {
-  "Not Ready":                { color: "#94A3B8", bg: "#F1F5F9", order: 0 },
-  "Discovery Complete":       { color: "#0284C7", bg: "#F0F9FF", order: 1 },
-  "Budget Discussed":         { color: "#0891B2", bg: "#ECFEFF", order: 2 },
-  "Decision Maker Identified":{ color: "#7C3AED", bg: "#F5F3FF", order: 3 },
-  "Business Need Identified": { color: "#D97706", bg: "#FFFBEB", order: 4 },
-  "Qualified":                { color: "#EA580C", bg: "#FFF7ED", order: 5 },
-  "Ready For Opportunity":    { color: "#059669", bg: "#ECFDF5", order: 6 },
-};
+// ── Opportunity lookup info ─────────────────────────────────────────────────
+// Carried from the ONE fetch of /api/sales-opportunities at page load.
+// Keyed by leadId. Absent key = no opportunity exists for that lead.
+interface OpportunityInfo {
+  opportunityNumber: string;
+  stage: string;
+  id: string;
+}
 
 const SOURCE_COLORS: Record<string, string> = {
   Website: "#2563EB", "Google Ads": "#EA4335", "Meta Ads": "#1877F2", GBP: "#34A853",
@@ -769,12 +739,54 @@ function ghlSyncBadge(status: GHLSyncStatus) {
   );
 }
 
-function readinessBadge(readiness: OpportunityReadiness) {
-  const c = READINESS_CONFIG[readiness];
+// ── Opportunity column badge ─────────────────────────────────────────────────
+// Renders PENDING / READY / CREATED derived from stage + opportunities table.
+// oppInfo is undefined while opportunities are loading (neutral load state).
+function oppStateBadge(
+  lead: Lead,
+  oppInfo: OpportunityInfo | undefined,
+  oppLoadError: boolean
+) {
+  // If the load failed we cannot assert anything — show neutral state.
+  if (oppLoadError) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
+        style={{ background: "#F1F5F9", color: "#94A3B8" }}>
+        —
+      </span>
+    );
+  }
+  if (oppInfo !== undefined) {
+    // CREATED — an opportunity row exists for this lead
+    return (
+      <div className="space-y-0.5">
+        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
+          style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
+          Created
+        </span>
+        <p className="text-[10px] font-semibold" style={{ color: "#059669" }}>
+          {oppInfo.opportunityNumber}
+        </p>
+        <p className="text-[10px]" style={{ color: "#6B7280" }}>
+          {oppInfo.stage}
+        </p>
+      </div>
+    );
+  }
+  if (lead.stage === "Qualified") {
+    // READY — Qualified + no opportunity
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
+        style={{ background: "#FFFBEB", color: "#D97706", border: "1px solid #FDE68A" }}>
+        Ready
+      </span>
+    );
+  }
+  // PENDING — not yet Qualified
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
-      style={{ background: c.bg, color: c.color }}>
-      {readiness}
+      style={{ background: "#F1F5F9", color: "#94A3B8" }}>
+      Pending
     </span>
   );
 }
@@ -1382,14 +1394,18 @@ type ActiveModal =
 
 //  Drawer Component ───────────────────────────────────────────────────────────
 
-function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
+function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, oppLoadError }: {
   lead: Lead;
   onClose: () => void;
   onAction: (modal: ActiveModal) => void;
   onCreateOpportunity: (lead: Lead) => void;
+  // Derived opportunity state — oppInfo is undefined when no opportunity exists
+  // (or while loading); oppLoadError is true when the fetch failed entirely.
+  oppInfo: OpportunityInfo | undefined;
+  oppLoadError: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<
-    "overview" | "ghl" | "qualification" | "discovery" | "readiness" | "affiliate" | "timeline"
+    "overview" | "ghl" | "qualification" | "discovery" | "opportunity" | "affiliate" | "timeline"
   >("overview");
 
   const tabs = [
@@ -1397,16 +1413,15 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
     { key: "ghl" as const, label: "GHL Contact" },
     { key: "qualification" as const, label: "Qualification" },
     { key: "discovery" as const, label: "Discovery" },
-    { key: "readiness" as const, label: "Opp Readiness" },
+    { key: "opportunity" as const, label: "Opportunity" },
     { key: "affiliate" as const, label: "Affiliate" },
     { key: "timeline" as const, label: "Timeline" },
   ];
 
-  const isReadyForOpportunity = lead.opportunityReadiness === "Ready For Opportunity";
+  // Gate is stage-based only. opportunityReadiness is removed.
   const isQualified = lead.stage === "Qualified";
 
   const readinessChecklist = [
-    { label: "Discovery Complete", done: lead.opportunityReadiness !== "Not Ready" },
     { label: "Budget Discussed", done: lead.budget !== "Unknown" },
     { label: "Decision Maker Identified", done: lead.authority === "Decision Maker" },
     { label: "Business Need Identified", done: lead.need === "High" || lead.need === "Medium" },
@@ -1419,7 +1434,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
     { date: lead.createdDate, event: `Assigned to ${lead.assignedRep}` },
     ...(lead.discoveryDate ? [{ date: lead.discoveryDate, event: "Discovery Completed" }] : []),
     ...(isQualified ? [{ date: lead.lastActivity, event: "Lead Qualified" }] : []),
-    ...(isReadyForOpportunity ? [{ date: lead.lastActivity, event: "Ready For Opportunity" }] : []),
+    ...(oppInfo ? [{ date: lead.lastActivity, event: `Opportunity Created: ${oppInfo.opportunityNumber}` }] : []),
     { date: lead.lastActivity, event: `Current Stage: ${lead.stage}` },
   ];
 
@@ -1445,10 +1460,10 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               {stageBadge(lead.stage)}
               {ghlSyncBadge(lead.ghlSyncStatus)}
-              {isReadyForOpportunity && (
+              {oppInfo && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                   style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
-                  ✓ Ready For Opportunity
+                  ✓ Opportunity Created
                 </span>
               )}
               {lead.disqualified && (
@@ -1467,12 +1482,21 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
             </p>
           </div>
           <div className="flex items-center gap-2 ml-4 flex-shrink-0">
-            {isReadyForOpportunity && (
+            {/* B6: Gate is stage === Qualified (no opportunityReadiness). Show only when
+                no opportunity exists yet; once CREATED, show pipeline link instead. */}
+            {isQualified && !oppInfo && !oppLoadError && (
               <button onClick={() => onCreateOpportunity(lead)}
                 className="text-xs px-3 py-1.5 rounded-lg font-bold border"
                 style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>
                 Create Opportunity →
               </button>
+            )}
+            {oppInfo && (
+              <Link href="/sales/pipeline"
+                className="text-xs px-3 py-1.5 rounded-lg font-bold border inline-block"
+                style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>
+                View Pipeline →
+              </Link>
             )}
             <button onClick={() => onAction({ type: "editLead", lead })}
               className="rtm-btn-primary text-xs px-3 py-1.5">Edit Lead</button>
@@ -1530,29 +1554,34 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
               </section>
 
               <section>
-                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Opportunity Readiness</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>Opportunity</h3>
                 <div className="rounded-lg p-4 border flex items-center justify-between"
-                  style={{ background: isReadyForOpportunity ? "#ECFDF5" : "var(--rtm-surface)", borderColor: isReadyForOpportunity ? "#A7F3D0" : "var(--rtm-border)" }}>
+                  style={{ background: oppInfo ? "#ECFDF5" : isQualified ? "#FFFBEB" : "var(--rtm-surface)", borderColor: oppInfo ? "#A7F3D0" : isQualified ? "#FDE68A" : "var(--rtm-border)" }}>
                   <div>
-                    {readinessBadge(lead.opportunityReadiness)}
+                    {oppStateBadge(lead, oppInfo, oppLoadError)}
                     <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>
-                      {isReadyForOpportunity ? "This lead is ready to become an opportunity." : "Complete discovery and qualification steps to advance."}
+                      {oppInfo
+                        ? `${oppInfo.opportunityNumber} · ${oppInfo.stage}`
+                        : isQualified
+                          ? "Ready to become an opportunity."
+                          : "Advance the lead to Qualified to create an opportunity."}
                     </p>
                   </div>
-                  {isReadyForOpportunity && (
-                    <div className="flex gap-2 flex-shrink-0 ml-4">
-                      <button onClick={() => onCreateOpportunity(lead)}
-                        className="text-xs px-3 py-1.5 rounded-lg font-bold"
-                        style={{ background: "#059669", color: "#fff" }}>
-                        Create Opportunity
-                      </button>
+                  <div className="flex gap-2 flex-shrink-0 ml-4">
+                    {oppInfo ? (
                       <Link href="/sales/pipeline"
                         className="text-xs px-3 py-1.5 rounded-lg font-semibold border"
                         style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0" }}>
                         Open Pipeline →
                       </Link>
-                    </div>
-                  )}
+                    ) : isQualified && !oppLoadError ? (
+                      <button onClick={() => onCreateOpportunity(lead)}
+                        className="text-xs px-3 py-1.5 rounded-lg font-bold"
+                        style={{ background: "#059669", color: "#fff" }}>
+                        Create Opportunity
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </section>
 
@@ -1564,11 +1593,11 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
                       onClick={() => onAction({ type: a.modal, lead } as ActiveModal)}
                       className="rtm-btn-secondary text-xs px-3 py-1.5">{a.label}</button>
                   ))}
-                  {isReadyForOpportunity && (
+                  {isQualified && !oppInfo && !oppLoadError && (
                     <button onClick={() => onCreateOpportunity(lead)}
                       className="text-xs px-3 py-1.5 rounded-lg font-bold inline-block"
                       style={{ background: workspace.accentColor, color: "#fff" }}>
-                      Send To Pipeline →
+                      Create Opportunity →
                     </button>
                   )}
                 </div>
@@ -1764,13 +1793,13 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
             </>
           )}
 
-          {/* OPP READINESS */}
-          {activeTab === "readiness" && (
+          {/* OPPORTUNITY — derived state tab */}
+          {activeTab === "opportunity" && (
             <>
               <section>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Opportunity Readiness</h3>
-                  {readinessBadge(lead.opportunityReadiness)}
+                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Opportunity</h3>
+                  {oppStateBadge(lead, oppInfo, oppLoadError)}
                 </div>
                 <div className="space-y-2">
                   {readinessChecklist.map(item => (
@@ -1785,22 +1814,36 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
                   ))}
                 </div>
               </section>
-              {isReadyForOpportunity && (
+              {oppInfo && (
                 <section>
                   <div className="rounded-xl p-5 border-2" style={{ background: "#ECFDF5", borderColor: "#059669" }}>
-                    <p className="text-sm font-bold mb-1" style={{ color: "#059669" }}>✓ Ready For Opportunity</p>
-                    <p className="text-xs mb-4" style={{ color: "#15803D" }}>
-                      All readiness criteria met. Create an opportunity in the Sales Pipeline to advance this lead.
+                    <p className="text-sm font-bold mb-1" style={{ color: "#059669" }}>✓ Opportunity Created</p>
+                    <p className="text-xs mb-1" style={{ color: "#15803D" }}>{oppInfo.opportunityNumber}</p>
+                    <p className="text-xs mb-4" style={{ color: "#15803D" }}>Stage: {oppInfo.stage}</p>
+                    <Link href="/sales/pipeline"
+                      className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"
+                      style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0" }}>
+                      Open Pipeline →
+                    </Link>
+                  </div>
+                </section>
+              )}
+              {!oppInfo && isQualified && !oppLoadError && (
+                <section>
+                  <div className="rounded-xl p-5 border-2" style={{ background: "#FFFBEB", borderColor: "#D97706" }}>
+                    <p className="text-sm font-bold mb-1" style={{ color: "#D97706" }}>Ready to Create Opportunity</p>
+                    <p className="text-xs mb-4" style={{ color: "#92400E" }}>
+                      Lead is Qualified. Create an opportunity in the Sales Pipeline to advance.
                     </p>
                     <div className="flex gap-2">
                       <button onClick={() => onCreateOpportunity(lead)}
                         className="text-xs px-4 py-2 rounded-lg font-bold"
-                        style={{ background: "#059669", color: "#fff" }}>
+                        style={{ background: "#D97706", color: "#fff" }}>
                         Create Opportunity
                       </button>
                       <Link href="/sales/pipeline"
                         className="text-xs px-4 py-2 rounded-lg font-semibold border inline-block"
-                        style={{ background: "#fff", color: "#059669", borderColor: "#A7F3D0" }}>
+                        style={{ background: "#fff", color: "#D97706", borderColor: "#FDE68A" }}>
                         Open Pipeline →
                       </Link>
                     </div>
@@ -1888,21 +1931,19 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity }: {
           <div className="flex gap-2">
             <button onClick={() => onAction({ type: "moveStage", lead })}
               className="rtm-btn-secondary text-xs px-3 py-1.5">Move Stage</button>
-            {isReadyForOpportunity ? (
-              <button onClick={() => onCreateOpportunity(lead)}
-                className="text-xs px-3 py-1.5 rounded-lg font-bold"
-                style={{ background: "#059669", color: "#fff" }}>
-                Create Opportunity →
-              </button>
+            {/* Gate: stage === Qualified only. No stored opportunityReadiness.
+                CREATED: show pipeline link. Not created + qualified: enable button. */}
+            {oppInfo ? (
+              <Link href="/sales/pipeline"
+                className="text-xs px-3 py-1.5 rounded-lg font-bold border inline-block"
+                style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>
+                View Pipeline →
+              </Link>
             ) : (
-              // Gate: lead.stage === "Qualified" is the correct guard.
-              // opportunityReadiness tracks interim progress but a lead can reach
-              // "Ready For Opportunity" before the stage is formally moved to Qualified;
-              // using the stage as the gate prevents premature opportunity creation.
-              <button className="rtm-btn-primary text-xs px-3 py-1.5" disabled={!isQualified}
-                style={{ opacity: isQualified ? 1 : 0.4 }}
-                title={isQualified ? undefined : "Available once the lead is Qualified"}
-                onClick={isQualified ? () => onCreateOpportunity(lead) : undefined}>
+              <button className="rtm-btn-primary text-xs px-3 py-1.5" disabled={!isQualified || oppLoadError}
+                style={{ opacity: isQualified && !oppLoadError ? 1 : 0.4 }}
+                title={!isQualified ? "Available once the lead is Qualified" : oppLoadError ? "Opportunity data unavailable" : undefined}
+                onClick={isQualified && !oppLoadError ? () => onCreateOpportunity(lead) : undefined}>
                 Create Opportunity
               </button>
             )}
@@ -1978,7 +2019,7 @@ function AddLeadModal({ onClose, onAdd }: {
       ghlLastActivityDate: new Date().toISOString().split("T")[0],
       ghlContactTags: [], ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
       leadSource: form.leadSource as LeadSource, assignedRep: form.assignedRep,
-      stage: "New Lead", opportunityReadiness: "Not Ready",
+      stage: "New Lead",
       discoveryScheduled: false, discoveryDate: "", discoveryNotes: "",
       businessGoals: [], painPoints: [], requestedServices: [],
       budget: "Unknown", authority: "Unknown", need: "Low", timeline: "6+ months",
@@ -2231,6 +2272,9 @@ function SalesLeadsPageInner() {
   const [stageFilter, setStageFilter] = useState<LeadStage | "All">("All");
   const [sourceFilter, setSourceFilter] = useState<string>("All");
   const [syncFilter, setSyncFilter] = useState<GHLSyncStatus | "All">("All");
+  // Opportunity filter — All / Pending / Ready / Created.
+  // Same pattern as stageFilter/sourceFilter: useState, no persistence, default "All".
+  const [oppFilter, setOppFilter] = useState<OppState | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showSyncPanel, setShowSyncPanel] = useState(false);
   const [showAddLeadModal, setShowAddLeadModal] = useState(false);
@@ -2250,8 +2294,15 @@ function SalesLeadsPageInner() {
     ghlContactIdReal?: string;
     ghlContactId?: string;
   } | null>(null);
-  const [opportunityCreatedLeadIds, setOpportunityCreatedLeadIds] = useState<Set<string>>(new Set());
   const [activeModal, setActiveModal] = useState<ActiveModal | null>(null);
+
+  // ── Opportunity lookup ───────────────────────────────────────────────────────────
+  // ONE fetch of /api/sales-opportunities at page load. All PENDING/READY/CREATED
+  // states are derived from this map + lead.stage. Nothing is stored.
+  // oppByLeadId: Map<leadId, OpportunityInfo> — populated on load.
+  // oppLoadError: true when the fetch failed; forces neutral state in the UI.
+  const [oppByLeadId, setOppByLeadId] = useState<Map<string, OpportunityInfo>>(new Map());
+  const [oppLoadError, setOppLoadError] = useState<boolean>(false);
 
   // Date range filter — applied to createdDate; drives KPIs, Lead Stages, and table
   const {
@@ -2262,7 +2313,8 @@ function SalesLeadsPageInner() {
   } = useDateRangeFilter();
 
   // Fetch base lead records from /api/leads then hydrate overlays from /api/leads-status.
-  // This replaces the old static-LEADS + overlay-only pattern.
+  // Also fetches /api/sales-opportunities (once, for the whole list) to derive
+  // PENDING / READY / CREATED states. No per-row fetches.
   // If /api/leads fails, fall back to the static LEADS seed so the page still renders.
   useEffect(() => {
     let cancelled = false;
@@ -2290,18 +2342,50 @@ function SalesLeadsPageInner() {
               const byId = new Map(statusRecords.map(r => [r.leadId, r]));
               if (!cancelled) {
                 setLeads(baseLeads.map(l => applyOverride(l, byId.get(l.id))));
-                return;
               }
+            } else if (!cancelled) {
+              setLeads(baseLeads);
             }
+          } else if (!cancelled) {
+            setLeads(baseLeads);
           }
         } catch (overlayErr) {
           console.error("[Leads] Failed to hydrate lead-status overlays:", overlayErr);
+          if (!cancelled) setLeads(baseLeads);
         }
 
-        if (!cancelled) setLeads(baseLeads);
+        // 3. Fetch opportunities — ONE call for the whole list.
+        // Build a Map<leadId, OpportunityInfo> for O(1) derived-state lookups.
+        // If this fetch fails, set oppLoadError = true so the UI shows neutral
+        // state rather than a false READY or PENDING.
+        if (!cancelled) {
+          try {
+            const oppRes = await fetch("/api/sales-opportunities");
+            if (oppRes.ok) {
+              const { records } = await oppRes.json() as { records: Array<{ leadId?: string | null; opportunityNumber: string; stage: string; id: string }> };
+              if (!cancelled) {
+                const map = new Map<string, OpportunityInfo>();
+                for (const r of records) {
+                  if (r.leadId) map.set(r.leadId, { opportunityNumber: r.opportunityNumber, stage: r.stage, id: r.id });
+                }
+                setOppByLeadId(map);
+                setOppLoadError(false);
+              }
+            } else {
+              console.error("[Leads] /api/sales-opportunities returned", oppRes.status);
+              if (!cancelled) setOppLoadError(true);
+            }
+          } catch (oppErr) {
+            console.error("[Leads] Failed to fetch opportunities:", oppErr);
+            if (!cancelled) setOppLoadError(true);
+          }
+        }
       } catch (err) {
         console.error("[Leads] Failed to load leads from /api/leads, using seed data:", err);
-        if (!cancelled) setLeads(LEADS);
+        if (!cancelled) {
+          setLeads(LEADS);
+          setOppLoadError(true);
+        }
       } finally {
         if (!cancelled) setLeadsLoading(false);
       }
@@ -2412,7 +2496,7 @@ function SalesLeadsPageInner() {
       ghlLastActivityDate: new Date().toISOString().split("T")[0],
       ghlContactTags: [], ghlContactStatus: "New", ghlSyncStatus: "Pending Sync" as GHLSyncStatus,
       leadSource: "Website" as LeadSource, assignedRep: ASSIGN_REPS[0],
-      stage: "New Lead" as LeadStage, opportunityReadiness: "Not Ready" as OpportunityReadiness,
+      stage: "New Lead" as LeadStage,
       discoveryScheduled: false, discoveryDate: "", discoveryNotes: "",
       businessGoals: [], painPoints: [], requestedServices: [],
       budget: "Unknown" as const, authority: "Unknown" as const, need: "Low" as const, timeline: "6+ months" as const,
@@ -2465,8 +2549,18 @@ function SalesLeadsPageInner() {
     } catch (err) {
       console.error("[Leads] Failed to persist opportunity:", err);
     }
+    // Update the in-memory opportunity map so CREATED state is immediately reflected.
+    // This is the ONLY place oppByLeadId is mutated after initial load.
     if (opp.leadId) {
-      setOpportunityCreatedLeadIds(prev => new Set([...prev, opp.leadId as string]));
+      setOppByLeadId(prev => {
+        const next = new Map(prev);
+        next.set(opp.leadId as string, {
+          opportunityNumber: opp.opportunityNumber,
+          stage: opp.stage,
+          id: opp.id,
+        });
+        return next;
+      });
     }
     setShowCreateOpportunityModal(false);
     setSelectedLeadForOpportunity(null);
@@ -2480,6 +2574,18 @@ function SalesLeadsPageInner() {
     if (stageFilter !== "All" && l.stage !== stageFilter) return false;
     if (sourceFilter !== "All" && l.leadSource !== sourceFilter) return false;
     if (syncFilter !== "All" && l.ghlSyncStatus !== syncFilter) return false;
+    // Opportunity filter — derived from stage + oppByLeadId, same as column rendering.
+    // When oppLoadError is true we cannot compute READY/PENDING reliably;
+    // the "All" case always passes. Created is still derivable (oppByLeadId retains
+    // any successfully loaded rows), so we allow it; Pending/Ready are suppressed
+    // to avoid false assertions when the load failed.
+    if (oppFilter !== "All") {
+      const hasOpp = oppByLeadId.has(l.id);
+      const derivedState: OppState = hasOpp
+        ? "Created"
+        : l.stage === "Qualified" ? "Ready" : "Pending";
+      if (derivedState !== oppFilter) return false;
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -2499,7 +2605,12 @@ function SalesLeadsPageInner() {
   const discoveryComplete = dateFilteredLeads.filter(l => l.stage === "Discovery Complete").length;
   const qualifiedLeads = dateFilteredLeads.filter(l => l.stage === "Qualified").length;
   const disqualifiedLeads = dateFilteredLeads.filter(l => l.stage === "Disqualified").length;
-  const readyForOpp = dateFilteredLeads.filter(l => l.opportunityReadiness === "Ready For Opportunity").length;
+  // READY = Qualified AND no opportunity exists. Derived, not stored.
+  // oppLoadError: if the opportunity fetch failed we cannot know which leads are READY,
+  // so the counter shows 0 rather than a possibly wrong number.
+  const readyForOpp = oppLoadError
+    ? 0
+    : dateFilteredLeads.filter(l => l.stage === "Qualified" && !oppByLeadId.has(l.id)).length;
   const ghlSynced = dateFilteredLeads.filter(l => l.ghlSyncStatus === "Synced").length;
   const ghlPending = dateFilteredLeads.filter(l => l.ghlSyncStatus === "Pending Sync").length;
   const ghlFailed = dateFilteredLeads.filter(l => l.ghlSyncStatus === "Sync Failed").length;
@@ -2520,6 +2631,8 @@ function SalesLeadsPageInner() {
           onClose={() => setSelectedLead(null)}
           onAction={modal => setActiveModal(modal)}
           onCreateOpportunity={handleCreateOpportunityFromLead}
+          oppInfo={oppByLeadId.get(selectedLead.id)}
+          oppLoadError={oppLoadError}
         />
       )}
 
@@ -2809,9 +2922,22 @@ function SalesLeadsPageInner() {
             style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
         </div>
         <div className="flex items-center gap-2 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+          {/* Opportunity filter dropdown — same visual convention as the existing
+              syncFilter: a <select> in the search bar. Default: "All". */}
+          <select
+            value={oppFilter}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOppFilter(e.target.value as OppState | "All")}
+            className="text-xs rounded-lg border px-2 py-1.5 outline-none"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+            aria-label="Filter by opportunity state">
+            <option value="All">All Opportunities</option>
+            <option value="Pending">Pending</option>
+            <option value="Ready">Ready</option>
+            <option value="Created">Created</option>
+          </select>
           <span>{filtered.length} leads</span>
-          {(stageFilter !== "All" || sourceFilter !== "All" || syncFilter !== "All" || searchQuery) && (
-            <button onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
+          {(stageFilter !== "All" || sourceFilter !== "All" || syncFilter !== "All" || oppFilter !== "All" || searchQuery) && (
+            <button onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setOppFilter("All"); setSearchQuery(""); }}
               className="px-2 py-1 rounded font-semibold" style={{ background: "#FEF2F2", color: "#DC2626" }}>
               Clear Filters
             </button>
@@ -2825,7 +2951,7 @@ function SalesLeadsPageInner() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
-                {["Lead Name", "Business Name", "Lead Source", "Assigned Rep", "Lead Stage", "Opp Readiness", "Created Date", "Last Activity", "Actions"].map(h => (
+                {["Lead Name", "Business Name", "Lead Source", "Assigned Rep", "Lead Stage", "Opportunity", "Created Date", "Last Activity", "Actions"].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"
                     style={{ color: "var(--rtm-text-muted)" }}>{h}</th>
                 ))}
@@ -2849,15 +2975,7 @@ function SalesLeadsPageInner() {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{stageBadge(lead.stage)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="space-y-1">
-                      {readinessBadge(lead.opportunityReadiness)}
-                      {opportunityCreatedLeadIds.has(lead.id) && (
-                        <span className="block text-[10px] font-bold px-2 py-0.5 rounded-full"
-                          style={{ background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" }}>
-                          Opportunity Created
-                        </span>
-                      )}
-                    </div>
+                    {oppStateBadge(lead, oppByLeadId.get(lead.id), oppLoadError)}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{lead.createdDate}</p>
@@ -2898,20 +3016,29 @@ function SalesLeadsPageInner() {
                               {action.label}
                             </button>
                           ))}
-                          {/* Gate: disabled unless lead.stage === "Qualified" — same boundary as the drawer footer. */}
-                          <button
-                            className="block w-full text-left px-3 py-2 text-xs font-bold"
-                            style={{
-                              color: lead.stage === "Qualified" ? "#059669" : "var(--rtm-text-muted)",
-                              background: opportunityCreatedLeadIds.has(lead.id) ? "#F0FDF4" : lead.stage === "Qualified" ? "#ECFDF5" : "transparent",
-                              opacity: lead.stage === "Qualified" ? 1 : 0.4,
-                              cursor: lead.stage === "Qualified" ? "pointer" : "default",
-                            }}
-                            disabled={lead.stage !== "Qualified"}
-                            title={lead.stage !== "Qualified" ? "Available once the lead is Qualified" : undefined}
-                            onClick={e => { e.stopPropagation(); if (lead.stage === "Qualified") handleCreateOpportunityFromLead(lead); }}>
-                            {opportunityCreatedLeadIds.has(lead.id) ? "Create Another Opportunity" : "Create Opportunity"}
-                          </button>
+                          {/* Gate: stage === Qualified. CREATED leads show pipeline link instead. */}
+                          {oppByLeadId.has(lead.id) ? (
+                            <Link href="/sales/pipeline"
+                              className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"
+                              style={{ color: "#059669", background: "#F0FDF4" }}
+                              onClick={e => e.stopPropagation()}>
+                              View Pipeline
+                            </Link>
+                          ) : (
+                            <button
+                              className="block w-full text-left px-3 py-2 text-xs font-bold"
+                              style={{
+                                color: lead.stage === "Qualified" ? "#059669" : "var(--rtm-text-muted)",
+                                background: lead.stage === "Qualified" ? "#ECFDF5" : "transparent",
+                                opacity: lead.stage === "Qualified" ? 1 : 0.4,
+                                cursor: lead.stage === "Qualified" ? "pointer" : "default",
+                              }}
+                              disabled={lead.stage !== "Qualified" || oppLoadError}
+                              title={lead.stage !== "Qualified" ? "Available once the lead is Qualified" : undefined}
+                              onClick={e => { e.stopPropagation(); if (lead.stage === "Qualified" && !oppLoadError) handleCreateOpportunityFromLead(lead); }}>
+                              Create Opportunity
+                            </button>
+                          )}
                           <Link href={`/sales/intake?leadId=${lead.id}`}
                             className="block w-full text-left px-3 py-2 text-xs font-bold rounded-b-lg"
                             style={{ color: "#2563EB", background: "#EFF6FF" }}
@@ -2935,7 +3062,7 @@ function SalesLeadsPageInner() {
         {!leadsLoading && filtered.length === 0 && (
           <div className="py-16 text-center">
             <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No leads match your filters.</p>
-            <button onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setSearchQuery(""); }}
+            <button onClick={() => { setStageFilter("All"); setSourceFilter("All"); setSyncFilter("All"); setOppFilter("All"); setSearchQuery(""); }}
               className="mt-3 rtm-btn-secondary text-xs px-3 py-1.5">Clear Filters</button>
           </div>
         )}

@@ -49,7 +49,6 @@ export interface LeadRecord {
   leadSource: string;
   assignedRep: string;
   stage: string;
-  opportunityReadiness: string;
   discoveryScheduled: boolean;
   discoveryDate: string;
   discoveryNotes: string;
@@ -101,7 +100,6 @@ function toLeadRecord(row: PrismaLead): LeadRecord {
     leadSource: row.leadSource,
     assignedRep: row.assignedRep,
     stage: row.stage,
-    opportunityReadiness: row.opportunityReadiness,
     discoveryScheduled: row.discoveryScheduled,
     discoveryDate: row.discoveryDate,
     discoveryNotes: row.discoveryNotes,
@@ -242,7 +240,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           ...(payload.leadSource !== undefined ? { leadSource: payload.leadSource } : {}),
           ...(payload.assignedRep !== undefined ? { assignedRep: payload.assignedRep } : {}),
           ...(payload.stage !== undefined ? { stage: payload.stage } : {}),
-          ...(payload.opportunityReadiness !== undefined ? { opportunityReadiness: payload.opportunityReadiness } : {}),
           ...(payload.discoveryScheduled !== undefined ? { discoveryScheduled: payload.discoveryScheduled } : {}),
           ...(payload.discoveryDate !== undefined ? { discoveryDate: payload.discoveryDate } : {}),
           ...(payload.discoveryNotes !== undefined ? { discoveryNotes: payload.discoveryNotes } : {}),
@@ -290,7 +287,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           leadSource: payload.leadSource ?? payload.ghlSource ?? "Direct",
           assignedRep: payload.assignedRep ?? "",
           stage: payload.stage ?? "New Lead",
-          opportunityReadiness: payload.opportunityReadiness ?? "Not Ready",
           discoveryScheduled: payload.discoveryScheduled ?? false,
           discoveryDate: payload.discoveryDate ?? "",
           discoveryNotes: payload.discoveryNotes ?? "",
