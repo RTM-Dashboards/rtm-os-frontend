@@ -48,7 +48,11 @@ import { Prisma } from "@prisma/client";
 
 async function upsertOppGhlStatus(
   opportunityId: string,
-  ghlPatch: Partial<KanbanGhlFields> & { ghlSyncError?: string }
+  ghlPatch: Partial<KanbanGhlFields> & { ghlSyncError?: string },
+  /** When true, sets the flat ghlSynced column to true on success.
+   *  When false (failure path), leaves ghlSynced unchanged — it must
+   *  not be clobbered to false if a prior sync succeeded. */
+  markSynced?: boolean
 ): Promise<void> {
   const row = await prisma.opportunity.findUnique({ where: { id: opportunityId } });
   if (!row) return; // record not found — nothing to patch
@@ -60,9 +64,17 @@ async function upsertOppGhlStatus(
     ...ghlPatch,
   } as Prisma.InputJsonValue;
 
+  // Only touch GHL metadata fields. stage, clientName, and all user-edited
+  // fields are intentionally absent from this update.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dataUpdate: Record<string, any> = { ghl: updatedGhl, updatedAt: new Date().toISOString() };
+  if (markSynced === true) {
+    dataUpdate.ghlSynced = true;
+  }
+
   await prisma.opportunity.update({
-    where:  { id: opportunityId },
-    data:   { ghl: updatedGhl, updatedAt: new Date().toISOString() },
+    where: { id: opportunityId },
+    data:  dataUpdate,
   });
 }
 
@@ -286,6 +298,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
     const now = new Date().toISOString();
 
+    // markSynced=true sets the flat ghlSynced column so the card renders
+    // "GHL: Synced" after a successful write. Only GHL metadata fields are
+    // touched; stage, clientName, and user-edited fields are untouched.
     await upsertOppGhlStatus(input.opportunityId, {
       ghlOpportunityId:     ghlOppId,
       ghlContactId:         contactId ?? (opportunity.contactId ?? ""),
@@ -303,7 +318,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       ghlLastActivityAt:    now,
       ghlSyncStatus:        "Synced",
       ghlSyncError:         "",
-    });
+    }, true);
 
     return NextResponse.json({ ok: true, ghlOpportunityId: ghlOppId, created, opportunity });
   } catch (err) {

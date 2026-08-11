@@ -10,6 +10,8 @@ interface OpportunityCardProps {
   opportunity: OpportunityRecord;
   onStageChange: (id: string, stage: string) => void;
   onStartProposal: (id: string) => void;
+  /** Called after a sync attempt with the outcome. Page owns the toast. */
+  onSync?: (outcome: "synced" | "skipped" | "failed", message: string) => void;
 }
 
 // ─── Stage Colors ─────────────────────────────────────────────────────────────
@@ -57,12 +59,57 @@ export function OpportunityCard({
   opportunity,
   onStageChange,
   onStartProposal,
+  onSync,
 }: OpportunityCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [stageMenuOpen, setStageMenuOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const stageMeta = getStageMeta(opportunity.stage);
   const priorityMeta = getPriorityMeta(opportunity.priority);
+
+  // A sync requires a real GHL contact ID. Mock/empty IDs are rejected by the
+  // route anyway (the GHL-CON-* guard), but we disable the button up front so
+  // the user gets a clear reason instead of a silent failure.
+  const hasContact =
+    Boolean(opportunity.ghlContactId) &&
+    !opportunity.ghlContactId.startsWith("GHL-CON-") &&
+    opportunity.ghlContactId !== "—";
+
+  async function handleSyncToGhl() {
+    if (!hasContact || syncing) return;
+    setSyncing(true);
+    setMenuOpen(false);
+    try {
+      const res = await fetch("/api/ghl/sync-opportunity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          opportunityId:          opportunity.id,
+          businessName:           opportunity.businessName,
+          estimatedMonthlyValue:  opportunity.estimatedMonthlyValue,
+          stage:                  opportunity.stage,
+          leadSource:             opportunity.leadSource,
+          assignedRep:            opportunity.assignedRep,
+          ghlContactId:           opportunity.ghlContactId,
+          // ghlOpportunityId intentionally omitted — route reads it from the
+          // ghl JSON column, but OpportunityRecord doesn't surface it here.
+          // First sync will create; subsequent syncs will update once the route
+          // writes ghlOpportunityId into the ghl column.
+        }),
+      });
+      const data = await res.json() as { ok: boolean; error?: string };
+      if (data.ok) {
+        onSync?.("synced", "Synced to GHL");
+      } else {
+        onSync?.("failed", data.error ?? "Sync failed");
+      }
+    } catch (err) {
+      onSync?.("failed", err instanceof Error ? err.message : "Network error");
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   return (
     <div
@@ -95,7 +142,7 @@ export function OpportunityCard({
 
           {menuOpen && (
             <div
-              className="absolute right-0 top-full mt-1 w-48 rounded-lg border shadow-lg z-20"
+              className="absolute right-0 top-full mt-1 w-52 rounded-lg border shadow-lg z-20"
               style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
             >
               <a
@@ -148,16 +195,36 @@ export function OpportunityCard({
               >
                 Edit Opportunity
               </button>
-              {opportunity.leadId && (
+              {/* Sync to GHL — disabled when no real GHL contact ID */}
+              {hasContact ? (
+                <button
+                  disabled={syncing}
+                  className="block w-full text-left px-3 py-2 text-xs hover:opacity-80 disabled:opacity-50"
+                  style={{ color: "#0891B2" }}
+                  onClick={handleSyncToGhl}
+                >
+                  {syncing ? "Syncing…" : "Sync to GHL"}
+                </button>
+              ) : (
+                <button
+                  disabled
+                  title="No GHL contact ID — link a contact before syncing"
+                  className="block w-full text-left px-3 py-2 text-xs opacity-40 cursor-not-allowed"
+                  style={{ color: "var(--rtm-text-muted)" }}
+                >
+                  Sync to GHL
+                </button>
+              )}
+              {opportunity.leadId ? (
                 <a
-                  href="/sales/leads"
+                  href={`/sales/leads?leadId=${opportunity.leadId}`}
                   className="block w-full text-left px-3 py-2 text-xs rounded-b-lg hover:opacity-80"
                   style={{ color: "var(--rtm-text-primary)" }}
                   onClick={() => setMenuOpen(false)}
                 >
                   View Lead
                 </a>
-              )}
+              ) : null}
             </div>
           )}
         </div>

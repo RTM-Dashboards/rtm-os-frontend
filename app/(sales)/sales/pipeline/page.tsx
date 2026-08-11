@@ -4847,6 +4847,19 @@ function SalesPipelinePageInner() {
                   onStartProposal={(id) => {
                     window.location.href = `/sales/proposals?new=true&opportunityId=${id}`;
                   }}
+                  onSync={(outcome, message) => {
+                    if (outcome === "synced") {
+                      // Optimistic update so the card flips to "Synced" immediately.
+                      setOpportunityRecords((prev) =>
+                        prev.map((o) => o.id === opp.id ? { ...o, ghlSynced: true } : o)
+                      );
+                      addPipelineToast(message, "success");
+                    } else if (outcome === "skipped") {
+                      addPipelineToast(message, "info");
+                    } else {
+                      addPipelineToast(`Sync failed: ${message}`, "danger");
+                    }
+                  }}
                 />
               ))}
             </div>

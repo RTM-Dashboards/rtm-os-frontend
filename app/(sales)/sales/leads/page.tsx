@@ -2402,6 +2402,23 @@ function SalesLeadsPageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Open a specific lead's drawer when ?leadId=<id> is in the URL.
+  // Fires once leads have been loaded. If the id does not resolve, the page
+  // loads normally — no error state.
+  const didOpenLeadFromParam = React.useRef(false);
+  useEffect(() => {
+    if (didOpenLeadFromParam.current) return;
+    if (leads.length === 0) return;
+    const paramLeadId = searchParams.get("leadId");
+    if (!paramLeadId) return;
+    const match = leads.find((l) => l.id === paramLeadId);
+    if (match) {
+      setSelectedLead(match);
+      didOpenLeadFromParam.current = true;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leads]);
+
   function addToast(text: string, variant: ToastMsg["variant"] = "success") {
     toastCounter.current += 1;
     const id = toastCounter.current;
