@@ -2093,51 +2093,54 @@ function RowActionsMenu({
 
 //  GHL Pipeline Mapping Section 
 
+// D6: GhlPipelineMapping — replaced fictional table with honest empty state.
+// Previous version showed GHL_PIPELINE_ID="ghl-pipeline-rtm-001" (fake) and fake
+// stage IDs. Real configured pipeline is bFpY9DruBldM5ZoUf8G9. Showing a live
+// GHL config table would require a network call during render — out of scope.
+// Edit Mapping and Sync Now had no onClick — now disabled with tooltip.
+// Pattern: relative group hover tooltip (audits/page.tsx:2072)
 function GhlPipelineMapping() {
   return (
-    <div className="rounded-xl border overflow-hidden"style={{ borderColor: "#A5F3FC"}}>
-      <div className="px-5 py-3 border-b flex items-center justify-between"style={{ background: "#ECFEFF", borderColor: "#A5F3FC"}}>
+    <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#A5F3FC" }}>
+      <div className="px-5 py-3 border-b flex items-center justify-between" style={{ background: "#ECFEFF", borderColor: "#A5F3FC" }}>
         <div className="flex items-center gap-2">
-          
-          <h3 className="text-xs font-bold uppercase tracking-wide"style={{ color: "#0891B2"}}>GHL Pipeline Mapping</h3>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>Connected</span>
+          <h3 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#0891B2" }}>GHL Pipeline Mapping</h3>
         </div>
         <div className="flex gap-2">
-          <button className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "var(--rtm-bg)", color: "#0891B2", borderColor: "#A5F3FC"}}>Edit Mapping</button>
-          <button className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "#0891B2", color: "#fff", borderColor: "#0891B2"}}>Sync Now</button>
+          {/* D6: Edit Mapping and Sync Now had no onClick. Disabled with tooltip. */}
+          <div className="relative group inline-block">
+            <button
+              disabled
+              className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border opacity-50 cursor-not-allowed"
+              style={{ background: "var(--rtm-bg)", color: "#0891B2", borderColor: "#A5F3FC" }}>
+              Edit Mapping
+            </button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" style={{ whiteSpace: "nowrap" }}>
+              <div className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg" style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+                Not yet available
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "#1E293B" }} />
+              </div>
+            </div>
+          </div>
+          <div className="relative group inline-block">
+            <button
+              disabled
+              className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border opacity-50 cursor-not-allowed"
+              style={{ background: "#0891B2", color: "#fff", borderColor: "#0891B2" }}>
+              Sync Now
+            </button>
+            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" style={{ whiteSpace: "nowrap" }}>
+              <div className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg" style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+                Not yet available
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "#1E293B" }} />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="p-3 text-[10px] font-semibold"style={{ background: "#F0FDFA", color: "#0F766E", borderBottom: "1px solid #A5F3FC"}}>
-        Pipeline: <strong>{GHL_PIPELINE_NAME}</strong> &nbsp;·&nbsp; ID: <code>{GHL_PIPELINE_ID}</code>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse"style={{ minWidth: 700 }}>
-          <thead>
-            <tr style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
-              {["GHL Stage", "RTM OS Stage", "Status", "Last Synced"].map((col) => (
-                <th key={col} className="text-left text-[10px] font-bold uppercase tracking-wide px-4 py-2.5 whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{col}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {GHL_STAGE_MAPPINGS.map((m, i) => (
-              <tr key={m.ghlStageId} style={{ background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
-                <td className="px-4 py-2.5">
-                  <span className="font-semibold text-[11px] px-2 py-0.5 rounded-full border"style={{ background: "#ECFEFF", color: "#0891B2", borderColor: "#A5F3FC"}}>{m.ghlStageName}</span>
-                </td>
-                <td className="px-4 py-2.5"><StageBadge stage={m.rtmStageName} /></td>
-                <td className="px-4 py-2.5">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"style={{
-                      background: m.status === "Active"? "#ECFDF5": "#FEF2F2",
-                      color: m.status === "Active"? "#059669": "#DC2626",
-                      borderColor: m.status === "Active"? "#A7F3D0": "#FECACA",
-                    }}>{m.status}</span>
-                </td>
-                <td className="px-4 py-2.5 text-[10px]"style={{ color: "var(--rtm-text-muted)"}}>{m.lastSynced}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="p-8 text-center" style={{ background: "var(--rtm-bg)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>Pipeline mapping configuration not yet available.</p>
+        <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>GHL pipeline ID: bFpY9DruBldM5ZoUf8G9 — stage mapping UI will appear here once built.</p>
       </div>
     </div>
   );
@@ -2200,14 +2203,30 @@ function GhlSyncIssuesPanel({ onResolve }: { onResolve?: (issue: GhlSyncIssue) =
   }
 
   return (
-    <div className="rounded-xl border overflow-hidden"style={{ borderColor: "#FECACA"}}>
-      <div className="px-5 py-3 border-b flex items-center justify-between"style={{ background: "#FEF2F2", borderColor: "#FECACA"}}>
+    <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#FECACA" }}>
+      <div className="px-5 py-3 border-b flex items-center justify-between" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
         <div className="flex items-center gap-2">
-          
-          <h3 className="text-xs font-bold uppercase tracking-wide"style={{ color: "#DC2626"}}>GHL Sync Issues</h3>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border"style={{ background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA"}}>{visible.length} Issues</span>
+          <h3 className="text-xs font-bold uppercase tracking-wide" style={{ color: "#DC2626" }}>GHL Sync Issues</h3>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border" style={{ background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" }}>{visible.length} Issues</span>
+          {/* D7: Preview badge — issues list is illustrative; IDs do not exist in DB */}
+          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border" style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}>Preview — Target State</span>
         </div>
-        <button className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border"style={{ background: "var(--rtm-bg)", color: "#DC2626", borderColor: "#FECACA"}}>View All Issues</button>
+        {/* D7: View All Issues had no onClick. Disabled with tooltip.
+             Pattern: relative group hover tooltip (audits/page.tsx:2072) */}
+        <div className="relative group inline-block">
+          <button
+            disabled
+            className="text-[10px] font-semibold px-3 py-1.5 rounded-lg border opacity-50 cursor-not-allowed"
+            style={{ background: "var(--rtm-bg)", color: "#DC2626", borderColor: "#FECACA" }}>
+            View All Issues
+          </button>
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" style={{ whiteSpace: "nowrap" }}>
+            <div className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg" style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+              Not yet available
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "#1E293B" }} />
+            </div>
+          </div>
+        </div>
       </div>
       {visible.length === 0 ? (
         <div className="p-6 text-center"style={{ background: "var(--rtm-bg)"}}>
@@ -2245,13 +2264,22 @@ function GhlSyncIssuesPanel({ onResolve }: { onResolve?: (issue: GhlSyncIssue) =
                         {action}
                       </button>
                     ) : action === "Resolve" ? (
-                      <button key={action}
-                        onClick={() => handleResolve(issue)}
-                        disabled={resolving === issue.id}
-                        className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-opacity hover:opacity-80 disabled:opacity-50"
-                        style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>
-                        {resolving === issue.id ? "Syncing…" : action}
-                      </button>
+                      // D7: Resolve disabled — operates on fake IDs not in DB
+                      // Pattern: relative group hover tooltip (audits/page.tsx:2072)
+                      <div key={action} className="relative group inline-block">
+                        <button
+                          disabled
+                          className="text-[10px] font-semibold px-2.5 py-1 rounded-lg border opacity-50 cursor-not-allowed"
+                          style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" }}>
+                          Resolve
+                        </button>
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" style={{ whiteSpace: "nowrap" }}>
+                          <div className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg" style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+                            Not yet available
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "#1E293B" }} />
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       // Manual Override — real action: writes Manual Override status to record
                       <button key={action}
@@ -2374,6 +2402,8 @@ function OpportunityDetailDrawer({
     ...MOCK_ACTIVITY_LOG,
     ...(opp.recentActivities ?? []).map(a => ({ date: a.date, event: a.notes || a.type, user: a.user })),
   ]);
+  // D3: drawer footer stage submenu replaces the prompt() call
+  const [showDrawerStageMenu, setShowDrawerStageMenu] = useState(false);
   const hasWizard = !!(opp as Opportunity & { activeWizardId?: string }).activeWizardId;
   const wizardId = (opp as Opportunity & { activeWizardId?: string }).activeWizardId;
   const stageCfg = getStageCfg(opp.stage);
@@ -2483,11 +2513,34 @@ function OpportunityDetailDrawer({
           )}
           <button onClick={() => onCreateFollowUp(opp.id)}
             className="text-xs font-semibold px-3 py-2 rounded-lg border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Create Follow Up</button>
-          <button className="text-xs font-semibold px-3 py-2 rounded-lg border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
-            onClick={() => {
-              const stage = prompt("Enter stage:") as PipelineStage | null;
-              if (stage) onChangeStage(opp.id, stage);
-            }}>Change Stage</button>
+          {/* D3: replaced prompt() with constrained submenu matching RowActionsMenu pattern */}
+          <div className="relative">
+            <button
+              className="text-xs font-semibold px-3 py-2 rounded-lg border"
+              style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}
+              onClick={() => setShowDrawerStageMenu(v => !v)}>
+              Change Stage
+            </button>
+            {showDrawerStageMenu && (
+              <div
+                className="absolute bottom-full left-0 mb-1 z-50 rounded-xl border shadow-lg py-1 min-w-[200px]"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+                onMouseLeave={() => setShowDrawerStageMenu(false)}>
+                {ALL_PIPELINE_STAGES.map(stage => {
+                  const cfg = STAGE_CONFIG.find(s => s.label === stage);
+                  const isCurrent = opp.stage === stage;
+                  return (
+                    <button key={stage}
+                      onClick={() => { onChangeStage(opp.id, stage); setShowDrawerStageMenu(false); }}
+                      className="w-full text-left text-xs px-4 py-2 hover:opacity-80"
+                      style={{ color: isCurrent ? cfg?.color ?? "var(--rtm-text-primary)" : "var(--rtm-text-primary)", fontWeight: isCurrent ? 700 : 400 }}>
+                      {isCurrent ? "(current) " : ""}{stage}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <button onClick={onClose} className="ml-auto text-xs font-semibold px-3 py-2 rounded-lg border" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>Close</button>
         </div>
       </div>
@@ -4265,17 +4318,33 @@ function SalesPipelinePageInner() {
           style={{ background: workspace.accentColor, color: "#fff", borderColor: workspace.accentColor }}>
           New Opportunity
         </button>
-        <button
-          onClick={() => { addPipelineToast("Exporting pipeline data...", "info"); setTimeout(() => addPipelineToast("Pipeline exported successfully", "success"), 1200); }}
-          className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"
-          style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>
-          Export Pipeline
-        </button>
+        {/* D1: Export Pipeline — no file was ever produced; fake toast sequence removed.
+             Disabled with tooltip. Pattern: relative group hover tooltip (audits/page.tsx:2072) */}
+        <div className="relative group inline-block">
+          <button
+            disabled
+            className="text-xs font-semibold px-4 py-2 rounded-lg border opacity-50 cursor-not-allowed"
+            style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>
+            Export Pipeline
+          </button>
+          <div
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+            style={{ whiteSpace: "nowrap" }}>
+            <div
+              className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg"
+              style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+              Export not yet available
+              <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent" style={{ borderTopColor: "#1E293B" }} />
+            </div>
+          </div>
+        </div>
+        {/* D2: "Create Audit" navigated to SelectOpportunityModal then proposals wizard.
+             Renamed to "New Proposal" to match what it actually does. Same fix as DA4. */}
         <button
           onClick={() => setShowAuditPicker(true)}
           className="text-xs font-semibold px-4 py-2 rounded-lg border transition-colors duration-150"
           style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-primary)", borderColor: "var(--rtm-border)" }}>
-          Create Audit
+          New Proposal
         </button>
         <button
           onClick={() => { window.location.href = "/sales/proposals?new=true"; }}
@@ -4399,11 +4468,12 @@ function SalesPipelinePageInner() {
                   const nextDateStr = logScheduleNext && logNextDate
                     ? new Date(logNextDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
                     : null;
+                  // D4: softened — does not persist to DB (preview data)
                   addPipelineToast(
                     nextDateStr
-                      ? `Follow-up logged. Next follow-up scheduled for ${nextDateStr}.`
-                      : "Follow-up logged.",
-                    "success"
+                      ? `View updated. Next follow-up shown for ${nextDateStr} (preview only).`
+                      : "View updated (preview only — not saved to database).",
+                    "info"
                   );
                   setLogModalRow(null);
                   setLogOutcome("");
@@ -4425,6 +4495,18 @@ function SalesPipelinePageInner() {
           : fuRows.filter(r => r.status === fuStatusFilter);
         return (
           <div className="space-y-6">
+            {/* D4: Preview badge — data is illustrative, actions are local-state only */}
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+                style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+              >
+                Preview — Target State
+              </span>
+              <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                Illustrative data — actions update this view only and do not persist to the database.
+              </span>
+            </div>
             {/* Compact KPI row */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               {[
@@ -4680,6 +4762,18 @@ function SalesPipelinePageInner() {
       {/* ── Stalled Deals tab ── */}
       {mainTab === "stalled" && (
         <div className="space-y-6">
+          {/* D4: Preview badge — data is illustrative, actions are local-state only */}
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
+              style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
+            >
+              Preview — Target State
+            </span>
+            <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+              Illustrative data — actions update this view only and do not persist to the database.
+            </span>
+          </div>
           <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
             <div className="px-5 py-4 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
               <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Stalled Deals</p>
@@ -4717,7 +4811,8 @@ function SalesPipelinePageInner() {
                           <button
                             onClick={() => {
                               setStalledFollowUpDone(prev => { const n = new Set(prev); n.add(deal.id); return n; });
-                              addPipelineToast(`Follow-up logged for ${deal.client}`, "success");
+                              // D4: softened — preview data, does not persist
+                              addPipelineToast(`View updated for ${deal.client} (preview only — not saved).`, "info");
                             }}
                             className="text-[10px] font-semibold px-2 py-1 rounded border transition-all"
                             style={{ background: fuDone ? "#ECFDF5" : "#EFF6FF", color: fuDone ? "#059669" : "#1D4ED8", borderColor: fuDone ? "#A7F3D0" : "#BFDBFE" }}>
@@ -4728,7 +4823,8 @@ function SalesPipelinePageInner() {
                               const reps = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
                               const next = reps.find(r => r !== (stalledReassigned[deal.id] ?? deal.assignedRep)) ?? reps[0];
                               setStalledReassigned(prev => ({ ...prev, [deal.id]: next }));
-                              addPipelineToast(`${deal.client} reassigned to ${next}`, "success");
+                              // D4: softened — preview data, does not persist
+                              addPipelineToast(`View updated: showing ${next} for ${deal.client} (preview only — not saved).`, "info");
                             }}
                             className="text-[10px] font-semibold px-2 py-1 rounded border transition-all"
                             style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>
@@ -4887,14 +4983,17 @@ function SalesPipelinePageInner() {
         <KpiCard title="Pending Sync"value={String(kpis.ghlPending)} subtitle="Awaiting next GHL sync"trend="neutral"trendValue={String(kpis.ghlPending)} trendLabel="in queue"/>
         <KpiCard title="Sync Failed"value={String(kpis.ghlFailed)} subtitle="Failed GHL sync attempts"trend={kpis.ghlFailed > 0 ? "down": "neutral"} trendValue={String(kpis.ghlFailed)} trendLabel="need attention"/>
         <KpiCard title="Manual Overrides"value={String(kpis.ghlManual)} subtitle="Manually managed records"trend="neutral"trendValue={String(kpis.ghlManual)} trendLabel="overridden"/>
-        <KpiCard title="Open Opportunities"value={String(kpis.openCount)} subtitle="Active deals in pipeline"trend="up"trendValue="+3"trendLabel="vs last month"/>
-        <KpiCard title="Pipeline Value"value={fmtCurrency(kpis.pipelineValue)} subtitle="Total open deal value"trend="up"trendValue="+12%"trendLabel="vs last month"/>
-        <KpiCard title="Weighted Revenue"value={fmtCurrency(kpis.weightedRevenue)} subtitle="All active deals weighted"trend="neutral"trendValue="Stable"trendLabel="vs last month"/>
-        <KpiCard title="Win Rate"value={`${kpis.winRate}%`} subtitle="Closed won ÷ total closed"trend="up"trendValue="+2pp"trendLabel="vs last month"/>
-        <KpiCard title="Closing This Month"value={String(kpis.closingThisMonth)} subtitle="Expected close Jan 2025"trend="neutral"trendValue="On track"trendLabel="vs forecast"/>
-        <KpiCard title="Closed Won"value={String(kpis.wonCount)} subtitle="Total closed won deals"trend="up"trendValue="+1"trendLabel="this month"/>
-        <KpiCard title="Closed Lost"value={String(kpis.lostCount)} subtitle="Total closed lost deals"trend="neutral"trendValue="Stable"trendLabel="this month"/>
-        <KpiCard title="Affiliate Revenue"value={fmtCurrency(kpis.affiliateRev)} subtitle="Won deals via affiliates"trend="up"trendValue="+18%"trendLabel="vs last month"/>
+        {/* D5: fabricated trend values removed. No historical snapshot data exists;
+             createdAt/updatedAt are empty-default strings, not timestamps.
+             Month-over-month comparison is impossible. Trends removed. */}
+        <KpiCard title="Open Opportunities"value={String(kpis.openCount)} subtitle="Active deals in pipeline"/>
+        <KpiCard title="Pipeline Value"value={fmtCurrency(kpis.pipelineValue)} subtitle="Total open deal value"/>
+        <KpiCard title="Weighted Revenue"value={fmtCurrency(kpis.weightedRevenue)} subtitle="All active deals weighted"/>
+        <KpiCard title="Win Rate"value={`${kpis.winRate}%`} subtitle="Closed won ÷ total closed"/>
+        <KpiCard title="Closing This Month"value={String(kpis.closingThisMonth)} subtitle="Expected close Jan 2025"/>
+        <KpiCard title="Closed Won"value={String(kpis.wonCount)} subtitle="Total closed won deals"/>
+        <KpiCard title="Closed Lost"value={String(kpis.lostCount)} subtitle="Total closed lost deals"/>
+        <KpiCard title="Affiliate Revenue"value={fmtCurrency(kpis.affiliateRev)} subtitle="Won deals via affiliates"/>
       </div>
       <div className="flex flex-wrap items-end gap-4 p-4 rounded-xl border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
         <div className="flex flex-col gap-1">

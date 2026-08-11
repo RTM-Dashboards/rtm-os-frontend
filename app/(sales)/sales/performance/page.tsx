@@ -239,15 +239,17 @@ function DisabledBtn({
   children,
   className,
   style,
+  title = "Not yet available",
 }: {
   children: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  title?: string;
 }) {
   return (
     <button
       disabled
-      title="Not yet available"
+      title={title}
       className={`opacity-40 cursor-not-allowed ${className ?? ""}`}
       style={style}
     >
@@ -391,22 +393,24 @@ export default function SalesPerformancePage() {
         <CustomizeViewModal pageId="performance" onClose={() => setShowCustomize(false)} />
       )}
 
-      {/*  Date Range Toggle  */}
+      {/*  Date Range Toggle — disabled: date filtering is not yet implemented  */}
       <div className="flex items-center gap-2">
         <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-muted)"}}>Period:</span>
         {(["month", "quarter", "year"] as DateRange[]).map((r) => (
-          <button
+          <DisabledBtn
             key={r}
-            onClick={() => setDateRange(r)}
-            className="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors"style={{
+            title="Date filtering is not yet available — all tables show cumulative data"
+            className="text-xs px-3 py-1.5 rounded-lg font-semibold"
+            style={{
               background: dateRange === r ? workspace.accentColor : "var(--rtm-surface)",
-              color: dateRange === r ? "#fff": "var(--rtm-text-secondary)",
+              color: dateRange === r ? "#fff" : "var(--rtm-text-secondary)",
               border: `1px solid ${dateRange === r ? workspace.accentColor : "var(--rtm-border)"}`,
             }}
           >
-            {r === "month"? "This Month": r === "quarter"? "This Quarter": "This Year"}
-          </button>
+            {r === "month" ? "This Month" : r === "quarter" ? "This Quarter" : "This Year"}
+          </DisabledBtn>
         ))}
+        <span className="text-xs ml-1" style={{ color: "var(--rtm-text-muted)" }}>Date filtering not yet available</span>
       </div>
 
       {/*  KPI Cards  */}
@@ -417,14 +421,14 @@ export default function SalesPerformancePage() {
             <KpiCard
               key="perf-ghl-contacts"
               title="GHL Contacts Synced" value={GHL_SYNC_HEALTH.contactsSynced.toString()}
-              trend="up" trendValue="14%" iconBg="#EFF6FF" iconColor="#2563EB"
+              iconBg="#EFF6FF" iconColor="#2563EB"
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"/></svg>}
             />
           ),
           "perf-open-opportunities": (
             <KpiCard
               key="perf-open-opportunities"
-              title="Open Opportunities" value="38" trend="up" trendValue="6"
+              title="Open Opportunities" value="38"
               iconBg="#F5F3FF" iconColor="#7C3AED"
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>}
             />
@@ -433,7 +437,7 @@ export default function SalesPerformancePage() {
             <KpiCard
               key="perf-pipeline-value"
               title="Pipeline Value" value={fmt$(totalPipelineValue)}
-              trend="up" trendValue="9%" iconBg="#FFFBEB" iconColor="#D97706"
+              iconBg="#FFFBEB" iconColor="#D97706"
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>}
             />
           ),
@@ -441,7 +445,7 @@ export default function SalesPerformancePage() {
             <KpiCard
               key="perf-weighted-forecast"
               title="Weighted Forecast" value={fmt$(totalWeighted)}
-              trend="up" trendValue="7%" iconBg="#ECFDF5" iconColor="#059669"
+              iconBg="#ECFDF5" iconColor="#059669"
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
             />
           ),
@@ -449,30 +453,25 @@ export default function SalesPerformancePage() {
             <KpiCard
               key="perf-closed-won-revenue"
               title="Closed Won Revenue" value={fmt$(closedWonRevenue)}
-              trend="up" trendValue="18%" iconBg="#ECFDF5" iconColor="#059669"
+              iconBg="#ECFDF5" iconColor="#059669"
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
             />
           ),
-          "perf-closed-lost-revenue": (
-            <KpiCard
-              key="perf-closed-lost-revenue"
-              title="Closed Lost Revenue" value={fmt$(totalClosedLost * 2100)}
-              trend="down" trendValue="3%" iconBg="#FEF2F2" iconColor="#DC2626"
-              icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
-            />
-          ),
+          // perf-closed-lost-revenue removed: value was totalClosedLost * 2100 where
+          // the 2100 multiplier was invented. No revenue-per-lost-deal data exists.
+          // DA6 fix.
           "perf-win-rate": (
             <KpiCard
               key="perf-win-rate"
               title="Win Rate" value={`${overallWinRate}%`}
-              trend="up" trendValue="4%" iconBg="#F0FDF4" iconColor="#16A34A"
+              iconBg="#F0FDF4" iconColor="#16A34A"
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>}
             />
           ),
           "perf-avg-sales-cycle": (
             <KpiCard
               key="perf-avg-sales-cycle"
-              title="Avg Sales Cycle" value="42 days" trend="down" trendValue="3 days"
+              title="Avg Sales Cycle" value="42 days"
               iconBg="#F5F3FF" iconColor="#7C3AED"
               icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
             />
@@ -494,6 +493,7 @@ export default function SalesPerformancePage() {
 
       {/*  Revenue Forecasting  */}
       <div>
+        <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="Revenue Forecasting"description="Forecast based on GHL Opportunities, Proposal Value, Negotiation Stage, Proposal Approved, and Sales Handoff."/>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
@@ -511,6 +511,7 @@ export default function SalesPerformancePage() {
 
       {/*  Sales Rep Performance  */}
       <div>
+        <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="Sales Rep Performance"description="Individual rep metrics across leads, opportunities, proposals, and closed deals."/>
         <TableWrapper>
@@ -557,6 +558,7 @@ export default function SalesPerformancePage() {
 
       {/*  Lead Source Performance  */}
       <div>
+        <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="Lead Source Performance"description="Conversion and cost metrics across all lead acquisition channels."/>
         <TableWrapper>
@@ -599,6 +601,7 @@ export default function SalesPerformancePage() {
 
       {/*  GHL Pipeline Stage Performance  */}
       <div>
+        <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="GHL Pipeline Stage Performance"description="Opportunity flow, value, and conversion across GHL pipeline stages mapped to RTM OS stages."/>
         <TableWrapper>
@@ -643,6 +646,7 @@ export default function SalesPerformancePage() {
 
       {/*  Proposal Performance  */}
       <div>
+        <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="Proposal Performance"description="Proposal counts, values, and approval rates across all proposal stages."/>
         <TableWrapper>
@@ -687,6 +691,7 @@ export default function SalesPerformancePage() {
 
       {/*  Handoff Performance  */}
       <div>
+        <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="Handoff Performance"description="Revenue and status tracking across all sales handoff stages."/>
         <TableWrapper>
@@ -741,6 +746,7 @@ export default function SalesPerformancePage() {
       {/*  Affiliate Revenue Performance  */}
       <div>
         <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
           <SectionHeader
             title="Affiliate Revenue Performance"description="Referral leads, deal conversion, and commission tracking across all affiliates."/>
           <Link
@@ -788,6 +794,7 @@ export default function SalesPerformancePage() {
       {/*  Follow-Up Performance  */}
       <div>
         <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
           <SectionHeader
             title="Follow-Up Performance"description="Follow-up completion rates and response times by sales rep."/>
           <Link
@@ -836,6 +843,7 @@ export default function SalesPerformancePage() {
 
       {/*  Conversion Funnel  */}
       <div>
+        <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="Conversion Funnel"description="Full sales funnel from GHL Contacts to Activated Client — count, conversion rate, and revenue value at each stage."/>
         <div
@@ -918,6 +926,7 @@ export default function SalesPerformancePage() {
 
       {/*  Revenue by Service  */}
       <div>
+        <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="Revenue by Service"description="Monthly revenue, setup fees, average deal value, and upsell potential broken down by service type."/>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
