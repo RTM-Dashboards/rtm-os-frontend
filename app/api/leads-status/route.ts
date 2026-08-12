@@ -16,6 +16,55 @@
 // POST /api/leads-status           → body: { leadId: string; [fields] }
 //                                    → { record: LeadStatusRecord }
 //                                    (server assigns/overwrites updatedAt; merges fields)
+//
+// DUAL-WRITE
+// ----------
+// The POST handler writes the eleven user-driven fields to BOTH lead_statuses
+// and leads so that /api/leads consumers (e.g. the Sales Dashboard) always see
+// current values without needing a separate overlay fetch.
+//
+// The four GHL sync fields (ghlContactId, ghlSyncStatus, ghlSyncError,
+// ghlLastSyncedAt) are intentionally NOT dual-written. Here is why:
+//
+//   leads.ghlContactId        — set at webhook ingest; the original GHL ID from
+//                               the moment the contact first arrived in RTM.
+//   lead_statuses.ghlContactId — set by /api/ghl/sync-lead after a full
+//                               round-trip sync; may differ if GHL merged or
+//                               updated the contact after initial creation.
+//
+//   The UI reads:  lead.ghlContactIdReal ?? lead.ghlContactId
+//   where ghlContactIdReal comes from the overlay and ghlContactId from the
+//   leads row.  The leads row is a deliberate fallback for contacts that have
+//   not yet been synced.  Dual-writing would collapse that distinction and
+//   destroy the fallback, making it impossible to distinguish "not yet synced"
+//   from "synced and the ID is unchanged".
+//
+//   The same reasoning applies to ghlSyncStatus / ghlSyncError / ghlLastSyncedAt:
+//   the overlay holds UI-sync state; the leads row holds webhook-ingest state.
+//   They are different facts and must remain separate.
+//
+// TRANSACTION DECISION
+// --------------------
+// The two writes (leadStatus upsert + lead updateMany) are NOT wrapped in a
+// Prisma transaction.  Rationale:
+//
+//   1. The overlay (lead_statuses) is the authoritative source for UI-driven
+//      changes.  If the leads mirror write fails, the overlay is still correct
+//      and applyOverride on the Leads page will surface the right value; no
+//      data is lost.
+//
+//   2. A transaction would cause the entire request to fail — and return a 500
+//      to the user — if the leads row is transiently unavailable or missing.
+//      That is a worse outcome than a temporarily stale mirror.
+//
+//   3. The leads row does not exist for some valid overlay states (the overlay
+//      has no FK constraint).  updateMany handles that as zero affected rows;
+//      a transaction wrapping update would throw P2025 instead.
+//
+//   The explicit contract: if the leads mirror write fails, the overlay write
+//   has already succeeded.  The failure is logged so it is never silent.  The
+//   next successful write (or the Phase C backfill) will bring the mirror back
+//   into sync.
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
@@ -87,6 +136,7 @@ export async function GET(): Promise<NextResponse> {
 
 // ── POST ───────────────────────────────────────────────────────────────────────
 // Upsert: merge incoming fields on top of existing record (if any).
+// Then mirror the same eleven user-driven fields to the leads row (dual-write).
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   let body: unknown;
@@ -109,6 +159,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   // Build only the fields that are explicitly provided in the payload.
   // This preserves the original merge-on-top-of-existing semantics.
+  // IMPORTANT: absent field !== empty value. Never treat a missing key as a
+  // blank — this codebase has already had a data-loss incident from that
+  // mistake. The typeof guards here are the enforcement mechanism.
   const updateData: Partial<Omit<PrismaLeadStatus, "leadId">> = {
     updatedAt: now,
     ...(typeof payload.stage              === "string"  ? { stage: payload.stage }                             : {}),
@@ -123,14 +176,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ...(typeof payload.businessName      === "string"   ? { businessName: payload.businessName }               : {}),
     ...(typeof payload.industry          === "string"   ? { industry: payload.industry }                       : {}),
     ...(typeof payload.leadSource        === "string"   ? { leadSource: payload.leadSource }                   : {}),
+    // GHL sync fields — overlay-only, not dual-written. See file header for full
+    // reasoning. Short version: ghlContactId in leads is the webhook-ingest value
+    // (a deliberate fallback); in lead_statuses it is the post-sync confirmed value.
+    // Dual-writing would collapse that distinction and destroy the fallback.
     ...(typeof payload.ghlContactId      === "string"   ? { ghlContactId: payload.ghlContactId }               : {}),
     ...(typeof payload.ghlSyncStatus     === "string"   ? { ghlSyncStatus: payload.ghlSyncStatus }             : {}),
     ...(typeof payload.ghlSyncError      === "string"   ? { ghlSyncError: payload.ghlSyncError }               : {}),
     ...(typeof payload.ghlLastSyncedAt   === "string"   ? { ghlLastSyncedAt: payload.ghlLastSyncedAt }         : {}),
   };
 
+  // ── Overlay write (primary) ────────────────────────────────────────────────
+  let row: PrismaLeadStatus;
   try {
-    const row = await prisma.leadStatus.upsert({
+    row = await prisma.leadStatus.upsert({
       where: { leadId },
       update: updateData,
       create: {
@@ -138,11 +197,61 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         ...updateData,
       },
     });
-
-    const record = toLeadStatusRecord(row);
-    return NextResponse.json({ record });
   } catch (err) {
-    console.error("[leads-status POST] DB error:", err);
+    console.error("[leads-status POST] DB error on overlay write:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
+
+  // ── Leads mirror write (dual-write) ───────────────────────────────────────
+  // Mirrors only the eleven user-driven fields to the leads row so that
+  // /api/leads consumers see current values without an overlay fetch.
+  //
+  // Uses updateMany so a missing leads row (zero affected rows) is silent.
+  // The overlay write above has already succeeded at this point, so the
+  // response to the client is not affected by the mirror outcome.
+  //
+  // GHL sync fields are intentionally excluded. See file header.
+  const leadsData: Record<string, unknown> = { updatedAt: now };
+  if (typeof payload.stage              === "string")  leadsData.stage              = payload.stage;
+  if (typeof payload.assignedRep        === "string")  leadsData.assignedRep        = payload.assignedRep;
+  if (typeof payload.discoveryScheduled === "boolean") leadsData.discoveryScheduled = payload.discoveryScheduled;
+  if (typeof payload.discoveryDate      === "string")  leadsData.discoveryDate      = payload.discoveryDate;
+  if (typeof payload.discoveryNotes     === "string")  leadsData.discoveryNotes     = payload.discoveryNotes;
+  if (typeof payload.notes              === "string")  leadsData.notes              = payload.notes;
+  if (typeof payload.disqualified       === "boolean") leadsData.disqualified       = payload.disqualified;
+  if (typeof payload.disqualifiedReason === "string")  leadsData.disqualifiedReason = payload.disqualifiedReason;
+  if (typeof payload.name               === "string")  leadsData.name               = payload.name;
+  if (typeof payload.businessName       === "string")  leadsData.businessName       = payload.businessName;
+  if (typeof payload.industry           === "string")  leadsData.industry           = payload.industry;
+  if (typeof payload.leadSource         === "string")  leadsData.leadSource         = payload.leadSource;
+
+  // Only issue the update if at least one user-driven field was supplied.
+  // updatedAt alone is not worth a round-trip.
+  const hasDualWriteFields = Object.keys(leadsData).length > 1;
+  if (hasDualWriteFields) {
+    try {
+      const result = await prisma.lead.updateMany({
+        where: { id: leadId },
+        data: leadsData,
+      });
+      if (result.count === 0) {
+        console.warn(
+          `[leads-status POST] Dual-write: no leads row found for leadId="${leadId}". ` +
+          "Overlay write succeeded; leads mirror skipped. " +
+          "This is expected only for overlays created before the lead row exists."
+        );
+      }
+    } catch (err) {
+      // The overlay write succeeded. Log and continue — do not fail the request.
+      // The next successful write or a backfill will bring leads back in sync.
+      console.error(
+        `[leads-status POST] Dual-write: leads mirror write failed for leadId="${leadId}". ` +
+        "Overlay write succeeded. leads row may be temporarily stale.",
+        err
+      );
+    }
+  }
+
+  const record = toLeadStatusRecord(row);
+  return NextResponse.json({ record });
 }
