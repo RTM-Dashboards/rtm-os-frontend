@@ -91,7 +91,7 @@ export default function SalesDashboard() {
   const openOppCount = openOpps.length;
   const pipelineValue = openOpps.reduce((sum, o) => sum + (o.estimatedMonthlyValue ?? 0), 0);
 
-  // Leads ready for intake: stage === "Qualified" with no linked opportunity
+  // Leads ready: stage === "Qualified" with no linked opportunity
   const oppLeadIds = new Set(opps.map((o) => o.leadId).filter(Boolean) as string[]);
   const leadsReadyForIntake = leads.filter(
     (l) => l.stage === "Qualified" && !oppLeadIds.has(l.id)
@@ -162,7 +162,7 @@ export default function SalesDashboard() {
         <p className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>
           Pipeline KPIs
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Open Opportunities — computed from DB */}
           <div
             className="rounded-xl border p-4"
@@ -184,18 +184,6 @@ export default function SalesDashboard() {
             </p>
             <p className="text-xs font-semibold mt-1" style={{ color: "var(--rtm-text-muted)" }}>
               Pipeline Value
-            </p>
-          </div>
-
-          {/* Leads Ready for Intake — computed from DB */}
-          <div
-            className="rounded-xl border p-4"
-            style={{ background: leadsReadyForIntake > 0 && !dataLoading && !dataError ? "#FFFBEB" : "var(--rtm-surface)", borderColor: leadsReadyForIntake > 0 && !dataLoading && !dataError ? "#FDE68A" : "var(--rtm-border)" }}>
-            <p className="text-2xl font-bold" style={{ color: leadsReadyForIntake > 0 && !dataLoading && !dataError ? "#D97706" : "var(--rtm-text-primary)" }}>
-              {val(leadsReadyForIntake)}
-            </p>
-            <p className="text-xs font-semibold mt-1" style={{ color: leadsReadyForIntake > 0 && !dataLoading && !dataError ? "#D97706" : "var(--rtm-text-muted)" }}>
-              Leads Ready for Intake
             </p>
           </div>
         </div>
@@ -241,7 +229,7 @@ export default function SalesDashboard() {
               {val(leadsReadyForIntake)}
             </p>
             <p className="text-xs font-semibold mt-1" style={{ color: leadsReadyForIntake > 0 && !dataLoading && !dataError ? "#D97706" : "var(--rtm-text-muted)" }}>
-              Leads Ready for Intake
+              Leads Ready
             </p>
           </div>
         </div>
