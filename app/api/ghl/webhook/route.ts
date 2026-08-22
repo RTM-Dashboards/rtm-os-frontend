@@ -38,7 +38,8 @@ import {
 // "pipleline_stage" is GHL's own documented typo — kept as-is.
 
 interface GhlWebhookPayload {
-  id?: string;
+  id?: string;          // Observed in one 2026-07-30 payload; not seen since
+  contact_id?: string;  // Primary field GHL actually sends — verified in ghl_webhook_logs 2026-08-20
   location_id?: string;
   first_name?: string;
   last_name?: string;
@@ -242,38 +243,52 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   const now = new Date().toISOString();
-  let ghlContactId = (typeof payload.id === "string" ? payload.id : "").trim();
+  // ── Tier 1: contact_id (primary — what GHL actually sends) ─────────────
+  // GHL Native Webhook payloads carry the contact ID in `contact_id`, not
+  // `id`. Verified from four captured payloads in ghl_webhook_logs
+  // (earliest: 2026-08-11, including the Nikki Cibu payload of 2026-08-20).
+  // `id` is kept as tier 2: it was observed in one older payload (2026-07-30)
+  // and may appear from trigger types not yet seen. Costs nothing to keep.
+  let ghlContactId = (
+    typeof payload.contact_id === "string" ? payload.contact_id
+    : typeof payload.id       === "string" ? payload.id
+    : ""
+  ).trim();
 
-  // ── Fix 1: self-heal empty contact ID via email lookup ───────────────────
-  // When GHL sends an empty id but the payload carries an email, resolve the
-  // real Contact ID from GHL before proceeding.  This covers the confirmed
-  // production case where a Native Webhook action omits the id field.
+  // ── Tier 3: self-heal via email lookup ───────────────────────────────────
+  // When neither contact_id nor id is present but the payload carries an
+  // email, resolve the real Contact ID from GHL before proceeding. This is
+  // the safety net for any future payload shape not yet captured.
+  // After the tier-1/2 fix above, reaching this branch means an unexpected
+  // payload shape — logged visibly so it shows in Vercel logs.
   // Rule: fail open — a lookup failure must never block lead ingestion.
   if (!ghlContactId && payload.email && ghlCredentialsConfigured()) {
     try {
       const found = await searchContact(payload.email);
       if (found?.id) {
         ghlContactId = found.id;
-        console.log(
-          `[GHL Webhook] Empty id resolved via email lookup: ` +
-          `"${payload.email}" → "${ghlContactId}"`
+        console.warn(
+          `[GHL Webhook] UNEXPECTED PAYLOAD SHAPE: contact_id and id both absent; ` +
+          `fell through to email lookup. email="${payload.email}" → "${ghlContactId}". ` +
+          `Check ghl_webhook_logs for the raw payload.`
         );
       } else {
         console.warn(
-          `[GHL Webhook] Empty id, email lookup returned no match for ` +
-          `"${payload.email}" — proceeding without a contact ID.`
+          `[GHL Webhook] UNEXPECTED PAYLOAD SHAPE: contact_id and id both absent; ` +
+          `email lookup returned no match for "${payload.email}" — proceeding without a contact ID. ` +
+          `Check ghl_webhook_logs for the raw payload.`
         );
       }
     } catch (lookupErr) {
       console.warn(
-        `[GHL Webhook] Empty id, email lookup threw for "${payload.email}" — ` +
-        `proceeding without a contact ID. Error:`,
+        `[GHL Webhook] UNEXPECTED PAYLOAD SHAPE: contact_id and id both absent; ` +
+        `email lookup threw for "${payload.email}" — proceeding without a contact ID. Error:`,
         lookupErr
       );
     }
   } else if (!ghlContactId && !payload.email) {
     console.warn(
-      `[GHL Webhook] Payload has no id and no email — cannot resolve contact.`
+      `[GHL Webhook] Payload has no contact_id, no id, and no email — cannot resolve contact.`
     );
   }
 

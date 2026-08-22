@@ -282,3 +282,37 @@ model GhlWebhookLog {
 
   @@map("ghl_webhook_logs")
 }
+
+// ── User ──────────────────────────────────────────────────────────────────────
+// Mirrors auth.users (managed by Supabase Auth, outside Prisma's schema).
+//
+// WHY A MIRROR: Prisma cannot introspect or migrate the Supabase auth schema.
+// Any join or filter on user identity would need raw SQL. Department and role
+// must live in a Prisma table regardless. The auth.users UUID is stored here
+// as the primary key so the two records are always in sync with no FK constraint
+// that would break when auth.users entries change outside Prisma.
+//
+// Populated by the OAuth callback (app/auth/callback/route.ts) via upsert.
+// A failed upsert is non-fatal — the user may sign in successfully even if this
+// row is absent; it will be created on the next successful sign-in.
+//
+// Timestamps follow the existing schema convention: ISO-8601 strings, not
+// DateTime columns. (See Lead.createdAt, Opportunity.createdAt above.)
+
+model User {
+  // Primary key — the same UUID as auth.users.id (Supabase Auth)
+  id          String   @id
+
+  email       String   @unique
+  name        String
+
+  // Optional profile fields — populated as the team grows into role management
+  department  String?
+  role        String?
+
+  // Audit timestamps — ISO-8601 strings, matching existing model conventions
+  createdAt   String   @default("")
+  updatedAt   String   @default("")
+
+  @@map("users")
+}

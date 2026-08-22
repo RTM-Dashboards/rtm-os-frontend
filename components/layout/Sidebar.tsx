@@ -168,12 +168,19 @@ const sectionLabels: Record<string, string> = {
   settings:    "",
 };
 
+interface AuthUser {
+  name: string;
+  email: string;
+  initial: string;
+}
+
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
+  user: AuthUser | null;
 }
 
-export default function Sidebar({ open, onClose }: SidebarProps) {
+export default function Sidebar({ open, onClose, user }: SidebarProps) {
   const pathname = usePathname();
 
   // Live notification badge count
@@ -416,27 +423,47 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
         <div
           className="px-3 py-4 flex-shrink-0"style={{ borderTop: "1px solid var(--rtm-sidebar-border)"}}
         >
-          <div
-            className="flex items-center gap-3 px-2 py-2.5 rounded-lg cursor-pointer transition-colors"onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-          >
+          {user ? (
             <div
-              className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow"style={{ background: "linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%)"}}
+              className="flex items-center gap-3 px-2 py-2.5 rounded-lg cursor-default transition-colors"
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              A
+              <div
+                className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow"
+                style={{ background: "linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%)" }}
+              >
+                {user.initial}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate text-white">{user.name}</p>
+                <p className="text-[11px] truncate" style={{ color: "rgba(200,213,238,0.55)" }}>
+                  {user.email}
+                </p>
+              </div>
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold truncate text-white">Admin</p>
-              <p className="text-[11px] truncate"style={{ color: "rgba(200,213,238,0.55)"}}>
-                admin@realtimemarketing.com
-              </p>
+          ) : (
+            // Session absent: neutral state — no name, no email, no avatar initial.
+            // Never fall back to displaying "Admin" or any hardcoded identity.
+            <div
+              className="flex items-center gap-3 px-2 py-2.5 rounded-lg"
+            >
+              <div
+                className="w-8 h-8 rounded-full flex-shrink-0"
+                style={{ background: "rgba(255,255,255,0.08)" }}
+              />
+              <div className="min-w-0 flex-1">
+                <div
+                  className="h-3 w-24 rounded"
+                  style={{ background: "rgba(255,255,255,0.08)" }}
+                />
+                <div
+                  className="h-2.5 w-32 rounded mt-1.5"
+                  style={{ background: "rgba(255,255,255,0.05)" }}
+                />
+              </div>
             </div>
-            <svg
-              className="w-4 h-4 flex-shrink-0"style={{ color: "rgba(200,213,238,0.4)"}}
-              fill="none"stroke="currentColor"viewBox="0 0 24 24">
-              <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4"/>
-            </svg>
-          </div>
+          )}
         </div>
       </aside>
     </>
