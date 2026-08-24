@@ -2,8 +2,8 @@
 //
 // Single sign-in method: Google (via Supabase Auth).
 // No password field, no magic link.
-// Domain restriction (@rtm.agency) is enforced server-side in the OAuth
-// callback. A UI message covers the rejected-domain case clearly.
+// Domain restriction is enforced server-side in the OAuth callback.
+// A UI message covers the rejected-domain case clearly.
 
 "use client";
 
@@ -59,9 +59,12 @@ export default function LoginPage({
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         queryParams: {
-          // Request Google Workspace accounts only — cosmetic hint; enforcement
-          // is server-side in the callback.
-          hd: "rtm.agency",
+          // `hd` is a UI hint to Google's account picker, not a security
+          // control. It pre-selects the Workspace domain in the chooser so
+          // users don't accidentally pick a personal account. The actual
+          // enforcement is the domain check in app/auth/callback/route.ts.
+          // This value must stay in sync with AUTH_ALLOWED_EMAIL_DOMAIN.
+          hd: process.env.NEXT_PUBLIC_AUTH_ALLOWED_EMAIL_DOMAIN ?? "realtimemarketing.com",
         },
       },
     });
@@ -75,7 +78,7 @@ export default function LoginPage({
 
   const displayError =
     callbackError === "domain_not_allowed"
-      ? callbackMessage ?? "Only @rtm.agency addresses may sign in."
+      ? callbackMessage ?? `Only @${process.env.NEXT_PUBLIC_AUTH_ALLOWED_EMAIL_DOMAIN ?? "realtimemarketing.com"} addresses may sign in.`
       : callbackError === "auth_failed"
         ? callbackMessage ?? "Sign-in failed. Please try again."
         : errorMsg;
@@ -125,7 +128,7 @@ export default function LoginPage({
               className="text-sm mt-1"
               style={{ color: "var(--rtm-text-secondary)" }}
             >
-              Use your @rtm.agency Google account
+              Use your @{process.env.NEXT_PUBLIC_AUTH_ALLOWED_EMAIL_DOMAIN ?? "realtimemarketing.com"} Google account
             </p>
           </div>
 

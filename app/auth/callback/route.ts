@@ -7,16 +7,21 @@
 // A client-side check alone would be insufficient because:
 //   - JavaScript can be bypassed or disabled.
 //   - The Supabase session is created server-side on this callback; client-side
-//     checks run after the session already exists, meaning a non-rtm.agency user
-//     could have an active session before any client check fires.
+//     checks run after the session already exists, meaning a non-allowed-domain
+//     user could have an active session before any client check fires.
 //   - The callback runs in a Route Handler (server context) with access to the
 //     full Supabase response including the user's email. Enforcement here means
 //     no session is ever written for a rejected domain.
 //
+// The allowed domain is read from AUTH_ALLOWED_EMAIL_DOMAIN (env var).
+// When that variable is unset the default is "realtimemarketing.com".
+// A missing env var MUST NOT open the door to all domains — it falls back to
+// the known-correct domain, never to an allow-all state.
+//
 // Flow:
 //   1. Exchange the ?code param for a session.
 //   2. Read the authenticated user's email.
-//   3. If the domain is not @rtm.agency: sign out and redirect to /login?error=domain_not_allowed.
+//   3. If the domain is not the allowed domain: sign out and redirect to /login?error=domain_not_allowed.
 //   4. If the domain is valid: upsert the Prisma User row, then redirect to /admin.
 //
 // The upsert (step 4) is non-blocking: if it fails, the user still reaches /admin.
@@ -25,7 +30,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const ALLOWED_DOMAIN = "rtm.agency";
+// Read the allowed domain from an environment variable so it can differ
+// between environments and be corrected without a code change or redeploy.
+// IMPORTANT: when the variable is unset we fall back to the real production
+// domain — never to allowing all domains.
+const ALLOWED_DOMAIN = (
+  process.env.AUTH_ALLOWED_EMAIL_DOMAIN ?? "realtimemarketing.com"
+).toLowerCase();
 const DEFAULT_REDIRECT = "/admin";
 
 export async function GET(request: NextRequest) {
@@ -64,8 +75,9 @@ export async function GET(request: NextRequest) {
   }
 
   // ── Domain restriction (server-side, authoritative) ──────────────────────
-  // Only @rtm.agency addresses are allowed. Reject everything else cleanly:
-  // sign the user out first so no partial session lingers, then redirect.
+  // Only addresses whose domain matches ALLOWED_DOMAIN are permitted.
+  // Reject everything else cleanly: sign the user out first so no partial
+  // session lingers, then redirect. Both sides are lowercased before comparing.
   const emailDomain = user.email.split("@")[1]?.toLowerCase();
   if (emailDomain !== ALLOWED_DOMAIN) {
     console.warn(
@@ -74,7 +86,7 @@ export async function GET(request: NextRequest) {
     await supabase.auth.signOut();
     return NextResponse.redirect(
       `${origin}/login?error=domain_not_allowed&message=${encodeURIComponent(
-        "Only @rtm.agency Google accounts may sign in to RTM OS."
+        `Only @${ALLOWED_DOMAIN} Google accounts may sign in to RTM OS.`
       )}`
     );
   }
