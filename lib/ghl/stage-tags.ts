@@ -45,6 +45,14 @@
 
 export const RTM_STAGE_TAG_PREFIX = "rtm-stage-";
 
+/**
+ * Entry-ticket tag that must be present on a GHL Contact payload for RTM to
+ * ingest the contact as a lead.  Applied manually (bulk upload) or by per-source
+ * GHL automations.  A GHL workflow removes it after ingestion — RTM never
+ * removes this tag itself.
+ */
+export const RTM_NEW_LEAD_TAG = "rtm-new-lead";
+
 // After pushing a tag to GHL, ignore any incoming webhook stage echoes for
 // this many milliseconds (30 seconds).
 export const LOOP_GUARD_WINDOW_MS = 30_000;
