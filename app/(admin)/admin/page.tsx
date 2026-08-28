@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { KpiCard, SectionWrapper, StatusBadge, ActivityFeed, AlertBanner, QuickActions, TeamWidget, MiniSparkline, DonutChart } from "@/components/ui";
 import type { ActivityItem, AlertItem, QuickAction, TeamMember } from "@/components/ui";
 import { workspaces } from "@/lib/workspaces";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
+import { createClient } from "@/lib/supabase/client";
 
 const sparkData = [42, 45, 40, 48, 52, 50, 55, 58, 61, 59, 64, 68];
 
@@ -60,6 +62,22 @@ const deptHealth = [
 ];
 
 export default function AdminPage() {
+  const [firstName, setFirstName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      const fullName: string =
+        user.user_metadata?.full_name ??
+        user.user_metadata?.name ??
+        user.email ??
+        "";
+      // Use only the first word of the name as the greeting first name
+      setFirstName(fullName.trim().split(/\s+/)[0] || null);
+    });
+  }, []);
+
   return (
     <div className="space-y-6">
 
@@ -85,7 +103,7 @@ export default function AdminPage() {
             </span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight"style={{ color: "var(--rtm-text-primary)"}}>
-            Good morning, Admin 
+            {firstName ? `Good morning, ${firstName}` : "Good morning"}
           </h1>
           <p className="text-sm mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
             Here&apos;s what&apos;s happening across your agency today.

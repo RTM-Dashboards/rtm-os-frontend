@@ -41,7 +41,7 @@ export default function AppShell({ children }: AppShellProps) {
       />
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <TopNav onMenuClick={() => setSidebarOpen(true)} />
+        <TopNav onMenuClick={() => setSidebarOpen(true)} user={authUser} />
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6 lg:p-8 max-w-screen-2xl mx-auto">
             {children}

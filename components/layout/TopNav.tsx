@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { IconMenu, IconSearch } from "./icons";
 import NotificationBell from "./NotificationBell";
+import { createClient } from "@/lib/supabase/client";
 
 const routeLabels: Record<string, { title: string; sub: string }> = {
   "/admin":              { title: "Overview",             sub: "All departments at a glance"},
@@ -27,8 +28,15 @@ const routeLabels: Record<string, { title: string; sub: string }> = {
   "/notifications":      { title: "Notifications",        sub: "Alerts, tasks & workflow events"},
 };
 
+interface AuthUser {
+  name: string;
+  email: string;
+  initial: string;
+}
+
 interface TopNavProps {
   onMenuClick: () => void;
+  user: AuthUser | null;
 }
 
 const WORKSPACE_SLUGS = [
@@ -79,11 +87,18 @@ function getAvatarLinks(pathname: string): { label: string; href: string }[] {
   ];
 }
 
-export default function TopNav({ onMenuClick }: TopNavProps) {
+export default function TopNav({ onMenuClick, user }: TopNavProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const avatarRef = useRef<HTMLDivElement>(null);
+
+  async function handleSignOut() {
+    setDropdownOpen(false);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -211,7 +226,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
             className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer flex items-center justify-center text-white text-xs font-bold shadow-sm ring-2 ring-white transition-opacity hover:opacity-80"style={{ background: "linear-gradient(135deg, var(--rtm-blue) 0%, var(--rtm-blue-mid) 100%)"}}
             aria-label="Account menu"aria-haspopup="true"aria-expanded={dropdownOpen}
           >
-            A
+            {user?.initial ?? ""}
           </button>
 
           {dropdownOpen && (
@@ -226,8 +241,17 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
               <div
                 className="px-4 py-3 border-b"style={{ borderColor: "var(--rtm-border)"}}
               >
-                <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>Admin User</p>
-                <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>admin@rtmos.com</p>
+                {user ? (
+                  <>
+                    <p className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{user.name}</p>
+                    <p className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>{user.email}</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="h-3 w-24 rounded mb-1.5" style={{ background: "var(--rtm-border)" }} />
+                    <div className="h-2.5 w-32 rounded" style={{ background: "var(--rtm-border)" }} />
+                  </>
+                )}
               </div>
 
               {/* Menu items */}
@@ -250,7 +274,7 @@ export default function TopNav({ onMenuClick }: TopNavProps) {
                 className="border-t pt-1"style={{ borderColor: "var(--rtm-border)"}}
               >
                 <button
-                  onClick={() => setDropdownOpen(false)}
+                  onClick={handleSignOut}
                   className="w-full text-left px-4 py-2 text-sm transition-colors"style={{ color: "#DC2626"}}
                   onMouseEnter={(e) => (e.currentTarget.style.background = "#FEF2F2")}
                   onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
