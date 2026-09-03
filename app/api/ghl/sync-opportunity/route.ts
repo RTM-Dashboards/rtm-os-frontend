@@ -80,44 +80,41 @@ async function upsertOppGhlStatus(
 
 // ── RTM Stage → GHL Stage name mapping ───────────────────────────────────────
 //
-// This map exists as an explicit translation layer even though the current
-// GHL test pipeline ("RTM OS TEST (do not use)") uses the same stage names as
-// RTM. Reasons to keep it explicit rather than falling through directly:
+// Previously a compile-time constant. Now derived from the pipeline_stages
+// config table at request time so that a stage rename in the settings UI is
+// immediately reflected in GHL syncs without a code redeploy.
 //
-//   1. A future production pipeline may use different stage names (e.g. the
-//      existing "Sales Management" pipeline uses "Closed Won" / "Closed Lost"
-//      but also has different intermediate names). Keeping the map means a
-//      pipeline swap requires only updating this map, not the route logic.
+// The GHL test pipeline ("RTM OS TEST (do not use)") uses the same stage
+// names as RTM, so the map is built as name → name (identity). The explicit
+// lookup is kept because:
+//   1. It makes every known RTM stage an auditable contract per request.
+//   2. An unmapped stage still fails loudly (named error) rather than
+//      silently landing the opportunity in the wrong GHL column.
+//   3. A future production pipeline with different GHL stage names can be
+//      supported by adding a ghlName column to pipeline_stages without
+//      changing this route logic.
 //
-//   2. It makes every expected RTM stage an explicit, auditable contract.
-//      If a new RTM stage is added but not mapped, it fails loudly (see the
-//      strict lookup below) rather than silently going to the wrong column.
-//
-// Rules:
+// Rules (unchanged from the previous compile-time version):
 //   - Every key is an RTM stage name exactly as stored in the DB.
 //   - Every value is the corresponding GHL stage name in the configured
 //     pipeline (GHL_OPPORTUNITY_PIPELINE_ID).
-//   - "Lead", "Discovery", "Qualified", and "New Opportunity" are NOT mapped
-//     here — they were removed from the Pipeline module. The Lead module owns
-//     those stages. An Opportunity is created only after a lead is Qualified,
-//     so the Pipeline starts at "Sales Intake".
-//   - "Closed Won" and "Closed Lost" are real GHL stage names in this
-//     pipeline. The GHL opportunity STATUS (open/won/lost) is set separately
-//     via the ghlStatus calculation below — the two are complementary.
-//
-const RTM_TO_GHL_STAGE: Record<string, string> = {
-  "Sales Intake":     "Sales Intake",
-  "Audit Requested":  "Audit Requested",
-  "Audit In Progress":"Audit In Progress",
-  "Proposal Draft":   "Proposal Draft",
-  "Proposal Sent":    "Proposal Sent",
-  "Negotiation":      "Negotiation",
-  "Verbal Approval":  "Verbal Approval",
-  "Proposal Approved":"Proposal Approved",
-  "Sales Handoff":    "Sales Handoff",
-  "Closed Won":       "Closed Won",
-  "Closed Lost":      "Closed Lost",
-};
+//   - An unmapped stage throws a named error; no silent fallback.
+
+/**
+ * Build the RTM → GHL stage name map from the pipeline_stages config table.
+ * Each row's name is both the RTM key and the GHL target (identity mapping)
+ * because the current GHL test pipeline uses the same stage names as RTM.
+ * A stage that exists in the DB but not in GHL will still fail at the
+ * matchedStage lookup below — that is the correct loud-failure path.
+ */
+async function buildRtmToGhlStageMap(): Promise<Record<string, string>> {
+  const rows = await prisma.pipelineStage.findMany({ orderBy: { order: "asc" } });
+  const map: Record<string, string> = {};
+  for (const row of rows) {
+    map[row.name] = row.name;
+  }
+  return map;
+}
 
 // ── Input type ────────────────────────────────────────────────────────────────
 
@@ -173,6 +170,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const locationId = process.env.GHL_LOCATION_ID!;
 
   try {
+    // ── Stage map: derive from config table ───────────────────────────────────────────
+    // Built once per request. If the table is empty (pre-seed), the map is empty
+    // and any stage lookup below will throw the named error — the correct failure.
+    const rtmToGhlStage = await buildRtmToGhlStageMap();
+
     // ── Pipeline resolution ──────────────────────────────────────────────────────────
     // Priority: (1) ghlPipelineId from request body, (2) GHL_OPPORTUNITY_PIPELINE_ID env,
     // (3) loud failure — no silent fallback to whichever pipeline happens to be first.
@@ -212,14 +214,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         // The map is an auditable contract: every known RTM stage is listed.
         // An unmapped stage is a CONFIGURATION ERROR — fail loudly rather than
         // silently landing the opportunity in the wrong column.
-        if (!(input.stage in RTM_TO_GHL_STAGE)) {
+        if (!(input.stage in rtmToGhlStage)) {
           throw new Error(
-            `RTM stage "${input.stage}" is not in RTM_TO_GHL_STAGE. ` +
-            `Add a mapping entry in app/api/ghl/sync-opportunity/route.ts before syncing.`
+            `RTM stage "${input.stage}" is not in the pipeline_stages config table. ` +
+            `Add the stage in Settings → Pipeline Configuration before syncing.`
           );
         }
 
-        const targetGhlStageName = RTM_TO_GHL_STAGE[input.stage];
+        const targetGhlStageName = rtmToGhlStage[input.stage];
         const matchedStage = pipeline.stages.find(
           (s) => s.name.toLowerCase() === targetGhlStageName.toLowerCase()
         );
@@ -290,11 +292,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       created  = true;
     }
 
-    // The map values are now real GHL stage names, so RTM_TO_GHL_STAGE[input.stage]
-    // is the correct display name. Fall back to input.stage itself if somehow absent.
+    // The map values are real GHL stage names (identity for the current test pipeline),
+    // so rtmToGhlStage[input.stage] is the correct display name. Fall back to input.stage.
     const ghlStageName: string =
       opportunity.pipelineStageName ??
-      (input.stage ? (RTM_TO_GHL_STAGE[input.stage] ?? input.stage) : "Unknown");
+      (input.stage ? (rtmToGhlStage[input.stage] ?? input.stage) : "Unknown");
 
     const now = new Date().toISOString();
 

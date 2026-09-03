@@ -464,16 +464,49 @@ export default function PipelineConfigPage() {
     void persist(next, `Moved "${stages[index].name}" down`);
   }
 
-  function handleRename(index: number, newName: string) {
-    // Check for duplicate name
+  async function handleRename(index: number, newName: string) {
+    // Duplicate check (local fast path before hitting the API)
     if (stages.some((s, i) => i !== index && s.name.toLowerCase() === newName.toLowerCase())) {
       addToast(`Stage "${newName}" already exists`, "error");
       return;
     }
-    const next = stages.map((s, i) =>
-      i === index ? { ...s, name: newName } : s
-    );
-    void persist(next, `Renamed to "${newName}"`);
+    const oldName = stages[index].name;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/pipeline-stages/rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldName, newName }),
+      });
+      const data = (await res.json()) as {
+        ok: boolean;
+        error?: string;
+        opportunitiesUpdated?: number;
+        ghlPipelineName?: string;
+        ghlStageName?: string;
+      };
+
+      if (!res.ok || !data.ok) {
+        // Surface the GHL mismatch message (or any other refusal) verbatim.
+        addToast(data.error ?? `Rename failed (HTTP ${res.status})`, "error");
+        return;
+      }
+
+      // Update local stage list with the new name
+      setStages((prev) =>
+        prev.map((s, i) => (i === index ? { ...s, name: newName } : s))
+      );
+
+      const opps = data.opportunitiesUpdated ?? 0;
+      addToast(
+        `Renamed "${oldName}" → "${newName}". ${opps} opportunit${opps === 1 ? "y" : "ies"} updated.`,
+        "success"
+      );
+    } catch (err) {
+      addToast(`Rename failed: ${String(err)}`, "error");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleRemoveRequest(stage: PipelineStageDefinition) {
