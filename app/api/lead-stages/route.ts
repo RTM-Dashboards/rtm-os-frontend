@@ -1,21 +1,20 @@
-// RTM OS — Pipeline Stages API Route
+// RTM OS — Lead Stages API Route
 //
-// Persistence layer: reads/writes the pipeline_stages table via Postgres/Prisma.
-// Previously wrote to data/pipeline-stages.json, which silently discarded every
-// write in production (Vercel's serverless filesystem is read-only).
+// Persistence layer: reads/writes the lead_stages table via Postgres/Prisma.
+// Previously the stage list lived as compile-time constants in
+// app/(sales)/sales/leads/page.tsx (LEAD_STAGES / STAGE_CONFIG), which could
+// not be changed at runtime.
 //
-// GET  /api/pipeline-stages       → { stages: PipelineStageDefinition[] }
-// POST /api/pipeline-stages       → body: { stages: PipelineStageDefinition[] }
-//                                   → 200 { ok: true } | 400/500
+// GET  /api/lead-stages       → { stages: LeadStageDefinition[] }
+// POST /api/lead-stages       → body: { stages: LeadStageDefinition[] }
+//                               → 200 { ok: true } | 400/500
 //
-// Request and response shapes are unchanged from the previous implementation.
-// The pipeline config editor (/settings/pipeline-config) and the Kanban board
-// (/sales/pipeline) work without modification.
+// Request and response conventions match /api/pipeline-stages exactly.
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 
-export interface PipelineStageDefinition {
+export interface LeadStageDefinition {
   id: string;
   name: string;
   order: number;
@@ -28,11 +27,11 @@ export interface PipelineStageDefinition {
 
 export async function GET(): Promise<NextResponse> {
   try {
-    const rows = await prisma.pipelineStage.findMany({
+    const rows = await prisma.leadStage.findMany({
       orderBy: { order: "asc" },
     });
 
-    const stages: PipelineStageDefinition[] = rows.map((r) => ({
+    const stages: LeadStageDefinition[] = rows.map((r) => ({
       id: r.id,
       name: r.name,
       order: r.order,
@@ -66,12 +65,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     !Array.isArray((body as Record<string, unknown>).stages)
   ) {
     return NextResponse.json(
-      { error: "Body must be { stages: PipelineStageDefinition[] }" },
+      { error: "Body must be { stages: LeadStageDefinition[] }" },
       { status: 400 }
     );
   }
 
-  const incoming = (body as { stages: PipelineStageDefinition[] }).stages;
+  const incoming = (body as { stages: LeadStageDefinition[] }).stages;
 
   // Basic validation: each stage must have id, name (non-empty string), order (number)
   for (const s of incoming) {
@@ -94,8 +93,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Replace all rows atomically: delete existing, insert incoming.
     // A transaction ensures the table is never left empty between the two steps.
     await prisma.$transaction([
-      prisma.pipelineStage.deleteMany(),
-      prisma.pipelineStage.createMany({
+      prisma.leadStage.deleteMany(),
+      prisma.leadStage.createMany({
         data: incoming.map((s) => ({
           id: s.id,
           name: s.name,
