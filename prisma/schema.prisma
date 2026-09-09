@@ -396,6 +396,99 @@ model LeadStage {
 // departments is stored as a String[] (Postgres text array) — same pattern
 // as Lead.ghlContactTags, Lead.businessGoals, etc.
 
+// ── Proposal ─────────────────────────────────────────────────────────────────
+// Maps 1:1 to SalesProposalRecord in data/sales-proposals.json.
+//
+// Scalar fields that are queried or filtered are real columns.
+// Nested objects and arrays that are always read/written as a whole are Json?
+// columns — the same pattern used by Opportunity for its sub-objects.
+//
+// The index signature [key: string]: unknown on SalesProposalRecord allows
+// arbitrary extra wizard fields (e.g. wizardId, linkedOpportunityId). Those
+// extras are captured in extraFields Json? so no data is dropped.
+//
+// Postgres only — Vercel's serverless filesystem is read-only so the previous
+// JSON-file approach silently discarded every write in production.
+
+model Proposal {
+  // Primary key — matches the app's string id (UUID or wizard-prefixed string)
+  id                              String   @id
+
+  // Status enum values as defined in SalesProposalRecord
+  // "draft" | "in-progress" | "sent" | "accepted" | "rejected" | "complete"
+  status                          String   @default("draft")
+
+  // Foreign-key references (no FK constraint — orphaned records must not break)
+  opportunityId                   String?
+  leadId                          String?
+
+  // Wizard navigation scalars
+  currentStep                     Int      @default(1)
+
+  // Steps completed by the wizard user (array of step numbers)
+  completedSteps                  Int[]
+
+  // Goal slugs selected by the user (flat string array)
+  selectedGoals                   String[]
+
+  // Audit mode and id selection
+  auditMode                       String?
+  selectedAuditId                 String?
+
+  // Recommendation slugs approved by the user
+  approvedRecommendations         String[]
+  approvedRecommendationServiceNames String[]
+
+  // Discount percentage scalar (the rest of discount lives in discount Json)
+  discountPercentage              Float    @default(0)
+
+  // Pre-seeded audit context from the URL that opened the wizard
+  preselectedAuditId              String?
+  preselectedAuditType            String?
+
+  // ── Json columns ────────────────────────────────────────────────────────────
+  // These preserve the exact nested structure expected by the frontend.
+  // Shape is enforced by TypeScript, not the database.
+
+  // clientInfo: { name, businessName, industry, location, website, leadSource,
+  //               contactName, contactEmail, contactPhone, notes }
+  clientInfo                      Json?
+
+  // auditResult: unknown — may be IntakeAuditResult, AiAuditResult, or null
+  auditResult                     Json?
+
+  // lineItems: unknown[] — ProposalLineItemRow[] or wizard intermediate format
+  lineItems                       Json?
+
+  // discount: ProposalDiscount — { type, value, label, authorizationNote }
+  discount                        Json?
+
+  // budgetResult: BudgetOptimizerOutput or null
+  budgetResult                    Json?
+
+  // proposalDocument: unknown — rendered proposal sections
+  proposalDocument                Json?
+
+  // intakeRecord: Partial<HomeServicesIntakeRecord> or null
+  intakeRecord                    Json?
+
+  // aiAuditResult: AiAuditResult or null
+  aiAuditResult                   Json?
+
+  // ── Arbitrary extra wizard fields ───────────────────────────────────────────
+  // Captures the [key: string]: unknown index signature on SalesProposalRecord.
+  // e.g. wizardId, linkedOpportunityId. Stored as a single Json object.
+  extraFields                     Json?
+
+  // Audit timestamps — ISO-8601 strings, matching existing model conventions
+  lastSavedAt                     String?
+  sentAt                          String?
+  createdAt                       String   @default("")
+  updatedAt                       String   @default("")
+
+  @@map("proposals")
+}
+
 model KpiDefinition {
   // Stable slug id assigned at definition time (e.g. "content-pages-published").
   id          String    @id
