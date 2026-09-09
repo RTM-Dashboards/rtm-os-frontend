@@ -23,6 +23,7 @@ interface LeadData {
   leadSource: string;
   assignedRep: string;
   notes: string;
+  website?: string;
   // GHL Contact linkage — carried forward from the Lead when it has already been synced.
   // ghlContactIdReal takes priority (real GHL ID from a completed sync).
   // ghlContactId is the static field (may be a mock ID like "GHL-CON-0001").
@@ -165,7 +166,9 @@ export function CreateOpportunityModal({
           ? leadData.ghlContactId
           : undefined);
 
-      // Patch extra fields, including GHL Contact linkage
+      // Patch extra fields, including GHL Contact linkage and website.
+      // website is NOT in the engine's 9-field parameter list; it is carried
+      // forward here via the existing post-engine patch pattern.
       opp = {
         ...opp,
         tradeType: form.tradeType,
@@ -173,6 +176,9 @@ export function CreateOpportunityModal({
         estimatedMonthlyValue: parseFloat(form.estimatedMonthlyValue) || 0,
         expectedCloseDate: form.expectedCloseDate,
         priority: form.priority,
+        // Carry website from the originating lead so it is stored on the
+        // opportunity and available to the proposal wizard.
+        ...(leadData.website ? { website: leadData.website } : {}),
         // Carry forward the real GHL Contact ID so the new opportunity is
         // linked to the same GHL Contact as the originating Lead.
         // This prevents duplicate GHL Contact creation when syncing the opportunity.

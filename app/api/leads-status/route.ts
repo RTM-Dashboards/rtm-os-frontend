@@ -86,6 +86,7 @@ export interface LeadStatusRecord {
   businessName?: string;
   industry?: string;
   leadSource?: string;
+  website?: string;
   ghlContactId?: string;
   ghlSyncStatus?: string;
   ghlSyncError?: string;
@@ -112,6 +113,7 @@ function toLeadStatusRecord(row: PrismaLeadStatus): LeadStatusRecord {
     ...(row.businessName !== null ? { businessName: row.businessName } : {}),
     ...(row.industry !== null ? { industry: row.industry } : {}),
     ...(row.leadSource !== null ? { leadSource: row.leadSource } : {}),
+    ...(row.website !== null ? { website: row.website } : {}),
     ...(row.ghlContactId !== null ? { ghlContactId: row.ghlContactId } : {}),
     ...(row.ghlSyncStatus !== null ? { ghlSyncStatus: row.ghlSyncStatus } : {}),
     ...(row.ghlSyncError !== null ? { ghlSyncError: row.ghlSyncError } : {}),
@@ -176,6 +178,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ...(typeof payload.businessName      === "string"   ? { businessName: payload.businessName }               : {}),
     ...(typeof payload.industry          === "string"   ? { industry: payload.industry }                       : {}),
     ...(typeof payload.leadSource        === "string"   ? { leadSource: payload.leadSource }                   : {}),
+    ...(typeof payload.website           === "string"   ? { website: payload.website }                         : {}),
     // GHL sync fields — overlay-only, not dual-written. See file header for full
     // reasoning. Short version: ghlContactId in leads is the webhook-ingest value
     // (a deliberate fallback); in lead_statuses it is the post-sync confirmed value.
@@ -224,6 +227,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (typeof payload.businessName       === "string")  leadsData.businessName       = payload.businessName;
   if (typeof payload.industry           === "string")  leadsData.industry           = payload.industry;
   if (typeof payload.leadSource         === "string")  leadsData.leadSource         = payload.leadSource;
+  if (typeof payload.website            === "string")  leadsData.website            = payload.website;
 
   // Only issue the update if at least one user-driven field was supplied.
   // updatedAt alone is not worth a round-trip.

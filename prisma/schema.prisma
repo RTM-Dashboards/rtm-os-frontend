@@ -116,6 +116,7 @@ model LeadStatus {
   businessName        String?
   industry            String?
   leadSource          String?
+  website             String?
 
   // GHL sync state — written by /api/ghl/sync-lead, never by client directly
   ghlContactId        String?

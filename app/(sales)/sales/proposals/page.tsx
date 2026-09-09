@@ -2621,6 +2621,7 @@ function ProposalsPageInner() {
           leadSource?: string;
           serviceInterest?: string[];
           discoveryNotes?: string;
+          website?: string;
         } = {};
         try {
           // 1. Try the real API store
@@ -2637,6 +2638,7 @@ function ProposalsPageInner() {
                 leadSource?: string;
                 serviceInterest?: string[];
                 discoveryNotes?: string;
+                website?: string;
               }[];
             };
             const match = oppJson.records.find((r) => r.id === opportunityId);
@@ -2650,6 +2652,7 @@ function ProposalsPageInner() {
                 leadSource: match.leadSource,
                 serviceInterest: match.serviceInterest,
                 discoveryNotes: match.discoveryNotes,
+                website: match.website,
               };
             }
           }
@@ -2669,7 +2672,7 @@ function ProposalsPageInner() {
             businessName: oppData.businessName ?? "",
             industry: oppData.tradeType ?? "",
             location: "",
-            website: "",
+            website: oppData.website ?? "",
             leadSource: oppData.leadSource ?? "",
             contactName: oppData.contactName ?? "",
             contactEmail: oppData.contactEmail ?? "",

@@ -268,6 +268,11 @@ export function OpportunityCard({
             <span className="font-semibold">Rep:</span> {opportunity.assignedRep}
           </p>
         )}
+        {opportunity.website && (
+          <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+            <span className="font-semibold">Website:</span> {opportunity.website}
+          </p>
+        )}
       </div>
 
       {/* Value + close date */}
