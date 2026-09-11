@@ -26,6 +26,7 @@ import type { LeadRecord } from "@/app/api/leads/route";
 import {
   stageFromTags,
   shouldSkipInboundStageUpdate,
+  RTM_NEW_LEAD_TAG,
 } from "@/lib/ghl/stage-tags";
 import {
   searchContact,
@@ -199,6 +200,35 @@ function buildLeadFromGhlPayload(
   };
 }
 
+// ── Helper: tag-gate check ──────────────────────────────────────────────────
+//
+// GHL delivers tags as either:
+//   • string[] (documented shape, not yet observed in captured payloads)
+//   • comma-separated string (observed: "active", "tag1,tag2")
+//   • empty string "" (observed: majority of captured payloads)
+//   • absent / undefined
+//
+// Returns true when RTM_NEW_LEAD_TAG is present, case-insensitively, trimmed.
+// Returns false for any absent, empty, or non-matching tags field.
+
+function hasNewLeadTag(tags: unknown): boolean {
+  const target = RTM_NEW_LEAD_TAG.toLowerCase();
+
+  if (Array.isArray(tags)) {
+    return tags.some(
+      (t) => typeof t === "string" && t.trim().toLowerCase() === target
+    );
+  }
+
+  if (typeof tags === "string" && tags.trim() !== "") {
+    return tags
+      .split(",")
+      .some((t) => t.trim().toLowerCase() === target);
+  }
+
+  return false;
+}
+
 // ── Fix 4: Raw webhook payload capture helper ───────────────────────────────
 //
 // Writes a row to ghl_webhook_logs.  Wrapped in try/catch so a DB failure
@@ -315,6 +345,32 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const hasContactIdentifier = Boolean(ghlContactId || payload.email);
 
   if (hasContactIdentifier) {
+    // ── Tag gate: rtm-new-lead must be present ────────────────────────────────────
+    // Server-side safety net: even if the GHL workflow trigger is changed or
+    // disabled, RTM will not ingest a contact that was not deliberately marked.
+    // Applies to ALL contact paths (create AND update) to prevent staff
+    // contacts or other unintended contacts from entering the dashboard.
+    if (!hasNewLeadTag(payload.tags)) {
+      const identifier = payload.email ?? ghlContactId ?? "(unknown)";
+      console.warn(
+        `[GHL Webhook] SKIPPED — missing tag "${RTM_NEW_LEAD_TAG}" on contact ` +
+        `${identifier}. Payload logged to ghl_webhook_logs with outcome "skipped-no-tag".`
+      );
+      void captureWebhookLog({
+        receivedAt:    now,
+        rawPayload:    payload,
+        ghlContactId:  ghlContactId || "",
+        leadId:        null,
+        outcome:       "skipped",
+        outcomeDetail: `Missing required tag: ${RTM_NEW_LEAD_TAG}`,
+      });
+      return NextResponse.json({
+        ok:        true,
+        processed: false,
+        note:      `Missing required tag: ${RTM_NEW_LEAD_TAG}`,
+      });
+    }
+
     // 3-level dedup: real ghlContactId → email (case-insensitive)
     // Skip mock/placeholder IDs ("GHL-CON-*")
     const isRealId =
