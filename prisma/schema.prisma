@@ -508,3 +508,209 @@ model KpiDefinition {
 
   @@map("kpi_definitions")
 }
+
+// ── Client ────────────────────────────────────────────────────────────────────
+// The paying owner. A Client holds one or more Businesses (domains).
+//
+// CLIENT IS THE OWNER, not the billing unit. Billing is per Business (domain),
+// so invoice status, payment status and subscription state live on Business,
+// not here.
+//
+// A Client is created by the Billing flow when a payment is confirmed. A
+// payment that is pending or failed is a valid state; the schema supports it
+// via paymentStatus on the Business that was being activated.
+//
+// GHL's role ends at payment. ghlContactId is provenance only — it records
+// which GHL contact originated this client. It is NOT an identity key and
+// NOT a matching key. No GHL lookup or sync is built on this field.
+
+model Client {
+  // Caller-assigned string id (e.g. UUID). Follows the pattern of all other
+  // models in this schema: String @id, no database-generated default.
+  id              String   @id
+
+  // Identity and contact details
+  fullName        String   @default("")
+  email           String   @default("")
+  phone           String   @default("")
+  company         String   @default("")
+
+  // Internal relationship ownership
+  assignedAM      String   @default("")   // account manager name or id
+
+  // Provenance: the GHL contact this client was created from.
+  // NOT an identity key. NOT a matching key. Records origin only.
+  // Do not build any GHL lookup or sync against this field.
+  ghlContactId    String?
+
+  // Audit timestamps — ISO-8601 strings, matching existing model conventions
+  createdAt       String   @default("")
+  updatedAt       String   @default("")
+
+  @@map("clients")
+}
+
+// ── Business ──────────────────────────────────────────────────────────────────
+// A domain is the identity. One website = one Business.
+// Billing is per Business, not per Client. Each Business gets its own invoice.
+//
+// DOMAIN STORAGE: stored normalised — no scheme, no www prefix, no trailing
+// slash, lowercased. "company-a.com", never "https://www.Company-A.com/".
+// The API routes normalise every input via lib/clients/domain.ts before
+// writing or querying.
+//
+// DOMAIN UNIQUENESS: unique per Client, not globally. The same domain can
+// legitimately appear under two different Clients — acquisition scenarios,
+// reseller arrangements, or a domain changing hands. A global unique constraint
+// would block those cases. Scoping to (clientId, domain) allows them while
+// still preventing one client from duplicating their own domain.
+//
+// GHL provenance: ghlOpportunityId records which GHL opportunity led to this
+// business being activated. NOT an identity key. NOT a matching key.
+
+model Business {
+  // Caller-assigned string id (e.g. UUID).
+  id                  String   @id
+
+  // Domain is the primary identity. Stored normalised (see above).
+  domain              String
+  displayName         String   @default("")
+
+  // Owner — plain string column, no FK constraint (matches codebase pattern).
+  clientId            String
+
+  // ── Billing state (per domain, not per client) ─────────────────────────────
+  // Invoice and payment status for THIS domain's subscription.
+  // Valid invoiceStatus values: "none" | "pending" | "sent" | "paid" | "overdue" | "cancelled"
+  // Valid paymentStatus values: "none" | "awaiting" | "failed" | "confirmed"
+  invoiceStatus       String   @default("none")
+  paymentStatus       String   @default("none")
+  invoiceAmountCents  Int      @default(0)     // amount in cents to avoid float rounding
+  subscriptionRef     String?                 // external subscription id (e.g. Stripe)
+
+  // ── Delivery and activation state ──────────────────────────────────────────
+  // Valid activationStatus values: "inactive" | "pending" | "active" | "suspended"
+  // Valid onboardingStatus values: "not_started" | "in_progress" | "complete"
+  assignedAM          String   @default("")   // account manager for this business
+  activationStatus    String   @default("inactive")
+  onboardingStatus    String   @default("not_started")
+  activeServices      String[]              // list of service slugs currently active
+  monthlyValueCents   Int      @default(0)   // monthly recurring value in cents
+  renewalDate         String?               // ISO-8601 string, nullable until set
+  // Valid renewalStatus values: "ok" | "upcoming" | "overdue" | "cancelled"
+  renewalStatus       String   @default("ok")
+
+  // Provenance: the GHL opportunity this business was created from.
+  // NOT an identity key. NOT a matching key. Records origin only.
+  // Do not build any GHL lookup or sync against this field.
+  ghlOpportunityId    String?
+
+  // Audit timestamps — ISO-8601 strings, matching existing model conventions
+  createdAt           String   @default("")
+  updatedAt           String   @default("")
+
+  // Index the domain for fast domain-first lookups.
+  // Index clientId for fast "all businesses for a client" queries.
+  // Unique constraint scoped to (clientId, domain) — see comment above.
+  @@unique([clientId, domain])
+  @@index([domain])
+  @@index([clientId])
+  @@map("businesses")
+}
+
+// ── PointOfContact ────────────────────────────────────────────────────────────
+// A named contact attached to a Business. Multiple contacts per business,
+// each with a role describing how they interact with RTM.
+//
+// Role is a plain String, not an enum, so new roles can be added without a
+// schema migration. Expected values:
+//   "Owner"      — the business owner or primary decision-maker
+//   "Marketing"  — marketing team contact
+//   "Billing"    — accounts payable / invoice recipient
+//   "Technical"  — technical or web team contact
+//   "Other"      — any other role not listed above
+
+model PointOfContact {
+  // Caller-assigned string id.
+  id          String   @id
+
+  // Parent business — plain column, no FK constraint.
+  businessId  String
+
+  name        String   @default("")
+  email       String   @default("")
+  phone       String   @default("")
+
+  // See role values in the comment above.
+  role        String   @default("Other")
+
+  // Whether this is the primary contact to reach for this business.
+  isPrimary   Boolean  @default(false)
+
+  // Audit timestamps — ISO-8601 strings, matching existing model conventions
+  createdAt   String   @default("")
+  updatedAt   String   @default("")
+
+  @@index([businessId])
+  @@map("points_of_contact")
+}
+
+// ── Project ───────────────────────────────────────────────────────────────────
+// A unit of work attached to a Business (domain).
+//
+// This model does NOT attempt to replicate the existing engine project shape.
+// That shape was built for a mock-data model that is being discarded.
+// This model captures what a project needs at the data layer:
+//   - name and what service it delivers
+//   - who owns it internally
+//   - lifecycle status and dates
+//   - any structured deliverable data stored as a whole (Json?)
+//
+// INCLUDED:
+//   name, service, status, assignedAM, startDate, endDate — scalar fields that
+//   are queried or filtered individually.
+//   deliverables Json? — structured deliverable or scope data read/written as a
+//   whole; avoids premature normalisation of a shape that is still evolving.
+//
+// EXCLUDED:
+//   The 30+ fields on the mock engine project record (seoData, analyticsData,
+//   contentCalendar, adCampaigns, etc.). Those were mock-only fields with no
+//   real data behind them. They belong to a future domain-specific model once
+//   the real requirements are understood.
+//
+// Valid status values:
+//   "planned" | "active" | "on_hold" | "complete" | "cancelled"
+
+model Project {
+  // Caller-assigned string id.
+  id            String   @id
+
+  // Parent business — plain column, no FK constraint.
+  businessId    String
+
+  name          String   @default("")
+
+  // The service this project delivers (e.g. "SEO", "PPC", "Web Design").
+  service       String   @default("")
+
+  // See valid status values in the comment above.
+  status        String   @default("planned")
+
+  // Internal owner of this project.
+  assignedAM    String   @default("")
+
+  // ISO-8601 strings, nullable until set.
+  startDate     String?
+  endDate       String?
+
+  // Structured deliverable or scope data, read/written as a whole.
+  // Shape is enforced by the application layer, not the database.
+  deliverables  Json?
+
+  // Audit timestamps — ISO-8601 strings, matching existing model conventions
+  createdAt     String   @default("")
+  updatedAt     String   @default("")
+
+  @@index([businessId])
+  @@map("projects")
+}
