@@ -7,11 +7,8 @@ import type { DrawerTab } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import {
   MASTER_CLIENTS,
-  computeHealth,
-  computePriority,
 } from "@/lib/mock/master-clients";
 import type { MasterClient } from "@/lib/mock/master-clients";
-import { upsertMasterClient, fetchMasterClients } from "@/lib/mock/master-clients-api";
 import { getWorkspaceTasksByDepartment } from "@/lib/engine";
 
 import type { WorkspaceTask } from "@/components/workspace";
@@ -48,6 +45,12 @@ interface InvoiceRow {
   archived?: boolean;
   /** Set when invoice was generated from a Sales Handoff row — links back to that row */
   salesHandoffId?: string;
+  /**
+   * The domain this invoice is for. Required before the invoice can be raised.
+   * Stored here so it is available at payment time for Business creation.
+   * Normalised at creation via normalizeDomain() in the form handler.
+   */
+  domain?: string;
 }
 
 interface SalesHandoffRow {
@@ -319,6 +322,7 @@ function CreateInvoiceModal({ onClose, onSave, nextNumber, prefill }: {
 }) {
   const [form, setForm] = useState({
     client: prefill?.client ?? "",
+    domain: "",
     contractValue: prefill?.contractValue ?? "",
     setupFee: "0",
     monthlyValue: prefill?.monthlyValue ?? "",
@@ -330,11 +334,24 @@ function CreateInvoiceModal({ onClose, onSave, nextNumber, prefill }: {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.client.trim()) { setError("Client name is required."); return; }
+    // B1 — Domain gate: an invoice cannot be raised without a domain.
+    // A missing domain produces a Business with no identity at payment time.
+    // The domain must be set on the opportunity in the Sales pipeline first;
+    // Billing enters it here to confirm it before the invoice is raised.
+    if (!form.domain.trim()) {
+      setError(
+        "Domain is required before this invoice can be raised. " +
+        "Add the client\u2019s website domain here (e.g. \u201cexample.com\u201d). " +
+        "If you do not have it, request it from Sales before proceeding."
+      );
+      return;
+    }
     if (!form.contractValue.trim()) { setError("Contract value is required."); return; }
     if (!form.dueDate.trim()) { setError("Due date is required."); return; }
     const newInvoice: InvoiceRow = {
       id: `new-${Date.now()}`,
       client: form.client.trim(),
+      domain: form.domain.trim(),
       invoiceNumber: `INV-${String(nextNumber).padStart(4, "0")}`,
       contractValue: form.contractValue.startsWith("$") ? form.contractValue : `$${form.contractValue}`,
       setupFee: form.setupFee ? (form.setupFee.startsWith("$") ? form.setupFee : `$${form.setupFee}`) : "$0",
@@ -367,7 +384,7 @@ function CreateInvoiceModal({ onClose, onSave, nextNumber, prefill }: {
         </div>
         {isFromHandoff && (
           <div className="mx-6 mt-4 rounded-lg border px-4 py-2 text-xs" style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1E3A8A" }}>
-            Pre-filled from Sales Handoff data. Confirm contract value and due date before generating.
+            Pre-filled from Sales Handoff data. Confirm domain, contract value and due date before generating.
           </div>
         )}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -390,6 +407,30 @@ function CreateInvoiceModal({ onClose, onSave, nextNumber, prefill }: {
               />
             </div>
           ))}
+          {/* B1 — Domain field: required gate. Invoice cannot be raised without a domain. */}
+          <div className="space-y-1">
+            <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+              Client Domain *
+            </label>
+            <input
+              type="text"
+              placeholder="example.com (required — must have this before raising the invoice)"
+              value={form.domain}
+              onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
+              className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-2"
+              style={{
+                borderColor: form.domain.trim() ? "var(--rtm-border)" : "#FECACA",
+                background: "var(--rtm-bg)",
+                color: "var(--rtm-text-primary)",
+              }}
+            />
+            {!form.domain.trim() && (
+              <p className="text-[11px] font-medium" style={{ color: "#DC2626" }}>
+                Domain required. Invoice cannot be raised without it.
+                Get it from Sales if missing before proceeding.
+              </p>
+            )}
+          </div>
           <div className="space-y-1">
             <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Billing Owner</label>
             <select value={form.billingOwner} onChange={(e) => setForm((f) => ({ ...f, billingOwner: e.target.value }))}
@@ -778,21 +819,478 @@ function InvoiceDetailDrawer({ invoice, onClose }: { invoice: InvoiceRow | null;
   );
 }
 
+// ─── Mark Paid Flow Modal (B2, B3, B4, B5, B7) ────────────────────────────────
+//
+// Shown when Billing marks an invoice as Paid. Replaces the old
+// autoCreateClientFromInvoice (file-backed MasterClient) path.
+//
+// Step 1 — Search: Billing can search existing Clients by name, email or domain.
+//   They pick an existing Client or choose to create a new one.
+// Step 2 — Confirm: Show what will be created and let Billing confirm.
+// Step 3 — Result: Created records + instruction to notify Sales.
+//
+// B7 — Partial failure: if Business creation fails after Client was created, the
+// modal reports exactly what was created and what was not. Nothing is silently
+// swallowed. The approach is: create Client, then Business. If Business fails,
+// report "Client was created (id: X). Business creation failed: <error>. No
+// Business row was written. You can retry by marking this invoice Paid again
+// and searching for the newly created Client."
+
+interface SearchResult {
+  client: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    company: string;
+    ghlContactId: string | null;
+  };
+  businesses: {
+    id: string;
+    domain: string;
+    displayName: string;
+    invoiceStatus: string;
+    paymentStatus: string;
+  }[];
+}
+
+function MarkPaidFlowModal({ invoice, onClose, onDone }: {
+  invoice: InvoiceRow;
+  onClose: () => void;
+  onDone: (summary: string) => void;
+}) {
+  type FlowStep = "search" | "new-client-form" | "confirm" | "result";
+  const [step, setStep] = useState<FlowStep>("search");
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchError, setSearchError] = useState("");
+  const [picked, setPicked] = useState<SearchResult | null>(null);
+  // New-client form state
+  const [newClientForm, setNewClientForm] = useState({
+    fullName: invoice.client,
+    email: "",
+    phone: "",
+    company: invoice.client,
+  });
+  const [saving, setSaving] = useState(false);
+  const [resultMsg, setResultMsg] = useState<{ ok: boolean; lines: string[] }>({
+    ok: false,
+    lines: [],
+  });
+
+  const domain = invoice.domain ?? "";
+  const isCreatingNewClient = step === "new-client-form" || (step === "confirm" && picked === null);
+
+  // Derive the active services from the invoice if it came from a handoff
+  // (we don’t have handoffRows in scope here, so the page passes the invoice
+  // with servicesSold already resolved into the domain field)
+  const monthlyValueCents = (() => {
+    const raw = invoice.monthlyValue.replace(/[$,]/g, "");
+    return Math.round((parseFloat(raw) || 0) * 100);
+  })();
+  const contractAmountCents = (() => {
+    const raw = invoice.contractValue.replace(/[$,]/g, "");
+    return Math.round((parseFloat(raw) || 0) * 100);
+  })();
+
+  async function runSearch(q: string) {
+    if (!q.trim()) { setSearchResults([]); setSearchError(""); return; }
+    setSearching(true);
+    setSearchError("");
+    try {
+      const res = await fetch(`/api/clients/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) throw new Error(`Search failed: HTTP ${res.status}`);
+      const data = await res.json() as { results?: SearchResult[]; error?: string };
+      if (data.error) throw new Error(data.error);
+      setSearchResults(data.results ?? []);
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "Search failed");
+      setSearchResults([]);
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  // Debounced search on query change
+  useEffect(() => {
+    const t = setTimeout(() => { void runSearch(query); }, 350);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query]);
+
+  function handlePickExisting(result: SearchResult) {
+    // Check: does this client already have a Business with this domain?
+    const domainAlreadyExists = result.businesses.some(
+      (b) => b.domain === domain ||
+             b.domain === domain.replace(/^www\./, "") ||
+             b.domain.replace(/^www\./, "") === domain.replace(/^www\./, "")
+    );
+    if (domainAlreadyExists) {
+      setSearchError(
+        `This client already has a Business with domain \u201c${domain}\u201d. ` +
+        "Duplicate domains under the same Client are not allowed. " +
+        "No new Business will be created."
+      );
+      return;
+    }
+    setPicked(result);
+    setStep("confirm");
+  }
+
+  function handleCreateNew() {
+    setPicked(null);
+    setStep("new-client-form");
+  }
+
+  function handleNewClientFormNext(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newClientForm.fullName.trim()) return;
+    setStep("confirm");
+  }
+
+  async function handleConfirm() {
+    if (!domain) return;
+    setSaving(true);
+
+    const now = new Date().toISOString();
+    let clientId: string;
+    let clientWasCreated = false;
+
+    // ── Step 1: Resolve or create the Client ────────────────────────────────
+    if (picked) {
+      clientId = picked.client.id;
+    } else {
+      // Create a new Client in Postgres via /api/clients
+      clientId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const clientBody = {
+        id:        clientId,
+        fullName:  newClientForm.fullName.trim(),
+        email:     newClientForm.email.trim(),
+        phone:     newClientForm.phone.trim(),
+        company:   newClientForm.company.trim(),
+        assignedAM: "",
+        ghlContactId: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      try {
+        const res = await fetch("/api/clients", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(clientBody),
+        });
+        const data = await res.json() as { record?: { id: string }; error?: string };
+        if (!res.ok || data.error) {
+          throw new Error(data.error ?? `HTTP ${res.status}`);
+        }
+        clientWasCreated = true;
+      } catch (err) {
+        // Client creation failed — nothing was written. Report and stop.
+        setSaving(false);
+        setResultMsg({
+          ok: false,
+          lines: [
+            `❌ Client creation failed. Nothing was written.`,
+            `Error: ${err instanceof Error ? err.message : String(err)}`,
+            "No Client or Business record was created.",
+            "Resolve the error above and then mark this invoice Paid again to retry.",
+          ],
+        });
+        setStep("result");
+        return;
+      }
+    }
+
+    // ── Step 2: Create the Business in Postgres via /api/businesses ─────────
+    // B7: if this fails after a new Client was created, we report exactly what
+    // was created and what was not. We do not roll back the Client — the user
+    // can search for it and attach a Business on the next attempt.
+    const bizId = `biz-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const bizBody = {
+      id:                 bizId,
+      domain:             domain,  // normalised by /api/businesses route
+      displayName:        newClientForm.company.trim() || invoice.client,
+      clientId:           clientId,
+      invoiceStatus:      "paid",
+      paymentStatus:      "confirmed",
+      invoiceAmountCents: contractAmountCents,
+      subscriptionRef:    null,
+      assignedAM:         "",
+      activationStatus:   "inactive",
+      onboardingStatus:   "not_started",
+      activeServices:     [],
+      monthlyValueCents:  monthlyValueCents,
+      renewalDate:        null,
+      renewalStatus:      "ok",
+      ghlOpportunityId:   null,
+      createdAt:          now,
+      updatedAt:          now,
+    };
+    try {
+      const res = await fetch("/api/businesses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bizBody),
+      });
+      const data = await res.json() as { record?: object; error?: string };
+      if (!res.ok || data.error) {
+        throw new Error(data.error ?? `HTTP ${res.status}`);
+      }
+    } catch (err) {
+      // B7: Business creation failed. Report the partial state precisely.
+      setSaving(false);
+      const clientLabel = clientWasCreated
+        ? `A new Client was created (id: ${clientId}, name: "${newClientForm.fullName.trim()}").`
+        : `The existing Client (id: ${clientId}) was not modified.`;
+      setResultMsg({
+        ok: false,
+        lines: [
+          `❌ Business creation failed for domain \u201c${domain}\u201d.`,
+          clientLabel,
+          `Error: ${err instanceof Error ? err.message : String(err)}`,
+          clientWasCreated
+            ? "The Client record exists. To create the Business, mark this invoice Paid again and search for the new Client by name."
+            : "Nothing was changed. Resolve the error and mark this invoice Paid again to retry.",
+        ],
+      });
+      setStep("result");
+      return;
+    }
+
+    // ── Success ──────────────────────────────────────────────────────────────
+    setSaving(false);
+    const clientLabel = picked
+      ? `Existing Client \u201c${picked.client.fullName}\u201d`
+      : `New Client \u201c${newClientForm.fullName.trim()}\u201d`;
+    setResultMsg({
+      ok: true,
+      lines: [
+        `✅ Business created: domain \u201c${domain}\u201d, invoice amount ${invoice.contractValue}.`,
+        `✅ ${clientLabel} (id: ${clientId}).`,
+        // B5 — Notify Sales: there is no existing notification mechanism in this
+        // codebase (the pending-sales-tasks route is file-backed and targets Sales
+        // tasks, not a push notification). We surface a clear instruction to
+        // Billing to notify Sales manually. B6: Billing does NOT advance the stage
+        // — Sales moves it to Closed Won themselves.
+        "📧 Notify Sales: tell them the invoice is paid so they can move the ",
+        `opportunity to Closed Won in the Sales Pipeline. The GHL sync `,
+        `runs from Sales’ own pipeline action — do not move the stage from Billing.`,
+      ],
+    });
+    setStep("result");
+    // Surface the summary to the parent page
+    onDone(
+      `Client \u0026 Business created for ${domain} — notify Sales to close the opportunity`
+    );
+  }
+
+  const inputCls = "w-full text-sm px-3 py-2 rounded-lg border focus:outline-none focus:ring-2";
+  const inputStyle = {
+    borderColor: "var(--rtm-border)",
+    background: "var(--rtm-bg)",
+    color: "var(--rtm-text-primary)",
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg" style={{ border: "1px solid var(--rtm-border)", maxHeight: "90vh", overflowY: "auto" }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--rtm-border-light)" }}>
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: workspace.accentColor }}>Mark as Paid</p>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+              {invoice.invoiceNumber} — {invoice.client}
+            </h2>
+            {domain && (
+              <p className="text-xs mt-0.5 font-mono" style={{ color: "var(--rtm-text-muted)" }}>Domain: {domain}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-xl leading-none" style={{ color: "var(--rtm-text-muted)" }}>×</button>
+        </div>
+
+        {/* Step: search */}
+        {step === "search" && (
+          <div className="p-6 space-y-4">
+            <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+              Search for an existing Client to attach this Business to, or create a new one.
+              Search by client name, contact email, or an existing domain.
+            </p>
+            {searchError && (
+              <div className="rounded-lg border px-4 py-3 text-sm font-semibold" style={{ background: "#FEF2F2", borderColor: "#FECACA", color: "#991B1B" }}>
+                {searchError}
+              </div>
+            )}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Search Clients</label>
+              <input
+                type="text"
+                placeholder="Name, email, or domain…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+                className={inputCls}
+                style={inputStyle}
+              />
+            </div>
+            {searching && <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Searching…</p>}
+            {/* Search results */}
+            {searchResults.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+                  {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
+                </p>
+                {searchResults.map((r) => (
+                  <button
+                    key={r.client.id}
+                    type="button"
+                    className="w-full text-left rounded-lg border p-3 space-y-1 transition-colors"
+                    style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--rtm-bg-alt, #F9FAFB)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--rtm-bg)"; }}
+                    onClick={() => handlePickExisting(r)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                        {r.client.fullName || "(no name)"}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "#EFF6FF", color: "#1B4FD8" }}>
+                        Pick this client
+                      </span>
+                    </div>
+                    {r.client.email && (
+                      <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{r.client.email}</p>
+                    )}
+                    {r.businesses.length > 0 && (
+                      <p className="text-xs font-mono" style={{ color: "var(--rtm-text-muted)" }}>
+                        Existing domains: {r.businesses.map((b) => b.domain).join(", ")}
+                      </p>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+            {!searching && query.trim().length > 0 && searchResults.length === 0 && !searchError && (
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No existing clients match. Create a new client below.</p>
+            )}
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={onClose} className="flex-1 text-sm font-semibold py-2 rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>Cancel</button>
+              <button type="button" onClick={handleCreateNew} className="flex-1 text-sm font-semibold py-2 rounded-lg text-white" style={{ background: "var(--rtm-blue)" }}>Create New Client</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step: new-client-form */}
+        {step === "new-client-form" && (
+          <form onSubmit={handleNewClientFormNext} className="p-6 space-y-4">
+            <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Enter the new client’s details. These become the Client record in Postgres.</p>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Full Name *</label>
+              <input required type="text" value={newClientForm.fullName} onChange={(e) => setNewClientForm((f) => ({ ...f, fullName: e.target.value }))} className={inputCls} style={inputStyle} autoFocus />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Email</label>
+              <input type="email" value={newClientForm.email} onChange={(e) => setNewClientForm((f) => ({ ...f, email: e.target.value }))} className={inputCls} style={inputStyle} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Phone</label>
+              <input type="tel" value={newClientForm.phone} onChange={(e) => setNewClientForm((f) => ({ ...f, phone: e.target.value }))} className={inputCls} style={inputStyle} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Company</label>
+              <input type="text" value={newClientForm.company} onChange={(e) => setNewClientForm((f) => ({ ...f, company: e.target.value }))} className={inputCls} style={inputStyle} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={() => setStep("search")} className="flex-1 text-sm font-semibold py-2 rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>Back</button>
+              <button type="submit" className="flex-1 text-sm font-semibold py-2 rounded-lg text-white" style={{ background: "var(--rtm-blue)" }}>Review</button>
+            </div>
+          </form>
+        )}
+
+        {/* Step: confirm */}
+        {step === "confirm" && (
+          <div className="p-6 space-y-4">
+            <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Confirm what will be created</p>
+            {/* Client row */}
+            <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "var(--rtm-border-light)" }}>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+                {picked ? "Existing Client" : "New Client"}
+              </p>
+              {picked ? (
+                <>
+                  <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{picked.client.fullName}</p>
+                  {picked.client.email && <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{picked.client.email}</p>}
+                  {picked.businesses.length > 0 && (
+                    <p className="text-xs font-mono" style={{ color: "var(--rtm-text-muted)" }}>
+                      Existing domains: {picked.businesses.map((b) => b.domain).join(", ")}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{newClientForm.fullName}</p>
+                  {newClientForm.email && <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{newClientForm.email}</p>}
+                  {newClientForm.company && <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{newClientForm.company}</p>}
+                </>
+              )}
+            </div>
+            {/* Business row */}
+            <div className="rounded-lg border p-4 space-y-2" style={{ borderColor: "var(--rtm-border-light)" }}>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>New Business (always created)</p>
+              <p className="text-sm font-semibold font-mono" style={{ color: "var(--rtm-text-primary)" }}>{domain}</p>
+              <div className="grid grid-cols-2 gap-2 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                <span>Invoice: {invoice.contractValue}</span>
+                <span>Monthly: {invoice.monthlyValue}</span>
+                <span>Invoice status: paid</span>
+                <span>Payment status: confirmed</span>
+              </div>
+            </div>
+            <div className="rounded-lg border px-4 py-3 text-xs" style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}>
+              After confirming, notify Sales to move the opportunity to Closed Won in their pipeline.
+              Billing does not advance the stage — that is Sales’ action.
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button type="button" onClick={() => setStep(isCreatingNewClient ? "new-client-form" : "search")} className="flex-1 text-sm font-semibold py-2 rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }} disabled={saving}>Back</button>
+              <button type="button" onClick={() => { void handleConfirm(); }} className="flex-1 text-sm font-semibold py-2 rounded-lg text-white" style={{ background: saving ? "#93C5FD" : "var(--rtm-blue)" }} disabled={saving}>
+                {saving ? "Creating…" : "Confirm \u2014 Create Records"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step: result */}
+        {step === "result" && (
+          <div className="p-6 space-y-4">
+            <div
+              className="rounded-lg border p-4 space-y-2"
+              style={{ borderColor: resultMsg.ok ? "#A7F3D0" : "#FECACA", background: resultMsg.ok ? "#ECFDF5" : "#FEF2F2" }}
+            >
+              {resultMsg.lines.map((line, i) => (
+                <p key={i} className="text-sm" style={{ color: resultMsg.ok ? "#065F46" : "#991B1B" }}>{line}</p>
+              ))}
+            </div>
+            <button type="button" onClick={onClose} className="w-full text-sm font-semibold py-2 rounded-lg text-white" style={{ background: "var(--rtm-blue)" }}>Close</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BillingInvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>(INITIAL_INVOICES);
   const [handoffRows, setHandoffRows] = useState<SalesHandoffRow[]>(INITIAL_HANDOFF_ROWS);
-  const [masterClients, setMasterClients] = useState<MasterClient[]>(MASTER_CLIENTS);
-
-  // Hydrate from file-backed API on mount for cross-route-group reliability
-  useEffect(() => {
-    fetchMasterClients().then((live) => setMasterClients(live)).catch(() => {/* keep seed */});
-  }, []);
+  // masterClients still used for the client portfolio display on this page
+  const [masterClients] = useState<MasterClient[]>(MASTER_CLIENTS);
   const [billingTaskList, setBillingTaskList] = useState<WorkspaceTask[]>(() => getWorkspaceTasksByDepartment("Billing"));
   const [drawerInvoice, setDrawerInvoice] = useState<InvoiceRow | null>(null);
   const [handoffDrawerRow, setHandoffDrawerRow] = useState<SalesHandoffRow | null>(null);
   const [paymentTarget, setPaymentTarget] = useState<InvoiceRow | null>(null);
+  // B2/B3/B4 — MarkPaidFlowModal: shown when Billing marks an invoice Paid.
+  // Replaces the old autoCreateClientFromInvoice (MasterClient / file-backed) path.
+  const [markPaidTarget, setMarkPaidTarget] = useState<InvoiceRow | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createPrefill, setCreatePrefill] = useState<{ client: string; contractValue?: string; monthlyValue?: string; handoffId?: string } | undefined>(undefined);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "info" | "warning" | "error" } | null>(null);
@@ -806,118 +1304,6 @@ export default function BillingInvoicesPage() {
 
   function log(msg: string) {
     setActionLog((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev.slice(0, 9)]);
-  }
-
-  // ─── Auto-create/update client in master list when invoice is paid ──────────
-  async function autoCreateClientFromInvoice(inv: InvoiceRow) {
-    const clientName = inv.client;
-    const existing = masterClients.find(
-      (c) => c.clientName.toLowerCase() === clientName.toLowerCase() ||
-             c.clientName.toLowerCase().includes(clientName.toLowerCase())
-    );
-
-    const activeServices = (() => {
-      // If from a handoff, parse servicesSold; otherwise leave empty
-      const handoffRow = inv.salesHandoffId
-        ? handoffRows.find((r) => r.id === inv.salesHandoffId)
-        : undefined;
-      if (handoffRow) {
-        return handoffRow.servicesSold.split(",").map((s) => s.trim()).filter(Boolean);
-      }
-      return existing?.activeServices ?? [];
-    })();
-
-    const monthlyNum = (() => {
-      const raw = inv.monthlyValue.replace(/[$,]/g, "");
-      return parseInt(raw) || 0;
-    })();
-
-    if (existing) {
-      // Update billing-owned fields only
-      const updatedFields = {
-        billingStatus: "Cleared" as const,
-        invoiceStatus: "Paid" as const,
-        paymentStatus: "Paid" as const,
-        activeServices: activeServices.length > 0 ? activeServices : existing.activeServices,
-        billingOwner: inv.billingOwner,
-        monthlyValue: monthlyNum > 0 ? monthlyNum : existing.monthlyValue,
-        clientHealth: computeHealth({ billingStatus: "Cleared", paymentStatus: "Paid", cancellationStatus: existing.cancellationStatus, activationStatus: existing.activationStatus }),
-        priority: computePriority(computeHealth({ billingStatus: "Cleared", paymentStatus: "Paid", cancellationStatus: existing.cancellationStatus, activationStatus: existing.activationStatus }), "Cleared"),
-      };
-      setMasterClients((prev) => prev.map((c) =>
-        c.id === existing.id ? { ...c, ...updatedFields } : c
-      ));
-      // Persist to file-backed API (cross-route-group reliable)
-      await upsertMasterClient({ ...existing, ...updatedFields }).catch(() => {});
-      log(`✅ Master client updated: ${clientName} — billing fields synced from paid invoice`);
-      showToast(`${clientName} client record updated in master list`, "success");
-    } else {
-      // Create new client record
-      const slug = clientName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      const handoffRow = inv.salesHandoffId ? handoffRows.find((r) => r.id === inv.salesHandoffId) : undefined;
-      const newClient: MasterClient = {
-        id: `mc-auto-${Date.now()}`,
-        slug,
-        clientName,
-        email: "",
-        industry: "Unknown",
-        avatarColor: "#6366f1",
-        salesStatus: "Closed Won",
-        salesOwner: handoffRow?.salesOwner ?? "",
-        billingStatus: "Cleared",
-        invoiceStatus: "Paid",
-        paymentStatus: "Paid",
-        cancellationStatus: "None",
-        upgradeDowngradeStatus: "None",
-        cleared: false,
-        activeServices,
-        monthlyValue: monthlyNum,
-        billingOwner: inv.billingOwner,
-        // AM-owned — leave at defaults
-        assignedAM: "Unassigned",
-        activationStatus: "AM Assignment Needed",
-        onboardingStatus: "Not Started",
-        renewalDate: "—",
-        renewalStatus: "N/A",
-        // ── Stripe groundwork (schema only — live wiring deferred to launch) ──────
-        // FUTURE LIVE INTEGRATION HOOK: when Stripe integration goes live,
-        // auto-created clients should have a Stripe Customer created here:
-        //   const customer = await stripe.customers.create({ email, name: clientName });
-        //   stripeCustomerId = customer.id; stripeSyncStatus = "Connected";
-        stripeCustomerId: null,
-        stripeInvoiceId: null,
-        stripeSubscriptionId: null,
-        stripeSyncStatus: "Not Connected" as const,
-        // Computed
-        clientHealth: "Good",
-        priority: "High",
-        currentStatus: "Invoice Paid",
-        workflowStatus: "In Progress",
-        lastActivity: new Date().toISOString().slice(0, 10),
-        nextRequiredAction: "Invoice paid — awaiting Billing clearance for AM handoff",
-        notes: `Auto-created from Sales Handoff invoice ${inv.invoiceNumber}`,
-        activationChecklist: {
-          invoicePaid: true,
-          billingCleared: true,
-          contractConfirmed: true,
-          servicesConfirmed: activeServices.length > 0,
-          clientContactVerified: false,
-          amAssigned: false,
-          onboardingRecordCreated: false,
-          activationTasksCreated: false,
-          kickoffNeeded: true,
-          kickoffCallCompleted: false,
-        },
-        recentEvents: [
-          { date: new Date().toISOString().slice(0, 10), actor: inv.billingOwner, action: `Client auto-created — invoice ${inv.invoiceNumber} marked paid` },
-        ],
-      };
-      setMasterClients((prev) => [...prev, newClient]);
-      // Persist to file-backed API (cross-route-group reliable)
-      await upsertMasterClient(newClient).catch(() => {});
-      log(`✅ New client auto-created: ${clientName} — added to master client list`);
-      showToast(`${clientName} automatically created in master client list`, "success");
-    }
   }
 
   function updateStatus(id: string, invoiceStatus: InvoiceStatus, paymentStatus: PaymentStatus, msg: string, toastVariant: "success" | "info" | "warning" | "error" = "success") {
@@ -945,18 +1331,25 @@ export default function BillingInvoicesPage() {
     updateStatus(id, newInvoiceStatus, newPaymentStatus,
       `Payment recorded: $${amountNum.toFixed(2)} via ${method} for ${inv.invoiceNumber}`, "success");
 
-    // Auto-create/update client when fully paid
+    // B2 — When fully paid, open the MarkPaidFlowModal so Billing can search
+    // for an existing Client or create a new one, then write to Postgres.
+    // The old autoCreateClientFromInvoice (MasterClient / file-backed) path
+    // has been removed. The modal fires after the status update so the table
+    // reflects Paid immediately and the modal can be dismissed without changing
+    // the invoice status.
     if (isPaid) {
       const updatedInv: InvoiceRow = { ...inv, invoiceStatus: "Paid", paymentStatus: "Paid" };
-      void autoCreateClientFromInvoice(updatedInv);
+      setMarkPaidTarget(updatedInv);
     }
   }
 
   function handleMarkAsPaid(id: string) {
     const inv = invoices.find((i) => i.id === id)!;
     updateStatus(id, "Paid", "Paid", `${inv.invoiceNumber} marked as Paid`, "success");
+    // B2 — Open the MarkPaidFlowModal. The invoice status is already Paid in
+    // local state; the modal handles Client + Business creation in Postgres.
     const updatedInv: InvoiceRow = { ...inv, invoiceStatus: "Paid", paymentStatus: "Paid" };
-    void autoCreateClientFromInvoice(updatedInv);
+    setMarkPaidTarget(updatedInv);
   }
 
   function handleCreateInvoice(inv: InvoiceRow, handoffId?: string) {
@@ -1207,6 +1600,17 @@ export default function BillingInvoicesPage() {
           onSave={handleRecordPayment}
         />
       )}
+      {/* B2/B3/B4 — Mark Paid flow: Client search + Business creation in Postgres */}
+      {markPaidTarget && (
+        <MarkPaidFlowModal
+          invoice={markPaidTarget}
+          onClose={() => setMarkPaidTarget(null)}
+          onDone={(summary) => {
+            log(`✅ ${summary}`);
+            showToast(summary, "success");
+          }}
+        />
+      )}
       {showCreateModal && (
         <CreateInvoiceModal
           onClose={() => { setShowCreateModal(false); setCreatePrefill(undefined); }}
@@ -1423,28 +1827,11 @@ export default function BillingInvoicesPage() {
           </table>
         </div>
         <p className="text-xs mt-2" style={{ color: "var(--rtm-text-muted)" }}>
-          Auto-client creation: when a handoff-originated invoice is marked Paid, the client is automatically added to or updated in the master client list with Billing-owned fields populated.
+          When an invoice is marked Paid, Billing completes the Client & Business creation flow.
+          Client and Business records are written to Postgres. Sales is then notified to move
+          the opportunity to Closed Won in their pipeline.
         </p>
       </SectionWrapper>
-
-      {/* Auto-created clients notice */}
-      {masterClients.length > MASTER_CLIENTS.length && (
-        <div className="rounded-xl border p-4 space-y-2" style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}>
-          <p className="text-sm font-bold" style={{ color: "#065F46" }}>
-            ✅ {masterClients.length - MASTER_CLIENTS.length} client{masterClients.length - MASTER_CLIENTS.length > 1 ? "s" : ""} auto-created this session
-          </p>
-          <p className="text-xs" style={{ color: "#065F46" }}>
-            These clients were automatically added to the master client list when their invoices were marked Paid.
-            They are visible on Billing › Client Portfolio and Admin › Clients.
-          </p>
-          {masterClients.slice(MASTER_CLIENTS.length).map((c) => (
-            <div key={c.id} className="flex items-center gap-2 text-xs font-semibold" style={{ color: "#065F46" }}>
-              <span className="w-4 h-4 rounded flex-shrink-0 flex items-center justify-center text-white text-[10px]" style={{ background: c.avatarColor }}>{c.clientName.charAt(0)}</span>
-              {c.clientName} — {c.activeServices.join(", ") || "Services TBD"} · {c.billingOwner}
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Footer */}
       <div className="flex gap-2">
