@@ -23,7 +23,7 @@ type LeadStage =
 
 type GHLSyncStatus = "Synced"| "Pending Sync"| "Sync Failed"| "Manual Override"| "Not Connected";
 
-// Derived opportunity state — computed from lead.stage + opportunities table.
+// Derived opportunity state - computed from lead.stage + opportunities table.
 // Nothing stored. PENDING = not Qualified. READY = Qualified + no opportunity.
 // CREATED = an opportunity row exists for this lead.
 type OppState = "Pending" | "Ready" | "Created";
@@ -69,7 +69,7 @@ interface Lead {
   // Persisted overlay fields
   disqualified?: boolean;
   disqualifiedReason?: string;
-  // GHL overlay fields — written by /api/ghl/sync-lead, hydrated from leads-status
+  // GHL overlay fields - written by /api/ghl/sync-lead, hydrated from leads-status
   ghlContactIdReal?: string;     // real GHL ID (overrides the static ghlContactId)
   ghlSyncStatusReal?: string;    // real sync status from API
   ghlSyncError?: string;
@@ -91,6 +91,7 @@ interface LeadStatusRecord {
   businessName?: string;
   industry?: string;
   leadSource?: string;
+  website?: string;
   // GHL sync overlay fields (written by /api/ghl/sync-lead)
   ghlContactId?: string;
   ghlSyncStatus?: string;
@@ -102,7 +103,7 @@ interface LeadStatusRecord {
 //  Seed Data ─────────────────────────────────────────────────────────────────
 // NOTE: The authoritative lead store is now data/leads.json (served by
 // /api/leads). The LEADS array below is kept as a fallback seed for SSR/build
-// type safety but is not used as the runtime source — the page fetches from
+// type safety but is not used as the runtime source - the page fetches from
 // /api/leads on mount and replaces this initial state.
 
 const LEADS: Lead[] = [
@@ -138,7 +139,7 @@ const LEADS: Lead[] = [
     painPoints: ["Low Google ranking", "No PPC experience"],
     requestedServices: ["SEO", "PPC", "GBP"],
     budget: "Medium", authority: "Decision Maker", need: "High", timeline: "1-3 months",
-    estimatedValue: 1800, affiliateName: "—",
+    estimatedValue: 1800, affiliateName: "-",
     createdDate: "2024-12-05", lastActivity: "Yesterday",
     notes: "Referred by website contact form.",
   },
@@ -156,7 +157,7 @@ const LEADS: Lead[] = [
     painPoints: ["Wasted ad spend", "No attribution", "Poor Meta ROI"],
     requestedServices: ["PPC", "Meta Ads", "Reporting", "SEO"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
-    estimatedValue: 5000, affiliateName: "—",
+    estimatedValue: 5000, affiliateName: "-",
     createdDate: "2024-11-15", lastActivity: "2 days ago",
     notes: "High value deal. Discovery complete. Needs qualification.",
   },
@@ -174,7 +175,7 @@ const LEADS: Lead[] = [
     painPoints: ["Inconsistent lead flow", "Too dependent on referrals"],
     requestedServices: ["SEO", "Web"],
     budget: "Medium", authority: "Influencer", need: "Medium", timeline: "3-6 months",
-    estimatedValue: 3200, affiliateName: "—",
+    estimatedValue: 3200, affiliateName: "-",
     createdDate: "2024-12-08", lastActivity: "3 days ago",
     notes: "Partner referral via BuildRight network.",
   },
@@ -210,7 +211,7 @@ const LEADS: Lead[] = [
     painPoints: ["Too dependent on Google Ads", "No SEO foundation"],
     requestedServices: ["LSA", "PPC", "SEO", "GBP"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
-    estimatedValue: 6000, affiliateName: "—",
+    estimatedValue: 6000, affiliateName: "-",
     createdDate: "2024-11-01", lastActivity: "1 week ago",
     notes: "Moving to qualified. All readiness criteria met.",
   },
@@ -228,7 +229,7 @@ const LEADS: Lead[] = [
     painPoints: ["Seasonal business", "No digital presence"],
     requestedServices: ["SEO", "GBP"],
     budget: "Low", authority: "Decision Maker", need: "Medium", timeline: "3-6 months",
-    estimatedValue: 2000, affiliateName: "—",
+    estimatedValue: 2000, affiliateName: "-",
     createdDate: "2024-12-10", lastActivity: "4 days ago",
     notes: "Client referral from Summit Landscaping.",
   },
@@ -248,7 +249,7 @@ const LEADS: Lead[] = [
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
     estimatedValue: 8000, affiliateName: "Tyler Nguyen",
     createdDate: "2024-11-20", lastActivity: "Today",
-    notes: "Tyler Nguyen affiliate. Highest value lead. GHL sync error — needs review.",
+    notes: "Tyler Nguyen affiliate. Highest value lead. GHL sync error - needs review.",
   },
   {
     id: "L009", name: "Amber Chen", businessName: "Coastal Wellness Spa", industry: "Health & Wellness",
@@ -300,7 +301,7 @@ const LEADS: Lead[] = [
     painPoints: ["Low membership signups", "No digital ads"],
     requestedServices: ["Meta Ads", "SEO"],
     budget: "Low", authority: "Decision Maker", need: "Medium", timeline: "1-3 months",
-    estimatedValue: 1500, affiliateName: "—",
+    estimatedValue: 1500, affiliateName: "-",
     createdDate: "2024-12-12", lastActivity: "Yesterday",
     notes: "Meta Ads inbound. Initial contact made.",
   },
@@ -318,7 +319,7 @@ const LEADS: Lead[] = [
     painPoints: ["High cost per lead", "Google LSA not optimized"],
     requestedServices: ["LSA", "PPC", "GBP"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
-    estimatedValue: 4200, affiliateName: "—",
+    estimatedValue: 4200, affiliateName: "-",
     createdDate: "2024-11-25", lastActivity: "2 days ago",
     notes: "LSA inbound. Strong budget. All readiness criteria met.",
   },
@@ -336,7 +337,7 @@ const LEADS: Lead[] = [
     painPoints: ["No digital marketing"],
     requestedServices: ["SEO", "GBP"],
     budget: "Low", authority: "Unknown", need: "Medium", timeline: "3-6 months",
-    estimatedValue: 1200, affiliateName: "—",
+    estimatedValue: 1200, affiliateName: "-",
     createdDate: "2024-12-14", lastActivity: "Today",
     notes: "GBP inquiry. Fresh lead.",
   },
@@ -354,7 +355,7 @@ const LEADS: Lead[] = [
     painPoints: ["Missed storm season opportunities", "Competitor outspending on LSA"],
     requestedServices: ["LSA", "PPC", "GBP", "SEO"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
-    estimatedValue: 3600, affiliateName: "—",
+    estimatedValue: 3600, affiliateName: "-",
     createdDate: "2024-11-10", lastActivity: "Yesterday",
     notes: "Strong Google Ads lead. Discovery done. Budget discussed.",
   },
@@ -372,7 +373,7 @@ const LEADS: Lead[] = [
     painPoints: ["Low Google ranking", "Competitor LSA domination"],
     requestedServices: ["SEO", "GBP", "PPC"],
     budget: "Medium", authority: "Decision Maker", need: "High", timeline: "1-3 months",
-    estimatedValue: 2800, affiliateName: "—",
+    estimatedValue: 2800, affiliateName: "-",
     createdDate: "2024-12-01", lastActivity: "Today",
     notes: "Client referral. Discovery complete. Business need identified.",
   },
@@ -390,7 +391,7 @@ const LEADS: Lead[] = [
     painPoints: ["Inconsistent Meta Ads results", "No SEO strategy"],
     requestedServices: ["Meta Ads", "SEO", "GBP", "Reporting"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
-    estimatedValue: 7500, affiliateName: "—",
+    estimatedValue: 7500, affiliateName: "-",
     createdDate: "2024-11-08", lastActivity: "Today",
     notes: "Premium deal. All readiness criteria met.",
   },
@@ -408,7 +409,7 @@ const LEADS: Lead[] = [
     painPoints: ["No online presence"],
     requestedServices: ["SEO", "GBP"],
     budget: "Low", authority: "Unknown", need: "Low", timeline: "6+ months",
-    estimatedValue: 900, affiliateName: "—",
+    estimatedValue: 900, affiliateName: "-",
     createdDate: "2024-12-13", lastActivity: "Today",
     notes: "Website form fill. Left voicemail.",
   },
@@ -426,7 +427,7 @@ const LEADS: Lead[] = [
     painPoints: ["No online reviews", "No website SEO"],
     requestedServices: ["SEO", "Web", "GBP"],
     budget: "Medium", authority: "Decision Maker", need: "Medium", timeline: "3-6 months",
-    estimatedValue: 2100, affiliateName: "—",
+    estimatedValue: 2100, affiliateName: "-",
     createdDate: "2024-12-09", lastActivity: "2 days ago",
     notes: "Cold outbound. Interested but needs follow-up.",
   },
@@ -444,7 +445,7 @@ const LEADS: Lead[] = [
     painPoints: ["No digital presence"],
     requestedServices: ["SEO", "GBP"],
     budget: "Low", authority: "Decision Maker", need: "Medium", timeline: "3-6 months",
-    estimatedValue: 1400, affiliateName: "—",
+    estimatedValue: 1400, affiliateName: "-",
     createdDate: "2024-12-15", lastActivity: "Today",
     notes: "Meta Ads form fill. Needs initial call.",
   },
@@ -480,7 +481,7 @@ const LEADS: Lead[] = [
     painPoints: ["No digital presence", "Losing referrals to larger agencies"],
     requestedServices: ["SEO", "GBP", "Web", "Reporting"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "1-3 months",
-    estimatedValue: 3800, affiliateName: "—",
+    estimatedValue: 3800, affiliateName: "-",
     createdDate: "2024-11-27", lastActivity: "2 days ago",
     notes: "Physician referral. Qualified. Ready for opportunity.",
   },
@@ -498,7 +499,7 @@ const LEADS: Lead[] = [
     painPoints: ["Competitor LSA domination", "No organic SEO"],
     requestedServices: ["SEO", "LSA", "GBP"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "1-3 months",
-    estimatedValue: 4800, affiliateName: "—",
+    estimatedValue: 4800, affiliateName: "-",
     createdDate: "2024-11-28", lastActivity: "2 days ago",
     notes: "Partner referral. Strong qualification. Manual override on GHL sync.",
   },
@@ -516,7 +517,7 @@ const LEADS: Lead[] = [
     painPoints: ["Competitor dominance on LSA"],
     requestedServices: ["LSA", "PPC", "GBP"],
     budget: "Medium", authority: "Decision Maker", need: "High", timeline: "Immediate",
-    estimatedValue: 2700, affiliateName: "—",
+    estimatedValue: 2700, affiliateName: "-",
     createdDate: "2024-11-26", lastActivity: "Today",
     notes: "LSA inbound. Discovery done. Decision maker confirmed.",
   },
@@ -534,7 +535,7 @@ const LEADS: Lead[] = [
     painPoints: ["High Google Ads spend with poor ROI"],
     requestedServices: ["PPC", "SEO", "LSA", "GBP"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "Immediate",
-    estimatedValue: 4100, affiliateName: "—",
+    estimatedValue: 4100, affiliateName: "-",
     createdDate: "2024-11-30", lastActivity: "Today",
     notes: "Google Ads inbound. Budget discussed. Hot lead.",
   },
@@ -551,7 +552,7 @@ const LEADS: Lead[] = [
     businessGoals: [], painPoints: [],
     requestedServices: [],
     budget: "Unknown", authority: "Unknown", need: "Low", timeline: "6+ months",
-    estimatedValue: 0, affiliateName: "—",
+    estimatedValue: 0, affiliateName: "-",
     createdDate: "2024-11-20", lastActivity: "2 weeks ago",
     notes: "Not a fit. Already with large agency. Disqualified.",
     disqualified: true, disqualifiedReason: "Already with large agency",
@@ -570,7 +571,7 @@ const LEADS: Lead[] = [
     painPoints: ["Limited Google Ads budget utilization", "No LSA"],
     requestedServices: ["LSA", "SEO", "GBP", "PPC"],
     budget: "Medium", authority: "Decision Maker", need: "High", timeline: "1-3 months",
-    estimatedValue: 2400, affiliateName: "—",
+    estimatedValue: 2400, affiliateName: "-",
     createdDate: "2024-12-03", lastActivity: "Today",
     notes: "Google Ads inbound. Discovery complete. Business need confirmed.",
   },
@@ -588,7 +589,7 @@ const LEADS: Lead[] = [
     painPoints: ["Sales team fully manual", "No inbound leads"],
     requestedServices: ["PPC", "SEO", "GBP"],
     budget: "High", authority: "Decision Maker", need: "High", timeline: "1-3 months",
-    estimatedValue: 3900, affiliateName: "—",
+    estimatedValue: 3900, affiliateName: "-",
     createdDate: "2024-11-22", lastActivity: "Today",
     notes: "Cold outbound converted. Ready for opportunity.",
   },
@@ -606,7 +607,7 @@ const LEADS: Lead[] = [
     painPoints: ["No online presence", "Dependent on word of mouth"],
     requestedServices: ["SEO", "GBP"],
     budget: "Medium", authority: "Decision Maker", need: "Medium", timeline: "3-6 months",
-    estimatedValue: 1400, affiliateName: "—",
+    estimatedValue: 1400, affiliateName: "-",
     createdDate: "2024-12-15", lastActivity: "Today",
     notes: "Website inquiry. First contact pending.",
   },
@@ -642,13 +643,13 @@ const LEADS: Lead[] = [
     painPoints: ["No online presence", "Relying on word of mouth"],
     requestedServices: ["SEO", "GBP", "LSA"],
     budget: "Medium", authority: "Decision Maker", need: "Medium", timeline: "1-3 months",
-    estimatedValue: 1800, affiliateName: "—",
+    estimatedValue: 1800, affiliateName: "-",
     createdDate: "2024-12-11", lastActivity: "Yesterday",
     notes: "Meta form. Discovery next week. GHL sync error.",
   },
 ];
 
-//  Merge helper — apply persisted overrides onto a Lead ─────────────────────
+//  Merge helper - apply persisted overrides onto a Lead ─────────────────────
 
 function applyOverride(lead: Lead, record: LeadStatusRecord | undefined): Lead {
   if (!record) return lead;
@@ -666,7 +667,8 @@ function applyOverride(lead: Lead, record: LeadStatusRecord | undefined): Lead {
     ...(record.businessName       !== undefined ? { businessName: record.businessName }           : {}),
     ...(record.industry           !== undefined ? { industry: record.industry }                   : {}),
     ...(record.leadSource         !== undefined ? { leadSource: record.leadSource as LeadSource } : {}),
-    // GHL overlay fields — real sync state from /api/ghl/sync-lead
+    ...(record.website            !== undefined ? { website: record.website }                     : {}),
+    // GHL overlay fields - real sync state from /api/ghl/sync-lead
     ...(record.ghlContactId    !== undefined ? { ghlContactIdReal: record.ghlContactId }    : {}),
     ...(record.ghlSyncStatus   !== undefined ? { ghlSyncStatusReal: record.ghlSyncStatus } : {}),
     ...(record.ghlSyncError    !== undefined ? { ghlSyncError: record.ghlSyncError }        : {}),
@@ -747,17 +749,17 @@ function oppStateBadge(
   oppInfo: OpportunityInfo | undefined,
   oppLoadError: boolean
 ) {
-  // If the load failed we cannot assert anything — show neutral state.
+  // If the load failed we cannot assert anything - show neutral state.
   if (oppLoadError) {
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
         style={{ background: "#F1F5F9", color: "#94A3B8" }}>
-        —
+        -
       </span>
     );
   }
   if (oppInfo !== undefined) {
-    // CREATED — an opportunity row exists for this lead
+    // CREATED - an opportunity row exists for this lead
     return (
       <div className="space-y-0.5">
         <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
@@ -774,7 +776,7 @@ function oppStateBadge(
     );
   }
   if (lead.stage === "Qualified") {
-    // READY — Qualified + no opportunity
+    // READY - Qualified + no opportunity
     return (
       <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
         style={{ background: "#FFFBEB", color: "#D97706", border: "1px solid #FDE68A" }}>
@@ -782,7 +784,7 @@ function oppStateBadge(
       </span>
     );
   }
-  // PENDING — not yet Qualified
+  // PENDING - not yet Qualified
   return (
     <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold"
       style={{ background: "#F1F5F9", color: "#94A3B8" }}>
@@ -818,7 +820,7 @@ async function persistLeadStatus(leadId: string, patch: Partial<LeadStatusRecord
 // ── GHL Stage Tag Sync (fire-and-forget) ──────────────────────────────────────
 //
 // Pushes the new stage to GHL as a Contact tag after a stage change.
-// Always fire-and-forget — the RTM-side save has already happened before this
+// Always fire-and-forget - the RTM-side save has already happened before this
 // is called.  The server route writes the outcome back to lead_statuses.
 // The onResult callback (if provided) fires when the request settles so the
 // caller can surface the outcome to the user without blocking the stage save.
@@ -838,7 +840,7 @@ function pushStageToGhl(
   // takes priority over the static field on the seed record.
   const ghlContactId = lead.ghlContactIdReal ?? lead.ghlContactId;
 
-  // Fire without awaiting — intentionally non-blocking.
+  // Fire without awaiting - intentionally non-blocking.
   fetch("/api/ghl/sync-lead-stage", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -935,11 +937,12 @@ function EditLeadModal({ lead, onClose, onSave }: {
   const [businessName, setBusinessName] = useState(lead.businessName);
   const [industry, setIndustry] = useState(lead.industry);
   const [leadSource, setLeadSource] = useState<LeadSource>(lead.leadSource);
+  const [website, setWebsite] = useState(lead.website ?? "");
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
-    const patch = { name, businessName, industry, leadSource };
+    const patch = { name, businessName, industry, leadSource, website: website.trim() };
     await persistLeadStatus(lead.id, patch);
     onSave(patch);
     setSaving(false);
@@ -951,7 +954,7 @@ function EditLeadModal({ lead, onClose, onSave }: {
         <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
         <button onClick={handleSave} disabled={saving} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
-          {saving ? "Saving…" : "Save Changes"}
+          {saving ? "Saving..." : "Save Changes"}
         </button>
       </>}>
       <div>
@@ -976,6 +979,12 @@ function EditLeadModal({ lead, onClose, onSave }: {
           style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
           {LEAD_SOURCE_OPTIONS.map(s => <option key={s}>{s}</option>)}
         </select>
+      </div>
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Website (optional)</label>
+        <input value={website} onChange={e => setWebsite(e.target.value)} placeholder="e.g. acme.com"
+          className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
       </div>
     </ModalShell>
   );
@@ -1003,7 +1012,7 @@ function AssignRepModal({ lead, onClose, onSave }: {
         <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
         <button onClick={handleSave} disabled={saving} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
-          {saving ? "Saving…" : "Assign Rep"}
+          {saving ? "Saving..." : "Assign Rep"}
         </button>
       </>}>
       <div>
@@ -1067,7 +1076,7 @@ function ScheduleDiscoveryModal({ lead, onClose, onSave, onGhlResult }: {
         <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
         <button onClick={handleSave} disabled={saving || !date} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
-          {saving ? "Saving…" : title}
+          {saving ? "Saving..." : title}
         </button>
       </>}>
       <div>
@@ -1119,7 +1128,7 @@ function MoveStageModal({ lead, onClose, onSave, onGhlResult }: {
           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
         <button onClick={handleSave} disabled={saving || stage === lead.stage}
           className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
-          {saving ? "Saving…" : "Move Stage"}
+          {saving ? "Saving..." : "Move Stage"}
         </button>
       </>}>
       <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Current: <strong>{lead.stage}</strong></p>
@@ -1170,7 +1179,7 @@ function AddNoteModal({ lead, onClose, onSave }: {
         <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
         <button onClick={handleSave} disabled={saving || !note.trim()} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
-          {saving ? "Saving…" : "Add Note"}
+          {saving ? "Saving..." : "Add Note"}
         </button>
       </>}>
       {lead.notes && (
@@ -1235,7 +1244,7 @@ function DisqualifyModal({ lead, onClose, onSave, onGhlResult }: {
         <button onClick={handleSave} disabled={saving}
           className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40"
           style={{ background: "#DC2626", color: "#fff" }}>
-          {saving ? "Saving…" : "Disqualify Lead"}
+          {saving ? "Saving..." : "Disqualify Lead"}
         </button>
       </>}>
       <div className="rounded-lg p-4 border" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
@@ -1329,7 +1338,7 @@ function CreateFollowUpModal({ lead, onClose, onSave }: {
         <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
         <button onClick={handleSave} disabled={saving} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
-          {saving ? "Creating…" : "Create Task"}
+          {saving ? "Creating..." : "Create Task"}
         </button>
       </>}>
       {error && (
@@ -1399,7 +1408,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, opp
   onClose: () => void;
   onAction: (modal: ActiveModal) => void;
   onCreateOpportunity: (lead: Lead) => void;
-  // Derived opportunity state — oppInfo is undefined when no opportunity exists
+  // Derived opportunity state - oppInfo is undefined when no opportunity exists
   // (or while loading); oppLoadError is true when the fetch failed entirely.
   oppInfo: OpportunityInfo | undefined;
   oppLoadError: boolean;
@@ -1613,7 +1622,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, opp
             const hasRealContactId =
               liveContactId &&
               !liveContactId.startsWith("GHL-CON-") &&
-              liveContactId !== "—";
+              liveContactId !== "-";
             const displayStatus: GHLSyncStatus | "Not Connected" = hasRealContactId ? liveSyncStatus : "Not Connected";
             const lastSynced = lead.ghlLastSyncedAt
               ? new Date(lead.ghlLastSyncedAt).toLocaleString()
@@ -1793,7 +1802,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, opp
             </>
           )}
 
-          {/* OPPORTUNITY — derived state tab */}
+          {/* OPPORTUNITY - derived state tab */}
           {activeTab === "opportunity" && (
             <>
               <section>
@@ -1856,7 +1865,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, opp
           {/* AFFILIATE */}
           {activeTab === "affiliate" && (
             <>
-              {lead.affiliateName !== "—" ? (
+              {lead.affiliateName !== "-" ? (
                 <section>
                   <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: "var(--rtm-text-muted)" }}>Affiliate Attribution</h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -1978,6 +1987,7 @@ interface AddLeadFormState {
   assignedRep: string;
   contactEmail: string;
   contactPhone: string;
+  website: string;
   notes: string;
 }
 
@@ -1985,7 +1995,7 @@ const EMPTY_ADD_LEAD_FORM: AddLeadFormState = {
   businessName: "", contactName: "",
   industry: MODAL_INDUSTRY_OPTIONS[0], location: "",
   leadSource: MODAL_SOURCE_OPTIONS[0], assignedRep: MODAL_ASSIGNED_REPS[0],
-  contactEmail: "", contactPhone: "", notes: "",
+  contactEmail: "", contactPhone: "", website: "", notes: "",
 };
 
 function AddLeadModal({ onClose, onAdd }: {
@@ -2012,9 +2022,9 @@ function AddLeadModal({ onClose, onAdd }: {
     const newLead: Lead = {
       id: `L${String(Date.now()).slice(-6)}`,
       name: form.contactName, businessName: form.businessName,
-      industry: form.industry, website: "", email: form.contactEmail,
+      industry: form.industry, website: form.website.trim(), email: form.contactEmail,
       phone: form.contactPhone, location: form.location,
-      ghlContactId: "—", ghlAssignedUser: form.assignedRep,
+      ghlContactId: "-", ghlAssignedUser: form.assignedRep,
       ghlSource: form.leadSource, ghlCreatedDate: new Date().toISOString().split("T")[0],
       ghlLastActivityDate: new Date().toISOString().split("T")[0],
       ghlContactTags: [], ghlContactStatus: "New", ghlSyncStatus: "Pending Sync",
@@ -2023,7 +2033,7 @@ function AddLeadModal({ onClose, onAdd }: {
       discoveryScheduled: false, discoveryDate: "", discoveryNotes: "",
       businessGoals: [], painPoints: [], requestedServices: [],
       budget: "Unknown", authority: "Unknown", need: "Low", timeline: "6+ months",
-      estimatedValue: 0, affiliateName: "—",
+      estimatedValue: 0, affiliateName: "-",
       createdDate: new Date().toISOString().split("T")[0], lastActivity: "Just now",
       notes: form.notes,
     };
@@ -2107,6 +2117,12 @@ function AddLeadModal({ onClose, onAdd }: {
                 className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
                 style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
             </div>
+          </div>
+          <div>
+            <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Website (optional)</label>
+            <input value={form.website} onChange={e => set("website", e.target.value)} placeholder="e.g. acme.com"
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
           </div>
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Notes (optional)</label>
@@ -2208,7 +2224,7 @@ function AssignLeadsModal({ leads, onClose, onAssign }: {
   onClose: () => void;
   onAssign: (leadIds: string[], rep: string) => void;
 }) {
-  const unassigned = leads.filter(l => !l.assignedRep || l.assignedRep === "—");
+  const unassigned = leads.filter(l => !l.assignedRep || l.assignedRep === "-");
   const candidates = unassigned.length > 0 ? unassigned : leads.slice(0, 5);
   const [selectedIds, setSelectedIds] = useState<string[]>(candidates.map(l => l.id));
   const [rep, setRep] = useState(ASSIGN_REPS[0]);
@@ -2272,7 +2288,7 @@ function SalesLeadsPageInner() {
   const [stageFilter, setStageFilter] = useState<LeadStage | "All">("All");
   const [sourceFilter, setSourceFilter] = useState<string>("All");
   const [syncFilter, setSyncFilter] = useState<GHLSyncStatus | "All">("All");
-  // Opportunity filter — All / Pending / Ready / Created.
+  // Opportunity filter - All / Pending / Ready / Created.
   // Same pattern as stageFilter/sourceFilter: useState, no persistence, default "All".
   const [oppFilter, setOppFilter] = useState<OppState | "All">("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -2290,7 +2306,8 @@ function SalesLeadsPageInner() {
   const [selectedLeadForOpportunity, setSelectedLeadForOpportunity] = useState<{
     id: string; clientName: string; businessName: string; contactName: string;
     contactPhone: string; contactEmail: string; leadSource: string; assignedRep: string; notes: string;
-    // GHL Contact linkage — carried forward to preserve the Lead-to-Opportunity GHL relationship
+    website: string;
+    // GHL Contact linkage - carried forward to preserve the Lead-to-Opportunity GHL relationship
     ghlContactIdReal?: string;
     ghlContactId?: string;
   } | null>(null);
@@ -2299,12 +2316,12 @@ function SalesLeadsPageInner() {
   // ── Opportunity lookup ───────────────────────────────────────────────────────────
   // ONE fetch of /api/sales-opportunities at page load. All PENDING/READY/CREATED
   // states are derived from this map + lead.stage. Nothing is stored.
-  // oppByLeadId: Map<leadId, OpportunityInfo> — populated on load.
+  // oppByLeadId: Map<leadId, OpportunityInfo> - populated on load.
   // oppLoadError: true when the fetch failed; forces neutral state in the UI.
   const [oppByLeadId, setOppByLeadId] = useState<Map<string, OpportunityInfo>>(new Map());
   const [oppLoadError, setOppLoadError] = useState<boolean>(false);
 
-  // Date range filter — applied to createdDate; drives KPIs, Lead Stages, and table
+  // Date range filter - applied to createdDate; drives KPIs, Lead Stages, and table
   const {
     dateRange, setDateRange,
     customStart, setCustomStart,
@@ -2354,7 +2371,7 @@ function SalesLeadsPageInner() {
           if (!cancelled) setLeads(baseLeads);
         }
 
-        // 3. Fetch opportunities — ONE call for the whole list.
+        // 3. Fetch opportunities - ONE call for the whole list.
         // Build a Map<leadId, OpportunityInfo> for O(1) derived-state lookups.
         // If this fetch fails, set oppLoadError = true so the UI shows neutral
         // state rather than a false READY or PENDING.
@@ -2404,7 +2421,7 @@ function SalesLeadsPageInner() {
 
   // Open a specific lead's drawer when ?leadId=<id> is in the URL.
   // Fires once leads have been loaded. If the id does not resolve, the page
-  // loads normally — no error state.
+  // loads normally - no error state.
   const didOpenLeadFromParam = React.useRef(false);
   useEffect(() => {
     if (didOpenLeadFromParam.current) return;
@@ -2427,7 +2444,7 @@ function SalesLeadsPageInner() {
 
   function dismissToast(id: number) { setToasts(prev => prev.filter(t => t.id !== id)); }
 
-  // Generic lead updater — applies a partial patch to the in-memory lead and closes any modal
+  // Generic lead updater - applies a partial patch to the in-memory lead and closes any modal
   function patchLead(leadId: string, patch: Partial<Lead>) {
     setLeads(prev => prev.map(l => l.id === leadId ? { ...l, ...patch } : l));
     // If the open drawer has this lead, update it too
@@ -2486,21 +2503,21 @@ function SalesLeadsPageInner() {
   function handleGhlResult(leadId: string, outcome: GhlPushOutcome) {
     if (outcome.kind === "pushed") {
       patchLead(leadId, { ghlSyncStatusReal: "Synced", ghlSyncError: "" } as Partial<Lead>);
-      addToast("GHL sync — stage pushed successfully", "success");
+      addToast("GHL sync - stage pushed successfully", "success");
     } else if (outcome.kind === "skipped") {
       // RTM stage is saved; GHL push was skipped because no real contact ID exists.
       // The badge stays as-is (DB-driven); only surface a quiet info toast.
-      addToast("GHL sync skipped — lead has no GHL contact ID yet", "info");
+      addToast("GHL sync skipped - lead has no GHL contact ID yet", "info");
     } else {
       // outcome.kind === "failed"
       patchLead(leadId, { ghlSyncStatusReal: "Sync Failed", ghlSyncError: outcome.error } as Partial<Lead>);
-      addToast(`GHL sync failed — ${outcome.error}`, "danger");
+      addToast(`GHL sync failed - ${outcome.error}`, "danger");
     }
   }
 
   function handleFollowUpCreated() {
     setActiveModal(null);
-    addToast("Follow-up task created — visible on Sales Tasks");
+    addToast("Follow-up task created - visible on Sales Tasks");
   }
 
   function handleImportLeads(mockCount: number) {
@@ -2508,7 +2525,7 @@ function SalesLeadsPageInner() {
       id: `LIMP${Date.now()}${i}`,
       name: `Imported Contact ${i + 1}`, businessName: `Imported Business ${i + 1}`,
       industry: "Home Services", website: "", email: `contact${i + 1}@imported.com`,
-      phone: "", location: "—", ghlContactId: "—", ghlAssignedUser: ASSIGN_REPS[0],
+      phone: "", location: "-", ghlContactId: "-", ghlAssignedUser: ASSIGN_REPS[0],
       ghlSource: "Website", ghlCreatedDate: new Date().toISOString().split("T")[0],
       ghlLastActivityDate: new Date().toISOString().split("T")[0],
       ghlContactTags: [], ghlContactStatus: "New", ghlSyncStatus: "Pending Sync" as GHLSyncStatus,
@@ -2517,7 +2534,7 @@ function SalesLeadsPageInner() {
       discoveryScheduled: false, discoveryDate: "", discoveryNotes: "",
       businessGoals: [], painPoints: [], requestedServices: [],
       budget: "Unknown" as const, authority: "Unknown" as const, need: "Low" as const, timeline: "6+ months" as const,
-      estimatedValue: 0, affiliateName: "—", createdDate: new Date().toISOString().split("T")[0],
+      estimatedValue: 0, affiliateName: "-", createdDate: new Date().toISOString().split("T")[0],
       lastActivity: "Just now", notes: "Imported via CSV",
     }));
     setLeads(prev => [...mockBatch, ...prev]);
@@ -2547,7 +2564,8 @@ function SalesLeadsPageInner() {
       id: lead.id, clientName: lead.name, businessName: lead.businessName,
       contactName: lead.name, contactPhone: lead.phone, contactEmail: lead.email,
       leadSource: lead.leadSource, assignedRep: lead.assignedRep, notes: lead.discoveryNotes,
-      // Carry forward GHL Contact linkage so the opportunity inherits the lead’s
+      website: lead.website ?? "",
+      // Carry forward GHL Contact linkage so the opportunity inherits the lead's
       // GHL Contact ID, preserving the Lead→Opportunity→GHL Contact chain.
       ghlContactIdReal: lead.ghlContactIdReal,
       ghlContactId: lead.ghlContactId,
@@ -2581,7 +2599,7 @@ function SalesLeadsPageInner() {
     }
     setShowCreateOpportunityModal(false);
     setSelectedLeadForOpportunity(null);
-    addToast("Opportunity created — now visible on Pipeline");
+    addToast("Opportunity created - now visible on Pipeline");
   }
 
   // Date-filtered base: everything that passes the date range filter
@@ -2591,7 +2609,7 @@ function SalesLeadsPageInner() {
     if (stageFilter !== "All" && l.stage !== stageFilter) return false;
     if (sourceFilter !== "All" && l.leadSource !== sourceFilter) return false;
     if (syncFilter !== "All" && l.ghlSyncStatus !== syncFilter) return false;
-    // Opportunity filter — derived from stage + oppByLeadId, same as column rendering.
+    // Opportunity filter - derived from stage + oppByLeadId, same as column rendering.
     // When oppLoadError is true we cannot compute READY/PENDING reliably;
     // the "All" case always passes. Created is still derivable (oppByLeadId retains
     // any successfully loaded rows), so we allow it; Pending/Ready are suppressed
@@ -2615,7 +2633,7 @@ function SalesLeadsPageInner() {
     return true;
   });
 
-  // KPI calcs — all based on dateFilteredLeads so they reflect the active date range
+  // KPI calcs - all based on dateFilteredLeads so they reflect the active date range
   const newLeads = dateFilteredLeads.filter(l => l.stage === "New Lead").length;
   const contactAttempted = dateFilteredLeads.filter(l => l.stage === "Contact Attempted").length;
   const discoveryScheduled = dateFilteredLeads.filter(l => l.stage === "Discovery Scheduled").length;
@@ -2939,7 +2957,7 @@ function SalesLeadsPageInner() {
             style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
         </div>
         <div className="flex items-center gap-2 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-          {/* Opportunity filter dropdown — same visual convention as the existing
+          {/* Opportunity filter dropdown - same visual convention as the existing
               syncFilter: a <select> in the search bar. Default: "All". */}
           <select
             value={oppFilter}
@@ -3073,7 +3091,7 @@ function SalesLeadsPageInner() {
         </div>
         {leadsLoading && leads.length === 0 && (
           <div className="py-16 text-center">
-            <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>Loading leads…</p>
+            <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>Loading leads...</p>
           </div>
         )}
         {!leadsLoading && filtered.length === 0 && (
