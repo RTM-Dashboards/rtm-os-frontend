@@ -19,42 +19,115 @@ export function generateOpportunityNumber(): string {
 }
 
 // ─── Create Opportunity From Lead ─────────────────────────────────────────────
+//
+// DESIGN: spread-with-exclusions.
+//
+// Every Lead field that has a matching Opportunity field carries across by
+// default.  Only fields that genuinely must NOT transfer are named below, with
+// a comment explaining why.  A field added to Lead in future flows through
+// automatically rather than being silently dropped.
+//
+// EXCLUSIONS (the short list):
+//   id            — Lead identifier; the Opportunity gets its own new id.
+//   opportunityNumber — generated fresh for the Opportunity.
+//   stage         — Opportunity has its own pipeline stage list; Lead stage is
+//                   irrelevant here. Fixed to "Sales Intake".
+//   ghlOrigin     — GHL-specific boolean that marks a contact as GHL-created;
+//                   has no meaning on an Opportunity record.
+//   ghlSyncStatus — Lead sync state; the Opportunity starts un-synced.
+//   ghlSynced     — Opportunity-specific GHL flag, always false at creation.
+//   createdAt     — Opportunity gets its own creation timestamp.
+//   updatedAt     — Same.
+//   disqualified / disqualifiedReason — Lead qualification state; disqualified
+//                   leads should not reach this function, but exclude for safety.
+//
+// NAME MAPPINGS (Lead field → Opportunity field):
+//   name              → clientName    (Lead.name is the contact display name;
+//                                      Opportunity.clientName is the same concept)
+//   name              → contactName   (also stored as contactName)
+//   email             → contactEmail  (Lead uses bare `email`; Opp uses `contactEmail`)
+//   phone             → contactPhone  (Lead uses bare `phone`; Opp uses `contactPhone`)
+//   requestedServices → serviceInterest (same meaning, different name)
+//   discoveryNotes    → discoveryNotes (same, no mapping needed)
+//   notes             → *(not mapped)* Lead.notes is a plain string; Opp.notes
+//                       is a Json array of note objects — incompatible types.
+//   affiliateName     → affiliateSource (Lead attribution name → Opp attribution field)
+//   industry          → industry       (same name; Opp field is optional String?)
+//
+// FIELDS WITH NO OPPORTUNITY COLUMN (cannot carry without adding columns, which
+// is out of scope per the task brief):
+//   location, ghlAssignedUser, ghlSource, ghlCreatedDate, ghlLastActivityDate,
+//   ghlContactTags, ghlContactStatus, ghlLastSyncedAt, ghlSyncError,
+//   businessGoals, painPoints, budget, authority, need, timeline,
+//   createdDate, lastActivity, discoveryScheduled, discoveryDate.
 
 export function createOpportunityFromLead(leadData: {
+  // Required identity fields
   id: string;
-  clientName: string;
+  // Contact name — maps to both clientName and contactName on Opportunity
+  name: string;
   businessName: string;
-  contactName: string;
-  contactPhone: string;
-  contactEmail: string;
+  // Contact details — field names differ on Opportunity
+  email: string;          // → contactEmail
+  phone: string;          // → contactPhone
+  // Shared-name fields carried as-is
   leadSource: string;
   assignedRep: string;
-  notes: string;
+  discoveryNotes: string;
+  // Optional shared-name fields
+  industry?: string;      // → industry
+  website?: string;       // → website
+  ghlContactId?: string;  // → ghlContactId
+  // Name-mapped array fields
+  requestedServices?: string[];  // → serviceInterest
+  // Name-mapped attribution field
+  affiliateName?: string; // → affiliateSource
+  // Estimated value (Int on Lead, Float? on Opportunity)
+  estimatedValue?: number; // → estimatedValue
 }): OpportunityRecord {
   const now = new Date().toISOString();
   const id = `opp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
   return {
+    // ── Opportunity-specific generated fields ──────────────────────────────
     id,
     opportunityNumber: generateOpportunityNumber(),
     leadId: leadData.id,
-    clientName: leadData.clientName,
+
+    // ── Name mappings: Lead field name → Opportunity field name ───────────
+    clientName: leadData.name,
+    contactName: leadData.name,
+    contactEmail: leadData.email,
+    contactPhone: leadData.phone,
+    serviceInterest: leadData.requestedServices ?? [],
+    ...(leadData.affiliateName ? { affiliateSource: leadData.affiliateName } : {}),
+
+    // ── Shared-name fields carried directly ───────────────────────────────
     businessName: leadData.businessName,
-    tradeType: "",
-    contactName: leadData.contactName,
-    contactPhone: leadData.contactPhone,
-    contactEmail: leadData.contactEmail,
     leadSource: leadData.leadSource,
     assignedRep: leadData.assignedRep,
-    stage: "Sales Intake", // Pipeline module starts here; Lead module owned the preceding stages (Lead → Qualified)
+    discoveryNotes: leadData.discoveryNotes,
+
+    // ── Optional shared-name fields ───────────────────────────────────────
+    ...(leadData.industry                    ? { industry: leadData.industry }                         : {}),
+    ...(leadData.website                     ? { website: leadData.website }                           : {}),
+    ...(leadData.ghlContactId                ? { ghlContactId: leadData.ghlContactId }                 : {}),
+    ...(leadData.estimatedValue !== undefined ? { estimatedValue: leadData.estimatedValue }             : {}),
+
+    // ── Exclusions: Opportunity-specific defaults ──────────────────────────
+    // stage: fixed to pipeline entry point; Lead.stage is irrelevant here
+    stage: "Sales Intake",
     priority: "Medium",
     estimatedMonthlyValue: 0,
     expectedCloseDate: "",
-    serviceInterest: [],
-    discoveryNotes: leadData.notes,
-    ghlContactId: "",
+    tradeType: "",
+    // ghlContactId defaults to empty string if not provided above
+    ghlContactId: leadData.ghlContactId ?? "",
+    // ghlSynced: Opportunity not yet synced to GHL as an Opportunity
     ghlSynced: false,
+    // Timestamps: Opportunity gets its own creation time
     createdAt: now,
     updatedAt: now,
+    // Complex sub-objects start empty
     intakeRecord: null,
     communicationLog: { opportunityId: id, entries: [] },
     activeWizardId: null,

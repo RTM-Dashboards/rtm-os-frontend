@@ -13,17 +13,36 @@ import {
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
+// LeadData mirrors the selectedLeadForOpportunity state shape in leads/page.tsx.
+// Every field here flows directly into createOpportunityFromLead in the engine.
+// Field names match the ENGINE signature, not the old Opportunity column names:
+//   name → engine maps to clientName + contactName
+//   email → engine maps to contactEmail
+//   phone → engine maps to contactPhone
+//   requestedServices → engine maps to serviceInterest
+//   affiliateName → engine maps to affiliateSource
 interface LeadData {
+  // Identity
   id: string;
-  clientName: string;
+  // Contact name — engine maps this to clientName and contactName
+  name: string;
   businessName: string;
-  contactName: string;
-  contactPhone: string;
-  contactEmail: string;
+  // Contact details — engine maps these to contactEmail / contactPhone
+  email: string;
+  phone: string;
+  // Shared-name fields
   leadSource: string;
   assignedRep: string;
-  notes: string;
+  discoveryNotes: string;
+  // Optional shared-name fields
+  industry?: string;
   website?: string;
+  // Name-mapped array: engine maps to serviceInterest
+  requestedServices?: string[];
+  // Name-mapped attribution: engine maps to affiliateSource
+  affiliateName?: string;
+  // Estimated value
+  estimatedValue?: number;
   // GHL Contact linkage — carried forward from the Lead when it has already been synced.
   // ghlContactIdReal takes priority (real GHL ID from a completed sync).
   // ghlContactId is the static field (may be a mock ID like "GHL-CON-0001").
@@ -92,18 +111,22 @@ export function CreateOpportunityModal({
 }: CreateOpportunityModalProps) {
   const [form, setForm] = useState<FormState>({
     businessName: leadData?.businessName ?? "",
-    contactName: leadData?.contactName ?? "",
+    // LeadData.name maps to contactName (Lead.name is the contact display name)
+    contactName: leadData?.name ?? "",
     tradeType: "",
     location: "",
-    contactPhone: leadData?.contactPhone ?? "",
-    contactEmail: leadData?.contactEmail ?? "",
+    // LeadData.phone/email map to contactPhone/contactEmail
+    contactPhone: leadData?.phone ?? "",
+    contactEmail: leadData?.email ?? "",
     leadSource: leadData?.leadSource ?? "",
     assignedRep: leadData?.assignedRep ?? ASSIGNED_REPS[0],
-    serviceInterest: [],
+    // Pre-fill service interest from lead.requestedServices if present
+    serviceInterest: leadData?.requestedServices ?? [],
     estimatedMonthlyValue: "",
     expectedCloseDate: "",
     priority: "Medium",
-    discoveryNotes: "",
+    // Pre-fill discovery notes from lead
+    discoveryNotes: leadData?.discoveryNotes ?? "",
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -143,18 +166,6 @@ export function CreateOpportunityModal({
     let opp: OpportunityRecord;
 
     if (leadData) {
-      opp = createOpportunityFromLead({
-        id: leadData.id,
-        clientName: leadData.clientName,
-        businessName: form.businessName,
-        contactName: form.contactName,
-        contactPhone: form.contactPhone,
-        contactEmail: form.contactEmail,
-        leadSource: form.leadSource,
-        assignedRep: form.assignedRep,
-        notes: form.discoveryNotes,
-      });
-
       // Resolve the real GHL Contact ID to carry forward.
       // ghlContactIdReal is the genuine GHL ID from a completed sync.
       // Only use ghlContactId if it looks like a real GHL ID (not a mock).
@@ -166,9 +177,34 @@ export function CreateOpportunityModal({
           ? leadData.ghlContactId
           : undefined);
 
-      // Patch extra fields, including GHL Contact linkage and website.
-      // website is NOT in the engine's 9-field parameter list; it is carried
-      // forward here via the existing post-engine patch pattern.
+      // Pass ALL shared fields to the engine.
+      // The engine handles name mappings internally:
+      //   name → clientName + contactName
+      //   email → contactEmail
+      //   phone → contactPhone
+      //   requestedServices → serviceInterest (pre-populated in form; form value used below)
+      //   affiliateName → affiliateSource
+      // website, industry, ghlContactId are also handled by the engine.
+      opp = createOpportunityFromLead({
+        id: leadData.id,
+        name: leadData.name,
+        businessName: form.businessName,
+        email: leadData.email,
+        phone: leadData.phone,
+        leadSource: form.leadSource,
+        assignedRep: form.assignedRep,
+        discoveryNotes: form.discoveryNotes,
+        industry: leadData.industry,
+        website: leadData.website,
+        ghlContactId: resolvedGhlContactId,
+        requestedServices: leadData.requestedServices,
+        affiliateName: leadData.affiliateName,
+        estimatedValue: leadData.estimatedValue,
+      });
+
+      // Apply form-only overrides that Justin can adjust before submitting.
+      // serviceInterest starts from lead.requestedServices (via form initial state)
+      // but Justin may toggle them in the modal, so use the form value.
       opp = {
         ...opp,
         tradeType: form.tradeType,
@@ -176,16 +212,9 @@ export function CreateOpportunityModal({
         estimatedMonthlyValue: parseFloat(form.estimatedMonthlyValue) || 0,
         expectedCloseDate: form.expectedCloseDate,
         priority: form.priority,
-        // Carry website from the originating lead so it is stored on the
-        // opportunity and available to the proposal wizard.
-        ...(leadData.website ? { website: leadData.website } : {}),
-        // Carry forward the real GHL Contact ID so the new opportunity is
-        // linked to the same GHL Contact as the originating Lead.
-        // This prevents duplicate GHL Contact creation when syncing the opportunity.
-        ...(resolvedGhlContactId ? {
-          ghlContactId: resolvedGhlContactId,
-          ghlSynced: false, // opportunity not yet synced to GHL as an Opportunity
-        } : {}),
+        contactName: form.contactName, // allow edit in modal
+        // ghlSynced: ensure false; engine sets this but be explicit
+        ghlSynced: false,
       };
     } else {
       opp = createOpportunityManual({

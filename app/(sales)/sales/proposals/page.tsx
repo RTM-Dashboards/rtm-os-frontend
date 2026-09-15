@@ -2617,7 +2617,10 @@ function ProposalsPageInner() {
           contactName?: string;
           contactEmail?: string;
           contactPhone?: string;
+          // tradeType: legacy field; industry is now also populated on the Opportunity
           tradeType?: string;
+          // industry: preferred over tradeType when both present
+          industry?: string;
           leadSource?: string;
           serviceInterest?: string[];
           discoveryNotes?: string;
@@ -2635,6 +2638,7 @@ function ProposalsPageInner() {
                 contactEmail?: string;
                 contactPhone?: string;
                 tradeType?: string;
+                industry?: string;
                 leadSource?: string;
                 serviceInterest?: string[];
                 discoveryNotes?: string;
@@ -2649,6 +2653,8 @@ function ProposalsPageInner() {
                 contactEmail: match.contactEmail,
                 contactPhone: match.contactPhone,
                 tradeType: match.tradeType,
+                // Read industry directly; it is now populated by the lead→opp engine
+                industry: match.industry,
                 leadSource: match.leadSource,
                 serviceInterest: match.serviceInterest,
                 discoveryNotes: match.discoveryNotes,
@@ -2668,9 +2674,13 @@ function ProposalsPageInner() {
         setWizardInitialState({
           opportunityId,
           clientInfo: {
-            name: "",
+            // name: the wizard uses contactName as the display name; use it directly
+            name: oppData.contactName ?? "",
             businessName: oppData.businessName ?? "",
-            industry: oppData.tradeType ?? "",
+            // Prefer opp.industry (now populated from lead); fall back to tradeType for
+            // older records that were created before the spread fix
+            industry: oppData.industry ?? oppData.tradeType ?? "",
+            // location: no Opportunity column exists for this field
             location: "",
             website: oppData.website ?? "",
             leadSource: oppData.leadSource ?? "",

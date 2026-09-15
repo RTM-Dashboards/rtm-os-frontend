@@ -2304,9 +2304,27 @@ function SalesLeadsPageInner() {
   const { isVisible, widgetOrder } = useWidgetPreferences("leads");
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
   const [selectedLeadForOpportunity, setSelectedLeadForOpportunity] = useState<{
-    id: string; clientName: string; businessName: string; contactName: string;
-    contactPhone: string; contactEmail: string; leadSource: string; assignedRep: string; notes: string;
-    website: string;
+    // Identity
+    id: string;
+    // Mapped fields: Lead.name → clientName/contactName on Opportunity
+    name: string;
+    businessName: string;
+    // Mapped fields: Lead.email/phone → contactEmail/contactPhone on Opportunity
+    email: string;
+    phone: string;
+    // Shared-name fields
+    leadSource: string;
+    assignedRep: string;
+    discoveryNotes: string;
+    // Optional shared-name fields
+    industry?: string;
+    website?: string;
+    // Name-mapped array: Lead.requestedServices → Opportunity.serviceInterest
+    requestedServices?: string[];
+    // Name-mapped attribution: Lead.affiliateName → Opportunity.affiliateSource
+    affiliateName?: string;
+    // Estimated value carried forward
+    estimatedValue?: number;
     // GHL Contact linkage - carried forward to preserve the Lead-to-Opportunity GHL relationship
     ghlContactIdReal?: string;
     ghlContactId?: string;
@@ -2560,13 +2578,30 @@ function SalesLeadsPageInner() {
   }
 
   function handleCreateOpportunityFromLead(lead: Lead) {
+    // Pass every Lead field that has an Opportunity equivalent.
+    // The engine (createOpportunityFromLead) handles name mappings:
+    //   name → clientName + contactName
+    //   email → contactEmail
+    //   phone → contactPhone
+    //   requestedServices → serviceInterest
+    //   affiliateName → affiliateSource
     setSelectedLeadForOpportunity({
-      id: lead.id, clientName: lead.name, businessName: lead.businessName,
-      contactName: lead.name, contactPhone: lead.phone, contactEmail: lead.email,
-      leadSource: lead.leadSource, assignedRep: lead.assignedRep, notes: lead.discoveryNotes,
-      website: lead.website ?? "",
-      // Carry forward GHL Contact linkage so the opportunity inherits the lead's
-      // GHL Contact ID, preserving the Lead→Opportunity→GHL Contact chain.
+      id: lead.id,
+      name: lead.name,
+      businessName: lead.businessName,
+      email: lead.email,
+      phone: lead.phone,
+      leadSource: lead.leadSource,
+      assignedRep: lead.assignedRep,
+      discoveryNotes: lead.discoveryNotes,
+      industry: lead.industry || undefined,
+      website: lead.website || undefined,
+      requestedServices: lead.requestedServices.length > 0 ? lead.requestedServices : undefined,
+      affiliateName: (lead.affiliateName && lead.affiliateName !== "-" && lead.affiliateName !== "—")
+        ? lead.affiliateName
+        : undefined,
+      estimatedValue: lead.estimatedValue > 0 ? lead.estimatedValue : undefined,
+      // GHL Contact linkage - carried forward to preserve the Lead→Opportunity→GHL Contact chain.
       ghlContactIdReal: lead.ghlContactIdReal,
       ghlContactId: lead.ghlContactId,
     });
