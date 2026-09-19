@@ -3,15 +3,16 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { RoleToggle } from "@/components/am-role-toggle";
 import { AM_NAMES, SARAH, type AMRole } from "@/lib/account-management/role-data";
-import { needsAssignment } from "@/lib/account-management/needs-assignment";
 import {
-  fetchMasterClients,
-  patchMasterClient,
+  fetchAMClients,
+  assignAM,
+  type BusinessClient,
+} from "@/lib/account-management/am-client-data";
+import {
   fetchReassignmentEvents,
   postReassignmentEvent,
   type ReassignmentEvent,
 } from "@/lib/mock/master-clients-api";
-import type { MasterClient } from "@/lib/mock/master-clients";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -46,12 +47,12 @@ function formatDate(iso: string): string {
   }
 }
 
-// Derive per-AM workload from live MASTER_CLIENTS
-function buildWorkload(clients: MasterClient[]) {
+// Derive per-AM workload from live businesses
+function buildWorkload(clients: BusinessClient[]) {
   return AM_NAMES.map((am) => {
     const assigned = clients.filter((c) => c.assignedAM === am);
     const atRisk = assigned.filter(
-      (c) => c.clientHealth === "At Risk" || c.clientHealth === "Critical"
+      (c) => c.paymentStatus === "failed" || c.activationStatus === "suspended"
     ).length;
     return { am, total: assigned.length, atRisk, clients: assigned };
   });
@@ -62,7 +63,7 @@ function buildWorkload(clients: MasterClient[]) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface ReassignModalProps {
-  client: MasterClient;
+  client: BusinessClient;
   onClose: () => void;
   onDone: () => void;
 }
@@ -85,12 +86,12 @@ function ReassignModal({ client, onClose, onDone }: ReassignModalProps) {
     try {
       const now = new Date().toISOString();
 
-      // 1. Patch the client record
-      await patchMasterClient(client.id, {
-        assignedAM: selectedAM,
-        assignedAt: now,
-        handoffNote: handoffNote.trim() || undefined,
-      });
+      // 1. Patch the business record (real Postgres write)
+      // TODO: automatic workload-based AM assignment with manager override is the
+      // intended future behaviour. It is blocked on the User model gaining populated
+      // department and role fields so that workload can be computed per-AM and the
+      // assigning manager can be verified. Until that lands, assignment is manual.
+      await assignAM(client.id, selectedAM);
 
       // 2. Record the reassignment event
       await postReassignmentEvent({
@@ -235,12 +236,12 @@ function ReassignModal({ client, onClose, onDone }: ReassignModalProps) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function HeadView() {
-  const [liveClients, setLiveClients] = useState<MasterClient[]>([]);
+  const [liveClients, setLiveClients] = useState<BusinessClient[]>([]);
   const [history, setHistory] = useState<ReassignmentEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterAM, setFilterAM] = useState("All");
   const [filterHealth, setFilterHealth] = useState("All");
-  const [reassignTarget, setReassignTarget] = useState<MasterClient | null>(null);
+  const [reassignTarget, setReassignTarget] = useState<BusinessClient | null>(null);
   // Client-picker for the header "Reassign Client" button
   const [pickingClient, setPickingClient] = useState(false);
   const [pickedClientId, setPickedClientId] = useState("");
@@ -249,7 +250,7 @@ function HeadView() {
     setLoading(true);
     try {
       const [clients, events] = await Promise.all([
-        fetchMasterClients(),
+        fetchAMClients(),
         fetchReassignmentEvents(),
       ]);
       setLiveClients(clients);
@@ -262,11 +263,8 @@ function HeadView() {
   useEffect(() => { void loadData(); }, [loadData]);
 
   // Only show assigned clients in the reassignment queue (unassigned belong in Client Portfolio)
-  const assignedClients = liveClients.filter(
-    (c) => c.assignedAM !== "Unassigned" && c.assignedAM !== ""
-  );
-  // Shared predicate — same condition used by Client Portfolio's KPI so counts always match.
-  const unassignedCount = liveClients.filter(needsAssignment).length;
+  const assignedClients = liveClients.filter((c) => !!c.assignedAM);
+  const unassignedCount = liveClients.filter((c) => !c.assignedAM && c.cleared).length;
 
   const workload = buildWorkload(liveClients);
   const overloadedCount = workload.filter((w) => w.total > 5).length;
@@ -278,7 +276,7 @@ function HeadView() {
   // Filtered queue
   const filteredQueue = assignedClients.filter((c) => {
     if (filterAM !== "All" && c.assignedAM !== filterAM) return false;
-    if (filterHealth !== "All" && c.clientHealth !== filterHealth) return false;
+    // Health filter not yet implemented for real data (no clientHealth field on Business)
     return true;
   });
 
@@ -418,7 +416,7 @@ function HeadView() {
         </p>
       </section>
 
-      {/* Full Assignment Queue — live from MASTER_CLIENTS */}
+      {/* Full Assignment Queue — live from Postgres (real data) */}
       <section
         className="rounded-xl border"
         style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
@@ -435,7 +433,7 @@ function HeadView() {
               Full Assignment Queue
             </h2>
             <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
-              All assigned clients across all Account Managers — live from MASTER_CLIENTS.
+              All assigned clients across all Account Managers — live from Postgres (real data).
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -464,7 +462,20 @@ function HeadView() {
 
         {loading ? (
           <div className="px-6 py-10 text-center text-slate-400 text-sm">
-            Loading client data…
+            Loading businesses…
+          </div>
+        ) : liveClients.length === 0 ? (
+          <div className="rounded-xl border p-12 text-center space-y-3 m-4" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
+            <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ background: "#EFF6FF" }}>
+              <svg width="24" height="24" fill="none" stroke="#1B4FD8" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <p className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>No businesses to assign</p>
+            <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+              Businesses appear here once Billing confirms a payment. When a client&apos;s invoice is marked Paid,
+              their business will appear here for AM assignment.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -506,7 +517,7 @@ function HeadView() {
                       {c.assignedAM}
                     </td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">
-                      {c.industry}
+                      {c.domain}
                     </td>
                     <td className="px-4 py-3 text-slate-700 font-medium whitespace-nowrap">
                       {c.monthlyValue > 0 ? `$${c.monthlyValue.toLocaleString()}/mo` : "—"}
@@ -517,21 +528,21 @@ function HeadView() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span
                         className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold"
-                        style={healthBadgeStyle(c.clientHealth)}
+                        style={healthBadgeStyle(c.paymentStatus === "failed" ? "At Risk" : c.activationStatus === "active" ? "Good" : "Pending")}
                       >
-                        {c.clientHealth}
+                        {c.paymentStatus === "failed" ? "At Risk" : c.activationStatus === "active" ? "Good" : "Pending"}
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span
                         className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold"
-                        style={priorityBadgeStyle(c.priority)}
+                        style={priorityBadgeStyle(c.paymentStatus === "failed" ? "High" : c.activationStatus === "active" ? "Low" : "Medium")}
                       >
-                        {c.priority}
+                        {c.paymentStatus === "failed" ? "High" : c.activationStatus === "active" ? "Low" : "Medium"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">
-                      {c.currentStatus}
+                      {c.activationStatus}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <button
@@ -560,7 +571,7 @@ function HeadView() {
         )}
       </section>
 
-      {/* AM Load Balancing — real client counts from MASTER_CLIENTS */}
+      {/* AM Load Balancing — real business counts from Postgres */}
       <section
         className="rounded-xl border"
         style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
@@ -576,7 +587,7 @@ function HeadView() {
             AM Load Balancing
           </h2>
           <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
-            Current client load per Account Manager — derived from live MASTER_CLIENTS data.
+            Current client load per Account Manager — derived from real Business records.
           </p>
         </div>
 
@@ -778,7 +789,7 @@ function HeadView() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AMView() {
-  const [liveClients, setLiveClients] = useState<MasterClient[]>([]);
+  const [liveClients, setLiveClients] = useState<BusinessClient[]>([]);
   const [history, setHistory] = useState<ReassignmentEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -786,7 +797,7 @@ function AMView() {
     setLoading(true);
     try {
       const [clients, events] = await Promise.all([
-        fetchMasterClients(),
+        fetchAMClients(),
         fetchReassignmentEvents(),
       ]);
       setLiveClients(clients);
@@ -810,7 +821,7 @@ function AMView() {
           {
             label: "At Risk / Critical",
             value: myClients.filter(
-              (c) => c.clientHealth === "At Risk" || c.clientHealth === "Critical"
+              (c) => c.paymentStatus === "failed" || c.activationStatus === "suspended"
             ).length,
           },
           {
@@ -899,7 +910,7 @@ function AMView() {
                         {c.clientName}
                       </td>
                       <td className="px-4 py-3 text-slate-500 whitespace-nowrap text-xs">
-                        {c.industry}
+                        {c.domain}
                       </td>
                       <td className="px-4 py-3 text-slate-700 font-medium whitespace-nowrap">
                         {c.monthlyValue > 0 ? `$${c.monthlyValue.toLocaleString()}/mo` : "—"}
@@ -910,21 +921,21 @@ function AMView() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span
                           className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold"
-                          style={healthBadgeStyle(c.clientHealth)}
+                          style={healthBadgeStyle(c.paymentStatus === "failed" ? "At Risk" : c.activationStatus === "active" ? "Good" : "Pending")}
                         >
-                          {c.clientHealth}
+                          {c.paymentStatus === "failed" ? "At Risk" : c.activationStatus === "active" ? "Good" : "Pending"}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span
                           className="inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold"
-                          style={priorityBadgeStyle(c.priority)}
+                          style={priorityBadgeStyle(c.paymentStatus === "failed" ? "High" : c.activationStatus === "active" ? "Low" : "Medium")}
                         >
-                          {c.priority}
+                          {c.paymentStatus === "failed" ? "High" : c.activationStatus === "active" ? "Low" : "Medium"}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-xs whitespace-nowrap">
-                        {c.currentStatus}
+                        {c.activationStatus}
                       </td>
                     </tr>
                   ))

@@ -5,7 +5,7 @@
  *
  * DATA SOURCES:
  *   lib/engine/mock-data.ts          (ENGINE_STORE - Projects, Tasks)
- *   lib/mock/master-clients.ts       (MASTER_CLIENTS - activeServices, monthlyValue, billingOwner)
+ *   /api/businesses (Postgres — real activeServices, monthlyValueCents)
  *   lib/account-management/am-client-success-data.ts
  *                                    (COMMUNICATIONS - project communication history + Send Follow-up)
  *
@@ -23,7 +23,7 @@
  *   - Last communication date + "Send Follow-up" action → creates a real
  *     CommunicationEntry in COMMUNICATIONS (in-session persistence)
  *   - "Manage Tasks →" link to /projects/${project.id} (global PM detail view)
- *   - Contract/service data from MASTER_CLIENTS (activeServices, monthlyValue, billingOwner)
+ *   - Contract/service data from real Business records (activeServices, monthlyValueCents)
  *   - 2-step "Activate Project" wizard retained (AM's primary workflow)
  */
 
@@ -41,16 +41,9 @@ import {
   genId,
 } from "@/lib/engine/create-project";
 import {
-  MASTER_CLIENTS,
-  markActivationTasksCreated,
-  markOnboardingRecordCreated,
-} from "@/lib/mock/master-clients";
-import {
-  apiMarkActivationTasksCreated,
-  apiMarkOnboardingRecordCreated,
-  fetchMasterClients,
-} from "@/lib/mock/master-clients-api";
-import type { MasterClient } from "@/lib/mock/master-clients";
+  fetchAMClients,
+  type BusinessClient,
+} from "@/lib/account-management/am-client-data";
 import {
   COMMUNICATIONS,
   getCommunicationsByProject,
@@ -58,6 +51,62 @@ import {
   type CommunicationEntry,
 } from "@/lib/account-management/am-client-success-data";
 import { KpiCard } from "@/components/ui";
+
+
+// Adapt a BusinessClient to the minimum MasterClient shape createEngineProject needs.
+// Fields not in BusinessClient default to empty/null equivalents.
+import type { MasterClient } from "@/lib/mock/master-clients";
+function toMasterClientShim(c: BusinessClient): MasterClient {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return {
+    id: c.id,
+    slug: c.id,
+    clientName: c.clientName,
+    email: c.email,
+    industry: "",
+    avatarColor: "#6366f1",
+    salesStatus: "",
+    salesOwner: "",
+    billingStatus: "Paid" as const,
+    invoiceStatus: "Paid" as const,
+    paymentStatus: "Paid" as const,
+    cancellationStatus: "None" as const,
+    upgradeDowngradeStatus: "None" as const,
+    cleared: c.cleared,
+    activeServices: c.activeServices,
+    monthlyValue: c.monthlyValue,
+    billingOwner: "",
+    assignedAM: c.assignedAM,
+    activationStatus: c.activationStatus as MasterClient["activationStatus"],
+    onboardingStatus: c.onboardingStatus,
+    renewalDate: c.renewalDate ?? "—",
+    renewalStatus: c.renewalStatus,
+    clientHealth: "Good" as const,
+    priority: "Medium" as const,
+    currentStatus: "Active" as const,
+    workflowStatus: "In Progress" as const,
+    lastActivity: "",
+    nextRequiredAction: "",
+    notes: "",
+    activationChecklist: {
+      invoicePaid: true,
+      billingCleared: c.cleared,
+      contractConfirmed: true,
+      servicesConfirmed: c.activeServices.length > 0,
+      clientContactVerified: true,
+      amAssigned: !!c.assignedAM,
+      activationTasksCreated: false,
+      onboardingRecordCreated: false,
+      kickoffNeeded: !c.kickoffCompleted,
+      kickoffCallCompleted: c.kickoffCompleted,
+    },
+    recentEvents: [],
+    stripeCustomerId: null,
+    stripeInvoiceId: null,
+    stripeSubscriptionId: null,
+    stripeSyncStatus: "Not Connected" as const,
+  } as MasterClient;
+}
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -171,8 +220,8 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
   const [note, setNote] = useState("");
   const [sent, setSent] = useState(false);
 
-  // Read from seed data - this is display-only, not the mutable status fields
-  const masterClient = MASTER_CLIENTS.find((c) => c.id === project.clientId);
+  // clientId lookup not available without real client data in this component
+  const masterClient: { monthlyValue?: number; activeServices?: string[] } = {};
 
   const handleSend = () => {
     const entry = createFollowUpEntry(
@@ -243,15 +292,15 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
           <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 text-xs space-y-1">
             <p className="text-slate-500">
               <span className="font-semibold text-slate-700">Services:</span>{" "}
-              {masterClient.activeServices.join(", ")}
+              {(masterClient.activeServices ?? []).join(", ") || "—"}
             </p>
             <p className="text-slate-500">
               <span className="font-semibold text-slate-700">MRR:</span>{" "}
-              ${masterClient.monthlyValue.toLocaleString()}/mo
+              ${(masterClient.monthlyValue ?? 0).toLocaleString()}/mo
             </p>
             <p className="text-slate-500">
               <span className="font-semibold text-slate-700">Billing owner:</span>{" "}
-              {masterClient.billingOwner}
+{"Billing Team"}
             </p>
           </div>
         )}
@@ -292,7 +341,7 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
 
 type WizardStep = 1 | 2 | "done";
 interface WizardState {
-  client:             MasterClient;
+  client:             BusinessClient;
   step:               WizardStep;
   selectedServices:   string[];
   manualBlueprintIds: string[];  // Part 3A: IDs added manually beyond auto-matched set
@@ -304,7 +353,7 @@ function ActivationWizard({
   onComplete,
   onCancel,
 }: {
-  client:     MasterClient;
+  client:     BusinessClient;
   onComplete: (project: Project) => void;
   onCancel:   () => void;
 }) {
@@ -396,7 +445,7 @@ function ActivationWizard({
     // Pass the full explicit blueprint IDs so createEngineProject uses them
     // rather than re-deriving from services (which would miss manually-added blueprints)
     const { project, tasks, milestone } = await createEngineProject(
-      client,
+      toMasterClientShim(client),
       state.selectedServices,
       allBlueprintIds
     );
@@ -407,12 +456,8 @@ function ActivationWizard({
     // causing duplicate-key warnings on the next render before refreshData
     // replaced the array.
     await appendToEngineStore({ projects: [project], tasks, milestones: [milestone] });
-    // Persist MASTER_CLIENTS mutations through API (cross-route-group reliable)
-    await apiMarkActivationTasksCreated(client.id);
-    await apiMarkOnboardingRecordCreated(client.id);
-    // Also update in-memory for same-session callers that still read MASTER_CLIENTS directly
-    markActivationTasksCreated(client.id);
-    markOnboardingRecordCreated(client.id);
+    // Activation state is tracked via Engine project + task records
+    // Business.activationStatus is updated separately through the onboarding flow
     setState((prev) => ({ ...prev, step: "done", createdProject: project }));
     onComplete(project);
   };
@@ -623,7 +668,7 @@ function ActivationWizard({
 
 function ProjectsPageInner() {
   const searchParams = useSearchParams();
-  const [wizardClient,   setWizardClient]   = useState<MasterClient | null>(null);
+  const [wizardClient,   setWizardClient]   = useState<BusinessClient | null>(null);
   const [followUpProject, setFollowUpProject] = useState<Project | null>(null);
   const [search,          setSearch]          = useState(
     () => searchParams.get("search") ?? ""
@@ -639,14 +684,13 @@ function ProjectsPageInner() {
   // silently contaminate state and cause duplicate keys on the next refresh.
   const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...ENGINE_STORE.projects]);
   const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
-  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => [...MASTER_CLIENTS]);
+  const [liveClients,  setLiveClients]  = useState<BusinessClient[]>([]);
 
   const refreshData = useCallback(async () => {
     try {
-      const [projectsRes, tasksRes, clientsRes] = await Promise.all([
+      const [projectsRes, tasksRes] = await Promise.all([
         fetch("/api/engine?resource=projects"),
         fetch("/api/engine?resource=tasks"),
-        fetch("/api/master-clients"),
       ]);
       if (projectsRes.ok) {
         const d = await projectsRes.json() as { projects: Project[] };
@@ -656,31 +700,38 @@ function ProjectsPageInner() {
         const d = await tasksRes.json() as { tasks: Task[] };
         setLiveTasks(d.tasks);
       }
-      if (clientsRes.ok) {
-        const d = await clientsRes.json() as { clients: MasterClient[] };
-        setLiveClients(d.clients);
-      }
+      // Load real businesses separately
+      const bizData = await fetchAMClients().catch(() => []);
+      setLiveClients(bizData);
     } catch {
-      // Keep using seed data on fetch failure — non-fatal
+      // Keep engine data as-is; businesses will be empty array
     }
   }, []);
 
   useEffect(() => { void refreshData(); }, [refreshData]);
 
   /**
-   * BUG FIX (Part 1): Always fetch a fresh client record from the file-backed
-   * API before opening the wizard. The in-memory MASTER_CLIENTS seed may be
-   * stale relative to data/master-clients.json (e.g. after a PATCH that updated
-   * activeServices). Fetching live guarantees the wizard sees the correct
-   * services regardless of whether the page-level refreshData() has resolved.
+   * Always fetch fresh businesses before opening the wizard to get the latest state.
    */
   const openWizardForClient = useCallback(async (clientId: string) => {
     try {
-      const res = await fetch(`/api/master-clients?id=${encodeURIComponent(clientId)}`);
+      const res = await fetch(`/api/businesses?id=${encodeURIComponent(clientId)}`);
       if (res.ok) {
-        const d = await res.json() as { client: MasterClient };
-        setWizardClient(d.client);
-        return;
+        const d = await res.json() as { record?: { id: string; domain: string; displayName: string; assignedAM: string; activeServices: string[]; monthlyValueCents: number; activationStatus: string; onboardingStatus: string; cleared: boolean; kickoffCompleted: boolean; kickoffDate: string | null; assignedAt: string | null; clientId: string; invoiceStatus: string; paymentStatus: string; renewalDate: string | null; renewalStatus: string; } };
+        if (d.record) {
+          // Map to BusinessClient shape
+          const r = d.record;
+          const bc: BusinessClient = {
+            id: r.id, clientId: r.clientId, displayName: r.displayName || r.domain, clientName: r.displayName || r.domain,
+            domain: r.domain, email: "", phone: "", invoiceStatus: r.invoiceStatus, paymentStatus: r.paymentStatus,
+            monthlyValue: Math.round(r.monthlyValueCents / 100), activeServices: r.activeServices, renewalDate: r.renewalDate,
+            renewalStatus: r.renewalStatus, assignedAM: r.assignedAM, activationStatus: r.activationStatus,
+            onboardingStatus: r.onboardingStatus, cleared: r.cleared, kickoffCompleted: r.kickoffCompleted,
+            kickoffDate: r.kickoffDate, assignedAt: r.assignedAt,
+          };
+          setWizardClient(bc);
+          return;
+        }
       }
     } catch {
       // Fall through to liveClients on fetch failure
@@ -996,10 +1047,10 @@ function ProjectsPageInner() {
                                 ))}
                               </div>
                               <p className="text-xs text-slate-500">
-                                ${masterClient.monthlyValue.toLocaleString()}/mo
+                                ${(masterClient.monthlyValue ?? 0).toLocaleString()}/mo
                               </p>
                               <p className="text-[11px] text-slate-400">
-                                Billing: {masterClient.billingOwner}
+                                Billing: Billing Team
                               </p>
                             </div>
                           ) : (

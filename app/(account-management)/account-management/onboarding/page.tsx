@@ -37,11 +37,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ENGINE_STORE } from "@/lib/engine/mock-data";
 import type { Project, Task } from "@/lib/engine/types";
-import {
-  MASTER_CLIENTS,
-  computeHealth,
-} from "@/lib/mock/master-clients";
-import type { MasterClient, ActivationStatus, HealthStatus } from "@/lib/mock/master-clients";
+import { fetchAMClients, type BusinessClient } from "@/lib/account-management/am-client-data";
 import {
   getAllOnboardingRecords,
   getOnboardingStatusMeta,
@@ -135,42 +131,24 @@ function onboardingStatusBadgeStyle(s: OnboardingTaskStatus): {
 
 // ─── Badge variant helpers ─────────────────────────────────────────────────────
 
-function activationStatusVariant(s: ActivationStatus): StatusVariant {
+function activationStatusVariant(s: string): StatusVariant {
   switch (s) {
-    case "Active":                        return "active";
-    case "Ready for Onboarding":          return "approved";
-    case "AM Assignment Needed":          return "warning";
-    case "Onboarding Pending":            return "pending";
-    case "Department Activation Pending": return "review";
-    case "Not Started":                   return "neutral";
-    default:                              return "neutral";
-  }
-}
-
-function healthVariant(h: HealthStatus): StatusVariant {
-  switch (h) {
-    case "Excellent": return "healthy";
-    case "Good":      return "info";
-    case "At Risk":   return "at-risk";
-    case "Critical":  return "critical";
+    case "active":    return "active";
+    case "pending":   return "pending";
+    case "inactive":  return "neutral";
+    case "suspended": return "error";
     default:          return "neutral";
   }
 }
 
 // ─── Queue tab: cleared clients (entry queue) ─────────────────────────────────
 
-const QUEUE_ACTIVATION_STATUSES: ActivationStatus[] = [
-  "AM Assignment Needed",
-  "Ready for Onboarding",
-  "Onboarding Pending",
-  "Department Activation Pending",
-];
+const QUEUE_ACTIVATION_STATUSES = ["inactive", "pending", "active"];
 
-/** Clients cleared by Billing and not yet fully Active */
-function getClearedQueueClients(clients?: MasterClient[]): MasterClient[] {
-  const clientsList = clients ?? MASTER_CLIENTS;
-  return clientsList.filter(
-    (c) => c.cleared === true && c.activationStatus !== "Active"
+/** Businesses cleared by Billing and not yet fully active */
+function getClearedQueueClients(clients: BusinessClient[]): BusinessClient[] {
+  return clients.filter(
+    (c) => c.cleared === true && c.activationStatus !== "active"
   );
 }
 
@@ -183,13 +161,13 @@ function QueueClientRow({
   liveProjects,
   liveTasks,
 }: {
-  client: MasterClient;
+  client: BusinessClient;
   obRecord: AMOnboardingRecord | undefined;
   onOpenRecord: (recordId: string) => void;
   liveProjects: Project[];
   liveTasks: Task[];
 }) {
-  const health   = computeHealth(client);
+  const health   = client.paymentStatus === "failed" ? "At Risk" : client.activationStatus === "active" ? "Good" : "Pending";
   const project  = getProjectForClient(client.id, liveProjects);
   const obTask   = getOnboardingTaskForClient(client.id, liveProjects, liveTasks);
   const taskStatus = getOnboardingTaskStatus(client.id, liveProjects, liveTasks);
@@ -202,13 +180,13 @@ function QueueClientRow({
         <div className="flex items-center gap-2">
           <span
             className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0"
-            style={{ background: client.avatarColor }}
+            style={{ background: "#6366f1" }}
           >
             {client.clientName.slice(0, 2).toUpperCase()}
           </span>
           <div>
             <p className="font-semibold text-slate-900 whitespace-nowrap">{client.clientName}</p>
-            <p className="text-[11px] text-slate-400">{client.industry}</p>
+            <p className="text-[11px] text-slate-400">{client.domain}</p>
           </div>
         </div>
       </td>
@@ -241,7 +219,7 @@ function QueueClientRow({
 
       {/* Assigned AM */}
       <td className="px-4 py-3 text-slate-700 whitespace-nowrap text-sm">
-        {client.assignedAM === "Unassigned" ? (
+        {!client.assignedAM ? (
           <span className="text-slate-400 italic text-xs">Unassigned</span>
         ) : (
           client.assignedAM
@@ -250,7 +228,7 @@ function QueueClientRow({
 
       {/* Health */}
       <td className="px-4 py-3 whitespace-nowrap">
-        <StatusBadge variant={healthVariant(health)} label={health} size="sm" />
+        <StatusBadge variant={health === "At Risk" ? "at-risk" : health === "Good" ? "info" : "neutral"} label={health} size="sm" />
       </td>
 
       {/* Project */}
@@ -332,17 +310,17 @@ function QueueTab({
   onOpenRecord: (recordId: string) => void;
   liveProjects: Project[];
   liveTasks: Task[];
-  liveClients: MasterClient[];
+  liveClients: BusinessClient[];
 }) {
   const [search, setSearch] = useState("");
-  const [activationFilter, setActivationFilter] = useState<ActivationStatus | "All">("All");
+  const [activationFilter, setActivationFilter] = useState<string>("All");
   const [amFilter, setAmFilter] = useState("All");
   const [taskStatusFilter, setTaskStatusFilter] = useState<OnboardingTaskStatus | "All">("All");
 
   const CLEARED_CLIENTS = getClearedQueueClients(liveClients);
 
   const amNames = Array.from(
-    new Set(CLEARED_CLIENTS.map((c) => c.assignedAM).filter((am) => am !== "Unassigned"))
+    new Set(CLEARED_CLIENTS.map((c) => c.assignedAM).filter(Boolean))
   ).sort();
 
   const filtered = CLEARED_CLIENTS.filter((c) => {
@@ -351,7 +329,7 @@ function QueueTab({
       !q ||
       c.clientName.toLowerCase().includes(q) ||
       c.assignedAM.toLowerCase().includes(q) ||
-      c.industry.toLowerCase().includes(q) ||
+      c.domain.toLowerCase().includes(q) ||
       c.activationStatus.toLowerCase().includes(q) ||
       c.activeServices.some((s) => s.toLowerCase().includes(q));
     const matchesActivation =
@@ -457,14 +435,14 @@ function QueueTab({
       <div className="flex flex-wrap items-center gap-3">
         <input
           type="text"
-          placeholder="Search clients, AM, industry, services…"
+          placeholder="Search by name, domain, AM, service…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 min-w-[220px] max-w-sm rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
         />
         <select
           value={activationFilter}
-          onChange={(e) => setActivationFilter(e.target.value as ActivationStatus | "All")}
+          onChange={(e) => setActivationFilter(e.target.value)}
           className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
         >
           <option value="All">All Activation Statuses</option>
@@ -490,7 +468,6 @@ function QueueTab({
           className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-200"
         >
           <option value="All">All AMs</option>
-          <option value="Unassigned">Unassigned</option>
           {amNames.map((am) => (
             <option key={am} value={am}>{am}</option>
           ))}
@@ -499,11 +476,16 @@ function QueueTab({
       </div>
 
       {total === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-16 text-center">
-          <div className="text-slate-300 text-5xl mb-4">✅</div>
-          <h2 className="text-lg font-bold text-slate-700 mb-1">No clients in the queue</h2>
-          <p className="text-sm text-slate-400 max-w-md mx-auto">
-            All cleared clients are Active, or no clients have been cleared by Billing yet.
+        <div className="rounded-xl border p-12 text-center space-y-3" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
+          <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ background: "#ECFDF5" }}>
+            <svg width="24" height="24" fill="none" stroke="#059669" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>No businesses in the onboarding queue</p>
+          <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+            The queue shows businesses cleared by Billing (payment confirmed) that are not yet fully active.
+            When Billing marks an invoice Paid and clears the business, it will appear here for AM assignment and onboarding.
           </p>
         </div>
       ) : (
@@ -768,7 +750,7 @@ export default function OnboardingQueuePage() {
   // contaminate state before the API refresh completes.
   const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...ENGINE_STORE.projects]);
   const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
-  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => [...MASTER_CLIENTS]);
+  const [liveClients,  setLiveClients]  = useState<BusinessClient[]>([]);
 
   const loadRecords = useCallback(async () => {
     const records = await getAllOnboardingRecords();
@@ -777,10 +759,9 @@ export default function OnboardingQueuePage() {
 
   const loadEngineData = useCallback(async () => {
     try {
-      const [projectsRes, tasksRes, clientsRes] = await Promise.all([
+      const [projectsRes, tasksRes] = await Promise.all([
         fetch("/api/engine?resource=projects"),
         fetch("/api/engine?resource=tasks"),
-        fetch("/api/master-clients"),
       ]);
       if (projectsRes.ok) {
         const d = await projectsRes.json() as { projects: Project[] };
@@ -790,12 +771,15 @@ export default function OnboardingQueuePage() {
         const d = await tasksRes.json() as { tasks: Task[] };
         setLiveTasks(d.tasks);
       }
-      if (clientsRes.ok) {
-        const d = await clientsRes.json() as { clients: MasterClient[] };
-        setLiveClients(d.clients);
-      }
     } catch {
-      // Keep using seed data on fetch failure — non-fatal
+      // Keep engine data as-is on failure — non-fatal
+    }
+    // Load real businesses from Postgres
+    try {
+      const data = await fetchAMClients();
+      setLiveClients(data);
+    } catch {
+      // No fallback — zero businesses shown if fetch fails
     }
   }, []);
 

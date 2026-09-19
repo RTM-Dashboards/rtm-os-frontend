@@ -44,6 +44,11 @@ export interface BusinessRecord {
   monthlyValueCents: number;
   renewalDate: string | null;
   renewalStatus: string;
+  // AM delivery lifecycle
+  cleared: boolean;
+  kickoffCompleted: boolean;
+  kickoffDate: string | null;
+  assignedAt: string | null;
   // Provenance — NOT an identity key, NOT a matching key
   ghlOpportunityId: string | null;
   createdAt: string;
@@ -71,6 +76,10 @@ function rowToRecord(row: BusinessRow): BusinessRecord {
     monthlyValueCents: row.monthlyValueCents,
     renewalDate: row.renewalDate ?? null,
     renewalStatus: row.renewalStatus,
+    cleared: row.cleared,
+    kickoffCompleted: row.kickoffCompleted,
+    kickoffDate: row.kickoffDate ?? null,
+    assignedAt: row.assignedAt ?? null,
     ghlOpportunityId: row.ghlOpportunityId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -198,6 +207,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             ? incoming.renewalDate
             : existing.renewalDate,
           renewalStatus:      incoming.renewalStatus         ?? existing.renewalStatus,
+          cleared:            incoming.cleared               !== undefined ? incoming.cleared            : existing.cleared,
+          kickoffCompleted:   incoming.kickoffCompleted      !== undefined ? incoming.kickoffCompleted   : existing.kickoffCompleted,
+          kickoffDate:        incoming.kickoffDate           !== undefined ? incoming.kickoffDate        : existing.kickoffDate,
+          assignedAt:         incoming.assignedAt            !== undefined ? incoming.assignedAt         : existing.assignedAt,
           ghlOpportunityId:   incoming.ghlOpportunityId !== undefined
             ? incoming.ghlOpportunityId
             : existing.ghlOpportunityId,
@@ -234,6 +247,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           monthlyValueCents:  incoming.monthlyValueCents  ?? 0,
           renewalDate:        incoming.renewalDate        ?? null,
           renewalStatus:      incoming.renewalStatus      ?? "ok",
+          cleared:            incoming.cleared            ?? false,
+          kickoffCompleted:   incoming.kickoffCompleted   ?? false,
+          kickoffDate:        incoming.kickoffDate        ?? null,
+          assignedAt:         incoming.assignedAt         ?? null,
           ghlOpportunityId:   incoming.ghlOpportunityId  ?? null,
           createdAt:          now,
           updatedAt:          now,
@@ -241,6 +258,73 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     }
 
+    return NextResponse.json({ record: rowToRecord(row) });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}
+
+// ── PATCH ────────────────────────────────────────────────────────────────────
+// Partial update by id. Only fields present in the body are changed.
+// Designed for AM page controls (assign AM, mark kickoff, mark onboarding, etc.)
+// and the Billing clearance action.
+//
+// PATCH /api/businesses?id=<id>  body: Partial<BusinessRecord> (id NOT required in body)
+
+export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "Query param id is required" },
+      { status: 400 }
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const patch = body as Partial<BusinessRecord>;
+  const now = new Date().toISOString();
+
+  // Build a data object containing only the keys the caller supplied.
+  // Using Prisma's update so we never overwrite fields the caller did not touch.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: Record<string, any> = { updatedAt: now };
+
+  if (patch.domain           !== undefined) data.domain           = normalizeDomain(patch.domain);
+  if (patch.displayName      !== undefined) data.displayName      = patch.displayName;
+  if (patch.invoiceStatus    !== undefined) data.invoiceStatus    = patch.invoiceStatus;
+  if (patch.paymentStatus    !== undefined) data.paymentStatus    = patch.paymentStatus;
+  if (patch.invoiceAmountCents !== undefined) data.invoiceAmountCents = patch.invoiceAmountCents;
+  if (patch.subscriptionRef  !== undefined) data.subscriptionRef  = patch.subscriptionRef;
+  if (patch.assignedAM       !== undefined) data.assignedAM       = patch.assignedAM;
+  if (patch.activationStatus !== undefined) data.activationStatus = patch.activationStatus;
+  if (patch.onboardingStatus !== undefined) data.onboardingStatus = patch.onboardingStatus;
+  if (patch.activeServices   !== undefined) data.activeServices   = patch.activeServices;
+  if (patch.monthlyValueCents !== undefined) data.monthlyValueCents = patch.monthlyValueCents;
+  if (patch.renewalDate      !== undefined) data.renewalDate      = patch.renewalDate;
+  if (patch.renewalStatus    !== undefined) data.renewalStatus    = patch.renewalStatus;
+  if (patch.cleared          !== undefined) data.cleared          = patch.cleared;
+  if (patch.kickoffCompleted !== undefined) data.kickoffCompleted = patch.kickoffCompleted;
+  if (patch.kickoffDate      !== undefined) data.kickoffDate      = patch.kickoffDate;
+  if (patch.assignedAt       !== undefined) data.assignedAt       = patch.assignedAt;
+  if (patch.ghlOpportunityId !== undefined) data.ghlOpportunityId = patch.ghlOpportunityId;
+
+  try {
+    const existing = await prisma.business.findUnique({ where: { id } });
+    if (!existing) {
+      return NextResponse.json(
+        { error: `No business found with id: ${id}` },
+        { status: 404 }
+      );
+    }
+    const row = await prisma.business.update({ where: { id }, data });
     return NextResponse.json({ record: rowToRecord(row) });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

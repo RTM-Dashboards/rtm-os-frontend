@@ -482,6 +482,30 @@ export default function BillingActivationPage() {
     const name = clients.find((c) => c.id === id)?.clientName ?? id;
     // Persist to file-backed API (cross-route-group reliable)
     await apiMarkCleared(id);
+    // Also mark cleared on any real Business records for this client.
+    // Best-effort: look up businesses by displayName match. Billing's MasterClient id
+    // and the real Business id are in different id spaces (MasterClient uses mc-* prefixes;
+    // Business uses biz-* prefixes). A full reconciliation requires joining on domain or
+    // client name. Until a stable cross-reference exists, this is a name-based best-effort.
+    try {
+      const bizRes = await fetch("/api/businesses");
+      if (bizRes.ok) {
+        const bizData = await bizRes.json() as { records?: Array<{ id: string; displayName: string; domain: string }> };
+        const matches = (bizData.records ?? []).filter(
+          (b) => b.displayName.toLowerCase().includes(name.toLowerCase()) ||
+                 name.toLowerCase().includes(b.displayName.toLowerCase())
+        );
+        for (const biz of matches) {
+          await fetch(`/api/businesses?id=${encodeURIComponent(biz.id)}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ cleared: true }),
+          }).catch(() => {});
+        }
+      }
+    } catch {
+      // Non-fatal — MasterClient cleared state is the authoritative gate in the current flow
+    }
     // Update local state optimistically
     setClients((prev) => prev.map((c) =>
       c.id === id ? { ...c, cleared: true, billingStatus: "Cleared" as const } : c

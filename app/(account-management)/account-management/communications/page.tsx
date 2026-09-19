@@ -49,7 +49,7 @@ interface TaskOption {
   status: string;
 }
 
-interface MasterClient {
+interface ClientListItem {
   id: string;
   clientName: string;
   assignedAM?: string;
@@ -216,7 +216,7 @@ function EmptyState({ message }: { message: string }) {
 // ── Log Communication Modal ────────────────────────────────────────────────────
 
 interface LogModalProps {
-  clients: MasterClient[];
+  clients: ClientListItem[];
   onClose: () => void;
   onSaved: () => void;
   defaultClientId?: string;
@@ -436,7 +436,7 @@ function LogCommunicationModal({
 
 export default function CommunicationsPage() {
   const [entries, setEntries]           = useState<AggregatedClientNote[]>([]);
-  const [clients, setClients]           = useState<MasterClient[]>([]);
+  const [clients, setClients]           = useState<ClientListItem[]>([]);
   const [loading, setLoading]           = useState(true);
   const [activeSource, setActiveSource] = useState<"All" | ClientCommSource>("All");
   const [clientFilter, setClientFilter] = useState<string>("All");
@@ -458,9 +458,16 @@ export default function CommunicationsPage() {
 
   const loadClients = useCallback(async () => {
     try {
-      const res = await fetch("/api/master-clients");
-      const data = (await res.json()) as { clients: MasterClient[] };
-      setClients(data.clients ?? []);
+      // Fetch real businesses from Postgres
+      const res = await fetch("/api/businesses");
+      const data = (await res.json()) as { records?: Array<{ id: string; displayName: string; domain: string; assignedAM: string }> };
+      const records = data.records ?? [];
+      setClients(records.map((b) => ({
+        id: b.id,
+        clientName: b.displayName || b.domain,
+        assignedAM: b.assignedAM || undefined,
+        avatarColor: "#6366f1",
+      })));
     } catch {
       setClients([]);
     }

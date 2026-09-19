@@ -24,7 +24,7 @@ import {
   type PendingCancellationRequest,
   type BillingCancellationStatus,
 } from "@/lib/mock/cancellation-queue";
-import { MASTER_CLIENTS, type MasterClient } from "@/lib/mock/master-clients";
+import { fetchAMClients, type BusinessClient } from "@/lib/account-management/am-client-data";
 
 // ══════════════════════════════════════════════════════════════════════════════
 // UTILITIES
@@ -279,18 +279,14 @@ function InitiateCancellationModal({
   onClose: () => void;
   onSubmit: (client: string, reason: string) => void;
 }) {
-  // Live fetch from /api/master-clients — same hydration pattern as Client Portfolio.
-  // Falls back to in-memory MASTER_CLIENTS only until the API response arrives.
-  const [liveClients, setLiveClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+  // Real data from Postgres — no fallback.
+  const [liveClients, setLiveClients] = useState<BusinessClient[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/master-clients")
-      .then((r) => r.ok ? r.json() : null)
-      .then((d: { clients: MasterClient[] } | null) => {
-        if (d?.clients && d.clients.length > 0) setLiveClients(d.clients);
-      })
-      .catch((err) => console.error("[AM Cancellations] Failed to load clients:", err))
+    fetchAMClients()
+      .then(setLiveClients)
+      .catch((err) => console.error("[AM Cancellations] Failed to load businesses:", err))
       .finally(() => setClientsLoading(false));
   }, []);
 

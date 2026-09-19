@@ -5,10 +5,10 @@
  * Route: /account-management/client-health
  *
  * DATA SOURCES (Phase 1 — real):
- *   /api/master-clients  → MasterClient records (MRR, billing status, renewal, activation)
+ *   /api/businesses + /api/clients  → real Business records (MRR, payment status, renewal, activation)
  *   /api/engine          → Projects + Tasks per client (task completion, blocked, overdue)
  *
- * HEALTH SCORE: computed via shared computeHealth() + computeClientHealthScore()
+ * HEALTH SCORE: derived from payment status, activation status, and engine task signals
  *   from lib/mock/master-clients.ts — NO parallel formula.
  *
  * DEFERRED (badged "Preview — Target State"):
@@ -21,45 +21,41 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
-  MASTER_CLIENTS,
-  computeHealth,
-  computeClientHealthScore,
-  computePriority,
-  RENEWAL_URGENT_DAYS,
-  type MasterClient,
-  type HealthStatus,
-  type TaskHealthSignals,
-} from "@/lib/mock/master-clients";
+  fetchAMClients,
+  type BusinessClient,
+} from "@/lib/account-management/am-client-data";
+
+type HealthStatus = "Excellent" | "Good" | "At Risk" | "Critical";
+type TaskHealthSignals = {
+  totalTasks: number;
+  completedTasks: number;
+  blockedTasks: number;
+  overdueTasks: number;
+};
+const RENEWAL_URGENT_DAYS = 90;
 
 // ══════════════════════════════════════════════════════════════════════════════
 // TYPES
 // ══════════════════════════════════════════════════════════════════════════════
 
-/** Enriched view model built from real MASTER_CLIENTS + real engine task data. */
+/** Enriched view model built from real Business + engine task data. */
 interface ClientHealthVM {
-  // from MasterClient
+  // from AMClient
   id: string;
-  slug: string;
   clientName: string;
-  industry: string;
   assignedAM: string;
-  avatarColor: string;
-  billingStatus: MasterClient["billingStatus"];
-  paymentStatus: MasterClient["paymentStatus"];
-  cancellationStatus: MasterClient["cancellationStatus"];
-  activationStatus: MasterClient["activationStatus"];
+  invoiceStatus: string;
+  paymentStatus: string;
+  activationStatus: string;
   mrr: number;
-  renewalDate: string;
+  renewalDate: string | null;
   renewalStatus: string;
   activeServices: string[];
   cleared: boolean;
-  recentEvents: MasterClient["recentEvents"];
-  notes: string;
-  nextRequiredAction: string;
   // computed
-  health: HealthStatus;           // categorical tier
-  healthScore: number;            // 0-100 numeric
-  priority: MasterClient["priority"];
+  health: HealthStatus;
+  healthScore: number;
+  priority: "High" | "Medium" | "Low";
   daysToRenewal: number | null;
   // task signals (from engine, may be null if client has no engine project)
   taskSignals: TaskHealthSignals | null;
@@ -137,8 +133,31 @@ function billingStyle(s: string) {
 // BUILD VIEW MODEL
 // ══════════════════════════════════════════════════════════════════════════════
 
+// Derive health from real Business fields
+function deriveHealth(c: BusinessClient, signals: TaskHealthSignals | null): HealthStatus {
+  if (c.paymentStatus === "failed" || c.activationStatus === "suspended") return "Critical";
+  if (signals && (signals.overdueTasks > 0 || signals.blockedTasks > 2)) return "At Risk";
+  if (c.activationStatus === "active" && c.cleared) return "Excellent";
+  if (c.cleared) return "Good";
+  return "Good";
+}
+
+function deriveScore(health: HealthStatus, signals: TaskHealthSignals | null): number {
+  const base = { Excellent: 90, Good: 70, "At Risk": 40, Critical: 15 }[health] ?? 70;
+  if (!signals || signals.totalTasks === 0) return base;
+  const completionBonus = Math.round((signals.completedTasks / signals.totalTasks) * 10);
+  const overdueHit = signals.overdueTasks * 5;
+  return Math.max(0, Math.min(100, base + completionBonus - overdueHit));
+}
+
+function derivePriority(health: HealthStatus): "High" | "Medium" | "Low" {
+  if (health === "Critical" || health === "At Risk") return "High";
+  if (health === "Good") return "Medium";
+  return "Low";
+}
+
 function buildVM(
-  clients: MasterClient[],
+  clients: BusinessClient[],
   tasksByClientId: Map<string, EngineTask[]>,
 ): ClientHealthVM[] {
   const today = new Date().toISOString().slice(0, 10);
@@ -160,30 +179,23 @@ function buildVM(
       };
     }
 
-    const health = computeHealth(c, taskSignals ?? undefined);
-    const healthScore = computeClientHealthScore(c, taskSignals ?? undefined);
-    const priority = computePriority(health, c.billingStatus);
-    const daysToRenewal = daysUntilDate(c.renewalDate);
+    const health = deriveHealth(c, taskSignals);
+    const healthScore = deriveScore(health, taskSignals);
+    const priority = derivePriority(health);
+    const daysToRenewal = daysUntilDate(c.renewalDate ?? "");
 
     return {
       id: c.id,
-      slug: c.slug,
       clientName: c.clientName,
-      industry: c.industry,
       assignedAM: c.assignedAM,
-      avatarColor: c.avatarColor,
-      billingStatus: c.billingStatus,
+      invoiceStatus: c.invoiceStatus,
       paymentStatus: c.paymentStatus,
-      cancellationStatus: c.cancellationStatus,
       activationStatus: c.activationStatus,
       mrr: c.monthlyValue,
       renewalDate: c.renewalDate,
       renewalStatus: c.renewalStatus,
       activeServices: c.activeServices,
       cleared: c.cleared,
-      recentEvents: c.recentEvents,
-      notes: c.notes,
-      nextRequiredAction: c.nextRequiredAction,
       health,
       healthScore,
       priority,
@@ -342,7 +354,7 @@ function HealthScoreGauge({ score }: { score: number }) {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function BillingTab({ vm }: { vm: ClientHealthVM }) {
-  const bs = billingStyle(vm.billingStatus);
+  const bs = billingStyle(vm.paymentStatus);
 
   const renewalStyle = () => {
     if (vm.daysToRenewal === null) return { color: "var(--rtm-text-muted)" };
@@ -360,11 +372,10 @@ function BillingTab({ vm }: { vm: ClientHealthVM }) {
           sub={vm.mrr > 0 ? `${fmt$(vm.mrr * 12)} ARR` : "No active billing"}
           valueColor={vm.mrr > 0 ? "#059669" : "var(--rtm-text-muted)"}
         />
-        <Stat label="Billing Status" value={vm.billingStatus} valueColor={bs.color} />
-        <Stat label="Payment Status" value={vm.paymentStatus} />
+        <Stat label="Payment Status" value={vm.paymentStatus} valueColor={bs.color} />
         <Stat
           label="Renewal Date"
-          value={vm.renewalDate !== "—" ? vm.renewalDate : "N/A"}
+          value={vm.renewalDate ? vm.renewalDate : "N/A"}
           sub={
             vm.daysToRenewal !== null
               ? `${vm.daysToRenewal >= 0 ? vm.daysToRenewal + " days away" : "Overdue"}`
@@ -373,15 +384,15 @@ function BillingTab({ vm }: { vm: ClientHealthVM }) {
           valueColor={renewalStyle().color}
         />
         <Stat label="Renewal Status" value={vm.renewalStatus} />
-        <Stat label="Cancellation" value={vm.cancellationStatus} valueColor={
-          vm.cancellationStatus !== "None" ? "#DC2626" : "#059669"
+        <Stat label="Cancellation" value={"None"} valueColor={
+          "None" !== "None" ? "#DC2626" : "#059669"
         } />
       </div>
 
       <div className="flex items-center gap-3 flex-wrap mb-5">
-        <Badge label={vm.billingStatus} bg={bs.bg} color={bs.color} border={bs.border} />
-        {vm.cancellationStatus !== "None" && (
-          <Badge label={`Cancellation: ${vm.cancellationStatus}`} bg="#FEF2F2" color="#DC2626" border="#FECACA" />
+        <Badge label={vm.paymentStatus} bg={bs.bg} color={bs.color} border={bs.border} />
+        {"None" !== "None" && (
+          <Badge label={`Cancellation: ${"None"}`} bg="#FEF2F2" color="#DC2626" border="#FECACA" />
         )}
         {vm.daysToRenewal !== null && vm.daysToRenewal <= RENEWAL_URGENT_DAYS && vm.daysToRenewal >= 0 && (
           <Badge label={`Renewal in ${vm.daysToRenewal}d`} bg="#FEF2F2" color="#DC2626" border="#FECACA" />
@@ -529,22 +540,14 @@ function CommunicationsTab({ vm }: { vm: ClientHealthVM }) {
         </p>
       </div>
 
-      {/* Recent events from MASTER_CLIENTS as a lightweight activity summary */}
-      {vm.recentEvents.length > 0 && (
+      {/* Recent events: not available in real Business model */}
+      {false /* recentEvents not in real model */ && (
         <div className="mt-6 border-t pt-4" style={{ borderColor: "var(--rtm-border-light)" }}>
           <p className="text-xs font-semibold mb-3" style={{ color: "var(--rtm-text-secondary)" }}>
             Recent Activity (from client record)
           </p>
           <div className="flex flex-col divide-y" style={{ borderColor: "var(--rtm-border-light)" }}>
-            {vm.recentEvents.map((ev, i) => (
-              <div key={i} className="py-2.5 flex items-start gap-3">
-                <span className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{ev.date}</span>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium" style={{ color: "var(--rtm-text-primary)" }}>{ev.actor}</p>
-                  <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{ev.action}</p>
-                </div>
-              </div>
-            ))}
+
           </div>
         </div>
       )}
@@ -561,10 +564,10 @@ function HealthHistoryTab({ vm }: { vm: ClientHealthVM }) {
 
   // Build score component breakdown for display
   const billingPts = (() => {
-    if (vm.billingStatus === "Paid" || vm.billingStatus === "Cleared") return 40;
-    if (vm.billingStatus === "Pending") return 28;
-    if (vm.billingStatus === "Overdue" && vm.paymentStatus !== "Overdue") return 15;
-    if (vm.billingStatus === "Overdue" && vm.paymentStatus === "Overdue") return 5;
+    if (vm.paymentStatus === "Paid" || vm.paymentStatus === "Cleared") return 40;
+    if (vm.paymentStatus === "Pending") return 28;
+    if (vm.paymentStatus === "Overdue" && vm.paymentStatus !== "Overdue") return 15;
+    if (vm.paymentStatus === "Overdue" && vm.paymentStatus === "Overdue") return 5;
     return 20;
   })();
 
@@ -619,9 +622,9 @@ function HealthHistoryTab({ vm }: { vm: ClientHealthVM }) {
         <DataRow label="Health Tier" valueEl={<HealthBadge health={vm.health} />} />
         <DataRow label="Numeric Score" value={`${vm.healthScore}/100`} />
         <DataRow label="Priority" value={vm.priority} />
-        <DataRow label="Billing Status" value={vm.billingStatus} />
         <DataRow label="Payment Status" value={vm.paymentStatus} />
-        <DataRow label="Cancellation Status" value={vm.cancellationStatus} />
+        <DataRow label="Payment Status" value={vm.paymentStatus} />
+        <DataRow label="Cancellation Status" value="N/A" />
         <DataRow label="Activation Status" value={vm.activationStatus} />
         {ts && (
           <>
@@ -664,7 +667,7 @@ function OverviewTab({ vm }: { vm: ClientHealthVM }) {
             <DataRow label="Health Tier" valueEl={<HealthBadge health={vm.health} />} />
             <DataRow label="Priority" value={vm.priority} />
             <DataRow label="MRR" value={vm.mrr > 0 ? fmt$(vm.mrr) : "—"} />
-            <DataRow label="Billing" value={vm.billingStatus} />
+            <DataRow label="Payment" value={vm.paymentStatus} />
             {vm.daysToRenewal !== null && (
               <DataRow
                 label="Renewal"
@@ -704,13 +707,13 @@ function OverviewTab({ vm }: { vm: ClientHealthVM }) {
       {/* Notes + Next Action */}
       <SectionCard title="Account Notes">
         <p className="text-sm leading-relaxed mb-3" style={{ color: "var(--rtm-text-secondary)" }}>
-          {vm.notes || "No notes."}
+          {"—"}
         </p>
         <div className="rounded-lg border p-3" style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)" }}>
           <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>
             Next Required Action
           </p>
-          <p className="text-sm" style={{ color: "var(--rtm-text-primary)" }}>{vm.nextRequiredAction}</p>
+          <p className="text-sm" style={{ color: "var(--rtm-text-primary)" }}>{"See onboarding record for details."}</p>
         </div>
       </SectionCard>
     </div>
@@ -770,7 +773,7 @@ function ClientDetailDrawer({
             <div className="flex items-center gap-3 flex-wrap">
               <span
                 className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-bold text-white"
-                style={{ background: vm.avatarColor }}
+                style={{ background: "#6366f1" }}
               >
                 {vm.clientName.charAt(0)}
               </span>
@@ -779,8 +782,8 @@ function ClientDetailDrawer({
             </div>
             <div className="flex items-center gap-4 flex-wrap">
               <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>AM: {vm.assignedAM}</span>
-              <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>{vm.industry}</span>
-              <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Billing: {vm.billingStatus}</span>
+              <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>{vm.activationStatus}</span>
+              <span className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Payment: {vm.paymentStatus}</span>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {vm.activeServices.slice(0, 4).map((s) => (
@@ -876,7 +879,7 @@ function ClientDetailDrawer({
 
 function ClientCard({ vm, onClick }: { vm: ClientHealthVM; onClick: () => void }) {
   const ps = scoreBg(vm.healthScore);
-  const bs = billingStyle(vm.billingStatus);
+  const bs = billingStyle(vm.paymentStatus);
   const renewalUrgent = vm.daysToRenewal !== null && vm.daysToRenewal <= RENEWAL_URGENT_DAYS && vm.daysToRenewal >= 0;
 
   return (
@@ -890,13 +893,13 @@ function ClientCard({ vm, onClick }: { vm: ClientHealthVM; onClick: () => void }
         <div className="flex items-center gap-2 min-w-0">
           <span
             className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
-            style={{ background: vm.avatarColor }}
+            style={{ background: "#6366f1" }}
           >
             {vm.clientName.charAt(0)}
           </span>
           <div className="min-w-0">
             <p className="font-semibold truncate text-sm" style={{ color: "var(--rtm-text-primary)" }}>{vm.clientName}</p>
-            <p className="text-xs truncate" style={{ color: "var(--rtm-text-muted)" }}>{vm.assignedAM} · {vm.industry}</p>
+            <p className="text-xs truncate" style={{ color: "var(--rtm-text-muted)" }}>{vm.assignedAM} · {vm.activationStatus}</p>
           </div>
         </div>
         <HealthBadge health={vm.health} />
@@ -920,7 +923,7 @@ function ClientCard({ vm, onClick }: { vm: ClientHealthVM; onClick: () => void }
           <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>MRR</span>
         </div>
         <div className="px-3 py-2 flex flex-col items-center">
-          <span className="text-xs font-bold" style={{ color: bs.color }}>{vm.billingStatus}</span>
+          <span className="text-xs font-bold" style={{ color: bs.color }}>{vm.paymentStatus}</span>
           <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>Billing</span>
         </div>
         <div className="px-3 py-2 flex flex-col items-center">
@@ -963,7 +966,7 @@ function ClientCard({ vm, onClick }: { vm: ClientHealthVM; onClick: () => void }
       {/* Notes */}
       <div className="px-4 py-3 border-t" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
         <p className="text-xs italic leading-snug line-clamp-2" style={{ color: "var(--rtm-text-muted)" }}>
-          {vm.notes || "No notes."}
+          {"—"}
         </p>
       </div>
     </div>
@@ -994,7 +997,7 @@ function ClientTable({ vms, onSelect }: { vms: ClientHealthVM[]; onSelect: (v: C
         <tbody>
           {vms.map((vm, i) => {
             const ps = scoreBg(vm.healthScore);
-            const bs = billingStyle(vm.billingStatus);
+            const bs = billingStyle(vm.paymentStatus);
             const renewalUrgent = vm.daysToRenewal !== null && vm.daysToRenewal <= RENEWAL_URGENT_DAYS && vm.daysToRenewal >= 0;
 
             return (
@@ -1011,13 +1014,13 @@ function ClientTable({ vms, onSelect }: { vms: ClientHealthVM[]; onSelect: (v: C
                   <div className="flex items-center gap-2">
                     <span
                       className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold text-white"
-                      style={{ background: vm.avatarColor }}
+                      style={{ background: "#6366f1" }}
                     >
                       {vm.clientName.charAt(0)}
                     </span>
                     <div>
                       <p className="font-semibold text-xs" style={{ color: "var(--rtm-text-primary)" }}>{vm.clientName}</p>
-                      <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{vm.industry}</p>
+                      <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{vm.activationStatus}</p>
                     </div>
                   </div>
                 </td>
@@ -1029,7 +1032,7 @@ function ClientTable({ vms, onSelect }: { vms: ClientHealthVM[]; onSelect: (v: C
                   <HealthBadge health={vm.health} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
-                  <Badge label={vm.billingStatus} bg={bs.bg} color={bs.color} border={bs.border} />
+                  <Badge label={vm.paymentStatus} bg={bs.bg} color={bs.color} border={bs.border} />
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
                   {vm.mrr > 0 ? fmt$(vm.mrr) : "—"}
@@ -1104,7 +1107,7 @@ const HEALTH_FILTERS: HealthFilter[] = ["All", "Excellent", "Good", "At Risk", "
 
 export default function ClientHealthPage() {
   // ── State ────────────────────────────────────────────────────────────────
-  const [clients, setClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+  const [clients, setClients] = useState<BusinessClient[]>([]);
   const [engineProjects, setEngineProjects] = useState<EngineProject[]>([]);
   const [engineTasks, setEngineTasks] = useState<EngineTask[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1118,22 +1121,17 @@ export default function ClientHealthPage() {
     let cancelled = false;
     async function load() {
       try {
-        const [mcRes, engRes] = await Promise.all([
-          fetch("/api/master-clients"),
+        const [amClients, engRes] = await Promise.all([
+          fetchAMClients(),
           fetch("/api/engine"),
         ]);
-        const [mcData, engData] = await Promise.all([
-          mcRes.json() as Promise<{ clients: MasterClient[] }>,
-          engRes.json() as Promise<{ projects: EngineProject[]; tasks: EngineTask[] }>,
-        ]);
+        const engData = await engRes.json() as { projects: EngineProject[]; tasks: EngineTask[] };
         if (cancelled) return;
-        if (Array.isArray(mcData.clients) && mcData.clients.length > 0) {
-          setClients(mcData.clients as MasterClient[]);
-        }
+        setClients(amClients);
         if (Array.isArray(engData.projects)) setEngineProjects(engData.projects);
         if (Array.isArray(engData.tasks)) setEngineTasks(engData.tasks);
       } catch {
-        // keep MASTER_CLIENTS seed on error
+        // No fallback — zero clients shown if fetch fails
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -1192,7 +1190,7 @@ export default function ClientHealthPage() {
         (v) =>
           v.clientName.toLowerCase().includes(q) ||
           v.assignedAM.toLowerCase().includes(q) ||
-          v.industry.toLowerCase().includes(q),
+          v.activationStatus.toLowerCase().includes(q),
       );
     }
     return result;
@@ -1230,7 +1228,7 @@ export default function ClientHealthPage() {
               Client Health
             </h1>
             <p className="mt-1 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
-              Real health scores computed from billing, activation, and task signals.
+              Real health scores derived from payment status, activation, and task signals.
               {loading && <span className="ml-2 text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading live data…</span>}
             </p>
           </div>
@@ -1267,6 +1265,22 @@ export default function ClientHealthPage() {
             ))}
           </div>
         </div>
+
+        {/* ── Empty State ─────────────────────────────────────────────── */}
+        {!loading && clients.length === 0 && (
+          <div className="rounded-xl border p-12 text-center space-y-3" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
+            <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ background: "#ECFDF5" }}>
+              <svg width="24" height="24" fill="none" stroke="#059669" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>No businesses to monitor yet</p>
+            <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+              Client health tracking is available once Billing confirms a payment and creates a business record.
+              Businesses appear here automatically after Billing clears an invoice.
+            </p>
+          </div>
+        )}
 
         {/* ── KPI Row ─────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">

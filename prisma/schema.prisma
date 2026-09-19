@@ -600,6 +600,29 @@ model Business {
   // Valid renewalStatus values: "ok" | "upcoming" | "overdue" | "cancelled"
   renewalStatus       String   @default("ok")
 
+  // ── AM delivery lifecycle ────────────────────────────────────────────────────
+  // cleared: Billing's payment verification gate. Set to true by Billing after
+  // payment is confirmed and the client is ready for AM handoff. AM pages gate
+  // their activation workflow on this flag. Billing-owned; AM reads only.
+  cleared             Boolean  @default(false)
+
+  // kickoffCompleted: true once the AM has run the kickoff call with the client.
+  // Written by AM via the onboarding record flow.
+  kickoffCompleted    Boolean  @default(false)
+
+  // kickoffDate: ISO-8601 date string of when the kickoff call occurred.
+  // Nullable until the kickoff call is completed.
+  kickoffDate         String?                  // ISO-8601 date string, nullable until set
+
+  // assignedAt: ISO-8601 timestamp of the most recent AM assignment or reassignment.
+  // Nullable until first assignment. Written by AM pages alongside assignedAM.
+  //
+  // TODO: automatic workload-based AM assignment with manager override is the
+  // intended future behaviour. It is blocked on the User model gaining populated
+  // department and role fields so that workload can be computed per-AM and the
+  // assigning manager can be verified. Until that lands, assignedAM is manual.
+  assignedAt          String?                  // ISO-8601 string, nullable until set
+
   // Provenance: the GHL opportunity this business was created from.
   // NOT an identity key. NOT a matching key. Records origin only.
   // Do not build any GHL lookup or sync against this field.

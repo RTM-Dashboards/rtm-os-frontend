@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { RoleToggle } from "@/components/am-role-toggle";
-import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
-import type { MasterClient } from "@/lib/mock/master-clients";
+import { fetchAMClients, type BusinessClient } from "@/lib/account-management/am-client-data";
 import {
   ALL_CLIENTS,
   ALL_TASKS,
@@ -114,18 +113,16 @@ function QuickLinkButton({ label, href }: { label: string; href: string }) {
 
 // ── Cleared-Client Queue summary card ─────────────────────────────────────────
 function ClearedClientSummaryCard() {
-  const [clients, setClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+  const [clients, setClients] = useState<BusinessClient[]>([]);
   useEffect(() => {
-    fetch("/api/master-clients").then((r) => r.ok ? r.json() : null).then((d: { clients: MasterClient[] } | null) => {
-      if (d?.clients) setClients(d.clients);
-    }).catch(() => {});
+    fetchAMClients().then(setClients).catch(() => setClients([]));
   }, []);
   const clearedClients = clients.filter((c) => c.cleared);
-  const needsAssignment = clearedClients.filter(
-    (c) => c.activationStatus === "AM Assignment Needed"
-  ).length;
+  // needsAssignment: cleared businesses with no AM assigned
+  const needsAssignment = clearedClients.filter((c) => !c.assignedAM).length;
+  // readyForOnboarding: pending activation
   const readyForOnboarding = clearedClients.filter(
-    (c) => c.activationStatus === "Ready for Onboarding"
+    (c) => c.activationStatus === "pending"
   ).length;
   const awaitingAction = needsAssignment + readyForOnboarding;
 

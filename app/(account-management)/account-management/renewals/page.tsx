@@ -5,14 +5,14 @@
  * Route: /account-management/renewals
  *
  * DATA SOURCES (Phase 1 — real):
- *   MASTER_CLIENTS (lib/mock/master-clients.ts)
+ *   /api/businesses + /api/clients (Postgres via Prisma)
  *     → renewalDate, renewalStatus, monthlyValue (MRR), clientName, assignedAM,
- *       activeServices, billingStatus, paymentStatus, cancellationStatus,
+ *       activeServices, invoiceStatus, paymentStatus, activationStatus
  *       activationStatus — single source of truth for all renewal candidates.
  *   /api/renewal-status  (data/renewal-status.json)
  *     → lightweight overlay: decision (Renew / Renew with Changes / Decline /
  *       Pending) + notes, keyed by clientId — persists across refreshes.
- *   computeClientHealthScore() / computeHealth() from lib/mock/master-clients.ts
+ *   derived from real Business fields (paymentStatus, activationStatus)
  *     → shared with Client Health page — no parallel formula.
  *
  * REAL ACTIONS:
@@ -33,13 +33,23 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  MASTER_CLIENTS,
-  computeHealth,
-  computeClientHealthScore,
-  RENEWAL_URGENT_DAYS,
-  type MasterClient,
-  type HealthStatus,
-} from "@/lib/mock/master-clients";
+  fetchAMClients,
+  type BusinessClient,
+} from "@/lib/account-management/am-client-data";
+
+type HealthStatus = "Excellent" | "Good" | "At Risk" | "Critical";
+const RENEWAL_URGENT_DAYS = 90;
+
+function deriveRenewalHealth(c: BusinessClient): HealthStatus {
+  if (c.paymentStatus === "failed") return "Critical";
+  if (c.activationStatus === "suspended") return "At Risk";
+  if (c.activationStatus === "active") return "Excellent";
+  return "Good";
+}
+
+function deriveRenewalScore(h: HealthStatus): number {
+  return { Excellent: 90, Good: 70, "At Risk": 40, Critical: 15 }[h] ?? 70;
+}
 import SubmitChangeRequestModal, {
   type PendingChangeRequest,
   type SubmitChangeRequestPrefill,
@@ -67,19 +77,16 @@ interface RenewalVM {
   id: string;
   clientName: string;
   assignedAM: string;
-  industry: string;
-  avatarColor: string;
   mrr: number;
   activeServices: string[];
   renewalDate: string;
-  renewalStatus: string;          // from MASTER_CLIENTS
+  renewalStatus: string;
   daysToRenewal: number | null;   // computed
-  health: HealthStatus;           // from computeHealth()
-  healthScore: number;            // from computeClientHealthScore()
-  billingStatus: MasterClient["billingStatus"];
-  paymentStatus: MasterClient["paymentStatus"];
-  cancellationStatus: MasterClient["cancellationStatus"];
-  activationStatus: MasterClient["activationStatus"];
+  health: HealthStatus;
+  healthScore: number;
+  invoiceStatus: string;
+  paymentStatus: string;
+  activationStatus: string;
   // overlay
   decision: RenewalDecision;
   notes: string;
@@ -111,40 +118,33 @@ function fmtDate(iso: string): string {
 }
 
 /**
- * Build view-model list from MASTER_CLIENTS.
- * Only includes clients with a real renewalDate (not "—") and
- * activationStatus === "Active" — these are the genuine renewal candidates.
- * No clients are fabricated; no parallel data model is used.
+ * Build view-model list from real Business records.
+ * Only includes businesses with a renewalDate set and activationStatus "active".
  */
 function buildRenewalVMs(
+  businesses: BusinessClient[],
   overlayMap: Map<string, RenewalStatusRecord>
 ): RenewalVM[] {
-  return MASTER_CLIENTS.filter(
-    (c) =>
-      c.renewalDate !== "—" &&
-      c.renewalDate !== "" &&
-      c.activationStatus === "Active"
+  return businesses.filter(
+    (c) => c.renewalDate && c.activationStatus === "active"
   ).map((c) => {
-    const health = computeHealth(c);
-    const healthScore = computeClientHealthScore(c);
-    const days = daysUntil(c.renewalDate);
+    const health = deriveRenewalHealth(c);
+    const healthScore = deriveRenewalScore(health);
+    const days = daysUntil(c.renewalDate ?? "");
     const overlay = overlayMap.get(c.id);
     return {
       id: c.id,
       clientName: c.clientName,
       assignedAM: c.assignedAM,
-      industry: c.industry,
-      avatarColor: c.avatarColor,
       mrr: c.monthlyValue,
       activeServices: c.activeServices,
-      renewalDate: c.renewalDate,
+      renewalDate: c.renewalDate ?? "",
       renewalStatus: c.renewalStatus,
       daysToRenewal: days,
       health,
       healthScore,
-      billingStatus: c.billingStatus,
+      invoiceStatus: c.invoiceStatus,
       paymentStatus: c.paymentStatus,
-      cancellationStatus: c.cancellationStatus,
       activationStatus: c.activationStatus,
       decision: overlay?.decision ?? "Pending",
       notes: overlay?.notes ?? "",
@@ -624,10 +624,10 @@ function ClientProfilePanel({ vm }: { vm: RenewalVM }) {
           [
             { label: "Client", value: vm.clientName },
             { label: "Account Manager", value: vm.assignedAM },
-            { label: "Industry", value: vm.industry },
-            { label: "Billing Status", value: vm.billingStatus },
+            { label: "Industry", value: vm.activationStatus },
+            { label: "Billing Status", value: vm.paymentStatus },
             { label: "Payment Status", value: vm.paymentStatus },
-            { label: "Cancellation Status", value: vm.cancellationStatus },
+            { label: "Cancellation Status", value: "None" },
           ] as { label: string; value: string }[]
         ).map(({ label, value }) => (
           <div
@@ -642,7 +642,7 @@ function ClientProfilePanel({ vm }: { vm: RenewalVM }) {
         {/* ── Stripe Subscription (groundwork — not yet live) ──────────────────────
              FUTURE LIVE INTEGRATION HOOK (Renewals / ClientProfilePanel):
              When Stripe is connected at launch:
-               - Display stripeSubscriptionId from the matching MASTER_CLIENTS record
+               - Display stripeSubscriptionId from the Business record
                - Status = current subscription status fetched from Stripe
                  (stripe.subscriptions.retrieve(stripeSubscriptionId))
                - "Sync Renewal to Stripe" should update subscription billing period:
@@ -1430,6 +1430,12 @@ export default function RenewalsPage() {
   const [mainTab, setMainTab] = useState<MainTab>("dashboard");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Real businesses from Postgres — for renewal VM computation
+  const [businesses, setBusinesses] = React.useState<BusinessClient[]>([]);
+  React.useEffect(() => {
+    fetchAMClients().then(setBusinesses).catch(() => setBusinesses([]));
+  }, []);
+
   // ── Overlay state (from /api/renewal-status) ─────────────────────────────
   const [overlayRecords, setOverlayRecords] = useState<RenewalStatusRecord[]>(
     []
@@ -1455,10 +1461,10 @@ export default function RenewalsPage() {
     return m;
   }, [overlayRecords]);
 
-  // ── View models (always real MASTER_CLIENTS + overlay) ───────────────────
+  // ── View models from real businesses + overlay ─────────────────────────────
   const vms = useMemo(
-    () => buildRenewalVMs(overlayMap),
-    [overlayMap]
+    () => buildRenewalVMs(businesses, overlayMap),
+    [businesses, overlayMap]
   );
 
   const selectedVM = useMemo(
@@ -1575,6 +1581,23 @@ export default function RenewalsPage() {
             <p className="text-xs text-slate-400 mt-1">Loading decisions…</p>
           )}
         </div>
+
+        {/* Empty state */}
+        {businesses.length === 0 && !overlayLoading && (
+          <div className="rounded-xl border p-12 text-center space-y-3" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
+            <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ background: "#EFF6FF" }}>
+              <svg width="24" height="24" fill="none" stroke="#1B4FD8" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+            <p className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>No renewals to track yet</p>
+            <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+              Renewals appear here once a business is active and has a renewal date set.
+              Businesses become eligible after Billing confirms payment and AM completes onboarding.
+            </p>
+          </div>
+        )}
+
         <div className="flex gap-3 text-sm">
           <div className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-center shadow-sm">
             <p className="text-xs text-slate-400 font-semibold uppercase tracking-wide">

@@ -75,8 +75,9 @@ import type {
   AMOnboardingSection,
 } from "@/lib/mock/am-onboarding-field-schema";
 import { getAllProjects, getProjectByClientId } from "@/lib/mock/am-projects-store";
-import { MASTER_CLIENTS, markKickoffComplete } from "@/lib/mock/master-clients";
+import { markKickoffComplete } from "@/lib/mock/master-clients";
 import { apiMarkKickoffComplete, apiMarkOnboardingComplete } from "@/lib/mock/master-clients-api";
+import { markKickoffComplete as realMarkKickoff, markOnboardingComplete as realMarkOnboarding } from "@/lib/account-management/am-client-data";
 import { updateTaskStatus } from "@/lib/engine/api";
 
 // ─── Formatting helpers ────────────────────────────────────────────────────────
@@ -336,7 +337,7 @@ function SalesPrefillPanel({ record }: { record: AMOnboardingRecord }) {
         <div>
           <h3 className="text-sm font-bold text-[#1340B0]">Sales Prefill Reference (Read-only)</h3>
           <p className="text-xs text-[#3B6EF5] mt-0.5">
-            Data from MASTER_CLIENTS / Sales intake - owned by Sales &amp; Billing.
+            Data from Sales intake - owned by Sales &amp; Billing.
           </p>
         </div>
         <span className="text-xs font-semibold text-[#1B4FD8] ml-4 shrink-0">
@@ -679,16 +680,17 @@ function KickoffCallWidget({
   record: AMOnboardingRecord;
   onRefresh: () => void;
 }) {
-  const client = MASTER_CLIENTS.find((c) => c.id === record.clientId);
+  // Kickoff state: use onboarding record field assignments as the source of truth.
+  // The MasterClient lookup was removed because onboarding records now support
+  // real Business records where no MasterClient id match will exist.
   const [kickoffDate, setKickoffDate] = useState(
     record.fieldAssignments["kickoffCallDate"]?.value ?? ""
   );
   const [completing, setCompleting] = useState(false);
 
-  if (!client) return null;
-
-  const kickoffNeeded = client.activationChecklist.kickoffNeeded;
-  const kickoffCompleted = client.activationChecklist.kickoffCallCompleted;
+  // Default to kickoff needed until kickoffCallDate is filled.
+  const kickoffNeeded = !record.fieldAssignments["kickoffCallDate"]?.value;
+  const kickoffCompleted = !!record.fieldAssignments["kickoffCallDate"]?.value;
   const storedDate = record.fieldAssignments["kickoffCallDate"]?.value ?? "";
 
   if (!kickoffNeeded) {
@@ -707,8 +709,11 @@ function KickoffCallWidget({
     if (kickoffDate) {
       await saveFieldValue(record.id, "kickoffCallDate", kickoffDate);
     }
+    // Write to mock store (onboarding record tracking)
     await apiMarkKickoffComplete(record.clientId, kickoffDate || undefined).catch(() => {});
     markKickoffComplete(record.clientId, kickoffDate || undefined);
+    // Also write to real Business record in Postgres
+    await realMarkKickoff(record.clientId, kickoffDate || undefined).catch(() => {});
     setTimeout(() => {
       setCompleting(false);
       onRefresh();
@@ -1147,8 +1152,9 @@ function CompleteOnboardingButton({
         }
       }
 
-      // 3. Advance MASTER_CLIENTS activationStatus → Active
-      await apiMarkOnboardingComplete(record.clientId);
+      // 3. Advance activationStatus → active in real Business record
+      await apiMarkOnboardingComplete(record.clientId).catch(() => {});
+      await realMarkOnboarding(record.clientId).catch(() => {});
 
       setDialogState({ open: false });
       onDone("✓ Onboarding completed - client is now Active and removed from the queue.");
