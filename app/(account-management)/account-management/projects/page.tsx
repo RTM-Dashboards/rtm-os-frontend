@@ -724,6 +724,8 @@ function ProjectsPageInner() {
           const bc: BusinessClient = {
             id: r.id, clientId: r.clientId, displayName: r.displayName || r.domain, clientName: r.displayName || r.domain,
             domain: r.domain, email: "", phone: "", invoiceStatus: r.invoiceStatus, paymentStatus: r.paymentStatus,
+            cancellationStatus: (r as Record<string, unknown>).cancellationStatus as string ?? "None",
+            billingStatus: (r as Record<string, unknown>).billingStatus as string ?? "Pending",
             monthlyValue: Math.round(r.monthlyValueCents / 100), activeServices: r.activeServices, renewalDate: r.renewalDate,
             renewalStatus: r.renewalStatus, assignedAM: r.assignedAM, activationStatus: r.activationStatus,
             onboardingStatus: r.onboardingStatus, cleared: r.cleared, kickoffCompleted: r.kickoffCompleted,

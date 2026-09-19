@@ -588,6 +588,16 @@ model Business {
   invoiceAmountCents  Int      @default(0)     // amount in cents to avoid float rounding
   subscriptionRef     String?                 // external subscription id (e.g. Stripe)
 
+  // Cancellation lifecycle for this business (domain).
+  // String, not enum — values can be extended without a schema migration.
+  // Valid values: "None" | "Requested" | "In Review" | "Approved" | "Cancelled"
+  cancellationStatus  String   @default("None")
+
+  // Billing closure status for this business (domain).
+  // String, not enum — values can be extended without a schema migration.
+  // Valid values: "Pending" | "Paid" | "Overdue" | "Cleared" | "Closed"
+  billingStatus       String   @default("Pending")
+
   // ── Delivery and activation state ──────────────────────────────────────────
   // Valid activationStatus values: "inactive" | "pending" | "active" | "suspended"
   // Valid onboardingStatus values: "not_started" | "in_progress" | "complete"

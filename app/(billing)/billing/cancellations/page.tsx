@@ -6,8 +6,11 @@ import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 import type { PendingCancellationRequest } from "@/lib/mock/cancellation-queue";
-import type { MasterClient } from "@/lib/mock/master-clients";
-import { fetchMasterClients, patchMasterClient } from "@/lib/mock/master-clients-api";
+import {
+  fetchAMClients,
+  patchBusiness,
+  type BusinessClient,
+} from "@/lib/account-management/am-client-data";
 
 const workspace = getWorkspace("billing")!;
 
@@ -18,8 +21,8 @@ const workspace = getWorkspace("billing")!;
 type BadgeVariant =
   | "success" | "error" | "warning" | "info" | "neutral" | "pending";
 
-// Billing-internal lifecycle status — separate from MASTER_CLIENTS.cancellationStatus
-// (which is the canonical AM/Billing shared field). This is purely for Billing's
+// Billing-internal lifecycle status — separate from Business.cancellationStatus
+// (which is the canonical per-domain field). This is purely for Billing's
 // internal workflow tracking within the cancellation process.
 type BillingWorkflowStatus =
   | "Cancellation Requested"
@@ -52,10 +55,14 @@ type InvoiceType =
   | "Final Invoice" | "Prorated Invoice" | "Cancellation Fee" | "Outstanding Balance";
 
 /**
- * Billing-side overlay: extra fields that don't live on MasterClient but Billing
- * needs to track within a cancellation workflow. Stored in session state keyed by
- * clientId. The canonical status fields (cancellationStatus, billingStatus,
- * invoiceStatus) live on MasterClient and are persisted via patchMasterClient().
+ * Billing-side overlay: extra fields that don't live on Business but Billing
+ * needs to track within a cancellation workflow. Stored in session state keyed
+ * by Business id. The canonical status fields (cancellationStatus, billingStatus,
+ * invoiceStatus) live on Business and are persisted via patchBusiness().
+ *
+ * holdReason is captured in the Place Billing Hold modal but is NOT persisted
+ * anywhere — not to the overlay, not to the database. It is local modal-form
+ * state only. No schema field exists for it and none will be added in this run.
  */
 interface BillingOverlay {
   workflowStatus: BillingWorkflowStatus;
@@ -76,19 +83,28 @@ interface BillingOverlay {
 }
 
 /**
- * Unified cancellation record: derived from MasterClient + billing overlay +
+ * Unified cancellation record: derived from BusinessClient + billing overlay +
  * optional pending-cancellation-request signal.
+ *
+ * Cancellation is per BUSINESS (domain), not per Client. A client with three
+ * domains can cancel one and keep the other two. Each Business has its own
+ * cancellationStatus and billingStatus, so the two fields are isolated at the
+ * domain level. This list shows businesses; the owning client's name is shown
+ * in the row for context.
  */
 interface CancellationRecord {
-  // From MasterClient (canonical)
-  id: string;               // masterClient.id
-  clientId: string;         // masterClient.id (alias for clarity)
-  client: string;           // masterClient.clientName
-  amOwner: string;          // masterClient.assignedAM
-  billingOwner: string;     // masterClient.billingOwner
-  mrrImpact: string;        // derived from masterClient.monthlyValue
-  monthlyValue: string;     // derived from masterClient.monthlyValue
-  requestedDate: string;    // from pending-cancellation-request or lastActivity
+  // From Business (canonical)
+  id: string;               // Business id
+  businessId: string;       // Business id (alias for clarity)
+  clientId: string;         // Client id (owning client)
+  client: string;           // BusinessClient.clientName (owner for context)
+  domain: string;           // BusinessClient.domain
+  displayName: string;      // BusinessClient.displayName
+  amOwner: string;          // Business.assignedAM
+  billingOwner: string;     // no equivalent on Business — displayed as "—"
+  mrrImpact: string;        // derived from Business.monthlyValue
+  monthlyValue: string;     // derived from Business.monthlyValue
+  requestedDate: string;    // from pending-cancellation-request or "—"
 
   // From BillingOverlay (billing-internal, session-state)
   cancellationStatus: BillingWorkflowStatus;
@@ -159,20 +175,20 @@ type ModalKind =
   | null;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Build a unified CancellationRecord from a MasterClient + optional AM signal
+// Build a unified CancellationRecord from a BusinessClient + optional AM signal
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Map MASTER_CLIENTS.cancellationStatus (the canonical shared field) to the
+ * Map Business.cancellationStatus (the canonical per-domain field) to the
  * billing-internal workflow status used for display/table badges.
  */
 function masterStatusToWorkflow(
-  masterStatus: MasterClient["cancellationStatus"],
+  cancellationStatus: string,
   existingOverlay?: BillingOverlay,
 ): BillingWorkflowStatus {
   // If Billing has already progressed this record to a later stage, preserve it.
   if (existingOverlay) return existingOverlay.workflowStatus;
-  switch (masterStatus) {
+  switch (cancellationStatus) {
     case "Requested":  return "Cancellation Requested";
     case "In Review":  return "Billing Review";
     case "Approved":   return "Approved for Offboarding";
@@ -182,47 +198,53 @@ function masterStatusToWorkflow(
 }
 
 function buildRecord(
-  client: MasterClient,
+  biz: BusinessClient,
   amSignal: PendingCancellationRequest | undefined,
   overlay?: BillingOverlay,
 ): CancellationRecord {
-  const workflow = masterStatusToWorkflow(client.cancellationStatus, overlay);
-  const mrrImpact = client.monthlyValue > 0 ? `-$${client.monthlyValue.toLocaleString()}` : "$0";
-  const monthlyValue = client.monthlyValue > 0 ? `$${client.monthlyValue.toLocaleString()}` : "$0";
+  const workflow = masterStatusToWorkflow(biz.cancellationStatus, overlay);
+  const mrrImpact = biz.monthlyValue > 0 ? `-$${biz.monthlyValue.toLocaleString()}` : "$0";
+  const monthlyValue = biz.monthlyValue > 0 ? `$${biz.monthlyValue.toLocaleString()}` : "$0";
 
   return {
-    id: client.id,
-    clientId: client.id,
-    client: client.clientName,
-    amOwner: client.assignedAM !== "Unassigned" ? client.assignedAM : (amSignal?.amOwner ?? "Account Management"),
-    billingOwner: client.billingOwner,
+    id: biz.id,
+    businessId: biz.id,
+    clientId: biz.clientId,
+    client: biz.clientName,
+    domain: biz.domain,
+    displayName: biz.displayName,
+    amOwner: biz.assignedAM || "Unassigned",
+    billingOwner: "—",   // no billingOwner field on Business; displayed for context only
     mrrImpact,
     monthlyValue,
-    requestedDate: amSignal?.requestedDate ?? client.lastActivity ?? "—",
+    requestedDate: amSignal?.requestedDate ?? "—",
 
     cancellationStatus: overlay?.workflowStatus ?? workflow,
-    finalInvoiceStatus: overlay?.finalInvoiceStatus ?? mapInvoiceStatus(client),
+    finalInvoiceStatus: overlay?.finalInvoiceStatus ?? mapInvoiceStatus(biz.invoiceStatus),
     offboardingStatus: overlay?.offboardingStatus ?? "Not Started",
     outstandingBalance: overlay?.outstandingBalance ?? "$0",
-    priority: overlay?.priority ?? derivePriority(client),
+    priority: overlay?.priority ?? derivePriority(biz),
     nextBillingAction: overlay?.nextBillingAction ?? deriveNextAction(workflow),
-    contractEndDate: overlay?.contractEndDate ?? client.renewalDate ?? "—",
-    currentPlan: overlay?.currentPlan ?? (client.activeServices.join(", ") || "—"),
+    contractEndDate: overlay?.contractEndDate ?? (biz.renewalDate ?? "—"),
+    currentPlan: overlay?.currentPlan ?? (biz.activeServices.join(", ") || "—"),
     remainingContractValue: overlay?.remainingContractValue ?? "—",
     refundRequired: overlay?.refundRequired ?? false,
     proratedAmount: overlay?.proratedAmount ?? "$0",
     paymentMethodStatus: overlay?.paymentMethodStatus ?? "Active",
     billingDecision: overlay?.billingDecision ?? "Continue Billing Until End Date",
     requestedBy: overlay?.requestedBy ?? (amSignal ? "AM" : "Client"),
-    recentEvents: overlay?.recentEvents ?? buildInitialEvents(client, amSignal),
+    recentEvents: overlay?.recentEvents ?? buildInitialEvents(biz, amSignal),
   };
 }
 
-function mapInvoiceStatus(client: MasterClient): FinalInvoiceStatus {
-  switch (client.invoiceStatus) {
+function mapInvoiceStatus(invoiceStatus: string): FinalInvoiceStatus {
+  switch (invoiceStatus) {
     case "Final invoice issued":   return "Created";
+    case "paid":
     case "Paid":                   return "Paid";
+    case "sent":
     case "Sent — Awaiting Payment":
+    case "overdue":
     case "Overdue 15d":
     case "Overdue 30d":            return "Needed";
     default:                       return "Not Required";
@@ -230,11 +252,11 @@ function mapInvoiceStatus(client: MasterClient): FinalInvoiceStatus {
 }
 
 function derivePriority(
-  client: MasterClient,
+  biz: BusinessClient,
 ): "Critical" | "High" | "Medium" | "Low" {
-  if (client.cancellationStatus === "Approved") return "High";
-  if (client.cancellationStatus === "Requested") return "High";
-  if (client.billingStatus === "Overdue") return "Critical";
+  if (biz.cancellationStatus === "Approved") return "High";
+  if (biz.cancellationStatus === "Requested") return "High";
+  if (biz.billingStatus === "Overdue") return "Critical";
   return "Medium";
 }
 
@@ -254,7 +276,7 @@ function deriveNextAction(workflow: BillingWorkflowStatus): string {
 }
 
 function buildInitialEvents(
-  client: MasterClient,
+  biz: BusinessClient,
   amSignal?: PendingCancellationRequest,
 ): { date: string; event: string; by: string }[] {
   const events: { date: string; event: string; by: string }[] = [];
@@ -264,23 +286,9 @@ function buildInitialEvents(
       event: `Cancellation Requested (Reason: ${amSignal.reason})`,
       by: amSignal.amOwner,
     });
-  } else if (client.lastActivity) {
-    events.push({
-      date: client.lastActivity,
-      event: "Cancellation Requested",
-      by: "Client",
-    });
   }
-  // Append relevant recentEvents from the master client
-  for (const ev of client.recentEvents ?? []) {
-    if (
-      ev.action.toLowerCase().includes("cancel") ||
-      ev.action.toLowerCase().includes("escalat") ||
-      ev.action.toLowerCase().includes("offboard")
-    ) {
-      events.push({ date: ev.date, event: ev.action, by: ev.actor });
-    }
-  }
+  // Business has no recentEvents array — initial event list is AM signal only.
+  // Further events are appended by billing actions in the session overlay.
   return events;
 }
 
@@ -466,16 +474,14 @@ function Toast({
 //
 // FUTURE LIVE INTEGRATION HOOK (Cancellations page):
 // When the Stripe integration goes live at launch:
-//   - Look up stripeSubscriptionId from the matching MASTER_CLIENTS record
+//   - Look up subscriptionRef from the Business record
 //   - When cancellationStatus reaches "Approved" or "Cancelled" (terminal state):
-//       await stripe.subscriptions.cancel(stripeSubscriptionId);
-//       await patchMasterClient(id, { stripeSyncStatus: "Not Connected", stripeSubscriptionId: null });
-//   - "Cancel in Stripe" button should be ENABLED only once stripeSubscriptionId is populated
-//     (i.e. once the client has a real Stripe subscription — all clients are "Not Connected" now)
+//       await stripe.subscriptions.cancel(subscriptionRef);
+//       await patchBusiness(id, { subscriptionRef: null });
+//   - "Cancel in Stripe" button should be ENABLED only once subscriptionRef is populated
+//     (i.e. once the business has a real Stripe subscription — all businesses are null now)
 //   - Stripe cancellation should trigger the customer.subscription.deleted webhook which
 //     updates billing status in real time
-//
-// All MASTER_CLIENTS records currently have stripeSyncStatus: "Not Connected" and null IDs.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StripeCancellationIndicator() {
@@ -718,8 +724,8 @@ function CheckboxField({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Billing Review Modal
-// Real write: advances MASTER_CLIENTS.cancellationStatus to "In Review"
-// via patchMasterClient(). Overlay updated to "Billing Review" stage.
+// Real write: advances Business.cancellationStatus to "In Review"
+// via patchBusiness(). Overlay updated to "Billing Review" stage.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ReviewBillingModal({
@@ -748,8 +754,8 @@ function ReviewBillingModal({
   async function handleSave() {
     setSaving(true);
     try {
-      // Persist: advance cancellationStatus to "In Review" on MASTER_CLIENTS
-      await patchMasterClient(record.clientId, {
+      // Persist: advance cancellationStatus to "In Review" on the Business record
+      await patchBusiness(record.businessId, {
         cancellationStatus: "In Review",
       });
       onSave(
@@ -769,9 +775,9 @@ function ReviewBillingModal({
         className="rounded-lg border p-3 text-xs"
         style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1E3A8A" }}
       >
-        Saving will advance this client&apos;s cancellation status to <strong>&ldquo;In Review&rdquo;</strong> in MASTER_CLIENTS — visible across all pages.
+        Saving will advance this business&apos;s cancellation status to <strong>&ldquo;In Review&rdquo;</strong> — visible across all pages.
       </div>
-      <FormField label="Client">
+      <FormField label="Client / Business">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
       <FormField label="Outstanding Balance">
@@ -824,7 +830,7 @@ function ReviewBillingModal({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Create Final Invoice Modal
-// Real write: sets invoiceStatus to "Final invoice issued" on MASTER_CLIENTS.
+// Real write: sets invoiceStatus to "Final invoice issued" on the Business.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CreateFinalInvoiceModal({
@@ -852,8 +858,8 @@ function CreateFinalInvoiceModal({
   async function handleSave() {
     setSaving(true);
     try {
-      // Persist: mark invoiceStatus as "Final invoice issued" on MASTER_CLIENTS
-      await patchMasterClient(record.clientId, {
+      // Persist: mark invoiceStatus as "Final invoice issued" on the Business record
+      await patchBusiness(record.businessId, {
         invoiceStatus: "Final invoice issued",
       });
       onSave(
@@ -873,9 +879,9 @@ function CreateFinalInvoiceModal({
         className="rounded-lg border p-3 text-xs"
         style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1E3A8A" }}
       >
-        Saving will set this client&apos;s invoice status to <strong>&ldquo;Final invoice issued&rdquo;</strong> in MASTER_CLIENTS.
+        Saving will set this business&apos;s invoice status to <strong>&ldquo;Final invoice issued&rdquo;</strong>.
       </div>
-      <FormField label="Client">
+      <FormField label="Client / Business">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
       <FormField label="Invoice Amount">
@@ -923,8 +929,13 @@ function CreateFinalInvoiceModal({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Place Billing Hold Modal
-// Real write: sets billingStatus to "Pending" on MASTER_CLIENTS, signalling
-// the billing hold state. Overlay tracks hold reason/dates.
+// Real write: sets billingStatus to "Pending" on the Business, signalling
+// the billing hold state. Overlay tracks hold dates.
+//
+// NOTE: holdReason is captured in this form but is NOT persisted anywhere.
+// No holdReason field exists on Business and none will be added. The hold
+// reason is local modal-form state only — it appears in the toast message
+// for the billing user's reference during this session but is not stored.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BillingHoldModal({
@@ -952,10 +963,10 @@ function BillingHoldModal({
   async function handleSave() {
     setSaving(true);
     try {
-      // Persist: set billingStatus to "Pending" on MASTER_CLIENTS
-      // (signals billing hold — the hold reason/dates are overlay-only since
-      // MASTER_CLIENTS has no hold-reason field)
-      await patchMasterClient(record.clientId, {
+      // Persist: set billingStatus to "Pending" on the Business record
+      // (signals billing hold — the hold reason/dates are session-local only since
+      // Business has no holdReason field; see NOTE above)
+      await patchBusiness(record.businessId, {
         billingStatus: "Pending",
       });
       onSave(
@@ -975,9 +986,9 @@ function BillingHoldModal({
         className="rounded-lg border p-3 text-xs"
         style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
       >
-        Saving will set this client&apos;s billing status to <strong>&ldquo;Pending&rdquo;</strong> in MASTER_CLIENTS, signalling a billing hold.
+        Saving will set this business&apos;s billing status to <strong>&ldquo;Pending&rdquo;</strong>, signalling a billing hold.
       </div>
-      <FormField label="Client">
+      <FormField label="Client / Business">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
       <FormField label="Hold Reason">
@@ -1020,7 +1031,6 @@ function BillingHoldModal({
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Notify AM Modal (Trigger Offboarding)
-// Already real — unchanged logic, now correctly operating on unified real data.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function NotifyAMModal({
@@ -1090,7 +1100,7 @@ function NotifyAMModal({
         <strong>Billing&apos;s responsibility ends here.</strong> This sends a real &ldquo;AM Notified&rdquo; signal.
         Account Management owns all downstream steps (campaign pausing, CRM archival, win-back).
       </div>
-      <FormField label="Client">
+      <FormField label="Client / Business">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
       <CheckboxField
@@ -1132,8 +1142,8 @@ function NotifyAMModal({
 // ─────────────────────────────────────────────────────────────────────────────
 // Close Billing Modal
 // Real write: sets cancellationStatus to "Cancelled" + billingStatus to
-// "Closed" on MASTER_CLIENTS via patchMasterClient(). This is the terminal
-// billing action — the client leaves the cancellation queue after refresh.
+// "Closed" on the Business via patchBusiness(). Terminal billing action.
+// The business leaves the cancellation queue after refresh.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CloseBillingModal({
@@ -1160,8 +1170,8 @@ function CloseBillingModal({
     setSaving(true);
     try {
       // Persist: mark cancellationStatus as "Cancelled" and billingStatus as
-      // "Closed" on MASTER_CLIENTS — the terminal billing state.
-      await patchMasterClient(record.clientId, {
+      // "Closed" on the Business — the terminal billing state.
+      await patchBusiness(record.businessId, {
         cancellationStatus: "Cancelled",
         billingStatus: "Closed",
       });
@@ -1182,10 +1192,10 @@ function CloseBillingModal({
         className="rounded-lg border p-3 text-xs"
         style={{ background: "#FEF2F2", borderColor: "#FECACA", color: "#991B1B" }}
       >
-        Saving will set this client&apos;s cancellation status to <strong>&ldquo;Cancelled&rdquo;</strong> and billing status to <strong>&ldquo;Closed&rdquo;</strong> in MASTER_CLIENTS.
-        The client will leave the cancellation queue on next refresh.
+        Saving will set this business&apos;s cancellation status to <strong>&ldquo;Cancelled&rdquo;</strong> and billing status to <strong>&ldquo;Closed&rdquo;</strong>.
+        The business will leave the cancellation queue on next refresh.
       </div>
-      <FormField label="Client">
+      <FormField label="Client / Business">
         <TextInput value={form.client} onChange={(v) => f("client", v)} />
       </FormField>
       <FormField label="Final Billing Status">
@@ -1223,16 +1233,17 @@ function CloseBillingModal({
 
 export default function BillingCancellationsPage() {
   // ── Data loading ────────────────────────────────────────────────────────
-  const [masterClients, setMasterClients] = useState<MasterClient[]>([]);
+  const [businesses, setBusinesses] = useState<BusinessClient[]>([]);
   const [amQueue, setAmQueue] = useState<PendingCancellationRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   /**
    * Billing overlay: session-state overrides for billing-internal fields that
-   * don't live on MasterClient. Keyed by clientId. Updated whenever a modal
+   * don't live on Business. Keyed by Business id. Updated whenever a modal
    * action advances the workflow status, final invoice status, etc.
-   * These are persisted within the session; MASTER_CLIENTS fields (cancellationStatus,
-   * billingStatus, invoiceStatus) are persisted permanently via patchMasterClient().
+   * These are persisted within the session; Business fields (cancellationStatus,
+   * billingStatus, invoiceStatus) are persisted permanently via patchBusiness().
    */
   const [overlays, setOverlays] = useState<Map<string, BillingOverlay>>(new Map());
 
@@ -1249,19 +1260,21 @@ export default function BillingCancellationsPage() {
     setToast({ message, variant });
   }
 
-  // Load master clients (file-backed API — cross-route-group reliable)
-  const loadClients = useCallback(async () => {
+  // Load businesses from real Postgres via the shared data layer
+  const loadBusinesses = useCallback(async () => {
+    setFetchError(null);
     try {
-      const clients = await fetchMasterClients();
-      setMasterClients(clients);
+      const data = await fetchAMClients();
+      setBusinesses(data);
     } catch (err) {
-      console.error("[BillingCancellations] Failed to load master clients:", err);
+      console.error("[BillingCancellations] Failed to load businesses:", err);
+      setFetchError(String(err));
     }
   }, []);
 
   useEffect(() => {
-    void loadClients().finally(() => setLoading(false));
-  }, [loadClients]);
+    void loadBusinesses().finally(() => setLoading(false));
+  }, [loadBusinesses]);
 
   // Load AM-initiated cancellation requests
   useEffect(() => {
@@ -1275,30 +1288,31 @@ export default function BillingCancellationsPage() {
       );
   }, []);
 
-  // ── Derive unified records from real MASTER_CLIENTS data ────────────────
+  // ── Derive unified records from real Business data ───────────────────────
   //
-  // Primary list = MASTER_CLIENTS where cancellationStatus !== "None".
-  // Each record is merged with the matching AM signal (by clientName) if present,
-  // and overlaid with session-state billing workflow fields.
+  // Primary list = Businesses where cancellationStatus !== "None".
+  // Cancellation is per BUSINESS (domain), not per Client. A client with
+  // multiple businesses can have one in cancellation while others remain active.
+  // Each row shows the owning client name for context.
   //
-  const records: CancellationRecord[] = masterClients
-    .filter((c) => c.cancellationStatus !== "None")
-    .map((c) => {
-      const amSignal = amQueue.find((r) => r.client === c.clientName);
-      const overlay = overlays.get(c.id);
-      return buildRecord(c, amSignal, overlay);
+  const records: CancellationRecord[] = businesses
+    .filter((b) => b.cancellationStatus !== "None")
+    .map((b) => {
+      const amSignal = amQueue.find((r) => r.client === b.clientName);
+      const overlay = overlays.get(b.id);
+      return buildRecord(b, amSignal, overlay);
     });
 
   // ── Overlay update helpers ───────────────────────────────────────────────
 
   function updateOverlay(
-    clientId: string,
+    businessId: string,
     patch: Partial<BillingOverlay>,
   ) {
     setOverlays((prev) => {
       const next = new Map(prev);
-      const existing = next.get(clientId) ?? ({} as BillingOverlay);
-      next.set(clientId, { ...existing, ...patch } as BillingOverlay);
+      const existing = next.get(businessId) ?? ({} as BillingOverlay);
+      next.set(businessId, { ...existing, ...patch } as BillingOverlay);
       return next;
     });
   }
@@ -1396,6 +1410,81 @@ export default function BillingCancellationsPage() {
     );
   }
 
+  // Error state
+  if (fetchError) {
+    return (
+      <div className="rounded-xl border p-8 text-center space-y-2" style={{ borderColor: "#FECACA", background: "#FEF2F2" }}>
+        <p className="text-sm font-semibold" style={{ color: "#991B1B" }}>
+          <strong>Failed to load cancellation queue:</strong> {fetchError}
+        </p>
+        <button
+          onClick={() => {
+            setLoading(true);
+            void loadBusinesses().finally(() => setLoading(false));
+          }}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg text-white"
+          style={{ background: "#DC2626" }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // Empty state — zero businesses with active cancellations
+  if (records.length === 0 && businesses.filter(b => b.cancellationStatus !== "None").length === 0) {
+    const noBizAtAll = businesses.length === 0;
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <p
+            className="text-[11px] font-bold uppercase tracking-widest mb-1"
+            style={{ color: workspace.accentColor }}
+          >
+            {workspace.name}
+          </p>
+          <h1
+            className="text-2xl font-bold tracking-tight"
+            style={{ color: "var(--rtm-text-primary)" }}
+          >
+            Billing Cancellations
+          </h1>
+        </div>
+
+        <div
+          className="rounded-xl border p-12 text-center space-y-3"
+          style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}
+        >
+          <div
+            className="w-12 h-12 rounded-full mx-auto flex items-center justify-center"
+            style={{ background: "#F5F3FF" }}
+          >
+            <svg width="24" height="24" fill="none" stroke="#7C3AED" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <p className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+            No active cancellations
+          </p>
+          <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+            {noBizAtAll
+              ? "No client businesses exist yet. Businesses appear here once a client requests cancellation. Create a business first via the Invoices flow."
+              : "Cancellations appear here once a client requests one. When that happens, the business will show up in this queue for Billing review, final invoice, and AM handoff."}
+          </p>
+          <Link
+            href="/billing/client-portfolio"
+            className="inline-block text-sm font-semibold px-4 py-2 rounded-lg text-white"
+            style={{ background: "var(--rtm-blue, #1B4FD8)" }}
+          >
+            Go to Client Portfolio →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       {/* Toast */}
@@ -1437,10 +1526,10 @@ export default function BillingCancellationsPage() {
           Billing Cancellations
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
-          Unified cancellation queue built from real client data. All status changes
-          persist to MASTER_CLIENTS via patchMasterClient() — consistent with Client
-          Portfolio. Billing&apos;s job ends at notifying AM; downstream steps are owned
-          by Account Management.
+          Unified cancellation queue built from real business data. Cancellation is per business
+          (domain) — a client with multiple businesses can cancel one and keep the others.
+          Status changes persist to Postgres via patchBusiness() — consistent with Client Portfolio.
+          Billing&apos;s job ends at notifying AM; downstream steps are owned by Account Management.
         </p>
       </div>
 
@@ -1451,7 +1540,7 @@ export default function BillingCancellationsPage() {
           label="Refresh Queue"
           onClick={() => {
             setLoading(true);
-            void loadClients().finally(() => setLoading(false));
+            void loadBusinesses().finally(() => setLoading(false));
             addEvent("-", "Queue Refreshed", "Billing", "-", "-");
           }}
         />
@@ -1539,26 +1628,26 @@ export default function BillingCancellationsPage() {
         style={{ background: "#ECFDF5", borderColor: "#A7F3D0", color: "#065F46" }}
       >
         <strong>Live data:</strong> This queue is built from{" "}
-        <strong>{records.length}</strong> MASTER_CLIENTS record
+        <strong>{records.length}</strong> business record
         {records.length !== 1 ? "s" : ""} where{" "}
         <code>cancellationStatus !== &quot;None&quot;</code>, merged with AM-initiated
-        requests from <code>/api/pending-cancellation-requests</code>. Status changes
-        made here (Billing Review, Final Invoice, Billing Hold, Close Billing) persist
-        immediately via <code>patchMasterClient()</code> and are reflected on Client
-        Portfolio after refresh.
+        requests from <code>/api/pending-cancellation-requests</code>. Cancellation is
+        per business (domain) — each row represents one domain. Status changes
+        made here persist immediately via <code>patchBusiness()</code> and are reflected
+        on Client Portfolio after refresh.
       </div>
 
       {/* 1. Cancellation Review Queue */}
       <SectionWrapper
         title="Cancellation Review Queue"
-        description="Primary billing review table. All action buttons persist real state changes to MASTER_CLIENTS."
+        description="Primary billing review table. Client name shown for context — each row is a business (domain). All action buttons persist real state changes to Postgres."
       >
         {records.length === 0 ? (
           <div
             className="text-center py-12 text-sm"
             style={{ color: "var(--rtm-text-muted)" }}
           >
-            No active cancellations. Clients with{" "}
+            No active cancellations. Businesses with{" "}
             <code>cancellationStatus !== &quot;None&quot;</code> will appear here.
           </div>
         ) : (
@@ -1569,12 +1658,12 @@ export default function BillingCancellationsPage() {
             <table className="min-w-full">
               <thead>
                 <tr>
+                  <Th>Business (Domain)</Th>
                   <Th>Client</Th>
                   <Th>Status</Th>
                   <Th>Requested</Th>
                   <Th>Requested By</Th>
                   <Th>AM Owner</Th>
-                  <Th>Billing Owner</Th>
                   <Th>MRR Impact</Th>
                   <Th>Contract End</Th>
                   <Th>Outstanding Balance</Th>
@@ -1594,13 +1683,22 @@ export default function BillingCancellationsPage() {
                     className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors"
                   >
                     <Td>
-                      <span
-                        className="font-semibold"
-                        style={{ color: "var(--rtm-text-primary)" }}
-                      >
-                        {row.client}
-                      </span>
+                      <div>
+                        <span
+                          className="font-semibold block"
+                          style={{ color: "var(--rtm-text-primary)" }}
+                        >
+                          {row.displayName || row.domain}
+                        </span>
+                        <span
+                          className="text-xs"
+                          style={{ color: "var(--rtm-text-muted)" }}
+                        >
+                          {row.domain}
+                        </span>
+                      </div>
                     </Td>
+                    <Td muted>{row.client}</Td>
                     <Td>
                       <StatusBadge
                         variant={cancellationStatusVariant(row.cancellationStatus)}
@@ -1611,7 +1709,6 @@ export default function BillingCancellationsPage() {
                     <Td muted>{row.requestedDate}</Td>
                     <Td muted>{row.requestedBy}</Td>
                     <Td muted>{row.amOwner}</Td>
-                    <Td muted>{row.billingOwner}</Td>
                     <Td>
                       <span
                         className="font-semibold text-sm"
@@ -1714,7 +1811,7 @@ export default function BillingCancellationsPage() {
                           label="Place Billing Hold"
                           onClick={() => setModal({ kind: "hold", record: row })}
                         />
-                        {/* Notify AM — already-real cross-workspace signal */}
+                        {/* Notify AM — real cross-workspace signal */}
                         <ActionBtn
                           small
                           variant="secondary"
@@ -1769,6 +1866,7 @@ export default function BillingCancellationsPage() {
           <table className="min-w-full">
             <thead>
               <tr>
+                <Th>Business (Domain)</Th>
                 <Th>Client</Th>
                 <Th>Current Plan</Th>
                 <Th>Monthly Value</Th>
@@ -1789,13 +1887,19 @@ export default function BillingCancellationsPage() {
                   className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors"
                 >
                   <Td>
-                    <span
-                      className="font-semibold"
-                      style={{ color: "var(--rtm-text-primary)" }}
-                    >
-                      {row.client}
-                    </span>
+                    <div>
+                      <span
+                        className="font-semibold block"
+                        style={{ color: "var(--rtm-text-primary)" }}
+                      >
+                        {row.displayName || row.domain}
+                      </span>
+                      <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                        {row.domain}
+                      </span>
+                    </div>
                   </Td>
+                  <Td muted>{row.client}</Td>
                   <Td muted>{row.currentPlan}</Td>
                   <Td>
                     <span
@@ -1872,14 +1976,14 @@ export default function BillingCancellationsPage() {
       {/* 3. AM Notification Queue */}
       <SectionWrapper
         title="AM Notification Queue"
-        description="Clients where Billing has cleared all balances. Use Notify AM to signal Account Management. Billing's job ends here."
+        description="Businesses where Billing has cleared all balances. Use Notify AM to signal Account Management. Billing's job ends here."
       >
         {offboardingReady.length === 0 ? (
           <div
             className="text-center py-8 text-sm"
             style={{ color: "var(--rtm-text-muted)" }}
           >
-            No clients currently ready for AM notification.
+            No businesses currently ready for AM notification.
           </div>
         ) : (
           <div
@@ -1889,6 +1993,7 @@ export default function BillingCancellationsPage() {
             <table className="min-w-full">
               <thead>
                 <tr>
+                  <Th>Business (Domain)</Th>
                   <Th>Client</Th>
                   <Th>Billing Cleared</Th>
                   <Th>Final Invoice Sent</Th>
@@ -1921,13 +2026,19 @@ export default function BillingCancellationsPage() {
                       className="hover:bg-[var(--rtm-bg-alt,#F9FAFB)] transition-colors"
                     >
                       <Td>
-                        <span
-                          className="font-semibold"
-                          style={{ color: "var(--rtm-text-primary)" }}
-                        >
-                          {row.client}
-                        </span>
+                        <div>
+                          <span
+                            className="font-semibold block"
+                            style={{ color: "var(--rtm-text-primary)" }}
+                          >
+                            {row.displayName || row.domain}
+                          </span>
+                          <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                            {row.domain}
+                          </span>
+                        </div>
                       </Td>
+                      <Td muted>{row.client}</Td>
                       <Td>
                         <StatusBadge
                           variant={billingCleared ? "success" : "warning"}
@@ -2024,7 +2135,7 @@ export default function BillingCancellationsPage() {
               <thead>
                 <tr>
                   <Th>Date</Th>
-                  <Th>Client</Th>
+                  <Th>Client / Business</Th>
                   <Th>Event Type</Th>
                   <Th>Triggered By</Th>
                   <Th>Billing Status</Th>
@@ -2171,8 +2282,8 @@ export default function BillingCancellationsPage() {
               msg,
             );
             showToast(`✅ Billing review saved for ${modal.record.client} — status updated to "In Review"`, "success");
-            // Refresh to pull the persisted MASTER_CLIENTS state
-            void loadClients();
+            // Refresh to pull the persisted Business state
+            void loadBusinesses();
           }}
         />
       )}
@@ -2196,7 +2307,7 @@ export default function BillingCancellationsPage() {
               msg,
             );
             showToast(`✅ Final invoice created for ${modal.record.client} — invoice status updated`, "success");
-            void loadClients();
+            void loadBusinesses();
           }}
         />
       )}
@@ -2220,7 +2331,7 @@ export default function BillingCancellationsPage() {
               msg,
             );
             showToast(`⚠️ Billing hold placed for ${modal.record.client}`, "warning");
-            void loadClients();
+            void loadBusinesses();
           }}
         />
       )}
@@ -2270,11 +2381,9 @@ export default function BillingCancellationsPage() {
               "Complete",
               msg,
             );
-            showToast(`✅ Billing closed for ${modal.record.client} — status set to "Cancelled" in MASTER_CLIENTS`, "success");
-            // Refresh: client will leave queue once cancellationStatus = "Cancelled"
-            // (if the page is reloaded, "Cancelled" is still !== "None" so it stays visible
-            // but with Billing Closed workflow status — consistent with old mock behavior)
-            void loadClients();
+            showToast(`✅ Billing closed for ${modal.record.client} — status set to "Cancelled"`, "success");
+            // Refresh: business leaves queue on next load once cancellationStatus = "Cancelled"
+            void loadBusinesses();
           }}
         />
       )}

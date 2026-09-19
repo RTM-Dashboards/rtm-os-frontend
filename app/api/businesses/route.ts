@@ -36,6 +36,11 @@ export interface BusinessRecord {
   paymentStatus: string;
   invoiceAmountCents: number;
   subscriptionRef: string | null;
+  // Billing-owned lifecycle status fields (per domain)
+  // cancellationStatus: "None" | "Requested" | "In Review" | "Approved" | "Cancelled"
+  cancellationStatus: string;
+  // billingStatus: "Pending" | "Paid" | "Overdue" | "Cleared" | "Closed"
+  billingStatus: string;
   // Delivery state
   assignedAM: string;
   activationStatus: string;
@@ -69,6 +74,8 @@ function rowToRecord(row: BusinessRow): BusinessRecord {
     paymentStatus: row.paymentStatus,
     invoiceAmountCents: row.invoiceAmountCents,
     subscriptionRef: row.subscriptionRef ?? null,
+    cancellationStatus: row.cancellationStatus,
+    billingStatus: row.billingStatus,
     assignedAM: row.assignedAM,
     activationStatus: row.activationStatus,
     onboardingStatus: row.onboardingStatus,
@@ -189,16 +196,18 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       row = await prisma.business.update({
         where: { id: incoming.id },
         data: {
-          domain:             normalisedDomain               ?? existing.domain,
-          displayName:        incoming.displayName           ?? existing.displayName,
-          clientId:           incoming.clientId              ?? existing.clientId,
-          invoiceStatus:      incoming.invoiceStatus         ?? existing.invoiceStatus,
-          paymentStatus:      incoming.paymentStatus         ?? existing.paymentStatus,
-          invoiceAmountCents: incoming.invoiceAmountCents    ?? existing.invoiceAmountCents,
-          subscriptionRef:    incoming.subscriptionRef !== undefined
+          domain:               normalisedDomain                   ?? existing.domain,
+          displayName:          incoming.displayName               ?? existing.displayName,
+          clientId:             incoming.clientId                  ?? existing.clientId,
+          invoiceStatus:        incoming.invoiceStatus             ?? existing.invoiceStatus,
+          paymentStatus:        incoming.paymentStatus             ?? existing.paymentStatus,
+          invoiceAmountCents:   incoming.invoiceAmountCents        ?? existing.invoiceAmountCents,
+          subscriptionRef:      incoming.subscriptionRef !== undefined
             ? incoming.subscriptionRef
             : existing.subscriptionRef,
-          assignedAM:         incoming.assignedAM            ?? existing.assignedAM,
+          cancellationStatus:   incoming.cancellationStatus        ?? existing.cancellationStatus,
+          billingStatus:        incoming.billingStatus             ?? existing.billingStatus,
+          assignedAM:           incoming.assignedAM                ?? existing.assignedAM,
           activationStatus:   incoming.activationStatus      ?? existing.activationStatus,
           onboardingStatus:   incoming.onboardingStatus      ?? existing.onboardingStatus,
           activeServices:     incoming.activeServices        ?? existing.activeServices,
@@ -232,28 +241,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
       row = await prisma.business.create({
         data: {
-          id:                 incoming.id,
-          domain:             normalisedDomain,
-          displayName:        incoming.displayName        ?? "",
-          clientId:           incoming.clientId,
-          invoiceStatus:      incoming.invoiceStatus      ?? "none",
-          paymentStatus:      incoming.paymentStatus      ?? "none",
-          invoiceAmountCents: incoming.invoiceAmountCents ?? 0,
-          subscriptionRef:    incoming.subscriptionRef    ?? null,
-          assignedAM:         incoming.assignedAM         ?? "",
-          activationStatus:   incoming.activationStatus   ?? "inactive",
-          onboardingStatus:   incoming.onboardingStatus   ?? "not_started",
-          activeServices:     incoming.activeServices     ?? [],
-          monthlyValueCents:  incoming.monthlyValueCents  ?? 0,
-          renewalDate:        incoming.renewalDate        ?? null,
-          renewalStatus:      incoming.renewalStatus      ?? "ok",
-          cleared:            incoming.cleared            ?? false,
-          kickoffCompleted:   incoming.kickoffCompleted   ?? false,
-          kickoffDate:        incoming.kickoffDate        ?? null,
-          assignedAt:         incoming.assignedAt         ?? null,
-          ghlOpportunityId:   incoming.ghlOpportunityId  ?? null,
-          createdAt:          now,
-          updatedAt:          now,
+          id:                  incoming.id,
+          domain:              normalisedDomain,
+          displayName:         incoming.displayName         ?? "",
+          clientId:            incoming.clientId,
+          invoiceStatus:       incoming.invoiceStatus       ?? "none",
+          paymentStatus:       incoming.paymentStatus       ?? "none",
+          invoiceAmountCents:  incoming.invoiceAmountCents  ?? 0,
+          subscriptionRef:     incoming.subscriptionRef     ?? null,
+          cancellationStatus:  incoming.cancellationStatus  ?? "None",
+          billingStatus:       incoming.billingStatus       ?? "Pending",
+          assignedAM:          incoming.assignedAM          ?? "",
+          activationStatus:    incoming.activationStatus    ?? "inactive",
+          onboardingStatus:    incoming.onboardingStatus    ?? "not_started",
+          activeServices:      incoming.activeServices      ?? [],
+          monthlyValueCents:   incoming.monthlyValueCents   ?? 0,
+          renewalDate:         incoming.renewalDate         ?? null,
+          renewalStatus:       incoming.renewalStatus       ?? "ok",
+          cleared:             incoming.cleared             ?? false,
+          kickoffCompleted:    incoming.kickoffCompleted    ?? false,
+          kickoffDate:         incoming.kickoffDate         ?? null,
+          assignedAt:          incoming.assignedAt          ?? null,
+          ghlOpportunityId:    incoming.ghlOpportunityId   ?? null,
+          createdAt:           now,
+          updatedAt:           now,
         },
       });
     }
@@ -297,13 +308,15 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const data: Record<string, any> = { updatedAt: now };
 
-  if (patch.domain           !== undefined) data.domain           = normalizeDomain(patch.domain);
-  if (patch.displayName      !== undefined) data.displayName      = patch.displayName;
-  if (patch.invoiceStatus    !== undefined) data.invoiceStatus    = patch.invoiceStatus;
-  if (patch.paymentStatus    !== undefined) data.paymentStatus    = patch.paymentStatus;
-  if (patch.invoiceAmountCents !== undefined) data.invoiceAmountCents = patch.invoiceAmountCents;
-  if (patch.subscriptionRef  !== undefined) data.subscriptionRef  = patch.subscriptionRef;
-  if (patch.assignedAM       !== undefined) data.assignedAM       = patch.assignedAM;
+  if (patch.domain               !== undefined) data.domain               = normalizeDomain(patch.domain);
+  if (patch.displayName          !== undefined) data.displayName          = patch.displayName;
+  if (patch.invoiceStatus        !== undefined) data.invoiceStatus        = patch.invoiceStatus;
+  if (patch.paymentStatus        !== undefined) data.paymentStatus        = patch.paymentStatus;
+  if (patch.invoiceAmountCents   !== undefined) data.invoiceAmountCents   = patch.invoiceAmountCents;
+  if (patch.subscriptionRef      !== undefined) data.subscriptionRef      = patch.subscriptionRef;
+  if (patch.cancellationStatus   !== undefined) data.cancellationStatus   = patch.cancellationStatus;
+  if (patch.billingStatus        !== undefined) data.billingStatus        = patch.billingStatus;
+  if (patch.assignedAM           !== undefined) data.assignedAM           = patch.assignedAM;
   if (patch.activationStatus !== undefined) data.activationStatus = patch.activationStatus;
   if (patch.onboardingStatus !== undefined) data.onboardingStatus = patch.onboardingStatus;
   if (patch.activeServices   !== undefined) data.activeServices   = patch.activeServices;

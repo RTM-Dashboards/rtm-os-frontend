@@ -35,6 +35,11 @@ export interface BusinessRecord {
   paymentStatus: string;
   invoiceAmountCents: number;
   subscriptionRef: string | null;
+  // Billing-owned lifecycle status fields (per domain)
+  // cancellationStatus: "None" | "Requested" | "In Review" | "Approved" | "Cancelled"
+  cancellationStatus: string;
+  // billingStatus: "Pending" | "Paid" | "Overdue" | "Cleared" | "Closed"
+  billingStatus: string;
   // Delivery state
   assignedAM: string;
   activationStatus: string;
@@ -78,6 +83,11 @@ export interface BusinessClient {
   // Billing state — from Business (AM reads only)
   invoiceStatus: string;
   paymentStatus: string;
+  // Billing-owned lifecycle status fields — from Business
+  // cancellationStatus: "None" | "Requested" | "In Review" | "Approved" | "Cancelled"
+  cancellationStatus: string;
+  // billingStatus: "Pending" | "Paid" | "Overdue" | "Cleared" | "Closed"
+  billingStatus: string;
   monthlyValue: number;   // monthlyValueCents / 100
   activeServices: string[];
   renewalDate: string | null;
@@ -130,26 +140,28 @@ export async function fetchAMClients(): Promise<BusinessClient[]> {
       biz.domain;
 
     return {
-      id:               biz.id,
-      clientId:         biz.clientId,
-      displayName:      biz.displayName || biz.domain,
+      id:                  biz.id,
+      clientId:            biz.clientId,
+      displayName:         biz.displayName || biz.domain,
       clientName,
-      domain:           biz.domain,
-      email:            client?.email ?? "",
-      phone:            client?.phone ?? "",
-      invoiceStatus:    biz.invoiceStatus,
-      paymentStatus:    biz.paymentStatus,
-      monthlyValue:     Math.round(biz.monthlyValueCents / 100),
-      activeServices:   biz.activeServices,
-      renewalDate:      biz.renewalDate,
-      renewalStatus:    biz.renewalStatus,
-      assignedAM:       biz.assignedAM,
-      activationStatus: biz.activationStatus,
-      onboardingStatus: biz.onboardingStatus,
-      cleared:          biz.cleared,
-      kickoffCompleted: biz.kickoffCompleted,
-      kickoffDate:      biz.kickoffDate,
-      assignedAt:       biz.assignedAt,
+      domain:              biz.domain,
+      email:               client?.email ?? "",
+      phone:               client?.phone ?? "",
+      invoiceStatus:       biz.invoiceStatus,
+      paymentStatus:       biz.paymentStatus,
+      cancellationStatus:  biz.cancellationStatus,
+      billingStatus:       biz.billingStatus,
+      monthlyValue:        Math.round(biz.monthlyValueCents / 100),
+      activeServices:      biz.activeServices,
+      renewalDate:         biz.renewalDate,
+      renewalStatus:       biz.renewalStatus,
+      assignedAM:          biz.assignedAM,
+      activationStatus:    biz.activationStatus,
+      onboardingStatus:    biz.onboardingStatus,
+      cleared:             biz.cleared,
+      kickoffCompleted:    biz.kickoffCompleted,
+      kickoffDate:         biz.kickoffDate,
+      assignedAt:          biz.assignedAt,
     };
   });
 }
