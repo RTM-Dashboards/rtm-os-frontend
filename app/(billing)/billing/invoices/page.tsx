@@ -5,10 +5,8 @@ import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge, DetailDrawer } from "@/components/ui";
 import type { DrawerTab } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
-import {
-  MASTER_CLIENTS,
-} from "@/lib/mock/master-clients";
-import type { MasterClient } from "@/lib/mock/master-clients";
+// MasterClient import removed — client data comes from Postgres via
+// the MarkPaidFlowModal (which calls /api/clients and /api/businesses directly).
 import { getWorkspaceTasksByDepartment } from "@/lib/engine";
 
 import type { WorkspaceTask } from "@/components/workspace";
@@ -1282,8 +1280,8 @@ function MarkPaidFlowModal({ invoice, onClose, onDone }: {
 export default function BillingInvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>(INITIAL_INVOICES);
   const [handoffRows, setHandoffRows] = useState<SalesHandoffRow[]>(INITIAL_HANDOFF_ROWS);
-  // masterClients still used for the client portfolio display on this page
-  const [masterClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+  // masterClients removed — client and business records are read from Postgres
+  // via MarkPaidFlowModal (/api/clients + /api/businesses). No local mock.
   const [billingTaskList, setBillingTaskList] = useState<WorkspaceTask[]>(() => getWorkspaceTasksByDepartment("Billing"));
   const [drawerInvoice, setDrawerInvoice] = useState<InvoiceRow | null>(null);
   const [handoffDrawerRow, setHandoffDrawerRow] = useState<SalesHandoffRow | null>(null);

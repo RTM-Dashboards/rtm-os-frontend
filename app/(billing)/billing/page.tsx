@@ -13,7 +13,7 @@ import {
   activityTimeline,
 } from "@/lib/billing/action-center-data";
 import type { CollectionStatus } from "@/lib/billing/action-center-data";
-import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
+import { fetchAMClients, type BusinessClient } from "@/lib/account-management/am-client-data";
 
 const workspace = getWorkspace("billing")!;
 
@@ -37,17 +37,29 @@ function collectionStatusVariant(s: CollectionStatus): BadgeVariant {
 const outstanding       = invoices.filter((i) => i.status !== "Paid" && i.status !== "Cancelled" && i.status !== "Refunded");
 const overdue           = invoices.filter((i) => i.status === "Overdue");
 const pendingCollection = collections.filter((c) => c.collectionStatus !== "Resolved");
-// Activation Ready: same predicate as /billing/activation — invoice-cleared but not yet cleared for AM.
-// Replaces activationQueue mock count; aligns Dashboard KPI with the real activation page.
-const activationReadyClients = MASTER_CLIENTS.filter(
-  (c) =>
-    (c.billingStatus === "Cleared" || (c.billingStatus === "Paid" && c.paymentStatus === "Paid")) &&
-    !c.cleared &&
-    c.currentStatus !== "Lead" &&
-    c.currentStatus !== "Proposal Sent"
-);
 const collectedThisMonth = invoices.filter((i) => i.status === "Paid").reduce((sum, i) => sum + i.amount, 0);
 const outstandingBalance = outstanding.reduce((sum, i) => sum + i.amount, 0);
+
+/**
+ * Activation-ready predicate for a Business.
+ *
+ * Original intent (against MasterClient):
+ *   billingStatus === "Cleared" || (billingStatus === "Paid" && paymentStatus === "Paid")
+ *   AND !cleared
+ *   AND currentStatus !== "Lead" && currentStatus !== "Proposal Sent"
+ *
+ * Business equivalent:
+ *   Invoice paid or cleared + payment confirmed/paid + not yet cleared for AM.
+ *   The currentStatus exclusion is inherently satisfied — Business records only exist
+ *   once an invoice has been marked Paid (via MarkPaidFlowModal), so no Business
+ *   can be a Lead or Proposal Sent.
+ */
+function isActivationReady(b: BusinessClient): boolean {
+  if (b.cleared) return false;
+  const inv = b.invoiceStatus?.toLowerCase() ?? "";
+  const pay = b.paymentStatus?.toLowerCase() ?? "";
+  return (inv === "paid" || inv === "cleared") && (pay === "paid" || pay === "confirmed");
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -114,6 +126,19 @@ function SummaryLinkCard({
 
 export default function BillingDashboard() {
   const [aiExpanded, setAiExpanded] = useState(false);
+  // Activation-ready count: fetched from Postgres on mount.
+  // Replaces MASTER_CLIENTS filter. Shows 0 while loading or on error.
+  const [activationReadyCount, setActivationReadyCount] = useState(0);
+  React.useEffect(() => {
+    fetchAMClients()
+      .then((businesses) => {
+        setActivationReadyCount(businesses.filter(isActivationReady).length);
+      })
+      .catch(() => {
+        // On error, keep at 0 — do not show stale or fabricated data.
+        setActivationReadyCount(0);
+      });
+  }, []);
 
   return (
     <div className="space-y-8">
@@ -168,7 +193,7 @@ export default function BillingDashboard() {
           />
           <KpiCard
             title="Activation Ready"
-            value={String(activationReadyClients.length)}
+            value={String(activationReadyCount)}
             trend="up" trendValue="3"
             iconBg="#F0F9FF" iconColor="#0891B2"
             icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5 13l4 4L19 7"/></svg>}
@@ -247,7 +272,7 @@ export default function BillingDashboard() {
             border="#DDD6FE"
             description="Clients cleared through billing ready for activation and onboarding."
             stats={[
-              { label: "Ready", value: activationReadyClients.length },
+              { label: "Ready", value: activationReadyCount },
             ]}
           />
           <SummaryLinkCard
