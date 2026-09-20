@@ -4,28 +4,31 @@
  * Billing Activation — SCOPED TO BILLING'S ACTUAL JOB
  *
  * What Billing sees here:
- *   - Clients whose invoice is cleared (billingStatus = Cleared or Paid + paymentStatus = Paid)
+ *   - Business records whose invoice is cleared (billingStatus = Cleared or Paid + paymentStatus = Paid)
  *     but who have NOT yet been cleared for Account Management.
- *   - ONE action: Clearance → sends signal to AM that Billing has cleared the client.
- *   - Once cleared, the client disappears from this view entirely.
+ *   - ONE action: Clearance → sends signal to AM that Billing has cleared the business.
+ *   - Once cleared, the business disappears from this view entirely.
+ *
+ * DATA SOURCE: /api/clients and /api/businesses (Postgres via Prisma).
+ * Fetched via lib/account-management/am-client-data (shared data layer).
+ *
+ * No mock data. No fallback. An empty queue means no real records are awaiting clearance.
+ *
+ * Clearance is per-Business (per domain). A client with three domains can have one
+ * cleared and two awaiting — each business is tracked independently.
  *
  * What is NOT shown here (AM-owned, not built yet):
  *   - Assign AM, Start Onboarding, Create Activation Tasks,
  *     Push to Account Mgmt, Dept Activation Pending, Needs AM Assignment,
  *     Activation In Progress, Pushed to AM
  *   - None of those summary cards or workflow steps appear here.
- *
- * Data source: same master client list (MASTER_CLIENTS) used by Admin › Clients
- * and Billing Client Portfolio — session-state mirrors the shared store.
  */
 
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
-import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
-import type { MasterClient } from "@/lib/mock/master-clients";
-import { apiMarkCleared, fetchMasterClients, upsertMasterClient } from "@/lib/mock/master-clients-api";
+import { fetchAMClients, markCleared, type BusinessClient } from "@/lib/account-management/am-client-data";
 import { fetchSalesHandoffs, markHandoffProcessed } from "@/lib/sales/sales-handoffs-api";
 import type { HandoffRecord } from "@/lib/sales/handoff-engine";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
@@ -92,22 +95,21 @@ function paymentStatusVariant(s: string): BadgeVariant {
 }
 
 /**
- * A client is "invoice-cleared" when Billing has confirmed payment
- * and they have NOT yet been cleared.
+ * A business is "invoice-cleared" when Billing has confirmed payment
+ * and it has NOT yet been cleared.
+ * Clearance is per-Business (per domain) — each Business is independently tracked.
  */
-function isInvoiceCleared(c: MasterClient): boolean {
+function isInvoiceCleared(b: BusinessClient): boolean {
   return (
-    (c.billingStatus === "Cleared" || (c.billingStatus === "Paid" && c.paymentStatus === "Paid")) &&
-    !c.cleared &&
-    c.currentStatus !== "Lead" &&
-    c.currentStatus !== "Proposal Sent"
+    (b.billingStatus === "Cleared" || (b.billingStatus === "Paid" && b.paymentStatus === "Paid")) &&
+    !b.cleared
   );
 }
 
 // ─── Clearance Confirmation Modal ───────────────────────────────────────────
 
-function ClearanceModal({ client, onClose, onConfirm }: {
-  client: MasterClient;
+function ClearanceModal({ business, onClose, onConfirm }: {
+  business: BusinessClient;
   onClose: () => void;
   onConfirm: (id: string) => void | Promise<void>;
 }) {
@@ -117,21 +119,22 @@ function ClearanceModal({ client, onClose, onConfirm }: {
         <div className="px-6 py-5 space-y-4">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: workspace.accentColor }}>Confirm Clearance</p>
-            <h2 className="text-lg font-bold mt-1" style={{ color: "var(--rtm-text-primary)" }}>{client.clientName}</h2>
+            <h2 className="text-lg font-bold mt-1" style={{ color: "var(--rtm-text-primary)" }}>{business.clientName}</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{business.domain}</p>
           </div>
 
           <div className="rounded-xl border p-4 space-y-2" style={{ background: "#F0FDF4", borderColor: "#A7F3D0" }}>
             <p className="text-sm font-semibold" style={{ color: "#065F46" }}>Billing confirms:</p>
             <ul className="text-sm space-y-1" style={{ color: "#065F46" }}>
-              <li>✓ Invoice cleared — {client.invoiceStatus}</li>
-              <li>✓ Payment confirmed — {client.paymentStatus}</li>
-              <li>✓ Monthly value: ${client.monthlyValue.toLocaleString()}/mo</li>
+              <li>✓ Invoice cleared — {business.invoiceStatus}</li>
+              <li>✓ Payment confirmed — {business.paymentStatus}</li>
+              <li>✓ Monthly value: ${business.monthlyValue.toLocaleString()}/mo</li>
             </ul>
           </div>
 
           <div className="rounded-xl border p-4" style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}>
             <p className="text-sm" style={{ color: "#1E3A8A" }}>
-              <span className="font-semibold">After clearance:</span> This client will be removed from Billing&rsquo;s Activation view.
+              <span className="font-semibold">After clearance:</span> This business will be removed from Billing&rsquo;s Activation view.
               Account Management will receive the signal to begin their onboarding workflow.
               Billing has no further action — AM owns all downstream steps.
             </p>
@@ -142,7 +145,7 @@ function ClearanceModal({ client, onClose, onConfirm }: {
               style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
               Cancel
             </button>
-            <button onClick={() => { void Promise.resolve(onConfirm(client.id)).then(() => onClose()); }}
+            <button onClick={() => { void Promise.resolve(onConfirm(business.id)).then(() => onClose()); }}
               className="flex-1 text-sm font-semibold py-2.5 rounded-lg text-white"
               style={{ background: "#059669" }}>
               Clearance — Send to Account Management →
@@ -156,15 +159,15 @@ function ClearanceModal({ client, onClose, onConfirm }: {
 
 // ─── Expanded Row Detail ──────────────────────────────────────────────────────
 
-function ExpandedDetail({ client, onClearance }: { client: MasterClient; onClearance: (id: string) => void }) {
+function ExpandedDetail({ business, onClearance }: { business: BusinessClient; onClearance: (id: string) => void }) {
   return (
     <div className="px-4 py-4 space-y-4" style={{ background: "#F8FAFF" }}>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Invoice Status",  value: client.invoiceStatus },
-          { label: "Payment Status",  value: client.paymentStatus },
-          { label: "Monthly Value",   value: `$${client.monthlyValue.toLocaleString()}/mo` },
-          { label: "Billing Owner",   value: client.billingOwner },
+          { label: "Invoice Status",  value: business.invoiceStatus },
+          { label: "Payment Status",  value: business.paymentStatus },
+          { label: "Monthly Value",   value: `$${business.monthlyValue.toLocaleString()}/mo` },
+          { label: "Domain",          value: business.domain },
         ].map(({ label, value }) => (
           <div key={label} className="space-y-0.5">
             <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
@@ -173,11 +176,11 @@ function ExpandedDetail({ client, onClearance }: { client: MasterClient; onClear
         ))}
       </div>
 
-      {client.activeServices.length > 0 && (
+      {business.activeServices.length > 0 && (
         <div className="space-y-1">
           <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Active Services</p>
           <div className="flex flex-wrap gap-1.5">
-            {client.activeServices.map((s) => (
+            {business.activeServices.map((s) => (
               <span key={s} className="text-xs font-semibold px-2.5 py-0.5 rounded-full border"
                 style={{ background: "#EFF6FF", color: "#1B4FD8", borderColor: "#BFDBFE" }}>
                 {s}
@@ -187,18 +190,11 @@ function ExpandedDetail({ client, onClearance }: { client: MasterClient; onClear
         </div>
       )}
 
-      {client.notes && (
-        <div className="rounded-lg border p-3" style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: "#92400E" }}>Notes</p>
-          <p className="text-sm" style={{ color: "#78350F" }}>{client.notes}</p>
-        </div>
-      )}
-
       <div className="flex items-center gap-2">
         <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-          Billing has cleared this client. The single remaining action is to clear them for Account Management.
+          Billing has cleared this business. The single remaining action is to clear it for Account Management.
         </p>
-        <button onClick={() => onClearance(client.id)}
+        <button onClick={() => onClearance(business.id)}
           className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-lg text-white"
           style={{ background: "#059669" }}>
           Clearance → AM
@@ -209,123 +205,23 @@ function ExpandedDetail({ client, onClearance }: { client: MasterClient; onClear
 }
 
 // ─── Sales Handoffs Panel ─────────────────────────────────────────────────────
-
-function buildClientFromHandoff(handoff: HandoffRecord): MasterClient {
-  const sf = handoff.summaryFields;
-  const clientName = sf["client-name"] ?? handoff.clientName;
-  const slug = clientName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  const mrrStr = sf["monthly-recurring-revenue"] ?? "";
-  const monthlyValue = parseInt(mrrStr.replace(/[^0-9]/g, ""), 10) || 0;
-  const services = sf["services-sold"]
-    ? sf["services-sold"].split(",").map((s) => s.trim()).filter(Boolean)
-    : [];
-  const assignedAM = sf["assigned-am"] ?? "Unassigned";
-
-  return {
-    id: `mc-hof-${handoff.id}`,
-    slug,
-    clientName,
-    email: sf["email"] ?? "",
-    industry: sf["industry"] ?? "Unknown",
-    avatarColor: "#6366f1",
-    // Sales-owned
-    salesStatus: "Closed Won",
-    salesOwner: handoff.preparedBy,
-    // Billing-owned — new client starts pending; Billing still owns invoice/payment gatekeeping
-    billingStatus: "Pending",
-    invoiceStatus: "Draft",
-    paymentStatus: "Unpaid",
-    cancellationStatus: "None",
-    upgradeDowngradeStatus: "None",
-    // MUST be false — Billing must complete invoice/payment gatekeeping before AM's wizard
-    cleared: false,
-    activeServices: services,
-    monthlyValue,
-    billingOwner: "Lisa P.",
-    // AM-owned (future)
-    assignedAM,
-    activationStatus: "Not Started",
-    onboardingStatus: "Not Started",
-    renewalDate: "—",
-    renewalStatus: "N/A",
-    // Computed defaults
-    clientHealth: "Good",
-    priority: "Medium",
-    currentStatus: "Invoice Sent",
-    workflowStatus: "Not Started",
-    lastActivity: new Date().toISOString().slice(0, 10),
-    nextRequiredAction: "Generate and send invoice",
-    notes: `Created from Sales handoff ${handoff.handoffNumber} (${handoff.contractNumber})`,
-    activationChecklist: {
-      invoicePaid: false,
-      billingCleared: false,
-      contractConfirmed: true,
-      servicesConfirmed: services.length > 0,
-      clientContactVerified: true,
-      amAssigned: assignedAM !== "Unassigned",
-      onboardingRecordCreated: false,
-      activationTasksCreated: false,
-      kickoffNeeded: true,
-      kickoffCallCompleted: false,
-    },
-    recentEvents: [
-      {
-        date: new Date().toISOString().slice(0, 10),
-        actor: "Billing",
-        action: `Client record created from Sales handoff ${handoff.handoffNumber}`,
-      },
-    ],
-    // ── Stripe groundwork (schema only — live wiring deferred to launch) ──────
-    // FUTURE LIVE INTEGRATION HOOK: when Stripe goes live, create Stripe Customer here:
-    //   const customer = await stripe.customers.create({ email, name: clientName });
-    //   stripeCustomerId = customer.id; stripeSyncStatus = "Connected";
-    stripeCustomerId: null,
-    stripeInvoiceId: null,
-    stripeSubscriptionId: null,
-    stripeSyncStatus: "Not Connected" as const,
-  };
-}
+// NOTE: The "Process & Create Client" action is DISABLED.
+// Creating a Business from a Sales handoff requires a real POST to /api/businesses
+// (with a corresponding Client record). That API does not yet exist in this codebase.
+// The control is preserved visually so the workflow is visible, but the button is
+// disabled with a tooltip explaining why. This prevents the button from silently
+// writing to mock storage with no real-data effect.
 
 function SalesHandoffsPanel({
   handoffs,
-  onProcessed,
-  onLog,
-  onToast,
 }: {
   handoffs: HandoffRecord[];
-  onProcessed: (handoffId: string, clientId: string) => void;
-  onLog: (msg: string) => void;
-  onToast: (msg: string, variant: "success" | "info" | "warning" | "error") => void;
 }) {
-  const [processing, setProcessing] = useState<string | null>(null);
-
   const pending = handoffs.filter(
     (h) => h.submittedToBilling === true && h.processed !== true
   );
 
   if (pending.length === 0) return null;
-
-  async function handleProcess(handoff: HandoffRecord) {
-    if (processing) return;
-    setProcessing(handoff.id);
-    try {
-      // Reuse Billing's existing exact write path (same as AddClientModal)
-      const newClient = buildClientFromHandoff(handoff);
-      await upsertMasterClient(newClient);
-      // Mark handoff as processed with the resulting clientId
-      await markHandoffProcessed(handoff.id, newClient.id);
-      onProcessed(handoff.id, newClient.id);
-      onLog(`✅ Processed handoff ${handoff.handoffNumber} → client record created (${newClient.id}, cleared: false)`);
-      onToast(
-        `${handoff.clientName} — client record created. Billing must still issue invoice and clear payment before AM activation.`,
-        "success"
-      );
-    } catch (err) {
-      onToast(`Error processing ${handoff.clientName}: ${String(err)}`, "error");
-    } finally {
-      setProcessing(null);
-    }
-  }
 
   return (
     <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#BFDBFE" }}>
@@ -347,10 +243,8 @@ function SalesHandoffsPanel({
             </p>
           </div>
           <p className="text-xs" style={{ color: "#1D4ED8" }}>
-            Sales submitted these handoffs to Billing. Process each one to create the client
-            record. Created records start with <code className="bg-blue-100 px-1 rounded">cleared: false</code> — Billing must still
-            issue the invoice and confirm payment before the client becomes eligible for AM
-            activation.
+            Sales submitted these handoffs to Billing. Client record creation requires a real
+            Business record in the database. That workflow is not yet implemented — see note below.
           </p>
         </div>
       </div>
@@ -361,7 +255,6 @@ function SalesHandoffsPanel({
           const sf = handoff.summaryFields;
           const mrr = sf["monthly-recurring-revenue"] ?? "—";
           const services = sf["services-sold"] ?? "—";
-          const isProcessing = processing === handoff.id;
 
           return (
             <div
@@ -409,13 +302,14 @@ function SalesHandoffsPanel({
                 </div>
               </div>
 
+              {/* Disabled — real Business creation API not yet implemented */}
               <button
-                onClick={() => void handleProcess(handoff)}
-                disabled={!!processing}
-                className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-lg text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+                disabled
+                title="Client record creation requires a real Business record in Postgres. That API endpoint is not yet implemented."
+                className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-lg text-white opacity-40 cursor-not-allowed"
                 style={{ background: "#1B4FD8" }}
               >
-                {isProcessing ? "Creating…" : "Process & Create Client"}
+                Process & Create Client
               </button>
             </div>
           );
@@ -428,10 +322,11 @@ function SalesHandoffsPanel({
         style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}
       >
         <p className="text-xs" style={{ color: "#92400E" }}>
-          <span className="font-bold">⚠ Clearance gatekeeping preserved:</span> Created client records
-          start with <code className="bg-yellow-100 px-1 rounded">cleared: false</code>. They will appear in
-          Client Portfolio under Billing Status = Pending. Billing must issue the invoice, confirm
-          payment, and then grant Clearance before this client appears in AM&rsquo;s Activation Engine.
+          <span className="font-bold">⚠ Not yet wired:</span> Processing a Sales handoff requires creating
+          a real Business record in Postgres. The{" "}
+          <code className="bg-yellow-100 px-1 rounded">POST /api/businesses</code> endpoint for
+          handoff-to-client creation is not yet implemented. This control is disabled until that
+          API exists.
         </p>
       </div>
     </div>
@@ -441,20 +336,25 @@ function SalesHandoffsPanel({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BillingActivationPage() {
-  // State initialized from seed data, hydrated from file-backed API on mount
-  const [clients, setClients] = useState<MasterClient[]>(MASTER_CLIENTS);
-  const [clearanceTarget, setClearanceTarget] = useState<MasterClient | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [businesses, setBusinesses] = useState<BusinessClient[]>([]);
+  const [clearanceTarget, setClearanceTarget] = useState<BusinessClient | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; variant: "success" | "info" | "warning" | "error" } | null>(null);
   const [actionLog, setActionLog] = useState<string[]>([]);
   const [salesHandoffs, setSalesHandoffs] = useState<HandoffRecord[]>([]);
 
-  const refreshClients = useCallback(async () => {
+  const refreshBusinesses = useCallback(async () => {
+    setLoading(true);
     try {
-      const live = await fetchMasterClients();
-      setClients(live);
-    } catch {
-      // Keep seed data on failure
+      const data = await fetchAMClients();
+      setBusinesses(data);
+      setFetchError(null);
+    } catch (err: unknown) {
+      setFetchError(err instanceof Error ? err.message : "Failed to load businesses.");
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -467,7 +367,7 @@ export default function BillingActivationPage() {
     }
   }, []);
 
-  useEffect(() => { void refreshClients(); }, [refreshClients]);
+  useEffect(() => { void refreshBusinesses(); }, [refreshBusinesses]);
   useEffect(() => { void refreshHandoffs(); }, [refreshHandoffs]);
 
   function log(msg: string) {
@@ -479,57 +379,23 @@ export default function BillingActivationPage() {
   }
 
   async function handleClearance(id: string) {
-    const name = clients.find((c) => c.id === id)?.clientName ?? id;
-    // Persist to file-backed API (cross-route-group reliable)
-    await apiMarkCleared(id);
-    // Also mark cleared on any real Business records for this client.
-    // Best-effort: look up businesses by displayName match. Billing's MasterClient id
-    // and the real Business id are in different id spaces (MasterClient uses mc-* prefixes;
-    // Business uses biz-* prefixes). A full reconciliation requires joining on domain or
-    // client name. Until a stable cross-reference exists, this is a name-based best-effort.
-    try {
-      const bizRes = await fetch("/api/businesses");
-      if (bizRes.ok) {
-        const bizData = await bizRes.json() as { records?: Array<{ id: string; displayName: string; domain: string }> };
-        const matches = (bizData.records ?? []).filter(
-          (b) => b.displayName.toLowerCase().includes(name.toLowerCase()) ||
-                 name.toLowerCase().includes(b.displayName.toLowerCase())
-        );
-        for (const biz of matches) {
-          await fetch(`/api/businesses?id=${encodeURIComponent(biz.id)}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ cleared: true }),
-          }).catch(() => {});
-        }
-      }
-    } catch {
-      // Non-fatal — MasterClient cleared state is the authoritative gate in the current flow
-    }
+    const biz = businesses.find((b) => b.id === id);
+    const name = biz?.clientName ?? id;
+    const domain = biz?.domain ?? "";
+    // Write cleared:true to the real Business record in Postgres
+    await markCleared(id);
     // Update local state optimistically
-    setClients((prev) => prev.map((c) =>
-      c.id === id ? { ...c, cleared: true, billingStatus: "Cleared" as const } : c
+    setBusinesses((prev) => prev.map((b) =>
+      b.id === id ? { ...b, cleared: true, billingStatus: "Cleared" } : b
     ));
     setExpanded(null);
-    log(`✅ Cleared: ${name} → Account Management notified`);
-    showToast(`${name} cleared — removed from Billing activation view`, "success");
+    log(`✅ Cleared: ${name} (${domain}) → Account Management notified`);
+    showToast(`${name} (${domain}) cleared — removed from Billing activation view`, "success");
   }
 
-  function handleHandoffProcessed(handoffId: string, clientId: string) {
-    // Mark handoff as processed in local state so it leaves the pending queue immediately
-    setSalesHandoffs((prev) =>
-      prev.map((h) =>
-        h.id === handoffId
-          ? { ...h, processed: true, processedClientId: clientId, processedAt: new Date().toISOString() }
-          : h
-      )
-    );
-    // Refresh clients so the new record appears in Client Portfolio
-    void refreshClients();
-  }
-
-  // Clients that are invoice-cleared but not yet cleared
-  const pendingClearance = clients.filter(isInvoiceCleared);
+  // Businesses that are invoice-cleared but not yet cleared for AM
+  // Clearance is per-Business — each domain is tracked independently.
+  const pendingClearance = businesses.filter(isInvoiceCleared);
 
   // KPI counts — Billing-scoped only
   const pendingSalesHandoffs = salesHandoffs.filter(
@@ -537,8 +403,8 @@ export default function BillingActivationPage() {
   );
   const kpi = {
     awaitingClearance: pendingClearance.length,
-    cleared: clients.filter((c) => c.cleared).length,
-    overdue: clients.filter((c) => c.paymentStatus === "Overdue" || c.billingStatus === "Overdue").length,
+    cleared: businesses.filter((b) => b.cleared).length,
+    overdue: businesses.filter((b) => b.paymentStatus === "Overdue" || b.billingStatus === "Overdue").length,
   };
 
   return (
@@ -549,7 +415,7 @@ export default function BillingActivationPage() {
       {/* Clearance modal */}
       {clearanceTarget && (
         <ClearanceModal
-          client={clearanceTarget}
+          business={clearanceTarget}
           onClose={() => setClearanceTarget(null)}
           onConfirm={handleClearance}
         />
@@ -574,10 +440,18 @@ export default function BillingActivationPage() {
           Billing Activation
         </h1>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
-          Clients whose invoice is cleared and are awaiting Billing&rsquo;s clearance signal to Account Management.
-          Once cleared, the client leaves this view — AM owns all downstream steps.
+          Business records whose invoice is cleared and are awaiting Billing&rsquo;s clearance signal to Account Management.
+          Clearance is per business (per domain) — each domain is tracked independently.
+          Once cleared, the business leaves this view — AM owns all downstream steps.
         </p>
       </div>
+
+      {/* Fetch error */}
+      {fetchError && (
+        <div className="rounded-lg border px-4 py-3" style={{ background: "#FEF2F2", borderColor: "#FECACA", color: "#991B1B" }}>
+          <strong>Failed to load businesses:</strong> {fetchError}
+        </div>
+      )}
 
       {/* Scope statement */}
       <div className="rounded-xl border p-5" style={{ background: "#F0FDF4", borderColor: "#A7F3D0" }}>
@@ -636,55 +510,53 @@ export default function BillingActivationPage() {
 
       {/* Sales Handoffs Queue — Incoming from Sales team */}
       {pendingSalesHandoffs.length > 0 && (
-        <SalesHandoffsPanel
-          handoffs={salesHandoffs}
-          onProcessed={handleHandoffProcessed}
-          onLog={log}
-          onToast={showToast}
-        />
+        <SalesHandoffsPanel handoffs={salesHandoffs} />
       )}
 
       {/* AM Change Requests — Billing Approval Queue */}
       <BillingChangeRequestsPanel onToast={showToast} />
 
       {/* Activation Table */}
-      {pendingClearance.length === 0 ? (
+      {!loading && !fetchError && pendingClearance.length === 0 ? (
         <div className="rounded-xl border p-12 text-center space-y-3" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
           <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center" style={{ background: "#ECFDF5" }}>
             <svg width="24" height="24" fill="none" stroke="#059669" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <p className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>All invoices cleared</p>
+          <p className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+            {businesses.length === 0 ? "No business records yet" : "All invoices cleared"}
+          </p>
           <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
-            No clients awaiting Billing clearance. When a client&rsquo;s invoice clears, they&rsquo;ll appear here for the clearance action.
+            {businesses.length === 0
+              ? "Business records appear here once clients are created in the system. When a business's invoice is cleared, it will appear here for the clearance action."
+              : "No businesses awaiting Billing clearance. When a business's invoice clears, it'll appear here for the clearance action."}
           </p>
         </div>
-      ) : (
+      ) : !loading && !fetchError && pendingClearance.length > 0 ? (
         <SectionWrapper
-          title={`Awaiting Clearance — ${pendingClearance.length} client${pendingClearance.length > 1 ? "s" : ""}`}
-          description="Invoice cleared clients awaiting Billing's clearance before Account Management can begin onboarding. Click a row to review details and grant clearance."
+          title={`Awaiting Clearance — ${pendingClearance.length} business${pendingClearance.length > 1 ? "es" : ""}`}
+          description="Invoice-cleared businesses awaiting Billing's clearance before Account Management can begin onboarding. Clearance is per domain — each business is cleared independently. Click a row to review details and grant clearance."
         >
           <div className="overflow-x-auto rounded-lg border" style={{ borderColor: "var(--rtm-border-light)" }}>
             <table className="min-w-full">
               <thead>
                 <tr>
-                  <Th>Client</Th>
+                  <Th>Client / Domain</Th>
                   <Th>Invoice Status</Th>
                   <Th>Payment Status</Th>
                   <Th>Monthly Value</Th>
                   <Th>Active Services</Th>
-                  <Th>Billing Owner</Th>
                   <Th>Clearance Action</Th>
                 </tr>
               </thead>
               <tbody>
-                {pendingClearance.map((client) => {
-                  const isExpanded = expanded === client.id;
+                {pendingClearance.map((biz) => {
+                  const isExpanded = expanded === biz.id;
                   return (
-                    <React.Fragment key={client.id}>
+                    <React.Fragment key={biz.id}>
                       <tr
-                        onClick={() => setExpanded(isExpanded ? null : client.id)}
+                        onClick={() => setExpanded(isExpanded ? null : biz.id)}
                         className="cursor-pointer transition-colors"
                         style={{ background: isExpanded ? "#EFF6FF" : "#F0FFF4" }}
                       >
@@ -696,30 +568,32 @@ export default function BillingActivationPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                             <div className="w-6 h-6 rounded-md flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                              style={{ background: client.avatarColor }}>
-                              {client.clientName.charAt(0)}
+                              style={{ background: "#059669" }}>
+                              {biz.clientName.charAt(0)}
                             </div>
-                            <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{client.clientName}</span>
+                            <div>
+                              <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{biz.clientName}</span>
+                              <span className="block text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>{biz.domain}</span>
+                            </div>
                           </div>
                         </Td>
-                        <Td><StatusBadge variant={invoiceStatusVariant(client.invoiceStatus)} label={client.invoiceStatus} size="sm" /></Td>
-                        <Td><StatusBadge variant={paymentStatusVariant(client.paymentStatus)} label={client.paymentStatus} size="sm" /></Td>
+                        <Td><StatusBadge variant={invoiceStatusVariant(biz.invoiceStatus)} label={biz.invoiceStatus} size="sm" /></Td>
+                        <Td><StatusBadge variant={paymentStatusVariant(biz.paymentStatus)} label={biz.paymentStatus} size="sm" /></Td>
                         <Td>
-                          {client.monthlyValue > 0
-                            ? <span className="font-bold text-sm" style={{ color: "#059669" }}>${client.monthlyValue.toLocaleString()}/mo</span>
+                          {biz.monthlyValue > 0
+                            ? <span className="font-bold text-sm" style={{ color: "#059669" }}>${biz.monthlyValue.toLocaleString()}/mo</span>
                             : <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</span>
                           }
                         </Td>
                         <Td muted>
-                          {client.activeServices.length > 0
-                            ? client.activeServices.slice(0, 2).join(", ") + (client.activeServices.length > 2 ? ` +${client.activeServices.length - 2}` : "")
+                          {biz.activeServices.length > 0
+                            ? biz.activeServices.slice(0, 2).join(", ") + (biz.activeServices.length > 2 ? ` +${biz.activeServices.length - 2}` : "")
                             : "—"
                           }
                         </Td>
-                        <Td muted>{client.billingOwner}</Td>
                         <Td>
                           <button
-                            onClick={(e) => { e.stopPropagation(); setClearanceTarget(client); }}
+                            onClick={(e) => { e.stopPropagation(); setClearanceTarget(biz); }}
                             className="text-xs font-bold px-3 py-1.5 rounded-lg text-white transition-opacity hover:opacity-90"
                             style={{ background: "#059669" }}
                           >
@@ -729,8 +603,8 @@ export default function BillingActivationPage() {
                       </tr>
                       {isExpanded && (
                         <tr>
-                          <td colSpan={7} className="p-0" style={{ borderBottom: "2px solid #BFDBFE" }}>
-                            <ExpandedDetail client={client} onClearance={(id) => setClearanceTarget(clients.find((c) => c.id === id) ?? null)} />
+                          <td colSpan={6} className="p-0" style={{ borderBottom: "2px solid #BFDBFE" }}>
+                            <ExpandedDetail business={biz} onClearance={(id) => setClearanceTarget(businesses.find((b) => b.id === id) ?? null)} />
                           </td>
                         </tr>
                       )}
@@ -741,7 +615,11 @@ export default function BillingActivationPage() {
             </table>
           </div>
         </SectionWrapper>
-      )}
+      ) : loading ? (
+        <div className="rounded-xl border p-12 text-center" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
+          <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading businesses…</p>
+        </div>
+      ) : null}
 
       {/* Action Log */}
       {actionLog.length > 0 && (

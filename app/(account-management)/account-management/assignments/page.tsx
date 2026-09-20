@@ -8,11 +8,40 @@ import {
   assignAM,
   type BusinessClient,
 } from "@/lib/account-management/am-client-data";
-import {
-  fetchReassignmentEvents,
-  postReassignmentEvent,
-  type ReassignmentEvent,
-} from "@/lib/mock/master-clients-api";
+// Reassignment event helpers — inlined here so this page does not import
+// from mock data modules. These call the file-backed /api/reassignment-events
+// store, which is a separate store from MASTER_CLIENTS.
+
+export interface ReassignmentEvent {
+  id: string;
+  clientId: string;
+  clientName: string;
+  from: string;
+  to: string;
+  date: string;
+  reason: string;
+  handoffNote?: string;
+}
+
+async function fetchReassignmentEvents(): Promise<ReassignmentEvent[]> {
+  const res = await fetch("/api/reassignment-events");
+  if (!res.ok) throw new Error(`/api/reassignment-events returned ${res.status}`);
+  const data = await res.json() as { events: ReassignmentEvent[] };
+  return data.events;
+}
+
+async function postReassignmentEvent(
+  event: Omit<ReassignmentEvent, "id">
+): Promise<ReassignmentEvent> {
+  const res = await fetch("/api/reassignment-events", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(event),
+  });
+  if (!res.ok) throw new Error(`/api/reassignment-events POST returned ${res.status}`);
+  const data = await res.json() as { event: ReassignmentEvent };
+  return data.event;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers

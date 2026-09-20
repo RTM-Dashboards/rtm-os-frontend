@@ -75,8 +75,6 @@ import type {
   AMOnboardingSection,
 } from "@/lib/mock/am-onboarding-field-schema";
 import { getAllProjects, getProjectByClientId } from "@/lib/mock/am-projects-store";
-import { markKickoffComplete } from "@/lib/mock/master-clients";
-import { apiMarkKickoffComplete, apiMarkOnboardingComplete } from "@/lib/mock/master-clients-api";
 import { markKickoffComplete as realMarkKickoff, markOnboardingComplete as realMarkOnboarding } from "@/lib/account-management/am-client-data";
 import { updateTaskStatus } from "@/lib/engine/api";
 
@@ -709,10 +707,7 @@ function KickoffCallWidget({
     if (kickoffDate) {
       await saveFieldValue(record.id, "kickoffCallDate", kickoffDate);
     }
-    // Write to mock store (onboarding record tracking)
-    await apiMarkKickoffComplete(record.clientId, kickoffDate || undefined).catch(() => {});
-    markKickoffComplete(record.clientId, kickoffDate || undefined);
-    // Also write to real Business record in Postgres
+    // Write to real Business record in Postgres
     await realMarkKickoff(record.clientId, kickoffDate || undefined).catch(() => {});
     setTimeout(() => {
       setCompleting(false);
@@ -1153,7 +1148,6 @@ function CompleteOnboardingButton({
       }
 
       // 3. Advance activationStatus → active in real Business record
-      await apiMarkOnboardingComplete(record.clientId).catch(() => {});
       await realMarkOnboarding(record.clientId).catch(() => {});
 
       setDialogState({ open: false });
