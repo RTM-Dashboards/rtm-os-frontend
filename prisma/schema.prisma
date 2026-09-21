@@ -49,7 +49,7 @@ model Lead {
   ghlSource             String   @default("")
   ghlCreatedDate        String   @default("")
   ghlLastActivityDate   String   @default("")
-  ghlContactTags        String[]
+  ghlContactTags        String[]   @default([])
   ghlContactStatus      String   @default("")
   ghlSyncStatus         String   @default("")
   ghlOrigin             Boolean  @default(false)
@@ -65,9 +65,9 @@ model Lead {
   discoveryNotes        String   @default("")
 
   // BANT / discovery arrays
-  businessGoals         String[]
-  painPoints            String[]
-  requestedServices     String[]
+  businessGoals         String[]   @default([])
+  painPoints            String[]   @default([])
+  requestedServices     String[]   @default([])
   budget                String   @default("Unknown")
   authority             String   @default("Unknown")
   need                  String   @default("Low")
@@ -165,7 +165,7 @@ model Opportunity {
   expectedCloseDate     String   @default("")
 
   // Array of strings — service interest tags
-  serviceInterest       String[]
+  serviceInterest       String[]   @default([])
 
   discoveryNotes        String   @default("")
 
@@ -427,18 +427,18 @@ model Proposal {
   currentStep                     Int      @default(1)
 
   // Steps completed by the wizard user (array of step numbers)
-  completedSteps                  Int[]
+  completedSteps                  Int[]    @default([])
 
   // Goal slugs selected by the user (flat string array)
-  selectedGoals                   String[]
+  selectedGoals                   String[] @default([])
 
   // Audit mode and id selection
   auditMode                       String?
   selectedAuditId                 String?
 
   // Recommendation slugs approved by the user
-  approvedRecommendations         String[]
-  approvedRecommendationServiceNames String[]
+  approvedRecommendations         String[] @default([])
+  approvedRecommendationServiceNames String[] @default([])
 
   // Discount percentage scalar (the rest of discount lives in discount Json)
   discountPercentage              Float    @default(0)
@@ -573,7 +573,8 @@ model Business {
   id                  String   @id
 
   // Domain is the primary identity. Stored normalised (see above).
-  domain              String
+  // Globally unique: one website = one Business, agency-wide.
+  domain              String   @unique
   displayName         String   @default("")
 
   // Owner — plain string column, no FK constraint (matches codebase pattern).
@@ -642,10 +643,10 @@ model Business {
   createdAt           String   @default("")
   updatedAt           String   @default("")
 
-  // Index the domain for fast domain-first lookups.
+  // Domain is globally unique: one website = one Business, agency-wide.
+  // A global @unique on domain replaces the former @@unique([clientId, domain]).
+  // clients and businesses were both at 0 rows at migration time; no backfill.
   // Index clientId for fast "all businesses for a client" queries.
-  // Unique constraint scoped to (clientId, domain) — see comment above.
-  @@unique([clientId, domain])
   @@index([domain])
   @@index([clientId])
   @@map("businesses")
@@ -746,4 +747,166 @@ model Project {
 
   @@index([businessId])
   @@map("projects")
+}
+
+// ── SalesHandoff ──────────────────────────────────────────────────────────────
+// Postgres persistence for the Sales→Billing handoff record.
+//
+// Round-trips every field on HandoffRecord (lib/sales/handoff-engine.ts).
+// Complex sub-objects (checklist, summaryFields) are stored as Json columns.
+// Timestamps on this model follow the existing schema convention: ISO-8601
+// strings, not DateTime columns.
+//
+// Four typed billing columns are populated from summaryFields on every write
+// by lib/billing/handoff-summary-parser.ts. summaryFields remains the source
+// of truth for display; the typed columns are for Billing queries/logic.
+
+model SalesHandoff {
+  // Caller-assigned string id (e.g. "hof-seed-0041", "hof-${Date.now()}-${random}")
+  id                    String   @id
+
+  handoffNumber         String   @default("")
+  clientName            String   @default("")
+  contractNumber        String   @default("")
+  contractId            String   @default("")
+  preparedBy            String   @default("")
+
+  // ISO-8601 string, follows existing String timestamp convention
+  createdAt             String   @default("")
+
+  // HandoffActivationStatus: "not-started"|"in-progress"|"ready"|"submitted"|"received"
+  status                String   @default("not-started")
+
+  // HandoffChecklistEntry[] — stored as Json, read/written as a whole
+  checklist             Json     @default("[]")
+
+  // Record<string, string> — stored as Json
+  summaryFields         Json     @default("{}")
+
+  completionPercentage  Int      @default(0)
+  readyToSubmit         Boolean  @default(false)
+
+  // Optional ISO-8601 strings
+  submittedAt           String?
+  receivedBy            String?
+
+  submittedToBilling    Boolean  @default(false)
+  submittedToBillingAt  String?
+
+  processed             Boolean  @default(false)
+  processedAt           String?
+  processedClientId     String?
+
+  // ── Typed billing columns ─────────────────────────────────────────────────
+  // Populated by lib/billing/handoff-summary-parser.ts on every POST/PATCH.
+  // NULL means the value is missing, malformed, or Billing must enter manually.
+  // summaryFields is the display source of truth; these are for queries/logic.
+
+  // Parsed from summaryFields["monthly-recurring-revenue"], e.g. "$3,800/mo" → 380000
+  monthlyValueCents     Int?
+
+  // Parsed from summaryFields["setup-fees"], e.g. "$0" → 0
+  setupFeeCents         Int?
+
+  // Parsed from summaryFields["payment-terms"], e.g. "Net 15" → "Net 15"
+  paymentTerms          String?
+
+  // Parsed from summaryFields["term-length"], leading integer e.g. "12 months" → 12
+  termLengthMonths      Int?
+
+  // Billing queue filters: submittedToBilling, processed
+  @@index([submittedToBilling])
+  @@index([processed])
+  @@index([contractId])
+  @@map("sales_handoffs")
+}
+
+// ── Invoice ───────────────────────────────────────────────────────────────────
+// One invoice document. One Business accumulates many Invoices over time.
+//
+// Invoice dates are real DateTime columns — the first DateTime in this schema.
+// (Business and Client timestamps remain String per the existing convention.)
+//
+// invoiceNumber is globally unique, server-generated in a transaction using a
+// Postgres advisory lock. The client never supplies invoiceNumber.
+// Format: INV-XXXX, zero-padded to 4+ digits, seeded at INV-0064.
+//
+// salesHandoffId is nullable: invoices created outside a handoff flow (e.g.
+// renewal invoices) do not require a handoff FK.
+
+model Invoice {
+  // Caller-assigned string id (e.g. "inv-${Date.now()}-${random}")
+  id                  String    @id
+
+  // Server-generated, globally unique, INV-XXXX format
+  invoiceNumber       String    @unique
+
+  // FK to Business (plain column, no FK constraint — matches codebase pattern)
+  businessId          String
+
+  // Denormalised for query convenience (avoids join through Business)
+  clientId            String
+
+  // Optional FK to the SalesHandoff that triggered this invoice
+  salesHandoffId      String?
+
+  // ── Financial fields ──────────────────────────────────────────────────────
+  contractAmountCents Int
+
+  setupFeeCents       Int       @default(0)
+  monthlyValueCents   Int       @default(0)
+
+  // ── Status fields (plain String — no enums in this schema) ───────────────
+  // invoiceStatus vocabulary: Draft, Ready To Send, Sent, Viewed,
+  //   Partially Paid, Paid, Overdue, Cancelled, Escalated
+  invoiceStatus       String    @default("Draft")
+
+  // paymentStatus vocabulary: N/A, Unpaid, Partial, Paid, Failed
+  paymentStatus       String    @default("N/A")
+
+  // ── DateTime fields (all DateTime — no String dates on Invoice) ──────────
+  dueDate             DateTime
+  sentAt              DateTime?
+  paidAt              DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  // ── Operational fields ────────────────────────────────────────────────────
+  billingOwner        String    @default("")
+  archived            Boolean   @default(false)
+
+  // Index businessId and clientId for list queries
+  @@index([businessId])
+  @@index([clientId])
+  // Composite index supporting overdue detection:
+  //   WHERE invoiceStatus IN ('Sent','Viewed','Partially Paid','Overdue')
+  //     AND dueDate < now()
+  // invoiceStatus first (equality/IN check narrows the set) then dueDate
+  // (range scan on the filtered subset). Replaced [dueDate, paymentStatus]
+  // which supported the old predicate paymentStatus != 'Paid'.
+  @@index([invoiceStatus, dueDate])
+  @@map("invoices")
+}
+
+// ── InvoiceSequence ───────────────────────────────────────────────────────────
+// Single-row counter for globally unique, sequential invoice numbers.
+//
+// WHY NOT MAX(invoiceNumber): the read-then-max-then-write pattern is a
+// TOCTOU race. Two simultaneous creates can both read the same max and
+// produce the same next number, causing a @unique violation.
+//
+// THIS APPROACH: the route acquires a Postgres advisory lock (pg_try_advisory_xact_lock)
+// inside a transaction, reads this row with SELECT FOR UPDATE, increments,
+// writes back, then generates the INV-XXXX string. The lock guarantees
+// only one concurrent writer at a time. The transaction guarantees atomicity.
+//
+// Seeded at 63 so the first generated number is INV-0064, clearing the
+// highest mock number visible in the existing seed data (up to INV-0063).
+
+model InvoiceSequence {
+  // Single row, fixed id
+  id          Int   @id @default(1)
+  lastValue   Int   @default(63)
+
+  @@map("invoice_sequence")
 }
