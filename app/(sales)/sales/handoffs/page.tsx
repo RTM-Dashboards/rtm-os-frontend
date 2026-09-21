@@ -107,6 +107,7 @@ function RequestInvoiceBanner({
   const bannerRef = useRef<HTMLDivElement>(null);
   const [submitted, setSubmitted] = useState(alreadySubmitted);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     setSubmitted(alreadySubmitted);
@@ -121,13 +122,13 @@ function RequestInvoiceBanner({
   async function handleSubmit() {
     if (submitting || submitted) return;
     setSubmitting(true);
+    setSubmitError(null);
     try {
       await submitHandoffToBilling(handoffId);
       setSubmitted(true);
-    } catch {
-      // On error, still show success locally so the UI doesn't feel broken;
-      // the API will retry on next load
-      setSubmitted(true);
+    } catch (err) {
+      // Surface the failure — do NOT show success for a write that did not persist.
+      setSubmitError(err instanceof Error ? err.message : String(err));
     } finally {
       setSubmitting(false);
     }
@@ -222,6 +223,11 @@ function RequestInvoiceBanner({
             {!contractSigned && (
               <p className="text-[11px]" style={{ color: "#94A3B8" }}>
                 Waiting on contract signature.
+              </p>
+            )}
+            {submitError && (
+              <p className="text-[11px] font-semibold text-right" style={{ color: "#DC2626", maxWidth: "280px" }}>
+                Failed to submit: {submitError}
               </p>
             )}
           </div>
