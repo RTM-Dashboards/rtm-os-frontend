@@ -23,6 +23,23 @@
 // matcher accidentally matched it, the middleware would not redirect it.
 // The matcher also excludes it via the negative lookahead on /api/ paths
 // — belt AND braces.
+//
+// DEV API BYPASS
+// When NODE_ENV === "development" AND RTM_DEV_API_BYPASS === "1", all /api/*
+// requests are allowed through without a Supabase session check. This exists
+// solely to allow local HTTP verification of API routes when Supabase env vars
+// (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY) are not populated.
+//
+// Production safety guarantees:
+//   1. The outer guard is `process.env.NODE_ENV !== "development"` — Vercel
+//      sets NODE_ENV=production unconditionally; this branch is dead code there.
+//   2. RTM_DEV_API_BYPASS must also be explicitly set to "1". Unset = bypass
+//      inactive regardless of NODE_ENV.
+//   3. The bypass ONLY applies to /api/* paths. All non-API paths (pages,
+//      layout routes) still go through the full session check regardless.
+//   4. It is NOT added to PUBLIC_PATHS (which would affect page routes too).
+//   5. This var is never set in .env (Vercel production env) or .env.local
+//      beyond this development phase; remove it when Supabase vars are populated.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createMiddlewareClient } from "@/lib/supabase/middleware";
@@ -46,6 +63,19 @@ export async function proxy(request: NextRequest) {
 
   // Always allow public paths through without touching the session.
   if (isPublicPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  // DEV-ONLY API BYPASS
+  // Allows local HTTP testing of /api/* routes when Supabase env vars are unset.
+  // Cannot be active in production: requires NODE_ENV=development AND
+  // RTM_DEV_API_BYPASS=1 to be set simultaneously. Vercel always sets
+  // NODE_ENV=production, making this branch unreachable in any deployed context.
+  if (
+    process.env.NODE_ENV === "development" &&
+    process.env.RTM_DEV_API_BYPASS === "1" &&
+    pathname.startsWith("/api/")
+  ) {
     return NextResponse.next();
   }
 
