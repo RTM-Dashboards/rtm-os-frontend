@@ -5,7 +5,10 @@
 // calls this module. No scattered checks.
 //
 // ── Role hierarchy (highest to lowest) ────────────────────────────────────────
-//   SystemAdmin  →  Manager  →  Member
+//   SystemAdmin (4)  technical owner, can do anything
+//   Executive   (3)  business leadership, all departments
+//   Manager     (2)  one department only
+//   Member      (1)  no role-setting ability at all
 //
 // ── Status gate ───────────────────────────────────────────────────────────────
 //   Only "active" users pass. "pending" and "disabled" are denied.
@@ -37,22 +40,21 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/db/prisma";
 
-// ── Role/status value sets ────────────────────────────────────────────────────
-// Kept as TypeScript unions and arrays — no Prisma enums per project convention.
+// Re-export canonical vocabulary so callers can import from one place.
+export type { UserRole, UserStatus, Department } from "@/lib/auth/vocab";
+export {
+  VALID_ROLES,
+  VALID_STATUSES,
+  VALID_DEPARTMENTS,
+  ROLE_RANK,
+} from "@/lib/auth/vocab";
 
-export type UserRole   = "SystemAdmin" | "Manager" | "Member";
-export type UserStatus = "pending" | "active" | "disabled";
-
-export const VALID_ROLES:    readonly UserRole[]   = ["SystemAdmin", "Manager", "Member"] as const;
-export const VALID_STATUSES: readonly UserStatus[] = ["pending", "active", "disabled"] as const;
-
-// Role rank: higher number = higher privilege.
-// Used by requireRole to compare minimum tier.
-const ROLE_RANK: Record<UserRole, number> = {
-  Member:      1,
-  Manager:     2,
-  SystemAdmin: 3,
-};
+import {
+  type UserRole,
+  type UserStatus,
+  VALID_ROLES,
+  ROLE_RANK,
+} from "@/lib/auth/vocab";
 
 // ── Resolved user type ────────────────────────────────────────────────────────
 
@@ -189,6 +191,7 @@ export function requireActive(user: AuthUser): AuthDenied | null {
 //
 // Example: requireRole(user, "Manager")
 //   "SystemAdmin" → null (passes — outranks Manager)
+//   "Executive"   → null (passes — outranks Manager)
 //   "Manager"     → null (passes — meets minimum)
 //   "Member"      → { error, status: 403 }
 

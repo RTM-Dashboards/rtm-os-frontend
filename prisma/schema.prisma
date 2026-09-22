@@ -312,7 +312,7 @@ model User {
   department  String?
 
   // Role and access control
-  // Allowed values (enforced server-side in lib/auth/): "SystemAdmin" | "Manager" | "Member"
+  // Allowed values (enforced server-side in lib/auth/): "SystemAdmin" | "Executive" | "Manager" | "Member"
   // null means no role has been assigned yet; access is denied until a role is set.
   role        String?
 
@@ -326,6 +326,12 @@ model User {
   invitedBy   String?
   // invitedAt: ISO-8601 string, set when the invite was created.
   invitedAt   String?
+
+  // Role/status/department audit trail — set by PATCH /api/users on every change.
+  // roleSetBy: the User.id of the person who made the change.
+  // roleSetAt: ISO-8601 string of when the change was made.
+  roleSetBy   String?
+  roleSetAt   String?
 
   // Set on every successful login by the auth callback.
   // Will power the "Last Active" column on the Team Members page.
