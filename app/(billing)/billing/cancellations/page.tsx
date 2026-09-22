@@ -57,8 +57,14 @@ type InvoiceType =
 /**
  * Billing-side overlay: extra fields that don't live on Business but Billing
  * needs to track within a cancellation workflow. Stored in session state keyed
- * by Business id. The canonical status fields (cancellationStatus, billingStatus,
- * invoiceStatus) live on Business and are persisted via patchBusiness().
+ * by Business id. The canonical status fields (cancellationStatus, invoiceStatus)
+ * live on Business and are persisted via patchBusiness().
+ *
+ * billingStatus also lives on Business but is written by syncBusinessCachedSummary
+ * on every invoice change (POST/PATCH /api/invoices). A billing hold that sets
+ * billingStatus to Pending via patchBusiness will be superseded on the next
+ * invoice event. There is no durable hold field — holdReason/holdStartDate/holdEndDate
+ * are overlay-local (session state only) and are not persisted to the database.
  *
  * holdReason is captured in the Place Billing Hold modal but is NOT persisted
  * anywhere — not to the overlay, not to the database. It is local modal-form

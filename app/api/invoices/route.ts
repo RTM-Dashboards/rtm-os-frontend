@@ -23,6 +23,21 @@
 // PATCH /api/invoices?id=<id>                   → body: Partial<InvoiceRecord>
 //                                               → { invoice: InvoiceRecord } | 404
 //
+// C1 — AUTHORITY RULE
+// Invoice is the authoritative source for billing state. The Business fields
+// invoiceStatus, paymentStatus, invoiceAmountCents, and monthlyValueCents are
+// a CACHED SUMMARY of the most recent Invoice for that Business. They are
+// written only by syncBusinessCachedSummary(), called after every POST and
+// PATCH that touches a businessId. Nothing else may write those Business fields.
+//
+// C5 — ORPHAN GUARD
+// POST validates that the supplied businessId exists before creating the invoice.
+// No Prisma FK constraint is added (matching codebase pattern).
+//
+// C3-5 — SERVER-SIDE TIMESTAMPS
+// sentAt is set server-side when invoiceStatus transitions to "Sent".
+// paidAt is set server-side when paymentStatus transitions to "Paid".
+//
 // Conventions (matching all other routes):
 //   - Prisma singleton: import { prisma } from "@/lib/db/prisma"
 //   - findUnique then branch to create/update — no upsert()
@@ -34,6 +49,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { allocateInvoiceNumber } from "@/lib/billing/invoice-number";
+import { getSessionUser, requireRole } from "@/lib/auth";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -84,9 +100,127 @@ function rowToRecord(row: InvoiceRow): InvoiceRecord {
   };
 }
 
+// ── C1: Cached-summary sync ───────────────────────────────────────────────────
+
+/**
+ * syncBusinessCachedSummary — THE ONLY place that writes Business billing fields.
+ *
+ * After any Invoice create or status change, call this with the businessId.
+ * It finds the most recent Invoice for that business (by createdAt desc) and
+ * writes invoiceStatus, paymentStatus, invoiceAmountCents, monthlyValueCents,
+ * and billingStatus back to the Business row so pages that only need a quick
+ * status can read from Business without joining Invoice.
+ *
+ * billingStatus mapping (Business vocabulary: "Pending" | "Paid" | "Overdue" |
+ *   "Cleared" | "Closed"):
+ *   - Invoice Paid + paymentStatus Paid  → "Paid"    (clears activation gate)
+ *   - Invoice Overdue or Escalated        → "Overdue"
+ *   - Invoice Cancelled                   → "Closed"
+ *   - Everything else                     → "Pending"
+ *   - No invoice                          → "Pending"
+ *
+ * Hold interaction: the Cancellations page sets billingStatus to "Pending" via
+ * a direct patchBusiness() call (billing hold) and to "Closed" via Close
+ * Billing. This sync will overwrite "Pending" (hold) if a subsequent invoice
+ * action resolves to a different status — that is correct behaviour, because a
+ * newly paid invoice supersedes the hold. "Closed" set by Close Billing will
+ * be re-written to "Closed" again by Cancelled invoice, or to another value if
+ * an active invoice exists, which is the correct state after a re-open.
+ * There is no separate hold field on Business, so the sync cannot distinguish
+ * a hold-set "Pending" from a default "Pending"; preserving it unconditionally
+ * would block paid invoices from clearing the activation gate.
+ *
+ * If the business row does not exist (e.g. pre-linking draft invoice) the call
+ * is a silent no-op — the caller already validated existence at create time.
+ *
+ * This is intentionally best-effort: if it fails, the Invoice record is still
+ * the authoritative source and the Business cache will be updated on the next
+ * successful PATCH.
+ */
+async function syncBusinessCachedSummary(businessId: string): Promise<void> {
+  if (!businessId) return;
+
+  // Find the most recent invoice for this business
+  const latest = await prisma.invoice.findFirst({
+    where: { businessId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!latest) {
+    // No invoices for this business — reset to defaults
+    await prisma.business.updateMany({
+      where: { id: businessId },
+      data: {
+        invoiceStatus:      "none",
+        paymentStatus:      "none",
+        invoiceAmountCents: 0,
+        monthlyValueCents:  0,
+        billingStatus:      "Pending",
+      },
+    });
+    return;
+  }
+
+  // Map Invoice status vocabulary to Business cached-summary vocabulary.
+  // Business uses lowercase shorthand; Invoice uses title-case display values.
+  const invoiceStatusMap: Record<string, string> = {
+    "Draft":          "pending",
+    "Ready To Send":  "pending",
+    "Sent":           "sent",
+    "Viewed":         "sent",
+    "Partially Paid": "paid",   // partially paid counts as in-flight
+    "Paid":           "paid",
+    "Overdue":        "overdue",
+    "Cancelled":      "cancelled",
+    "Escalated":      "overdue",
+  };
+  const paymentStatusMap: Record<string, string> = {
+    "N/A":     "none",
+    "Unpaid":  "awaiting",
+    "Partial": "awaiting",
+    // Write "Paid" (title-case) so the Activation gate (b.paymentStatus === "Paid")
+    // passes correctly. All readers now expect this exact casing — the old
+    // "confirmed" hardcode has been removed from every reader and writer.
+    "Paid":    "Paid",
+    "Failed":  "failed",
+  };
+
+  // Derive billingStatus for the Business from the authoritative Invoice fields.
+  // Vocabulary: "Pending" | "Paid" | "Overdue" | "Cleared" | "Closed"
+  // "Cleared" is only ever written by the Activation page (markCleared); this
+  // sync never writes it — a paid invoice sets "Paid", not "Cleared".
+  let billingStatus = "Pending";
+  if (latest.invoiceStatus === "Paid" && latest.paymentStatus === "Paid") {
+    billingStatus = "Paid";
+  } else if (latest.invoiceStatus === "Overdue" || latest.invoiceStatus === "Escalated") {
+    billingStatus = "Overdue";
+  } else if (latest.invoiceStatus === "Cancelled") {
+    billingStatus = "Closed";
+  }
+
+  const mappedInvoiceStatus = invoiceStatusMap[latest.invoiceStatus] ?? "pending";
+  const mappedPaymentStatus = paymentStatusMap[latest.paymentStatus] ?? "none";
+
+  await prisma.business.updateMany({
+    where: { id: businessId },
+    data: {
+      invoiceStatus:      mappedInvoiceStatus,
+      paymentStatus:      mappedPaymentStatus,
+      invoiceAmountCents: latest.contractAmountCents,
+      monthlyValueCents:  latest.monthlyValueCents,
+      billingStatus,
+    },
+  });
+}
+
 // ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  // A4: require an active user of any role (Member or above).
+  const { user, error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus! });
+  void user; // authenticated; no minimum role check for GET
+
   const { searchParams } = new URL(req.url);
 
   const id = searchParams.get("id");
@@ -140,6 +274,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // ── POST — create one invoice (server-generates invoiceNumber) ────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // A4: require Manager or SystemAdmin.
+  const { user: postUser, error: postAuthError, status: postAuthStatus } = await getSessionUser(req);
+  if (postAuthError) return NextResponse.json({ error: postAuthError }, { status: postAuthStatus! });
+  const postRoleGate = requireRole(postUser!, "Manager");
+  if (postRoleGate) return NextResponse.json({ error: postRoleGate.error }, { status: postRoleGate.status });
+
   let body: unknown;
   try {
     body = await req.json();
@@ -163,6 +303,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   if (!record.dueDate) {
     return NextResponse.json({ error: "dueDate required" }, { status: 400 });
+  }
+
+  // C5 — ORPHAN GUARD: verify the business exists before creating an invoice.
+  // Plain column, no FK constraint — matches codebase pattern.
+  try {
+    const business = await prisma.business.findUnique({ where: { id: record.businessId } });
+    if (!business) {
+      return NextResponse.json(
+        { error: `Business not found: no business with id "${record.businessId}" exists. Create the business first.` },
+        { status: 422 }
+      );
+    }
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 
   try {
@@ -201,7 +355,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       });
     });
 
-    return NextResponse.json({ invoice: rowToRecord(row) }, { status: 201 });
+    // C1 — sync cached summary on the Business after creating the invoice
+    let syncFailed = false;
+    await syncBusinessCachedSummary(record.businessId!).catch((err: unknown) => {
+      // Best-effort — the invoice write has committed; log at error level so
+      // drift is visible, and surface it in the response so callers can alert.
+      syncFailed = true;
+      console.error(
+        "[invoices POST] syncBusinessCachedSummary failed — businessId:",
+        record.businessId,
+        "invoiceId:",
+        row.id,
+        "error:",
+        err,
+      );
+    });
+
+    return NextResponse.json(
+      { invoice: rowToRecord(row), ...(syncFailed ? { syncFailed: true } : {}) },
+      { status: 201 },
+    );
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
@@ -210,6 +383,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // ── PATCH — partial update by ?id= ───────────────────────────────────────────
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  // A4: require Manager or SystemAdmin.
+  const { user: patchUser, error: patchAuthError, status: patchAuthStatus } = await getSessionUser(req);
+  if (patchAuthError) return NextResponse.json({ error: patchAuthError }, { status: patchAuthStatus! });
+  const patchRoleGate = requireRole(patchUser!, "Manager");
+  if (patchRoleGate) return NextResponse.json({ error: patchRoleGate.error }, { status: patchRoleGate.status });
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) {
@@ -242,16 +421,60 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (patch.contractAmountCents !== undefined) data.contractAmountCents = patch.contractAmountCents;
     if (patch.setupFeeCents       !== undefined) data.setupFeeCents       = patch.setupFeeCents;
     if (patch.monthlyValueCents   !== undefined) data.monthlyValueCents   = patch.monthlyValueCents;
-    if (patch.invoiceStatus       !== undefined) data.invoiceStatus       = patch.invoiceStatus;
-    if (patch.paymentStatus       !== undefined) data.paymentStatus       = patch.paymentStatus;
-    if (patch.dueDate             !== undefined) data.dueDate             = new Date(patch.dueDate);
-    if (patch.sentAt              !== undefined) data.sentAt              = patch.sentAt ? new Date(patch.sentAt) : null;
-    if (patch.paidAt              !== undefined) data.paidAt              = patch.paidAt ? new Date(patch.paidAt) : null;
-    if (patch.billingOwner        !== undefined) data.billingOwner        = patch.billingOwner;
     if (patch.archived            !== undefined) data.archived            = patch.archived;
+    if (patch.billingOwner        !== undefined) data.billingOwner        = patch.billingOwner;
+    if (patch.dueDate             !== undefined) data.dueDate             = new Date(patch.dueDate);
+
+    // C3-5 — invoiceStatus: set sentAt server-side when transitioning to "Sent"
+    if (patch.invoiceStatus !== undefined) {
+      data.invoiceStatus = patch.invoiceStatus;
+      // Set sentAt when the invoice becomes Sent (and sentAt is not already set)
+      if (patch.invoiceStatus === "Sent" && !existing.sentAt) {
+        data.sentAt = new Date();
+      }
+    }
+
+    // C3-5 — paymentStatus: set paidAt server-side when transitioning to "Paid"
+    if (patch.paymentStatus !== undefined) {
+      data.paymentStatus = patch.paymentStatus;
+      // Set paidAt when payment is confirmed (and paidAt is not already set)
+      if (patch.paymentStatus === "Paid" && !existing.paidAt) {
+        data.paidAt = new Date();
+      }
+    }
+
+    // Allow explicit sentAt/paidAt override if the caller supplies them
+    // (but server-side auto-set above takes priority when not supplied).
+    if (patch.sentAt !== undefined && data.sentAt === undefined) {
+      data.sentAt = patch.sentAt ? new Date(patch.sentAt) : null;
+    }
+    if (patch.paidAt !== undefined && data.paidAt === undefined) {
+      data.paidAt = patch.paidAt ? new Date(patch.paidAt) : null;
+    }
 
     const row = await prisma.invoice.update({ where: { id }, data });
-    return NextResponse.json({ invoice: rowToRecord(row) });
+
+    // C1 — sync cached summary on the Business after status change.
+    // Use the updated businessId if it was patched, else the existing one.
+    const bizId = (patch.businessId !== undefined ? patch.businessId : existing.businessId) ?? "";
+    let syncFailed = false;
+    if (bizId) {
+      await syncBusinessCachedSummary(bizId).catch((err: unknown) => {
+        // Best-effort — the invoice write has committed; log at error level so
+        // drift is visible, and surface it in the response so callers can alert.
+        syncFailed = true;
+        console.error(
+          "[invoices PATCH] syncBusinessCachedSummary failed — businessId:",
+          bizId,
+          "invoiceId:",
+          id,
+          "error:",
+          err,
+        );
+      });
+    }
+
+    return NextResponse.json({ invoice: rowToRecord(row), ...(syncFailed ? { syncFailed: true } : {}) });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

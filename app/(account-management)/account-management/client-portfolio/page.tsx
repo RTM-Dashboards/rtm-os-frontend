@@ -257,7 +257,7 @@ function ClientDetailDrawer({ client, role, onClose, onAssigned }: ClientDetailD
             <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
               {(
                 [
-                  ["Payment Confirmed (Billing)", client.paymentStatus === "confirmed"],
+                  ["Payment Confirmed (Billing)", client.paymentStatus === "Paid"],
                   ["Cleared by Billing", client.cleared],
                   ["AM Assigned", assignSuccess ? true : !!client.assignedAM],
                   ["Kickoff Complete", client.kickoffCompleted],

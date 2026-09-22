@@ -49,7 +49,7 @@ const outstandingBalance = outstanding.reduce((sum, i) => sum + i.amount, 0);
  *   AND currentStatus !== "Lead" && currentStatus !== "Proposal Sent"
  *
  * Business equivalent:
- *   Invoice paid or cleared + payment confirmed/paid + not yet cleared for AM.
+ *   Invoice paid or cleared + payment paid + not yet cleared for AM.
  *   The currentStatus exclusion is inherently satisfied — Business records only exist
  *   once an invoice has been marked Paid (via MarkPaidFlowModal), so no Business
  *   can be a Lead or Proposal Sent.
@@ -58,7 +58,7 @@ function isActivationReady(b: BusinessClient): boolean {
   if (b.cleared) return false;
   const inv = b.invoiceStatus?.toLowerCase() ?? "";
   const pay = b.paymentStatus?.toLowerCase() ?? "";
-  return (inv === "paid" || inv === "cleared") && (pay === "paid" || pay === "confirmed");
+  return (inv === "paid" || inv === "cleared") && pay === "paid";
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────

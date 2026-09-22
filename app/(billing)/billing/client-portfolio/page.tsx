@@ -69,7 +69,7 @@ function toHealthInput(b: BusinessClient): Parameters<typeof computeHealth>[0] {
   else if (inv === "closed") billingStatus = "Closed";
 
   let paymentStatus: "Paid" | "Overdue" | "Unpaid" | "Partial" | "Confirmed" | "N/A" = "Unpaid";
-  if (pay === "paid" || pay === "confirmed") paymentStatus = "Paid";
+  if (pay === "paid") paymentStatus = "Paid";
   else if (pay === "overdue") paymentStatus = "Overdue";
   else if (pay === "partial") paymentStatus = "Partial";
   else if (pay === "n/a") paymentStatus = "N/A";
@@ -113,7 +113,7 @@ function avatarColor(id: string): string {
 //   AND currentStatus !== "Lead" && currentStatus !== "Proposal Sent"
 //
 // Business equivalent:
-//   invoiceStatus "paid" or "cleared", paymentStatus "paid" or "confirmed"
+//   invoiceStatus "paid" or "cleared", paymentStatus "paid"
 //   AND !cleared
 //   Business records only exist once an invoice has been marked Paid — they were
 //   created via MarkPaidFlowModal, so there is no "Lead"/"Proposal Sent" equivalent.
@@ -123,7 +123,7 @@ function isClearanceReady(b: BusinessClient): boolean {
   if (b.cleared) return false;
   const inv = b.invoiceStatus?.toLowerCase() ?? "";
   const pay = b.paymentStatus?.toLowerCase() ?? "";
-  return (inv === "paid" || inv === "cleared") && (pay === "paid" || pay === "confirmed");
+  return (inv === "paid" || inv === "cleared") && pay === "paid";
 }
 
 // ─── Badge variant helpers ────────────────────────────────────────────────────
@@ -140,7 +140,7 @@ function invoiceStatusVariant(s: string): BadgeVariant {
 
 function paymentStatusVariant(s: string): BadgeVariant {
   const l = s?.toLowerCase() ?? "";
-  if (l === "paid" || l === "confirmed") return "success";
+  if (l === "paid") return "success";
   if (l === "overdue") return "error";
   if (l === "partial") return "warning";
   if (l === "unpaid") return "warning";
@@ -277,7 +277,7 @@ type InvoiceStatusOption =
   | "not_issued" | "draft" | "sent" | "overdue" | "paid" | "cancelled";
 
 type PaymentStatusOption =
-  | "unpaid" | "partial" | "paid" | "confirmed" | "overdue" | "n/a";
+  | "unpaid" | "partial" | "paid" | "overdue" | "n/a";
 
 function UpdateStatusModal({ biz, onClose, onUpdate }: {
   biz: BusinessClient;
@@ -297,7 +297,7 @@ function UpdateStatusModal({ biz, onClose, onUpdate }: {
     "not_issued", "draft", "sent", "overdue", "paid", "cancelled",
   ];
   const paymentOptions: PaymentStatusOption[] = [
-    "unpaid", "partial", "paid", "confirmed", "overdue", "n/a",
+    "unpaid", "partial", "paid", "overdue", "n/a",
   ];
 
   function addService(name: string) {
@@ -514,7 +514,7 @@ export default function BillingClientPortfolioPage() {
   }
 
   // Businesses eligible for Billing's activation view:
-  // invoice cleared (invoiceStatus paid/cleared, paymentStatus paid/confirmed)
+  // invoice cleared (invoiceStatus paid/cleared, paymentStatus paid)
   // but NOT yet granted clearance
   const pendingClearance = businesses.filter(isClearanceReady);
 
