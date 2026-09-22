@@ -310,7 +310,26 @@ model User {
 
   // Optional profile fields — populated as the team grows into role management
   department  String?
+
+  // Role and access control
+  // Allowed values (enforced server-side in lib/auth/): "SystemAdmin" | "Manager" | "Member"
+  // null means no role has been assigned yet; access is denied until a role is set.
   role        String?
+
+  // Account lifecycle status.
+  // Allowed values (enforced server-side in lib/auth/): "pending" | "active" | "disabled"
+  // New rows default to "pending". Access requires status = "active".
+  status      String   @default("pending")
+
+  // Invite provenance — nullable until the invite system is built.
+  // invitedBy: the User.id of whoever sent the invite (null for the seed SystemAdmin).
+  invitedBy   String?
+  // invitedAt: ISO-8601 string, set when the invite was created.
+  invitedAt   String?
+
+  // Set on every successful login by the auth callback.
+  // Will power the "Last Active" column on the Team Members page.
+  lastLoginAt String?
 
   // Audit timestamps — ISO-8601 strings, matching existing model conventions
   createdAt   String   @default("")
@@ -581,6 +600,12 @@ model Business {
   clientId            String
 
   // ── Billing state (per domain, not per client) ─────────────────────────────
+  // CACHED SUMMARY — these four fields mirror the most recent Invoice for this
+  // Business. They are written ONLY by the invoice status path (POST and PATCH
+  // /api/invoices via syncBusinessCachedSummary). Do NOT write them directly
+  // from any other handler or page; doing so breaks the "Invoice is authoritative"
+  // rule established in Phase C.
+  //
   // Invoice and payment status for THIS domain's subscription.
   // Valid invoiceStatus values: "none" | "pending" | "sent" | "paid" | "overdue" | "cancelled"
   // Valid paymentStatus values: "none" | "awaiting" | "failed" | "confirmed"

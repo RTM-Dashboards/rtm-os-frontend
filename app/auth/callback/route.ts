@@ -21,11 +21,32 @@
 // Flow:
 //   1. Exchange the ?code param for a session.
 //   2. Read the authenticated user's email.
-//   3. If the domain is not the allowed domain: sign out and redirect to /login?error=domain_not_allowed.
-//   4. If the domain is valid: upsert the Prisma User row, then redirect to /admin.
+//   3. If the domain is not the allowed domain: sign out and redirect to
+//      /login?error=domain_not_allowed.
+//   4. Upsert the Prisma User row. On failure: sign out and redirect to
+//      /login?error=account_error — the upsert is now BLOCKING (A2).
+//   5. Set lastLoginAt on every successful login.
+//   6. Redirect to /admin.
 //
-// The upsert (step 4) is non-blocking: if it fails, the user still reaches /admin.
-// The failure is logged loudly so it surfaces in Vercel logs.
+// ── A2: Upsert fields written on UPDATE ──────────────────────────────────────
+//   The update branch writes ONLY:
+//     - email    (corrects email changes in Google account, non-sensitive)
+//     - name     (corrects display name changes in Google account)
+//     - lastLoginAt  (timestamp of this login — used by Team Members page)
+//     - updatedAt    (audit trail)
+//
+//   The update branch NEVER writes:
+//     - role        (set at invite time only, login must never change it)
+//     - department  (set at invite time only, login must never change it)
+//     - status      (set at invite time only, login must never change it)
+//     - invitedBy / invitedAt  (invite provenance, written once at invite time)
+//     - createdAt   (immutable after row creation)
+//     - id          (primary key, never patched)
+//
+// ── A2: Failure is now blocking ───────────────────────────────────────────────
+//   Previously a failed upsert was swallowed and the user still reached /admin.
+//   Once access depends on the User row, a missing row is a silent security hole.
+//   A upsert failure now: signs the user out, redirects to /login with an error.
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -91,8 +112,16 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // ── Upsert the Prisma User row ───────────────────────────────────────────
-  // Deliberately non-blocking. A database failure must not prevent login.
+  // ── Upsert the Prisma User row (A2: now BLOCKING) ────────────────────────
+  //
+  // A failed upsert previously allowed the user through to /admin even with
+  // no User row. Now that access depends on the User row being present and
+  // having a role set, a missing row is a security hole. Failure now blocks:
+  // sign out, redirect to /login with an honest error.
+  //
+  // The update branch writes ONLY: email, name, lastLoginAt, updatedAt.
+  // It NEVER writes role, department, status, invitedBy, invitedAt, or createdAt.
+  // New rows get role null and status "pending" — never defaulted to any role.
   try {
     const { prisma } = await import("@/lib/db/prisma");
     const displayName =
@@ -100,27 +129,48 @@ export async function GET(request: NextRequest) {
       user.user_metadata?.name ??
       user.email;
 
+    const now = new Date().toISOString();
+
     await prisma.user.upsert({
       where: { id: user.id },
       update: {
-        email: user.email,
-        name: displayName,
-        updatedAt: new Date().toISOString(),
+        // Fields that reflect the current Google account state — safe to refresh.
+        email:       user.email,
+        name:        displayName,
+        // A2: set lastLoginAt on every successful login.
+        lastLoginAt: now,
+        updatedAt:   now,
+        // NEVER written by update: role, department, status, invitedBy, invitedAt, createdAt.
       },
       create: {
-        id: user.id,
-        email: user.email,
-        name: displayName,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        id:        user.id,
+        email:     user.email,
+        name:      displayName,
+        // New rows: no role, no department, status "pending" (column default).
+        // The invite flow will set role and status when it lands; until then
+        // the user is in "pending" state and access is denied.
+        role:      null,
+        department: null,
+        // status defaults to "pending" from the column default — not set here
+        // explicitly so that if the default changes, the schema is the authority.
+        createdAt: now,
+        updatedAt: now,
+        lastLoginAt: now,
       },
     });
   } catch (upsertError) {
-    // Log loudly — visible in Vercel Function logs and local terminal.
-    // The user still proceeds; this must not block login.
+    // A2: upsert failure is now BLOCKING. A missing User row means the access
+    // check in lib/auth/ will deny entry. Rather than let the user through to
+    // an immediate 403 on every page, block here at login with a clear message.
     console.error(
-      "[auth/callback] WARN: Prisma User upsert failed. User can still sign in. Error:",
+      "[auth/callback] FATAL: Prisma User upsert failed. Blocking login. Error:",
       upsertError
+    );
+    await supabase.auth.signOut();
+    return NextResponse.redirect(
+      `${origin}/login?error=account_error&message=${encodeURIComponent(
+        "Your account could not be verified. Please contact your manager."
+      )}`
     );
   }
 
