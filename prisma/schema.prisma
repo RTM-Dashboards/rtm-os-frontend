@@ -845,6 +845,27 @@ model SalesHandoff {
   // Parsed from summaryFields["term-length"], leading integer e.g. "12 months" → 12
   termLengthMonths      Int?
 
+  // ── Contact and domain fields (carried from the originating contract) ────────────
+  // All nullable: rows created before this migration, or from contracts without
+  // a website, must not break. Billing sees null and can fill manually.
+
+  // Normalised domain (no scheme, no www, no trailing slash, lowercased).
+  // Carried from SalesContractRecord.domain via RequestInvoiceButton.
+  domain                String?
+
+  // Contact person (not the business name). From clientInfo.contactName.
+  contactName           String?
+
+  // From clientInfo.contactEmail.
+  contactEmail          String?
+
+  // From clientInfo.contactPhone.
+  contactPhone          String?
+
+  // Total contract value in cents: (monthly * termMonths) + setup.
+  // Null when either monthly or term is unknown.
+  contractAmountCents   Int?
+
   // Billing queue filters: submittedToBilling, processed
   @@index([submittedToBilling])
   @@index([processed])

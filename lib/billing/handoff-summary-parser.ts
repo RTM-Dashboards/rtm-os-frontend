@@ -16,10 +16,11 @@
 // NULL means "Billing must enter this manually."
 
 export interface ParsedBillingFields {
-  monthlyValueCents: number | null;
-  setupFeeCents:     number | null;
-  paymentTerms:      string | null;
-  termLengthMonths:  number | null;
+  monthlyValueCents:   number | null;
+  setupFeeCents:       number | null;
+  paymentTerms:        string | null;
+  termLengthMonths:    number | null;
+  contractAmountCents: number | null;
 }
 
 /**
@@ -107,9 +108,12 @@ export function parseBillingFields(
   };
 
   return {
-    monthlyValueCents: parseCents(get("monthly-recurring-revenue")),
-    setupFeeCents:     parseCents(get("setup-fees")),
-    paymentTerms:      parsePaymentTerms(get("payment-terms")),
-    termLengthMonths:  parseTermLengthMonths(get("term-length")),
+    monthlyValueCents:   parseCents(get("monthly-recurring-revenue")),
+    setupFeeCents:       parseCents(get("setup-fees")),
+    paymentTerms:        parsePaymentTerms(get("payment-terms")),
+    termLengthMonths:    parseTermLengthMonths(get("term-length")),
+    // Parsed from summaryFields["contract-amount"] when present.
+    // Strip $, commas, and /mo; handle NaN → null. Never default to 0.
+    contractAmountCents: parseCents(get("contract-amount")),
   };
 }

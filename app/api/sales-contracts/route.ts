@@ -56,6 +56,12 @@ export interface SalesContractRecord {
   termLength: string;
   /** Payment term key, e.g. "net-30" */
   paymentTerm: string;
+  /** Normalised domain (no scheme, no www, no trailing slash, lowercased). */
+  domain: string | null;
+  /** Raw setup fee in dollars (from budgetResult.totalSetup). Null when unknown. */
+  setupFee: number | null;
+  /** Total contract value in cents: (monthly * termMonths) + setup. Null when either is unknown. */
+  contractAmountCents: number | null;
   /** ISO string or null */
   signedDate: string | null;
   createdAt: string;
@@ -161,6 +167,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       monthlyValue: incoming.monthlyValue ?? "",
       termLength: incoming.termLength ?? "12 months",
       paymentTerm: incoming.paymentTerm ?? "net-30",
+      domain: incoming.domain ?? null,
+      setupFee: incoming.setupFee ?? null,
+      contractAmountCents: incoming.contractAmountCents ?? null,
       signedDate: incoming.signedDate ?? null,
       createdAt: now,
       updatedAt: now,

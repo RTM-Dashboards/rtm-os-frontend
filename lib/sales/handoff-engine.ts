@@ -45,6 +45,16 @@ export interface HandoffRecord {
   processedAt?: string;
   /** The MASTER_CLIENTS id created when Billing processed this handoff */
   processedClientId?: string;
+  /** Normalised domain (no scheme, no www, no trailing slash, lowercased). Null when not available. */
+  domain?: string | null;
+  /** Contact person name (not the business name). Null when not available. */
+  contactName?: string | null;
+  /** Contact email. Null when not available. */
+  contactEmail?: string | null;
+  /** Contact phone. Null when not available. */
+  contactPhone?: string | null;
+  /** Total contract value in cents: (monthly * termMonths) + setup. Null when either is unknown. */
+  contractAmountCents?: number | null;
 }
 
 // ─── Handoff Number Generator ─────────────────────────────────────────────────
@@ -57,12 +67,21 @@ export function generateHandoffNumber(): string {
 
 // ─── Build Handoff Record ─────────────────────────────────────────────────────
 
+export interface HandoffContactFields {
+  domain?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  contractAmountCents?: number | null;
+}
+
 export function buildHandoffRecord(
   clientName: string,
   contractNumber: string,
   contractId: string,
   preparedBy: string,
-  initialSummaryFields?: Record<string, string>
+  initialSummaryFields?: Record<string, string>,
+  contactFields?: HandoffContactFields
 ): HandoffRecord {
   const summaryFields: Record<string, string> = initialSummaryFields ?? {};
 
@@ -107,6 +126,14 @@ export function buildHandoffRecord(
     summaryFields,
     completionPercentage,
     readyToSubmit,
+    // Carry contact/domain fields if supplied
+    ...(contactFields ? {
+      domain:               contactFields.domain               ?? null,
+      contactName:          contactFields.contactName          ?? null,
+      contactEmail:         contactFields.contactEmail         ?? null,
+      contactPhone:         contactFields.contactPhone         ?? null,
+      contractAmountCents:  contactFields.contractAmountCents  ?? null,
+    } : {}),
   };
 }
 

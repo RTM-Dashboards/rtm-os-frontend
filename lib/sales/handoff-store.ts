@@ -17,7 +17,7 @@
 //   updateHandoffInStore()           → persists via PATCH API + updates local snapshot
 
 import { buildHandoffRecord } from "./handoff-engine";
-import type { HandoffRecord } from "./handoff-engine";
+import type { HandoffRecord, HandoffContactFields } from "./handoff-engine";
 import {
   fetchSalesHandoffs,
   fetchSalesHandoffByContract,
@@ -77,7 +77,8 @@ export async function getOrCreateHandoffForContract(
   clientName: string,
   contractNumber: string,
   preparedBy: string,
-  summaryFields: Record<string, string>
+  summaryFields: Record<string, string>,
+  contactFields?: HandoffContactFields
 ): Promise<HandoffRecord> {
   // Check snapshot first (fast path)
   const existingInSnapshot = _snapshot.find((h) => h.contractId === contractId);
@@ -99,7 +100,8 @@ export async function getOrCreateHandoffForContract(
     contractNumber,
     contractId,
     preparedBy,
-    summaryFields
+    summaryFields,
+    contactFields
   );
   const persisted = await upsertSalesHandoff(record);
 

@@ -60,6 +60,11 @@ export interface HandoffRecord {
   processed?: boolean;
   processedAt?: string;
   processedClientId?: string;
+  domain?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  contractAmountCents?: number | null;
 }
 
 // ── DB row ↔ HandoffRecord ─────────────────────────────────────────────────────
@@ -87,6 +92,11 @@ function rowToRecord(row: HandoffRow): HandoffRecord {
     processed:            row.processed,
     processedAt:          row.processedAt ?? undefined,
     processedClientId:    row.processedClientId ?? undefined,
+    domain:               row.domain ?? null,
+    contactName:          row.contactName ?? null,
+    contactEmail:         row.contactEmail ?? null,
+    contactPhone:         row.contactPhone ?? null,
+    contractAmountCents:  row.contractAmountCents ?? null,
   };
 }
 
@@ -169,6 +179,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     setupFeeCents:        billing.setupFeeCents,
     paymentTerms:         billing.paymentTerms,
     termLengthMonths:     billing.termLengthMonths,
+    // Contact and domain fields
+    domain:               record.domain               ?? null,
+    contactName:          record.contactName          ?? null,
+    contactEmail:         record.contactEmail         ?? null,
+    contactPhone:         record.contactPhone         ?? null,
+    // contractAmountCents: prefer the typed field from the record (computed at creation
+    // from monthly * termMonths + setup); fall back to the summaryFields parse of
+    // "contract-amount" when the record doesn't carry it directly.
+    contractAmountCents:  record.contractAmountCents  ?? billing.contractAmountCents ?? null,
   };
 
   try {
@@ -230,6 +249,11 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (patch.processed            !== undefined) data.processed            = patch.processed;
     if (patch.processedAt          !== undefined) data.processedAt          = patch.processedAt;
     if (patch.processedClientId    !== undefined) data.processedClientId    = patch.processedClientId;
+    if (patch.domain               !== undefined) data.domain               = patch.domain;
+    if (patch.contactName          !== undefined) data.contactName          = patch.contactName;
+    if (patch.contactEmail         !== undefined) data.contactEmail         = patch.contactEmail;
+    if (patch.contactPhone         !== undefined) data.contactPhone         = patch.contactPhone;
+    if (patch.contractAmountCents  !== undefined) data.contractAmountCents  = patch.contractAmountCents;
 
     // When summaryFields is patched, re-parse the billing columns from the
     // merged summaryFields (existing + patch) so they stay in sync.

@@ -17,6 +17,7 @@
 //   buildContractFromProposal()→ derive a SalesContractRecord from a proposal
 
 import type { SalesContractRecord, SalesContractStatus } from "@/app/api/sales-contracts/route";
+import { normalizeDomain } from "@/lib/clients/domain";
 
 export type { SalesContractRecord, SalesContractStatus };
 
@@ -66,6 +67,7 @@ export interface ProposalForContract {
   clientInfo: {
     name: string;
     businessName: string;
+    website?: string;
     contactName: string;
     contactEmail: string;
     contactPhone: string;
@@ -151,6 +153,32 @@ export function buildContractFromProposal(
     proposal.owner ||
     "Sales Representative";
 
+  // Domain — normalise via the same function used by /api/businesses
+  // Source: proposal.clientInfo.website
+  const rawWebsite = proposal.clientInfo?.website ?? "";
+  const domain = rawWebsite.trim() !== "" ? normalizeDomain(rawWebsite) : null;
+
+  // Setup fee — raw dollar amount from budgetResult.totalSetup
+  // Null (not 0) when the proposal does not carry a setup figure, so that
+  // Billing can distinguish "no setup fee" from "setup fee unknown".
+  const setupFee = (proposal.budgetResult?.totalSetup != null && proposal.budgetResult.totalSetup > 0)
+    ? proposal.budgetResult.totalSetup
+    : proposal.budgetResult?.totalSetup === 0
+    ? 0
+    : null;
+
+  // Total contract amount in cents: (monthly * termMonths) + setup.
+  // Uses the parsed termLength integer; null when either is unknown.
+  const termMonths =
+    rawTerm === "Month-to-Month" ? null
+    : rawTerm.includes("24") ? 24
+    : rawTerm.includes("6") ? 6
+    : 12;
+  const contractAmountCents =
+    monthly > 0 && termMonths !== null
+      ? Math.round(((monthly * termMonths) + (setupFee ?? 0)) * 100)
+      : null;
+
   const record: SalesContractRecord = {
     id: contractNumber,
     contractNumber,
@@ -167,6 +195,9 @@ export function buildContractFromProposal(
     monthlyValue,
     termLength,
     paymentTerm,
+    domain,
+    setupFee,
+    contractAmountCents,
     signedDate: null,
     createdAt: now,
     updatedAt: now,

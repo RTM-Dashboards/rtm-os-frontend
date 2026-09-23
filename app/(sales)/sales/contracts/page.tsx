@@ -45,29 +45,49 @@ function RequestInvoiceButton({
   async function handleClick() {
     if (creating) return;
     setCreating(true);
-    // Build summary fields from real contract data
-    const summaryFields: Record<string, string> = {
-      "client-name": contract.clientName,
-      "contract-number": contract.contractNumber,
-      "services-sold": contract.services.join(", "),
-      "monthly-recurring-revenue": contract.monthlyValue,
-      "payment-terms": contract.paymentTerm === "net-15"
+    // Build summary fields from real contract data.
+    // "setup-fees" is only written when the contract carries a real value.
+    // Null means "Billing must confirm". Zero means "no setup fee".
+    // Never write a hardcoded "$0" for an unknown value.
+    const paymentTermsLabel =
+      contract.paymentTerm === "net-15"
         ? "Net 15"
         : contract.paymentTerm === "net-45"
         ? "Net 45"
         : contract.paymentTerm === "upon-receipt"
         ? "Due Upon Receipt"
-        : "Net 30",
+        : "Net 30";
+
+    const summaryFields: Record<string, string> = {
+      "client-name": contract.clientName,
+      "contract-number": contract.contractNumber,
+      "services-sold": contract.services.join(", "),
+      "monthly-recurring-revenue": contract.monthlyValue,
+      "payment-terms": paymentTermsLabel,
       "term-length": contract.termLength,
-      "setup-fees": "$0",
     };
+
+    // Only write setup-fees when the contract has a real value (0 is legitimate; null is unknown).
+    if (contract.setupFee !== null && contract.setupFee !== undefined) {
+      summaryFields["setup-fees"] = `$${contract.setupFee.toLocaleString()}`;
+    }
+    // If contract.setupFee is null, the key is absent — parser will return null — Billing must confirm.
+
     try {
       const handoff = await getOrCreateHandoffForContract(
         contractId,
         contract.clientName,
         contract.contractNumber,
         contract.assignedRep,
-        summaryFields
+        summaryFields,
+        // Contact and domain fields carried from the contract
+        {
+          domain:               contract.domain ?? null,
+          contactName:          contract.contactName || null,
+          contactEmail:         contract.contactEmail || null,
+          contactPhone:         contract.contactPhone || null,
+          contractAmountCents:  contract.contractAmountCents ?? null,
+        }
       );
       router.push(`/sales/handoffs?handoffId=${handoff.id}&action=request-invoice`);
     } finally {

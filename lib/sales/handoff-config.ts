@@ -7,7 +7,6 @@
 
 export type HandoffChecklistItemId =
   | "contract-signed"
-  | "invoice-created"
   | "payment-terms-confirmed"
   | "services-verified"
   | "am-assigned"
@@ -57,21 +56,12 @@ export const HANDOFF_CHECKLIST: HandoffChecklistItemDef[] = [
     order: 1,
   },
   {
-    id: "invoice-created",
-    label: "Invoice Created",
-    description: "Billing team creates the setup and first-month invoice.",
-    required: true,
-    autoCompletable: false,
-    order: 2,
-    blockedBy: ["contract-signed"],
-  },
-  {
     id: "payment-terms-confirmed",
     label: "Payment Terms Confirmed",
     description: "Payment terms from contract are confirmed in billing system.",
     required: true,
     autoCompletable: true,
-    order: 3,
+    order: 2,
     blockedBy: ["contract-signed"],
   },
   {
@@ -81,7 +71,7 @@ export const HANDOFF_CHECKLIST: HandoffChecklistItemDef[] = [
       "All services from the contract scope are verified against the billing record.",
     required: true,
     autoCompletable: true,
-    order: 4,
+    order: 3,
     blockedBy: ["contract-signed"],
   },
   {
@@ -90,7 +80,7 @@ export const HANDOFF_CHECKLIST: HandoffChecklistItemDef[] = [
     description: "Account Manager is assigned to the client before activation.",
     required: true,
     autoCompletable: false,
-    order: 5,
+    order: 4,
     blockedBy: ["contract-signed"],
   },
   {
@@ -99,7 +89,7 @@ export const HANDOFF_CHECKLIST: HandoffChecklistItemDef[] = [
     description: "All fulfillment departments are notified of the incoming client.",
     required: true,
     autoCompletable: false,
-    order: 6,
+    order: 5,
     blockedBy: ["am-assigned"],
   },
   {
@@ -108,8 +98,13 @@ export const HANDOFF_CHECKLIST: HandoffChecklistItemDef[] = [
     description: "A formal activation record is created in the Billing workspace.",
     required: true,
     autoCompletable: false,
-    order: 7,
-    blockedBy: ["invoice-created", "am-assigned"],
+    order: 6,
+    // Was previously blocked by ["invoice-created", "am-assigned"].
+    // invoice-created was removed: Billing creates the invoice after receiving the
+    // handoff; Sales cannot confirm it exists before submitting. The gate is now
+    // payment-terms-confirmed (auto-completed when payment terms are present) and
+    // am-assigned (manual, ensures an AM is in place before Billing activates).
+    blockedBy: ["payment-terms-confirmed", "am-assigned"],
   },
   {
     id: "billing-team-notified",
@@ -117,7 +112,7 @@ export const HANDOFF_CHECKLIST: HandoffChecklistItemDef[] = [
     description: "Billing team receives the completed handoff package.",
     required: true,
     autoCompletable: false,
-    order: 8,
+    order: 7,
     blockedBy: ["activation-record-created"],
   },
 ];
