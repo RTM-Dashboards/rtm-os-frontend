@@ -136,14 +136,25 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
 
     if (actor.role === "Manager") {
-      // Own department + themselves. If department is null, fall through to
-      // Member behaviour (only themselves) — a Manager with no department set
-      // cannot scope to a department.
+      // Own department + themselves + unassigned users (department null).
+      //
+      // Unassigned users are included because a Manager's primary purpose on
+      // the Users page is finding newly-signed-in people and claiming them into
+      // their department. Without visibility of null-department users, the
+      // claim rule is unreachable from the UI.
+      //
+      // This does NOT leak users from other departments: the OR clauses are
+      // { department: actor.department }, { department: null }, and { id: actor.id }.
+      // A Billing Manager cannot see any Sales (or any other department) row.
+      //
+      // If the Manager themselves has no department set, fall through to Member
+      // behaviour (only themselves) — they cannot scope a department filter.
       if (actor.department) {
         const rows = await prisma.user.findMany({
           where: {
             OR: [
               { department: actor.department },
+              { department: null },
               { id: actor.id },
             ],
           },
@@ -345,24 +356,53 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     }
   }
 
-  // Manager-specific limits (Rule 3):
-  //   - May only set Members (not create Managers or above).
-  //   - May only act within their own department.
+  // Manager-specific limits (Rule 3 + claim rule):
+  //
+  //   Original Rule 3:
+  //     - May only set Members (not create Managers or above).
+  //     - May only act within their own department.
+  //
+  //   Claim rule (NEW — extends Rule 3, does not weaken it):
+  //     A Manager MAY claim a user whose department is NULL into the Manager's
+  //     OWN department, provided:
+  //       (a) The target currently has no role, or role Member (rank ≤ 1).
+  //       (b) The Manager sets them to Member only.
+  //       (c) The department in the patch equals the Manager's OWN department.
+  //     A Manager may NOT:
+  //       - Move a user OUT of another department (department must be null).
+  //       - Claim into any department other than their own.
+  //       - Claim someone whose current role is Manager, Executive, or SystemAdmin.
+  //       - Set any role other than Member on a claim.
+  //     All other tier rules are unchanged.
+
   if (actor.role === "Manager") {
-    // Rule 3a: target must currently be a Member (rank 1) or have no role.
-    // Managers cannot demote Managers or anyone above.
-    if (targetCurrentRank > 1) {
+    // Manager must have a department to do anything.
+    if (!actor.department) {
       return NextResponse.json(
         {
           error:
-            `Managers may only modify Members. ${targetRow.email} currently ` +
-            `holds the role "${targetRow.role}", which Managers cannot change.`,
+            "Your account has no department set. " +
+            "A Manager must have a department to modify users.",
         },
         { status: 403 },
       );
     }
 
-    // Rule 3b: may not assign a role above Member (i.e. cannot create a Manager).
+    // Rule 3a: target must currently be a Member (rank 1) or have no role (rank 0).
+    // Managers cannot modify Managers or anyone above.
+    if (targetCurrentRank > 1) {
+      return NextResponse.json(
+        {
+          error:
+            `Managers may only modify Members or unassigned users. ` +
+            `${targetRow.email} currently holds the role "${targetRow.role}", ` +
+            `which Managers cannot change.`,
+        },
+        { status: 403 },
+      );
+    }
+
+    // Rule 3b: may not assign a role above Member.
     if (patch.role !== undefined && patch.role !== "Member") {
       return NextResponse.json(
         {
@@ -374,28 +414,45 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    // Rule 3c (& Rule 6): department scoping. Manager must have a department,
-    // and the target must be in that same department.
-    if (!actor.department) {
-      return NextResponse.json(
-        {
-          error:
-            "Your account has no department set. " +
-            "A Manager must have a department to modify users.",
-        },
-        { status: 403 },
-      );
-    }
-    if (targetRow.department !== actor.department) {
+    // Rule 3c / claim rule: department scoping.
+    //
+    //   Case A — target is already in the Manager's own department: allowed.
+    //   Case B — target has department null (unassigned): this is the claim path.
+    //     The patch may set department, but only to the Manager's OWN department.
+    //     The patch must also set role to Member (or leave it unset, which is
+    //     fine — status-only patches on unassigned users are also permitted).
+    //   Case C — target is in ANY other department: forbidden (unchanged rule).
+
+    if (targetRow.department === null) {
+      // Claim path: unassigned user. Manager may only set them into their own department.
+      if (
+        patch.department !== undefined &&
+        patch.department !== actor.department
+      ) {
+        return NextResponse.json(
+          {
+            error:
+              `You can only claim an unassigned user into your own department ` +
+              `(${actor.department}). You cannot assign them to "${patch.department}".`,
+          },
+          { status: 403 },
+        );
+      }
+      // All other checks already passed (role ≤ Member, no rank elevation).
+      // Fall through to the update.
+    } else if (targetRow.department !== actor.department) {
+      // Target is in a different, non-null department: forbidden.
       return NextResponse.json(
         {
           error:
             `You can only modify users in your own department (${actor.department}). ` +
-            `${targetRow.email} is in "${targetRow.department ?? "no department"}".`,
+            `${targetRow.email} is in "${targetRow.department}" and cannot be moved ` +
+            `by a Manager. Only a SystemAdmin or Executive can reassign them.`,
         },
         { status: 403 },
       );
     }
+    // Case A: target.department === actor.department — no extra check needed.
   }
 
   // 9. Apply the update.
