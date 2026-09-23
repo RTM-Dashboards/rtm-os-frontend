@@ -2,15 +2,15 @@
 
 import { WorkspaceProfilePage } from "@/components/workspace";
 import { getWorkspace } from "@/lib/workspaces";
-import { salesProfile } from "@/lib/workspace-people";
 
 const workspace = getWorkspace("sales")!;
 
-export default function SalesProfilePage() {
+export default function ProfilePage() {
   return (
     <WorkspaceProfilePage
       workspace={workspace}
-      profile={salesProfile}
-      teamRoute="/sales/team-members"rolesRoute="/sales/roles"/>
+      teamRoute="/sales/team-members"
+      rolesRoute="/sales/roles"
+    />
   );
 }

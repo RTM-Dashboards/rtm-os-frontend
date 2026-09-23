@@ -1,6 +1,15 @@
 /**
- * Shared mock data for workspace user management pages.
- * Used by WorkspaceProfilePage, WorkspaceTeamMembersPage, WorkspaceRolesPage.
+ * Workspace Roles & Permissions data.
+ * Used by WorkspaceRolesPage (ten department roles pages) and
+ * SeoTeamPerformanceRollup (SEO dashboard sub-team KPI rollup).
+ *
+ * WorkspaceProfilePage and WorkspaceTeamMembersPage now read from /api/users
+ * via lib/users/users-api.ts and no longer need *Profile or *Members exports.
+ *
+ * What was removed: all ten *Profile WorkspaceProfileData exports and all
+ * *Members TeamMemberRow[] exports EXCEPT seoLocalMembers, which is still
+ * consumed by SeoTeamPerformanceRollup for sub-team (seoTeam) grouping.
+ * WorkspaceProfileData was also removed. TeamMemberRow is kept for seoLocalMembers.
  */
 
 import type { StatusVariant } from "@/components/ui";
@@ -42,21 +51,6 @@ export interface PermissionArea {
   perms: Record<string, PermLevel>;
 }
 
-export interface WorkspaceProfileData {
-  name: string;
-  initials: string;
-  email: string;
-  department: string;
-  role: string;
-  accessLevel: string;
-  accessVariant: StatusVariant;
-  phone?: string;
-  assignedClients: string[];
-  lastLogin: string;
-  joinedDate: string;
-  timezone: string;
-}
-
 //  Permission level config (shared) 
 
 export const permLevelConfig: Record<
@@ -72,108 +66,6 @@ export const permLevelConfig: Record<
 //  Per-workspace data 
 
 //  Account Management 
-
-export const accountManagementProfile: WorkspaceProfileData = {
-  name: "Jordan Mitchell",
-  initials: "JM",
-  email: "jordan.mitchell@rtm.agency",
-  department: "Account Management",
-  role: "Senior Account Manager",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 204-8811",
-  assignedClients: ["Apex Roofing", "Pacific Dental", "Summit Landscaping"],
-  lastLogin: "Today at 9:14 AM",
-  joinedDate: "March 12, 2022",
-  timezone: "PST (UTC−8)",
-};
-
-export const accountManagementMembers: TeamMemberRow[] = [
-  {
-    user: "Dana Pham",
-    initials: "DP",
-    email: "dana.pham@rtm.agency",
-    role: "Department Head",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 9:02 AM",
-  },
-  {
-    user: "Jordan Mitchell",
-    initials: "JM",
-    email: "jordan.mitchell@rtm.agency",
-    role: "Senior Account Manager",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Apex Roofing", "Pacific Dental", "Summit Landscaping"],
-    lastActive: "Today, 9:14 AM",
-  },
-  {
-    user: "Sarah Kowalski",
-    initials: "SK",
-    email: "sarah.kowalski@rtm.agency",
-    role: "Account Manager",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Sunbelt HVAC", "Metro Dental"],
-    lastActive: "Today, 8:52 AM",
-  },
-  {
-    user: "Mike Torres",
-    initials: "MT",
-    email: "mike.torres@rtm.agency",
-    role: "Account Manager",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Harbor Auto Group"],
-    lastActive: "Yesterday, 4:30 PM",
-  },
-  {
-    user: "Alex Rivera",
-    initials: "AR",
-    email: "alex.rivera@rtm.agency",
-    role: "Junior Account Manager",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Blue Ridge Plumbing", "Green Valley Pools"],
-    lastActive: "Today, 7:45 AM",
-  },
-  {
-    user: "Chris Nguyen",
-    initials: "CN",
-    email: "chris.nguyen@rtm.agency",
-    role: "AM Coordinator",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "On Leave",
-    statusVariant: "warning",
-    assignedClients: ["Summit Landscaping"],
-    lastActive: "3 days ago",
-  },
-  {
-    user: "Priya Sharma",
-    initials: "PS",
-    email: "priya.sharma@rtm.agency",
-    role: "Reporting Specialist",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (Read-only)"],
-    lastActive: "Today, 6:58 AM",
-  },
-];
 
 export const accountManagementRoles: RoleDef[] = [
   {
@@ -267,96 +159,6 @@ export const accountManagementPermissions: PermissionArea[] = [
 ];
 
 //  Sales 
-
-export const salesProfile: WorkspaceProfileData = {
-  name: "Marcus Webb",
-  initials: "MW",
-  email: "marcus.webb@rtm.agency",
-  department: "Sales",
-  role: "Senior Sales Executive",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 318-7422",
-  assignedClients: ["New Prospects", "Northgate Dental", "SolarEdge Installs"],
-  lastLogin: "Today at 8:47 AM",
-  joinedDate: "July 3, 2021",
-  timezone: "EST (UTC−5)",
-};
-
-export const salesMembers: TeamMemberRow[] = [
-  {
-    user: "Rachel Torres",
-    initials: "RT",
-    email: "rachel.torres@rtm.agency",
-    role: "Sales Director",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 8:35 AM",
-  },
-  {
-    user: "Marcus Webb",
-    initials: "MW",
-    email: "marcus.webb@rtm.agency",
-    role: "Senior Sales Executive",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["New Prospects", "Northgate Dental", "SolarEdge Installs"],
-    lastActive: "Today, 8:47 AM",
-  },
-  {
-    user: "Caitlin Park",
-    initials: "CP",
-    email: "caitlin.park@rtm.agency",
-    role: "Sales Executive",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["TrueGreen Lawn", "FastTrack Legal"],
-    lastActive: "Today, 9:01 AM",
-  },
-  {
-    user: "Devon Hall",
-    initials: "DH",
-    email: "devon.hall@rtm.agency",
-    role: "Sales Development Rep",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Cold Outreach"],
-    lastActive: "Today, 7:58 AM",
-  },
-  {
-    user: "Brianna Lee",
-    initials: "BL",
-    email: "brianna.lee@rtm.agency",
-    role: "Sales Coordinator",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Pipeline Support"],
-    lastActive: "Yesterday, 5:12 PM",
-  },
-  {
-    user: "Evan Cho",
-    initials: "EC",
-    email: "evan.cho@rtm.agency",
-    role: "Sales Analyst",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "On Leave",
-    statusVariant: "warning",
-    assignedClients: ["— (Read-only)"],
-    lastActive: "4 days ago",
-  },
-];
 
 export const salesRoles: RoleDef[] = [
   {
@@ -456,96 +258,6 @@ export const salesPermissions: PermissionArea[] = [
 
 //  Billing 
 
-export const billingProfile: WorkspaceProfileData = {
-  name: "Cassandra Hill",
-  initials: "CH",
-  email: "cassandra.hill@rtm.agency",
-  department: "Billing",
-  role: "Billing Operations Manager",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 492-3301",
-  assignedClients: ["Harbor Auto Group", "Pacific Dental", "Metro Dental"],
-  lastLogin: "Today at 7:55 AM",
-  joinedDate: "January 18, 2020",
-  timezone: "CST (UTC−6)",
-};
-
-export const billingMembers: TeamMemberRow[] = [
-  {
-    user: "Thomas Greer",
-    initials: "TG",
-    email: "thomas.greer@rtm.agency",
-    role: "Billing Director",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 8:10 AM",
-  },
-  {
-    user: "Cassandra Hill",
-    initials: "CH",
-    email: "cassandra.hill@rtm.agency",
-    role: "Billing Operations Manager",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Harbor Auto Group", "Pacific Dental", "Metro Dental"],
-    lastActive: "Today, 7:55 AM",
-  },
-  {
-    user: "Nadia Okonkwo",
-    initials: "NO",
-    email: "nadia.okonkwo@rtm.agency",
-    role: "Billing Specialist",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Sunbelt HVAC", "Blue Ridge Plumbing"],
-    lastActive: "Today, 9:22 AM",
-  },
-  {
-    user: "Felix Reyes",
-    initials: "FR",
-    email: "felix.reyes@rtm.agency",
-    role: "Collections Specialist",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Apex Roofing", "Summit Landscaping"],
-    lastActive: "Today, 8:33 AM",
-  },
-  {
-    user: "Yuki Tanaka",
-    initials: "YT",
-    email: "yuki.tanaka@rtm.agency",
-    role: "Billing Analyst",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (Analysis only)"],
-    lastActive: "Yesterday, 3:45 PM",
-  },
-  {
-    user: "Sam Butler",
-    initials: "SB",
-    email: "sam.butler@rtm.agency",
-    role: "Finance Viewer",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "Inactive",
-    statusVariant: "neutral",
-    assignedClients: ["— (Read-only)"],
-    lastActive: "2 weeks ago",
-  },
-];
-
 export const billingRoles: RoleDef[] = [
   {
     name: "Department Head",
@@ -644,84 +356,6 @@ export const billingPermissions: PermissionArea[] = [
 
 //  Content 
 
-export const contentProfile: WorkspaceProfileData = {
-  name: "Maya Torres",
-  initials: "MT",
-  email: "maya.torres@rtm.agency",
-  department: "Content",
-  role: "Senior Content Strategist",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 318-7742",
-  assignedClients: ["Apex Roofing", "Summit Landscaping", "Green Valley Dental"],
-  lastLogin: "Today at 8:30 AM",
-  joinedDate: "July 5, 2021",
-  timezone: "PST (UTC−8)",
-};
-
-export const contentMembers: TeamMemberRow[] = [
-  {
-    user: "Lydia Park",
-    initials: "LP",
-    email: "lydia.park@rtm.agency",
-    role: "Content Director",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 8:05 AM",
-  },
-  {
-    user: "Maya Torres",
-    initials: "MT",
-    email: "maya.torres@rtm.agency",
-    role: "Senior Content Strategist",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Apex Roofing", "Summit Landscaping", "Green Valley Dental"],
-    lastActive: "Today, 8:30 AM",
-  },
-  {
-    user: "Chris Adeyemi",
-    initials: "CA",
-    email: "chris.adeyemi@rtm.agency",
-    role: "Content Coordinator",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Harbor Auto Group", "Pacific Dental"],
-    lastActive: "Today, 9:15 AM",
-  },
-  {
-    user: "Sofia Reyes",
-    initials: "SR",
-    email: "sofia.reyes@rtm.agency",
-    role: "Copywriter",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Metro Dental", "Blue Ridge Plumbing"],
-    lastActive: "Today, 9:00 AM",
-  },
-  {
-    user: "Ben Okafor",
-    initials: "BO",
-    email: "ben.okafor@rtm.agency",
-    role: "Content Reviewer",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "Inactive",
-    statusVariant: "neutral",
-    assignedClients: ["— (Read-only)"],
-    lastActive: "3 days ago",
-  },
-];
-
 export const contentRoles: RoleDef[] = [
   {
     name: "Department Head",
@@ -814,84 +448,6 @@ export const contentPermissions: PermissionArea[] = [
 ];
 
 //  Web Development & Design 
-
-export const webDevDesignProfile: WorkspaceProfileData = {
-  name: "Ethan Brooks",
-  initials: "EB",
-  email: "ethan.brooks@rtm.agency",
-  department: "Web Development & Design",
-  role: "Lead Developer",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 609-4412",
-  assignedClients: ["Harbor Auto Group", "Summit Landscaping", "Apex Roofing"],
-  lastLogin: "Today at 9:45 AM",
-  joinedDate: "September 3, 2020",
-  timezone: "MST (UTC−7)",
-};
-
-export const webDevDesignMembers: TeamMemberRow[] = [
-  {
-    user: "Naomi Chen",
-    initials: "NC",
-    email: "naomi.chen@rtm.agency",
-    role: "VP of Web & Design",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 8:50 AM",
-  },
-  {
-    user: "Ethan Brooks",
-    initials: "EB",
-    email: "ethan.brooks@rtm.agency",
-    role: "Lead Developer",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Harbor Auto Group", "Summit Landscaping", "Apex Roofing"],
-    lastActive: "Today, 9:45 AM",
-  },
-  {
-    user: "Priya Nair",
-    initials: "PN",
-    email: "priya.nair@rtm.agency",
-    role: "UI/UX Designer",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Pacific Dental", "Green Valley Dental"],
-    lastActive: "Today, 10:02 AM",
-  },
-  {
-    user: "Lucas Ferreira",
-    initials: "LF",
-    email: "lucas.ferreira@rtm.agency",
-    role: "Front-End Specialist",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Metro Dental", "Blue Ridge Plumbing"],
-    lastActive: "Today, 8:15 AM",
-  },
-  {
-    user: "Aisha Grant",
-    initials: "AG",
-    email: "aisha.grant@rtm.agency",
-    role: "QA Reviewer",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (Review only)"],
-    lastActive: "Yesterday, 4:30 PM",
-  },
-];
 
 export const webDevDesignRoles: RoleDef[] = [
   {
@@ -986,21 +542,10 @@ export const webDevDesignPermissions: PermissionArea[] = [
 
 //  SEO & Local 
 
-export const seoLocalProfile: WorkspaceProfileData = {
-  name: "Carlos Mendez",
-  initials: "CM",
-  email: "carlos.mendez@rtm.agency",
-  department: "SEO & Local",
-  role: "SEO Strategist",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 720-5583",
-  assignedClients: ["Pacific Dental", "Summit Landscaping", "Harbor Auto Group"],
-  lastLogin: "Today at 8:00 AM",
-  joinedDate: "February 14, 2021",
-  timezone: "EST (UTC−5)",
-};
-
+// seoLocalMembers is kept here for SeoTeamPerformanceRollup, which uses the
+// seoTeam and isTeamLead fields to compute per-sub-team KPI rollups.
+// The SEO & Local Team Members page (app/(seo-local)/seo-local/team-members/)
+// no longer reads this export — it fetches from /api/users instead.
 export const seoLocalMembers: TeamMemberRow[] = [
   {
     user: "Simone Watts",
@@ -1013,7 +558,8 @@ export const seoLocalMembers: TeamMemberRow[] = [
     statusVariant: "success",
     assignedClients: ["— (All)"],
     lastActive: "Today, 7:58 AM",
-    // Division Head — oversees both teams; no sub-team assignment
+    seoTeam: "On-Page SEO",
+    isTeamLead: true,
   },
   {
     user: "Carlos Mendez",
@@ -1027,39 +573,77 @@ export const seoLocalMembers: TeamMemberRow[] = [
     assignedClients: ["Pacific Dental", "Summit Landscaping", "Harbor Auto Group"],
     lastActive: "Today, 8:00 AM",
     seoTeam: "On-Page SEO",
-    isTeamLead: true,
   },
   {
-    user: "Nia Adeyemi",
-    initials: "NA",
-    email: "nia.adeyemi@rtm.agency",
+    user: "Lena Okafor",
+    initials: "LO",
+    email: "lena.okafor@rtm.agency",
+    role: "On-Page SEO Specialist",
+    accessLevel: "Specialist",
+    accessVariant: "neutral",
+    status: "Active",
+    statusVariant: "success",
+    assignedClients: ["Apex Roofing", "Sunbelt HVAC"],
+    lastActive: "Today, 8:15 AM",
+    seoTeam: "On-Page SEO",
+  },
+  {
+    user: "Jordan Kim",
+    initials: "JK",
+    email: "jordan.kim@rtm.agency",
     role: "Local SEO Coordinator",
     accessLevel: "Coordinator",
     accessVariant: "pending",
     status: "Active",
     statusVariant: "success",
-    assignedClients: ["Apex Roofing", "Green Valley Dental"],
-    lastActive: "Today, 9:30 AM",
+    assignedClients: ["Blue Ridge Plumbing", "Green Valley Pools"],
+    lastActive: "Yesterday, 4:45 PM",
+    seoTeam: "On-Page SEO",
+  },
+  {
+    user: "Marcus Bell",
+    initials: "MB",
+    email: "marcus.bell.seo@rtm.agency",
+    role: "Off-Page SEO Lead",
+    accessLevel: "Manager",
+    accessVariant: "info",
+    status: "Active",
+    statusVariant: "success",
+    assignedClients: ["Metro Dental", "Pacific Dental"],
+    lastActive: "Today, 7:40 AM",
     seoTeam: "Off-Page SEO",
     isTeamLead: true,
   },
   {
-    user: "Drew Holloway",
-    initials: "DH",
-    email: "drew.holloway@rtm.agency",
-    role: "GBP Specialist",
+    user: "Priya Nair",
+    initials: "PN",
+    email: "priya.nair@rtm.agency",
+    role: "Link Building Specialist",
     accessLevel: "Specialist",
     accessVariant: "neutral",
     status: "Active",
     statusVariant: "success",
-    assignedClients: ["Metro Dental", "Blue Ridge Plumbing"],
-    lastActive: "Today, 8:45 AM",
+    assignedClients: ["Summit Landscaping", "Harbor Auto Group"],
+    lastActive: "Today, 9:10 AM",
     seoTeam: "Off-Page SEO",
   },
   {
-    user: "Tasha Morris",
-    initials: "TM",
-    email: "tasha.morris@rtm.agency",
+    user: "Tyler Ross",
+    initials: "TR",
+    email: "tyler.ross@rtm.agency",
+    role: "Citation & GBP Coordinator",
+    accessLevel: "Coordinator",
+    accessVariant: "pending",
+    status: "On Leave",
+    statusVariant: "warning",
+    assignedClients: ["Northgate Dental"],
+    lastActive: "5 days ago",
+    seoTeam: "Off-Page SEO",
+  },
+  {
+    user: "Dana Kim",
+    initials: "DK",
+    email: "dana.kim@rtm.agency",
     role: "Reporting Viewer",
     accessLevel: "Viewer",
     accessVariant: "neutral",
@@ -1164,84 +748,6 @@ export const seoLocalPermissions: PermissionArea[] = [
 
 //  Paid Advertising 
 
-export const paidAdvertisingProfile: WorkspaceProfileData = {
-  name: "Diana Walsh",
-  initials: "DW",
-  email: "diana.walsh@rtm.agency",
-  department: "Paid Advertising",
-  role: "Paid Media Manager",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 831-2290",
-  assignedClients: ["Sunbelt HVAC", "Apex Roofing", "Harbor Auto Group"],
-  lastLogin: "Today at 7:40 AM",
-  joinedDate: "November 9, 2020",
-  timezone: "CST (UTC−6)",
-};
-
-export const paidAdvertisingMembers: TeamMemberRow[] = [
-  {
-    user: "Marcus Bell",
-    initials: "MB",
-    email: "marcus.bell@rtm.agency",
-    role: "Paid Advertising Director",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 8:20 AM",
-  },
-  {
-    user: "Diana Walsh",
-    initials: "DW",
-    email: "diana.walsh@rtm.agency",
-    role: "Paid Media Manager",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Sunbelt HVAC", "Apex Roofing", "Harbor Auto Group"],
-    lastActive: "Today, 7:40 AM",
-  },
-  {
-    user: "Lena Park",
-    initials: "LPk",
-    email: "lena.park@rtm.agency",
-    role: "Meta Ads Coordinator",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Pacific Dental", "Green Valley Dental"],
-    lastActive: "Today, 9:05 AM",
-  },
-  {
-    user: "Jared Coleman",
-    initials: "JC",
-    email: "jared.coleman@rtm.agency",
-    role: "Google Ads Specialist",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Metro Dental", "Blue Ridge Plumbing"],
-    lastActive: "Today, 8:50 AM",
-  },
-  {
-    user: "Renee Foster",
-    initials: "RF",
-    email: "renee.foster@rtm.agency",
-    role: "Analytics Viewer",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "Inactive",
-    statusVariant: "neutral",
-    assignedClients: ["— (Read-only)"],
-    lastActive: "2 weeks ago",
-  },
-];
-
 export const paidAdvertisingRoles: RoleDef[] = [
   {
     name: "Department Head",
@@ -1334,84 +840,6 @@ export const paidAdvertisingPermissions: PermissionArea[] = [
 ];
 
 //  Reporting 
-
-export const reportingProfile: WorkspaceProfileData = {
-  name: "Alexis Turner",
-  initials: "AT",
-  email: "alexis.turner@rtm.agency",
-  department: "Reporting",
-  role: "Analytics Manager",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 447-9920",
-  assignedClients: ["Apex Roofing", "Pacific Dental", "Sunbelt HVAC"],
-  lastLogin: "Today at 8:10 AM",
-  joinedDate: "April 20, 2021",
-  timezone: "EST (UTC−5)",
-};
-
-export const reportingMembers: TeamMemberRow[] = [
-  {
-    user: "Owen Price",
-    initials: "OP",
-    email: "owen.price@rtm.agency",
-    role: "Reporting Director",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 8:00 AM",
-  },
-  {
-    user: "Alexis Turner",
-    initials: "AT",
-    email: "alexis.turner@rtm.agency",
-    role: "Analytics Manager",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Apex Roofing", "Pacific Dental", "Sunbelt HVAC"],
-    lastActive: "Today, 8:10 AM",
-  },
-  {
-    user: "Dani Osei",
-    initials: "DO",
-    email: "dani.osei@rtm.agency",
-    role: "Report Coordinator",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Harbor Auto Group", "Green Valley Dental"],
-    lastActive: "Today, 9:20 AM",
-  },
-  {
-    user: "Felix Russo",
-    initials: "FR",
-    email: "felix.russo@rtm.agency",
-    role: "Data Analyst",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Metro Dental", "Blue Ridge Plumbing"],
-    lastActive: "Today, 8:55 AM",
-  },
-  {
-    user: "Ingrid Holm",
-    initials: "IH",
-    email: "ingrid.holm@rtm.agency",
-    role: "Report Viewer",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "Inactive",
-    statusVariant: "neutral",
-    assignedClients: ["— (Read-only)"],
-    lastActive: "4 days ago",
-  },
-];
 
 export const reportingRoles: RoleDef[] = [
   {
@@ -1506,84 +934,6 @@ export const reportingPermissions: PermissionArea[] = [
 
 //  Local Service Ads 
 
-export const localServiceAdsProfile: WorkspaceProfileData = {
-  name: "Keisha James",
-  initials: "KJ",
-  email: "keisha.james@rtm.agency",
-  department: "Local Service Ads",
-  role: "LSA Campaign Manager",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 562-8841",
-  assignedClients: ["Summit Landscaping", "Sunbelt HVAC", "Blue Ridge Plumbing"],
-  lastLogin: "Today at 9:00 AM",
-  joinedDate: "June 11, 2021",
-  timezone: "EST (UTC−5)",
-};
-
-export const localServiceAdsMembers: TeamMemberRow[] = [
-  {
-    user: "Victor Lane",
-    initials: "VL",
-    email: "victor.lane@rtm.agency",
-    role: "LSA Director",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 8:30 AM",
-  },
-  {
-    user: "Keisha James",
-    initials: "KJ",
-    email: "keisha.james@rtm.agency",
-    role: "LSA Campaign Manager",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Summit Landscaping", "Sunbelt HVAC", "Blue Ridge Plumbing"],
-    lastActive: "Today, 9:00 AM",
-  },
-  {
-    user: "Marcus Webb",
-    initials: "MW",
-    email: "marcus.webb@rtm.agency",
-    role: "LSA Coordinator",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Apex Roofing", "Pacific Dental"],
-    lastActive: "Today, 9:40 AM",
-  },
-  {
-    user: "Sara Nguyen",
-    initials: "SN",
-    email: "sara.nguyen@rtm.agency",
-    role: "Review & Dispute Specialist",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["Green Valley Dental", "Harbor Auto Group"],
-    lastActive: "Today, 8:00 AM",
-  },
-  {
-    user: "Evan Tucker",
-    initials: "ET",
-    email: "evan.tucker@rtm.agency",
-    role: "Budget Viewer",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "Inactive",
-    statusVariant: "neutral",
-    assignedClients: ["— (Read-only)"],
-    lastActive: "5 days ago",
-  },
-];
-
 export const localServiceAdsRoles: RoleDef[] = [
   {
     name: "Department Head",
@@ -1676,84 +1026,6 @@ export const localServiceAdsPermissions: PermissionArea[] = [
 ];
 
 //  IT & Security 
-
-export const itSecurityProfile: WorkspaceProfileData = {
-  name: "Ravi Sharma",
-  initials: "RS",
-  email: "ravi.sharma@rtm.agency",
-  department: "IT & Security",
-  role: "Systems Administrator",
-  accessLevel: "Manager",
-  accessVariant: "info",
-  phone: "+1 (555) 193-6670",
-  assignedClients: ["— (Internal)"],
-  lastLogin: "Today at 7:30 AM",
-  joinedDate: "August 22, 2019",
-  timezone: "PST (UTC−8)",
-};
-
-export const itSecurityMembers: TeamMemberRow[] = [
-  {
-    user: "Gabe Kowalski",
-    initials: "GK",
-    email: "gabe.kowalski@rtm.agency",
-    role: "CTO / IT Director",
-    accessLevel: "Department Head",
-    accessVariant: "error",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (All)"],
-    lastActive: "Today, 7:45 AM",
-  },
-  {
-    user: "Ravi Sharma",
-    initials: "RS",
-    email: "ravi.sharma@rtm.agency",
-    role: "Systems Administrator",
-    accessLevel: "Manager",
-    accessVariant: "info",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (Internal)"],
-    lastActive: "Today, 7:30 AM",
-  },
-  {
-    user: "Tamara Fox",
-    initials: "TF",
-    email: "tamara.fox@rtm.agency",
-    role: "Security Coordinator",
-    accessLevel: "Coordinator",
-    accessVariant: "pending",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (Internal)"],
-    lastActive: "Today, 8:30 AM",
-  },
-  {
-    user: "Noah Kim",
-    initials: "NK",
-    email: "noah.kim@rtm.agency",
-    role: "Help Desk Specialist",
-    accessLevel: "Specialist",
-    accessVariant: "neutral",
-    status: "Active",
-    statusVariant: "success",
-    assignedClients: ["— (Internal)"],
-    lastActive: "Today, 9:10 AM",
-  },
-  {
-    user: "Cleo Barnes",
-    initials: "CB",
-    email: "cleo.barnes@rtm.agency",
-    role: "Audit Viewer",
-    accessLevel: "Viewer",
-    accessVariant: "neutral",
-    status: "Inactive",
-    statusVariant: "neutral",
-    assignedClients: ["— (Read-only)"],
-    lastActive: "1 month ago",
-  },
-];
 
 export const itSecurityRoles: RoleDef[] = [
   {
