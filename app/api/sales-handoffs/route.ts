@@ -65,6 +65,11 @@ export interface HandoffRecord {
   contactEmail?: string | null;
   contactPhone?: string | null;
   contractAmountCents?: number | null;
+  // Typed billing columns returned alongside the record
+  monthlyValueCents?: number | null;
+  setupFeeCents?: number | null;
+  paymentTerms?: string | null;
+  termLengthMonths?: number | null;
 }
 
 // ── DB row ↔ HandoffRecord ─────────────────────────────────────────────────────
@@ -97,6 +102,10 @@ function rowToRecord(row: HandoffRow): HandoffRecord {
     contactEmail:         row.contactEmail ?? null,
     contactPhone:         row.contactPhone ?? null,
     contractAmountCents:  row.contractAmountCents ?? null,
+    monthlyValueCents:    row.monthlyValueCents ?? null,
+    setupFeeCents:        row.setupFeeCents ?? null,
+    paymentTerms:         row.paymentTerms ?? null,
+    termLengthMonths:     row.termLengthMonths ?? null,
   };
 }
 

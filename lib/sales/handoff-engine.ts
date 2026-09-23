@@ -55,6 +55,14 @@ export interface HandoffRecord {
   contactPhone?: string | null;
   /** Total contract value in cents: (monthly * termMonths) + setup. Null when either is unknown. */
   contractAmountCents?: number | null;
+  /** Monthly recurring value in cents. Typed DB column, returned by the API alongside the record. */
+  monthlyValueCents?: number | null;
+  /** One-time setup fee in cents. Typed DB column, returned by the API alongside the record. */
+  setupFeeCents?: number | null;
+  /** Payment terms string, e.g. "Net 15". */
+  paymentTerms?: string | null;
+  /** Contract term length in months. */
+  termLengthMonths?: number | null;
 }
 
 // ─── Handoff Number Generator ─────────────────────────────────────────────────

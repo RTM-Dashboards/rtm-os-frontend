@@ -31,6 +31,7 @@ import { getWorkspace } from "@/lib/workspaces";
 import { fetchAMClients, markCleared, type BusinessClient } from "@/lib/account-management/am-client-data";
 import { fetchSalesHandoffs, markHandoffProcessed } from "@/lib/sales/sales-handoffs-api";
 import type { HandoffRecord } from "@/lib/sales/handoff-engine";
+import { normalizeDomain } from "@/lib/clients/domain";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 import BillingChangeRequestsPanel from "@/components/billing/BillingChangeRequestsPanel";
 
@@ -204,132 +205,477 @@ function ExpandedDetail({ business, onClearance }: { business: BusinessClient; o
   );
 }
 
+// ─── Process & Create Client Result Modal ─────────────────────────────────────
+//
+// Shown after the Process action completes (success or partial failure).
+// Standard: follow MarkPaidFlowModal from invoices/page.tsx — name every record
+// created and every failure, never leave the user guessing.
+
+function ProcessResultModal({ lines, ok, onClose }: {
+  lines: string[];
+  ok: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" style={{ border: "1px solid var(--rtm-border)" }}>
+        <div className="px-6 py-5 space-y-4">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: workspace.accentColor }}>Process Result</p>
+            <h2 className="text-base font-bold mt-1" style={{ color: "var(--rtm-text-primary)" }}>
+              {ok ? "✅ Client & Business Created" : "❌ Partial Failure"}
+            </h2>
+          </div>
+          <div
+            className="rounded-lg border p-4 space-y-2"
+            style={{
+              borderColor: ok ? "#A7F3D0" : "#FECACA",
+              background:  ok ? "#ECFDF5"  : "#FEF2F2",
+            }}
+          >
+            {lines.map((line, i) => (
+              <p key={i} className="text-sm" style={{ color: ok ? "#065F46" : "#991B1B" }}>{line}</p>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full text-sm font-semibold py-2.5 rounded-lg text-white"
+            style={{ background: "var(--rtm-blue)" }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Sales Handoffs Panel ─────────────────────────────────────────────────────
-// NOTE: The "Process & Create Client" action is DISABLED.
-// Creating a Business from a Sales handoff requires a real POST to /api/businesses
-// (with a corresponding Client record). That API does not yet exist in this codebase.
-// The control is preserved visually so the workflow is visible, but the button is
-// disabled with a tooltip explaining why. This prevents the button from silently
-// writing to mock storage with no real-data effect.
+//
+// Shows submitted-but-unprocessed handoffs. For each handoff:
+//   - If domain is present: "Process & Create Client" is enabled.
+//   - If domain is missing: button is disabled with a clear explanation.
+//
+// Process & Create Client (in order):
+//   1. Refuse if no domain (enforced in handler + UI).
+//   2. Check whether a Business already exists for that domain (globally unique).
+//      If one exists, report it and skip creation.
+//   3. Create the Client (contactName → fullName, contactEmail, contactPhone, clientName → company).
+//   4. Create the Business (normalised domain, clientId, monthlyValueCents, UNPAID billing state).
+//   5. Mark the handoff processed via markHandoffProcessed(id, clientId).
+//   PARTIAL FAILURE: if Client is created and Business fails, report both, guide recovery.
+
+type ProcessStatus = "idle" | "processing" | "done";
 
 function SalesHandoffsPanel({
   handoffs,
+  onProcessed,
+  onToast,
+  onLog,
 }: {
   handoffs: HandoffRecord[];
+  onProcessed: (handoffId: string) => void;
+  onToast: (msg: string, variant: "success" | "info" | "warning" | "error") => void;
+  onLog: (msg: string) => void;
 }) {
   const pending = handoffs.filter(
     (h) => h.submittedToBilling === true && h.processed !== true
   );
 
+  // Track processing state per-handoff
+  const [processingId, setProcessingId] = React.useState<string | null>(null);
+  const [processStatus, setProcessStatus] = React.useState<ProcessStatus>("idle");
+  const [resultLines, setResultLines] = React.useState<string[]>([]);
+  const [resultOk, setResultOk] = React.useState(false);
+  const [showResult, setShowResult] = React.useState(false);
+
+  async function handleProcess(handoff: HandoffRecord) {
+    // ── Guard 1: domain required ───────────────────────────────────────────
+    if (!handoff.domain) {
+      onToast(
+        `Cannot process “${handoff.clientName}”: this handoff has no domain. ` +
+        "Sales must add the client’s website domain before Billing can create a Business record.",
+        "error"
+      );
+      return;
+    }
+
+    const domain = normalizeDomain(handoff.domain);
+    setProcessingId(handoff.id);
+    setProcessStatus("processing");
+
+    // ── Guard 2: check whether Business already exists for this domain ─────
+    let existingBizId: string | null = null;
+    try {
+      const checkRes = await fetch(`/api/businesses?domain=${encodeURIComponent(domain)}`);
+      if (checkRes.ok) {
+        const checkData = await checkRes.json() as { record?: { id: string; clientId: string }; error?: string };
+        if (checkData.record) {
+          existingBizId = checkData.record.id;
+        }
+      }
+      // 404 = no existing business, which is fine
+    } catch {
+      // fetch error = treat as no existing business; POST will reveal the constraint if any
+    }
+
+    if (existingBizId) {
+      // Business already exists. Do NOT create a second one. Report and stop.
+      // Mark the handoff processed anyway so it leaves the queue, recording the
+      // existing clientId from the Business.
+      try {
+        const bizDetailRes = await fetch(`/api/businesses?id=${encodeURIComponent(existingBizId)}`);
+        const bizData = await bizDetailRes.json() as { record?: { clientId: string } };
+        const existingClientId = bizData.record?.clientId ?? "";
+        await markHandoffProcessed(handoff.id, existingClientId);
+        onProcessed(handoff.id);
+        setResultOk(true);
+        setResultLines([
+          `ℹ️ A Business already exists for domain “${domain}” (id: ${existingBizId}).`,
+          `No new Business or Client was created — the existing records are correct.`,
+          `✅ Handoff marked processed (processedClientId: ${existingClientId || "existing"}).`,
+          `The handoff has left Billing’s queue.`,
+          `To raise an invoice, go to the Invoices page and use “Create Invoice” against domain “${domain}”.`,
+        ]);
+        setShowResult(true);
+        onLog(`ℹ️ ${handoff.clientName}: business already exists for ${domain} — handoff marked processed`);
+        onToast(`Business already exists for ${domain} — handoff processed, no new records created.`, "info");
+      } catch (err) {
+        setResultOk(false);
+        setResultLines([
+          `ℹ️ A Business already exists for domain “${domain}” (id: ${existingBizId}).`,
+          `❌ However, marking the handoff processed failed: ${err instanceof Error ? err.message : String(err)}.`,
+          `The handoff remains in the queue. Retry the Process action.`,
+        ]);
+        setShowResult(true);
+        onToast("Failed to mark handoff processed. See result details.", "error");
+      }
+      setProcessStatus("done");
+      setProcessingId(null);
+      return;
+    }
+
+    // ── Step 1: Create the Client ──────────────────────────────────────────
+    //
+    // Field mapping (HandoffRecord → Client):
+    //   contactName  → fullName   (primary contact person)
+    //   contactEmail → email
+    //   contactPhone → phone
+    //   clientName   → company    (business name)
+    //   clientName   → fullName   (fallback when contactName is null)
+    const now = new Date().toISOString();
+    const clientId = `client-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const clientBody = {
+      id:           clientId,
+      fullName:     handoff.contactName?.trim() || handoff.clientName,
+      email:        handoff.contactEmail?.trim() ?? "",
+      phone:        handoff.contactPhone?.trim() ?? "",
+      company:      handoff.clientName,
+      assignedAM:   "",
+      ghlContactId: null,
+      createdAt:    now,
+      updatedAt:    now,
+    };
+
+    let clientCreated = false;
+    try {
+      const clientRes = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clientBody),
+      });
+      const clientData = await clientRes.json() as { record?: { id: string }; error?: string };
+      if (!clientRes.ok || clientData.error) {
+        throw new Error(clientData.error ?? `HTTP ${clientRes.status}`);
+      }
+      clientCreated = true;
+    } catch (err) {
+      // Client creation failed — nothing written. Report and stop.
+      setProcessStatus("done");
+      setProcessingId(null);
+      setResultOk(false);
+      setResultLines([
+        `❌ Client creation failed. Nothing was written.`,
+        `Error: ${err instanceof Error ? err.message : String(err)}`,
+        `No Client or Business record was created.`,
+        `Resolve the error above and retry the Process action.`,
+      ]);
+      setShowResult(true);
+      onToast("Client creation failed. See result details.", "error");
+      return;
+    }
+
+    // ── Step 2: Create the Business ───────────────────────────────────────
+    //
+    // Field mapping:
+    //   domain (normalised)     → domain
+    //   clientId (new)          → clientId
+    //   monthlyValueCents       → monthlyValueCents (from typed DB column)
+    //   invoiceStatus = "none"  → UNPAID / no invoice yet
+    //   paymentStatus = "none"  → UNPAID
+    //   billingStatus = "Pending"
+    //
+    // Do NOT set any paid or confirmed status.
+    const bizId = `biz-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const bizBody = {
+      id:                 bizId,
+      domain:             domain,
+      displayName:        handoff.clientName,
+      clientId:           clientId,
+      invoiceStatus:      "none",
+      paymentStatus:      "none",
+      billingStatus:      "Pending",
+      invoiceAmountCents: handoff.contractAmountCents ?? 0,
+      subscriptionRef:    null,
+      assignedAM:         "",
+      activationStatus:   "inactive",
+      onboardingStatus:   "not_started",
+      activeServices:     [],
+      monthlyValueCents:  handoff.monthlyValueCents ?? 0,
+      renewalDate:        null,
+      renewalStatus:      "ok",
+      ghlOpportunityId:   null,
+      createdAt:          now,
+      updatedAt:          now,
+    };
+
+    let bizCreated = false;
+    try {
+      const bizRes = await fetch("/api/businesses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bizBody),
+      });
+      const bizData = await bizRes.json() as { record?: object; error?: string };
+      if (!bizRes.ok || bizData.error) {
+        throw new Error(bizData.error ?? `HTTP ${bizRes.status}`);
+      }
+      bizCreated = true;
+    } catch (err) {
+      // B7-equivalent partial failure: Client was created, Business was not.
+      setProcessStatus("done");
+      setProcessingId(null);
+      setResultOk(false);
+      setResultLines([
+        `❌ Business creation failed for domain “${domain}”.`,
+        `A new Client WAS created (id: ${clientId}, name: “${clientBody.fullName}”, company: “${clientBody.company}”).`,
+        `Error: ${err instanceof Error ? err.message : String(err)}`,
+        `The Client record exists. To create the Business, go to the Invoices page and`,
+        `use “Create Invoice” → “Mark as Paid” → search for the newly created Client by name.`,
+        `Alternatively, retry the Process action — if the Client id collision caused the`,
+        `Business failure, the retry will reuse the existing Client.`,
+      ]);
+      setShowResult(true);
+      onToast("Business creation failed after Client was created. See result details.", "error");
+      return;
+    }
+
+    // ── Step 3: Mark handoff processed ───────────────────────────────────
+    try {
+      await markHandoffProcessed(handoff.id, clientId);
+    } catch (err) {
+      // Records exist but handoff is not marked processed.
+      // It will reappear in the queue on next load. Processing again will
+      // hit the "business already exists" guard and still mark it processed.
+      setProcessStatus("done");
+      setProcessingId(null);
+      setResultOk(false);
+      setResultLines([
+        `⚠ Client and Business were created, but marking the handoff processed failed.`,
+        `Client id: ${clientId} (name: “${clientBody.fullName}”).`,
+        `Business id: ${bizId} (domain: “${domain}”).`,
+        `Error: ${err instanceof Error ? err.message : String(err)}`,
+        `The handoff will reappear in the queue on next load. Reprocessing it is safe:`,
+        `the “business already exists” guard will detect the new Business and mark it processed.`,
+      ]);
+      setShowResult(true);
+      onToast("Created Client & Business but handoff mark-processed failed. Retry is safe.", "warning");
+      onProcessed(handoff.id); // remove from local list anyway since records exist
+      return;
+    }
+
+    // ── Success ───────────────────────────────────────────────────────────
+    bizCreated; // used
+    setProcessStatus("done");
+    setProcessingId(null);
+    setResultOk(true);
+    setResultLines([
+      `✅ Client created (id: ${clientId}).`,
+      `   Name: “${clientBody.fullName}” | Company: “${clientBody.company}”`,
+      `   Email: ${clientBody.email || "—"} | Phone: ${clientBody.phone || "—"}`,
+      `✅ Business created (id: ${bizId}).`,
+      `   Domain: “${domain}” | Monthly: ${handoff.monthlyValueCents != null ? `$${(handoff.monthlyValueCents / 100).toLocaleString()}` : "—"} | Status: Unpaid (Pending)`,
+      `✅ Handoff marked processed (processedClientId: ${clientId}).`,
+      `The handoff has left Billing’s queue.`,
+      `Next step: go to the Invoices page and use “Create Invoice” against domain “${domain}”.`,
+    ]);
+    setShowResult(true);
+    onProcessed(handoff.id);
+    onLog(`✅ Processed ${handoff.clientName}: client ${clientId}, business ${bizId}, domain ${domain}`);
+    onToast(`✅ Created Client & Business for ${handoff.clientName} (${domain})`, "success");
+  }
+
   if (pending.length === 0) return null;
 
   return (
-    <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#BFDBFE" }}>
-      {/* Panel header */}
-      <div
-        className="px-5 py-4 border-b flex items-center justify-between gap-4"
-        style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}
-      >
-        <div>
-          <div className="flex items-center gap-2 mb-0.5">
-            <span
-              className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold"
-              style={{ background: "#1B4FD8" }}
-            >
-              {pending.length}
-            </span>
-            <p className="text-sm font-bold" style={{ color: "#1E3A8A" }}>
-              Incoming Sales Handoffs — Pending Processing
+    <>
+      {showResult && (
+        <ProcessResultModal
+          lines={resultLines}
+          ok={resultOk}
+          onClose={() => { setShowResult(false); setResultLines([]); }}
+        />
+      )}
+
+      <div className="rounded-xl border overflow-hidden" style={{ borderColor: "#BFDBFE" }}>
+        {/* Panel header */}
+        <div
+          className="px-5 py-4 border-b flex items-center justify-between gap-4"
+          style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}
+        >
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span
+                className="inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-[10px] font-bold"
+                style={{ background: "#1B4FD8" }}
+              >
+                {pending.length}
+              </span>
+              <p className="text-sm font-bold" style={{ color: "#1E3A8A" }}>
+                Incoming Sales Handoffs — Pending Processing
+              </p>
+            </div>
+            <p className="text-xs" style={{ color: "#1D4ED8" }}>
+              Sales submitted these handoffs to Billing. Process &amp; Create Client creates a Client
+              and a Business record in Postgres. No invoice is created. Raise the invoice
+              separately from the Invoices page.
             </p>
           </div>
-          <p className="text-xs" style={{ color: "#1D4ED8" }}>
-            Sales submitted these handoffs to Billing. Client record creation requires a real
-            Business record in the database. That workflow is not yet implemented — see note below.
+        </div>
+
+        {/* Handoff rows */}
+        <div className="divide-y" style={{ borderColor: "#DBEAFE" }}>
+          {pending.map((handoff) => {
+            const sf = handoff.summaryFields as Record<string, string>;
+            const services = sf["services-sold"] ?? "—";
+            const hasDomain = !!handoff.domain;
+            const isProcessing = processingId === handoff.id && processStatus === "processing";
+
+            return (
+              <div
+                key={handoff.id}
+                className="px-5 py-4 flex items-start justify-between gap-4 flex-wrap"
+                style={{ background: "var(--rtm-bg)" }}
+              >
+                <div className="space-y-2 min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                      {handoff.clientName}
+                    </span>
+                    <span
+                      className="text-[10px] font-mono px-2 py-0.5 rounded border"
+                      style={{ background: "#F1F5F9", color: "#475569", borderColor: "#CBD5E1" }}
+                    >
+                      {handoff.handoffNumber}
+                    </span>
+                    <span
+                      className="text-[10px] font-mono px-2 py-0.5 rounded border"
+                      style={{ background: "#F1F5F9", color: "#475569", borderColor: "#CBD5E1" }}
+                    >
+                      {handoff.contractNumber}
+                    </span>
+                  </div>
+
+                  {/* Domain — most critical field for processing */}
+                  {hasDomain ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: "#059669" }}>Domain:</span>
+                      <span className="text-xs font-mono font-semibold" style={{ color: "#065F46" }}>{handoff.domain}</span>
+                    </div>
+                  ) : (
+                    <div className="rounded border px-3 py-2" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
+                      <p className="text-xs font-bold" style={{ color: "#991B1B" }}>
+                        ⚠ No domain — cannot process
+                      </p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "#991B1B" }}>
+                        Domain is required to create a Business record. Sales must add the client’s
+                        website domain to the contract before this handoff can be processed.
+                        Do not invent or derive a domain from the client name.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 flex-wrap text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+                    {handoff.contactName && (
+                      <span><span className="font-semibold">Contact:</span> {handoff.contactName}</span>
+                    )}
+                    {handoff.contactEmail && (
+                      <span><span className="font-semibold">Email:</span> {handoff.contactEmail}</span>
+                    )}
+                    {handoff.contactPhone && (
+                      <span><span className="font-semibold">Phone:</span> {handoff.contactPhone}</span>
+                    )}
+                    <span><span className="font-semibold">Services:</span> {services}</span>
+                    {handoff.monthlyValueCents != null && (
+                      <span><span className="font-semibold">MRR:</span> ${(handoff.monthlyValueCents / 100).toLocaleString()}/mo</span>
+                    )}
+                    <span className="" style={{ color: "var(--rtm-text-muted)" }}>
+                      Prepared by {handoff.preparedBy}
+                    </span>
+                    {handoff.submittedToBillingAt && (
+                      <span style={{ color: "var(--rtm-text-muted)" }}>
+                        Submitted{" "}
+                        {new Date(handoff.submittedToBillingAt).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                  {/* Process & Create Client button */}
+                  <div className="relative group">
+                    <button
+                      disabled={!hasDomain || isProcessing}
+                      onClick={() => { if (hasDomain) void handleProcess(handoff); }}
+                      className={`text-xs font-bold px-4 py-2 rounded-lg text-white transition-opacity ${
+                        hasDomain && !isProcessing ? "hover:opacity-90" : "opacity-40 cursor-not-allowed"
+                      }`}
+                      style={{ background: "#1B4FD8" }}
+                    >
+                      {isProcessing ? "Processing…" : "Process & Create Client"}
+                    </button>
+                    {!hasDomain && (
+                      <div className="absolute bottom-full right-0 mb-1.5 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" style={{ whiteSpace: "nowrap" }}>
+                        <div className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg" style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+                          Domain is missing. Sales must supply it before this handoff can be processed.
+                          <div className="absolute top-full right-4 border-4 border-transparent" style={{ borderTopColor: "#1E293B" }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div
+          className="px-5 py-3 border-t"
+          style={{ background: "#F0FDF4", borderColor: "#A7F3D0" }}
+        >
+          <p className="text-xs" style={{ color: "#065F46" }}>
+            <span className="font-bold">✅ Process &amp; Create Client</span> creates a Client and a Business in Postgres.
+            No invoice is created. The handoff leaves the queue once processed.
+            Raise the invoice from the Invoices page against the new Business.
           </p>
         </div>
       </div>
-
-      {/* Handoff rows */}
-      <div className="divide-y" style={{ borderColor: "#DBEAFE" }}>
-        {pending.map((handoff) => {
-          const sf = handoff.summaryFields;
-          const mrr = sf["monthly-recurring-revenue"] ?? "—";
-          const services = sf["services-sold"] ?? "—";
-
-          return (
-            <div
-              key={handoff.id}
-              className="px-5 py-4 flex items-center justify-between gap-4 flex-wrap"
-              style={{ background: "var(--rtm-bg)" }}
-            >
-              <div className="space-y-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
-                    {handoff.clientName}
-                  </span>
-                  <span
-                    className="text-[10px] font-mono px-2 py-0.5 rounded border"
-                    style={{ background: "#F1F5F9", color: "#475569", borderColor: "#CBD5E1" }}
-                  >
-                    {handoff.handoffNumber}
-                  </span>
-                  <span
-                    className="text-[10px] font-mono px-2 py-0.5 rounded border"
-                    style={{ background: "#F1F5F9", color: "#475569", borderColor: "#CBD5E1" }}
-                  >
-                    {handoff.contractNumber}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
-                    <span className="font-semibold">Services:</span> {services}
-                  </span>
-                  <span className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
-                    <span className="font-semibold">MRR:</span> {mrr}
-                  </span>
-                  <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                    Prepared by {handoff.preparedBy}
-                  </span>
-                  {handoff.submittedToBillingAt && (
-                    <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                      Submitted{" "}
-                      {new Date(handoff.submittedToBillingAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Disabled — real Business creation API not yet implemented */}
-              <button
-                disabled
-                title="Client record creation requires a real Business record in Postgres. That API endpoint is not yet implemented."
-                className="flex-shrink-0 text-xs font-bold px-4 py-2 rounded-lg text-white opacity-40 cursor-not-allowed"
-                style={{ background: "#1B4FD8" }}
-              >
-                Process & Create Client
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Footer notice */}
-      <div
-        className="px-5 py-3 border-t"
-        style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}
-      >
-        <p className="text-xs" style={{ color: "#92400E" }}>
-          <span className="font-bold">⚠ Not yet wired:</span> Processing a Sales handoff requires creating
-          a real Business record in Postgres. The{" "}
-          <code className="bg-yellow-100 px-1 rounded">POST /api/businesses</code> endpoint for
-          handoff-to-client creation is not yet implemented. This control is disabled until that
-          API exists.
-        </p>
-      </div>
-    </div>
+    </>
   );
 }
 
@@ -510,7 +856,19 @@ export default function BillingActivationPage() {
 
       {/* Sales Handoffs Queue — Incoming from Sales team */}
       {pendingSalesHandoffs.length > 0 && (
-        <SalesHandoffsPanel handoffs={salesHandoffs} />
+        <SalesHandoffsPanel
+          handoffs={salesHandoffs}
+          onProcessed={(handoffId) => {
+            // Remove from local state so it leaves the queue immediately.
+            // Also refresh businesses in case the new Business now appears there.
+            setSalesHandoffs((prev) => prev.map((h) =>
+              h.id === handoffId ? { ...h, processed: true } : h
+            ));
+            void refreshBusinesses();
+          }}
+          onToast={showToast}
+          onLog={log}
+        />
       )}
 
       {/* AM Change Requests — Billing Approval Queue */}

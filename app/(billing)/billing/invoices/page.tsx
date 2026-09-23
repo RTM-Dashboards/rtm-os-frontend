@@ -52,16 +52,52 @@ interface InvoiceRow {
   domain?: string;
 }
 
+/**
+ * SalesHandoffRow — derived from a real HandoffRecord.
+ *
+ * FIELD MAPPING (HandoffRecord → SalesHandoffRow):
+ *   id                  → id                   (direct)
+ *   clientName          → client               (direct)
+ *   domain              → domain               (direct; null = problem, shown as warning)
+ *   contactName         → contactName          (direct)
+ *   contactEmail        → contactEmail         (direct)
+ *   contactPhone        → contactPhone         (direct)
+ *   monthlyValueCents   → monthlyValueCents    (direct; null shown honestly)
+ *   setupFeeCents       → setupFeeCents        (direct; null shown honestly)
+ *   contractAmountCents → contractAmountCents  (direct; null shown honestly)
+ *   paymentTerms        → paymentTerms         (direct)
+ *   termLengthMonths    → termLengthMonths     (direct)
+ *   summaryFields["services-sold"] → servicesSold  (best-effort parse)
+ *   preparedBy          → preparedBy           (direct)
+ *   submittedToBillingAt → submittedAt         (direct)
+ *
+ * DROPPED FIELDS (no real source — were mock-only):
+ *   salesOwner          — no field on HandoffRecord; dropped.
+ *   proposal            — contractNumber is the closest real field; not shown
+ *                         because it is an internal id, not a proposal number.
+ *   contractStatus      — no equivalent typed column; dropped.
+ *   billingIntakeStatus — no equivalent on HandoffRecord; dropped.
+ *   invoiceCreationStatus — no equivalent on HandoffRecord; dropped.
+ *   generatedInvoiceNumber — tracked by Invoice.salesHandoffId on the Invoice
+ *                            record, not on the handoff itself. Dropped from
+ *                            this type; linked invoices are found via salesHandoffId.
+ */
 interface SalesHandoffRow {
   id: string;
   client: string;
-  salesOwner: string;
-  proposal: string;
-  contractStatus: string;
+  domain: string | null;
+  contactName: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  monthlyValueCents: number | null;
+  setupFeeCents: number | null;
+  contractAmountCents: number | null;
+  paymentTerms: string | null;
+  termLengthMonths: number | null;
   servicesSold: string;
-  billingIntakeStatus: string;
-  invoiceCreationStatus: string;
-  /** Invoice number generated from this row, if any */
+  preparedBy: string;
+  submittedAt: string | null;
+  /** Invoice number if an invoice was generated from this handoff this session */
   generatedInvoiceNumber?: string;
 }
 
@@ -69,13 +105,8 @@ interface SalesHandoffRow {
 // Invoice data is now loaded from GET /api/invoices on mount.
 // The hardcoded mock array has been deleted; all rows persist in Postgres.
 
-const INITIAL_HANDOFF_ROWS: SalesHandoffRow[] = [
-  { id: "s1", client: "Coastal Eye Care",      salesOwner: "Jake R.",  proposal: "PRO-0112", contractStatus: "Signed",    servicesSold: "SEO, PPC, Web",        billingIntakeStatus: "Complete",    invoiceCreationStatus: "Invoice Generated", generatedInvoiceNumber: "INV-0062" },
-  { id: "s2", client: "Mesa Auto Repair",      salesOwner: "Tina W.",  proposal: "PRO-0109", contractStatus: "Signed",    servicesSold: "Local SEO, GMB",       billingIntakeStatus: "In Progress",  invoiceCreationStatus: "Pending" },
-  { id: "s3", client: "Lakeview Orthodontics", salesOwner: "Chris M.", proposal: "PRO-0117", contractStatus: "Pending",   servicesSold: "Social, Content",      billingIntakeStatus: "Incomplete",  invoiceCreationStatus: "Blocked" },
-  { id: "s4", client: "Summit HVAC",           salesOwner: "Jake R.",  proposal: "PRO-0121", contractStatus: "Signed",    servicesSold: "PPC, Web Redesign",    billingIntakeStatus: "Complete",    invoiceCreationStatus: "Invoice Generated", generatedInvoiceNumber: "INV-0063" },
-  { id: "s5", client: "Heritage Dental",       salesOwner: "Tina W.",  proposal: "PRO-0124", contractStatus: "Countered", servicesSold: "SEO, Email Campaigns", billingIntakeStatus: "Incomplete",  invoiceCreationStatus: "On Hold" },
-];
+// INITIAL_HANDOFF_ROWS removed. Real handoffs are fetched from
+// GET /api/sales-handoffs (filtered: submittedToBilling && !processed).
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
 
@@ -104,27 +135,10 @@ function paymentStatusVariant(s: PaymentStatus): BadgeVariant {
   }
 }
 
-function contractStatusVariant(s: string): BadgeVariant {
-  if (s === "Signed")    return "success";
-  if (s === "Pending")   return "warning";
-  if (s === "Countered") return "info";
-  return "neutral";
-}
-
-function intakeStatusVariant(s: string): BadgeVariant {
-  if (s === "Complete")     return "success";
-  if (s === "In Progress")  return "warning";
-  if (s === "Incomplete")   return "error";
-  if (s === "Info Requested") return "info";
-  return "neutral";
-}
-
-function invoiceCreationVariant(s: string): BadgeVariant {
-  if (s === "Invoice Generated") return "success";
-  if (s === "Pending")           return "warning";
-  if (s === "Blocked")           return "error";
-  if (s === "On Hold")           return "neutral";
-  return "neutral";
+/** Format a cents value to a dollar string. Null renders as “—” (honest missing). */
+function centsToMoney(cents: number | null | undefined): string {
+  if (cents === null || cents === undefined) return "—";
+  return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: 0 })}`;
 }
 
 // C4: "Send Invoice" renamed to "Mark as Sent" — no email is sent.
@@ -602,38 +616,69 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
   useEffect(() => { if (row) setActiveTab("details"); }, [row?.id]);
   if (!row) return null;
 
+  const submittedDate = row.submittedAt
+    ? new Date(row.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    : null;
+
   const tabs: DrawerTab[] = [
     {
       id: "details",
       label: "Handoff Details",
       content: (
         <div className="space-y-5">
+          {/* Domain warning — most important thing Billing needs to see */}
+          {!row.domain && (
+            <div className="rounded-lg border px-4 py-3" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
+              <p className="text-sm font-bold" style={{ color: "#991B1B" }}>⚠ No domain on this handoff</p>
+              <p className="text-xs mt-1" style={{ color: "#991B1B" }}>
+                This handoff cannot be processed. Domain is required to create a Business.
+                Return it to Sales so they can add the client’s website domain.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "Client",           value: row.client },
-              { label: "Sales Owner",      value: row.salesOwner },
-              { label: "Proposal #",       value: row.proposal },
-              { label: "Contract Status",  value: row.contractStatus },
-              { label: "Services Sold",    value: row.servicesSold },
-              { label: "Billing Intake",   value: row.billingIntakeStatus },
-              { label: "Invoice Creation", value: row.invoiceCreationStatus },
-            ].map(({ label, value }) => (
+              { label: "Client",          value: row.client },
+              { label: "Domain",          value: row.domain ?? null, warn: !row.domain },
+              { label: "Contact Name",    value: row.contactName ?? null },
+              { label: "Contact Email",   value: row.contactEmail ?? null },
+              { label: "Contact Phone",   value: row.contactPhone ?? null },
+              { label: "Prepared By",     value: row.preparedBy },
+              { label: "Submitted",       value: submittedDate ?? null },
+              { label: "Services Sold",   value: row.servicesSold || null },
+              { label: "Payment Terms",   value: row.paymentTerms ?? null },
+              { label: "Term Length",     value: row.termLengthMonths ? `${row.termLengthMonths} months` : null },
+            ].map(({ label, value, warn }) => (
               <div key={label} className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
-                <p className="text-sm font-medium" style={{ color: "var(--rtm-text-primary)" }}>{value}</p>
+                {value
+                  ? <p className="text-sm font-medium" style={{ color: warn ? "#DC2626" : "var(--rtm-text-primary)" }}>{value}</p>
+                  : <p className="text-sm font-medium" style={{ color: warn ? "#DC2626" : "var(--rtm-text-muted)", fontStyle: "italic" }}>{warn ? "Missing — required" : "—"}</p>
+                }
               </div>
             ))}
-            {row.generatedInvoiceNumber && (
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Generated Invoice</p>
-                <p className="text-sm font-semibold font-mono" style={{ color: "var(--rtm-blue)" }}>{row.generatedInvoiceNumber}</p>
-              </div>
-            )}
           </div>
-          <div className="rounded-lg border px-4 py-3 text-sm space-y-1" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-secondary)" }}>
-            <p className="font-semibold text-xs uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Services Detail</p>
-            <p>{row.servicesSold}</p>
+          {/* Money fields — rendered from typed cents columns */}
+          <div className="rounded-lg border px-4 py-3 space-y-2" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border-light)" }}>
+            <p className="font-semibold text-xs uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Contract Values</p>
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: "Monthly",       value: centsToMoney(row.monthlyValueCents) },
+                { label: "Setup Fee",     value: centsToMoney(row.setupFeeCents) },
+                { label: "Contract Total",value: centsToMoney(row.contractAmountCents) },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
+                  <p className="text-sm font-bold" style={{ color: value === "—" ? "var(--rtm-text-muted)" : "var(--rtm-text-primary)", fontStyle: value === "—" ? "italic" : undefined }}>{value}</p>
+                </div>
+              ))}
+            </div>
           </div>
+          {row.generatedInvoiceNumber && (
+            <div className="rounded-lg border px-4 py-2" style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}>
+              <p className="text-xs font-semibold" style={{ color: "#065F46" }}>Invoice generated this session: <span className="font-mono">{row.generatedInvoiceNumber}</span></p>
+            </div>
+          )}
         </div>
       ),
     },
@@ -667,7 +712,7 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
           ) : (
             <div className="rounded-lg border p-6 text-center" style={{ borderColor: "var(--rtm-border-light)" }}>
               <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No invoice generated yet</p>
-              <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>Use "Generate Invoice" to create an invoice from this handoff.</p>
+              <p className="text-xs mt-1" style={{ color: "var(--rtm-text-muted)" }}>Use “Generate Invoice” to create an invoice from this handoff.</p>
             </div>
           )}
         </div>
@@ -681,15 +726,14 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
           <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Handoff Timeline</p>
           <div className="space-y-0">
             {[
-              { date: "Today",   label: "Billing Review",      detail: "Handoff reviewed in Invoice Action Center", color: "#3B82F6" },
-              { date: "Recent",  label: "Sales Handoff Sent",  detail: `${row.salesOwner} completed the handoff`,   color: "#059669" },
-              { date: "Earlier", label: "Contract Signed",     detail: `${row.proposal} signed`,                    color: "#D97706" },
-              { date: "Earlier", label: "Deal Closed Won",     detail: "Opportunity moved to Closed Won",           color: "#6B7280" },
-            ].map((event, i) => (
+              { date: "Today",                   label: "Billing Review",     detail: "Handoff reviewed in Invoice Action Center",     color: "#3B82F6" },
+              { date: submittedDate ?? "Recent", label: "Sales Handoff Sent", detail: `Prepared by ${row.preparedBy}`,                  color: "#059669" },
+              { date: "Earlier",                 label: "Deal Closed Won",    detail: "Opportunity moved to Closed Won in Sales Pipeline", color: "#6B7280" },
+            ].map((event, i, arr) => (
               <div key={i} className="flex gap-3 pb-4">
                 <div className="flex flex-col items-center">
                   <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: event.color }} />
-                  {i < 3 && <div className="w-px flex-1 mt-1" style={{ background: "var(--rtm-border-light)" }} />}
+                  {i < arr.length - 1 && <div className="w-px flex-1 mt-1" style={{ background: "var(--rtm-border-light)" }} />}
                 </div>
                 <div className="pb-1">
                   <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{event.label}</p>
@@ -708,8 +752,7 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
       open={!!row}
       onClose={onClose}
       title={`${row.client} — Sales Handoff`}
-      subtitle={`${row.proposal} · ${row.salesOwner}`}
-      statusBadge={<StatusBadge variant={contractStatusVariant(row.contractStatus)} label={row.contractStatus} size="sm" />}
+      subtitle={row.domain ? `Domain: ${row.domain} · Prepared by ${row.preparedBy}` : `No domain — Prepared by ${row.preparedBy}`}
       tabs={tabs}
       activeTab={activeTab}
       onTabChange={setActiveTab}
@@ -1468,7 +1511,9 @@ export default function BillingInvoicesPage() {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [invoicesError, setInvoicesError] = useState<string | null>(null);
-  const [handoffRows, setHandoffRows] = useState<SalesHandoffRow[]>(INITIAL_HANDOFF_ROWS);
+  const [handoffRows, setHandoffRows] = useState<SalesHandoffRow[]>([]);
+  const [handoffsLoading, setHandoffsLoading] = useState(true);
+  const [handoffsError, setHandoffsError] = useState<string | null>(null);
   // masterClients removed — client and business records are read from Postgres
   // via MarkPaidFlowModal (/api/clients + /api/businesses). No local mock.
   const [billingTaskList, setBillingTaskList] = useState<WorkspaceTask[]>(() => getWorkspaceTasksByDepartment("Billing"));
@@ -1563,6 +1608,66 @@ export default function BillingInvoicesPage() {
     void loadInvoices();
   }, [loadInvoices]);
 
+  // Load submitted-but-unprocessed handoffs from the real API.
+  // Filter: submittedToBilling === true && !processed.
+  // Money fields come from typed DB columns (monthlyValueCents, setupFeeCents,
+  // contractAmountCents) which are now exposed by rowToRecord in the route.
+  const loadHandoffs = useCallback(async () => {
+    setHandoffsLoading(true);
+    setHandoffsError(null);
+    try {
+      const res = await fetch("/api/sales-handoffs");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json() as { handoffs: Array<{
+        id: string;
+        clientName: string;
+        domain?: string | null;
+        contactName?: string | null;
+        contactEmail?: string | null;
+        contactPhone?: string | null;
+        monthlyValueCents?: number | null;
+        setupFeeCents?: number | null;
+        contractAmountCents?: number | null;
+        paymentTerms?: string | null;
+        termLengthMonths?: number | null;
+        summaryFields?: Record<string, string>;
+        preparedBy: string;
+        submittedToBilling?: boolean;
+        submittedToBillingAt?: string | null;
+        processed?: boolean;
+      }> };
+      const pending = data.handoffs.filter(
+        (h) => h.submittedToBilling === true && h.processed !== true
+      );
+      const rows: SalesHandoffRow[] = pending.map((h) => ({
+        id: h.id,
+        client: h.clientName,
+        domain: h.domain ?? null,
+        contactName: h.contactName ?? null,
+        contactEmail: h.contactEmail ?? null,
+        contactPhone: h.contactPhone ?? null,
+        monthlyValueCents: h.monthlyValueCents ?? null,
+        setupFeeCents: h.setupFeeCents ?? null,
+        contractAmountCents: h.contractAmountCents ?? null,
+        paymentTerms: h.paymentTerms ?? null,
+        termLengthMonths: h.termLengthMonths ?? null,
+        // servicesSold: best-effort from summaryFields; no dedicated typed column.
+        servicesSold: h.summaryFields?.["services-sold"] ?? "",
+        preparedBy: h.preparedBy,
+        submittedAt: h.submittedToBillingAt ?? null,
+      }));
+      setHandoffRows(rows);
+    } catch (err) {
+      setHandoffsError(err instanceof Error ? err.message : "Failed to load handoffs.");
+    } finally {
+      setHandoffsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadHandoffs();
+  }, [loadHandoffs]);
+
   function showToast(message: string, variant: "success" | "info" | "warning" | "error" = "success") {
     setToast({ message, variant });
   }
@@ -1651,28 +1756,29 @@ export default function BillingInvoicesPage() {
   // ─── Sales Handoff actions ─────────────────────────────────────────────────
 
   function handleRequestMissingInfo(row: SalesHandoffRow) {
-    // 1. Existing: update local billing intake status
-    setHandoffRows((prev) => prev.map((r) =>
-      r.id === row.id ? { ...r, billingIntakeStatus: "Info Requested" } : r
-    ));
-
-    // 2. New: create a real task on the Sales workspace's Tasks page,
-    //    assigned to the Sales Owner from this handoff row.
+    // Create a Sales task requesting missing info (domain is the most common gap).
     const today = new Date();
     const dueDate = `${today.toLocaleString("en-US", { month: "short" })} ${today.getDate() + 3}`;
+    const missingFields: string[] = [];
+    if (!row.domain) missingFields.push("domain");
+    if (!row.contactName) missingFields.push("contact name");
+    if (!row.contactEmail) missingFields.push("contact email");
+    const missingNote = missingFields.length > 0
+      ? `Missing: ${missingFields.join(", ")}. `
+      : "";
     const salesTask: WorkspaceTask = {
       id: `billing-info-req-${row.id}-${Date.now()}`,
       title: `Missing sales info needed for ${row.client} — requested by Billing`,
       client: row.client,
-      project: `${row.proposal} — Sales Handoff`,
+      project: `Sales Handoff ${row.id}`,
       department: "Sales",
       service: "Sales",
       source: "Manual Task",
-      assignee: row.salesOwner,
+      assignee: row.preparedBy || "Sales Team",
       priority: "High",
       status: "Pending",
       dueDate,
-      blocker: null,
+      blocker: missingNote || null,
     };
     // POST to file-backed API — cross-route-group reliable.
     fetch("/api/pending-sales-tasks", {
@@ -1681,23 +1787,25 @@ export default function BillingInvoicesPage() {
       body: JSON.stringify(salesTask),
     }).catch((err) => console.error("[Billing Invoices] Failed to persist sales task:", err));
 
-    log(`Info request sent to Sales for ${row.client} — task assigned to ${row.salesOwner}`);
-    showToast(`Missing info requested from ${row.salesOwner} for ${row.client} — task created on Sales Tasks`, "info");
+    log(`Info request sent to Sales for ${row.client} (prepared by ${row.preparedBy}) — ${missingNote || "no specific missing fields"}`);
+    showToast(`Missing info requested from ${row.preparedBy || "Sales"} for ${row.client} — task created on Sales Tasks`, "info");
   }
 
   function handleCreateBillingTask(row: SalesHandoffRow) {
+    const today = new Date();
+    const dueDate = `${today.toLocaleString("en-US", { month: "short" })} ${today.getDate() + 7}`;
     const newTask: WorkspaceTask = {
       id: `bi-handoff-${Date.now()}`,
       title: `Sales Handoff Review — ${row.client}`,
       client: row.client,
-      project: "Billing — Sales Handoff",
+      project: `Billing — Sales Handoff ${row.id}`,
       department: "Billing",
       service: "Billing",
       source: "Manual Task",
       assignee: "Lisa P.",
       priority: "High",
       status: "Pending",
-      dueDate: "Jun 30",
+      dueDate,
       blocker: null,
     };
     setBillingTaskList((prev) => [newTask, ...prev]);
@@ -1706,13 +1814,17 @@ export default function BillingInvoicesPage() {
   }
 
   function handleGenerateInvoiceFromHandoff(row: SalesHandoffRow) {
-    if (row.invoiceCreationStatus === "Invoice Generated") {
-      showToast(`Invoice already generated for ${row.client}`, "info");
+    if (row.generatedInvoiceNumber) {
+      showToast(`Invoice already generated for ${row.client} this session (${row.generatedInvoiceNumber})`, "info");
       return;
     }
+    const contractValue = row.contractAmountCents !== null ? (row.contractAmountCents / 100).toFixed(0) : "";
+    const monthlyValue  = row.monthlyValueCents  !== null ? (row.monthlyValueCents  / 100).toFixed(0) : "";
     setCreatePrefill({
       client: row.client,
       handoffId: row.id,
+      contractValue: contractValue ? `$${contractValue}` : undefined,
+      monthlyValue:  monthlyValue  ? `$${monthlyValue}`  : undefined,
     });
     setShowCreateModal(true);
   }
@@ -1824,7 +1936,8 @@ export default function BillingInvoicesPage() {
   }
 
   function getSalesHandoffMenuActions(row: SalesHandoffRow): MenuAction[] {
-    const invoiceAlreadyGenerated = row.invoiceCreationStatus === "Invoice Generated";
+    const invoiceAlreadyGenerated = !!row.generatedInvoiceNumber;
+    const hasDomain = !!row.domain;
     return [
       {
         label: "Review Sales Handoff",
@@ -1835,13 +1948,22 @@ export default function BillingInvoicesPage() {
         },
       },
       {
-        label: invoiceAlreadyGenerated ? `Invoice Generated (${row.generatedInvoiceNumber ?? ""})` : "Generate Invoice",
-        disabled: invoiceAlreadyGenerated,
+        // Generate Invoice: disabled if already generated this session, or if no domain
+        // (the CreateInvoiceModal requires a domain to look up the Business).
+        label: invoiceAlreadyGenerated
+          ? `Invoice Generated (${row.generatedInvoiceNumber})`
+          : hasDomain
+            ? "Generate Invoice"
+            : "Generate Invoice (disabled — no domain)",
+        disabled: invoiceAlreadyGenerated || !hasDomain,
         onClick: () => handleGenerateInvoiceFromHandoff(row),
       },
       {
         separator: true,
-        label: "Request Missing Sales Information",
+        // Request Missing Info: works for any handoff; most useful when domain is absent.
+        label: hasDomain
+          ? "Request Missing Sales Information"
+          : "Request Missing Sales Information (domain required)",
         onClick: () => handleRequestMissingInfo(row),
       },
       {
@@ -1850,14 +1972,18 @@ export default function BillingInvoicesPage() {
       },
       {
         separator: true,
-        label: "Return To Sales",
+        // Return To Sales: removes from local UI list.
+        // There is no persisted "returned" status on HandoffRecord; this is a local
+        // Billing session action. The handoff remains in Postgres unprocessed.
+        // A real Return-to-Sales flow would PATCH submittedToBilling to false, but
+        // that is not part of this run.
+        label: "Return To Sales (session only — does not alter DB record)",
         danger: true,
         onClick: () => {
-          setHandoffRows((prev) => prev.map((r) =>
-            r.id === row.id ? { ...r, billingIntakeStatus: "Returned to Sales", invoiceCreationStatus: "On Hold" } : r
-          ));
-          log(`${row.client} returned to Sales`);
-          showToast(`${row.client} returned to Sales team`, "warning");
+          // Remove from local list for this session — handoff stays unprocessed in DB.
+          setHandoffRows((prev) => prev.filter((r) => r.id !== row.id));
+          log(`${row.client} marked returned to Sales (local session only)`);
+          showToast(`${row.client} removed from this session’s queue. The handoff record in Postgres is unchanged — it will reappear on next page load.`, "warning");
         },
       },
     ];
@@ -2091,42 +2217,92 @@ export default function BillingInvoicesPage() {
 
       {/* Sales Handoff Invoice Creation */}
       <SectionWrapper
-        title="Sales Handoff Invoice Creation"
-        description="Bridge from Sales Closed Won deals to Billing. Use ⋮ to review handoffs, generate invoices, request info, or create tasks. Marking a generated invoice Paid auto-creates the client in the master list."
+        title={handoffsLoading ? "Sales Handoff Invoice Creation — Loading…" : `Sales Handoff Invoice Creation (${handoffRows.length} pending)`}
+        description="Real handoffs submitted to Billing by Sales. Filtered to: submittedToBilling AND NOT processed. Use ⋮ to review handoffs, generate invoices, request info, or create tasks."
       >
+        {handoffsError && (
+          <div className="rounded-lg border px-4 py-3 mb-3" style={{ background: "#FEF2F2", borderColor: "#FECACA", color: "#991B1B" }}>
+            <strong>Failed to load handoffs:</strong> {handoffsError}
+          </div>
+        )}
         <div className="overflow-x-auto rounded-lg border" style={{ borderColor: "var(--rtm-border-light)" }}>
           <table className="min-w-full">
             <thead>
               <tr>
                 <Th>Client</Th>
-                <Th>Sales Owner</Th>
-                <Th>Proposal</Th>
-                <Th>Contract Status</Th>
+                <Th>Domain</Th>
+                <Th>Contact</Th>
                 <Th>Services Sold</Th>
-                <Th>Billing Intake</Th>
-                <Th>Invoice Creation</Th>
+                <Th>Monthly</Th>
+                <Th>Setup Fee</Th>
+                <Th>Contract Total</Th>
+                <Th>Payment Terms</Th>
+                <Th>Submitted</Th>
                 <Th>⋮</Th>
               </tr>
             </thead>
             <tbody>
-              {handoffRows.map((row) => (
+              {handoffsLoading && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+                    Loading handoffs…
+                  </td>
+                </tr>
+              )}
+              {!handoffsLoading && handoffRows.length === 0 && !handoffsError && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-10 text-center" style={{ color: "var(--rtm-text-muted)" }}>
+                    <p className="text-sm font-semibold mb-1">No submitted handoffs awaiting processing</p>
+                    <p className="text-xs">Handoffs appear here when Sales submits them to Billing and they have not yet been processed on the Activation page.</p>
+                  </td>
+                </tr>
+              )}
+              {!handoffsLoading && handoffRows.map((row) => (
                 <tr key={row.id} className="transition-colors" style={{ background: "var(--rtm-bg)" }}
                   onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "var(--rtm-bg-alt, #F9FAFB)"; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = "var(--rtm-bg)"; }}
                 >
-                  <Td><span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{row.client}</span></Td>
-                  <Td muted>{row.salesOwner}</Td>
-                  <Td muted>{row.proposal}</Td>
-                  <Td><StatusBadge variant={contractStatusVariant(row.contractStatus)} label={row.contractStatus} size="sm" /></Td>
-                  <Td muted>{row.servicesSold}</Td>
-                  <Td><StatusBadge variant={intakeStatusVariant(row.billingIntakeStatus)} label={row.billingIntakeStatus} size="sm" /></Td>
                   <Td>
-                    <div className="flex items-center gap-1.5">
-                      <StatusBadge variant={invoiceCreationVariant(row.invoiceCreationStatus)} label={row.invoiceCreationStatus} size="sm" />
-                      {row.generatedInvoiceNumber && (
-                        <span className="text-[10px] font-mono font-semibold" style={{ color: "var(--rtm-text-muted)" }}>{row.generatedInvoiceNumber}</span>
+                    <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{row.client}</span>
+                  </Td>
+                  <Td>
+                    {row.domain
+                      ? <span className="font-mono text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{row.domain}</span>
+                      : <span className="text-xs font-semibold" style={{ color: "#DC2626" }}>Missing — cannot process</span>
+                    }
+                  </Td>
+                  <Td>
+                    <div className="space-y-0.5">
+                      {row.contactName  && <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{row.contactName}</p>}
+                      {row.contactEmail && <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>{row.contactEmail}</p>}
+                      {row.contactPhone && <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>{row.contactPhone}</p>}
+                      {!row.contactName && !row.contactEmail && !row.contactPhone && (
+                        <span className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>—</span>
                       )}
                     </div>
+                  </Td>
+                  <Td muted>{row.servicesSold || "—"}</Td>
+                  <Td>
+                    <span style={{ color: row.monthlyValueCents === null ? "var(--rtm-text-muted)" : "var(--rtm-text-primary)", fontStyle: row.monthlyValueCents === null ? "italic" : undefined }}>
+                      {centsToMoney(row.monthlyValueCents)}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span style={{ color: row.setupFeeCents === null ? "var(--rtm-text-muted)" : "var(--rtm-text-primary)", fontStyle: row.setupFeeCents === null ? "italic" : undefined }}>
+                      {centsToMoney(row.setupFeeCents)}
+                    </span>
+                  </Td>
+                  <Td>
+                    <span style={{ color: row.contractAmountCents === null ? "var(--rtm-text-muted)" : "var(--rtm-text-primary)", fontStyle: row.contractAmountCents === null ? "italic" : undefined }}>
+                      {centsToMoney(row.contractAmountCents)}
+                    </span>
+                  </Td>
+                  <Td muted>{row.paymentTerms ?? "—"}</Td>
+                  <Td muted>
+                    {row.submittedAt
+                      ? new Date(row.submittedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                      : "—"
+                    }
                   </Td>
                   <Td><ContextMenu actions={getSalesHandoffMenuActions(row)} /></Td>
                 </tr>
@@ -2135,9 +2311,8 @@ export default function BillingInvoicesPage() {
           </table>
         </div>
         <p className="text-xs mt-2" style={{ color: "var(--rtm-text-muted)" }}>
-          When an invoice is marked Paid, Billing completes the Client & Business creation flow.
-          Client and Business records are written to Postgres. Sales is then notified to move
-          the opportunity to Closed Won in their pipeline.
+          Handoffs without a domain cannot be processed. Request missing info from Sales.
+          Process &amp; Create Client is on the Activation page. After processing, raise the invoice using “Create Invoice” above.
         </p>
       </SectionWrapper>
 
