@@ -23,7 +23,8 @@ export type BudgetServiceId =
   | "meta-ads"
   | "meta-ads-setup"
   | "website"
-  | "website-maintenance";
+  | "website-maintenance"
+  | "website-hosting";
 
 export type QuantityUnit = "location" | "campaign" | "flat" | "page";
 
@@ -294,6 +295,23 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     department: "Web Development",
     isRecurring: true,
   },
+  {
+    id: "website-hosting",
+    catalogId: "svc-web-hosting",
+    label: "Website Hosting",
+    description:
+      "Managed website hosting with uptime monitoring and SSL.",
+    quantityUnit: "flat",
+    quantityOptions: [1],
+    defaultQuantity: 1,
+    defaultMonthlyPrice: 75,
+    defaultSetupFee: 0,
+    minMonthlyPrice: 50,
+    maxMonthlyPrice: 200,
+    setupFeeEditable: false,
+    department: "Web Development",
+    isRecurring: true,
+  },
 ];
 
 // ─── Lookup Helper ────────────────────────────────────────────────────────────
@@ -329,9 +347,10 @@ export const RECOMMENDATION_TO_BUDGET_MAP: Record<string, BudgetServiceId> = {
   // Meta Ads — distinct: one-time setup vs ongoing management
   "Meta Ads Campaign Setup": "meta-ads-setup",
   "Meta Ads Monthly Management": "meta-ads",
-  // Website — distinct: redesign (one-time) vs maintenance (recurring)
+  // Website — distinct: redesign (one-time) vs maintenance (recurring) vs hosting (recurring)
   "Website Redesign": "website",
   "Website Maintenance": "website-maintenance",
+  "Website Hosting": "website-hosting",
   // Tracking/pixel → no matching budget service; intentionally unmapped
   // ── Legacy keys kept for old drafts that stored these names ───────────────
   "SEO": "seo",

@@ -3,8 +3,35 @@
 import React, { useState, useEffect, useRef } from "react";
 import { generateRecommendationsFromAudit } from "@/lib/sales/recommendation-engine";
 import { RECOMMENDATION_GROUP_CONFIG } from "@/lib/sales/recommendation-config";
+import { RECOMMENDATION_TO_BUDGET_MAP } from "@/lib/sales/budget-config";
 import type { RecommendationItem, RecommendationResult } from "@/lib/sales/recommendation-engine";
 import type { ProposalWizardState } from "../ProposalWizard";
+
+// ─── Chip → Department map ─────────────────────────────────────────────────────
+// Maps service-interest chip labels to their database department names.
+// A chip not in this map (Content, Reporting) matches no department and
+// the fallback will surface it by name.
+
+const CHIP_TO_DEPARTMENT: Record<string, string> = {
+  SEO: "SEO",
+  GBP: "GBP",
+  PPC: "PPC",
+  LSA: "LSA",
+  "Meta Ads": "Meta Ads",
+  Website: "Web Development",
+};
+
+// ─── Fallback catalogue item ───────────────────────────────────────────────────
+
+interface FallbackItem {
+  id: string;
+  label: string;
+  department: string;
+  defaultMonthlyPrice: number;
+  defaultSetupFee: number;
+  isRecurring: boolean;
+  approved: boolean;
+}
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -252,6 +279,88 @@ function RecommendationCard({
   );
 }
 
+// ─── FallbackServiceRow ───────────────────────────────────────────────────────
+
+function FallbackServiceRow({
+  item,
+  onToggle,
+}: {
+  item: FallbackItem;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className="rounded-xl border transition-all"
+      style={{
+        background: item.approved ? "#F0FDF4" : "#F9FAFB",
+        borderColor: item.approved ? "#BBF7D0" : "#E5E7EB",
+        opacity: item.approved ? 1 : 0.7,
+      }}
+    >
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-sm font-bold mb-2"
+              style={{ color: item.approved ? "#15803D" : "#6B7280" }}
+            >
+              {item.label}
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div>
+                <p className="text-[10px] font-bold" style={{ color: "var(--rtm-text-muted)" }}>
+                  DEPARTMENT
+                </p>
+                <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                  {item.department}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold" style={{ color: "var(--rtm-text-muted)" }}>
+                  {item.isRecurring ? "MONTHLY FEE" : "SETUP FEE"}
+                </p>
+                <p className="text-sm font-bold" style={{ color: "#1D4ED8" }}>
+                  {item.isRecurring
+                    ? item.defaultMonthlyPrice > 0
+                      ? `$${item.defaultMonthlyPrice.toLocaleString()}/mo`
+                      : "—"
+                    : item.defaultSetupFee > 0
+                    ? `$${item.defaultSetupFee.toLocaleString()}`
+                    : "—"}
+                </p>
+              </div>
+              {!item.isRecurring && item.defaultMonthlyPrice === 0 ? null : (
+                <div>
+                  <p className="text-[10px] font-bold" style={{ color: "var(--rtm-text-muted)" }}>
+                    SETUP FEE
+                  </p>
+                  <p className="text-sm font-bold" style={{ color: "#C2410C" }}>
+                    {item.defaultSetupFee > 0
+                      ? `$${item.defaultSetupFee.toLocaleString()}`
+                      : "—"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onToggle}
+            className="px-3 py-1.5 rounded-lg border text-xs font-bold transition-all hover:opacity-80 flex-shrink-0"
+            style={{
+              background: item.approved ? "#F0FDF4" : "var(--rtm-surface)",
+              borderColor: item.approved ? "#BBF7D0" : "var(--rtm-border)",
+              color: item.approved ? "#15803D" : "#6B7280",
+            }}
+          >
+            {item.approved ? "✓ Include" : "Skip"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsProps) {
@@ -259,6 +368,14 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
   const [loading, setLoading] = useState(false);
   const [recStatuses, setRecStatuses] = useState<Record<string, WizardRecStatus>>({});
   const generated = useRef(false);
+
+  // ── Fallback state (no audit findings, has service interests) ───────────────
+  const [fallbackItems, setFallbackItems] = useState<FallbackItem[]>([]);
+  const [fallbackLoading, setFallbackLoading] = useState(false);
+  const [fallbackError, setFallbackError] = useState<string | null>(null);
+  const [unmappedChips, setUnmappedChips] = useState<string[]>([]);
+  const [noServiceChips, setNoServiceChips] = useState<string[]>([]);
+  const fallbackFetched = useRef(false);
 
   // Hybrid audit notification state
   // Only the "pending department reviews" banner is shown for existing-audit mode.
@@ -351,15 +468,330 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
     });
   }
 
+  // ── Fallback: fetch catalogue services when no audit result ──────────────────
+  // Runs once when Step 3 is first rendered without an auditResult.
+  // Skipped if auditResult is present (normal path runs instead).
+  const serviceInterests: string[] = Array.isArray(
+    (state.intakeRecord as Record<string, unknown> | null)?.serviceInterest
+  )
+    ? ((state.intakeRecord as Record<string, unknown>).serviceInterest as string[])
+    : [];
+
+  useEffect(() => {
+    if (state.auditResult) return;
+    if (fallbackFetched.current) return;
+    if (serviceInterests.length === 0) return;
+    fallbackFetched.current = true;
+
+    // Map chips to departments
+    const matched: string[] = [];
+    const unmapped: string[] = [];
+    for (const chip of serviceInterests) {
+      const dept = CHIP_TO_DEPARTMENT[chip];
+      if (dept) {
+        matched.push(dept);
+      } else {
+        unmapped.push(chip);
+      }
+    }
+    setUnmappedChips(unmapped);
+
+    if (matched.length === 0) {
+      // All chips unmapped — nothing to fetch
+      return;
+    }
+
+    setFallbackLoading(true);
+    const params = new URLSearchParams({ departments: matched.join(",") });
+    fetch(`/api/sales/service-catalog/by-department?${params.toString()}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const b = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+          throw new Error((b.error as string) ?? `Fetch failed: ${res.status}`);
+        }
+        return res.json() as Promise<{
+          services: {
+            id: string;
+            label: string;
+            department: string;
+            defaultMonthlyPrice: number;
+            defaultSetupFee: number;
+            isRecurring: boolean;
+          }[];
+        }>;
+      })
+      .then(({ services }) => {
+        // Identify which mapped departments returned no services
+        const deptSet = new Set(services.map((s) => s.department));
+        const noSvc: string[] = [];
+        for (const chip of serviceInterests) {
+          const dept = CHIP_TO_DEPARTMENT[chip];
+          if (dept && !deptSet.has(dept)) {
+            noSvc.push(chip);
+          }
+        }
+        setNoServiceChips(noSvc);
+
+        const items: FallbackItem[] = services.map((s) => ({
+          id: s.id,
+          label: s.label,
+          department: s.department,
+          defaultMonthlyPrice: s.defaultMonthlyPrice,
+          defaultSetupFee: s.defaultSetupFee,
+          isRecurring: s.isRecurring,
+          approved: true,
+        }));
+        setFallbackItems(items);
+
+        // Write initial approved set into wizard state
+        const approvedLabels = items.map((i) => i.label);
+        onUpdate({
+          approvedRecommendations: items.map((i) => i.id),
+          approvedRecommendationServiceNames: approvedLabels,
+        });
+      })
+      .catch((err: unknown) => {
+        setFallbackError(String(err));
+      })
+      .finally(() => {
+        setFallbackLoading(false);
+      });
+  // serviceInterests identity is stable across renders (derived from state.intakeRecord)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.auditResult]);
+
+  // Keep wizard state in sync whenever the rep toggles items in the fallback list
+  function toggleFallbackItem(id: string) {
+    setFallbackItems((prev) => {
+      const updated = prev.map((item) =>
+        item.id === id ? { ...item, approved: !item.approved } : item
+      );
+      const approvedItems = updated.filter((i) => i.approved);
+      onUpdate({
+        approvedRecommendations: approvedItems.map((i) => i.id),
+        approvedRecommendationServiceNames: approvedItems.map((i) => i.label),
+      });
+      return updated;
+    });
+  }
+
   if (!state.auditResult) {
+    // ── Fallback loading ────────────────────────────────────────────────────
+    if (fallbackLoading) {
+      return (
+        <div
+          className="rounded-xl border px-6 py-12 text-center"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+            Loading services for selected interests…
+          </p>
+        </div>
+      );
+    }
+
+    // ── Fallback error ──────────────────────────────────────────────────────
+    if (fallbackError) {
+      return (
+        <div
+          className="rounded-xl border px-6 py-12 text-center"
+          style={{ background: "#FEF2F2", borderColor: "#FECACA" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "#DC2626" }}>
+            Could not load the service catalogue.
+          </p>
+          <p className="text-xs mt-1" style={{ color: "#EF4444" }}>
+            {fallbackError}
+          </p>
+        </div>
+      );
+    }
+
+    // ── No audit AND no service interests → explain both routes ────────────
+    if (serviceInterests.length === 0) {
+      return (
+        <div
+          className="rounded-xl border px-6 py-12 text-center space-y-3"
+          style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+        >
+          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+            No audit findings and no service interests selected.
+          </p>
+          <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+            To generate recommendations, do one of the following:
+          </p>
+          <ul className="text-sm text-left mx-auto max-w-md space-y-2" style={{ color: "var(--rtm-text-secondary)" }}>
+            <li>
+              <span className="font-semibold">Option 1 — Run an audit:</span> Go back to Step 2
+              and complete an audit. Recommendations will be generated from the findings.
+            </li>
+            <li>
+              <span className="font-semibold">Option 2 — Select service interests:</span> Go back
+              to Step 1 and select at least one service interest (SEO, GBP, PPC, etc.). The
+              catalogue services for those interests will be offered here for you to review.
+            </li>
+          </ul>
+        </div>
+      );
+    }
+
+    // ── Fallback UI: service interests present ──────────────────────────────
+    const approvedCount = fallbackItems.filter((i) => i.approved).length;
+    const totalMonthly = fallbackItems
+      .filter((i) => i.approved && i.isRecurring)
+      .reduce((s, i) => s + i.defaultMonthlyPrice, 0);
+    const totalSetup = fallbackItems
+      .filter((i) => i.approved)
+      .reduce((s, i) => s + i.defaultSetupFee, 0);
+
+    // Group by department for display
+    const byDept = new Map<string, FallbackItem[]>();
+    for (const item of fallbackItems) {
+      if (!byDept.has(item.department)) byDept.set(item.department, []);
+      byDept.get(item.department)!.push(item);
+    }
+
+    // Verify all approved labels are in the map (surface any that would be silently dropped)
+    const unmappedLabels = fallbackItems
+      .filter((i) => i.approved && !RECOMMENDATION_TO_BUDGET_MAP[i.label])
+      .map((i) => i.label);
+
     return (
-      <div
-        className="rounded-xl border px-6 py-12 text-center"
-        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
-      >
-        <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
-          Complete Step 2 (Audit) to generate recommendations.
-        </p>
+      <div className="space-y-6">
+        {/* Source disclosure banner */}
+        <div
+          className="rounded-xl border px-5 py-4"
+          style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}
+        >
+          <p className="text-sm font-semibold" style={{ color: "#1D4ED8" }}>
+            Service Interest Fallback — no audit was completed.
+          </p>
+          <p className="text-xs mt-0.5" style={{ color: "#1E40AF" }}>
+            These services come from the stated service interest ({serviceInterests.join(", ")}),
+            not from an analysis of the client&apos;s site. They are every active service in
+            those departments. Review and uncheck anything that does not apply before advancing.
+          </p>
+        </div>
+
+        {/* Unmapped chips (Content, Reporting, etc.) */}
+        {(unmappedChips.length > 0 || noServiceChips.length > 0) && (
+          <div
+            className="rounded-xl border px-5 py-4"
+            style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}
+          >
+            <p className="text-sm font-semibold" style={{ color: "#D97706" }}>
+              Some interests have no catalogue services yet.
+            </p>
+            <ul className="text-xs mt-1 space-y-0.5" style={{ color: "#92400E" }}>
+              {unmappedChips.map((chip) => (
+                <li key={chip}>
+                  <span className="font-semibold">{chip}:</span> This interest does not map to any
+                  department in the catalogue. No services are available for it.
+                </li>
+              ))}
+              {noServiceChips.map((chip) => (
+                <li key={chip}>
+                  <span className="font-semibold">{chip}:</span> No active services exist in this
+                  department yet. Contact your administrator to add catalogue entries.
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Budget map coverage warning */}
+        {unmappedLabels.length > 0 && (
+          <div
+            className="rounded-xl border px-5 py-4"
+            style={{ background: "#FEF2F2", borderColor: "#FECACA" }}
+          >
+            <p className="text-sm font-semibold" style={{ color: "#DC2626" }}>
+              Warning: the following services are not in the budget map and will be dropped when
+              advancing to Step 4. Contact your administrator to add them.
+            </p>
+            <ul className="text-xs mt-1" style={{ color: "#B91C1C" }}>
+              {unmappedLabels.map((l) => (
+                <li key={l}>{l}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Department groups */}
+        {Array.from(byDept.entries()).map(([dept, items]) => (
+          <div
+            key={dept}
+            className="rounded-xl border"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          >
+            <div
+              className="px-5 py-3 border-b"
+              style={{ background: "#F8FAFC", borderColor: "var(--rtm-border)" }}
+            >
+              <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                {dept}
+              </p>
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                {items.filter((i) => i.approved).length} of {items.length} selected
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              {items.map((item) => (
+                <FallbackServiceRow
+                  key={item.id}
+                  item={item}
+                  onToggle={() => toggleFallbackItem(item.id)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Summary bar */}
+        <div
+          className="rounded-xl border p-4 sticky bottom-4"
+          style={{
+            background: approvedCount > 0 ? "#F0FDF4" : "#FFF7ED",
+            borderColor: approvedCount > 0 ? "#BBF7D0" : "#FED7AA",
+          }}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-6">
+              <div>
+                <p className="text-[10px] font-bold" style={{ color: "var(--rtm-text-muted)" }}>
+                  SELECTED
+                </p>
+                <p
+                  className="text-lg font-black"
+                  style={{ color: approvedCount > 0 ? "#15803D" : "#C2410C" }}
+                >
+                  {approvedCount} service{approvedCount !== 1 ? "s" : ""}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold" style={{ color: "var(--rtm-text-muted)" }}>
+                  MONTHLY RECURRING
+                </p>
+                <p className="text-lg font-black" style={{ color: "#1D4ED8" }}>
+                  ${totalMonthly.toLocaleString()}/mo
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold" style={{ color: "var(--rtm-text-muted)" }}>
+                  SETUP FEES
+                </p>
+                <p className="text-lg font-black" style={{ color: "#C2410C" }}>
+                  ${totalSetup.toLocaleString()}
+                </p>
+              </div>
+            </div>
+            {approvedCount === 0 && (
+              <p className="text-xs font-semibold" style={{ color: "#C2410C" }}>
+                Select at least one service to continue to the Budget Optimizer.
+              </p>
+            )}
+          </div>
+        </div>
       </div>
     );
   }
