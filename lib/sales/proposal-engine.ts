@@ -57,8 +57,32 @@ function isoNow(): string {
 }
 
 /**
+ * Substitute well-known tokens in defaultContent with real values.
+ * Only called for editable sections on build; safe to run repeatedly.
+ */
+function applyContentTokens(
+  content: string,
+  clientName: string,
+  preparedBy: string
+): string {
+  const dateStr = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  return content
+    .replaceAll("[Client Name]", clientName || "Client")
+    .replaceAll("[Prepared By]", preparedBy || "Sales Rep")
+    .replaceAll("[Proposal Date]", dateStr);
+}
+
+/**
  * Compute what content an auto-populated section should receive from context.
  * Returns undefined when no context value is available for the section.
+ *
+ * For non-editable sections that carry static defaultContent (e.g. "terms"),
+ * callers should fall back to the section’s own defaultContent rather than
+ * treating undefined as "no content".
  */
 function contextContentFor(
   sectionId: ProposalSectionId,
@@ -111,10 +135,15 @@ export function buildProposalFromTemplate(
     .map((sectionId) => {
       const def = PROPOSAL_SECTIONS.find((s) => s.id === sectionId);
       if (!def) return null;
+      // For editable sections, substitute name/date tokens so the rep sees
+      // real values rather than brackets.
+      const content = def.editable
+        ? applyContentTokens(def.defaultContent, clientName, preparedBy)
+        : def.defaultContent;
       return {
         id: def.id,
         label: def.label,
-        content: def.defaultContent,
+        content,
         status: "empty" as ProposalSectionStatus,
         editable: def.editable,
         order: def.order,
@@ -155,7 +184,7 @@ export function buildProposalWithContext(
 
   const sections = base.sections.map((section): ProposalSection => {
     if (!section.editable) {
-      // Non-editable section — attempt to populate from context
+      // Non-editable section — attempt to populate from context first.
       const contextContent = contextContentFor(section.id, context);
       if (contextContent) {
         return {
@@ -164,7 +193,16 @@ export function buildProposalWithContext(
           status: "complete",
         };
       }
-      // No context available — leave as empty, show placeholder
+      // No upstream context value — fall back to the section’s own
+      // defaultContent (e.g. TERMS has static legal copy that is always
+      // present regardless of context).  If defaultContent is non-empty
+      // the section is complete; otherwise it stays empty.
+      if (section.content.trim().length > 0) {
+        return {
+          ...section,
+          status: "complete",
+        };
+      }
       return {
         ...section,
         status: "empty",

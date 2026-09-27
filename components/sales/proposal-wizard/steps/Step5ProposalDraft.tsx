@@ -155,6 +155,9 @@ export function Step5ProposalDraft({
         preparedBy="Sales Rep"
         templateId="standard"
         context={context}
+        document={state.proposalDocument ?? undefined}
+        onDocumentChange={(doc) => onUpdate({ proposalDocument: doc })}
+        onSaveDraft={onSaveDraft}
       />
 
       {/* Actions */}

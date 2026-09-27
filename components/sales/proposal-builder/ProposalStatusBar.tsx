@@ -15,6 +15,12 @@ interface ProposalStatusBarProps {
   proposal: ProposalDocument;
   onTogglePreview: () => void;
   previewMode: boolean;
+  /**
+   * When provided, the Save Draft button calls this handler and the rep sees
+   * the same save feedback the wizard provides.  When omitted (standalone use
+   * outside the wizard), the button is disabled with an honest tooltip.
+   */
+  onSaveDraft?: () => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -23,6 +29,7 @@ export default function ProposalStatusBar({
   proposal,
   onTogglePreview,
   previewMode,
+  onSaveDraft,
 }: ProposalStatusBarProps) {
   const statusLabel = PROPOSAL_STATUS_LABELS[proposal.status];
   const statusColors = PROPOSAL_STATUS_COLORS[proposal.status];
@@ -248,12 +255,14 @@ export default function ProposalStatusBar({
           {previewMode ? "Back to Editor" : "Preview Proposal"}
         </button>
 
-        {/* Save Draft */}
+        {/* Save Draft — wired to the wizard's save path when inside the wizard.
+            When used standalone (no onSaveDraft), the button is disabled with
+            an honest tooltip rather than appearing functional and doing nothing. */}
         <button
-          onClick={() => {
-            // Mock — no real persistence in this stage
-          }}
-          className="w-full px-4 py-2.5 text-xs font-semibold rounded-lg border transition-all hover:opacity-90"
+          onClick={onSaveDraft}
+          disabled={!onSaveDraft}
+          title={!onSaveDraft ? "Save is only available inside the proposal wizard" : undefined}
+          className="w-full px-4 py-2.5 text-xs font-semibold rounded-lg border transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             background: "var(--rtm-bg)",
             color: "var(--rtm-text-secondary)",
@@ -263,12 +272,12 @@ export default function ProposalStatusBar({
           Save Draft
         </button>
 
-        {/* Send for Review */}
+        {/* Send for Review — no review workflow exists in the system.
+            Disabled with tooltip rather than appearing functional and doing nothing. */}
         <button
-          onClick={() => {
-            // Mock — no real submission in this stage
-          }}
-          className="w-full px-4 py-2.5 text-xs font-semibold rounded-lg border transition-all hover:opacity-90"
+          disabled
+          title="Review workflow not yet available"
+          className="w-full px-4 py-2.5 text-xs font-semibold rounded-lg border transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             background: "#FFF7ED",
             color: "#C2410C",

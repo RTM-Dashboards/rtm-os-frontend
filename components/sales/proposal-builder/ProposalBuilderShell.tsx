@@ -40,6 +40,22 @@ interface ProposalBuilderShellProps {
     recommendedServices?: string[];
     budgetSummary?: string;
   };
+  /**
+   * When supplied, the shell is controlled: it renders this document and calls
+   * onDocumentChange whenever the rep edits a section or reorders. The parent
+   * owns the source of truth and is responsible for persisting it.
+   *
+   * When omitted, the shell manages its own private document (standalone use).
+   */
+  document?: ProposalDocument;
+  onDocumentChange?: (doc: ProposalDocument) => void;
+  /**
+   * Forwarded to ProposalStatusBar.  When supplied (wizard context), the Save
+   * Draft button in the status bar calls this handler and the rep sees the
+   * wizard's own save feedback.  When omitted (standalone), the button is
+   * disabled with an honest tooltip.
+   */
+  onSaveDraft?: () => void;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -49,21 +65,52 @@ export default function ProposalBuilderShell({
   preparedBy = "",
   templateId = "standard",
   context,
+  document: controlledDocument,
+  onDocumentChange,
+  onSaveDraft,
 }: ProposalBuilderShellProps) {
-  const [proposal, setProposal] = useState<ProposalDocument | null>(null);
+  // When a controlled document is provided, the shell is a pure presenter:
+  // it delegates all state ownership to the parent.  When no document is
+  // provided (standalone use), it owns its own private state.
+  const isControlled = controlledDocument !== undefined;
+
+  const [privateProposal, setPrivateProposal] = useState<ProposalDocument | null>(null);
   const [activeSection, setActiveSection] = useState<ProposalSectionId | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState(templateId);
 
-  // Initialize proposal on mount
+  // The document the shell renders — controlled doc wins when present.
+  const proposal: ProposalDocument | null = isControlled ? controlledDocument : privateProposal;
+
+  // Helper: push an updated document outward (controlled) or into local state
+  // (standalone).  Keeps the two code paths identical below.
+  function applyDocument(doc: ProposalDocument) {
+    if (isControlled) {
+      onDocumentChange?.(doc);
+    } else {
+      setPrivateProposal(doc);
+    }
+  }
+
+  // Initialize private proposal on mount — only when NOT controlled.
+  // When controlled, the parent already owns the document; running the builder
+  // here would overwrite the rep's saved edits with a fresh skeleton.
   useEffect(() => {
+    if (isControlled) {
+      // Controlled mode: default the active section from the incoming document.
+      if (controlledDocument && controlledDocument.sections.length > 0 && !activeSection) {
+        setActiveSection(controlledDocument.sections[0].id);
+      }
+      return;
+    }
+
+    // Standalone mode: build from template/context.
     const doc =
       context && Object.values(context).some((v) => v !== undefined && (Array.isArray(v) ? v.length > 0 : true))
         ? buildProposalWithContext(selectedTemplateId, clientName, preparedBy, context)
         : buildProposalFromTemplate(selectedTemplateId, clientName, preparedBy);
 
-    setProposal(doc);
-    // Default to first section
+    setPrivateProposal(doc);
     if (doc.sections.length > 0) {
       setActiveSection(doc.sections[0].id);
     }
@@ -79,12 +126,12 @@ export default function ProposalBuilderShell({
 
   function handleSectionUpdate(sectionId: ProposalSectionId, content: string) {
     if (!proposal) return;
-    setProposal(updateProposalSection(proposal, sectionId, content));
+    applyDocument(updateProposalSection(proposal, sectionId, content));
   }
 
   function handleReorder(sectionId: ProposalSectionId, direction: string) {
     if (!proposal) return;
-    setProposal(reorderSection(proposal, sectionId, direction));
+    applyDocument(reorderSection(proposal, sectionId, direction));
   }
 
   function handleTogglePreview() {
@@ -98,7 +145,7 @@ export default function ProposalBuilderShell({
         ? buildProposalWithContext(newTemplateId, clientName, preparedBy, context ?? {})
         : buildProposalFromTemplate(newTemplateId, clientName, preparedBy);
 
-    setProposal(doc);
+    applyDocument(doc);
     if (doc.sections.length > 0) {
       setActiveSection(doc.sections[0].id);
     }
@@ -347,6 +394,7 @@ export default function ProposalBuilderShell({
             proposal={proposal}
             onTogglePreview={handleTogglePreview}
             previewMode={previewMode}
+            onSaveDraft={onSaveDraft}
           />
         </div>
       </div>

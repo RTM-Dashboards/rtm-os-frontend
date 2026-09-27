@@ -583,6 +583,7 @@ export interface HomeServicesIntakeRecord {
   primaryLeadSource: string;
   // Section 4 — Goals
   primaryGoals: string[];
+  serviceInterest: string[];
   targetBudget: string;
   timeline: string;
   seasonalConsiderations: string;

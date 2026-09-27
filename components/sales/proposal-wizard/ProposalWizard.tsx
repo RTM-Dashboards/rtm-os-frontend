@@ -53,6 +53,9 @@ export interface ProposalWizardState {
   preselectedAuditId: string | null;
   // Audit type label for display in Step 2 pre-select summary
   preselectedAuditType: string | null;
+  // True when clientInfo was prefilled from the linked Opportunity on first open.
+  // Used to show a non-blocking "Pre-filled from opportunity" banner in Step 1.
+  opportunityPrefilled?: boolean;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -70,9 +73,13 @@ const STORAGE_PREFIX = "rtm-proposal-draft-";
 
 // ─── API persistence helpers ──────────────────────────────────────────────────
 
-async function saveProposalToApi(state: ProposalWizardState): Promise<void> {
+/**
+ * Persist the proposal to the API.  Returns true on success, false on failure.
+ * Throws nothing: callers decide whether to surface the failure.
+ */
+async function saveProposalToApi(state: ProposalWizardState): Promise<boolean> {
   try {
-    await fetch("/api/sales-proposals", {
+    const res = await fetch("/api/sales-proposals", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -81,8 +88,10 @@ async function saveProposalToApi(state: ProposalWizardState): Promise<void> {
         updatedAt: new Date().toISOString(),
       }),
     });
+    return res.ok;
   } catch {
-    // Network errors are non-fatal — localStorage copy remains as fallback
+    // Network error — localStorage copy remains as fallback
+    return false;
   }
 }
 
@@ -157,6 +166,7 @@ function createDefaultState(wizardId: string): ProposalWizardState {
     aiAuditResult: null,
     preselectedAuditId: null,
     preselectedAuditType: null,
+    opportunityPrefilled: false,
   };
 }
 
@@ -209,6 +219,10 @@ export function ProposalWizard({
   onSaveDraft,
   onExit,
 }: ProposalWizardProps) {
+  // "save-failed" | "save-ok" | null — drives the non-blocking save-status banner
+  const [saveAlert, setSaveAlert] = useState<"save-failed" | "save-ok" | null>(null);
+  const saveAlertTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [state, setState] = useState<ProposalWizardState>(() => {
     const id = initialState?.wizardId ?? generateWizardId();
 
@@ -249,23 +263,146 @@ export function ProposalWizard({
 
   // Track whether the initial API hydration has run
   const apiHydrated = useRef(false);
+  // Track whether the opportunity prefill has been attempted (run once only)
+  const opportunityPrefillAttempted = useRef(false);
+  // Resolved once the API hydration attempt completes (success or failure).
+  // The prefill effect awaits this so it always runs AFTER hydration, making
+  // the ordering deterministic: hydrate first, then fill any fields still empty.
+  const hydrationDone = useRef<Promise<void>>(Promise.resolve());
+  const resolveHydration = useRef<() => void>(() => { /* noop until effect sets real resolver */ });
 
   // On mount: attempt to load state from API (handles server-persisted drafts
   // and cross-device recovery). Merges API record over localStorage snapshot
   // so the newer record wins.
+  //
+  // ORDERING CONTRACT: hydrationDone resolves after this effect finishes
+  // (whether the API call succeeded, returned nothing, or threw). The prefill
+  // effect awaits hydrationDone so it always reads the post-hydration state.
   useEffect(() => {
     if (apiHydrated.current) return;
     apiHydrated.current = true;
+    // Create the promise that the prefill effect will await.
+    hydrationDone.current = new Promise<void>((resolve) => {
+      resolveHydration.current = resolve;
+    });
     void loadProposalFromApi(state.wizardId).then((apiRecord) => {
-      if (!apiRecord) return;
+      if (!apiRecord) {
+        resolveHydration.current();
+        return;
+      }
       const apiTime =
         apiRecord.lastSavedAt ??
         ((apiRecord as unknown as Record<string, string>).updatedAt ?? null);
       const localTime = state.lastSavedAt;
       if (apiTime && (!localTime || new Date(apiTime) > new Date(localTime))) {
-        setState((prev) => ({ ...prev, ...apiRecord }));
+        // Merge the API record, but preserve any opportunityId so the prefill
+        // effect can still identify which opportunity to fetch.
+        setState((prev) => ({
+          ...prev,
+          ...apiRecord,
+          // Keep the opportunityId that was resolved at init time so the
+          // prefill effect (which runs next) can still use it.
+          opportunityId: prev.opportunityId ?? apiRecord.opportunityId ?? null,
+        }));
       }
+      resolveHydration.current();
+    }).catch(() => {
+      // Network error — still resolve so the prefill effect is not blocked.
+      resolveHydration.current();
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // On mount: if opportunityId is set, fetch that opportunity and prefill any
+  // clientInfo fields that are still empty.  Empty = the field is "".  Fields
+  // that already have a value (from localStorage or from API hydration) are
+  // NEVER overwritten — a rep returning to a draft keeps their edits.
+  //
+  // ORDERING CONTRACT: this effect awaits hydrationDone before touching state
+  // so hydration always runs first.  Because we use functional setState the
+  // comparison reads the post-hydration state, not the mount-time snapshot.
+  //
+  // Failure modes are all silent: no opportunityId, fetch error, 404, or any
+  // thrown exception → the wizard opens exactly as it would without this effect.
+  useEffect(() => {
+    if (opportunityPrefillAttempted.current) return;
+    opportunityPrefillAttempted.current = true;
+    const oppId = state.opportunityId;
+    if (!oppId) return;
+    void (async () => {
+      try {
+        // Wait for API hydration to finish so we see the real saved state
+        // before deciding which fields are empty.
+        await hydrationDone.current;
+
+        const res = await fetch("/api/sales-opportunities");
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          records: {
+            id: string;
+            businessName?: string;
+            contactName?: string;
+            contactEmail?: string;
+            contactPhone?: string;
+            tradeType?: string;
+            industry?: string;
+            leadSource?: string;
+            discoveryNotes?: string;
+            website?: string;
+            serviceInterest?: string[];
+          }[];
+        };
+        const opp = data.records.find((r) => r.id === oppId);
+        if (!opp) return;
+
+        setState((prev) => {
+          // Read clientInfo from the CURRENT state (post-hydration) so we
+          // never overwrite a rep's real saved values.
+          const ci = prev.clientInfo;
+          const contactName = opp.contactName ?? "";
+          const updated = {
+            name:         ci.name         || contactName,
+            businessName: ci.businessName || (opp.businessName ?? ""),
+            industry:     ci.industry     || (opp.industry ?? opp.tradeType ?? ""),
+            location:     ci.location,   // no Opportunity column — leave as-is
+            website:      ci.website      || (opp.website ?? ""),
+            leadSource:   ci.leadSource   || (opp.leadSource ?? ""),
+            contactName:  ci.contactName  || contactName,
+            contactEmail: ci.contactEmail || (opp.contactEmail ?? ""),
+            contactPhone: ci.contactPhone || (opp.contactPhone ?? ""),
+            notes:        ci.notes        || [
+              (opp.discoveryNotes ?? ""),
+              `Linked from opportunity ${oppId}`,
+            ].filter(Boolean).join("\n"),
+          };
+
+          // Prefill serviceInterest into intakeRecord when the opportunity has it
+          // and the saved intake does not already have a selection.
+          const oppServices = opp.serviceInterest ?? [];
+          const existingIntake = prev.intakeRecord as Record<string, unknown> | null;
+          const existingServices = (existingIntake?.serviceInterest as string[] | undefined) ?? [];
+          const updatedIntake =
+            oppServices.length > 0 && existingServices.length === 0
+              ? { ...(prev.intakeRecord ?? {}), serviceInterest: oppServices }
+              : prev.intakeRecord;
+
+          // If nothing actually changed, return prev to avoid a spurious re-render
+          // and keep the banner hidden (nothing was prefilled).
+          const anyChange = (Object.keys(updated) as (keyof typeof updated)[]).some(
+            (k) => updated[k] !== ci[k as keyof typeof ci]
+          ) || updatedIntake !== prev.intakeRecord;
+          if (!anyChange) return prev;
+          return {
+            ...prev,
+            clientInfo: updated,
+            intakeRecord: updatedIntake,
+            opportunityPrefilled: true,
+          };
+        });
+      } catch {
+        // Ignore all errors — wizard must open regardless
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -286,9 +423,24 @@ export function ProposalWizard({
     } catch {
       // Ignore storage quota errors
     }
-    // 2. API (async, fire-and-forget, persists to file-backed server store)
-    void saveProposalToApi(toSave);
+    // 2. API (async, non-blocking, persists to server store).
+    // On failure show a non-modal banner so the rep knows the cloud copy did
+    // not save.  The local copy in localStorage remains as a fallback.
+    void saveProposalToApi(toSave).then((ok) => {
+      // Clear any previous auto-dismiss timer
+      if (saveAlertTimer.current) clearTimeout(saveAlertTimer.current);
+      if (ok) {
+        setSaveAlert("save-ok");
+      } else {
+        setSaveAlert("save-failed");
+      }
+      // Auto-dismiss success after 3 s; keep failure visible until dismissed
+      if (ok) {
+        saveAlertTimer.current = setTimeout(() => setSaveAlert(null), 3000);
+      }
+    });
     return toSave;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save on unmount
@@ -496,6 +648,45 @@ export function ProposalWizard({
             </button>
           </div>
         </div>
+
+        {/* Save-failure banner — non-modal, dismissible */}
+        {saveAlert === "save-failed" && (
+          <div
+            className="mx-6 mb-2 px-4 py-2.5 rounded-lg border flex items-center justify-between gap-3"
+            style={{ background: "#FFF1F2", borderColor: "#FECDD3" }}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className="text-sm font-black"
+                style={{ color: "#BE123C" }}
+              >
+                ⚠️
+              </span>
+              <p className="text-xs font-semibold" style={{ color: "#BE123C" }}>
+                Cloud save failed. Your work is saved locally in this browser. Log back in or check your connection and save again.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSaveAlert(null)}
+              className="text-xs font-bold flex-shrink-0"
+              style={{ color: "#BE123C" }}
+              aria-label="Dismiss save error"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        {saveAlert === "save-ok" && (
+          <div
+            className="mx-6 mb-2 px-4 py-2 rounded-lg border flex items-center gap-2"
+            style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
+          >
+            <span className="text-xs font-bold" style={{ color: "#15803D" }}>
+              ✓ Saved
+            </span>
+          </div>
+        )}
 
         {/* Step indicator */}
         <div className="px-6 pb-4">

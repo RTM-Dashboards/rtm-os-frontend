@@ -61,7 +61,14 @@ export const PROPOSAL_SECTIONS: ProposalSectionDefinition[] = [
     description:
       "Client-facing cover page including client name, prepared by, and proposal date.",
     required: true,
-    defaultContent: "",
+    // Default is intentionally plain and factual so a rep edits rather than
+    // deletes it.  The build functions below substitute real client name,
+    // preparer, and date at document-build time.
+    defaultContent:
+      "Prepared for: [Client Name]\n" +
+      "Prepared by: Real Time Marketing\n" +
+      "Date: [Proposal Date]\n\n" +
+      "This proposal has been prepared specifically for [Client Name] based on a review of their current digital presence and business objectives. Please review the enclosed sections and reach out with any questions.",
     editable: true,
     order: 1,
   },

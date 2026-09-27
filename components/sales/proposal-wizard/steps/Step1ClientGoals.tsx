@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   TRADE_TYPES,
   BUSINESS_STRUCTURES,
@@ -153,6 +153,7 @@ function buildSampleIntakeRecord(): HomeServicesIntakeRecord {
     primaryLeadSource: "Google Ads",
     // ─ Section 4: Goals ──────────────────────────────────────────────
     primaryGoals: ["More inbound calls", "Rank higher on Google Maps"],
+    serviceInterest: ["SEO", "GBP"],
     targetBudget: "$1,500 - $2,000",
     timeline: "Within 30 days",
     seasonalConsiderations: "Business is year-round",
@@ -264,6 +265,7 @@ function defaultIntake(): HomeServicesIntakeRecord {
     monthlyLeads: 0,
     primaryLeadSource: "",
     primaryGoals: [],
+    serviceInterest: [],
     targetBudget: "",
     timeline: "",
     seasonalConsiderations: "",
@@ -943,6 +945,61 @@ function GoalChips({
   );
 }
 
+// ─── Service Interest Chips ──────────────────────────────────────────────────
+
+// The same seven chips the Create Opportunity modal uses, in the same order.
+const SERVICE_CHIPS = ["SEO", "GBP", "PPC", "LSA", "Meta Ads", "Website", "Content"] as const;
+
+/**
+ * Multi-select chip group for service interest.
+ *
+ * `selected` may contain values not in SERVICE_CHIPS (e.g. "Reporting" stored
+ * in legacy or GHL-derived opportunities).  Unknown values are rendered as
+ * extra chips so they are visible and editable rather than silently dropped.
+ * On toggle they are added/removed from the array the same way as known chips.
+ */
+function ServiceChips({
+  selected,
+  onToggle,
+}: {
+  selected: string[];
+  onToggle: (svc: string) => void;
+}) {
+  // Build the full display list: known chips first, then any unknown values
+  // already in the selection that are not in SERVICE_CHIPS.
+  const knownSet = new Set<string>(SERVICE_CHIPS);
+  const extras = selected.filter((s) => !knownSet.has(s));
+  const displayList = [...SERVICE_CHIPS, ...extras];
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {displayList.map((svc) => {
+        const active = selected.includes(svc);
+        const isUnknown = !knownSet.has(svc);
+        return (
+          <button
+            key={svc}
+            type="button"
+            onClick={() => onToggle(svc)}
+            className="text-xs px-3 py-1.5 rounded-full border font-semibold transition-colors"
+            style={{
+              background: active ? "#EFF6FF" : "var(--rtm-bg)",
+              color: active ? "#2563EB" : "var(--rtm-text-secondary)",
+              borderColor: active ? (isUnknown ? "#7C3AED" : "#2563EB") : "var(--rtm-border)",
+            }}
+            title={isUnknown ? `"${svc}" was recorded on the opportunity but is not in the standard service list.` : undefined}
+          >
+            {svc}
+            {isUnknown && (
+              <span className="ml-1 text-[9px] opacity-70">(custom)</span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Platform Block ───────────────────────────────────────────────────────────
 
 function PlatformBlock({
@@ -1300,6 +1357,101 @@ export function Step1ClientGoals({ state, onUpdate }: Step1ClientGoalsProps) {
     flaggedForFollowUp: existingIntake?.flaggedForFollowUp ?? false,
   }));
 
+  // When the wizard's clientInfo is updated after mount (e.g. the opportunity
+  // prefill arrives asynchronously after API hydration completes), sync the
+  // new values into local intake for any fields that are still empty.
+  // Fields the rep has already typed into are NOT overwritten.
+  //
+  // We track a stable ref to the previous clientInfo so we only react when
+  // the incoming values actually change to a non-empty string from what we
+  // had before — this avoids re-firing on unrelated wizard state updates.
+  const prevClientInfo = useRef(state.clientInfo);
+  useEffect(() => {
+    const ci = state.clientInfo;
+    const prev = prevClientInfo.current;
+    prevClientInfo.current = ci;
+
+    // Determine if any of the bridged clientInfo fields changed to a non-empty
+    // value since the last render.  If none changed, do nothing.
+    const bridged = [
+      "businessName",
+      "contactName",
+      "name",
+      "contactEmail",
+      "contactPhone",
+      "website",
+    ] as const;
+    const anyArrived = bridged.some(
+      (k) => ci[k as keyof typeof ci] && ci[k as keyof typeof ci] !== prev[k as keyof typeof prev]
+    );
+    if (!anyArrived) return;
+
+    setIntake((currentIntake) => {
+      // For each bridged field, fill it only if the local intake field is
+      // still empty.  This preserves rep edits made after initial mount.
+      const businessName =
+        currentIntake.businessName || ci.businessName || "";
+      const contactName =
+        currentIntake.contactName || ci.contactName || ci.name || "";
+      const contactEmail =
+        currentIntake.contactEmail || ci.contactEmail || "";
+      const contactPhone =
+        currentIntake.contactPhone || ci.contactPhone || "";
+      const website =
+        currentIntake.website || ci.website || "";
+
+      // If nothing actually changes, return the same object to avoid a
+      // spurious re-render.
+      if (
+        businessName === currentIntake.businessName &&
+        contactName  === currentIntake.contactName &&
+        contactEmail === currentIntake.contactEmail &&
+        contactPhone === currentIntake.contactPhone &&
+        website      === currentIntake.website
+      ) {
+        return currentIntake;
+      }
+
+      return {
+        ...currentIntake,
+        businessName,
+        contactName,
+        contactEmail,
+        contactPhone,
+        website,
+      };
+    });
+  // state.clientInfo identity changes when the prefill setState fires; that is
+  // exactly when we want to re-run.  onUpdate is stable via useCallback in the
+  // wizard, so omitting it here is safe.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.clientInfo]);
+
+  // When the wizard's intakeRecord is updated after mount (e.g. from the
+  // opportunity prefill or API hydration), sync serviceInterest into local
+  // intake if the local value is still empty.  Follows the same pattern as
+  // the clientInfo race fix above.
+  const prevIntakeRef = useRef<Partial<HomeServicesIntakeRecord> | null>(null);
+  useEffect(() => {
+    const incoming = state.intakeRecord as HomeServicesIntakeRecord | null;
+    const prev = prevIntakeRef.current;
+    prevIntakeRef.current = incoming;
+
+    const incomingServices = incoming?.serviceInterest ?? [];
+    const prevServices = (prev as HomeServicesIntakeRecord | null)?.serviceInterest ?? [];
+
+    // Only react when a non-empty array arrives where there was none before
+    if (incomingServices.length === 0) return;
+    if (incomingServices.length === prevServices.length) return;
+
+    setIntake((cur) => {
+      if ((cur.serviceInterest ?? []).length > 0) return cur; // rep already edited
+      return { ...cur, serviceInterest: incomingServices };
+    });
+  // state.intakeRecord identity changes when the prefill setState fires
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.intakeRecord]);
+
   function setField<K extends keyof HomeServicesIntakeRecord>(
     key: K,
     value: HomeServicesIntakeRecord[K]
@@ -1397,6 +1549,21 @@ export function Step1ClientGoals({ state, onUpdate }: Step1ClientGoalsProps) {
 
   return (
     <div className="space-y-4">
+
+      {/* ── Opportunity prefill banner ────────────────────────────────────── */}
+      {state.opportunityPrefilled && (
+        <div
+          className="rounded-xl border px-5 py-3 flex items-center gap-3"
+          style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" className="flex-shrink-0">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <p className="text-xs font-semibold" style={{ color: "#065F46" }}>
+            Fields pre-filled from the linked opportunity. Review and correct anything before proceeding.
+          </p>
+        </div>
+      )}
 
       {/* ── Sample data utility bar ───────────────────────────── */}
       <div
@@ -2116,7 +2283,48 @@ export function Step1ClientGoals({ state, onUpdate }: Step1ClientGoalsProps) {
             </div>
           )}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        {/* ── Service Interest ────────────────────────────────────────────── */}
+        <div className="mt-4">
+          <div className="flex items-center gap-2 mb-1">
+            <FieldLabel>Services of Interest</FieldLabel>
+            {state.opportunityPrefilled && (intake.serviceInterest ?? []).length > 0 && (
+              <span
+                className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                style={{ background: "#ECFDF5", color: "#065F46", border: "1px solid #A7F3D0" }}
+              >
+                Pre-filled
+              </span>
+            )}
+          </div>
+          <p className="text-xs mb-2" style={{ color: "var(--rtm-text-muted)" }}>
+            Which services is this client interested in? Select all that apply. Not required — you can update this at any time.
+          </p>
+          <ServiceChips
+            selected={intake.serviceInterest ?? []}
+            onToggle={(svc) => {
+              const current = intake.serviceInterest ?? [];
+              const updated = current.includes(svc)
+                ? current.filter((s) => s !== svc)
+                : [...current, svc];
+              setField("serviceInterest", updated);
+            }}
+          />
+          {(intake.serviceInterest ?? []).length > 0 && (
+            <div
+              className="mt-3 rounded-lg border px-4 py-2"
+              style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}
+            >
+              <p className="text-xs font-semibold" style={{ color: "#1D4ED8" }}>
+                {(intake.serviceInterest ?? []).length} service
+                {(intake.serviceInterest ?? []).length !== 1 ? "s" : ""} selected:{" "}
+                {(intake.serviceInterest ?? []).join(", ")}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <SelectInput
             label="Target Monthly Budget"
             value={intake.targetBudget}
