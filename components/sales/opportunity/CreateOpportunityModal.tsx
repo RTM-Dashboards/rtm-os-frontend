@@ -93,6 +93,7 @@ interface FormState {
   location: string;
   contactPhone: string;
   contactEmail: string;
+  website: string;
   leadSource: string;
   assignedRep: string;
   serviceInterest: string[];
@@ -118,6 +119,8 @@ export function CreateOpportunityModal({
     // LeadData.phone/email map to contactPhone/contactEmail
     contactPhone: leadData?.phone ?? "",
     contactEmail: leadData?.email ?? "",
+    // LeadData.website prefilled; rep can correct before submitting
+    website: leadData?.website ?? "",
     leadSource: leadData?.leadSource ?? "",
     assignedRep: leadData?.assignedRep ?? ASSIGNED_REPS[0],
     // Pre-fill service interest from lead.requestedServices if present
@@ -185,6 +188,9 @@ export function CreateOpportunityModal({
       //   requestedServices → serviceInterest (pre-populated in form; form value used below)
       //   affiliateName → affiliateSource
       // website, industry, ghlContactId are also handled by the engine.
+      // form.website is used (not leadData.website) so the rep's edits reach
+      // the opportunity; an empty string is passed as undefined so the engine
+      // omits the field rather than writing an empty string.
       opp = createOpportunityFromLead({
         id: leadData.id,
         name: leadData.name,
@@ -195,7 +201,7 @@ export function CreateOpportunityModal({
         assignedRep: form.assignedRep,
         discoveryNotes: form.discoveryNotes,
         industry: leadData.industry,
-        website: leadData.website,
+        website: form.website.trim() || undefined,
         ghlContactId: resolvedGhlContactId,
         requestedServices: leadData.requestedServices,
         affiliateName: leadData.affiliateName,
@@ -509,6 +515,19 @@ export function CreateOpportunityModal({
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* Website */}
+          <div>
+            {fieldLabel("Website")}
+            {prefilled && leadData?.website && prefilledBadge()}
+            <input
+              value={form.website}
+              onChange={(e) => set("website", e.target.value)}
+              placeholder="e.g. acme.com"
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none mt-1"
+              style={inputStyle}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
