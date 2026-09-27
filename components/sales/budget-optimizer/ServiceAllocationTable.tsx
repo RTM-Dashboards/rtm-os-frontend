@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import {
-  getBudgetServiceById,
+  getBudgetServiceById as getBudgetServiceByIdSeed,
   type BudgetServiceId,
   type BudgetServiceDefinition,
 } from "@/lib/sales/budget-config";
@@ -48,6 +48,7 @@ interface ServiceAllocationTableProps {
     quantity: number
   ) => void;
   availableServices: BudgetServiceDefinition[];
+  catalogLookup?: (id: string) => BudgetServiceDefinition | undefined;
 }
 
 // ─── Chevron icon ─────────────────────────────────────────────────────────────
@@ -206,6 +207,7 @@ interface ServiceRowProps {
   ) => void;
   onRemove: (serviceId: BudgetServiceId) => void;
   onLineItemQuantityChange: (lineItemId: string, quantity: number) => void;
+  catalogLookup?: (id: string) => BudgetServiceDefinition | undefined;
 }
 
 function ServiceRow({
@@ -214,9 +216,10 @@ function ServiceRow({
   onUpdate,
   onRemove,
   onLineItemQuantityChange,
+  catalogLookup,
 }: ServiceRowProps) {
   const [expanded, setExpanded] = useState(false);
-  const def = getBudgetServiceById(item.serviceId);
+  const def = catalogLookup?.(item.serviceId) ?? getBudgetServiceByIdSeed(item.serviceId);
   const catalogId = def?.catalogId ?? "";
   const lineItemDefs: ServiceLineItem[] = getServiceLineItems(catalogId);
 
@@ -502,6 +505,7 @@ export function ServiceAllocationTable({
   onAdd,
   onLineItemQuantityChange,
   availableServices,
+  catalogLookup,
 }: ServiceAllocationTableProps) {
   function handleAddServiceSelect(e: React.ChangeEvent<HTMLSelectElement>) {
     const id = e.target.value as BudgetServiceId;
@@ -655,6 +659,7 @@ export function ServiceAllocationTable({
                   onLineItemQuantityChange={(lineItemId, qty) =>
                     onLineItemQuantityChange(item.serviceId, lineItemId, qty)
                   }
+                  catalogLookup={catalogLookup}
                 />
               );
             })}

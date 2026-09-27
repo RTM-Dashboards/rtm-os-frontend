@@ -2,10 +2,8 @@
 
 import React from "react";
 import Link from "next/link";
-import {
-  BUDGET_SERVICE_CATALOG,
-  DISCOUNT_TIERS,
-} from "@/lib/sales/budget-config";
+// Service catalogue and discount config are now DB-backed.
+// See /sales/settings/service-catalog and /api/sales/service-catalog.
 import {
   PROPOSAL_SECTIONS,
   PROPOSAL_TEMPLATES,
@@ -256,8 +254,21 @@ export default function SalesSettingsPage() {
                 Configure
               </Link>
             </div>
-            <Row label="Services in catalog" value={BUDGET_SERVICE_CATALOG.length} />
-            <Row label="Discount tiers configured" value={DISCOUNT_TIERS.length} />
+            <Row label="Services in catalog" value="Live — managed in database" />
+            <Row label="Discount tiers" value="Live — managed in database" />
+          </div>
+
+          {/* Service Catalogue (DB-backed) */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Service Catalogue &amp; Discounts</p>
+              <Link href="/sales/settings/service-catalog" className="text-xs font-semibold px-3 py-1 rounded-lg border transition-all hover:opacity-80"
+                style={{ background: "var(--rtm-surface)", color: "#059669", borderColor: "#BBF7D0" }}>
+                Configure
+              </Link>
+            </div>
+            <Row label="Source" value="Postgres — service_catalog_items table" />
+            <Row label="Covers" value="Services, pricing, discounts" />
           </div>
 
           {/* Proposal Templates */}

@@ -3,17 +3,17 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import {
   BUDGET_VIEW_LABELS,
-  getBudgetServiceById,
   type BudgetView,
   type BudgetServiceId,
   type BudgetServiceDefinition,
 } from "@/lib/sales/budget-config";
+import type { DiscountTypeOption } from "@/lib/sales/budget-config";
+import { DISCOUNT_TYPE_OPTIONS as DISCOUNT_TYPE_OPTIONS_SEED } from "@/lib/sales/budget-config";
 import { getServiceLineItems } from "@/lib/sales/recommendation-config";
 import {
   buildLineItemsFromRecommendations,
   buildLineItemFromService,
   computeBudget,
-  getAvailableServices,
   computeLineItemSubtotal,
   type BudgetLineItem,
   type BudgetResult,
@@ -45,6 +45,14 @@ export interface BudgetOptimizerShellProps {
    *  the shell renders a target-budget suggestion overlay. */
   targetBudget?: number | null;
   onTargetBudgetChange?: (value: number | null) => void;
+  /** Pre-loaded catalogue services from the DB (all, including retired).
+   * When omitted, the shell fetches /api/sales/service-catalog?all=1 on mount.
+   * Never falls back silently to the hardcoded array — if the fetch fails,
+   * the shell shows an error state rather than reading stale config. */
+  catalogServices?: BudgetServiceDefinition[];
+  /** Pre-loaded discount type options from the DB.
+   * When omitted, the shell fetches /api/sales/discount-config on mount. */
+  discountTypeOptions?: DiscountTypeOption[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -75,7 +83,8 @@ function buildDefaultLineItemQuantities(
 function applyLineItemSubtotalToBudgetItem(
   item: BudgetLineItem,
   lineItemQtys: Record<string, number>,
-  manualMonthlyPrice?: number | null
+  manualMonthlyPrice?: number | null,
+  catalogLookup?: (id: string) => BudgetServiceDefinition | undefined
 ): BudgetLineItem {
   // Rep has explicitly entered a custom monthly price — respect it, skip line-item override.
   if (manualMonthlyPrice != null) {
@@ -86,7 +95,7 @@ function applyLineItemSubtotalToBudgetItem(
     };
   }
 
-  const def = getBudgetServiceById(item.serviceId);
+  const def = catalogLookup?.(item.serviceId);
   const catalogId = def?.catalogId ?? "";
   const lineItemDefs = getServiceLineItems(catalogId);
 
@@ -115,7 +124,70 @@ export function BudgetOptimizerShell({
   onLineItemsChange,
   targetBudget: targetBudgetProp,
   onTargetBudgetChange,
+  catalogServices: catalogServicesProp,
+  discountTypeOptions: discountTypeOptionsProp,
 }: BudgetOptimizerShellProps) {
+  // DB-backed catalogue fetch
+  // Fetches full catalogue (active + retired) from DB route on mount.
+  // No silent fallback to seed array: error state shown on failure.
+  const [dbCatalog, setDbCatalog] = useState<BudgetServiceDefinition[] | null>(
+    catalogServicesProp ?? null
+  );
+  const [dbDiscountTypes, setDbDiscountTypes] = useState<DiscountTypeOption[] | null>(
+    discountTypeOptionsProp ?? null
+  );
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const needCat = catalogServicesProp === undefined;
+    const needTypes = discountTypeOptionsProp === undefined;
+    if (!needCat && !needTypes) return;
+    async function fetchCatalog() {
+      try {
+        const [catRes, discRes] = await Promise.all([
+          needCat ? fetch("/api/sales/service-catalog?all=1") : Promise.resolve(null),
+          needTypes ? fetch("/api/sales/discount-config") : Promise.resolve(null),
+        ]);
+        if (cancelled) return;
+        if (catRes) {
+          if (!catRes.ok) {
+            const b = await catRes.json().catch(() => ({})) as Record<string, unknown>;
+            throw new Error((b.error as string) ?? `Catalogue fetch failed: ${catRes.status}`);
+          }
+          const d = await catRes.json() as { services: BudgetServiceDefinition[] };
+          if (!cancelled) setDbCatalog(d.services);
+        }
+        if (discRes) {
+          if (!discRes.ok) {
+            const b = await discRes.json().catch(() => ({})) as Record<string, unknown>;
+            throw new Error((b.error as string) ?? `Discount config fetch failed: ${discRes.status}`);
+          }
+          const d = await discRes.json() as { tiers: unknown[]; types: DiscountTypeOption[] };
+          if (!cancelled) setDbDiscountTypes(d.types);
+        }
+      } catch (err) {
+        if (!cancelled) setCatalogError(String(err));
+      }
+    }
+    fetchCatalog();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const getCatalogServiceById = useCallback(
+    (id: string): BudgetServiceDefinition | undefined => dbCatalog?.find((s) => s.id === id),
+    [dbCatalog]
+  );
+
+  const activeCatalogServices = useMemo(
+    () => (dbCatalog ?? []).filter(
+      (s) => (s as BudgetServiceDefinition & { isActive?: boolean }).isActive !== false
+    ),
+    [dbCatalog]
+  );
+
+  const effectiveDiscountTypes: DiscountTypeOption[] = dbDiscountTypes ?? DISCOUNT_TYPE_OPTIONS_SEED;
   // ─── State ─────────────────────────────────────────────────────────────────
   const [lineItems, setLineItems] = useState<BudgetLineItem[]>([]);
   const [activeView, setActiveView] = useState<BudgetView>("byService");
@@ -152,27 +224,27 @@ export function BudgetOptimizerShell({
     if (!recommendedServiceLabels || recommendedServiceLabels.length === 0) return;
 
     bootstrapped.current = true;
-    const items = buildLineItemsFromRecommendations(recommendedServiceLabels);
+    const items = buildLineItemsFromRecommendations(recommendedServiceLabels, dbCatalog ?? undefined);
     setLineItems(items);
 
     const qtys: LineItemQuantities = {};
     for (const item of items) {
-      const def = getBudgetServiceById(item.serviceId);
+      const def = getCatalogServiceById(item.serviceId);
       if (def?.catalogId) {
         qtys[item.serviceId] = buildDefaultLineItemQuantities(def.catalogId);
       }
     }
     setLineItemQuantities(qtys);
-  }, [recommendedServiceLabels]);
+  }, [recommendedServiceLabels, dbCatalog, getCatalogServiceById]);
 
   // ─── Effective line items with line-item-based subtotals ───────────────────
   const effectiveLineItems = useMemo<BudgetLineItem[]>(() => {
     return lineItems.map((item) => {
       const qtys = lineItemQuantities[item.serviceId] ?? {};
       const manualPrice = manualMonthlyPrices[item.serviceId] ?? null;
-      return applyLineItemSubtotalToBudgetItem(item, qtys, manualPrice);
+      return applyLineItemSubtotalToBudgetItem(item, qtys, manualPrice, getCatalogServiceById);
     });
-  }, [lineItems, lineItemQuantities, manualMonthlyPrices]);
+  }, [lineItems, lineItemQuantities, manualMonthlyPrices, getCatalogServiceById]);
 
   // ─── Derived budget result ──────────────────────────────────────────────────
   const budgetResult: BudgetResult = useMemo(
@@ -180,10 +252,10 @@ export function BudgetOptimizerShell({
     [effectiveLineItems]
   );
 
-  const availableServices: BudgetServiceDefinition[] = useMemo(
-    () => getAvailableServices(lineItems.map((i) => i.serviceId)),
-    [lineItems]
-  );
+  const availableServices: BudgetServiceDefinition[] = useMemo(() => {
+    const existingSet = new Set(lineItems.map((i) => i.serviceId));
+    return activeCatalogServices.filter((s) => !existingSet.has(s.id));
+  }, [lineItems, activeCatalogServices]);
 
   // ─── Propagate line items + budget result to parent ────────────────────────
   // Fires whenever effectiveLineItems or budgetResult changes, so the wizard
@@ -209,10 +281,12 @@ export function BudgetOptimizerShell({
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
   function handleAddService(serviceId: BudgetServiceId) {
-    const newItem = buildLineItemFromService(serviceId);
+    const def = getCatalogServiceById(serviceId);
+    const newItem = def
+      ? buildLineItemFromService(serviceId, undefined, def)
+      : buildLineItemFromService(serviceId);
     setLineItems((prev) => [...prev, newItem]);
 
-    const def = getBudgetServiceById(serviceId);
     if (def?.catalogId) {
       const defaults = buildDefaultLineItemQuantities(def.catalogId);
       setLineItemQuantities((prev) => ({
@@ -285,6 +359,30 @@ export function BudgetOptimizerShell({
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
+
+  // Show error if catalogue failed to load
+  if (catalogError) {
+    return (
+      <div className="rounded-xl border px-6 py-10 text-center" style={{ background: "#FEF2F2", borderColor: "#FECACA" }}>
+        <p className="text-sm font-semibold" style={{ color: "#DC2626" }}>
+          Failed to load service catalogue from the database.
+        </p>
+        <p className="text-xs mt-2" style={{ color: "#EF4444" }}>{catalogError}</p>
+        <p className="text-xs mt-2" style={{ color: "#B91C1C" }}>
+          Check that /api/sales/service-catalog is reachable and you are signed in.
+        </p>
+      </div>
+    );
+  }
+
+  // Loading state while catalogue is being fetched
+  if (dbCatalog === null) {
+    return (
+      <div className="rounded-xl border px-6 py-10 text-center" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading service catalogue…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-28">
@@ -361,6 +459,7 @@ export function BudgetOptimizerShell({
         onAdd={handleAddService}
         onLineItemQuantityChange={handleLineItemQuantityChange}
         availableServices={availableServices}
+        catalogLookup={getCatalogServiceById}
       />
 
       {/* ── Budget Summary Panel ──────────────────────────────────────────── */}
@@ -369,6 +468,7 @@ export function BudgetOptimizerShell({
         activeView={activeView}
         discount={discount}
         onDiscountChange={handleDiscountChange}
+        discountTypeOptions={effectiveDiscountTypes}
       />
 
       {/* ── Target Budget Optimizer ───────────────────────────────────────── */}

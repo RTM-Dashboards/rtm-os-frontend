@@ -955,6 +955,114 @@ model Invoice {
 // Seeded at 63 so the first generated number is INV-0064, clearing the
 // highest mock number visible in the existing seed data (up to INV-0063).
 
+// ── ServiceCatalogItem ───────────────────────────────────────────────────────
+// Postgres persistence for the Budget Optimizer service catalogue.
+// Replaces BUDGET_SERVICE_CATALOG in lib/sales/budget-config.ts as the
+// runtime source of truth.
+//
+// Every field present on BudgetServiceDefinition is preserved exactly.
+// Added fields:
+//   isActive    Boolean — soft delete; retired services stop appearing in
+//                         selection lists but remain fetchable by id so old
+//                         proposals referencing them still render.
+//   isDefault   Boolean — unused this run; reserved for auto-quote logic.
+//   sortOrder   Int     — controls dropdown order; matches original array order.
+//   createdAt   String  — ISO-8601 string, following existing schema convention.
+//   updatedAt   String  — ISO-8601 string, following existing schema convention.
+//
+// Proposals store serviceId (a string slug) in their lineItems Json column,
+// not a snapshot of the service at quote time. Renaming a service therefore
+// changes what old proposals display — see C6 item 5 in the run report.
+//
+// GET  /api/sales/service-catalog         → all active rows for selection lists
+// GET  /api/sales/service-catalog?all=1   → all rows including retired
+// GET  /api/sales/service-catalog/:id     → single row by id (including retired)
+// POST /api/sales/service-catalog         → create
+// PATCH /api/sales/service-catalog/:id   → update (including retire/restore)
+
+model ServiceCatalogItem {
+  // Business-meaningful string slug, e.g. "seo", "ppc-setup".
+  // Matches BudgetServiceDefinition.id and BudgetServiceId union.
+  id                  String   @id
+
+  // Matches catalogId on BudgetServiceDefinition (links to recommendation-config).
+  catalogId           String   @default("")
+
+  label               String
+  description         String   @default("")
+
+  // QuantityUnit: "location" | "campaign" | "flat" | "page"
+  quantityUnit        String   @default("flat")
+
+  // Stored as a PostgreSQL integer array — matches BudgetServiceDefinition.quantityOptions.
+  quantityOptions     Int[]    @default([])
+
+  defaultQuantity     Int      @default(1)
+  defaultMonthlyPrice Float    @default(0)
+  defaultSetupFee     Float    @default(0)
+  minMonthlyPrice     Float    @default(0)
+  maxMonthlyPrice     Float    @default(0)
+  setupFeeEditable    Boolean  @default(false)
+  department          String   @default("")
+  isRecurring         Boolean  @default(true)
+
+  // Soft delete — retired services are excluded from new selection lists
+  // but remain fetchable by id so old proposals still render.
+  isActive            Boolean  @default(true)
+
+  // Reserved for auto-quote logic (unused this run).
+  isDefault           Boolean  @default(false)
+
+  // Controls dropdown order; mirrors original BUDGET_SERVICE_CATALOG array order.
+  sortOrder           Int      @default(0)
+
+  // ISO-8601 strings, following existing schema timestamp convention.
+  createdAt           String   @default("")
+  updatedAt           String   @default("")
+
+  @@map("service_catalog_items")
+}
+
+// ── DiscountTier ──────────────────────────────────────────────────────────────
+// Postgres persistence for the discount percentage tiers.
+// Replaces DISCOUNT_TIERS in lib/sales/budget-config.ts.
+//
+// These are the named percentage tiers shown in the Budget Optimizer discount
+// dropdown (e.g. "10% — Preferred Partner").
+//
+// GET  /api/sales/discount-config  → { tiers: DiscountTier[], types: DiscountTypeOption[] }
+// POST /api/sales/discount-config  → replace all tiers and/or types atomically
+
+model DiscountTier {
+  id          String   @id
+  label       String
+  percentage  Float    @default(0)
+  sortOrder   Int      @default(0)
+  createdAt   String   @default("")
+  updatedAt   String   @default("")
+
+  @@map("discount_tiers")
+}
+
+// ── DiscountTypeOption ────────────────────────────────────────────────────────
+// Postgres persistence for the discount type options.
+// Replaces DISCOUNT_TYPE_OPTIONS in lib/sales/budget-config.ts.
+//
+// These define the behaviour of a discount: percentage-monthly, flat-setup, etc.
+// The value field is a DiscountType string (see lib/sales/types.ts).
+
+model DiscountTypeOption {
+  id          String   @id
+  value       String   @unique  // DiscountType: "none"|"percentage-monthly"|etc.
+  label       String
+  description String   @default("")
+  sortOrder   Int      @default(0)
+  createdAt   String   @default("")
+  updatedAt   String   @default("")
+
+  @@map("discount_type_options")
+}
+
 model InvoiceSequence {
   // Single row, fixed id
   id          Int   @id @default(1)

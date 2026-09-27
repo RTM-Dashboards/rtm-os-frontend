@@ -135,12 +135,13 @@ export function buildLineItemFromService(
   serviceId: BudgetServiceId,
   overrides?: Partial<
     Pick<BudgetLineItem, "quantity" | "unitMonthlyPrice" | "setupFee">
-  >
+  >,
+  prefetchedDef?: BudgetServiceDefinition
 ): BudgetLineItem {
-  const def = getBudgetServiceById(serviceId);
+  const def = prefetchedDef ?? getBudgetServiceById(serviceId);
   if (!def) {
     throw new Error(
-      `[budget-engine] Unknown serviceId: "${serviceId}". Check BUDGET_SERVICE_CATALOG.`
+      `[budget-engine] Unknown serviceId: "${serviceId}". Not found in service catalogue.`
     );
   }
 
@@ -170,13 +171,10 @@ export function buildLineItemFromService(
  * Unmatched labels are silently skipped.
  */
 export function buildLineItemsFromRecommendations(
-  recommendedServiceLabels: string[]
+  recommendedServiceLabels: string[],
+  dbCatalog?: BudgetServiceDefinition[]
 ): BudgetLineItem[] {
   const items: BudgetLineItem[] = [];
-  // Track which BudgetServiceIds have already been added so that a single
-  // service never appears twice in the table even if two recommendation labels
-  // map to the same id (e.g. legacy draft keys) or if the caller passes
-  // duplicate labels. Each distinct BudgetServiceId should appear at most once.
   const seen = new Set<BudgetServiceId>();
   for (const label of recommendedServiceLabels) {
     const budgetId = RECOMMENDATION_TO_BUDGET_MAP[label];
@@ -184,9 +182,10 @@ export function buildLineItemsFromRecommendations(
     if (seen.has(budgetId)) continue;
     seen.add(budgetId);
     try {
-      items.push(buildLineItemFromService(budgetId));
+      const prefetched = dbCatalog?.find((s) => s.id === budgetId);
+      items.push(buildLineItemFromService(budgetId, undefined, prefetched));
     } catch {
-      // Skip if service is somehow missing from catalog
+      // Skip if service is missing from catalogue
     }
   }
   return items;

@@ -3,12 +3,13 @@
 import React, { useState } from "react";
 import {
   BUDGET_VIEW_LABELS,
-  DISCOUNT_TYPE_OPTIONS,
+  DISCOUNT_TYPE_OPTIONS as DISCOUNT_TYPE_OPTIONS_SEED,
   DISCOUNT_SUGGESTIONS,
   MAX_DISCOUNT_PERCENTAGE,
   MAX_FLAT_DISCOUNT_MONTHLY,
   MAX_FLAT_DISCOUNT_SETUP,
   type BudgetView,
+  type DiscountTypeOption,
 } from "@/lib/sales/budget-config";
 import { computeDiscountedSummary, type BudgetResult } from "@/lib/sales/budget-engine";
 import type { ProposalDiscount, DiscountType } from "@/lib/sales/types";
@@ -39,8 +40,8 @@ function maxForType(type: DiscountType): number {
   return MAX_DISCOUNT_PERCENTAGE;
 }
 
-function discountTypeLabel(type: DiscountType): string {
-  return DISCOUNT_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type;
+function discountTypeLabel(type: DiscountType, opts?: DiscountTypeOption[]): string {
+  return (opts ?? DISCOUNT_TYPE_OPTIONS_SEED).find((o) => o.value === type)?.label ?? type;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -50,6 +51,7 @@ interface BudgetSummaryPanelProps {
   activeView: BudgetView;
   discount: ProposalDiscount;
   onDiscountChange: (discount: ProposalDiscount) => void;
+  discountTypeOptions?: DiscountTypeOption[];
 }
 
 // ─── Discount Section ─────────────────────────────────────────────────────────
@@ -59,6 +61,7 @@ interface DiscountSectionProps {
   onChange: (discount: ProposalDiscount) => void;
   totalMonthlyRecurring: number;
   totalSetupFees: number;
+  discountTypeOptions?: DiscountTypeOption[];
 }
 
 function DiscountSection({
@@ -66,7 +69,9 @@ function DiscountSection({
   onChange,
   totalMonthlyRecurring,
   totalSetupFees,
+  discountTypeOptions: dtOpts,
 }: DiscountSectionProps) {
+  const DISCOUNT_TYPE_OPTIONS = dtOpts ?? DISCOUNT_TYPE_OPTIONS_SEED;
   const hasDiscount = discount.type !== "none" && discount.value > 0;
   const [open, setOpen] = useState<boolean>(hasDiscount);
 
@@ -356,7 +361,9 @@ export function BudgetSummaryPanel({
   activeView,
   discount,
   onDiscountChange,
+  discountTypeOptions,
 }: BudgetSummaryPanelProps) {
+  const DISCOUNT_TYPE_OPTIONS = discountTypeOptions ?? DISCOUNT_TYPE_OPTIONS_SEED;
   const {
     lineItems,
     totalMonthlyRecurring,
@@ -618,6 +625,7 @@ export function BudgetSummaryPanel({
               onChange={onDiscountChange}
               totalMonthlyRecurring={totalMonthlyRecurring}
               totalSetupFees={totalSetupFees}
+              discountTypeOptions={discountTypeOptions}
             />
           </>
         )}
@@ -915,6 +923,7 @@ export function BudgetSummaryPanel({
         onChange={onDiscountChange}
         totalMonthlyRecurring={totalMonthlyRecurring}
         totalSetupFees={totalSetupFees}
+        discountTypeOptions={discountTypeOptions}
       />
         </>
       )}
