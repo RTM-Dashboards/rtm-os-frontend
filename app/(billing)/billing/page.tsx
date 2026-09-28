@@ -1,19 +1,29 @@
 "use client";
 
-import React, { useState } from "react";
+// RTM OS — Billing Dashboard
+//
+// Every figure on this page comes from a real data source.
+// Figures without a real source have been removed or labelled honestly.
+//
+// REAL SOURCES (all via /api/invoices → Postgres):
+//   Outstanding Balance  — SUM(contractAmountCents) where invoiceStatus
+//                          NOT IN Paid, Cancelled
+//   Collected Revenue    — SUM(contractAmountCents) where paymentStatus = Paid
+//   Overdue Invoices     — count returned by /api/invoices?overdue=true
+//   Activation Ready     — count from /api/clients + /api/businesses (isActivationReady)
+//
+// NOT SHOWN (no source in current schema):
+//   MRR / ARR            — requires recurring Contract model (does not exist)
+//   Revenue Forecast     — requires contract projections (do not exist)
+//   AI Billing Summary   — requires real event history (no audit log)
+//   Activity Timeline    — requires real event history (no audit log)
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
-import {
-  invoices,
-  recurringContracts,
-  collections,
-  revenueSummary,
-  aiBillingSummary,
-  activityTimeline,
-} from "@/lib/billing/action-center-data";
-import type { CollectionStatus } from "@/lib/billing/action-center-data";
 import { fetchAMClients, type BusinessClient } from "@/lib/account-management/am-client-data";
+import type { InvoiceRecord } from "@/app/api/invoices/route";
 
 const workspace = getWorkspace("billing")!;
 
@@ -21,39 +31,23 @@ const workspace = getWorkspace("billing")!;
 
 type BadgeVariant = "success" | "error" | "warning" | "info" | "neutral" | "pending";
 
-function collectionStatusVariant(s: CollectionStatus): BadgeVariant {
-  switch (s) {
-    case "Resolved":             return "success";
-    case "Escalated":            return "error";
-    case "Payment Arrangement":  return "warning";
-    case "Contacted":            return "info";
-    case "Reminder Sent":        return "pending";
-    default:                     return "neutral";
+function overdueStatusVariant(invoiceStatus: string): BadgeVariant {
+  switch (invoiceStatus) {
+    case "Overdue":        return "error";
+    case "Escalated":      return "error";
+    case "Partially Paid": return "warning";
+    case "Sent":           return "pending";
+    case "Viewed":         return "info";
+    default:               return "neutral";
   }
 }
 
-// ── KPI computations ──────────────────────────────────────────────────────────
+// ── Activation-ready predicate (mirrors the one in AM) ────────────────────────
+//
+// isActivationReady: invoice paid + payment confirmed + not yet cleared to AM.
+// Business records only exist once an invoice has been marked Paid via
+// MarkPaidFlowModal, so no Business can be a Lead or Proposal Sent.
 
-const outstanding       = invoices.filter((i) => i.status !== "Paid" && i.status !== "Cancelled" && i.status !== "Refunded");
-const overdue           = invoices.filter((i) => i.status === "Overdue");
-const pendingCollection = collections.filter((c) => c.collectionStatus !== "Resolved");
-const collectedThisMonth = invoices.filter((i) => i.status === "Paid").reduce((sum, i) => sum + i.amount, 0);
-const outstandingBalance = outstanding.reduce((sum, i) => sum + i.amount, 0);
-
-/**
- * Activation-ready predicate for a Business.
- *
- * Original intent (against MasterClient):
- *   billingStatus === "Cleared" || (billingStatus === "Paid" && paymentStatus === "Paid")
- *   AND !cleared
- *   AND currentStatus !== "Lead" && currentStatus !== "Proposal Sent"
- *
- * Business equivalent:
- *   Invoice paid or cleared + payment paid + not yet cleared for AM.
- *   The currentStatus exclusion is inherently satisfied — Business records only exist
- *   once an invoice has been marked Paid (via MarkPaidFlowModal), so no Business
- *   can be a Lead or Proposal Sent.
- */
 function isActivationReady(b: BusinessClient): boolean {
   if (b.cleared) return false;
   const inv = b.invoiceStatus?.toLowerCase() ?? "";
@@ -61,22 +55,27 @@ function isActivationReady(b: BusinessClient): boolean {
   return (inv === "paid" || inv === "cleared") && pay === "paid";
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Currency formatter ────────────────────────────────────────────────────────
 
-function PreviewBadge() {
-  return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
-      style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
-    >
-      Preview — Target State
-    </span>
-  );
+function formatCents(cents: number): string {
+  const dollars = cents / 100;
+  return `$${dollars.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 }
+
+function daysOverdueFromISO(dueDateISO: string): number {
+  const due = new Date(dueDateISO).getTime();
+  const now  = Date.now();
+  return Math.max(0, Math.floor((now - due) / 86_400_000));
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: "var(--rtm-text-muted)" }}>
+    <h2
+      className="text-xs font-bold uppercase tracking-widest mb-4"
+      style={{ color: "var(--rtm-text-muted)" }}
+    >
       {children}
     </h2>
   );
@@ -109,27 +108,90 @@ function SummaryLinkCard({
         <span className="text-sm font-bold" style={{ color: accent }}>{title}</span>
         <span className="text-xs font-semibold" style={{ color: accent }}>View →</span>
       </div>
-      <p className="text-xs leading-relaxed" style={{ color: "var(--rtm-text-secondary)" }}>{description}</p>
-      <div className="flex flex-wrap gap-3 pt-1" style={{ borderTop: `1px solid ${border}` }}>
-        {stats.map((s) => (
-          <div key={s.label} className="flex flex-col gap-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{s.label}</span>
-            <span className="text-base font-bold" style={{ color: accent }}>{s.value}</span>
-          </div>
-        ))}
-      </div>
+      <p className="text-xs leading-relaxed" style={{ color: "var(--rtm-text-secondary)" }}>
+        {description}
+      </p>
+      {stats.length > 0 && (
+        <div className="flex flex-wrap gap-3 pt-1" style={{ borderTop: `1px solid ${border}` }}>
+          {stats.map((s) => (
+            <div key={s.label} className="flex flex-col gap-0.5">
+              <span
+                className="text-[10px] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--rtm-text-muted)" }}
+              >
+                {s.label}
+              </span>
+              <span className="text-base font-bold" style={{ color: accent }}>
+                {s.value}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </Link>
   );
 }
 
+// ── Fetch state type ──────────────────────────────────────────────────────────
+
+type LoadState = "loading" | "loaded" | "error";
+
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BillingDashboard() {
-  const [aiExpanded, setAiExpanded] = useState(false);
-  // Activation-ready count: fetched from Postgres on mount.
-  // Replaces MASTER_CLIENTS filter. Shows 0 while loading or on error.
+  // ── Invoice data (real, from Postgres) ───────────────────────────────────
+  const [allInvoices,     setAllInvoices]     = useState<InvoiceRecord[]>([]);
+  const [overdueInvoices, setOverdueInvoices] = useState<InvoiceRecord[]>([]);
+  const [invoiceState,    setInvoiceState]    = useState<LoadState>("loading");
+  const [invoiceError,    setInvoiceError]    = useState<string | null>(null);
+
+  // ── Activation-ready count (real, from Postgres) ─────────────────────────
   const [activationReadyCount, setActivationReadyCount] = useState(0);
-  React.useEffect(() => {
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setInvoiceState("loading");
+      setInvoiceError(null);
+
+      try {
+        // Fetch all invoices and overdue invoices in parallel.
+        const [allRes, overdueRes] = await Promise.all([
+          fetch("/api/invoices"),
+          fetch("/api/invoices?overdue=true"),
+        ]);
+
+        if (!allRes.ok) {
+          const err = (await allRes.json()) as { error?: string };
+          throw new Error(err.error ?? `HTTP ${allRes.status}`);
+        }
+        if (!overdueRes.ok) {
+          const err = (await overdueRes.json()) as { error?: string };
+          throw new Error(err.error ?? `HTTP ${overdueRes.status}`);
+        }
+
+        const allData     = (await allRes.json())     as { invoices: InvoiceRecord[] };
+        const overdueData = (await overdueRes.json()) as { invoices: InvoiceRecord[] };
+
+        if (!cancelled) {
+          setAllInvoices(allData.invoices     ?? []);
+          setOverdueInvoices(overdueData.invoices ?? []);
+          setInvoiceState("loaded");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setInvoiceError(String(err));
+          setInvoiceState("error");
+        }
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
     fetchAMClients()
       .then((businesses) => {
         setActivationReadyCount(businesses.filter(isActivationReady).length);
@@ -140,92 +202,160 @@ export default function BillingDashboard() {
       });
   }, []);
 
+  // ── Derived KPIs (computed from real invoice data) ────────────────────────
+
+  // Outstanding Balance: SUM(contractAmountCents) where invoiceStatus NOT IN Paid, Cancelled
+  const outstandingBalanceCents = allInvoices
+    .filter((i) => i.invoiceStatus !== "Paid" && i.invoiceStatus !== "Cancelled")
+    .reduce((sum, i) => sum + i.contractAmountCents, 0);
+
+  // Collected Revenue: SUM(contractAmountCents) where paymentStatus = Paid
+  const collectedRevenueCents = allInvoices
+    .filter((i) => i.paymentStatus === "Paid")
+    .reduce((sum, i) => sum + i.contractAmountCents, 0);
+
+  // Overdue: count from the ?overdue=true fetch (same rule as Collections page)
+  const overdueCount = overdueInvoices.length;
+
+  // Paid invoice count (for Invoices link card)
+  const paidCount = allInvoices.filter((i) => i.paymentStatus === "Paid").length;
+
+  // ── Loading / error UI helpers ────────────────────────────────────────────
+
+  const kpiValue = (cents: number) =>
+    invoiceState === "loading"
+      ? "—"
+      : invoiceState === "error"
+        ? "Error"
+        : formatCents(cents);
+
+  const kpiCount = (n: number) =>
+    invoiceState === "loading"
+      ? "—"
+      : invoiceState === "error"
+        ? "Error"
+        : String(n);
+
+  // ── Empty-state messaging ─────────────────────────────────────────────────
+  //
+  // With no invoices yet, every figure correctly reads zero. The dashboard
+  // is not broken — it is waiting for the first invoice to be created.
+
+  const showEmptyNotice = invoiceState === "loaded" && allInvoices.length === 0;
+
   return (
     <div className="space-y-8">
 
       {/* Header */}
       <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: workspace.accentColor }}>
+        <p
+          className="text-[11px] font-bold uppercase tracking-widest mb-1"
+          style={{ color: workspace.accentColor }}
+        >
           {workspace.name}
         </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
-            Billing Dashboard
-          </h1>
-          <PreviewBadge />
-        </div>
+        <h1
+          className="text-2xl font-bold tracking-tight"
+          style={{ color: "var(--rtm-text-primary)" }}
+        >
+          Billing Dashboard
+        </h1>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
-          Billing action layer — invoice management, recurring revenue, collections, activation readiness, and revenue tracking.
+          Invoice management, collections, and activation readiness.
         </p>
       </div>
+
+      {/* Fetch error banner */}
+      {invoiceState === "error" && (
+        <div
+          className="rounded-xl border px-4 py-3 text-sm"
+          style={{ background: "#FEF2F2", borderColor: "#FECACA", color: "#DC2626" }}
+        >
+          <span className="font-semibold">Could not load invoice data.</span>{" "}
+          {invoiceError}
+        </div>
+      )}
+
+      {/* Empty-state notice */}
+      {showEmptyNotice && (
+        <div
+          className="rounded-xl border px-4 py-3 text-sm"
+          style={{ background: "#F0F9FF", borderColor: "#BAE6FD", color: "#0891B2" }}
+        >
+          No invoices have been created yet. All figures below are zero — that
+          is the correct state. Create a client, a business, and an invoice to
+          see real numbers here.
+        </div>
+      )}
 
       {/* KPI Cards */}
       <section>
         <SectionHeading>Key Billing Metrics</SectionHeading>
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+
+          {/* Outstanding Balance — real: SUM(contractAmountCents) where not Paid/Cancelled */}
           <KpiCard
-            title="Outstanding Invoices"
-            value={`$${outstandingBalance.toLocaleString()}`}
-            trend="down" trendValue="$4,200"
-            iconBg="#FEF2F2" iconColor="#DC2626"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>}
+            title="Outstanding Balance"
+            value={kpiValue(outstandingBalanceCents)}
+            iconBg="#FEF2F2"
+            iconColor="#DC2626"
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+            }
           />
+
+          {/* Collected Revenue — real: SUM(contractAmountCents) where paymentStatus = Paid */}
           <KpiCard
             title="Collected Revenue"
-            value={`$${collectedThisMonth.toLocaleString()}`}
-            trend="up" trendValue="9.3%"
-            iconBg="#ECFDF5" iconColor="#059669"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>}
+            value={kpiValue(collectedRevenueCents)}
+            iconBg="#ECFDF5"
+            iconColor="#059669"
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            }
           />
+
+          {/* Overdue Invoices — real: /api/invoices?overdue=true count */}
           <KpiCard
-            title="MRR"
-            value={`$${revenueSummary.mrr.toLocaleString()}`}
-            trend="up" trendValue="11.2%"
-            iconBg="#EFF6FF" iconColor="#1B4FD8"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>}
+            title="Overdue Invoices"
+            value={kpiCount(overdueCount)}
+            iconBg="#FEF2F2"
+            iconColor="#DC2626"
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+              </svg>
+            }
           />
-          <KpiCard
-            title="ARR"
-            value={`$${(revenueSummary.arr / 1000).toFixed(0)}k`}
-            trend="up" trendValue="11.2%"
-            iconBg="#F5F3FF" iconColor="#7C3AED"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>}
-          />
+
+          {/* Activation Ready — real: businesses filtered by isActivationReady */}
           <KpiCard
             title="Activation Ready"
             value={String(activationReadyCount)}
-            trend="up" trendValue="3"
-            iconBg="#F0F9FF" iconColor="#0891B2"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5 13l4 4L19 7"/></svg>}
+            iconBg="#F0F9FF"
+            iconColor="#0891B2"
+            icon={
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M5 13l4 4L19 7"/>
+              </svg>
+            }
           />
-          <KpiCard
-            title="Overdue Invoices"
-            value={String(overdue.length)}
-            trend="up" trendValue="1"
-            iconBg="#FEF2F2" iconColor="#DC2626"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>}
-          />
-          <KpiCard
-            title="Pending Collections"
-            value={String(pendingCollection.length)}
-            trend="up" trendValue="1"
-            iconBg="#FFFBEB" iconColor="#D97706"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>}
-          />
-          <KpiCard
-            title="Revenue Forecast"
-            value={`$${revenueSummary.projectedRevenue.toLocaleString()}`}
-            trend="up" trendValue="8.0%"
-            iconBg="#ECFDF5" iconColor="#059669"
-            icon={<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/></svg>}
-          />
+
         </div>
       </section>
 
-      {/* Section summary cards — links to full pages, no duplicate tables */}
+      {/* Section summary cards — links to full pages */}
       <section>
         <SectionHeading>Billing Operations</SectionHeading>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
           <SummaryLinkCard
             title="Invoices"
             href="/billing/invoices"
@@ -233,25 +363,27 @@ export default function BillingDashboard() {
             bg="#EFF6FF"
             border="#BFDBFE"
             description="Generate, send, and record payments for all client invoices."
-            stats={[
-              { label: "Outstanding", value: `$${outstandingBalance.toLocaleString()}` },
-              { label: "Overdue", value: overdue.length },
-              { label: "Paid", value: invoices.filter((i) => i.status === "Paid").length },
-            ]}
+            stats={
+              invoiceState === "loaded"
+                ? [
+                    { label: "Outstanding", value: formatCents(outstandingBalanceCents) },
+                    { label: "Overdue",     value: overdueCount },
+                    { label: "Paid",        value: paidCount },
+                  ]
+                : []
+            }
           />
+
           <SummaryLinkCard
             title="Recurring Revenue"
             href="/billing/recurring-revenue"
             accent="#059669"
             bg="#ECFDF5"
             border="#A7F3D0"
-            description="MRR, ARR, active contracts, renewals, and at-risk accounts."
-            stats={[
-              { label: "MRR", value: `$${revenueSummary.mrr.toLocaleString()}` },
-              { label: "ARR", value: `$${(revenueSummary.arr / 1000).toFixed(0)}k` },
-              { label: "Active", value: recurringContracts.filter((c) => c.status === "Active").length },
-            ]}
+            description="Track MRR, ARR, and active contracts. Requires recurring contract tracking, which is not yet available."
+            stats={[]}
           />
+
           <SummaryLinkCard
             title="Collections"
             href="/billing/collections"
@@ -259,11 +391,13 @@ export default function BillingDashboard() {
             bg="#FEF2F2"
             border="#FECACA"
             description="Overdue accounts, collection statuses, and follow-up actions."
-            stats={[
-              { label: "Pending", value: pendingCollection.length },
-              { label: "Escalated", value: collections.filter((c) => c.collectionStatus === "Escalated").length },
-            ]}
+            stats={
+              invoiceState === "loaded"
+                ? [{ label: "Overdue", value: overdueCount }]
+                : []
+            }
           />
+
           <SummaryLinkCard
             title="Activation Queue"
             href="/billing/activation-queue"
@@ -271,22 +405,19 @@ export default function BillingDashboard() {
             bg="#F5F3FF"
             border="#DDD6FE"
             description="Clients cleared through billing ready for activation and onboarding."
-            stats={[
-              { label: "Ready", value: activationReadyCount },
-            ]}
+            stats={[{ label: "Ready", value: activationReadyCount }]}
           />
+
           <SummaryLinkCard
             title="Revenue"
             href="/billing/revenue"
             accent="#D97706"
             bg="#FFFBEB"
             border="#FDE68A"
-            description="Monthly, quarterly, and annual revenue by department and service."
-            stats={[
-              { label: "Projected", value: `$${revenueSummary.projectedRevenue.toLocaleString()}` },
-              { label: "At Risk", value: `$${revenueSummary.revenueAtRisk.toLocaleString()}` },
-            ]}
+            description="Revenue reporting by department and service. Requires recurring contract tracking and department tagging on invoices, which are not yet available."
+            stats={[]}
           />
+
           <SummaryLinkCard
             title="Active Services"
             href="/billing/active-services"
@@ -294,157 +425,97 @@ export default function BillingDashboard() {
             bg="#F0F9FF"
             border="#BAE6FD"
             description="All current client service subscriptions and their billing status."
-            stats={[
-              { label: "Active", value: 4 },
-              { label: "At Risk", value: 1 },
-            ]}
+            stats={[]}
           />
+
         </div>
       </section>
 
-      {/* Collections — top overdue accounts (compact, links to full page) */}
+      {/* Overdue Accounts — real data from /api/invoices?overdue=true */}
       <SectionWrapper
         title="Overdue Accounts"
-        description="Top overdue accounts requiring follow-up"
+        description="Invoices past their due date that have been sent to clients"
         actions={
-          <Link href="/billing/collections" className="text-xs font-semibold px-3 py-1.5 rounded-lg border hover:opacity-80" style={{ color: "#DC2626", borderColor: "#FECACA", background: "#FEF2F2" }}>
+          <Link
+            href="/billing/collections"
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg border hover:opacity-80"
+            style={{ color: "#DC2626", borderColor: "#FECACA", background: "#FEF2F2" }}
+          >
             All Collections →
           </Link>
         }
       >
-        <div className="space-y-2">
-          {collections.filter((c) => c.collectionStatus !== "Resolved").slice(0, 4).map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3"
-              style={{
-                background: c.daysOverdue >= 30 ? "#FEF2F2" : "var(--rtm-bg)",
-                borderColor: c.daysOverdue >= 30 ? "#FECACA" : "var(--rtm-border-light)",
-              }}
-            >
-              <div className="min-w-0">
-                <span className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>{c.client}</span>
-                <span className="ml-3 text-xs" style={{ color: "var(--rtm-text-muted)" }}>{c.invoiceNumber}</span>
-              </div>
-              <div className="flex items-center gap-3 flex-shrink-0">
-                <span className="text-sm font-bold text-[#DC2626]">${c.outstandingAmount.toLocaleString()}</span>
-                <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{c.daysOverdue > 0 ? `${c.daysOverdue}d overdue` : "Not yet due"}</span>
-                <StatusBadge variant={collectionStatusVariant(c.collectionStatus)} label={c.collectionStatus} size="sm" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </SectionWrapper>
+        {invoiceState === "loading" && (
+          <p className="text-sm py-4 text-center" style={{ color: "var(--rtm-text-muted)" }}>
+            Loading…
+          </p>
+        )}
 
-      {/* AI Billing Summary */}
-      <section>
-        <SectionHeading>AI Billing Summary</SectionHeading>
-        <div
-          className="rounded-xl border p-6 space-y-5"
-          style={{ background: "linear-gradient(135deg, #F5F3FF 0%, #EFF6FF 100%)", borderColor: "#DDD6FE" }}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#7C3AED" }}>
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-sm font-bold" style={{ color: "#4C1D95" }}>AI Billing Summary</h2>
-                <p className="text-xs" style={{ color: "#6D28D9" }}>Revenue risks, opportunities, and recommended actions</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setAiExpanded((v) => !v)}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
-              style={{ color: "#7C3AED", borderColor: "#DDD6FE", background: "#fff" }}
-            >
-              {aiExpanded ? "Collapse" : "Expand"}
-            </button>
-          </div>
+        {invoiceState === "error" && (
+          <p className="text-sm py-4" style={{ color: "#DC2626" }}>
+            Could not load overdue invoices.
+          </p>
+        )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { label: "Revenue Risks",           items: aiBillingSummary.revenueRisks,           color: "#DC2626", bg: "#FEF2F2", border: "#FECACA" },
-              { label: "Outstanding Collections", items: aiBillingSummary.outstandingCollections, color: "#D97706", bg: "#FFFBEB", border: "#FDE68A" },
-              { label: "Upcoming Renewals",       items: aiBillingSummary.upcomingRenewals,       color: "#0891B2", bg: "#F0F9FF", border: "#BAE6FD" },
-              { label: "Revenue Opportunities",   items: aiBillingSummary.revenueOpportunities,   color: "#059669", bg: "#ECFDF5", border: "#A7F3D0" },
-              { label: "Activation Bottlenecks",  items: aiBillingSummary.activationBottlenecks,  color: "#7C3AED", bg: "#F5F3FF", border: "#DDD6FE" },
-              { label: "Recommended Actions",     items: aiBillingSummary.recommendedActions,     color: "#1B4FD8", bg: "#EFF6FF", border: "#BFDBFE" },
-            ].map((section) => (
-              <div
-                key={section.label}
-                className="rounded-xl border p-4 space-y-2"
-                style={{ background: section.bg, borderColor: section.border }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className="w-5 h-5 rounded flex items-center justify-center text-[9px] font-bold"
-                    style={{ background: section.color + "20", color: section.color }}
-                  >
-                    {section.label.slice(0, 2).toUpperCase()}
-                  </span>
-                  <span className="text-xs font-bold uppercase tracking-wide" style={{ color: section.color }}>{section.label}</span>
-                </div>
-                {(aiExpanded ? section.items : section.items.slice(0, 2)).map((item, i) => (
-                  <p key={i} className="text-xs leading-relaxed" style={{ color: "var(--rtm-text-secondary)" }}>
-                    • {item}
-                  </p>
-                ))}
-                {!aiExpanded && section.items.length > 2 && (
-                  <p className="text-xs font-semibold" style={{ color: section.color }}>+{section.items.length - 2} more</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+        {invoiceState === "loaded" && overdueInvoices.length === 0 && (
+          <p className="text-sm py-4 text-center" style={{ color: "var(--rtm-text-muted)" }}>
+            No overdue invoices. Check back here once invoices have been sent to clients.
+          </p>
+        )}
 
-      {/* Activity Timeline */}
-      <SectionWrapper title="Activity Timeline" description="Recent billing events and actions">
-        <div className="space-y-3">
-          {activityTimeline.map((evt) => {
-            const colors: Record<string, { color?: string; bg?: string }> = {
-              "Invoice Created":     { color: "#1B4FD8", bg: "#EFF6FF" },
-              "Invoice Sent":        { color: "#0891B2", bg: "#F0F9FF" },
-              "Invoice Paid":        { color: "#059669", bg: "#ECFDF5" },
-              "Invoice Overdue":     { color: "#DC2626", bg: "#FEF2F2" },
-              "Collection Updated":  { color: "#D97706", bg: "#FFFBEB" },
-              "Activation Approved": { color: "#7C3AED", bg: "#F5F3FF" },
-              "Project Activated":   { color: "#059669", bg: "#ECFDF5" },
-            };
-            const c = colors[evt.type] ?? { color: "#6B7280", bg: "#F9FAFB" };
-            const typeAbbr = evt.type.split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase();
-            return (
-              <div
-                key={evt.id}
-                className="flex items-start gap-4 rounded-xl border p-4"
-                style={{ background: c.bg, borderColor: `${c.color}30` }}
-              >
+        {invoiceState === "loaded" && overdueInvoices.length > 0 && (
+          <div className="space-y-2">
+            {overdueInvoices.slice(0, 5).map((inv) => {
+              const days = daysOverdueFromISO(inv.dueDate);
+              return (
                 <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                  style={{ background: c.color + "20", color: c.color }}
+                  key={inv.id}
+                  className="flex items-center justify-between gap-4 rounded-lg border px-4 py-3"
+                  style={{
+                    background:   days >= 30 ? "#FEF2F2" : "var(--rtm-bg)",
+                    borderColor:  days >= 30 ? "#FECACA" : "var(--rtm-border-light)",
+                  }}
                 >
-                  {typeAbbr}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                    <span className="text-xs font-bold" style={{ color: c.color }}>{evt.type}</span>
-                    <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{evt.client}</span>
-                    {evt.invoiceNumber && <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{evt.invoiceNumber}</span>}
-                    {evt.amount && <span className="text-xs font-semibold" style={{ color: c.color }}>${evt.amount.toLocaleString()}</span>}
+                  <div className="min-w-0">
+                    <span
+                      className="font-semibold text-sm"
+                      style={{ color: "var(--rtm-text-primary)" }}
+                    >
+                      {inv.invoiceNumber}
+                    </span>
+                    <span
+                      className="ml-3 text-xs"
+                      style={{ color: "var(--rtm-text-muted)" }}
+                    >
+                      {inv.billingOwner || "Unassigned"}
+                    </span>
                   </div>
-                  <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{evt.description}</p>
-                  <div className="flex gap-3 mt-1 text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
-                    <span>{evt.timestamp}</span>
-                    <span>by {evt.actor}</span>
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <span className="text-sm font-bold text-[#DC2626]">
+                      {formatCents(inv.contractAmountCents)}
+                    </span>
+                    <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                      {days}d overdue
+                    </span>
+                    <StatusBadge
+                      variant={overdueStatusVariant(inv.invoiceStatus)}
+                      label={inv.invoiceStatus}
+                      size="sm"
+                    />
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+            {overdueInvoices.length > 5 && (
+              <p className="text-xs pt-1 text-center" style={{ color: "var(--rtm-text-muted)" }}>
+                +{overdueInvoices.length - 5} more — see{" "}
+                <Link href="/billing/collections" style={{ color: "#DC2626" }}>
+                  Collections
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
       </SectionWrapper>
 
     </div>
