@@ -13,6 +13,7 @@ import { useDateRangeFilter } from "@/lib/reporting/useDateRangeFilter";
 import { SalesLeadsDateRangeFilter } from "@/components/sales/leads/DateRangeFilter";
 import { GhlSyncModal } from "@/components/sales/leads/GhlSyncModal";
 import type { LeadGhlSyncState } from "@/components/sales/leads/GhlSyncModal";
+import { useDepartmentUsers, resolveRep, type UserRecord } from "@/lib/users/users-api";
 
 const workspace = getWorkspace("sales")!;
 
@@ -716,10 +717,11 @@ const LEAD_STAGES: LeadStage[] = [
   "Discovery Scheduled", "Discovery Complete", "Qualified", "Disqualified",
 ];
 
-const SALES_REPS = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
+// SALES_REPS removed — dropdowns now fetch real Users in the Sales department.
 const LEAD_SOURCE_OPTIONS: LeadSource[] = ["Website", "Google Ads", "Meta Ads", "GBP", "LSA", "Referral", "Affiliate", "Partner", "Direct", "Outbound"];
 
 //  Helpers ────────────────────────────────────────────────────────────────────
+
 
 function stageBadge(stage: LeadStage) {
   const c = STAGE_CONFIG[stage];
@@ -991,10 +993,13 @@ function EditLeadModal({ lead, onClose, onSave }: {
 }
 
 // Assign Sales Rep Modal
-function AssignRepModal({ lead, onClose, onSave }: {
+function AssignRepModal({ lead, onClose, onSave, salesUsers, salesLoading, salesError }: {
   lead: Lead;
   onClose: () => void;
-  onSave: (rep: string) => void;
+  onSave: (repId: string) => void;
+  salesUsers: UserRecord[];
+  salesLoading: boolean;
+  salesError: string | null;
 }) {
   const [rep, setRep] = useState(lead.assignedRep);
   const [saving, setSaving] = useState(false);
@@ -1006,34 +1011,50 @@ function AssignRepModal({ lead, onClose, onSave }: {
     setSaving(false);
   }
 
+  // Current display: resolve id to name, or show stale indicator
+  const currentDisplay = resolveRep(lead.assignedRep, salesUsers);
+
   return (
     <ModalShell title="Assign Sales Rep" subtitle={lead.businessName} onClose={onClose}
       footer={<>
         <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
-        <button onClick={handleSave} disabled={saving} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
+        <button onClick={handleSave} disabled={saving || salesUsers.length === 0} className="rtm-btn-primary text-sm px-4 py-2 disabled:opacity-40">
           {saving ? "Saving..." : "Assign Rep"}
         </button>
       </>}>
       <div>
         <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Currently Assigned</label>
-        <p className="text-sm font-semibold mb-3" style={{ color: "var(--rtm-text-primary)" }}>{lead.assignedRep}</p>
+        <p className="text-sm font-semibold mb-3" style={{ color: "var(--rtm-text-primary)" }}>{currentDisplay}</p>
       </div>
       <div>
         <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Assign To</label>
-        <div className="space-y-1.5">
-          {SALES_REPS.map(r => (
-            <button key={r} onClick={() => setRep(r)}
-              className="w-full text-left px-4 py-2.5 rounded-lg border text-sm font-semibold transition-colors"
-              style={{
-                background: rep === r ? "#EFF6FF" : "var(--rtm-surface)",
-                borderColor: rep === r ? "#2563EB" : "var(--rtm-border)",
-                color: rep === r ? "#2563EB" : "var(--rtm-text-primary)",
-              }}>
-              {r} {r === lead.assignedRep ? <span className="text-[10px] font-normal text-slate-400">(current)</span> : ""}
-            </button>
-          ))}
-        </div>
+        {salesLoading && (
+          <p className="text-sm py-2" style={{ color: "var(--rtm-text-muted)" }}>Loading Sales reps…</p>
+        )}
+        {!salesLoading && salesError && (
+          <p className="text-sm py-2 text-red-500">Failed to load Sales reps. Try refreshing.</p>
+        )}
+        {!salesLoading && !salesError && salesUsers.length === 0 && (
+          <p className="text-sm py-2" style={{ color: "var(--rtm-text-muted)" }}>
+            No one in Sales has signed in yet. Reps appear here after their first login.
+          </p>
+        )}
+        {!salesLoading && !salesError && salesUsers.length > 0 && (
+          <div className="space-y-1.5">
+            {salesUsers.map(u => (
+              <button key={u.id} onClick={() => setRep(u.id)}
+                className="w-full text-left px-4 py-2.5 rounded-lg border text-sm font-semibold transition-colors"
+                style={{
+                  background: rep === u.id ? "#EFF6FF" : "var(--rtm-surface)",
+                  borderColor: rep === u.id ? "#2563EB" : "var(--rtm-border)",
+                  color: rep === u.id ? "#2563EB" : "var(--rtm-text-primary)",
+                }}>
+                {u.name}{rep === u.id && lead.assignedRep === u.id ? <span className="text-[10px] font-normal text-slate-400 ml-1">(current)</span> : ""}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </ModalShell>
   );
@@ -1276,10 +1297,11 @@ function DisqualifyModal({ lead, onClose, onSave, onGhlResult }: {
 }
 
 // Create Follow-Up Modal (creates a real engine task via /api/pending-sales-tasks)
-function CreateFollowUpModal({ lead, onClose, onSave }: {
+function CreateFollowUpModal({ lead, onClose, onSave, salesUsers }: {
   lead: Lead;
   onClose: () => void;
   onSave: () => void;
+  salesUsers: UserRecord[];
 }) {
   const tomorrow = new Date(Date.now() + 24 * 3600 * 1000);
   const defaultDate = `${tomorrow.getUTCFullYear()}-${String(tomorrow.getUTCMonth() + 1).padStart(2, "0")}-${String(tomorrow.getUTCDate()).padStart(2, "0")}`;
@@ -1333,7 +1355,7 @@ function CreateFollowUpModal({ lead, onClose, onSave }: {
   const PRIORITIES = ["Low", "Medium", "High", "Critical"] as const;
 
   return (
-    <ModalShell title="Create Follow-Up Task" subtitle={`${lead.businessName} · Assigned to ${lead.assignedRep}`} onClose={onClose}
+    <ModalShell title="Create Follow-Up Task" subtitle={`${lead.businessName} · Assigned to ${resolveRep(lead.assignedRep, salesUsers)}`} onClose={onClose}
       footer={<>
         <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
           style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
@@ -1379,7 +1401,7 @@ function CreateFollowUpModal({ lead, onClose, onSave }: {
       <div className="grid grid-cols-2 gap-3 text-xs">
         <div className="rounded-lg p-2 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <p className="font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Assigned To</p>
-          <p style={{ color: "var(--rtm-text-primary)" }}>{lead.assignedRep}</p>
+          <p style={{ color: "var(--rtm-text-primary)" }}>{resolveRep(lead.assignedRep, salesUsers)}</p>
         </div>
         <div className="rounded-lg p-2 border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <p className="font-bold uppercase tracking-wide mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Lead</p>
@@ -1403,7 +1425,7 @@ type ActiveModal =
 
 //  Drawer Component ───────────────────────────────────────────────────────────
 
-function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, oppLoadError }: {
+function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, oppLoadError, salesUsers }: {
   lead: Lead;
   onClose: () => void;
   onAction: (modal: ActiveModal) => void;
@@ -1412,6 +1434,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, opp
   // (or while loading); oppLoadError is true when the fetch failed entirely.
   oppInfo: OpportunityInfo | undefined;
   oppLoadError: boolean;
+  salesUsers: UserRecord[];
 }) {
   const [activeTab, setActiveTab] = useState<
     "overview" | "ghl" | "qualification" | "discovery" | "opportunity" | "affiliate" | "timeline"
@@ -1440,7 +1463,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, opp
   const timeline = [
     { date: lead.ghlCreatedDate, event: "GHL Contact Created" },
     { date: lead.createdDate, event: "Lead Created in RTM" },
-    { date: lead.createdDate, event: `Assigned to ${lead.assignedRep}` },
+    { date: lead.createdDate, event: `Assigned to ${resolveRep(lead.assignedRep, salesUsers)}` },
     ...(lead.discoveryDate ? [{ date: lead.discoveryDate, event: "Discovery Completed" }] : []),
     ...(isQualified ? [{ date: lead.lastActivity, event: "Lead Qualified" }] : []),
     ...(oppInfo ? [{ date: lead.lastActivity, event: `Opportunity Created: ${oppInfo.opportunityNumber}` }] : []),
@@ -1548,7 +1571,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, opp
                     ["Phone", lead.phone],
                     ["Location", lead.location],
                     ["Lead Source", lead.leadSource],
-                    ["Assigned Rep", lead.assignedRep],
+                    ["Assigned Rep", resolveRep(lead.assignedRep, salesUsers)],
                     ["Created Date", lead.createdDate],
                     ["Last Activity", lead.lastActivity],
                     ["Est. Monthly Value", `${fmt$(lead.estimatedValue)}/mo`],
@@ -1746,7 +1769,7 @@ function LeadDrawer({ lead, onClose, onAction, onCreateOpportunity, oppInfo, opp
                   {[
                     ["Discovery Scheduled", lead.discoveryScheduled ? "Yes" : "No"],
                     ["Discovery Date", lead.discoveryDate || "Not Scheduled"],
-                    ["Assigned Rep", lead.assignedRep],
+                    ["Assigned Rep", resolveRep(lead.assignedRep, salesUsers)],
                   ].map(([k, v]) => (
                     <div key={k} className="rounded-lg p-3 border"
                       style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
@@ -1976,7 +1999,7 @@ const MODAL_SOURCE_OPTIONS = [
   "Google Ads", "Meta Ads", "Outbound", "Direct",
 ];
 
-const MODAL_ASSIGNED_REPS = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
+// MODAL_ASSIGNED_REPS removed — AddLeadModal fetches real Users in the Sales department.
 
 interface AddLeadFormState {
   businessName: string;
@@ -1994,13 +2017,16 @@ interface AddLeadFormState {
 const EMPTY_ADD_LEAD_FORM: AddLeadFormState = {
   businessName: "", contactName: "",
   industry: MODAL_INDUSTRY_OPTIONS[0], location: "",
-  leadSource: MODAL_SOURCE_OPTIONS[0], assignedRep: MODAL_ASSIGNED_REPS[0],
+  leadSource: MODAL_SOURCE_OPTIONS[0], assignedRep: "",
   contactEmail: "", contactPhone: "", website: "", notes: "",
 };
 
-function AddLeadModal({ onClose, onAdd }: {
+function AddLeadModal({ onClose, onAdd, salesUsers, salesLoading, salesError }: {
   onClose: () => void;
   onAdd: (lead: Lead) => void;
+  salesUsers: UserRecord[];
+  salesLoading: boolean;
+  salesError: string | null;
 }) {
   const [form, setForm] = useState<AddLeadFormState>({ ...EMPTY_ADD_LEAD_FORM });
   const [errors, setErrors] = useState<Partial<Record<keyof AddLeadFormState, string>>>({});
@@ -2097,11 +2123,19 @@ function AddLeadModal({ onClose, onAdd }: {
             </div>
             <div>
               <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Assigned Rep</label>
-              <select value={form.assignedRep} onChange={e => set("assignedRep", e.target.value)}
-                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
-                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
-                {MODAL_ASSIGNED_REPS.map(o => <option key={o}>{o}</option>)}
-              </select>
+              {salesLoading && <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>Loading reps…</p>}
+              {!salesLoading && salesError && <p className="text-sm py-1 text-red-500">Failed to load reps.</p>}
+              {!salesLoading && !salesError && salesUsers.length === 0 && (
+                <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>No one in Sales has signed in yet.</p>
+              )}
+              {!salesLoading && !salesError && salesUsers.length > 0 && (
+                <select value={form.assignedRep} onChange={e => set("assignedRep", e.target.value)}
+                  className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                  style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                  <option value="">-- Select rep --</option>
+                  {salesUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -2217,17 +2251,20 @@ function ImportLeadsModal({ onClose, onImport }: {
 }
 
 // Assign Leads Modal (bulk)
-const ASSIGN_REPS = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
+// ASSIGN_REPS removed — AssignLeadsModal fetches real Users in the Sales department.
 
-function AssignLeadsModal({ leads, onClose, onAssign }: {
+function AssignLeadsModal({ leads, onClose, onAssign, salesUsers, salesLoading, salesError }: {
   leads: Lead[];
   onClose: () => void;
-  onAssign: (leadIds: string[], rep: string) => void;
+  onAssign: (leadIds: string[], repId: string) => void;
+  salesUsers: UserRecord[];
+  salesLoading: boolean;
+  salesError: string | null;
 }) {
   const unassigned = leads.filter(l => !l.assignedRep || l.assignedRep === "-");
   const candidates = unassigned.length > 0 ? unassigned : leads.slice(0, 5);
   const [selectedIds, setSelectedIds] = useState<string[]>(candidates.map(l => l.id));
-  const [rep, setRep] = useState(ASSIGN_REPS[0]);
+  const [rep, setRep] = useState(salesUsers[0]?.id ?? "");
   function toggleLead(id: string) { setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]); }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -2246,11 +2283,19 @@ function AssignLeadsModal({ leads, onClose, onAssign }: {
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wide block mb-1" style={{ color: "var(--rtm-text-muted)" }}>Assign To Rep</label>
-            <select value={rep} onChange={e => setRep(e.target.value)}
-              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
-              style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
-              {ASSIGN_REPS.map(r => <option key={r}>{r}</option>)}
-            </select>
+            {salesLoading && <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>Loading reps…</p>}
+            {!salesLoading && salesError && <p className="text-sm py-1 text-red-500">Failed to load reps.</p>}
+            {!salesLoading && !salesError && salesUsers.length === 0 && (
+              <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>No one in Sales has signed in yet. Reps appear here after their first login.</p>
+            )}
+            {!salesLoading && !salesError && salesUsers.length > 0 && (
+              <select value={rep} onChange={e => setRep(e.target.value)}
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none"
+                style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                <option value="">-- Select rep --</option>
+                {salesUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            )}
           </div>
           <div>
             <label className="text-[10px] font-bold uppercase tracking-wide block mb-2" style={{ color: "var(--rtm-text-muted)" }}>Select Leads ({selectedIds.length} selected)</label>
@@ -2272,7 +2317,7 @@ function AssignLeadsModal({ leads, onClose, onAssign }: {
           style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <button onClick={onClose} className="text-sm px-4 py-2 rounded-lg font-semibold border"
             style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
-          <button onClick={() => onAssign(selectedIds, rep)} disabled={selectedIds.length === 0}
+          <button onClick={() => onAssign(selectedIds, rep)} disabled={selectedIds.length === 0 || !rep}
             className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40"
             style={{ background: "#059669", color: "#fff" }}>Assign</button>
         </div>
@@ -2300,6 +2345,9 @@ function SalesLeadsPageInner() {
   const toastCounter = useRef(0);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [leadsLoading, setLeadsLoading] = useState(true);
+
+  // Real Sales users — loaded once, passed to all rep dropdowns.
+  const { users: salesUsers, loading: salesLoading, error: salesError } = useDepartmentUsers("Sales");
   const [showCustomizeView, setShowCustomizeView] = useState(false);
   const { isVisible, widgetOrder } = useWidgetPreferences("leads");
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
@@ -2543,11 +2591,11 @@ function SalesLeadsPageInner() {
       id: `LIMP${Date.now()}${i}`,
       name: `Imported Contact ${i + 1}`, businessName: `Imported Business ${i + 1}`,
       industry: "Home Services", website: "", email: `contact${i + 1}@imported.com`,
-      phone: "", location: "-", ghlContactId: "-", ghlAssignedUser: ASSIGN_REPS[0],
+      phone: "", location: "-", ghlContactId: "-", ghlAssignedUser: "",
       ghlSource: "Website", ghlCreatedDate: new Date().toISOString().split("T")[0],
       ghlLastActivityDate: new Date().toISOString().split("T")[0],
       ghlContactTags: [], ghlContactStatus: "New", ghlSyncStatus: "Pending Sync" as GHLSyncStatus,
-      leadSource: "Website" as LeadSource, assignedRep: ASSIGN_REPS[0],
+      leadSource: "Website" as LeadSource, assignedRep: "",
       stage: "New Lead" as LeadStage,
       discoveryScheduled: false, discoveryDate: "", discoveryNotes: "",
       businessGoals: [], painPoints: [], requestedServices: [],
@@ -2703,6 +2751,7 @@ function SalesLeadsPageInner() {
           onCreateOpportunity={handleCreateOpportunityFromLead}
           oppInfo={oppByLeadId.get(selectedLead.id)}
           oppLoadError={oppLoadError}
+          salesUsers={salesUsers}
         />
       )}
 
@@ -2711,7 +2760,8 @@ function SalesLeadsPageInner() {
         <EditLeadModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleEditLead} />
       )}
       {activeModal?.type === "assignRep" && (
-        <AssignRepModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleAssignRep} />
+        <AssignRepModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleAssignRep}
+          salesUsers={salesUsers} salesLoading={salesLoading} salesError={salesError} />
       )}
       {activeModal?.type === "scheduleDiscovery" && (
         <ScheduleDiscoveryModal
@@ -2741,7 +2791,7 @@ function SalesLeadsPageInner() {
         />
       )}
       {activeModal?.type === "createFollowUp" && (
-        <CreateFollowUpModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleFollowUpCreated} />
+        <CreateFollowUpModal lead={activeModal.lead} onClose={() => setActiveModal(null)} onSave={handleFollowUpCreated} salesUsers={salesUsers} />
       )}
       {activeModal?.type === "ghlSync" && (
         <GhlSyncModal
@@ -2778,6 +2828,7 @@ function SalesLeadsPageInner() {
       {showAddLeadModal && (
         <AddLeadModal
           onClose={() => setShowAddLeadModal(false)}
+          salesUsers={salesUsers} salesLoading={salesLoading} salesError={salesError}
           onAdd={async newLead => {
             // Persist the new lead to data/leads.json via /api/leads
             try {
@@ -2803,7 +2854,8 @@ function SalesLeadsPageInner() {
 
       {/* Assign Modal */}
       {showAssignModal && (
-        <AssignLeadsModal leads={leads} onClose={() => setShowAssignModal(false)} onAssign={handleAssignLeads} />
+        <AssignLeadsModal leads={leads} onClose={() => setShowAssignModal(false)} onAssign={handleAssignLeads}
+          salesUsers={salesUsers} salesLoading={salesLoading} salesError={salesError} />
       )}
 
       {/* Customize View Modal */}
@@ -3041,7 +3093,7 @@ function SalesLeadsPageInner() {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{sourceBadge(lead.leadSource)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{lead.assignedRep}</p>
+                    <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{resolveRep(lead.assignedRep, salesUsers)}</p>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">{stageBadge(lead.stage)}</td>
                   <td className="px-4 py-3 whitespace-nowrap">

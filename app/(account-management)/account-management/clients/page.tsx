@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useDepartmentUsers } from "@/lib/users/users-api";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
@@ -219,7 +220,7 @@ const healthData = {
 const PROFILE_TABS = ["Overview", "Onboarding", "Services", "Tasks", "Health", "Check-ins", "Reports", "Renewals", "Notes", "Documents"] as const;
 type ProfileTab = typeof PROFILE_TABS[number];
 
-const AM_OPTIONS     = ["All AMs", "Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
+// AM_OPTIONS removed — the AM filter now uses real Account Management users from the API.
 const STATUS_OPTIONS = ["All Statuses", "Healthy", "At Risk", "Watch", "Onboarding"];
 const SERVICE_OPTIONS= ["All Services", "SEO", "GBP", "Meta Ads", "Google Ads", "LSA", "Content", "Website Dev", "Reporting"];
 const PAYMENT_OPTIONS= ["All Payments", "Current", "Pending", "Late", "Overdue"];
@@ -231,6 +232,11 @@ export default function AccountClientsPage() {
   const [activeTab,       setActiveTab]       = useState<ProfileTab>("Overview");
   const [selectedRow,     setSelectedRow]     = useState<string>("Apex Roofing");
   const [filterAM,        setFilterAM]        = useState("All AMs");
+
+  // Real Account Management users — loaded once for the AM filter.
+  const { users: amUsers, loading: amLoading } = useDepartmentUsers("Account Management");
+  // Options: "All AMs" reset + real user names. Falls back to just the reset option while loading or when empty.
+  const AM_OPTIONS = ["All AMs", ...amUsers.map(u => u.name)];
   const [filterStatus,    setFilterStatus]    = useState("All Statuses");
   const [filterService,   setFilterService]   = useState("All Services");
   const [filterPayment,   setFilterPayment]   = useState("All Payments");
@@ -320,6 +326,11 @@ export default function AccountClientsPage() {
               </select>
             ))}
           </div>
+          {!amLoading && amUsers.length === 0 && (
+            <p className="text-xs mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+              No one in Account Management has signed in yet — the AM filter will populate after first login.
+            </p>
+          )}
 
           {/* Table */}
           <div className="overflow-x-auto">

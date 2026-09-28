@@ -16,7 +16,12 @@
 // Used by:
 //   - components/workspace/WorkspaceTeamMembersPage (department roster)
 //   - lib/hooks/useCurrentUser (current-user resolution for Profile pages)
+//   - app/(sales)/sales/leads/page.tsx (Sales rep dropdowns)
+//   - app/(account-management)/account-management/clients/page.tsx (AM filter)
+//   - app/(billing)/billing/invoices/page.tsx (Billing owner select)
 // =============================================================================
+
+import { useState, useEffect } from "react";
 
 // ── Record shape (mirrors app/api/users/route.ts UserRecord) ─────────────────
 
@@ -97,4 +102,70 @@ export async function fetchCurrentUser(): Promise<UserRecord | null> {
   } catch {
     return null;
   }
+}
+
+// ── React hook: department-scoped users ──────────────────────────────────────
+//
+// Returns { users, loading, error } for a given department.
+//
+// Three states are intentionally distinct:
+//   loading  = true                      → fetch in flight
+//   loading  = false, error != null       → fetch failed
+//   loading  = false, error == null, users = [] → fetch succeeded, no users in dept
+//
+// The department filter is client-side (same as fetchUsersByDepartment).
+// The API tier scoping is preserved — a Manager in Sales only ever sees
+// Sales users; the client-side filter is a no-op for them.
+//
+// Usage:
+//   const { users, loading, error } = useDepartmentUsers("Sales");
+
+export interface UseDepartmentUsersResult {
+  users: UserRecord[];
+  loading: boolean;
+  error: string | null;
+}
+
+/**
+ * Resolve a stored assignedRep / billingOwner value to a display string.
+ *
+ * - Matches against the provided users list by User.id.
+ * - If matched: returns user.name.
+ * - If not matched (stale display name like "Alex R."): returns the value
+ *   suffixed with " ⚠ (stale)" so it reads as clearly outdated.
+ * - Empty / "-": returns "Unassigned".
+ */
+export function resolveRep(value: string | undefined | null, users: UserRecord[]): string {
+  if (!value || value === "-") return "Unassigned";
+  const matched = users.find((u) => u.id === value);
+  if (matched) return matched.name;
+  return `${value} ⚠ (stale)`;
+}
+
+/**
+ * React hook. Fetches users for a specific department using fetchUsersByDepartment.
+ * Safe to call in Client Components; must not be used in Server Components or
+ * module-level code (it imports "react" dynamically to stay SSR-safe).
+ */
+export function useDepartmentUsers(department: string): UseDepartmentUsersResult {
+  const [users, setUsers] = useState<UserRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    fetchUsersByDepartment(department)
+      .then((rows) => { if (!cancelled) { setUsers(rows); setLoading(false); } })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Failed to load users.");
+          setLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [department]);
+
+  return { users, loading, error };
 }

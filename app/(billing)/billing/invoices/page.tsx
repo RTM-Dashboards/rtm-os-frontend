@@ -9,6 +9,7 @@ import { getWorkspace } from "@/lib/workspaces";
 // the MarkPaidFlowModal (which calls /api/clients and /api/businesses directly).
 import { getWorkspaceTasksByDepartment } from "@/lib/engine";
 import { fetchInvoices, createInvoice, patchInvoice } from "@/lib/billing/invoices-api";
+import { useDepartmentUsers, resolveRep, type UserRecord } from "@/lib/users/users-api";
 
 import type { WorkspaceTask } from "@/components/workspace";
 
@@ -322,6 +323,9 @@ function CreateInvoiceModal({ onClose, onSave, prefill }: {
   onSave: (invoice: InvoiceRow, handoffId?: string) => void;
   prefill?: { client: string; contractValue?: string; monthlyValue?: string; handoffId?: string };
 }) {
+  // Real Billing users — loaded once for the billing owner select.
+  const { users: billingUsers, loading: billingUsersLoading, error: billingUsersError } = useDepartmentUsers("Billing");
+
   const [form, setForm] = useState({
     client: prefill?.client ?? "",
     domain: "",
@@ -329,7 +333,7 @@ function CreateInvoiceModal({ onClose, onSave, prefill }: {
     setupFee: "0",
     monthlyValue: prefill?.monthlyValue ?? "",
     dueDate: "",
-    billingOwner: "Lisa P.",
+    billingOwner: "",
   });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -585,13 +589,20 @@ function CreateInvoiceModal({ onClose, onSave, prefill }: {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Billing Owner</label>
-            <select value={form.billingOwner} onChange={(e) => setForm((f) => ({ ...f, billingOwner: e.target.value }))}
-              className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none"
-              style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)" }}
-            >
-              <option>Lisa P.</option>
-              <option>Sarah K.</option>
-            </select>
+            {billingUsersLoading && <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>Loading billing staff…</p>}
+            {!billingUsersLoading && billingUsersError && <p className="text-sm py-1 text-red-500">Failed to load billing staff.</p>}
+            {!billingUsersLoading && !billingUsersError && billingUsers.length === 0 && (
+              <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>No one in Billing has signed in yet. Billing staff appear here after their first login.</p>
+            )}
+            {!billingUsersLoading && !billingUsersError && billingUsers.length > 0 && (
+              <select value={form.billingOwner} onChange={(e) => setForm((f) => ({ ...f, billingOwner: e.target.value }))}
+                className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none"
+                style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)" }}
+              >
+                <option value="">-- Select owner --</option>
+                {billingUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            )}
           </div>
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="flex-1 text-sm font-semibold py-2 rounded-lg border" style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }} disabled={saving}>Cancel</button>
@@ -819,7 +830,7 @@ function ContextMenu({ actions }: { actions: MenuAction[] }) {
 
 // ─── Invoice Detail Drawer ────────────────────────────────────────────────────
 
-function InvoiceDetailDrawer({ invoice, onClose }: { invoice: InvoiceRow | null; onClose: () => void }) {
+function InvoiceDetailDrawer({ invoice, onClose, billingUsers }: { invoice: InvoiceRow | null; onClose: () => void; billingUsers: UserRecord[] }) {
   const [activeTab, setActiveTab] = useState("overview");
   useEffect(() => { if (invoice) setActiveTab("overview"); }, [invoice?.id]);
   if (!invoice) return null;
@@ -837,7 +848,7 @@ function InvoiceDetailDrawer({ invoice, onClose }: { invoice: InvoiceRow | null;
               { label: "Setup Fee",      value: invoice.setupFee },
               { label: "Monthly Value",  value: invoice.monthlyValue },
               { label: "Due Date",       value: invoice.dueDate },
-              { label: "Billing Owner",  value: invoice.billingOwner },
+              { label: "Billing Owner",  value: resolveRep(invoice.billingOwner, billingUsers) },
             ].map(({ label, value }) => (
               <div key={label} className="space-y-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>{label}</p>
@@ -990,7 +1001,7 @@ function InvoiceDetailDrawer({ invoice, onClose }: { invoice: InvoiceRow | null;
       open={!!invoice}
       onClose={onClose}
       title={`${invoice.invoiceNumber} — ${invoice.client}`}
-      subtitle={`Due ${invoice.dueDate} · ${invoice.billingOwner}`}
+      subtitle={`Due ${invoice.dueDate} · ${resolveRep(invoice.billingOwner, billingUsers)}`}
       statusBadge={<StatusBadge variant={invoiceStatusVariant(invoice.invoiceStatus)} label={invoice.invoiceStatus} size="sm" />}
       tabs={tabs}
       activeTab={activeTab}
@@ -1508,6 +1519,9 @@ function MarkPaidFlowModal({ invoice, onClose, onDone }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function BillingInvoicesPage() {
+  // Real Billing users for resolving billingOwner ids to display names in the table/drawer.
+  const { users: billingUsers } = useDepartmentUsers("Billing");
+
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
   const [invoicesError, setInvoicesError] = useState<string | null>(null);
@@ -2027,7 +2041,7 @@ export default function BillingInvoicesPage() {
       )}
 
       {/* Invoice Detail Drawer */}
-      <InvoiceDetailDrawer invoice={drawerInvoice} onClose={() => setDrawerInvoice(null)} />
+      <InvoiceDetailDrawer invoice={drawerInvoice} onClose={() => setDrawerInvoice(null)} billingUsers={billingUsers} />
 
       {/* Sales Handoff Review Drawer */}
       <HandoffReviewDrawer
@@ -2053,7 +2067,7 @@ export default function BillingInvoicesPage() {
               const rows = visibleInvoices.map((inv) => [
                 inv.invoiceNumber, inv.client, inv.contractValue, inv.setupFee,
                 inv.monthlyValue, inv.invoiceStatus, inv.paymentStatus, inv.dueDate,
-                inv.billingOwner,
+                resolveRep(inv.billingOwner, billingUsers),
               ]);
               const header = ["Invoice #","Client","Contract Value","Setup Fee","Monthly Value","Invoice Status","Payment Status","Due Date","Billing Owner"];
               const csv = [header, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -2192,7 +2206,7 @@ export default function BillingInvoicesPage() {
                   <Td><StatusBadge variant={invoiceStatusVariant(inv.invoiceStatus)} label={inv.invoiceStatus} size="sm" /></Td>
                   <Td><StatusBadge variant={paymentStatusVariant(inv.paymentStatus)} label={inv.paymentStatus} size="sm" /></Td>
                   <Td muted>{inv.dueDate}</Td>
-                  <Td muted>{inv.billingOwner}</Td>
+                  <Td muted>{resolveRep(inv.billingOwner, billingUsers)}</Td>
                   <Td><StripeConnectIndicator /></Td>
                   <Td>{getPrimaryActionButton(inv)}</Td>
                   <Td><ContextMenu actions={getInvoiceMenuActions(inv)} /></Td>
