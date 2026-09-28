@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
+import { resolveRep, useDepartmentUsers } from "@/lib/users/users-api";
 
 const workspace = getWorkspace("billing")!;
 
@@ -25,17 +26,18 @@ type BadgeVariant =
   | "neutral"
   | "pending";
 
-interface MasterClient {
+// Invoice record as returned by GET /api/invoices?overdue=true
+interface OverdueInvoice {
   id: string;
-  clientName: string;
-  billingStatus: string;
+  invoiceNumber: string;
+  businessId: string;
+  clientId: string;
+  contractAmountCents: number;
+  monthlyValueCents: number;
   invoiceStatus: string;
   paymentStatus: string;
-  monthlyValue: number;
+  dueDate: string;
   billingOwner: string;
-  assignedAM: string;
-  notes: string;
-  lastActivity: string;
 }
 
 interface ContactLogEntry {
@@ -54,46 +56,41 @@ interface CollectionsStatusRecord {
   updatedAt: string;
 }
 
-// ── Derived types for the merged view ────────────────────────────────────────
+// ── Derived type for the merged view ─────────────────────────────────────────
+//
+// invoiceId is the Postgres Invoice id; the overlay is keyed by invoiceId.
+// (Overlay was previously keyed by master-clients id; we now use invoice id.)
 
 interface CollectionRow {
-  clientId: string;
-  clientName: string;
-  outstandingAmount: number;
-  daysOverdue: number;
+  invoiceId: string;
+  invoiceNumber: string;
+  clientName: string;    // from Client.fullName or Client.company
+  domain: string;        // from Business.domain
+  outstandingAmountCents: number;
+  daysOverdue: number;   // Math.floor((now - dueDate) / 86_400_000)
+  invoiceStatus: string;
+  billingOwner: string;  // User id — resolved for display
+  // Overlay fields (file-backed, keyed by invoiceId)
   collectionStatus: CollectionStatus;
-  assignedTo: string;
   notes: string;
   contactLog: ContactLogEntry[];
   paymentPlanDetails: string;
   lastContactDate: string;
   nextFollowUp: string;
+  // Row-level write failure (set when overlay POST returns non-ok)
+  writeError?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Parse daysOverdue from invoiceStatus strings like "Overdue 30d" or "Overdue 15d". */
-function parseDaysOverdue(invoiceStatus: string): number {
-  const m = invoiceStatus.match(/Overdue\s+(\d+)d/i);
-  if (m) return parseInt(m[1], 10);
-  // billingStatus is "Overdue" but no day count in invoiceStatus — default 1
-  return 1;
-}
-
 function collectionStatusVariant(s: CollectionStatus): BadgeVariant {
   switch (s) {
-    case "Resolved":
-      return "success";
-    case "Escalated":
-      return "error";
-    case "Payment Arrangement":
-      return "warning";
-    case "Contacted":
-      return "info";
-    case "Reminder Sent":
-      return "pending";
-    default:
-      return "neutral";
+    case "Resolved":            return "success";
+    case "Escalated":           return "error";
+    case "Payment Arrangement": return "warning";
+    case "Contacted":           return "info";
+    case "Reminder Sent":       return "pending";
+    default:                    return "neutral";
   }
 }
 
@@ -105,6 +102,12 @@ const ALL_STATUSES: CollectionStatus[] = [
   "Escalated",
   "Resolved",
 ];
+
+function daysOverdueFromISO(dueDateISO: string): number {
+  const due = new Date(dueDateISO).getTime();
+  const now = Date.now();
+  return Math.max(0, Math.floor((now - due) / 86_400_000));
+}
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -148,11 +151,13 @@ function ActionBtn({
   onClick,
   variant = "secondary",
   loading = false,
+  writeError,
 }: {
   label: string;
   onClick: () => void;
   variant?: "primary" | "secondary" | "danger";
   loading?: boolean;
+  writeError?: string;
 }) {
   const base =
     "text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors";
@@ -160,12 +165,28 @@ function ActionBtn({
     ? "opacity-40 cursor-not-allowed"
     : "cursor-pointer";
   const styles: Record<string, string> = {
-    primary: "bg-[#1B4FD8] text-white border-transparent hover:opacity-90",
-    secondary:
-      "bg-white text-[var(--rtm-text-primary)] border-[var(--rtm-border)] hover:bg-[var(--rtm-bg)]",
-    danger:
-      "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA] hover:bg-[#FEE2E2]",
+    primary:   "bg-[#1B4FD8] text-white border-transparent hover:opacity-90",
+    secondary: "bg-white text-[var(--rtm-text-primary)] border-[var(--rtm-border)] hover:bg-[var(--rtm-bg)]",
+    danger:    "bg-[#FEF2F2] text-[#DC2626] border-[#FECACA] hover:bg-[#FEE2E2]",
   };
+
+  if (writeError) {
+    // Row had a write failure — show an error pill instead of the normal button.
+    return (
+      <span
+        className="text-xs font-semibold px-3 py-1.5 rounded-lg border"
+        style={{
+          background: "#FEF2F2",
+          borderColor: "#FECACA",
+          color: "#991B1B",
+        }}
+        title={writeError}
+      >
+        Write failed — {writeError.length > 40 ? writeError.slice(0, 40) + "…" : writeError}
+      </span>
+    );
+  }
+
   return (
     <button
       disabled={loading}
@@ -180,79 +201,136 @@ function ActionBtn({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function CollectionsPage() {
-  // ── Fetch state ─────────────────────────────────────────────────────────────
+  // Billing users for resolveRep display
+  const { users: billingUsers } = useDepartmentUsers("Billing");
+
+  // ── Fetch state ──────────────────────────────────────────────────────────────
   const [rows, setRows] = useState<CollectionRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadState, setLoadState] = useState<"loading" | "empty" | "loaded" | "error">("loading");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // ── UI state ─────────────────────────────────────────────────────────────────
-  const [selectedFilter, setSelectedFilter] = useState<
-    CollectionStatus | "All"
-  >("All");
+  const [selectedFilter, setSelectedFilter] = useState<CollectionStatus | "All">("All");
   const [actionLog, setActionLog] = useState<string[]>([]);
   const [cardNotes, setCardNotes] = useState<Record<string, string>>({});
-  const [actingOn, setActingOn] = useState<string | null>(null); // clientId being acted on
-
-  // ── Build merged rows from API data ──────────────────────────────────────────
-  const buildRows = useCallback(
-    (
-      clients: MasterClient[],
-      overlayRecords: CollectionsStatusRecord[]
-    ): CollectionRow[] => {
-      const overlayMap = new Map(overlayRecords.map((r) => [r.clientId, r]));
-
-      // Filter to overdue clients: paymentStatus === "Overdue"
-      const overdueClients = clients.filter(
-        (c) => c.paymentStatus === "Overdue"
-      );
-
-      return overdueClients.map((c) => {
-        const overlay = overlayMap.get(c.id);
-        const daysOverdue = parseDaysOverdue(c.invoiceStatus);
-        return {
-          clientId: c.id,
-          clientName: c.clientName,
-          outstandingAmount: c.monthlyValue,
-          daysOverdue,
-          collectionStatus: overlay?.collectionStatus ?? "Pending",
-          assignedTo: c.billingOwner || c.assignedAM || "—",
-          notes: overlay?.notes || c.notes || "",
-          contactLog: overlay?.contactLog ?? [],
-          paymentPlanDetails: overlay?.paymentPlanDetails ?? "",
-          lastContactDate:
-            overlay?.lastContactDate || c.lastActivity || "—",
-          nextFollowUp: overlay?.nextFollowUp || "—",
-        };
-      });
-    },
-    []
-  );
+  const [actingOn, setActingOn] = useState<string | null>(null); // invoiceId being acted on
 
   // ── Load data ─────────────────────────────────────────────────────────────────
+  //
+  // 1. GET /api/invoices?overdue=true — real overdue invoices from Postgres.
+  //    Overdue rule: dueDate < now AND invoiceStatus IN [Sent, Viewed,
+  //    Partially Paid, Overdue]. Draft and Cancelled are excluded because an
+  //    invoice that was never sent cannot be overdue.
+  //
+  // 2. For each invoice, we need clientName (from Client) and domain (from
+  //    Business). To avoid N+1 fetches, we collect unique clientIds and
+  //    businessIds and fetch each set in parallel with Promise.all.
+  //    This is one round-trip per unique client id and per unique business id,
+  //    not one per row.
+  //
+  // 3. GET /api/collections-status — file-backed overlay keyed by invoiceId.
+  //    Provides collectionStatus, contactLog, paymentPlanDetails, etc.
+
   const loadData = useCallback(async () => {
+    setLoadState("loading");
+    setLoadError(null);
+
     try {
-      const [clientsRes, overlayRes] = await Promise.all([
-        fetch("/api/master-clients"),
-        fetch("/api/collections-status"),
-      ]);
-      if (!clientsRes.ok) throw new Error("Failed to load clients");
-      if (!overlayRes.ok) throw new Error("Failed to load collections status");
-
-      const clientsData = (await clientsRes.json()) as {
-        clients: MasterClient[];
+      // ── Fetch overdue invoices ───────────────────────────────────────────────
+      const invoicesRes = await fetch("/api/invoices?overdue=true");
+      if (!invoicesRes.ok) {
+        const err = (await invoicesRes.json()) as { error?: string };
+        throw new Error(err.error ?? `HTTP ${invoicesRes.status}`);
+      }
+      const invoicesData = (await invoicesRes.json()) as {
+        invoices: OverdueInvoice[];
       };
-      const overlayData = (await overlayRes.json()) as {
-        records: CollectionsStatusRecord[];
-      };
+      const invoices = invoicesData.invoices ?? [];
 
-      setRows(buildRows(clientsData.clients, overlayData.records));
-      setError(null);
+      if (invoices.length === 0) {
+        setRows([]);
+        setLoadState("empty");
+        return;
+      }
+
+      // ── Batch-resolve client names (unique clientIds) ───────────────────────
+      const uniqueClientIds = [...new Set(invoices.map((i) => i.clientId).filter(Boolean))];
+      const clientNameMap: Record<string, string> = {};
+      await Promise.all(
+        uniqueClientIds.map(async (cid) => {
+          try {
+            const res = await fetch(`/api/clients?id=${encodeURIComponent(cid)}`);
+            if (res.ok) {
+              const d = (await res.json()) as {
+                record?: { fullName?: string; company?: string };
+              };
+              const name = d.record?.fullName || d.record?.company || "";
+              if (name) clientNameMap[cid] = name;
+            }
+          } catch { /* best-effort */ }
+        })
+      );
+
+      // ── Batch-resolve domains (unique businessIds) ──────────────────────────
+      const uniqueBizIds = [...new Set(invoices.map((i) => i.businessId).filter(Boolean))];
+      const bizDomainMap: Record<string, string> = {};
+      await Promise.all(
+        uniqueBizIds.map(async (bid) => {
+          try {
+            const res = await fetch(`/api/businesses?id=${encodeURIComponent(bid)}`);
+            if (res.ok) {
+              const d = (await res.json()) as {
+                record?: { domain?: string };
+              };
+              if (d.record?.domain) bizDomainMap[bid] = d.record.domain;
+            }
+          } catch { /* best-effort */ }
+        })
+      );
+
+      // ── Fetch overlay records ───────────────────────────────────────────────
+      const overlayRes = await fetch("/api/collections-status");
+      const overlayData = overlayRes.ok
+        ? ((await overlayRes.json()) as { records: CollectionsStatusRecord[] })
+        : { records: [] as CollectionsStatusRecord[] };
+      // Overlay is keyed by clientId in the existing file format.
+      // We key it by invoiceId going forward; fall back to clientId match for
+      // any legacy records that pre-date this change.
+      const overlayByInvoiceId = new Map(
+        overlayData.records.map((r) => [r.clientId, r])
+      );
+
+      const now = Date.now();
+
+      const built: CollectionRow[] = invoices.map((inv) => {
+        const overlay = overlayByInvoiceId.get(inv.id);
+        const daysOverdue = daysOverdueFromISO(inv.dueDate);
+        return {
+          invoiceId:              inv.id,
+          invoiceNumber:          inv.invoiceNumber,
+          clientName:             clientNameMap[inv.clientId] || inv.invoiceNumber,
+          domain:                 bizDomainMap[inv.businessId] || "—",
+          outstandingAmountCents: inv.contractAmountCents,
+          daysOverdue,
+          invoiceStatus:          inv.invoiceStatus,
+          billingOwner:           inv.billingOwner,
+          collectionStatus:       overlay?.collectionStatus ?? "Pending",
+          notes:                  overlay?.notes ?? "",
+          contactLog:             overlay?.contactLog ?? [],
+          paymentPlanDetails:     overlay?.paymentPlanDetails ?? "",
+          lastContactDate:        overlay?.lastContactDate ?? "",
+          nextFollowUp:           overlay?.nextFollowUp ?? "",
+        };
+      });
+
+      void now; // used only inside daysOverdueFromISO above
+      setRows(built);
+      setLoadState("loaded");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unknown error");
-    } finally {
-      setLoading(false);
+      setLoadError(e instanceof Error ? e.message : "Unknown error");
+      setLoadState("error");
     }
-  }, [buildRows]);
+  }, []);
 
   useEffect(() => {
     void loadData();
@@ -267,44 +345,80 @@ export default function CollectionsPage() {
   }
 
   // ── POST action to overlay API then refresh ──────────────────────────────────
+  //
+  // The overlay is file-backed (data/collections-status.json). On Vercel's
+  // read-only filesystem every write fails. The action AWAITS the response
+  // before updating UI or logging success. If the write fails, the row shows
+  // the error inline — no false success is shown.
+
   async function doAction(
-    clientId: string,
+    invoiceId: string,
     clientName: string,
     action: string,
     extra?: Record<string, string>
   ) {
-    setActingOn(clientId);
+    setActingOn(invoiceId);
+    // Clear any previous write error for this row
+    setRows((prev) =>
+      prev.map((r) =>
+        r.invoiceId === invoiceId ? { ...r, writeError: undefined } : r
+      )
+    );
+
     try {
       const res = await fetch("/api/collections-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, action, ...extra }),
+        body: JSON.stringify({ clientId: invoiceId, action, ...extra }),
       });
+
       if (!res.ok) {
         const err = (await res.json()) as { error?: string };
-        throw new Error(err.error ?? "API error");
+        const msg = err.error ?? `HTTP ${res.status}`;
+        // Show error inline on the row — do not claim success
+        setRows((prev) =>
+          prev.map((r) =>
+            r.invoiceId === invoiceId ? { ...r, writeError: msg } : r
+          )
+        );
+        log(`Write failed — ${clientName}: ${msg}`);
+        return;
       }
-      // Refresh rows from server to reflect persisted state
+
+      // Write succeeded — refresh from server to reflect persisted state
       await loadData();
       const actionLabel: Record<string, string> = {
         "send-reminder": "Reminder sent",
-        "log-contact": "Contact logged",
-        "payment-plan": "Payment plan created",
-        escalate: "Escalated",
-        resolve: "Resolved",
+        "log-contact":   "Contact logged",
+        "payment-plan":  "Payment plan created",
+        escalate:        "Escalated",
+        resolve:         "Resolved",
       };
       log(`${actionLabel[action] ?? action}: ${clientName}`);
     } catch (e) {
-      log(`Error — ${clientName}: ${e instanceof Error ? e.message : String(e)}`);
+      const msg = e instanceof Error ? e.message : String(e);
+      setRows((prev) =>
+        prev.map((r) =>
+          r.invoiceId === invoiceId ? { ...r, writeError: msg } : r
+        )
+      );
+      log(`Error — ${clientName}: ${msg}`);
     } finally {
       setActingOn(null);
     }
   }
 
-  // ── Derived KPIs ──────────────────────────────────────────────────────────────
+  // ── Derived KPIs from real invoice data ───────────────────────────────────────
+  //
+  // Total Outstanding: sum of contractAmountCents across all active (non-Resolved) rows.
+  // Overdue Accounts: total row count (every row is an overdue invoice by definition).
+  // High Risk (≥30d): rows where daysOverdue ≥ 30.
+  // Escalated: rows where collectionStatus is "Escalated".
+  // All four are derived from real invoice data returned by /api/invoices?overdue=true.
+
   const activeRows = rows.filter((r) => r.collectionStatus !== "Resolved");
-  const totalOutstanding = activeRows.reduce(
-    (s, r) => s + r.outstandingAmount,
+  const totalOutstandingCents = activeRows.reduce(
+    (s, r) => s + r.outstandingAmountCents,
     0
   );
   const highRiskRows = activeRows.filter((r) => r.daysOverdue >= 30);
@@ -315,24 +429,120 @@ export default function CollectionsPage() {
       ? rows
       : rows.filter((r) => r.collectionStatus === selectedFilter);
 
-  // ── Render ────────────────────────────────────────────────────────────────────
-  if (loading) {
+  // ── Loading state ─────────────────────────────────────────────────────────────
+  if (loadState === "loading") {
     return (
       <div className="flex items-center justify-center min-h-64">
         <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
-          Loading collections…
+          Loading overdue invoices…
         </p>
       </div>
     );
   }
 
-  if (error) {
+  // ── Fetch failure ─────────────────────────────────────────────────────────────
+  if (loadState === "error") {
     return (
-      <div className="flex items-center justify-center min-h-64">
-        <p className="text-sm text-[#DC2626]">Error: {error}</p>
+      <div className="space-y-4 p-6">
+        <div
+          className="rounded-xl border px-5 py-4"
+          style={{ background: "#FEF2F2", borderColor: "#FECACA" }}
+        >
+          <p className="text-sm font-bold" style={{ color: "#991B1B" }}>
+            Failed to load overdue invoices
+          </p>
+          <p className="text-xs mt-1" style={{ color: "#991B1B" }}>
+            {loadError}
+          </p>
+          <button
+            className="mt-3 text-xs font-semibold px-3 py-1.5 rounded-lg border"
+            style={{
+              borderColor: "#FECACA",
+              color: "#991B1B",
+              background: "#FFF",
+            }}
+            onClick={() => void loadData()}
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
+
+  // ── Loaded-and-empty state ────────────────────────────────────────────────────
+  //
+  // With zero invoices today this is the expected result, not a broken page.
+  // The overdue rule excludes Draft and Cancelled; if no Sent/Viewed/Partially
+  // Paid/Overdue invoice has a past dueDate, this queue is correctly empty.
+
+  if (loadState === "empty") {
+    return (
+      <div className="space-y-8">
+        {/* Header */}
+        <div>
+          <p
+            className="text-[11px] font-bold uppercase tracking-widest mb-1"
+            style={{ color: workspace.accentColor }}
+          >
+            {workspace.name} / Collections
+          </p>
+          <h1
+            className="text-2xl font-bold tracking-tight"
+            style={{ color: "var(--rtm-text-primary)" }}
+          >
+            Collections Dashboard
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
+            Overdue invoices from Postgres — dueDate past and status Sent, Viewed,
+            Partially Paid, or Overdue. Draft and Cancelled invoices are excluded.
+          </p>
+        </div>
+
+        <div
+          className="rounded-xl border px-6 py-10 text-center"
+          style={{
+            background: "var(--rtm-bg)",
+            borderColor: "var(--rtm-border-light)",
+          }}
+        >
+          <p
+            className="text-base font-semibold"
+            style={{ color: "var(--rtm-text-primary)" }}
+          >
+            No overdue invoices
+          </p>
+          <p
+            className="text-sm mt-2 max-w-md mx-auto"
+            style={{ color: "var(--rtm-text-muted)" }}
+          >
+            There are no invoices that are both past their due date and in a
+            sent status. An invoice must have been sent to the client (status
+            Sent, Viewed, Partially Paid, or Overdue) before it appears here.
+            Draft and Cancelled invoices are never counted as overdue.
+          </p>
+          <p
+            className="text-xs mt-3"
+            style={{ color: "var(--rtm-text-muted)" }}
+          >
+            This is the correct result. When overdue invoices exist they will
+            appear here automatically.
+          </p>
+        </div>
+
+        <div className="flex gap-2">
+          <Link href="/billing" className="rtm-btn-secondary text-sm">
+            ← Dashboard
+          </Link>
+          <Link href="/billing/invoices" className="rtm-btn-secondary text-sm">
+            Invoices →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render (loaded with rows) ─────────────────────────────────────────────────
 
   return (
     <div className="space-y-8">
@@ -353,54 +563,39 @@ export default function CollectionsPage() {
           </h1>
         </div>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
-          Live overdue accounts from client records. All actions persist across
-          page refreshes.
+          Overdue invoices from Postgres — dueDate past and status Sent, Viewed,
+          Partially Paid, or Overdue. Collection status and notes persist via
+          local overlay; overlay writes fail on Vercel&apos;s read-only filesystem.
         </p>
       </div>
 
-      {/* KPIs — recomputed from real + overlay data */}
+      {/* KPIs — recomputed from real invoice data */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           title="Total Outstanding"
-          value={`$${totalOutstanding.toLocaleString()}`}
+          value={`$${(totalOutstandingCents / 100).toLocaleString()}`}
           trend="down"
           trendValue="Active accounts only"
           iconBg="#FEF2F2"
           iconColor="#DC2626"
           icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.75}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
                 d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
           }
         />
         <KpiCard
-          title="Overdue Accounts"
+          title="Overdue Invoices"
           value={String(rows.length)}
           trend="neutral"
-          trendValue="From MASTER_CLIENTS"
+          trendValue="Past due date, sent status"
           iconBg="#FFFBEB"
           iconColor="#D97706"
           icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.75}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
               />
             </svg>
@@ -410,20 +605,12 @@ export default function CollectionsPage() {
           title="High Risk (≥30d)"
           value={String(highRiskRows.length)}
           trend="neutral"
-          trendValue="30+ days overdue"
+          trendValue="30+ days past due date"
           iconBg="#FEF2F2"
           iconColor="#DC2626"
           icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.75}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
                 d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
               />
             </svg>
@@ -437,16 +624,8 @@ export default function CollectionsPage() {
           iconBg="#FDF4FF"
           iconColor="#9333EA"
           icon={
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.75}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
                 d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
               />
             </svg>
@@ -457,7 +636,7 @@ export default function CollectionsPage() {
       {/* Collections Table */}
       <SectionWrapper
         title="Collections Queue"
-        description={`${rows.length} overdue account${rows.length !== 1 ? "s" : ""} from MASTER_CLIENTS — all actions persist via overlay`}
+        description={`${rows.length} overdue invoice${rows.length !== 1 ? "s" : ""} — dueDate past, status Sent / Viewed / Partially Paid / Overdue`}
         actions={
           <div className="flex flex-wrap gap-2">
             {(["All", ...ALL_STATUSES] as (CollectionStatus | "All")[]).map(
@@ -468,16 +647,8 @@ export default function CollectionsPage() {
                   className="text-xs font-semibold px-3 py-1 rounded-full border transition-colors"
                   style={
                     selectedFilter === s
-                      ? {
-                          background: "#1B4FD8",
-                          color: "#fff",
-                          borderColor: "#1B4FD8",
-                        }
-                      : {
-                          background: "#fff",
-                          color: "var(--rtm-text-secondary)",
-                          borderColor: "var(--rtm-border)",
-                        }
+                      ? { background: "#1B4FD8", color: "#fff", borderColor: "#1B4FD8" }
+                      : { background: "#fff", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }
                   }
                 >
                   {s}
@@ -500,10 +671,13 @@ export default function CollectionsPage() {
               <thead>
                 <tr>
                   <Th>Client</Th>
+                  <Th>Domain</Th>
+                  <Th>Invoice #</Th>
                   <Th>Outstanding</Th>
                   <Th>Days Overdue</Th>
+                  <Th>Invoice Status</Th>
                   <Th>Collection Status</Th>
-                  <Th>Assigned To</Th>
+                  <Th>Billing Owner</Th>
                   <Th>Last Contact</Th>
                   <Th>Next Follow-Up</Th>
                   <Th>Actions</Th>
@@ -511,16 +685,14 @@ export default function CollectionsPage() {
               </thead>
               <tbody>
                 {filtered.map((r) => {
-                  const isActing = actingOn === r.clientId;
+                  const isActing = actingOn === r.invoiceId;
                   return (
                     <tr
-                      key={r.clientId}
+                      key={r.invoiceId}
                       className="hover:bg-[#FFFBEB] transition-colors"
                       style={{
                         background:
-                          r.daysOverdue >= 30
-                            ? "#FFF7F7"
-                            : "var(--rtm-bg)",
+                          r.daysOverdue >= 30 ? "#FFF7F7" : "var(--rtm-bg)",
                       }}
                     >
                       <Td>
@@ -531,19 +703,25 @@ export default function CollectionsPage() {
                           {r.clientName}
                         </span>
                       </Td>
+                      <Td muted>
+                        <span className="font-mono text-xs">{r.domain}</span>
+                      </Td>
+                      <Td muted>
+                        <span className="font-mono text-xs">{r.invoiceNumber}</span>
+                      </Td>
                       <Td>
                         <span
                           className="font-bold"
                           style={{
                             color:
-                              r.outstandingAmount >= 2000
+                              r.outstandingAmountCents >= 200_000
                                 ? "#DC2626"
-                                : r.outstandingAmount >= 1000
+                                : r.outstandingAmountCents >= 100_000
                                 ? "#D97706"
                                 : "var(--rtm-text-primary)",
                           }}
                         >
-                          ${r.outstandingAmount.toLocaleString()}
+                          ${(r.outstandingAmountCents / 100).toLocaleString()}
                         </span>
                       </Td>
                       <Td>
@@ -563,71 +741,79 @@ export default function CollectionsPage() {
                       </Td>
                       <Td>
                         <StatusBadge
+                          variant={
+                            r.invoiceStatus === "Overdue"
+                              ? "error"
+                              : r.invoiceStatus === "Partially Paid"
+                              ? "warning"
+                              : "info"
+                          }
+                          label={r.invoiceStatus}
+                          size="sm"
+                        />
+                      </Td>
+                      <Td>
+                        <StatusBadge
                           variant={collectionStatusVariant(r.collectionStatus)}
                           label={r.collectionStatus}
                           size="sm"
                         />
                       </Td>
-                      <Td muted>{r.assignedTo}</Td>
                       <Td muted>
-                        {r.lastContactDate || "—"}
+                        {resolveRep(r.billingOwner, billingUsers)}
                       </Td>
-                      <Td muted>
-                        {r.nextFollowUp || "—"}
-                      </Td>
+                      <Td muted>{r.lastContactDate || "—"}</Td>
+                      <Td muted>{r.nextFollowUp || "—"}</Td>
                       <Td>
-                        <div className="flex gap-1.5 flex-wrap">
-                          <ActionBtn
-                            label="Send Reminder"
-                            loading={isActing}
-                            onClick={() =>
-                              void doAction(
-                                r.clientId,
-                                r.clientName,
-                                "send-reminder"
-                              )
-                            }
-                          />
-                          <ActionBtn
-                            label="Log Contact"
-                            loading={isActing}
-                            onClick={() =>
-                              void doAction(
-                                r.clientId,
-                                r.clientName,
-                                "log-contact",
-                                { note: "Contact logged from table." }
-                              )
-                            }
-                          />
-                          <ActionBtn
-                            label="Payment Plan"
-                            loading={isActing}
-                            onClick={() =>
-                              void doAction(
-                                r.clientId,
-                                r.clientName,
-                                "payment-plan",
-                                {
-                                  paymentPlanDetails:
-                                    "Payment arrangement initiated.",
-                                }
-                              )
-                            }
-                          />
-                          <ActionBtn
-                            label="Escalate"
-                            variant="danger"
-                            loading={isActing}
-                            onClick={() =>
-                              void doAction(
-                                r.clientId,
-                                r.clientName,
-                                "escalate"
-                              )
-                            }
-                          />
-                        </div>
+                        {r.writeError ? (
+                          <span
+                            className="text-xs font-semibold px-2 py-1 rounded-lg border"
+                            style={{
+                              background: "#FEF2F2",
+                              borderColor: "#FECACA",
+                              color: "#991B1B",
+                            }}
+                            title={r.writeError}
+                          >
+                            Write failed — check action log
+                          </span>
+                        ) : (
+                          <div className="flex gap-1.5 flex-wrap">
+                            <ActionBtn
+                              label="Send Reminder"
+                              loading={isActing}
+                              onClick={() =>
+                                void doAction(r.invoiceId, r.clientName, "send-reminder")
+                              }
+                            />
+                            <ActionBtn
+                              label="Log Contact"
+                              loading={isActing}
+                              onClick={() =>
+                                void doAction(r.invoiceId, r.clientName, "log-contact", {
+                                  note: "Contact logged from table.",
+                                })
+                              }
+                            />
+                            <ActionBtn
+                              label="Payment Plan"
+                              loading={isActing}
+                              onClick={() =>
+                                void doAction(r.invoiceId, r.clientName, "payment-plan", {
+                                  paymentPlanDetails: "Payment arrangement initiated.",
+                                })
+                              }
+                            />
+                            <ActionBtn
+                              label="Escalate"
+                              variant="danger"
+                              loading={isActing}
+                              onClick={() =>
+                                void doAction(r.invoiceId, r.clientName, "escalate")
+                              }
+                            />
+                          </div>
+                        )}
                       </Td>
                     </tr>
                   );
@@ -641,223 +827,225 @@ export default function CollectionsPage() {
       {/* Collection Cards Detail */}
       <SectionWrapper
         title="Collection Detail Cards"
-        description="Per-account collection details with notes and full action set"
+        description="Per-invoice collection details with notes and full action set. Collection status and contact log persist via local overlay."
       >
-        {rows.length === 0 ? (
-          <p
-            className="text-sm px-3 py-6 text-center"
-            style={{ color: "var(--rtm-text-muted)" }}
-          >
-            No overdue accounts at this time.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {rows.map((r) => {
-              const isActing = actingOn === r.clientId;
-              const noteVal = cardNotes[r.clientId] ?? "";
-              return (
-                <div
-                  key={r.clientId}
-                  className="rounded-xl border p-5 space-y-4"
-                  style={{
-                    background: "var(--rtm-bg)",
-                    borderColor: "var(--rtm-border-light)",
-                  }}
-                >
-                  <div className="flex items-start justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {rows.map((r) => {
+            const isActing = actingOn === r.invoiceId;
+            const noteVal = cardNotes[r.invoiceId] ?? "";
+            return (
+              <div
+                key={r.invoiceId}
+                className="rounded-xl border p-5 space-y-4"
+                style={{
+                  background: "var(--rtm-bg)",
+                  borderColor: "var(--rtm-border-light)",
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
                     <span
                       className="font-bold text-sm"
                       style={{ color: "var(--rtm-text-primary)" }}
                     >
                       {r.clientName}
                     </span>
-                    <StatusBadge
-                      variant={collectionStatusVariant(r.collectionStatus)}
-                      label={r.collectionStatus}
-                      size="sm"
-                    />
-                  </div>
-                  <div
-                    className="space-y-1 text-xs"
-                    style={{ color: "var(--rtm-text-muted)" }}
-                  >
-                    <div className="flex justify-between">
-                      <span>Outstanding</span>
-                      <span className="font-bold text-[#DC2626]">
-                        ${r.outstandingAmount.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Days Overdue</span>
-                      <span
-                        className="font-semibold"
-                        style={{
-                          color:
-                            r.daysOverdue >= 30
-                              ? "#DC2626"
-                              : r.daysOverdue > 0
-                              ? "#D97706"
-                              : "#059669",
-                        }}
-                      >
-                        {r.daysOverdue > 0
-                          ? `${r.daysOverdue} days`
-                          : "Not overdue"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Assigned To</span>
-                      <span
-                        className="font-semibold"
-                        style={{ color: "var(--rtm-text-secondary)" }}
-                      >
-                        {r.assignedTo}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Last Contact</span>
-                      <span>{r.lastContactDate || "—"}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Follow-Up</span>
-                      <span>{r.nextFollowUp || "—"}</span>
-                    </div>
-                    {r.paymentPlanDetails && (
-                      <div className="flex justify-between">
-                        <span>Payment Plan</span>
-                        <span
-                          className="font-semibold text-right max-w-[140px] break-words"
-                          style={{ color: "var(--rtm-text-secondary)" }}
-                        >
-                          {r.paymentPlanDetails}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  {r.notes && (
-                    <p
-                      className="text-xs"
-                      style={{ color: "var(--rtm-text-secondary)" }}
-                    >
-                      {r.notes}
-                    </p>
-                  )}
-                  {r.contactLog.length > 0 && (
-                    <div className="space-y-1">
+                    {r.domain !== "—" && (
                       <p
-                        className="text-[10px] font-semibold uppercase tracking-wide"
+                        className="text-[11px] font-mono mt-0.5"
                         style={{ color: "var(--rtm-text-muted)" }}
                       >
-                        Contact Log
+                        {r.domain}
                       </p>
-                      {r.contactLog.slice(-3).map((entry, i) => (
-                        <p
-                          key={i}
-                          className="text-xs"
-                          style={{ color: "var(--rtm-text-muted)" }}
-                        >
-                          <span className="font-medium">
-                            {new Date(entry.timestamp).toLocaleDateString()}
-                          </span>{" "}
-                          — {entry.note}
-                        </p>
-                      ))}
+                    )}
+                  </div>
+                  <StatusBadge
+                    variant={collectionStatusVariant(r.collectionStatus)}
+                    label={r.collectionStatus}
+                    size="sm"
+                  />
+                </div>
+
+                {/* Row-level write error banner */}
+                {r.writeError && (
+                  <div
+                    className="rounded-lg border px-3 py-2 text-xs font-semibold"
+                    style={{
+                      background: "#FEF2F2",
+                      borderColor: "#FECACA",
+                      color: "#991B1B",
+                    }}
+                  >
+                    Last write failed: {r.writeError}
+                  </div>
+                )}
+
+                <div
+                  className="space-y-1 text-xs"
+                  style={{ color: "var(--rtm-text-muted)" }}
+                >
+                  <div className="flex justify-between">
+                    <span>Invoice</span>
+                    <span className="font-mono">{r.invoiceNumber}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Outstanding</span>
+                    <span className="font-bold text-[#DC2626]">
+                      ${(r.outstandingAmountCents / 100).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Days Overdue</span>
+                    <span
+                      className="font-semibold"
+                      style={{
+                        color:
+                          r.daysOverdue >= 30
+                            ? "#DC2626"
+                            : r.daysOverdue > 0
+                            ? "#D97706"
+                            : "#059669",
+                      }}
+                    >
+                      {r.daysOverdue > 0 ? `${r.daysOverdue} days` : "Not overdue"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Invoice Status</span>
+                    <span className="font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                      {r.invoiceStatus}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Billing Owner</span>
+                    <span className="font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                      {resolveRep(r.billingOwner, billingUsers)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Last Contact</span>
+                    <span>{r.lastContactDate || "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Follow-Up</span>
+                    <span>{r.nextFollowUp || "—"}</span>
+                  </div>
+                  {r.paymentPlanDetails && (
+                    <div className="flex justify-between">
+                      <span>Payment Plan</span>
+                      <span
+                        className="font-semibold text-right max-w-[140px] break-words"
+                        style={{ color: "var(--rtm-text-secondary)" }}
+                      >
+                        {r.paymentPlanDetails}
+                      </span>
                     </div>
                   )}
-                  <textarea
-                    rows={2}
-                    placeholder="Add a note for Log Contact or Escalate…"
-                    value={noteVal}
-                    onChange={(e) =>
-                      setCardNotes((prev) => ({
-                        ...prev,
-                        [r.clientId]: e.target.value,
-                      }))
+                </div>
+
+                {r.notes && (
+                  <p
+                    className="text-xs"
+                    style={{ color: "var(--rtm-text-secondary)" }}
+                  >
+                    {r.notes}
+                  </p>
+                )}
+
+                {r.contactLog.length > 0 && (
+                  <div className="space-y-1">
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-wide"
+                      style={{ color: "var(--rtm-text-muted)" }}
+                    >
+                      Contact Log
+                    </p>
+                    {r.contactLog.slice(-3).map((entry, i) => (
+                      <p
+                        key={i}
+                        className="text-xs"
+                        style={{ color: "var(--rtm-text-muted)" }}
+                      >
+                        <span className="font-medium">
+                          {new Date(entry.timestamp).toLocaleDateString()}
+                        </span>{" "}
+                        — {entry.note}
+                      </p>
+                    ))}
+                  </div>
+                )}
+
+                <textarea
+                  rows={2}
+                  placeholder="Add a note for Log Contact or Escalate…"
+                  value={noteVal}
+                  onChange={(e) =>
+                    setCardNotes((prev) => ({
+                      ...prev,
+                      [r.invoiceId]: e.target.value,
+                    }))
+                  }
+                  className="w-full text-xs px-2.5 py-2 rounded-lg border resize-none"
+                  style={{
+                    background: "var(--rtm-surface)",
+                    borderColor: "var(--rtm-border)",
+                    color: "var(--rtm-text-primary)",
+                  }}
+                />
+
+                <div className="flex flex-wrap gap-1.5">
+                  <ActionBtn
+                    label="Send Reminder"
+                    loading={isActing}
+                    onClick={() =>
+                      void doAction(r.invoiceId, r.clientName, "send-reminder")
                     }
-                    className="w-full text-xs px-2.5 py-2 rounded-lg border resize-none"
-                    style={{
-                      background: "var(--rtm-surface)",
-                      borderColor: "var(--rtm-border)",
-                      color: "var(--rtm-text-primary)",
+                  />
+                  <ActionBtn
+                    label="Log Contact"
+                    loading={isActing}
+                    onClick={() => {
+                      void doAction(r.invoiceId, r.clientName, "log-contact", {
+                        note: noteVal.trim() || "Contact logged.",
+                      });
+                      setCardNotes((prev) => ({ ...prev, [r.invoiceId]: "" }));
                     }}
                   />
-                  <div className="flex flex-wrap gap-1.5">
-                    <ActionBtn
-                      label="Send Reminder"
-                      loading={isActing}
-                      onClick={() =>
-                        void doAction(
-                          r.clientId,
-                          r.clientName,
-                          "send-reminder"
-                        )
-                      }
-                    />
-                    <ActionBtn
-                      label="Log Contact"
-                      loading={isActing}
-                      onClick={() => {
-                        void doAction(
-                          r.clientId,
-                          r.clientName,
-                          "log-contact",
-                          {
-                            note: noteVal.trim() || "Contact logged.",
-                          }
-                        );
-                        setCardNotes((prev) => ({
-                          ...prev,
-                          [r.clientId]: "",
-                        }));
-                      }}
-                    />
-                    <ActionBtn
-                      label="Payment Plan"
-                      loading={isActing}
-                      onClick={() =>
-                        void doAction(
-                          r.clientId,
-                          r.clientName,
-                          "payment-plan",
-                          {
-                            paymentPlanDetails:
-                              noteVal.trim() || "Payment arrangement initiated.",
-                          }
-                        )
-                      }
-                    />
-                    <ActionBtn
-                      label="Escalate"
-                      variant="danger"
-                      loading={isActing}
-                      onClick={() =>
-                        void doAction(
-                          r.clientId,
-                          r.clientName,
-                          "escalate",
-                          { note: noteVal.trim() }
-                        )
-                      }
-                    />
-                    <ActionBtn
-                      label="Mark Resolved"
-                      variant="primary"
-                      loading={isActing}
-                      onClick={() =>
-                        void doAction(
-                          r.clientId,
-                          r.clientName,
-                          "resolve",
-                          { note: noteVal.trim() }
-                        )
-                      }
-                    />
-                  </div>
+                  <ActionBtn
+                    label="Payment Plan"
+                    loading={isActing}
+                    onClick={() =>
+                      void doAction(r.invoiceId, r.clientName, "payment-plan", {
+                        paymentPlanDetails:
+                          noteVal.trim() || "Payment arrangement initiated.",
+                      })
+                    }
+                  />
+                  <ActionBtn
+                    label="Escalate"
+                    variant="danger"
+                    loading={isActing}
+                    onClick={() =>
+                      void doAction(r.invoiceId, r.clientName, "escalate", {
+                        note: noteVal.trim(),
+                      })
+                    }
+                  />
+                  <ActionBtn
+                    label="Mark Resolved"
+                    variant="primary"
+                    loading={isActing}
+                    onClick={() =>
+                      void doAction(r.invoiceId, r.clientName, "resolve", {
+                        note: noteVal.trim(),
+                      })
+                    }
+                  />
                 </div>
-              );
-            })}
-          </div>
-        )}
+              </div>
+            );
+          })}
+        </div>
       </SectionWrapper>
 
       {/* Action Log */}
@@ -888,10 +1076,7 @@ export default function CollectionsPage() {
         <Link href="/billing/invoices" className="rtm-btn-secondary text-sm">
           Invoices →
         </Link>
-        <Link
-          href="/billing/activation-queue"
-          className="rtm-btn-primary text-sm"
-        >
+        <Link href="/billing/activation-queue" className="rtm-btn-primary text-sm">
           Activation Queue →
         </Link>
       </div>

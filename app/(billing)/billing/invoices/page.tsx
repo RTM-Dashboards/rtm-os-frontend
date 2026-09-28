@@ -1769,7 +1769,7 @@ export default function BillingInvoicesPage() {
 
   // ─── Sales Handoff actions ─────────────────────────────────────────────────
 
-  function handleRequestMissingInfo(row: SalesHandoffRow) {
+  async function handleRequestMissingInfo(row: SalesHandoffRow) {
     // Create a Sales task requesting missing info (domain is the most common gap).
     const today = new Date();
     const dueDate = `${today.toLocaleString("en-US", { month: "short" })} ${today.getDate() + 3}`;
@@ -1794,15 +1794,32 @@ export default function BillingInvoicesPage() {
       dueDate,
       blocker: missingNote || null,
     };
-    // POST to file-backed API — cross-route-group reliable.
-    fetch("/api/pending-sales-tasks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(salesTask),
-    }).catch((err) => console.error("[Billing Invoices] Failed to persist sales task:", err));
-
-    log(`Info request sent to Sales for ${row.client} (prepared by ${row.preparedBy}) — ${missingNote || "no specific missing fields"}`);
-    showToast(`Missing info requested from ${row.preparedBy || "Sales"} for ${row.client} — task created on Sales Tasks`, "info");
+    // POST to file-backed API. Awaited — success toast fires only after the
+    // write has returned ok. If the write fails the user is told clearly that
+    // the request did NOT reach Sales. This is the same bug fixed twice before
+    // (Submit to Billing, Generate Contract). Fire-and-forget is not used here.
+    try {
+      const res = await fetch("/api/pending-sales-tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(salesTask),
+      });
+      if (!res.ok) {
+        const err = (await res.json()) as { error?: string };
+        throw new Error(err.error ?? `HTTP ${res.status}`);
+      }
+      // Write confirmed — safe to tell the user it worked.
+      log(`Info request sent to Sales for ${row.client} (prepared by ${row.preparedBy}) — ${missingNote || "no specific missing fields"}`);
+      showToast(`Missing info requested from ${row.preparedBy || "Sales"} for ${row.client} — task created on Sales Tasks`, "info");
+    } catch (err) {
+      // Write failed — tell the user the request did NOT reach Sales.
+      const msg = err instanceof Error ? err.message : String(err);
+      log(`Failed to send info request to Sales for ${row.client}: ${msg}`);
+      showToast(
+        `Request did not reach Sales — write failed: ${msg}. Sales has not been notified. Retry or contact Sales directly.`,
+        "error",
+      );
+    }
   }
 
   function handleCreateBillingTask(row: SalesHandoffRow) {
@@ -1978,7 +1995,7 @@ export default function BillingInvoicesPage() {
         label: hasDomain
           ? "Request Missing Sales Information"
           : "Request Missing Sales Information (domain required)",
-        onClick: () => handleRequestMissingInfo(row),
+        onClick: () => { void handleRequestMissingInfo(row); },
       },
       {
         label: "Create Billing Task",
