@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import SalesSettingsBreadcrumb from "@/components/sales/settings/SalesSettingsBreadcrumb";
-import type { ServiceCatalogRow } from "@/app/api/sales/service-catalog/route";
+import type { ServiceCatalogRow, DeliverableGroup } from "@/app/api/sales/service-catalog/route";
 import type { DiscountTierRow, DiscountTypeRow } from "@/app/api/sales/discount-config/route";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -29,6 +29,20 @@ function parseIntOptions(raw: string): number[] | null {
   return nums;
 }
 
+// Strip empty headings and empty bullets before saving.
+// An empty heading with no bullets is dropped entirely.
+// A non-empty heading with some empty bullets: empty bullets are dropped.
+// If this leaves a group with a heading but no bullets, it is still saved
+// (the heading is the content, bullets are optional from a data standpoint).
+function cleanGroups(groups: DeliverableGroup[]): DeliverableGroup[] {
+  return groups
+    .map((g) => ({
+      heading: g.heading.trim(),
+      bullets: g.bullets.map((b) => b.trim()).filter(Boolean),
+    }))
+    .filter((g) => g.heading !== "");
+}
+
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -51,6 +65,184 @@ const LABEL_STYLE: React.CSSProperties = {
   display: "block",
   marginBottom: 4,
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Deliverable Groups Editor
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Justin pastes copy from a document, so the common flow is:
+//   1. Click "Add Group" → heading input appears.
+//   2. Type/paste a heading.
+//   3. Click "Add Bullet" → bullet input appears.
+//   4. Type/paste bullets one by one (or paste, add, paste, add…).
+//   5. Add another group and repeat.
+//
+// Reordering uses Up/Down buttons so no drag-and-drop dependency is needed.
+
+interface DeliverableGroupsEditorProps {
+  groups: DeliverableGroup[];
+  onChange: (groups: DeliverableGroup[]) => void;
+}
+
+function DeliverableGroupsEditor({ groups, onChange }: DeliverableGroupsEditorProps) {
+  function addGroup() {
+    onChange([...groups, { heading: "", bullets: [""] }]);
+  }
+
+  function removeGroup(gi: number) {
+    onChange(groups.filter((_, i) => i !== gi));
+  }
+
+  function moveGroup(gi: number, dir: -1 | 1) {
+    const next = [...groups];
+    const swap = gi + dir;
+    if (swap < 0 || swap >= next.length) return;
+    [next[gi], next[swap]] = [next[swap], next[gi]];
+    onChange(next);
+  }
+
+  function setHeading(gi: number, heading: string) {
+    onChange(groups.map((g, i) => i === gi ? { ...g, heading } : g));
+  }
+
+  function addBullet(gi: number) {
+    onChange(groups.map((g, i) => i === gi ? { ...g, bullets: [...g.bullets, ""] } : g));
+  }
+
+  function setBullet(gi: number, bi: number, value: string) {
+    onChange(groups.map((g, i) =>
+      i === gi ? { ...g, bullets: g.bullets.map((b, j) => j === bi ? value : b) } : g
+    ));
+  }
+
+  function removeBullet(gi: number, bi: number) {
+    onChange(groups.map((g, i) =>
+      i === gi ? { ...g, bullets: g.bullets.filter((_, j) => j !== bi) } : g
+    ));
+  }
+
+  function moveBullet(gi: number, bi: number, dir: -1 | 1) {
+    const next = [...groups];
+    const bullets = [...next[gi].bullets];
+    const swap = bi + dir;
+    if (swap < 0 || swap >= bullets.length) return;
+    [bullets[bi], bullets[swap]] = [bullets[swap], bullets[bi]];
+    next[gi] = { ...next[gi], bullets };
+    onChange(next);
+  }
+
+  const btnBase: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 600,
+    padding: "2px 8px",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderStyle: "solid",
+    cursor: "pointer",
+    background: "var(--rtm-bg)",
+    lineHeight: "18px",
+  };
+
+  return (
+    <div className="space-y-3">
+      {groups.length === 0 && (
+        <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+          No deliverable groups. Click &ldquo;Add Group&rdquo; to add the first one.
+        </p>
+      )}
+
+      {groups.map((group, gi) => (
+        <div
+          key={gi}
+          className="rounded-lg border p-3 space-y-2"
+          style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)" }}
+        >
+          {/* Group header row */}
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold shrink-0" style={{ color: "var(--rtm-text-muted)", minWidth: 20 }}>
+              {gi + 1}.
+            </span>
+            <input
+              style={{ ...INPUT_STYLE, fontWeight: 600, flex: 1 }}
+              value={group.heading}
+              onChange={(e) => setHeading(gi, e.target.value)}
+              placeholder="Group heading (e.g. Set-up and Optimization)"
+            />
+            <button
+              type="button"
+              onClick={() => moveGroup(gi, -1)}
+              disabled={gi === 0}
+              style={{ ...btnBase, color: "#6B7280", borderColor: "var(--rtm-border)", opacity: gi === 0 ? 0.35 : 1 }}
+              title="Move group up"
+            >↑</button>
+            <button
+              type="button"
+              onClick={() => moveGroup(gi, 1)}
+              disabled={gi === groups.length - 1}
+              style={{ ...btnBase, color: "#6B7280", borderColor: "var(--rtm-border)", opacity: gi === groups.length - 1 ? 0.35 : 1 }}
+              title="Move group down"
+            >↓</button>
+            <button
+              type="button"
+              onClick={() => removeGroup(gi)}
+              style={{ ...btnBase, color: "#DC2626", borderColor: "#FECACA" }}
+              title="Remove group"
+            >Remove</button>
+          </div>
+
+          {/* Bullets */}
+          <div className="space-y-1 pl-6">
+            {group.bullets.map((bullet, bi) => (
+              <div key={bi} className="flex items-center gap-2">
+                <span className="text-[10px] shrink-0" style={{ color: "var(--rtm-text-muted)", minWidth: 16 }}>•</span>
+                <input
+                  style={{ ...INPUT_STYLE, flex: 1 }}
+                  value={bullet}
+                  onChange={(e) => setBullet(gi, bi, e.target.value)}
+                  placeholder="Bullet text"
+                />
+                <button
+                  type="button"
+                  onClick={() => moveBullet(gi, bi, -1)}
+                  disabled={bi === 0}
+                  style={{ ...btnBase, color: "#6B7280", borderColor: "var(--rtm-border)", opacity: bi === 0 ? 0.35 : 1 }}
+                  title="Move bullet up"
+                >↑</button>
+                <button
+                  type="button"
+                  onClick={() => moveBullet(gi, bi, 1)}
+                  disabled={bi === group.bullets.length - 1}
+                  style={{ ...btnBase, color: "#6B7280", borderColor: "var(--rtm-border)", opacity: bi === group.bullets.length - 1 ? 0.35 : 1 }}
+                  title="Move bullet down"
+                >↓</button>
+                <button
+                  type="button"
+                  onClick={() => removeBullet(gi, bi)}
+                  style={{ ...btnBase, color: "#DC2626", borderColor: "#FECACA" }}
+                  title="Remove bullet"
+                >✕</button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => addBullet(gi)}
+              style={{ ...btnBase, color: "#1D4ED8", borderColor: "#BFDBFE", marginTop: 4 }}
+            >+ Add Bullet</button>
+          </div>
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={addGroup}
+        className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+        style={{ background: "var(--rtm-surface)", color: "#1D4ED8", borderColor: "#BFDBFE" }}
+      >
+        + Add Group
+      </button>
+    </div>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Service Catalogue Config
@@ -248,6 +440,7 @@ function ServiceListRow({
   saving: boolean;
   retired?: boolean;
 }) {
+  const groupCount = svc.deliverableGroups?.length ?? 0;
   return (
     <div className="flex items-center gap-3 px-4 py-3" style={{ background: retired ? "var(--rtm-surface)" : "var(--rtm-bg)", opacity: retired ? 0.75 : 1 }}>
       <div className="flex-1 min-w-0">
@@ -259,6 +452,11 @@ function ServiceListRow({
             : <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: "#F3F4F6", color: "#6B7280" }}>One-Time</span>
           }
           {retired && <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: "#F3F4F6", color: "#6B7280" }}>Retired</span>}
+          {groupCount > 0 && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold" style={{ background: "#F5F3FF", color: "#7C3AED" }}>
+              {groupCount} deliverable {groupCount === 1 ? "group" : "groups"}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3 mt-1 flex-wrap">
           <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
@@ -325,7 +523,11 @@ function ServiceEditor({
   const [isRecurring, setIsRecurring] = useState(existing?.isRecurring ?? true);
   const [isDefault, setIsDefault] = useState(existing?.isDefault ?? false);
   const [catalogId, setCatalogId] = useState(existing?.catalogId ?? "");
+  const [deliverableGroups, setDeliverableGroups] = useState<DeliverableGroup[]>(
+    existing?.deliverableGroups ?? []
+  );
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [deliverableTab, setDeliverableTab] = useState(false);
 
   function validate(): boolean {
     setValidationError(null);
@@ -364,8 +566,11 @@ function ServiceEditor({
       isRecurring,
       isDefault,
       catalogId: catalogId.trim(),
+      deliverableGroups: cleanGroups(deliverableGroups),
     });
   }
+
+  const groupCount = cleanGroups(deliverableGroups).length;
 
   return (
     <div className="border rounded-xl p-4 space-y-4" style={{ borderColor: "#BFDBFE", background: "#EFF6FF" }}>
@@ -379,79 +584,111 @@ function ServiceEditor({
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label style={LABEL_STYLE}>Label *</label>
-          <input style={INPUT_STYLE} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Website Hosting" />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Department</label>
-          <select style={INPUT_STYLE} value={department} onChange={(e) => setDepartment(e.target.value)}>
-            {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
-        </div>
-        <div className="col-span-2">
-          <label style={LABEL_STYLE}>Description</label>
-          <textarea style={{ ...INPUT_STYLE, resize: "vertical", minHeight: 60 }} value={description} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Quantity Unit</label>
-          <select style={INPUT_STYLE} value={quantityUnit} onChange={(e) => setQuantityUnit(e.target.value)}>
-            {QUANTITY_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
-          </select>
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Quantity Options (comma-separated)</label>
-          <input style={INPUT_STYLE} value={quantityOptionsStr} onChange={(e) => setQuantityOptionsStr(e.target.value)} placeholder="1, 2, 3" />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Default Quantity</label>
-          <input type="number" min={1} style={INPUT_STYLE} value={defaultQuantity} onChange={(e) => setDefaultQuantity(e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Default Monthly Price ($)</label>
-          <input type="number" min={0} style={INPUT_STYLE} value={defaultMonthlyStr} onChange={(e) => setDefaultMonthlyStr(e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Default Setup Fee ($)</label>
-          <input type="number" min={0} style={INPUT_STYLE} value={defaultSetupStr} onChange={(e) => setDefaultSetupStr(e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Min Monthly Price ($)</label>
-          <input type="number" min={0} style={INPUT_STYLE} value={minMonthlyStr} onChange={(e) => setMinMonthlyStr(e.target.value)} />
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Max Monthly Price ($)</label>
-          <input type="number" min={0} style={INPUT_STYLE} value={maxMonthlyStr} onChange={(e) => setMaxMonthlyStr(e.target.value)} />
-          {(() => {
-            const def = parseDollar(defaultMonthlyStr);
-            const min = parseDollar(minMonthlyStr);
-            const max = parseDollar(maxMonthlyStr);
-            if (def !== null && min !== null && max !== null && max > 0 && (def < min || def > max)) {
-              return <p className="text-[10px] mt-1" style={{ color: "#DC2626" }}>Default price is outside the min–max range.</p>;
-            }
-            return null;
-          })()}
-        </div>
-        <div>
-          <label style={LABEL_STYLE}>Catalogue ID (links to recommendation config)</label>
-          <input style={INPUT_STYLE} value={catalogId} onChange={(e) => setCatalogId(e.target.value)} placeholder="e.g. svc-web-hosting" />
-        </div>
-        <div className="col-span-2 flex items-center gap-6 flex-wrap">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} />
-            <span style={{ fontSize: 12, color: "var(--rtm-text-secondary)" }}>Recurring (monthly)</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={setupFeeEditable} onChange={(e) => setSetupFeeEditable(e.target.checked)} />
-            <span style={{ fontSize: 12, color: "var(--rtm-text-secondary)" }}>Setup fee editable by rep</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
-            <span style={{ fontSize: 12, color: "var(--rtm-text-secondary)" }}>Is default (reserved for future use)</span>
-          </label>
-        </div>
+      {/* Tab switcher: Service Details | Deliverables */}
+      <div className="flex items-center gap-1 border rounded-lg p-1 w-fit" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+        <button type="button" onClick={() => setDeliverableTab(false)}
+          className="px-3 py-1 rounded-md text-xs font-semibold transition-colors"
+          style={{ background: !deliverableTab ? "#1D4ED8" : "transparent", color: !deliverableTab ? "#fff" : "var(--rtm-text-secondary)" }}>
+          Service Details
+        </button>
+        <button type="button" onClick={() => setDeliverableTab(true)}
+          className="px-3 py-1 rounded-md text-xs font-semibold transition-colors"
+          style={{ background: deliverableTab ? "#1D4ED8" : "transparent", color: deliverableTab ? "#fff" : "var(--rtm-text-secondary)" }}>
+          Deliverables {groupCount > 0 ? `(${groupCount})` : ""}
+        </button>
       </div>
+
+      {/* ── Service Details tab ── */}
+      {!deliverableTab && (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label style={LABEL_STYLE}>Label *</label>
+            <input style={INPUT_STYLE} value={label} onChange={(e) => setLabel(e.target.value)} placeholder="e.g. Website Hosting" />
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Department</label>
+            <select style={INPUT_STYLE} value={department} onChange={(e) => setDepartment(e.target.value)}>
+              {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </div>
+          <div className="col-span-2">
+            <label style={LABEL_STYLE}>Description</label>
+            <textarea style={{ ...INPUT_STYLE, resize: "vertical", minHeight: 60 }} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Quantity Unit</label>
+            <select style={INPUT_STYLE} value={quantityUnit} onChange={(e) => setQuantityUnit(e.target.value)}>
+              {QUANTITY_UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Quantity Options (comma-separated)</label>
+            <input style={INPUT_STYLE} value={quantityOptionsStr} onChange={(e) => setQuantityOptionsStr(e.target.value)} placeholder="1, 2, 3" />
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Default Quantity</label>
+            <input type="number" min={1} style={INPUT_STYLE} value={defaultQuantity} onChange={(e) => setDefaultQuantity(e.target.value)} />
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Default Monthly Price ($)</label>
+            <input type="number" min={0} style={INPUT_STYLE} value={defaultMonthlyStr} onChange={(e) => setDefaultMonthlyStr(e.target.value)} />
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Default Setup Fee ($)</label>
+            <input type="number" min={0} style={INPUT_STYLE} value={defaultSetupStr} onChange={(e) => setDefaultSetupStr(e.target.value)} />
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Min Monthly Price ($)</label>
+            <input type="number" min={0} style={INPUT_STYLE} value={minMonthlyStr} onChange={(e) => setMinMonthlyStr(e.target.value)} />
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Max Monthly Price ($)</label>
+            <input type="number" min={0} style={INPUT_STYLE} value={maxMonthlyStr} onChange={(e) => setMaxMonthlyStr(e.target.value)} />
+            {(() => {
+              const def = parseDollar(defaultMonthlyStr);
+              const min = parseDollar(minMonthlyStr);
+              const max = parseDollar(maxMonthlyStr);
+              if (def !== null && min !== null && max !== null && max > 0 && (def < min || def > max)) {
+                return <p className="text-[10px] mt-1" style={{ color: "#DC2626" }}>Default price is outside the min–max range.</p>;
+              }
+              return null;
+            })()}
+          </div>
+          <div>
+            <label style={LABEL_STYLE}>Catalogue ID (links to recommendation config)</label>
+            <input style={INPUT_STYLE} value={catalogId} onChange={(e) => setCatalogId(e.target.value)} placeholder="e.g. svc-web-hosting" />
+          </div>
+          <div className="col-span-2 flex items-center gap-6 flex-wrap">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} />
+              <span style={{ fontSize: 12, color: "var(--rtm-text-secondary)" }}>Recurring (monthly)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={setupFeeEditable} onChange={(e) => setSetupFeeEditable(e.target.checked)} />
+              <span style={{ fontSize: 12, color: "var(--rtm-text-secondary)" }}>Setup fee editable by rep</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} />
+              <span style={{ fontSize: 12, color: "var(--rtm-text-secondary)" }}>Is default (reserved for future use)</span>
+            </label>
+          </div>
+        </div>
+      )}
+
+      {/* ── Deliverables tab ── */}
+      {deliverableTab && (
+        <div className="space-y-2">
+          <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+            Add groups of deliverables. Each group has a heading and one or more bullets.
+            Empty headings and empty bullets are not saved.
+            The service description is separate (on the Details tab) and is not replaced by this.
+          </p>
+          <DeliverableGroupsEditor
+            groups={deliverableGroups}
+            onChange={setDeliverableGroups}
+          />
+        </div>
+      )}
 
       <div className="flex items-center gap-2">
         <button onClick={handleSubmit} disabled={saving}

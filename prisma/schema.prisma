@@ -1016,6 +1016,11 @@ model ServiceCatalogItem {
   // Controls dropdown order; mirrors original BUDGET_SERVICE_CATALOG array order.
   sortOrder           Int      @default(0)
 
+  // Grouped deliverables for the service agreement / proposal.
+  // Schema: [{ heading: string, bullets: string[] }, ...]
+  // Order is preserved by array position. Empty array = no deliverables (normal).
+  deliverableGroups   Json     @default("[]")
+
   // ISO-8601 strings, following existing schema timestamp convention.
   createdAt           String   @default("")
   updatedAt           String   @default("")

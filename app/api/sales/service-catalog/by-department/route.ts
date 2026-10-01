@@ -12,7 +12,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionUser, requireRole } from "@/lib/auth";
-import type { ServiceCatalogRow } from "../route";
+import type { ServiceCatalogRow, DeliverableGroup } from "../route";
+
+function parseGroups(raw: unknown): DeliverableGroup[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((g): g is { heading: unknown; bullets: unknown } => g !== null && typeof g === "object")
+    .map((g) => ({
+      heading: typeof g.heading === "string" ? g.heading : "",
+      bullets: Array.isArray(g.bullets)
+        ? g.bullets.filter((b): b is string => typeof b === "string")
+        : [],
+    }));
+}
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const { user, error, status } = await getSessionUser(req);
@@ -58,6 +70,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       isActive: r.isActive,
       isDefault: r.isDefault,
       sortOrder: r.sortOrder,
+      deliverableGroups: parseGroups(r.deliverableGroups),
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));

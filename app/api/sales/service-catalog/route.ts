@@ -19,6 +19,13 @@ import { getSessionUser, requireRole } from "@/lib/auth";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
+// A group of deliverables: a heading and an ordered list of bullet strings.
+// Stored as JSONB on the catalogue item. Order is preserved by array position.
+export interface DeliverableGroup {
+  heading: string;
+  bullets: string[];
+}
+
 export interface ServiceCatalogRow {
   id: string;
   catalogId: string;
@@ -37,8 +44,23 @@ export interface ServiceCatalogRow {
   isActive: boolean;
   isDefault: boolean;
   sortOrder: number;
+  deliverableGroups: DeliverableGroup[];
   createdAt: string;
   updatedAt: string;
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function parseGroups(raw: unknown): DeliverableGroup[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((g): g is { heading: unknown; bullets: unknown } => g !== null && typeof g === "object")
+    .map((g) => ({
+      heading: typeof g.heading === "string" ? g.heading : "",
+      bullets: Array.isArray(g.bullets)
+        ? g.bullets.filter((b): b is string => typeof b === "string")
+        : [],
+    }));
 }
 
 function rowToApi(r: Awaited<ReturnType<typeof prisma.serviceCatalogItem.findUnique>>): ServiceCatalogRow {
@@ -61,6 +83,7 @@ function rowToApi(r: Awaited<ReturnType<typeof prisma.serviceCatalogItem.findUni
     isActive: r.isActive,
     isDefault: r.isDefault,
     sortOrder: r.sortOrder,
+    deliverableGroups: parseGroups(r.deliverableGroups),
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   };
@@ -164,6 +187,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         isActive: true,
         isDefault: typeof b.isDefault === "boolean" ? b.isDefault : false,
         sortOrder,
+        deliverableGroups: Array.isArray(b.deliverableGroups) ? b.deliverableGroups : [],
         createdAt: now,
         updatedAt: now,
       },
