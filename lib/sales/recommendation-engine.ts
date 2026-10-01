@@ -213,14 +213,34 @@ export interface RecommendationResult {
 
 // ─── Engine Options ────────────────────────────────────────────────────────────
 
-interface RecommendationEngineOptions {
-  contractMonths?: number;     // default 12
-  includeOptionalPhase?: boolean; // default true
+/**
+ * Price row sourced from the database (ServiceCatalogItem).
+ * Keyed by catalogId — the link between recommendation-config service ids and
+ * the Postgres service catalogue.
+ */
+export interface DbPriceRow {
+  monthly: number;
+  setup: number;
+  isActive: boolean;
 }
 
-const DEFAULT_ENGINE_OPTIONS: Required<RecommendationEngineOptions> = {
+interface RecommendationEngineOptions {
+  contractMonths?: number;       // default 12
+  includeOptionalPhase?: boolean; // default true
+  /** Prices sourced from the Postgres service catalogue, keyed by catalogId.
+   *  When provided, these prices replace the hardcoded values in
+   *  recommendation-config for every recommendation that has a matching row.
+   *  Services with no matching row are marked "Needs Pricing Review" with $0
+   *  fees so the rep cannot mistake a hardcoded stub for a real price.
+   *  When omitted the engine falls back to the hardcoded values (unit-test
+   *  / demo use only). */
+  dbPriceMap?: Map<string, DbPriceRow>;
+}
+
+const DEFAULT_ENGINE_OPTIONS: Required<Omit<RecommendationEngineOptions, "dbPriceMap">> & { dbPriceMap: undefined } = {
   contractMonths: 12,
   includeOptionalPhase: true,
+  dbPriceMap: undefined,
 };
 
 // ─── Finding Category Matcher ──────────────────────────────────────────────────
@@ -275,7 +295,8 @@ function calculateConfidenceScore(
 // ─── Revenue Impact Estimator ─────────────────────────────────────────────────
 
 function estimateRevenueImpact(
-  service: ServiceCatalogEntry,
+  monthlyFee: number,
+  setupFee: number,
   triggerFindings: AuditFinding[],
   revenueMultiplier: number,
   contractMonths: number
@@ -284,7 +305,7 @@ function estimateRevenueImpact(
     (sum, f) => sum + f.estimatedRevenueImpact,
     0
   );
-  const baseRevenue = service.monthlyFee * contractMonths + service.setupFee;
+  const baseRevenue = monthlyFee * contractMonths + setupFee;
   return Math.round(baseRevenue + (findingImpact * revenueMultiplier) / 1000);
 }
 
@@ -314,6 +335,7 @@ export function runRecommendationEngine(
   options: RecommendationEngineOptions = {}
 ): RecommendationResult {
   const opts = { ...DEFAULT_ENGINE_OPTIONS, ...options };
+  const dbPriceMap = opts.dbPriceMap;
 
   // Step 1: Get active rules
   const activeRules = RECOMMENDATION_RULES
@@ -346,6 +368,40 @@ export function runRecommendationEngine(
     const service = SERVICE_CATALOG.find((s) => s.id === rule.serviceId);
     if (!service || !service.active) continue;
 
+    // Resolve database prices.
+    // service.id in recommendation-config IS the catalogId on the DB row.
+    // If the DB price map is present and the row is retired (isActive: false),
+    // skip the recommendation — a retired service must not appear in new proposals.
+    const dbRow = dbPriceMap?.get(service.id) ?? null;
+    if (dbRow && !dbRow.isActive) continue;
+
+    // Determine which prices to display:
+    //   - DB row present  → use DB prices (Justin can edit these).
+    //   - DB row absent   → mark as unpriced ($0) with status "Needs Pricing Review".
+    //     The hardcoded values in recommendation-config are NOT used as a fallback
+    //     so they can never be mistaken for real editable prices.
+    //
+    // NOTE: when dbPriceMap is undefined (unit-test / demo mode), fall back to
+    // the hardcoded values so existing tests are unaffected.
+    let estimatedMonthlyFee: number;
+    let estimatedSetupFee: number;
+    let needsPricingReview = false;
+    if (dbPriceMap === undefined) {
+      // No map supplied — pure engine call (tests / demo). Use config values.
+      estimatedMonthlyFee = service.monthlyFee;
+      estimatedSetupFee = service.setupFee;
+    } else if (dbRow !== null) {
+      // DB row found — authoritative prices.
+      estimatedMonthlyFee = dbRow.monthly;
+      estimatedSetupFee = dbRow.setup;
+    } else {
+      // DB row absent (orphan service: svc-review-gen, svc-tracking, svc-pixel).
+      // Show $0 and flag for pricing review. Do not show the hardcoded stub.
+      estimatedMonthlyFee = 0;
+      estimatedSetupFee = 0;
+      needsPricingReview = true;
+    }
+
     // Calculate confidence
     const confidenceScore = calculateConfidenceScore(
       rule.confidenceBase,
@@ -354,9 +410,10 @@ export function runRecommendationEngine(
       rule
     );
 
-    // Calculate revenue impact
+    // Calculate revenue impact — use resolved prices, not hardcoded config values.
     const revenueImpactEstimate = estimateRevenueImpact(
-      service,
+      estimatedMonthlyFee,
+      estimatedSetupFee,
       triggerFindings,
       rule.revenueMultiplier,
       opts.contractMonths
@@ -396,8 +453,8 @@ export function runRecommendationEngine(
 
       deliverables: service.deliverables,
 
-      estimatedMonthlyFee: service.monthlyFee,
-      estimatedSetupFee: service.setupFee,
+      estimatedMonthlyFee,
+      estimatedSetupFee,
       estimatedHoursPerMonth: service.estimatedHoursPerMonth,
 
       estimatedTimeline: rule.estimatedTimeline,
@@ -409,9 +466,11 @@ export function runRecommendationEngine(
       confidenceScore,
       revenueImpactEstimate,
 
-      proposalReadiness: rule.proposalReadiness,
-      status: "Pending",
-      salesNotes: "",
+      proposalReadiness: needsPricingReview ? "Needs Pricing" : rule.proposalReadiness,
+      status: needsPricingReview ? "Needs Pricing Review" : "Pending",
+      salesNotes: needsPricingReview
+        ? "No database price row found for this service. A manager must add it in Settings → Service Catalogue before this service can be quoted."
+        : "",
     };
 
     recommendations.push(rec);
@@ -579,16 +638,70 @@ export function runRecommendationEngine(
   };
 }
 
-// ─── Demo Generator ────────────────────────────────────────────────────────────
-// Called from the UI with a completed AuditResult.
+// ─── UI Entry Point ────────────────────────────────────────────────────────────
+// Called from Step 3 with a completed AuditResult.
+//
+// This function is async because it fetches the current prices from the Postgres
+// service catalogue before running the engine. Prices come from the database so
+// that changes made in Settings → Service Catalogue are immediately visible in
+// new proposals without a deploy.
+//
+// The engine itself (runRecommendationEngine) stays synchronous and pure. The
+// database fetch happens here, once, before the engine runs.
+//
+// Reuses the same /api/sales/service-catalog?all=1 route that Step 4's Budget
+// Optimizer already calls — no second fetch path introduced.
 
-export function generateRecommendationsFromAudit(
+export async function generateRecommendationsFromAudit(
   auditResult: AuditResult,
   contractMonths: number = 12
-): RecommendationResult {
+): Promise<RecommendationResult> {
+  // Build a catalogId → price/status map from the database.
+  // On fetch failure, fall back gracefully: log the error and run the engine
+  // without a price map. The hardcoded config values will be used, which is
+  // better than crashing Step 3 for a network hiccup.
+  let dbPriceMap: Map<string, DbPriceRow> | undefined;
+  try {
+    const res = await fetch("/api/sales/service-catalog?all=1");
+    if (res.ok) {
+      const data = (await res.json()) as {
+        services: Array<{
+          catalogId: string;
+          defaultMonthlyPrice: number;
+          defaultSetupFee: number;
+          isActive: boolean;
+        }>;
+      };
+      dbPriceMap = new Map(
+        data.services
+          .filter((s) => s.catalogId)
+          .map((s) => [
+            s.catalogId,
+            {
+              monthly: s.defaultMonthlyPrice,
+              setup: s.defaultSetupFee,
+              isActive: s.isActive,
+            },
+          ])
+      );
+    } else {
+      console.warn(
+        "[recommendation-engine] Could not load DB service catalogue (",
+        res.status,
+        "). Falling back to hardcoded prices."
+      );
+    }
+  } catch (err) {
+    console.warn(
+      "[recommendation-engine] DB service catalogue fetch failed. Falling back to hardcoded prices.",
+      err
+    );
+  }
+
   return runRecommendationEngine(auditResult, {
     contractMonths,
     includeOptionalPhase: true,
+    dbPriceMap,
   });
 }
 

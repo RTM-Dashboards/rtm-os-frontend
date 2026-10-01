@@ -218,6 +218,14 @@ function RecommendationCard({
             <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
               {rec.businessImpact}
             </p>
+            {rec.salesNotes && (
+              <p
+                className="text-xs mt-1.5 font-semibold px-2 py-1 rounded-lg border"
+                style={{ background: "#FFFBEB", color: "#92400E", borderColor: "#FDE68A" }}
+              >
+                ⚠️ {rec.salesNotes}
+              </p>
+            )}
           </div>
 
           {/* Action menu */}
@@ -394,8 +402,14 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
     if (state.auditResult && !generated.current) {
       generated.current = true;
       setLoading(true);
-      setTimeout(() => {
-        const r = generateRecommendationsFromAudit(state.auditResult!);
+
+      // generateRecommendationsFromAudit is async: it fetches current prices
+      // from the Postgres service catalogue before running the recommendation
+      // engine. A minimum 600ms delay preserves the loading UX.
+      void Promise.all([
+        generateRecommendationsFromAudit(state.auditResult!),
+        new Promise<void>((resolve) => setTimeout(resolve, 600)),
+      ]).then(([r]) => {
         setResult(r);
 
         // Restore statuses from wizard state when the rep has already made
@@ -447,7 +461,7 @@ export function Step3Recommendations({ state, onUpdate }: Step3RecommendationsPr
         });
 
         setLoading(false);
-      }, 600);
+      });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.auditResult]);
