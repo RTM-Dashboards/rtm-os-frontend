@@ -151,7 +151,9 @@ function getPrimaryAction(status: InvoiceStatus): string {
     case "Ready To Send":  return "Mark as Sent";
     case "Viewed":         return "Mark Reminder Sent";
     case "Partially Paid": return "Record Payment";
-    case "Overdue":        return "Escalate Collections";
+    // C3: "Escalate Collections" removed — Collections owns escalation.
+    //   Overdue invoices route to the Collections page for all chasing actions.
+    case "Overdue":        return "View Invoice";
     case "Paid":           return "View Invoice";  // C4: "Send To Activation Queue" disabled
     case "Escalated":      return "View Invoice";
     default:               return "View Invoice";
@@ -774,7 +776,7 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
 
 // ─── Context menu (three-dot) ─────────────────────────────────────────────────
 
-interface MenuAction { label: string; onClick: () => void; separator?: boolean; danger?: boolean; primary?: boolean; disabled?: boolean; }
+interface MenuAction { label: string; onClick: () => void; separator?: boolean; danger?: boolean; primary?: boolean; disabled?: boolean; tooltip?: string; }
 
 function ContextMenu({ actions }: { actions: MenuAction[] }) {
   const [open, setOpen] = useState(false);
@@ -810,6 +812,31 @@ function ContextMenu({ actions }: { actions: MenuAction[] }) {
           {actions.map((action, i) => (
             <React.Fragment key={i}>
               {action.separator && i > 0 && <div className="my-1 mx-3 border-t" style={{ borderColor: "var(--rtm-border-light)" }} />}
+              {action.tooltip && action.disabled ? (
+                // F2: disabled-with-tooltip pattern — matches the Stripe/Bulk Actions
+                // group-hover tooltip used elsewhere in Billing.
+                <div className="relative group">
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={{ color: action.danger ? "#DC2626" : action.primary ? "var(--rtm-blue)" : "var(--rtm-text-primary)", background: "transparent" }}
+                    disabled
+                    onClick={undefined}
+                  >
+                    {action.label}
+                  </button>
+                  <div
+                    className="absolute right-full top-1/2 -translate-y-1/2 mr-2 z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ whiteSpace: "nowrap" }}
+                  >
+                    <div className="rounded-lg px-3 py-1.5 text-xs font-medium shadow-lg"
+                      style={{ background: "#1E293B", color: "#F8FAFC", border: "1px solid #334155" }}>
+                      {action.tooltip}
+                      <div className="absolute top-1/2 left-full -translate-y-1/2 border-4 border-transparent"
+                        style={{ borderLeftColor: "#1E293B" }} />
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <button
                 className="w-full text-left px-4 py-2 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ color: action.danger ? "#DC2626" : action.primary ? "var(--rtm-blue)" : "var(--rtm-text-primary)", background: "transparent" }}
@@ -820,6 +847,7 @@ function ContextMenu({ actions }: { actions: MenuAction[] }) {
               >
                 {action.label}
               </button>
+              )}
             </React.Fragment>
           ))}
         </div>
@@ -1914,11 +1942,16 @@ export default function BillingInvoicesPage() {
         disabled: true,
         onClick: () => { showToast("Activation Queue integration is not yet wired. This will be enabled in Phase D.", "warning"); },
       },
+      // F2: Escalate is disabled on the Invoices page — Collections owns escalation.
+      // The item is visible (so the user knows escalation exists) but non-functional
+      // with a tooltip pointing to the Collections page. This matches the
+      // disabled-with-tooltip pattern used for Stripe and Bulk Actions.
       {
-        // C4: Status change is real. Collections record creation is not wired.
-        label: "Escalate to Collections (status change only — no Collections record)",
-        danger: true,
-        onClick: () => { void updateStatus(inv.id, "Escalated", inv.paymentStatus, `${inv.invoiceNumber} escalated to Collections (status changed; no Collections record created — integration not yet wired)`, "error"); },
+        separator: true,
+        label: "Escalate to Collections",
+        disabled: true,
+        tooltip: "Escalation is managed on the Collections page",
+        onClick: () => {},
       },
       { separator: true, label: "Archive Invoice", danger: true, onClick: () => { void archiveInvoice(inv.id); } },
     ];
@@ -1938,8 +1971,7 @@ export default function BillingInvoicesPage() {
           void updateStatus(inv.id, "Viewed", inv.paymentStatus, `Reminder noted for ${inv.invoiceNumber} — status updated (no email sent)`, "info"); break;
         case "Record Payment":
           setPaymentTarget(inv); break;
-        case "Escalate Collections":
-          void updateStatus(inv.id, "Escalated", inv.paymentStatus, `${inv.invoiceNumber} escalated to Collections (status change only — Collections integration not yet wired)`, "error"); break;
+        // C3: "Escalate Collections" case removed — Collections owns escalation.
       }
     };
 

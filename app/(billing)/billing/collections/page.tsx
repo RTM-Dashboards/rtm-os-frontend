@@ -219,8 +219,8 @@ export default function CollectionsPage() {
   //
   // 1. GET /api/invoices?overdue=true — real overdue invoices from Postgres.
   //    Overdue rule: dueDate < now AND invoiceStatus IN [Sent, Viewed,
-  //    Partially Paid, Overdue]. Draft and Cancelled are excluded because an
-  //    invoice that was never sent cannot be overdue.
+  //    Partially Paid, Overdue, Escalated]. Draft and Cancelled are excluded.
+  //    C3: Escalated is included — an escalated invoice must stay visible here.
   //
   // 2. For each invoice, we need clientName (from Client) and domain (from
   //    Business). To avoid N+1 fetches, we collect unique clientIds and
@@ -228,7 +228,7 @@ export default function CollectionsPage() {
   //    This is one round-trip per unique client id and per unique business id,
   //    not one per row.
   //
-  // 3. GET /api/collections-status — file-backed overlay keyed by invoiceId.
+  // 3. GET /api/collections-status — Postgres-backed (collection_states + collection_logs).
   //    Provides collectionStatus, contactLog, paymentPlanDetails, etc.
 
   const loadData = useCallback(async () => {
@@ -344,12 +344,11 @@ export default function CollectionsPage() {
     ]);
   }
 
-  // ── POST action to overlay API then refresh ──────────────────────────────────
+  // ── POST action to API then refresh ───────────────────────────────────────────
   //
-  // The overlay is file-backed (data/collections-status.json). On Vercel's
-  // read-only filesystem every write fails. The action AWAITS the response
-  // before updating UI or logging success. If the write fails, the row shows
-  // the error inline — no false success is shown.
+  // The overlay is now Postgres-backed (collection_states + collection_logs tables).
+  // The action AWAITS the response before updating UI or logging success.
+  // If the write fails, the row shows the error inline — no false success is shown.
 
   async function doAction(
     invoiceId: string,
@@ -388,7 +387,9 @@ export default function CollectionsPage() {
       // Write succeeded — refresh from server to reflect persisted state
       await loadData();
       const actionLabel: Record<string, string> = {
-        "send-reminder": "Reminder sent",
+        // C4: "Reminder sent" → "Reminder logged" — the system sends nothing;
+        // this records that the collector sent a reminder outside the system.
+        "send-reminder": "Reminder logged (sent by collector outside system)",
         "log-contact":   "Contact logged",
         "payment-plan":  "Payment plan created",
         escalate:        "Escalated",
@@ -424,9 +425,12 @@ export default function CollectionsPage() {
   const highRiskRows = activeRows.filter((r) => r.daysOverdue >= 30);
   const escalatedRows = rows.filter((r) => r.collectionStatus === "Escalated");
 
+  // F1: The default "All" view excludes Resolved so a resolved row leaves the
+  // collector's queue automatically. Resolved rows remain findable by selecting
+  // the "Resolved" filter button (already present in ALL_STATUSES).
   const filtered =
     selectedFilter === "All"
-      ? rows
+      ? rows.filter((r) => r.collectionStatus !== "Resolved")
       : rows.filter((r) => r.collectionStatus === selectedFilter);
 
   // ── Loading state ─────────────────────────────────────────────────────────────
@@ -495,7 +499,7 @@ export default function CollectionsPage() {
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
             Overdue invoices from Postgres — dueDate past and status Sent, Viewed,
-            Partially Paid, or Overdue. Draft and Cancelled invoices are excluded.
+            Partially Paid, Overdue, or Escalated. Draft and Cancelled excluded.
           </p>
         </div>
 
@@ -517,9 +521,9 @@ export default function CollectionsPage() {
             style={{ color: "var(--rtm-text-muted)" }}
           >
             There are no invoices that are both past their due date and in a
-            sent status. An invoice must have been sent to the client (status
-            Sent, Viewed, Partially Paid, or Overdue) before it appears here.
-            Draft and Cancelled invoices are never counted as overdue.
+            chasing status. An invoice must have been sent to the client (status
+            Sent, Viewed, Partially Paid, Overdue, or Escalated) before it
+            appears here. Draft and Cancelled invoices are never shown.
           </p>
           <p
             className="text-xs mt-3"
@@ -564,8 +568,8 @@ export default function CollectionsPage() {
         </div>
         <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
           Overdue invoices from Postgres — dueDate past and status Sent, Viewed,
-          Partially Paid, or Overdue. Collection status and notes persist via
-          local overlay; overlay writes fail on Vercel&apos;s read-only filesystem.
+          Partially Paid, Overdue, or Escalated. Collection actions persist to
+          Postgres (collection_states + collection_logs tables).
         </p>
       </div>
 
@@ -636,7 +640,7 @@ export default function CollectionsPage() {
       {/* Collections Table */}
       <SectionWrapper
         title="Collections Queue"
-        description={`${rows.length} overdue invoice${rows.length !== 1 ? "s" : ""} — dueDate past, status Sent / Viewed / Partially Paid / Overdue`}
+        description={`${rows.length} overdue invoice${rows.length !== 1 ? "s" : ""} — dueDate past, status Sent / Viewed / Partially Paid / Overdue / Escalated`}
         actions={
           <div className="flex flex-wrap gap-2">
             {(["All", ...ALL_STATUSES] as (CollectionStatus | "All")[]).map(
@@ -779,8 +783,10 @@ export default function CollectionsPage() {
                           </span>
                         ) : (
                           <div className="flex gap-1.5 flex-wrap">
+                            {/* C4: "Send Reminder" renamed — the system sends nothing;
+                                this records that the collector sent a reminder outside the system. */}
                             <ActionBtn
-                              label="Send Reminder"
+                              label="Log Reminder Sent"
                               loading={isActing}
                               onClick={() =>
                                 void doAction(r.invoiceId, r.clientName, "send-reminder")
@@ -827,7 +833,7 @@ export default function CollectionsPage() {
       {/* Collection Cards Detail */}
       <SectionWrapper
         title="Collection Detail Cards"
-        description="Per-invoice collection details with notes and full action set. Collection status and contact log persist via local overlay."
+        description="Per-invoice collection details with notes and full action set. Collection status and contact log persist to Postgres."
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {rows.map((r) => {
@@ -994,8 +1000,10 @@ export default function CollectionsPage() {
                 />
 
                 <div className="flex flex-wrap gap-1.5">
+                  {/* C4: "Send Reminder" renamed — the system sends nothing;
+                      this records that the collector sent a reminder outside the system. */}
                   <ActionBtn
-                    label="Send Reminder"
+                    label="Log Reminder Sent"
                     loading={isActing}
                     onClick={() =>
                       void doAction(r.invoiceId, r.clientName, "send-reminder")

@@ -10,8 +10,10 @@
 // GET  /api/invoices?paymentStatus=<s>          → { invoices: InvoiceRecord[] }
 // GET  /api/invoices?overdue=true               → { invoices: InvoiceRecord[] }
 //      (overdue = dueDate < now() AND invoiceStatus IN
-//       ["Sent", "Viewed", "Partially Paid", "Overdue"])
-//      Excludes Draft, Ready To Send, Paid, Cancelled, Escalated.
+//       ["Sent", "Viewed", "Partially Paid", "Overdue", "Escalated"])
+//      Excludes Draft, Ready To Send, Paid, Cancelled.
+//      C3: Escalated is INCLUDED — Collections owns escalation; escalated invoices
+//      must remain visible in the Collections queue.
 //      paymentStatus is NOT used in this predicate (Draft invoices were
 //      never sent; they cannot be overdue regardless of dueDate).
 //      Filters may be combined (all active simultaneously via AND).
@@ -252,11 +254,17 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (overdue === "true") {
     where.dueDate = { lt: new Date() };
     // Only invoices that were actually sent to the client can be overdue.
-    // Draft and Ready To Send were never sent; Paid/Cancelled/Escalated are
-    // closed. The statuses below are the only ones where an unpaid sent
-    // invoice can become overdue.
+    // Draft and Ready To Send were never sent; Paid/Cancelled are closed.
+    // C3 — ESCALATION FIX: "Escalated" is included here.
+    //   Collections owns escalation. An escalated invoice must remain visible
+    //   in the Collections queue. Excluding "Escalated" caused escalated invoices
+    //   to disappear from the queue meant to chase them, which was the bug.
+    //   The Collections page escalate action is the single escalation path.
+    //   The Invoices page escalate menu item has been removed.
+    //   The dashboard overdue count also uses this filter — it now correctly
+    //   counts escalated invoices as overdue (they are).
     where.invoiceStatus = {
-      in: ["Sent", "Viewed", "Partially Paid", "Overdue"],
+      in: ["Sent", "Viewed", "Partially Paid", "Overdue", "Escalated"],
     };
   }
 
