@@ -1154,3 +1154,63 @@ model CollectionLog {
   @@index([invoiceId])
   @@map("collection_logs")
 }
+
+// ── Contract ──────────────────────────────────────────────────────────────────
+// Postgres-backed sales contract records.
+// Replaces data/sales-contracts.json (which held zero records).
+// One contract per proposal is the intent; no DB UNIQUE on proposalId because
+// the upsert pattern allows overwriting a draft.
+// services: text[] — follows Business.activeServices convention.
+// All timestamps: String (ISO-8601), matching non-Invoice model convention.
+
+model Contract {
+  id                  String   @id
+
+  // Unique human-readable number, e.g. "CTR-2026-4821"
+  contractNumber      String   @unique
+
+  proposalId          String   @default("")
+
+  // draft | sent | signed | expired | cancelled
+  status              String   @default("draft")
+
+  clientName          String   @default("")
+  businessName        String   @default("")
+  contactName         String   @default("")
+  contactEmail        String   @default("")
+  contactPhone        String   @default("")
+  assignedRep         String   @default("")
+
+  // Service names approved in the proposal
+  services            String[]
+
+  investmentSummary   String   @default("")
+  monthlyValue        String   @default("")
+
+  // Human-readable term display, e.g. "12 months"
+  termLength          String   @default("12 months")
+
+  // Payment term key, e.g. "net-30" — stored value, not a buried constant
+  paymentTerm         String   @default("net-30")
+
+  // Typed term fields — carried into handoff as contractual source of truth
+  termLengthMonths    Int?
+  paymentTerms        String?
+
+  // Normalised domain (no scheme, no www, no trailing slash, lowercased)
+  domain              String?
+
+  // Raw setup fee in dollars. Null means unknown, 0 means no setup fee.
+  setupFee            Float?
+
+  // (monthly * termMonths + setup) in cents. Null when either is unknown.
+  contractAmountCents Int?
+
+  signedDate          String?
+  createdAt           String   @default("")
+  updatedAt           String   @default("")
+
+  @@index([proposalId])
+  @@index([status])
+  @@map("contracts")
+}

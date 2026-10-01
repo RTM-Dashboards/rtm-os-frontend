@@ -1,6 +1,7 @@
 // RTM OS — Sales Contracts Client-Side Store
 //
-// File-backed via /api/sales-contracts (reads/writes data/sales-contracts.json).
+// Postgres-backed via /api/sales-contracts (Prisma Contract model).
+// data/sales-contracts.json remains on disk as a dead artifact (zero records).
 // Mirrors the same snapshot + async pattern used by lib/sales/handoff-store.ts.
 //
 // SYNC HELPERS (snapshot after hydration):
@@ -145,7 +146,7 @@ export function buildContractFromProposal(
     : "12 months";
 
   // Payment term — default net-30
-  const paymentTerm = "net-30";
+  const paymentTerm: string = "net-30";
 
   // Assigned rep
   const assignedRep =
@@ -179,6 +180,15 @@ export function buildContractFromProposal(
       ? Math.round(((monthly * termMonths) + (setupFee ?? 0)) * 100)
       : null;
 
+  // Typed term columns — the contract is the authoritative source;
+  // the handoff snapshot copies from these.
+  const termLengthMonthsTyped = termMonths; // already derived above
+  const paymentTermsLabel =
+    paymentTerm === "net-15"       ? "Net 15"
+    : paymentTerm === "net-45"     ? "Net 45"
+    : paymentTerm === "upon-receipt" ? "Due Upon Receipt"
+    : "Net 30";
+
   const record: SalesContractRecord = {
     id: contractNumber,
     contractNumber,
@@ -195,6 +205,8 @@ export function buildContractFromProposal(
     monthlyValue,
     termLength,
     paymentTerm,
+    termLengthMonths: termLengthMonthsTyped,
+    paymentTerms: paymentTermsLabel,
     domain,
     setupFee,
     contractAmountCents,

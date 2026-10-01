@@ -9,6 +9,7 @@ import { getOrCreateHandoffForContract } from "@/lib/sales/handoff-store";
 import {
   fetchAllContracts,
   hydrateContracts,
+  patchContract,
   type SalesContractRecord,
   type SalesContractStatus,
 } from "@/lib/sales/contracts-store";
@@ -28,6 +29,94 @@ const STATUS_STYLES: Record<
   cancelled: { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3", label: "Cancelled" },
 };
 
+// ── Mark as Signed Button ────────────────────────────────────────────────────
+// Records that a client signature was collected in PandaDoc.
+// Follows the same honest-wording pattern as "Mark as Sent (no email)" on
+// invoices: it does not imply RTM OS collected a signature.
+// Two-step inline confirm (no modal) because signing is a meaningful,
+// billable transition and must not happen on a single stray click.
+
+function MarkAsSignedButton({
+  contract,
+  onSigned,
+}: {
+  contract: SalesContractRecord;
+  onSigned: (updated: SalesContractRecord) => void;
+}) {
+  const [confirming, setConfirming] = React.useState(false);
+  const [saving, setSaving]         = React.useState(false);
+  const [signError, setSignError]   = React.useState<string | null>(null);
+
+  async function handleConfirm() {
+    if (saving) return;
+    setSaving(true);
+    setSignError(null);
+    try {
+      const updated = await patchContract(contract.id, {
+        status:     "signed",
+        signedDate: new Date().toISOString(),
+      });
+      onSigned(updated);
+      setConfirming(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setSignError(`Could not mark as signed: ${msg}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <button
+          onClick={() => setConfirming(true)}
+          className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "#1D4ED8", color: "#fff", borderColor: "#1E40AF" }}
+        >
+          Mark as Signed (collected in PandaDoc)
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <p className="text-[10px] font-semibold" style={{ color: "#1D4ED8" }}>
+        This records that the client signature was collected in PandaDoc.
+        Billing will then be able to invoice this contract.
+      </p>
+      <div className="flex gap-1.5">
+        <button
+          onClick={() => void handleConfirm()}
+          disabled={saving}
+          className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90 disabled:opacity-60"
+          style={{ background: "#1D4ED8", color: "#fff", borderColor: "#1E40AF" }}
+        >
+          {saving ? "Saving…" : "Confirm — mark as signed"}
+        </button>
+        <button
+          onClick={() => { setConfirming(false); setSignError(null); }}
+          disabled={saving}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80 disabled:opacity-60"
+          style={{
+            background: "var(--rtm-surface)",
+            color: "var(--rtm-text-muted)",
+            borderColor: "var(--rtm-border)",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+      {signError && (
+        <span className="text-xs font-medium" style={{ color: "#DC2626" }}>
+          {signError}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ── Request Invoice Button ─────────────────────────────────────────────────────
 // Preserved exactly from the original implementation — uses the existing
 // real file-backed handoff-store integration unchanged.
@@ -41,10 +130,12 @@ function RequestInvoiceButton({
 }) {
   const router = useRouter();
   const [creating, setCreating] = React.useState(false);
+  const [invoiceError, setInvoiceError] = React.useState<string | null>(null);
 
   async function handleClick() {
     if (creating) return;
     setCreating(true);
+    setInvoiceError(null);
     // Build summary fields from real contract data.
     // "setup-fees" is only written when the contract carries a real value.
     // Null means "Billing must confirm". Zero means "no setup fee".
@@ -90,20 +181,30 @@ function RequestInvoiceButton({
         }
       );
       router.push(`/sales/handoffs?handoffId=${handoff.id}&action=request-invoice`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setInvoiceError(`Failed to create handoff: ${msg}`);
     } finally {
       setCreating(false);
     }
   }
 
   return (
-    <button
-      onClick={() => void handleClick()}
-      disabled={creating}
-      className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90 disabled:opacity-60"
-      style={{ background: "#059669", color: "#fff", borderColor: "#047857" }}
-    >
-      {creating ? "Creating…" : "Request Invoice"}
-    </button>
+    <div className="flex flex-col items-start gap-1">
+      <button
+        onClick={() => void handleClick()}
+        disabled={creating}
+        className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90 disabled:opacity-60"
+        style={{ background: "#059669", color: "#fff", borderColor: "#047857" }}
+      >
+        {creating ? "Creating…" : "Request Invoice"}
+      </button>
+      {invoiceError && (
+        <span className="text-xs font-medium" style={{ color: "#DC2626" }}>
+          {invoiceError}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -114,9 +215,11 @@ function RequestInvoiceButton({
 
 function ContractDetailPanel({
   contract,
+  onUpdate,
   onClose,
 }: {
   contract: SalesContractRecord;
+  onUpdate: (updated: SalesContractRecord) => void;
   onClose: () => void;
 }) {
   const s = STATUS_STYLES[contract.status];
@@ -144,6 +247,9 @@ function ContractDetailPanel({
           >
             {s.label}
           </span>
+          {(contract.status === "draft" || contract.status === "sent") && (
+            <MarkAsSignedButton contract={contract} onSigned={onUpdate} />
+          )}
         </div>
         <button
           onClick={onClose}
@@ -614,28 +720,40 @@ export default function SalesContractsPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex gap-1.5">
-                          {contract.status === "signed" && (
-                            <RequestInvoiceButton
-                              contractId={contract.id}
-                              contract={contract}
-                            />
-                          )}
-                          <button
-                            onClick={() =>
-                              setSelectedContract(
-                                isSelected ? null : contract
-                              )
-                            }
-                            className="text-xs font-semibold px-2 py-1 rounded-lg border transition-all hover:opacity-80"
-                            style={{
-                              background: isSelected ? "#2563EB" : "var(--rtm-bg)",
-                              color: isSelected ? "#fff" : "var(--rtm-text-secondary)",
-                              borderColor: isSelected ? "#1D4ED8" : "var(--rtm-border)",
-                            }}
-                          >
-                            {isSelected ? "Close" : "View"}
-                          </button>
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex gap-1.5 flex-wrap items-start">
+                            {(contract.status === "draft" || contract.status === "sent") && (
+                              <MarkAsSignedButton
+                                contract={contract}
+                                onSigned={(updated) =>
+                                  setContracts((prev) =>
+                                    prev.map((c) => (c.id === updated.id ? updated : c))
+                                  )
+                                }
+                              />
+                            )}
+                            {contract.status === "signed" && (
+                              <RequestInvoiceButton
+                                contractId={contract.id}
+                                contract={contract}
+                              />
+                            )}
+                            <button
+                              onClick={() =>
+                                setSelectedContract(
+                                  isSelected ? null : contract
+                                )
+                              }
+                              className="text-xs font-semibold px-2 py-1.5 rounded-lg border transition-all hover:opacity-80"
+                              style={{
+                                background: isSelected ? "#2563EB" : "var(--rtm-bg)",
+                                color: isSelected ? "#fff" : "var(--rtm-text-secondary)",
+                                borderColor: isSelected ? "#1D4ED8" : "var(--rtm-border)",
+                              }}
+                            >
+                              {isSelected ? "Close" : "View"}
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -652,6 +770,12 @@ export default function SalesContractsPage() {
         <div className="mx-1">
           <ContractDetailPanel
             contract={selectedContract}
+            onUpdate={(updated) => {
+              setContracts((prev) =>
+                prev.map((c) => (c.id === updated.id ? updated : c))
+              );
+              setSelectedContract(updated);
+            }}
             onClose={() => setSelectedContract(null)}
           />
         </div>

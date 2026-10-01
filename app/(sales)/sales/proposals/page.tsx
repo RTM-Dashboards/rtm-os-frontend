@@ -681,11 +681,12 @@ function useProposalToast() {
   return { toast, showToast };
 }
 
-function ProposalToastBanner({ message }: { message: string }) {
+function ProposalToastBanner({ message, variant = "success" }: { message: string; variant?: "success" | "error" }) {
+  const bg = variant === "error" ? "#DC2626" : "#059669";
   return (
     <div
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-semibold"
-      style={{ background: "#059669", color: "#fff", minWidth: 280, textAlign: "center" }}
+      style={{ background: bg, color: "#fff", minWidth: 280, textAlign: "center" }}
     >
       {message}
     </div>
@@ -705,10 +706,12 @@ function GenerateContractButton({
 }) {
   const [loading, setLoading] = React.useState(false);
   const [done, setDone] = React.useState(false);
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
   async function handleClick() {
     if (loading || done) return;
     setLoading(true);
+    setErrorMsg(null);
     try {
       // Check if a contract already exists for this proposal
       const existing = await fetchContractByProposalId(proposal.id);
@@ -736,22 +739,27 @@ function GenerateContractButton({
       }
       setDone(true);
       onGenerate(proposal);
-    } catch {
-      // Non-fatal: navigate anyway
-      onGenerate(proposal);
+    } catch (err) {
+      // Failed to save — tell the user and do NOT navigate.
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMsg(`Contract save failed: ${msg}`);
+      setTimeout(() => setErrorMsg(null), 5000);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <Btn
-      size="xs"
-      variant="success"
-      onClick={() => void handleClick()}
-    >
-      {loading ? "Creating…" : done ? "Created ✓" : "Contract"}
-    </Btn>
+    <>
+      <Btn
+        size="xs"
+        variant="success"
+        onClick={() => void handleClick()}
+      >
+        {loading ? "Creating…" : done ? "Created ✓" : "Contract"}
+      </Btn>
+      {errorMsg && <ProposalToastBanner message={errorMsg} variant="error" />}
+    </>
   );
 }
 
