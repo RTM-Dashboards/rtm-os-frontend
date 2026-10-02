@@ -15,6 +15,7 @@ import type {
   HandoffChecklistItemId,
   HandoffChecklistItemStatus,
 } from "@/lib/sales/handoff-config";
+import { patchSalesHandoff } from "@/lib/sales/sales-handoffs-api";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,7 +28,9 @@ export interface HandoffShellProps {
   /** When the shell is embedded inside a detail view, pass the persisted
    *  handoff number so the shell does not generate a second random one. */
   persistedHandoffNumber?: string;
-
+  /** When supplied, checklist updates are persisted to Postgres via PATCH.
+   *  Without this the shell is local-state only (standalone embed / new record flow). */
+  persistedHandoffId?: string;
 }
 
 type ActiveTab = "checklist" | "summary";
@@ -41,6 +44,7 @@ export default function HandoffShell({
   preparedBy = "Sales Representative",
   initialSummaryFields,
   persistedHandoffNumber,
+  persistedHandoffId,
 }: HandoffShellProps) {
   const [record, setRecord] = useState<HandoffRecord | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("checklist");
@@ -71,6 +75,16 @@ export default function HandoffShell({
     if (!record) return;
     const updated = updateChecklistItem(record, itemId, status, completedBy ?? preparedBy);
     setRecord(updated);
+    // Persist to Postgres when this shell is embedded in a detail view.
+    // Without persistedHandoffId the shell is standalone (local state only).
+    if (persistedHandoffId) {
+      void patchSalesHandoff(persistedHandoffId, {
+        checklist:            updated.checklist,
+        completionPercentage: updated.completionPercentage,
+        readyToSubmit:        updated.readyToSubmit,
+        status:               updated.status,
+      });
+    }
   }
 
   function handleSummaryFieldUpdate(fieldId: string, value: string) {

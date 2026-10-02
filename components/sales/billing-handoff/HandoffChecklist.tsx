@@ -102,7 +102,12 @@ export default function HandoffChecklist({ checklist, onUpdate }: HandoffCheckli
             label: defItem.label,
             status: "pending",
           };
+          // blocked is derived from config rules via isItemBlocked (which reads
+          // HANDOFF_CHECKLIST, not the stored entry). A complete item is never
+          // blocked — that invariant is enforced inside isItemBlocked.
           const blocked = isItemBlocked(entry, checklist);
+          // Config-defined blockers for the label row, so we never read stored blockedBy.
+          const configBlockerIds = defItem.blockedBy ?? [];
           const isComplete = entry.status === "complete";
           const isPending = entry.status === "pending";
           const canComplete = isPending && !blocked;
@@ -167,8 +172,9 @@ export default function HandoffChecklist({ checklist, onUpdate }: HandoffCheckli
                     {defItem?.description}
                   </p>
 
-                  {/* Blocked by indicator */}
-                  {blocked && entry.blockedBy && entry.blockedBy.length > 0 && (
+                  {/* Blocked by indicator — only when blocked (complete items are never blocked).
+                      Labels come from the config (HANDOFF_CHECKLIST), not from stored blockedBy. */}
+                  {blocked && configBlockerIds.length > 0 && (
                     <div
                       className="flex items-start gap-1.5 mt-1.5 rounded px-2.5 py-1.5"
                       style={{ background: "#FEF2F2", border: "1px solid #FECACA" }}
@@ -180,10 +186,10 @@ export default function HandoffChecklist({ checklist, onUpdate }: HandoffCheckli
                         Blocked by:
                       </span>
                       <span className="text-[10px]" style={{ color: "#991B1B" }}>
-                        {entry.blockedBy
+                        {configBlockerIds
                           .map((depId) => {
-                            const dep = checklist.find((e) => e.id === depId);
-                            return dep ? dep.label : depId;
+                            const depDef = HANDOFF_CHECKLIST.find((d) => d.id === depId);
+                            return depDef ? depDef.label : depId;
                           })
                           .join(", ")}
                       </span>

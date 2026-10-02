@@ -114,7 +114,8 @@ export function buildHandoffRecord(
       status,
       completedAt:
         status === "complete" ? new Date().toISOString() : undefined,
-      blockedBy: item.blockedBy,
+      // Do NOT store blockedBy — the config is authoritative and storing a copy
+      // risks freezing stale rules into persisted rows.
     };
   });
 
@@ -239,13 +240,24 @@ export function computeHandoffStatus(
 }
 
 // ─── Is Item Blocked ─────────────────────────────────────────────────────────
+//
+// Rule 1: A complete item is NEVER blocked — done is done.
+// Rule 2: Blocking rules come from HANDOFF_CHECKLIST (the config), not from the
+//         stored entry's blockedBy field. Stored blockedBy is legacy data and is
+//         intentionally ignored here to avoid the frozen-config bug.
 
 export function isItemBlocked(
   item: HandoffChecklistEntry,
   allItems: HandoffChecklistEntry[]
 ): boolean {
-  if (!item.blockedBy || item.blockedBy.length === 0) return false;
-  return item.blockedBy.some((depId) => {
+  // A complete item cannot be blocked.
+  if (item.status === "complete") return false;
+
+  // Look up blocking rules from the authoritative config, not the stored entry.
+  const configDef = HANDOFF_CHECKLIST.find((d) => d.id === item.id);
+  if (!configDef?.blockedBy || configDef.blockedBy.length === 0) return false;
+
+  return configDef.blockedBy.some((depId) => {
     const dep = allItems.find((e) => e.id === depId);
     return !dep || dep.status !== "complete";
   });

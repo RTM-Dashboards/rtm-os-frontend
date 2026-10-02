@@ -688,6 +688,7 @@ function HandoffDetailView({
               preparedBy={handoff.preparedBy}
               initialSummaryFields={summaryFields}
               persistedHandoffNumber={handoff.handoffNumber}
+              persistedHandoffId={handoff.id}
             />
           </div>
         </CollapsibleChecklist>
