@@ -66,7 +66,16 @@ function StatusIndicator({ status }: { status: HandoffChecklistItemStatus }) {
 
 export default function HandoffChecklist({ checklist, onUpdate }: HandoffChecklistProps) {
   const requiredCount = HANDOFF_CHECKLIST.filter((d) => d.required).length;
-  const completedCount = checklist.filter((e) => e.status === "complete").length;
+
+  // Render from config, not from the stored array.
+  // This guarantees exactly the three current items are shown regardless of
+  // what the stored checklist contains (e.g. seeded rows with 8 items).
+  // Status is looked up from the stored array by id; falls back to "pending".
+  const configItems = [...HANDOFF_CHECKLIST].sort((a, b) => a.order - b.order);
+  const completedCount = configItems.filter((d) => {
+    const stored = checklist.find((e) => e.id === d.id);
+    return stored?.status === "complete";
+  }).length;
 
   return (
     <div className="space-y-3">
@@ -83,10 +92,16 @@ export default function HandoffChecklist({ checklist, onUpdate }: HandoffCheckli
         </span>
       </div>
 
-      {/* Checklist Items */}
+      {/* Checklist Items — driven by config; stored array provides status only */}
       <div className="space-y-2">
-        {checklist.map((entry) => {
-          const defItem = HANDOFF_CHECKLIST.find((d) => d.id === entry.id);
+        {configItems.map((defItem) => {
+          const storedEntry = checklist.find((e) => e.id === defItem.id);
+          // Synthesise an entry from config + stored state for rendering.
+          const entry: HandoffChecklistEntry = storedEntry ?? {
+            id: defItem.id,
+            label: defItem.label,
+            status: "pending",
+          };
           const blocked = isItemBlocked(entry, checklist);
           const isComplete = entry.status === "complete";
           const isPending = entry.status === "pending";

@@ -15,6 +15,8 @@ import {
   type HandoffListStatus,
 } from "@/lib/sales/handoff-store";
 import { submitHandoffToBilling } from "@/lib/sales/sales-handoffs-api";
+import { computeReadyToSubmit, computeHandoffCompletion } from "@/lib/sales/handoff-engine";
+import { HANDOFF_CHECKLIST } from "@/lib/sales/handoff-config";
 import type { HandoffRecord } from "@/lib/sales/handoff-engine";
 
 
@@ -88,7 +90,7 @@ function WorkflowBreadcrumb({ active }: { active: string }) {
 // ─── Request Invoice Banner ───────────────────────────────────────────────────
 
 interface RequestInvoiceBannerProps {
-  contractSigned: boolean;
+  readyToSubmit: boolean;
   autoExpanded: boolean;
   contractId: string | null;
   handoffId: string;
@@ -97,7 +99,7 @@ interface RequestInvoiceBannerProps {
 }
 
 function RequestInvoiceBanner({
-  contractSigned,
+  readyToSubmit,
   autoExpanded,
   contractId,
   handoffId,
@@ -163,8 +165,8 @@ function RequestInvoiceBanner({
       ref={bannerRef}
       className="rounded-xl border overflow-hidden"
       style={{
-        borderColor: contractSigned ? "#A7F3D0" : "#E2E8F0",
-        background: contractSigned ? "#F0FDF4" : "#F8FAFC",
+        borderColor: readyToSubmit ? "#A7F3D0" : "#E2E8F0",
+        background: readyToSubmit ? "#F0FDF4" : "#F8FAFC",
       }}
     >
       <div className="px-6 py-5">
@@ -172,25 +174,25 @@ function RequestInvoiceBanner({
           <div className="flex-1 min-w-0">
             <p
               className="text-[10px] font-bold uppercase tracking-widest mb-1"
-              style={{ color: contractSigned ? "#059669" : "#94A3B8" }}
+              style={{ color: readyToSubmit ? "#059669" : "#94A3B8" }}
             >
               Billing Action
             </p>
             <h2
               className="text-lg font-bold mb-1"
-              style={{ color: contractSigned ? "#065F46" : "#64748B" }}
+              style={{ color: readyToSubmit ? "#065F46" : "#64748B" }}
             >
               Ready to Request Invoice
             </h2>
-            <p className="text-sm" style={{ color: contractSigned ? "#047857" : "#94A3B8" }}>
-              {contractSigned
+            <p className="text-sm" style={{ color: readyToSubmit ? "#047857" : "#94A3B8" }}>
+              {readyToSubmit
                 ? "Submit this signed contract to Billing to generate the client invoice."
-                : "Waiting on contract signature before invoice can be requested."}
+                : "Complete all three checklist items before requesting an invoice."}
             </p>
             {contractId && (
               <p
                 className="text-xs mt-1.5 font-mono"
-                style={{ color: contractSigned ? "#059669" : "#94A3B8" }}
+                style={{ color: readyToSubmit ? "#059669" : "#94A3B8" }}
               >
                 Contract: {contractId}
               </p>
@@ -198,7 +200,7 @@ function RequestInvoiceBanner({
           </div>
 
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            {contractSigned ? (
+            {readyToSubmit ? (
               <button
                 onClick={() => void handleSubmit()}
                 disabled={submitting}
@@ -220,9 +222,9 @@ function RequestInvoiceBanner({
                 Request Invoice — Submit to Billing Team
               </div>
             )}
-            {!contractSigned && (
+            {!readyToSubmit && (
               <p className="text-[11px]" style={{ color: "#94A3B8" }}>
-                Waiting on contract signature.
+                Complete all three checklist items first.
               </p>
             )}
             {submitError && (
@@ -379,10 +381,14 @@ function HandoffListView() {
                 {handoffs.map((handoff, i) => {
                   const listStatus = getHandoffListStatus(handoff);
                   const sc = statusCfg[listStatus];
-                  const completed = handoff.checklist.filter(
-                    (e) => e.status === "complete"
-                  ).length;
-                  const total = handoff.checklist.length;
+                  // Compute live from config (3 items) so the list agrees with
+                  // the detail view regardless of stale DB columns or extra stored items.
+                  const liveCompletion = computeHandoffCompletion(handoff.checklist);
+                  const completed = HANDOFF_CHECKLIST.filter((d) => {
+                    const e = handoff.checklist.find((x) => x.id === d.id);
+                    return e?.status === "complete";
+                  }).length;
+                  const total = HANDOFF_CHECKLIST.length;
 
                   return (
                     <tr
@@ -435,11 +441,11 @@ function HandoffListView() {
                             <div
                               className="h-full rounded-full"
                               style={{
-                                width: `${handoff.completionPercentage}%`,
+                                width: `${liveCompletion}%`,
                                 background:
-                                  handoff.completionPercentage === 100
+                                  liveCompletion === 100
                                     ? "#059669"
-                                    : handoff.completionPercentage >= 50
+                                    : liveCompletion >= 50
                                     ? "#3B82F6"
                                     : "#F59E0B",
                               }}
@@ -582,8 +588,10 @@ function HandoffDetailView({
   }
 
   const autoExpand = action === "request-invoice";
-  const contractSignedEntry = handoff.checklist.find((e) => e.id === "contract-signed");
-  const contractSigned = contractSignedEntry?.status === "complete";
+  // Compute readyToSubmit live from the stored checklist so it reflects the
+  // current 3-item config rather than the stale DB column (which may have been
+  // written when 7 items were required).
+  const readyToSubmit = computeReadyToSubmit(handoff.checklist);
 
   const summaryFields = handoff.summaryFields;
 
@@ -662,7 +670,7 @@ function HandoffDetailView({
       <div className="px-6 space-y-5">
         {/* Request Invoice Banner — now wired to real API */}
         <RequestInvoiceBanner
-          contractSigned={contractSigned}
+          readyToSubmit={readyToSubmit}
           autoExpanded={autoExpand}
           contractId={handoff.contractNumber}
           handoffId={handoff.id}
@@ -679,7 +687,7 @@ function HandoffDetailView({
               contractId={handoff.contractId}
               preparedBy={handoff.preparedBy}
               initialSummaryFields={summaryFields}
-              onSubmitted={handleHandoffSubmit}
+              persistedHandoffNumber={handoff.handoffNumber}
             />
           </div>
         </CollapsibleChecklist>

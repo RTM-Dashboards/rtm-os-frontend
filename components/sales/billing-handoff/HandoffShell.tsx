@@ -24,8 +24,10 @@ export interface HandoffShellProps {
   contractId?: string;
   preparedBy?: string;
   initialSummaryFields?: Record<string, string>;
-  /** Optional callback fired when the handoff is successfully submitted. */
-  onSubmitted?: () => void;
+  /** When the shell is embedded inside a detail view, pass the persisted
+   *  handoff number so the shell does not generate a second random one. */
+  persistedHandoffNumber?: string;
+
 }
 
 type ActiveTab = "checklist" | "summary";
@@ -38,12 +40,10 @@ export default function HandoffShell({
   contractId = "",
   preparedBy = "Sales Representative",
   initialSummaryFields,
-  onSubmitted,
+  persistedHandoffNumber,
 }: HandoffShellProps) {
   const [record, setRecord] = useState<HandoffRecord | null>(null);
   const [activeTab, setActiveTab] = useState<ActiveTab>("checklist");
-  const [submitted, setSubmitted] = useState(false);
-
   // Initialize on mount
   useEffect(() => {
     const initial = buildHandoffRecord(
@@ -53,8 +53,13 @@ export default function HandoffShell({
       preparedBy,
       initialSummaryFields
     );
+    // When a persisted handoff number is supplied (embedded detail view),
+    // overwrite the randomly-generated one so the shell matches the page header.
+    if (persistedHandoffNumber) {
+      initial.handoffNumber = persistedHandoffNumber;
+    }
     setRecord(initial);
-  }, [clientName, contractNumber, contractId, preparedBy, initialSummaryFields]);
+  }, [clientName, contractNumber, contractId, preparedBy, initialSummaryFields, persistedHandoffNumber]);
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
@@ -78,21 +83,7 @@ export default function HandoffShell({
     setActiveTab(tab);
   }
 
-  function handleSubmit() {
-    if (!record || !record.readyToSubmit) return;
-    console.log("[HandoffShell] Submitting handoff:", record.handoffNumber, record);
-    setRecord((prev) =>
-      prev
-        ? {
-            ...prev,
-            status: "submitted",
-            submittedAt: new Date().toISOString(),
-          }
-        : prev
-    );
-    setSubmitted(true);
-    onSubmitted?.();
-  }
+
 
   if (!record) {
     return (
@@ -173,19 +164,6 @@ export default function HandoffShell({
           </div>
         </div>
 
-        {/* Submitted confirmation */}
-        {submitted && (
-          <div
-            className="flex items-center gap-3 rounded-lg px-4 py-3 border"
-            style={{ background: "#ECFDF5", borderColor: "#A7F3D0" }}
-          >
-            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: "#059669" }} />
-            <p className="text-xs font-semibold" style={{ color: "#065F46" }}>
-              Handoff {record.handoffNumber} submitted to the Billing team successfully.
-            </p>
-          </div>
-        )}
-
         {/* Two-panel layout */}
         <div className="flex items-start gap-6">
           {/* Main Content */}
@@ -235,7 +213,7 @@ export default function HandoffShell({
 
           {/* Right Panel — Status Bar */}
           <div className="flex-shrink-0" style={{ width: 280 }}>
-            <HandoffStatusBar record={record} onSubmit={handleSubmit} />
+            <HandoffStatusBar record={record} />
           </div>
         </div>
 

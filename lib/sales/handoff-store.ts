@@ -16,7 +16,7 @@
 //   getOrCreateHandoffForContract()  → checks API; creates + persists if missing
 //   updateHandoffInStore()           → persists via PATCH API + updates local snapshot
 
-import { buildHandoffRecord } from "./handoff-engine";
+import { buildHandoffRecord, computeHandoffCompletion } from "./handoff-engine";
 import type { HandoffRecord, HandoffContactFields } from "./handoff-engine";
 import {
   fetchSalesHandoffs,
@@ -130,10 +130,11 @@ export async function updateHandoffInStore(updated: HandoffRecord): Promise<void
 export type HandoffListStatus = "Not Started" | "In Progress" | "Submitted" | "Complete";
 
 export function getHandoffListStatus(record: HandoffRecord): HandoffListStatus {
-  if (record.status === "completed" || record.completionPercentage === 100)
-    return "Complete";
+  // Compute live so the badge matches the detail view regardless of stale DB columns.
+  const liveCompletion = computeHandoffCompletion(record.checklist);
+  if (record.status === "completed" || liveCompletion === 100) return "Complete";
   if (record.status === "submitted" || record.status === "received") return "Submitted";
-  const completed = record.checklist.filter((e) => e.status === "complete").length;
-  if (completed > 0) return "In Progress";
+  // Use config-aware count: only count checklist items the engine recognises.
+  if (liveCompletion > 0) return "In Progress";
   return "Not Started";
 }

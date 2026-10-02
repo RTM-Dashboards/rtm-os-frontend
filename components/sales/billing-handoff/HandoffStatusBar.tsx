@@ -14,12 +14,11 @@ import {
 
 interface HandoffStatusBarProps {
   record: HandoffRecord;
-  onSubmit: () => void;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function HandoffStatusBar({ record, onSubmit }: HandoffStatusBarProps) {
+export default function HandoffStatusBar({ record }: HandoffStatusBarProps) {
   const statusLabel = HANDOFF_STATUS_LABELS[record.status];
   const statusColor = HANDOFF_STATUS_COLORS[record.status];
 
@@ -152,21 +151,6 @@ export default function HandoffStatusBar({ record, onSubmit }: HandoffStatusBarP
             }}
           >
             Save Draft
-          </button>
-
-          <button
-            onClick={onSubmit}
-            disabled={!record.readyToSubmit}
-            className="w-full text-xs font-bold px-3 py-2 rounded-lg border transition-opacity"
-            style={{
-              background: record.readyToSubmit ? "var(--rtm-blue)" : "#E2E8F0",
-              color: record.readyToSubmit ? "#fff" : "#94A3B8",
-              borderColor: record.readyToSubmit ? "var(--rtm-blue)" : "#E2E8F0",
-              cursor: record.readyToSubmit ? "pointer" : "not-allowed",
-              opacity: record.readyToSubmit ? 1 : 0.7,
-            }}
-          >
-            Request Invoice — Submit to Billing Team
           </button>
 
           <Link
