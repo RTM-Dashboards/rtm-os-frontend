@@ -30,6 +30,7 @@ import { SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import { fetchAMClients, markCleared, type BusinessClient } from "@/lib/account-management/am-client-data";
 import { fetchSalesHandoffs, markHandoffProcessed } from "@/lib/sales/sales-handoffs-api";
+import { fetchContractById } from "@/lib/sales/contracts-store";
 import type { HandoffRecord } from "@/lib/sales/handoff-engine";
 import { normalizeDomain } from "@/lib/clients/domain";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
@@ -707,7 +708,26 @@ export default function BillingActivationPage() {
   const refreshHandoffs = useCallback(async () => {
     try {
       const all = await fetchSalesHandoffs();
-      setSalesHandoffs(all);
+      // D3 fallback: a handoff with no domain of its own resolves to its
+      // contract's domain at render time. This is a view-layer enrichment only —
+      // the handoff row in Postgres is NOT written back. The contract link is
+      // contractId (a string id). If the contract cannot be fetched (e.g. seeded
+      // handoffs whose contract no longer exists), the handoff stays domain-less
+      // and Billing's refusal gate fires exactly as today.
+      const enriched = await Promise.all(
+        all.map(async (h) => {
+          if (h.domain) return h; // already has a domain — no lookup needed
+          if (!h.contractId) return h;
+          try {
+            const contract = await fetchContractById(h.contractId);
+            if (contract?.domain) return { ...h, domain: contract.domain };
+          } catch {
+            // Contract not found or fetch failed — leave domain as-is
+          }
+          return h;
+        })
+      );
+      setSalesHandoffs(enriched);
     } catch {
       // No handoffs on failure — panel simply won't render
     }

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getWorkspace } from "@/lib/workspaces";
 import ContractBuilderShell from "@/components/sales/contract-builder/ContractBuilderShell";
 import { getOrCreateHandoffForContract } from "@/lib/sales/handoff-store";
+import { normalizeDomain } from "@/lib/clients/domain";
 import {
   fetchAllContracts,
   hydrateContracts,
@@ -28,6 +29,148 @@ const STATUS_STYLES: Record<
   expired:   { bg: "#F3F4F6", text: "#9CA3AF", border: "#D1D5DB", label: "Expired" },
   cancelled: { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3", label: "Cancelled" },
 };
+
+// ── Add Domain Button ──────────────────────────────────────────────────────────
+// Allows Sales to add a missing domain to a contract.
+//
+// WHY IT'S HERE: Billing requires a domain to create a Business record. A
+// contract with no domain will block the handoff queue with "No domain —
+// cannot process." This field can only be filled when the domain is absent.
+// Once set it is read-only, because Business.domain is globally unique and
+// changing it after a Business is created would orphan records.
+//
+// NORMALISATION: uses normalizeDomain — the same function used everywhere else.
+//
+// VALIDATION — rejected:
+//   • Empty string after trim.
+//   • String longer than 253 characters.
+//   • String containing spaces.
+//   • Anything that, after normalisation, has no dot (e.g. bare "example" or
+//     something that stripped to nothing).
+// VALIDATION — allowed:
+//   • Any string with at least one dot and no spaces after trim (e.g.
+//     "blueridgeplumbing.com", "https://www.example.co.uk/",
+//     "www.company-b.com"). The scheme and www prefix are stripped by
+//     normalizeDomain before saving.
+// An empty save does not clear an existing domain (the button is hidden when
+// domain is already set, and validateDomain rejects an empty string).
+
+function AddDomainButton({
+  contract,
+  onDomainAdded,
+}: {
+  contract: SalesContractRecord;
+  onDomainAdded: (updated: SalesContractRecord) => void;
+}) {
+  const [editing, setEditing]         = React.useState(false);
+  const [input, setInput]             = React.useState("");
+  const [saving, setSaving]           = React.useState(false);
+  const [domainError, setDomainError] = React.useState<string | null>(null);
+
+  function validateDomain(raw: string): string | null {
+    const trimmed = raw.trim();
+    if (!trimmed) return "Domain cannot be empty.";
+    if (trimmed.length > 253) return "Domain is too long (max 253 characters).";
+    if (/\s/.test(trimmed)) return "Domain must not contain spaces.";
+    // After normalising, must contain at least one dot.
+    const normalised = normalizeDomain(trimmed);
+    if (!normalised.includes(".")) {
+      return `"${trimmed}" does not look like a domain. Include the extension, e.g. "blueridgeplumbing.com".`;
+    }
+    return null; // valid
+  }
+
+  async function handleSave() {
+    if (saving) return;
+    const err = validateDomain(input);
+    if (err) { setDomainError(err); return; }
+    setSaving(true);
+    setDomainError(null);
+    try {
+      const normalised = normalizeDomain(input);
+      const updated = await patchContract(contract.id, { domain: normalised });
+      onDomainAdded(updated);
+      setEditing(false);
+      setInput("");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setDomainError(`Could not save domain: ${msg}`);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <button
+          onClick={() => setEditing(true)}
+          className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90"
+          style={{ background: "#7C3AED", color: "#fff", borderColor: "#6D28D9" }}
+        >
+          Add Domain
+        </button>
+        <span className="text-[10px]" style={{ color: "#7C3AED" }}>
+          Required — Billing cannot create a Business without it.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <p className="text-[10px] font-semibold" style={{ color: "#7C3AED" }}>
+        Billing cannot process this handoff without a domain. Enter the
+        client&apos;s website domain (e.g. &ldquo;blueridgeplumbing.com&rdquo;).
+        Do not invent one.
+      </p>
+      <div className="flex gap-1.5 items-center flex-wrap">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => { setInput(e.target.value); setDomainError(null); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void handleSave();
+            if (e.key === "Escape") { setEditing(false); setInput(""); setDomainError(null); }
+          }}
+          placeholder="blueridgeplumbing.com"
+          autoFocus
+          className="text-xs px-2 py-1 rounded border font-mono"
+          style={{
+            borderColor: domainError ? "#DC2626" : "#A78BFA",
+            outline: "none",
+            minWidth: 200,
+          }}
+        />
+        <button
+          onClick={() => void handleSave()}
+          disabled={saving}
+          className="text-xs font-bold px-3 py-1.5 rounded-lg border transition-all hover:opacity-90 disabled:opacity-60"
+          style={{ background: "#7C3AED", color: "#fff", borderColor: "#6D28D9" }}
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button
+          onClick={() => { setEditing(false); setInput(""); setDomainError(null); }}
+          disabled={saving}
+          className="text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all hover:opacity-80 disabled:opacity-60"
+          style={{
+            background: "var(--rtm-surface)",
+            color: "var(--rtm-text-muted)",
+            borderColor: "var(--rtm-border)",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+      {domainError && (
+        <span className="text-xs font-medium" style={{ color: "#DC2626" }}>
+          {domainError}
+        </span>
+      )}
+    </div>
+  );
+}
 
 // ── Mark as Signed Button ────────────────────────────────────────────────────
 // Records that a client signature was collected in PandaDoc.
@@ -325,6 +468,19 @@ function ContractDetailPanel({
               : "Net 30"}
           </p>
         </div>
+        {/* Domain — critical for Billing to create a Business record */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Domain
+          </p>
+          {contract.domain ? (
+            <p className="text-xs font-mono font-semibold" style={{ color: "#065F46" }}>
+              {contract.domain}
+            </p>
+          ) : (
+            <AddDomainButton contract={contract} onDomainAdded={onUpdate} />
+          )}
+        </div>
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
             Assigned Rep
@@ -457,6 +613,11 @@ export default function SalesContractsPage() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  function handleContractUpdate(updated: SalesContractRecord) {
+    setContracts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    setSelectedContract((sel) => (sel?.id === updated.id ? updated : sel));
+  }
 
   return (
     <div className="flex flex-col gap-6 h-full">
@@ -610,7 +771,7 @@ export default function SalesContractsPage() {
           <div className="overflow-x-auto">
             <table
               className="w-full text-xs"
-              style={{ borderCollapse: "collapse", minWidth: "800px" }}
+              style={{ borderCollapse: "collapse", minWidth: "900px" }}
             >
               <thead>
                 <tr
@@ -622,6 +783,7 @@ export default function SalesContractsPage() {
                   {[
                     "Contract #",
                     "Client",
+                    "Domain",
                     "Services",
                     "Monthly Value",
                     "Term",
@@ -667,6 +829,22 @@ export default function SalesContractsPage() {
                         style={{ color: "var(--rtm-text-primary)" }}
                       >
                         {contract.clientName}
+                      </td>
+                      {/* Domain column — shows value or an inline Add button */}
+                      <td className="px-4 py-3">
+                        {contract.domain ? (
+                          <span
+                            className="font-mono text-xs font-semibold"
+                            style={{ color: "#065F46" }}
+                          >
+                            {contract.domain}
+                          </span>
+                        ) : (
+                          <AddDomainButton
+                            contract={contract}
+                            onDomainAdded={handleContractUpdate}
+                          />
+                        )}
                       </td>
                       <td
                         className="px-4 py-3"
@@ -725,11 +903,7 @@ export default function SalesContractsPage() {
                             {(contract.status === "draft" || contract.status === "sent") && (
                               <MarkAsSignedButton
                                 contract={contract}
-                                onSigned={(updated) =>
-                                  setContracts((prev) =>
-                                    prev.map((c) => (c.id === updated.id ? updated : c))
-                                  )
-                                }
+                                onSigned={handleContractUpdate}
                               />
                             )}
                             {contract.status === "signed" && (
@@ -770,12 +944,7 @@ export default function SalesContractsPage() {
         <div className="mx-1">
           <ContractDetailPanel
             contract={selectedContract}
-            onUpdate={(updated) => {
-              setContracts((prev) =>
-                prev.map((c) => (c.id === updated.id ? updated : c))
-              );
-              setSelectedContract(updated);
-            }}
+            onUpdate={handleContractUpdate}
             onClose={() => setSelectedContract(null)}
           />
         </div>
