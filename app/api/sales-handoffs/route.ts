@@ -70,6 +70,8 @@ export interface HandoffRecord {
   setupFeeCents?: number | null;
   paymentTerms?: string | null;
   termLengthMonths?: number | null;
+  /** Agreed per-service line items copied from the contract at handoff creation. */
+  lineItems?: unknown[];
 }
 
 // ── DB row ↔ HandoffRecord ─────────────────────────────────────────────────────
@@ -106,6 +108,7 @@ function rowToRecord(row: HandoffRow): HandoffRecord {
     setupFeeCents:        row.setupFeeCents ?? null,
     paymentTerms:         row.paymentTerms ?? null,
     termLengthMonths:     row.termLengthMonths ?? null,
+    lineItems:            Array.isArray(row.lineItems) ? row.lineItems : [],
   };
 }
 
@@ -197,6 +200,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // from monthly * termMonths + setup); fall back to the summaryFields parse of
     // "contract-amount" when the record doesn't carry it directly.
     contractAmountCents:  record.contractAmountCents  ?? billing.contractAmountCents ?? null,
+    lineItems:            Array.isArray(record.lineItems) ? record.lineItems as Prisma.InputJsonValue : ([] as unknown as Prisma.InputJsonValue),
   };
 
   try {
@@ -263,6 +267,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (patch.contactEmail         !== undefined) data.contactEmail         = patch.contactEmail;
     if (patch.contactPhone         !== undefined) data.contactPhone         = patch.contactPhone;
     if (patch.contractAmountCents  !== undefined) data.contractAmountCents  = patch.contractAmountCents;
+    if (patch.lineItems            !== undefined) data.lineItems            = patch.lineItems as Prisma.InputJsonValue;
 
     // When summaryFields is patched, re-parse the billing columns from the
     // merged summaryFields (existing + patch) so they stay in sync.

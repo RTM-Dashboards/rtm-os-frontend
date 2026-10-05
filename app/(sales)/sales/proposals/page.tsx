@@ -8,6 +8,7 @@ import {
   createContract,
   fetchContractByProposalId,
 } from "@/lib/sales/contracts-store";
+import type { BudgetLineItem } from "@/lib/sales/budget-engine";
 import dynamic from "next/dynamic";
 const ProposalWizard = dynamic(
   () => import("@/components/sales/proposal-wizard/ProposalWizard").then(m => ({ default: m.ProposalWizard })),
@@ -106,6 +107,12 @@ interface Proposal {
   owner: string;
   services: ServiceCategory[];
   lineItems: LineItem[];
+  /**
+   * Agreed per-service line items from the Budget Optimizer, in BudgetLineItem shape.
+   * Populated for wizard-created (API-backed) proposals; absent for mock proposals.
+   * Carried into the contract at creation time.
+   */
+  budgetLineItems?: BudgetLineItem[];
   setupTotal: number;
   recurringTotal: number;
   totalValue: number;
@@ -716,7 +723,10 @@ function GenerateContractButton({
       // Check if a contract already exists for this proposal
       const existing = await fetchContractByProposalId(proposal.id);
       if (!existing) {
-        // Build from proposal data and persist
+        // Build from proposal data and persist.
+        // Pass budgetLineItems (present on API-backed proposals) so agreed prices
+        // carry from proposal → contract. Mock proposals have none and produce an
+        // empty array, which is correct — they have no real agreed prices.
         const record = buildContractFromProposal({
           id: proposal.id,
           clientInfo: {
@@ -727,6 +737,7 @@ function GenerateContractButton({
             contactPhone: "",
           },
           approvedRecommendationServiceNames: proposal.services as string[],
+          lineItems: proposal.budgetLineItems ?? [],
           recurringTotal: proposal.recurringTotal,
           budgetResult: {
             totalMonthly: proposal.recurringTotal,
@@ -2434,7 +2445,16 @@ function apiRecordToProposal(r: SalesProposalApiRecord): Proposal {
     grandTotalMonthly?: number;
     totalSetupFees?: number;
     totalOneTimeProjects?: number;
+    lineItems?: BudgetLineItem[];
   } | null;
+
+  // Carry agreed BudgetLineItem[] from budgetResult; these are the prices the client agreed to.
+  // budgetResult.lineItems is authoritative because it is what the Budget Optimizer wrote.
+  // r.lineItems (the top-level column) carries the same data; budgetResult.lineItems is preferred
+  // because it is always in the right shape when the wizard completed.
+  const budgetLineItems: BudgetLineItem[] = Array.isArray(budgetResult?.lineItems)
+    ? (budgetResult!.lineItems as BudgetLineItem[])
+    : [];
 
   const lineItemsRaw = (r.lineItems ?? []) as Array<{
     setupFee?: number;
@@ -2529,6 +2549,7 @@ function apiRecordToProposal(r: SalesProposalApiRecord): Proposal {
       { date: createdDate, event: "Proposal created via wizard", user: r.clientInfo?.contactName || "—" },
       ...(r.sentAt ? [{ date: new Date(r.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), event: "Proposal sent to client", user: r.clientInfo?.contactName || "—" }] : []),
     ],
+    budgetLineItems,
   };
 }
 

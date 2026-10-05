@@ -866,6 +866,11 @@ model SalesHandoff {
   // Null when either monthly or term is unknown.
   contractAmountCents   Int?
 
+  // Agreed per-service line items copied from the contract at handoff creation.
+  // Empty array for handoffs created before this migration.
+  // Schema: BudgetLineItem[] — see lib/sales/budget-engine.ts.
+  lineItems             Json     @default("[]")
+
   // Billing queue filters: submittedToBilling, processed
   @@index([submittedToBilling])
   @@index([processed])
@@ -1205,6 +1210,12 @@ model Contract {
 
   // (monthly * termMonths + setup) in cents. Null when either is unknown.
   contractAmountCents Int?
+
+  // Agreed per-service line items copied from the proposal's BudgetLineItem[]
+  // at contract creation time. Empty array for contracts without a proposal
+  // (e.g. seeded records) or proposals that pre-date this migration.
+  // Schema: BudgetLineItem[] — see lib/sales/budget-engine.ts.
+  lineItems           Json     @default("[]")
 
   signedDate          String?
   createdAt           String   @default("")

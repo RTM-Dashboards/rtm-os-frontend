@@ -8,6 +8,7 @@ import {
   HandoffChecklistItemStatus,
   HandoffActivationStatus,
 } from "./handoff-config";
+import type { BudgetLineItem } from "./budget-engine";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,12 @@ export interface HandoffRecord {
   paymentTerms?: string | null;
   /** Contract term length in months. */
   termLengthMonths?: number | null;
+  /**
+   * Agreed per-service line items copied from the contract at handoff creation.
+   * Empty array for handoffs created before this feature or from contracts without
+   * a proposal (e.g. seeded records).
+   */
+  lineItems?: BudgetLineItem[];
 }
 
 // ─── Handoff Number Generator ─────────────────────────────────────────────────
@@ -81,6 +88,8 @@ export interface HandoffContactFields {
   contactEmail?: string | null;
   contactPhone?: string | null;
   contractAmountCents?: number | null;
+  /** Agreed per-service line items carried from the contract. */
+  lineItems?: BudgetLineItem[];
 }
 
 export function buildHandoffRecord(
@@ -142,7 +151,10 @@ export function buildHandoffRecord(
       contactEmail:         contactFields.contactEmail         ?? null,
       contactPhone:         contactFields.contactPhone         ?? null,
       contractAmountCents:  contactFields.contractAmountCents  ?? null,
-    } : {}),
+      lineItems:            Array.isArray(contactFields.lineItems) ? contactFields.lineItems : [],
+    } : {
+      lineItems: [],
+    }),
   };
 }
 

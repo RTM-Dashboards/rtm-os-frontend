@@ -314,13 +314,14 @@ function RequestInvoiceButton({
         contract.contractNumber,
         contract.assignedRep,
         summaryFields,
-        // Contact and domain fields carried from the contract
+        // Contact, domain, and line item fields carried from the contract
         {
           domain:               contract.domain ?? null,
           contactName:          contract.contactName || null,
           contactEmail:         contract.contactEmail || null,
           contactPhone:         contract.contactPhone || null,
           contractAmountCents:  contract.contractAmountCents ?? null,
+          lineItems:            Array.isArray(contract.lineItems) ? contract.lineItems : [],
         }
       );
       router.push(`/sales/handoffs?handoffId=${handoff.id}&action=request-invoice`);
@@ -537,6 +538,54 @@ function ContractDetailPanel({
           >
             {contract.investmentSummary}
           </pre>
+        </div>
+      )}
+
+      {/* Per-service line items — only shown when the contract carries them */}
+      {Array.isArray(contract.lineItems) && contract.lineItems.length > 0 && (
+        <div className="px-5 py-3 border-b" style={{ borderColor: "var(--rtm-border)" }}>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "var(--rtm-text-muted)" }}>
+            Agreed Line Items
+          </p>
+          <div className="flex flex-col gap-1">
+            {(contract.lineItems as Array<{
+              label: string;
+              quantity: number;
+              unitMonthlyPrice: number;
+              setupFee: number;
+              monthlySubtotal: number;
+              setupSubtotal: number;
+              isRecurring: boolean;
+            }>).map((li, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between py-1 border-b last:border-b-0"
+                style={{ borderColor: "var(--rtm-border)" }}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold truncate" style={{ color: "var(--rtm-text-primary)" }}>
+                    {li.label}
+                  </p>
+                  <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+                    {li.isRecurring ? "Recurring" : "One-time"}
+                    {li.quantity > 1 ? ` × ${li.quantity}` : ""}
+                  </p>
+                </div>
+                <div className="text-right ml-3 shrink-0">
+                  {li.monthlySubtotal > 0 && (
+                    <p className="text-xs font-semibold" style={{ color: "#059669" }}>
+                      ${li.monthlySubtotal.toLocaleString()}/mo
+                    </p>
+                  )}
+                  {li.setupFee > 0 && (
+                    <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+                      +${li.setupFee.toLocaleString()} setup
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

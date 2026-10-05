@@ -19,6 +19,7 @@
 
 import type { SalesContractRecord, SalesContractStatus } from "@/app/api/sales-contracts/route";
 import { normalizeDomain } from "@/lib/clients/domain";
+import type { BudgetLineItem } from "@/lib/sales/budget-engine";
 
 export type { SalesContractRecord, SalesContractStatus };
 
@@ -74,7 +75,8 @@ export interface ProposalForContract {
     contactPhone: string;
   };
   approvedRecommendationServiceNames: string[];
-  lineItems?: unknown[];
+  /** Agreed per-service line items from the Budget Optimizer. Carry as-is; do not re-derive. */
+  lineItems?: BudgetLineItem[];
   budgetResult?: { totalMonthly?: number; totalSetup?: number } | null;
   intakeRecord?: {
     assignedRep?: string;
@@ -159,6 +161,10 @@ export function buildContractFromProposal(
   const rawWebsite = proposal.clientInfo?.website ?? "";
   const domain = rawWebsite.trim() !== "" ? normalizeDomain(rawWebsite) : null;
 
+  // Line items — agreed prices from the Budget Optimizer, carried as-is.
+  // Must not be re-derived from the catalogue: these are the prices the client agreed to.
+  const lineItems: BudgetLineItem[] = Array.isArray(proposal.lineItems) ? proposal.lineItems : [];
+
   // Setup fee — raw dollar amount from budgetResult.totalSetup
   // Null (not 0) when the proposal does not carry a setup figure, so that
   // Billing can distinguish "no setup fee" from "setup fee unknown".
@@ -210,6 +216,7 @@ export function buildContractFromProposal(
     domain,
     setupFee,
     contractAmountCents,
+    lineItems,
     signedDate: null,
     createdAt: now,
     updatedAt: now,

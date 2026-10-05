@@ -36,7 +36,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { Prisma } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
+import type { BudgetLineItem } from "@/lib/sales/budget-engine";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -81,6 +83,11 @@ export interface SalesContractRecord {
   setupFee: number | null;
   /** Total contract value in cents: (monthly * termMonths) + setup. Null when either is unknown. */
   contractAmountCents: number | null;
+  /**
+   * Agreed per-service line items from the originating proposal's BudgetLineItem[].
+   * Empty array for contracts created from proposals without line items.
+   */
+  lineItems: BudgetLineItem[];
   /** ISO string or null */
   signedDate: string | null;
   createdAt: string;
@@ -134,6 +141,7 @@ function rowToRecord(row: {
   domain: string | null;
   setupFee: number | null;
   contractAmountCents: number | null;
+  lineItems: unknown;
   signedDate: string | null;
   createdAt: string;
   updatedAt: string;
@@ -159,6 +167,7 @@ function rowToRecord(row: {
     domain:              row.domain,
     setupFee:            row.setupFee,
     contractAmountCents: row.contractAmountCents,
+    lineItems:           Array.isArray(row.lineItems) ? (row.lineItems as BudgetLineItem[]) : [],
     signedDate:          row.signedDate,
     createdAt:           row.createdAt,
     updatedAt:           row.updatedAt,
@@ -243,6 +252,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     domain:              incoming.domain              ?? null,
     setupFee:            incoming.setupFee            ?? null,
     contractAmountCents: incoming.contractAmountCents ?? null,
+    lineItems:           (Array.isArray(incoming.lineItems) ? incoming.lineItems : []) as unknown as Prisma.InputJsonValue,
     signedDate:          incoming.signedDate          ?? null,
     updatedAt:           now,
   };
