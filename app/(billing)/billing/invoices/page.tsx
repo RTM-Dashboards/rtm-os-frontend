@@ -905,6 +905,29 @@ function InvoiceDetailDrawer({ invoice, onClose, billingUsers }: { invoice: Invo
             </div>
           )}
 
+          {/* ── Invoice Document link ───────────────────────────────────────
+              Opens the printable HTML document in a new tab.
+              The document route gates at Manager; anyone who reached this
+              drawer is at least a Billing Manager, so the link always shows.
+              The route enforces auth independently.
+           ──────────────────────────────────────────────────── */}
+          <div className="rounded-xl border p-4" style={{ borderColor: "#E2E8F0", background: "#F8FAFC" }}>
+            <p className="text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: "#64748B" }}>Invoice Document</p>
+            <p className="text-xs mb-3" style={{ color: "#94A3B8" }}>Printable client-facing document. Opens in a new tab.</p>
+            <a
+              href={`/api/invoices/${invoice.id}/document`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-md border"
+              style={{ background: "#EFF6FF", borderColor: "#BFDBFE", color: "#1D4ED8", textDecoration: "none" }}
+            >
+              <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Open Invoice Document
+            </a>
+          </div>
+
           {/* ── Stripe Connection (groundwork — not yet live) ──────────────────────
               FUTURE LIVE INTEGRATION HOOK (Invoice Drawer):
               When Stripe is connected at launch:
@@ -1925,6 +1948,13 @@ export default function BillingInvoicesPage() {
         label: "View Invoice",
         primary: true,
         onClick: () => { setDrawerInvoice(inv); log(`Viewing ${inv.invoiceNumber}`); },
+      },
+      {
+        label: "Open Invoice Document ↗",
+        onClick: () => {
+          window.open(`/api/invoices/${inv.id}/document`, "_blank", "noopener,noreferrer");
+          log(`Opened document for ${inv.invoiceNumber}`);
+        },
       },
       {
         // C4: Renamed from "Send Invoice" — no email is sent; status only.

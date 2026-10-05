@@ -207,3 +207,64 @@ export function requireRole(user: AuthUser, minimum: UserRole): AuthDenied | nul
   }
   return null;
 }
+
+// ── requireDepartment ─────────────────────────────────────────────────────────
+//
+// Department-aware gate. Passes when the user meets EITHER condition:
+//   A. userRank >= ROLE_RANK["Executive"] (Executive or SystemAdmin)
+//   B. user.department === department AND userRank >= ROLE_RANK[minimumRole]
+//
+// Designed for operations that belong to one department but must also be
+// reachable by Executives and SystemAdmins regardless of their department.
+//
+// Example: requireDepartment(user, "Billing", "Manager")
+//   fe@    SystemAdmin, no dept          → passes (condition A)
+//   cath@  Billing Manager               → passes (A and B)
+//   rhea@  Billing Member                → denied (B fails: Member < Manager)
+//   justin@ Sales Manager               → denied (B fails: wrong department)
+//   melissa@ Account Management Manager → denied (B fails: wrong department)
+//
+// ── User with no department ───────────────────────────────────────────────────
+//   A user with department === null never matches condition B regardless of role.
+//   They are admitted only through condition A (Executive or SystemAdmin).
+//   A Manager with no department is therefore denied — they need a department
+//   set before they can access department-scoped resources.
+//
+// ── Do not change requireRole ─────────────────────────────────────────────────
+//   requireRole is rank-only and is used in many existing routes.
+//   requireDepartment is a separate gate for department-scoped surfaces.
+
+import type { Department } from "@/lib/auth/vocab";
+
+export function requireDepartment(
+  user:        AuthUser,
+  department:  Department,
+  minimumRole: UserRole,
+): AuthDenied | null {
+  const userRank     = ROLE_RANK[user.role] ?? 0;
+  const executiveRank = ROLE_RANK["Executive"];
+
+  // Condition A: Executive and above pass regardless of department.
+  if (userRank >= executiveRank) {
+    return null;
+  }
+
+  // Condition B: must be in the right department AND meet the minimum role.
+  const minimumRank = ROLE_RANK[minimumRole] ?? 0;
+
+  if (user.department !== department) {
+    return {
+      error:  `This resource is restricted to the ${department} department. Your department: ${user.department ?? "none"}.`,
+      status: 403,
+    };
+  }
+
+  if (userRank < minimumRank) {
+    return {
+      error:  `Requires ${minimumRole} or higher within ${department}. Your role: ${user.role}.`,
+      status: 403,
+    };
+  }
+
+  return null;
+}

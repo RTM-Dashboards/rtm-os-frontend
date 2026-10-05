@@ -13,6 +13,8 @@
 //   SalesHandoff — paymentTerms (via invoice.salesHandoffId)
 //   company_config — RTM's legal name, address, phone, supportEmail, logoUrl,
 //                    taxExemptionText, refundFooter
+//   bank_details — accountHolder, bankName, routingNumber, accountNumber,
+//                  swiftCode (rendered as a second-page transfer block)
 //
 // PAYMENT TERMS DECISION:
 //   Payment terms live on SalesHandoff and Contract, NOT on Invoice.
@@ -33,6 +35,11 @@
 //   operations in this codebase (POST and PATCH are also Manager).
 //   A Member can see invoice status in lists; they should not produce
 //   a renderable client document.
+//
+// BANK TRANSFER BLOCK:
+//   The second page of the invoice shows RTM's wire transfer details when
+//   bank_details has a row. When no row exists, or all fields are empty,
+//   the block is omitted entirely. The reference line uses the invoice number.
 //
 // PRINT LAYOUT:
 //   @media print rules suppress the browser chrome and set A4 margins.
@@ -139,6 +146,14 @@ function renderAddress(addr: MasterAddress | null | undefined): string {
 
 // ── HTML builder ──────────────────────────────────────────────────────────────
 
+interface BankDetails {
+  accountHolder: string;
+  bankName:      string;
+  routingNumber: string;
+  accountNumber: string;
+  swiftCode:     string;
+}
+
 interface InvoiceDocData {
   invoice: {
     id:                  string;
@@ -177,10 +192,11 @@ interface InvoiceDocData {
     defaultPaymentTerms: string;
   };
   paymentTerms: string | null;
+  bankDetails:  BankDetails | null;
 }
 
 function buildHtml(data: InvoiceDocData): string {
-  const { invoice, client, business, config, paymentTerms } = data;
+  const { invoice, client, business, config, paymentTerms, bankDetails } = data;
 
   const invoiceNumber  = esc(invoice.invoiceNumber);
   const issueDate      = fmtDate(invoice.createdAt) ?? "";
@@ -314,6 +330,55 @@ function buildHtml(data: InvoiceDocData): string {
   const billToEmailLine    = billToEmail  ? `<p class="bill-contact">${billToEmail}</p>` : "";
   const billToPhoneLine    = billToPhone  ? `<p class="bill-contact">${billToPhone}</p>` : "";
   const billToAddrSection  = billToAddr   ? `<div class="bill-addr">${billToAddr}</div>` : "";
+
+  // Transfer block (second page): rendered when bank details exist and any field is non-empty.
+  const hasBankDetails = !!(bankDetails && (
+    bankDetails.accountHolder.trim() ||
+    bankDetails.bankName.trim()      ||
+    bankDetails.routingNumber.trim() ||
+    bankDetails.accountNumber.trim() ||
+    bankDetails.swiftCode.trim()
+  ));
+
+  const transferBlock = hasBankDetails ? `
+    <div class="transfer-section" style="page-break-before: always;">
+      <h2 class="transfer-title">Wire Transfer Details</h2>
+      <p class="transfer-note">
+        To pay by bank transfer, use the details below. Include the invoice number as the reference.
+      </p>
+      <table class="transfer-table">
+        <tbody>
+          <tr>
+            <td class="transfer-label">Account Holder</td>
+            <td class="transfer-val">${esc(bankDetails!.accountHolder)}</td>
+          </tr>
+          <tr>
+            <td class="transfer-label">Bank Name</td>
+            <td class="transfer-val">${esc(bankDetails!.bankName)}</td>
+          </tr>
+          <tr>
+            <td class="transfer-label">Routing Number</td>
+            <td class="transfer-val">${esc(bankDetails!.routingNumber)}</td>
+          </tr>
+          <tr>
+            <td class="transfer-label">Account Number</td>
+            <td class="transfer-val">${esc(bankDetails!.accountNumber)}</td>
+          </tr>
+          <tr>
+            <td class="transfer-label">SWIFT Code</td>
+            <td class="transfer-val">${esc(bankDetails!.swiftCode)}</td>
+          </tr>
+          <tr class="transfer-ref-row">
+            <td class="transfer-label">Reference</td>
+            <td class="transfer-val transfer-ref-val">${invoiceNumber}</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="transfer-footer">
+        Please include <strong>${invoiceNumber}</strong> as the payment reference so we can
+        match your transfer. Questions? Contact us at <strong>${rtmEmail}</strong>.
+      </p>
+    </div>` : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -646,6 +711,66 @@ function buildHtml(data: InvoiceDocData): string {
       letter-spacing: 0.2px;
     }
     .print-btn:hover { background: #1e40af; }
+
+    /* ── Transfer block ─────────────────────────────────────────────────── */
+    .transfer-section {
+      margin-top: 48px;
+      padding-top: 32px;
+      border-top: 2px solid #e5e7eb;
+    }
+    .transfer-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 8px;
+    }
+    .transfer-note {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+    .transfer-table {
+      width: 100%;
+      max-width: 480px;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    .transfer-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #6b7280;
+      padding: 8px 0;
+      width: 40%;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: top;
+    }
+    .transfer-val {
+      font-size: 13px;
+      color: #1a1a1a;
+      padding: 8px 0 8px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      font-variant-numeric: tabular-nums;
+    }
+    .transfer-ref-row .transfer-label,
+    .transfer-ref-row .transfer-val {
+      border-bottom: none;
+      padding-top: 14px;
+      font-weight: 700;
+    }
+    .transfer-ref-val {
+      color: #1d4ed8;
+      font-weight: 700;
+    }
+    .transfer-footer {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.6;
+      border-top: 1px solid #f3f4f6;
+      padding-top: 12px;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -739,6 +864,9 @@ function buildHtml(data: InvoiceDocData): string {
       </p>
       ${refundFooter ? `<p class="footer-refund">${refundFooter}</p>` : ""}
     </div>
+
+    <!-- Wire transfer block (second page, omitted when no bank details) -->
+    ${transferBlock}
 
   </div>
 </body>
@@ -837,6 +965,26 @@ export async function GET(
     }
   }
 
+  // ── Fetch bank details ──────────────────────────────────────────────────────
+  // Best-effort: if the row is absent or the fetch fails, the transfer block
+  // is omitted and the rest of the document still renders.
+  // Account number is NOT logged or interpolated into any error string.
+  let bankDetailsData: BankDetails | null = null;
+  try {
+    const bdRow = await prisma.bankDetails.findUnique({ where: { id: 1 } });
+    if (bdRow) {
+      bankDetailsData = {
+        accountHolder: bdRow.accountHolder,
+        bankName:      bdRow.bankName,
+        routingNumber: bdRow.routingNumber,
+        accountNumber: bdRow.accountNumber,
+        swiftCode:     bdRow.swiftCode,
+      };
+    }
+  } catch {
+    // best-effort: render without transfer block
+  }
+
   // ── Build and return HTML ─────────────────────────────────────────────────
   const html = buildHtml({
     invoice: {
@@ -871,6 +1019,7 @@ export async function GET(
       : null,
     config,
     paymentTerms,
+    bankDetails: bankDetailsData,
   });
 
   return new NextResponse(html, {

@@ -1224,6 +1224,32 @@ model CompanyConfig {
   @@map("company_config")
 }
 
+// ── BankDetails ──────────────────────────────────────────────────────────────
+// RTM's wire-transfer banking details for the second page of invoices.
+// Singleton row (id = 1), enforced by a CHECK constraint in the migration.
+//
+// Gate: Billing Manager or higher within Billing, plus Executives and
+// SystemAdmins (via requireDepartment in lib/auth). Company identity fields
+// (legalName, address) live in company_config which is gated at Executive;
+// bank details are separate because Cath (Billing Manager) maintains them,
+// not Executives.
+//
+// The reference field on a wire transfer is the invoice number and is NOT
+// stored here — it is injected per-invoice at document-render time.
+
+model BankDetails {
+  id            Int    @id @default(1)
+  accountHolder String @default("") @map("account_holder")
+  bankName      String @default("") @map("bank_name")
+  routingNumber String @default("") @map("routing_number")
+  accountNumber String @default("") @map("account_number")
+  swiftCode     String @default("") @map("swift_code")
+  createdAt     String @default("") @map("created_at")
+  updatedAt     String @default("") @map("updated_at")
+
+  @@map("bank_details")
+}
+
 model CollectionLog {
   // Auto-incremented surrogate key; no business meaning.
   id          Int      @id @default(autoincrement())
