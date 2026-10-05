@@ -19,6 +19,7 @@
 // A missing record returns { error: string } with HTTP 404.
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 
@@ -58,6 +59,9 @@ function rowToRecord(row: ProjectRow): ProjectRecord {
 // ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus ?? 401 });
+
   const { searchParams } = new URL(req.url);
   const id         = searchParams.get("id");
   const businessId = searchParams.get("businessId");
@@ -103,6 +107,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // Upsert by id.
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus ?? 401 });
+
   let body: unknown;
   try {
     body = await req.json();
@@ -169,6 +176,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // ── DELETE ────────────────────────────────────────────────────────────────────
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const { error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus ?? 401 });
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 

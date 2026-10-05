@@ -22,6 +22,7 @@ export const workspaces: WorkspaceConfig[] = [
       { label: "Dashboard",               href: "/account-management"},
       { label: "Onboarding Queue",        href: "/account-management/onboarding"},
       { label: "Projects",               href: "/account-management/projects"},
+      { label: "Project List",             href: "/projects/view"},
       { label: "My Tasks",                href: "/account-management/tasks"},
       { label: "Client Portfolio",        href: "/account-management/client-portfolio"},
       { label: "Client Health",           href: "/account-management/client-health"},
