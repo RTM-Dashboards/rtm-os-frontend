@@ -148,6 +148,7 @@ function UserRow({ user, viewerRole, viewerDept, viewerId, onSaved }: UserRowPro
   const [localRole, setLocalRole]   = useState(user.role ?? "");
   const [localStatus, setLocalStatus] = useState(user.status);
   const [localDept, setLocalDept]   = useState(user.department ?? "");
+  const [localIsMain, setLocalIsMain] = useState<boolean | null>(user.isMain ?? null);
   const [saving, setSaving]         = useState(false);
   const [success, setSuccess]       = useState<string | null>(null);
   const [apiError, setApiError]     = useState<string | null>(null);
@@ -157,6 +158,7 @@ function UserRow({ user, viewerRole, viewerDept, viewerId, onSaved }: UserRowPro
     setLocalRole(user.role ?? "");
     setLocalStatus(user.status);
     setLocalDept(user.department ?? "");
+    setLocalIsMain(user.isMain ?? null);
     setSuccess(null);
     setApiError(null);
   }, [user]);
@@ -168,10 +170,11 @@ function UserRow({ user, viewerRole, viewerDept, viewerId, onSaved }: UserRowPro
 
     const effectiveDept = deptOverride !== undefined ? deptOverride : localDept;
 
-    const patch: Record<string, string> = {};
+    const patch: Record<string, string | boolean> = {};
     if (localRole !== (user.role ?? ""))           patch.role       = localRole;
     if (localStatus !== user.status)               patch.status     = localStatus;
     if (effectiveDept !== (user.department ?? "")) patch.department = effectiveDept;
+    if (localIsMain !== (user.isMain ?? null))     patch.isMain     = localIsMain ?? false;
 
     if (Object.keys(patch).length === 0) {
       setSaving(false);
@@ -197,7 +200,7 @@ function UserRow({ user, viewerRole, viewerDept, viewerId, onSaved }: UserRowPro
     } finally {
       setSaving(false);
     }
-  }, [user, localRole, localStatus, localDept, onSaved]);
+  }, [user, localRole, localStatus, localDept, localIsMain, onSaved]);
 
   // Determine what controls are visible for this viewer+row combination.
   const showRoleSelect   = !isOwnRow && (isSA || isExec || isManager);
@@ -205,6 +208,11 @@ function UserRow({ user, viewerRole, viewerDept, viewerId, onSaved }: UserRowPro
   // Department select: SA/Exec always; Manager never (would always fail or is
   // a claim — handled via the fixed department logic for unassigned users).
   const showDeptSelect   = !isOwnRow && (isSA || isExec);
+  // isMain: visible only to SA/Exec, only when not own row.
+  // Shown for all departments (the toggle has no effect outside Account Management
+  // at present, but the field is schema-level optional everywhere).
+  // A badge note clarifies when the user is not in Account Management.
+  const showIsMain       = !isOwnRow && (isSA || isExec);
 
   // For Managers, role options are restricted to Member only.
   const roleOptions = isManager
@@ -252,6 +260,18 @@ function UserRow({ user, viewerRole, viewerDept, viewerId, onSaved }: UserRowPro
         <div className="flex flex-wrap gap-1.5 items-center flex-shrink-0">
           <RoleBadge role={user.role} />
           <StatusBadge status={user.status} />
+          {user.department === "Account Management" && user.isMain !== null && (
+            <span
+              className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+              style={{
+                background: user.isMain ? "#EFF6FF" : "#F9FAFB",
+                color:      user.isMain ? "#1D4ED8" : "#6B7280",
+                border:     `1px solid ${user.isMain ? "#BFDBFE" : "#E5E7EB"}`,
+              }}
+            >
+              {user.isMain ? "Main AM" : "AM Support"}
+            </span>
+          )}
         </div>
       </div>
 
@@ -338,6 +358,42 @@ function UserRow({ user, viewerRole, viewerDept, viewerId, onSaved }: UserRowPro
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* isMain toggle — Executive and SystemAdmin only */}
+          {showIsMain && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wide"
+                style={{ color: "var(--rtm-text-muted)" }}>
+                Main flag
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLocalIsMain((v) => !(v ?? false))}
+                  disabled={saving}
+                  className="relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50"
+                  style={{
+                    background: localIsMain ? "#1B4FD8" : "var(--rtm-border)",
+                  }}
+                  title={localIsMain ? "Main — click to clear" : "Not main — click to set"}
+                >
+                  <span
+                    className="inline-block w-3.5 h-3.5 rounded-full bg-white shadow transition-transform"
+                    style={{ transform: localIsMain ? "translateX(18px)" : "translateX(3px)" }}
+                  />
+                </button>
+                <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+                  {localIsMain ? "Main" : "Support"}
+                  {user.department !== "Account Management" && (
+                    <span
+                      className="ml-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold"
+                      style={{ background: "#F3F4F6", color: "#6B7280", border: "1px solid #E5E7EB" }}
+                    >AM only</span>
+                  )}
+                </span>
+              </div>
             </div>
           )}
 

@@ -35,6 +35,7 @@ export interface UserRecord {
   lastLoginAt: string | null;
   roleSetBy:   string | null;
   roleSetAt:   string | null;
+  isMain:      boolean | null;
 }
 
 // ── Base fetch helper ─────────────────────────────────────────────────────────

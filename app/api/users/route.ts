@@ -71,6 +71,7 @@ interface UserRecord {
   lastLoginAt: string | null;
   roleSetBy:   string | null;
   roleSetAt:   string | null;
+  isMain:      boolean | null;
 }
 
 // ── DB row → safe record ──────────────────────────────────────────────────────
@@ -85,6 +86,7 @@ type UserRow = {
   lastLoginAt: string | null;
   roleSetBy:   string | null;
   roleSetAt:   string | null;
+  isMain:      boolean | null;
 };
 
 function rowToRecord(row: UserRow): UserRecord {
@@ -98,6 +100,7 @@ function rowToRecord(row: UserRow): UserRecord {
     lastLoginAt: row.lastLoginAt ?? null,
     roleSetBy:   row.roleSetBy ?? null,
     roleSetAt:   row.roleSetAt ?? null,
+    isMain:      row.isMain ?? null,
   };
 }
 
@@ -115,6 +118,7 @@ const USER_SELECT = {
   lastLoginAt: true,
   roleSetBy:   true,
   roleSetAt:   true,
+  isMain:      true,
 } as const;
 
 // ── GET — list users ──────────────────────────────────────────────────────────
@@ -227,18 +231,41 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     role:       string;
     status:     string;
     department: string;
+    isMain:     boolean;
   }>;
 
   // At least one field must be supplied.
   if (
     patch.role === undefined &&
     patch.status === undefined &&
-    patch.department === undefined
+    patch.department === undefined &&
+    patch.isMain === undefined
   ) {
     return NextResponse.json(
-      { error: "Body must include at least one of: role, status, department." },
+      { error: "Body must include at least one of: role, status, department, isMain." },
       { status: 400 },
     );
+  }
+
+  // isMain may only be set by Executive or SystemAdmin.
+  // Manager cannot set it even for their own department.
+  if (patch.isMain !== undefined) {
+    if (actor.role !== "SystemAdmin" && actor.role !== "Executive") {
+      return NextResponse.json(
+        {
+          error:
+            "Only a SystemAdmin or Executive can set the Main flag. " +
+            `Your role: ${actor.role}.`,
+        },
+        { status: 403 },
+      );
+    }
+    if (typeof patch.isMain !== "boolean") {
+      return NextResponse.json(
+        { error: "isMain must be a boolean (true or false)." },
+        { status: 400 },
+      );
+    }
   }
 
   // 6. Validate supplied values before touching the database.
@@ -468,6 +495,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (patch.role       !== undefined) data.role       = patch.role;
   if (patch.status     !== undefined) data.status     = patch.status;
   if (patch.department !== undefined) data.department = patch.department;
+  if (patch.isMain     !== undefined) data.isMain     = patch.isMain;
 
   try {
     const updated = await prisma.user.update({

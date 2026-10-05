@@ -837,11 +837,16 @@ model Task {
   ownerId    String? @map("owner_id")
   dueDate    String? @map("due_date")
   isSetup    Boolean @default(true) @map("is_setup")
+  // Which department this task belongs to. Comes from the template task
+  // at launch; routing picks the member of this department with the
+  // fewest open tasks. Null means unassigned / unknown.
+  department String? @map("department")
   createdAt  String  @default("") @map("created_at")
   updatedAt  String  @default("") @map("updated_at")
 
   @@index([categoryId])
   @@index([ownerId])
+  @@index([department])
   @@map("tasks")
 }
 
