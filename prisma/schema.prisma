@@ -1139,6 +1139,67 @@ model CollectionState {
 // Parent is identified by invoiceId (matches CollectionState.invoiceId).
 // No FK constraint — matches codebase pattern.
 
+// ── CompanyConfig ────────────────────────────────────────────────────────────
+// Single-row table holding RTM's own company identity for all client-facing
+// documents (invoices, proposals, contracts).
+//
+// SINGLE-ROW GUARANTEE: id is fixed to 1. The database has a CHECK constraint
+// (company_config_singleton) that rejects any row with id <> 1, so only one
+// row can ever exist. There is no application-layer guard needed.
+//
+// logoUrl stores a URL string (absolute or root-relative path, e.g. "/rtm-logo.png").
+// File upload is out of scope; the renderer puts it directly into an <img src>.
+//
+// defaultTaxRate: Decimal — 0 = 0%, 0.10 = 10%. RTM clients are currently
+// always exempt, so the seeded value is 0 and taxExemptionText carries the
+// notice. No tax engine is built on this; it is a document hint only.
+//
+// Timestamps: String ISO-8601, matching all non-Invoice model conventions.
+//
+// Access: Executive (rank 3) or higher only.
+// GET  /api/company-config   → { config: CompanyConfigRow }
+// PATCH /api/company-config  → { config: CompanyConfigRow }
+
+model CompanyConfig {
+  // Fixed to 1. The CHECK constraint in migration SQL enforces singularity.
+  id                  Int      @id @default(1)
+
+  // Legal entity name printed on all client-facing documents.
+  legalName           String   @default("")
+
+  // Full mailing address (multi-line acceptable).
+  address             String   @default("")
+
+  // Primary phone number.
+  phone               String   @default("")
+
+  // Support / billing contact email.
+  supportEmail        String   @default("")
+
+  // URL or root-relative path to the company logo.
+  // e.g. "/rtm-logo.png" or "https://cdn.example.com/logo.png"
+  logoUrl             String   @default("")
+
+  // Default payment terms string, e.g. "Net 30".
+  defaultPaymentTerms String   @default("")
+
+  // Footer text about the card-processing fee and refund policy.
+  refundFooter        String   @default("")
+
+  // Default tax rate as a decimal (0 = 0%, 0.1 = 10%).
+  // Using Decimal for financial precision; stored as NUMERIC(6,4) in Postgres.
+  defaultTaxRate      Decimal  @default(0) @db.Decimal(6, 4)
+
+  // Text shown on an invoice when the client is tax-exempt.
+  taxExemptionText    String   @default("")
+
+  // ISO-8601 audit timestamps — String, matching existing model convention.
+  createdAt           String   @default("")
+  updatedAt           String   @default("")
+
+  @@map("company_config")
+}
+
 model CollectionLog {
   // Auto-incremented surrogate key; no business meaning.
   id          Int      @id @default(autoincrement())
