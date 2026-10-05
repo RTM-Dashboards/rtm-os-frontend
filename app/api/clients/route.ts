@@ -28,6 +28,12 @@ export interface ClientRecord {
   // Provenance only — records where this client came from in GHL.
   // NOT an identity key. NOT a matching key.
   ghlContactId: string | null;
+  /**
+   * Client's master business address, carried from intake → contract → handoff → client.
+   * Schema: { street, suite, city, state, zip, country }.
+   * Null for clients created before this migration or without an intake address.
+   */
+  address: Record<string, string> | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -45,6 +51,7 @@ function rowToRecord(row: ClientRow): ClientRecord {
     company: row.company,
     assignedAM: row.assignedAM,
     ghlContactId: row.ghlContactId ?? null,
+    address: (row.address ?? null) as Record<string, string> | null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -127,6 +134,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           ghlContactId: incoming.ghlContactId !== undefined
             ? incoming.ghlContactId
             : existing.ghlContactId,
+          // address: only write when supplied; null is valid (no address).
+          ...(incoming.address !== undefined
+            ? { address: incoming.address as unknown as Prisma.InputJsonValue }
+            : {}),
           updatedAt: now,
         },
       });
@@ -140,6 +151,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           company:      incoming.company      ?? "",
           assignedAM:   incoming.assignedAM   ?? "",
           ghlContactId: incoming.ghlContactId ?? null,
+          // address: carried from handoff at client creation; null when not available.
+          address:      (incoming.address ?? null) as unknown as Prisma.InputJsonValue,
           createdAt:    now,
           updatedAt:    now,
         },

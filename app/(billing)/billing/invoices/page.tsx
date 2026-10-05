@@ -493,6 +493,13 @@ function CreateInvoiceModal({ onClose, onSave, prefill }: {
         archived:            false,
         sentAt:              null,
         paidAt:              null,
+        // Line items are copied from the handoff server-side (via salesHandoffId).
+        // The client sends an empty array; the server overwrites it from the handoff.
+        lineItems:           [] as unknown[],
+        // periodStart / periodEnd / paymentLink: nullable; populated in later runs.
+        periodStart:         null,
+        periodEnd:           null,
+        paymentLink:         null,
       };
 
       const created = await createInvoice(invoicePayload);

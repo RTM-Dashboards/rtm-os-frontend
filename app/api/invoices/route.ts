@@ -74,6 +74,26 @@ export interface InvoiceRecord {
   updatedAt:           string;
   billingOwner:        string;
   archived:            boolean;
+  /**
+   * Per-service line items, copied from the SalesHandoff at invoice creation.
+   * BudgetLineItem[] shape (see lib/sales/budget-engine.ts).
+   * Empty array for invoices created without a handoff.
+   */
+  lineItems:           unknown[];
+  /**
+   * Billing period start date (ISO-8601 date string, e.g. "2025-09-17").
+   * Nullable; nothing populates this field in this run.
+   */
+  periodStart:         string | null;
+  /**
+   * Billing period end date (ISO-8601 date string, e.g. "2025-10-17").
+   * Nullable; nothing populates this field in this run.
+   */
+  periodEnd:           string | null;
+  /**
+   * Payment link URL. Nullable; Stripe integration populates this in a later run.
+   */
+  paymentLink:         string | null;
 }
 
 // ── DB row ↔ InvoiceRecord conversion ────────────────────────────────────────
@@ -99,6 +119,10 @@ function rowToRecord(row: InvoiceRow): InvoiceRecord {
     updatedAt:           row.updatedAt.toISOString(),
     billingOwner:        row.billingOwner,
     archived:            row.archived,
+    lineItems:           Array.isArray(row.lineItems) ? row.lineItems : [],
+    periodStart:         row.periodStart ?? null,
+    periodEnd:           row.periodEnd   ?? null,
+    paymentLink:         row.paymentLink ?? null,
   };
 }
 
@@ -337,6 +361,30 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Resolve line items: copy from the named SalesHandoff when salesHandoffId is set.
+    // An invoice created without a handoff gets an empty array.
+    // lineItems is the only field fetched from the handoff here — nothing else is derived.
+    let handoffLineItems: Prisma.InputJsonValue = [];
+    if (record.salesHandoffId) {
+      try {
+        const handoffRow = await prisma.salesHandoff.findUnique({
+          where: { id: record.salesHandoffId },
+          select: { lineItems: true },
+        });
+        if (handoffRow && Array.isArray(handoffRow.lineItems) && handoffRow.lineItems.length > 0) {
+          handoffLineItems = handoffRow.lineItems as Prisma.InputJsonValue;
+        }
+      } catch {
+        // Best-effort: if the handoff fetch fails, the invoice is still created
+        // with an empty lineItems array. Log at warning level so it is visible.
+        console.warn(
+          "[invoices POST] Could not fetch handoff lineItems — salesHandoffId:",
+          record.salesHandoffId,
+          "— invoice will have empty lineItems"
+        );
+      }
+    }
+
     // Allocate invoiceNumber inside a transaction with a SELECT FOR UPDATE lock.
     // This guarantees no two concurrent requests generate the same number.
     const row = await prisma.$transaction(async (tx) => {
@@ -359,6 +407,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           paidAt:              record.paidAt  ? new Date(record.paidAt)  : null,
           billingOwner:        record.billingOwner        ?? "",
           archived:            record.archived            ?? false,
+          // Line items: copied from the handoff identified by salesHandoffId.
+          // Empty array when no handoff is linked or the handoff has no line items.
+          lineItems:           handoffLineItems,
+          // periodStart / periodEnd / paymentLink: nullable; nothing sets them this run.
+          periodStart:         null,
+          periodEnd:           null,
+          paymentLink:         null,
         },
       });
     });
@@ -432,6 +487,11 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (patch.archived            !== undefined) data.archived            = patch.archived;
     if (patch.billingOwner        !== undefined) data.billingOwner        = patch.billingOwner;
     if (patch.dueDate             !== undefined) data.dueDate             = new Date(patch.dueDate);
+    // periodStart / periodEnd / paymentLink are nullable strings; patch when supplied.
+    if (patch.periodStart !== undefined) data.periodStart = patch.periodStart;
+    if (patch.periodEnd   !== undefined) data.periodEnd   = patch.periodEnd;
+    if (patch.paymentLink !== undefined) data.paymentLink = patch.paymentLink;
+    // lineItems are set at invoice creation from the handoff; not patchable.
 
     // C3-5 — invoiceStatus: set sentAt server-side when transitioning to "Sent"
     if (patch.invoiceStatus !== undefined) {

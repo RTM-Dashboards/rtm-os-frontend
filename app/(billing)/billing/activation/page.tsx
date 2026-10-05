@@ -370,11 +370,17 @@ function SalesHandoffsPanel({
     const clientBody = {
       id:           clientId,
       fullName:     handoff.contactName?.trim() || handoff.clientName,
-      email:        handoff.contactEmail?.trim() ?? "",
+      // contactEmail: use the handoff's contactEmail if non-empty; otherwise empty string.
+      // Never fall through to clientName or any other string — that wrote "Blue Ridge Plumbing"
+      // into the email field of the Blue Ridge client.
+      email:        handoff.contactEmail?.trim() || "",
       phone:        handoff.contactPhone?.trim() ?? "",
       company:      handoff.clientName,
       assignedAM:   "",
       ghlContactId: null,
+      // Address: carried from the handoff, which copied it from the contract at creation.
+      // Null when the handoff has no address (pre-migration records or missing intake).
+      address:      handoff.address ?? null,
       createdAt:    now,
       updatedAt:    now,
     };

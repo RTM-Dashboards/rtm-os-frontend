@@ -568,6 +568,11 @@ model Client {
   // Do not build any GHL lookup or sync against this field.
   ghlContactId    String?
 
+  // Client's master business address, carried from the intake via contract → handoff.
+  // Schema: { street, suite, city, state, zip, country } — MasterAddress type.
+  // Null for clients created before this migration or without an intake address.
+  address         Json?
+
   // Audit timestamps — ISO-8601 strings, matching existing model conventions
   createdAt       String   @default("")
   updatedAt       String   @default("")
@@ -871,6 +876,11 @@ model SalesHandoff {
   // Schema: BudgetLineItem[] — see lib/sales/budget-engine.ts.
   lineItems             Json     @default("[]")
 
+  // Client's master business address, copied from the contract at handoff creation.
+  // Schema: { street, suite, city, state, zip, country } — MasterAddress type.
+  // Null for handoffs created before this migration.
+  address               Json?
+
   // Billing queue filters: submittedToBilling, processed
   @@index([submittedToBilling])
   @@index([processed])
@@ -927,6 +937,20 @@ model Invoice {
   paidAt              DateTime?
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
+
+  // ── Line items (copied from the handoff at invoice creation) ────────────
+  // BudgetLineItem[] — same schema as Contract.lineItems and SalesHandoff.lineItems.
+  // Empty array for invoices created without a handoff or before this migration.
+  lineItems           Json      @default("[]")
+
+  // ── Billing period (nullable; nothing populates them this run) ────────────
+  // ISO-8601 date strings, e.g. "2025-09-17". Null until explicitly set.
+  periodStart         String?
+  periodEnd           String?
+
+  // ── Payment link (nullable; Stripe integration comes later) ─────────────
+  // URL string for the payment page. Null until the Stripe run populates it.
+  paymentLink         String?
 
   // ── Operational fields ────────────────────────────────────────────────────
   billingOwner        String    @default("")
@@ -1277,6 +1301,11 @@ model Contract {
   // (e.g. seeded records) or proposals that pre-date this migration.
   // Schema: BudgetLineItem[] — see lib/sales/budget-engine.ts.
   lineItems           Json     @default("[]")
+
+  // Client's master business address, carried from the intake's masterAddress.
+  // Schema: { street, suite, city, state, zip, country } — MasterAddress type.
+  // Null for contracts created before this migration or without an intake.
+  address             Json?
 
   signedDate          String?
   createdAt           String   @default("")

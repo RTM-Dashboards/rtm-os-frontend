@@ -20,6 +20,7 @@
 import type { SalesContractRecord, SalesContractStatus } from "@/app/api/sales-contracts/route";
 import { normalizeDomain } from "@/lib/clients/domain";
 import type { BudgetLineItem } from "@/lib/sales/budget-engine";
+import type { MasterAddress } from "@/lib/sales/types";
 
 export type { SalesContractRecord, SalesContractStatus };
 
@@ -82,6 +83,7 @@ export interface ProposalForContract {
     assignedRep?: string;
     targetBudget?: string;
     timeline?: string;
+    masterAddress?: MasterAddress | null;
   } | null;
   // Proposal-page display-side fields (camelCase from the static list)
   client?: string;
@@ -165,6 +167,10 @@ export function buildContractFromProposal(
   // Must not be re-derived from the catalogue: these are the prices the client agreed to.
   const lineItems: BudgetLineItem[] = Array.isArray(proposal.lineItems) ? proposal.lineItems : [];
 
+  // Address — carried from the intake's masterAddress.
+  // Null when the proposal has no intake record or the intake has no address.
+  const address: MasterAddress | null = proposal.intakeRecord?.masterAddress ?? null;
+
   // Setup fee — raw dollar amount from budgetResult.totalSetup
   // Null (not 0) when the proposal does not carry a setup figure, so that
   // Billing can distinguish "no setup fee" from "setup fee unknown".
@@ -217,6 +223,7 @@ export function buildContractFromProposal(
     setupFee,
     contractAmountCents,
     lineItems,
+    address,
     signedDate: null,
     createdAt: now,
     updatedAt: now,

@@ -113,6 +113,13 @@ interface Proposal {
    * Carried into the contract at creation time.
    */
   budgetLineItems?: BudgetLineItem[];
+  /**
+   * Master business address from the intake record.
+   * Populated for wizard-created proposals that completed Step 1 with an address.
+   * Null for mock proposals or proposals without an intake address.
+   * Carried proposal → contract → handoff → client.
+   */
+  masterAddress?: { street: string; suite: string; city: string; state: string; zip: string; country: string } | null;
   setupTotal: number;
   recurringTotal: number;
   totalValue: number;
@@ -733,7 +740,9 @@ function GenerateContractButton({
             name: proposal.client,
             businessName: proposal.client,
             contactName: proposal.owner ?? "",
-            contactEmail: proposal.info?.client ?? "",
+            // FIX: proposal.info?.client is the business name, not an email.
+            // An empty contactEmail must leave the contract's contactEmail empty.
+            contactEmail: "",
             contactPhone: "",
           },
           approvedRecommendationServiceNames: proposal.services as string[],
@@ -745,6 +754,9 @@ function GenerateContractButton({
           },
           contract: { term: proposal.contract?.term },
           owner: proposal.owner,
+          intakeRecord: {
+            masterAddress: proposal.masterAddress ?? null,
+          },
         });
         await createContract(record);
       }
@@ -2550,6 +2562,7 @@ function apiRecordToProposal(r: SalesProposalApiRecord): Proposal {
       ...(r.sentAt ? [{ date: new Date(r.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }), event: "Proposal sent to client", user: r.clientInfo?.contactName || "—" }] : []),
     ],
     budgetLineItems,
+    masterAddress: (r.intakeRecord as { masterAddress?: { street: string; suite: string; city: string; state: string; zip: string; country: string } | null } | null)?.masterAddress ?? null,
   };
 }
 

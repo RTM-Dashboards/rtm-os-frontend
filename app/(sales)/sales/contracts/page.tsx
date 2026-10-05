@@ -314,7 +314,7 @@ function RequestInvoiceButton({
         contract.contractNumber,
         contract.assignedRep,
         summaryFields,
-        // Contact, domain, and line item fields carried from the contract
+        // Contact, domain, line item, and address fields carried from the contract
         {
           domain:               contract.domain ?? null,
           contactName:          contract.contactName || null,
@@ -322,6 +322,7 @@ function RequestInvoiceButton({
           contactPhone:         contract.contactPhone || null,
           contractAmountCents:  contract.contractAmountCents ?? null,
           lineItems:            Array.isArray(contract.lineItems) ? contract.lineItems : [],
+          address:              contract.address ?? null,
         }
       );
       router.push(`/sales/handoffs?handoffId=${handoff.id}&action=request-invoice`);

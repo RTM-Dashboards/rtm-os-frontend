@@ -9,6 +9,7 @@ import {
   HandoffActivationStatus,
 } from "./handoff-config";
 import type { BudgetLineItem } from "./budget-engine";
+import type { MasterAddress } from "./types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,11 @@ export interface HandoffRecord {
    * a proposal (e.g. seeded records).
    */
   lineItems?: BudgetLineItem[];
+  /**
+   * Client's master business address, carried from the contract.
+   * Null for handoffs created before this migration or from contracts without an intake.
+   */
+  address?: MasterAddress | null;
 }
 
 // ─── Handoff Number Generator ─────────────────────────────────────────────────
@@ -90,6 +96,8 @@ export interface HandoffContactFields {
   contractAmountCents?: number | null;
   /** Agreed per-service line items carried from the contract. */
   lineItems?: BudgetLineItem[];
+  /** Client's master business address, carried from the contract. */
+  address?: MasterAddress | null;
 }
 
 export function buildHandoffRecord(
@@ -152,8 +160,10 @@ export function buildHandoffRecord(
       contactPhone:         contactFields.contactPhone         ?? null,
       contractAmountCents:  contactFields.contractAmountCents  ?? null,
       lineItems:            Array.isArray(contactFields.lineItems) ? contactFields.lineItems : [],
+      address:              contactFields.address              ?? null,
     } : {
       lineItems: [],
+      address: null,
     }),
   };
 }

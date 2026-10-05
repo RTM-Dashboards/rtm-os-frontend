@@ -72,6 +72,12 @@ export interface HandoffRecord {
   termLengthMonths?: number | null;
   /** Agreed per-service line items copied from the contract at handoff creation. */
   lineItems?: unknown[];
+  /**
+   * Client's master business address, copied from the contract at handoff creation.
+   * Schema: { street, suite, city, state, zip, country }.
+   * Null for handoffs created before this migration.
+   */
+  address?: Record<string, string> | null;
 }
 
 // ── DB row ↔ HandoffRecord ─────────────────────────────────────────────────────
@@ -109,6 +115,7 @@ function rowToRecord(row: HandoffRow): HandoffRecord {
     paymentTerms:         row.paymentTerms ?? null,
     termLengthMonths:     row.termLengthMonths ?? null,
     lineItems:            Array.isArray(row.lineItems) ? row.lineItems : [],
+    address:              (row.address ?? null) as Record<string, string> | null,
   };
 }
 
@@ -201,6 +208,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // "contract-amount" when the record doesn't carry it directly.
     contractAmountCents:  record.contractAmountCents  ?? billing.contractAmountCents ?? null,
     lineItems:            Array.isArray(record.lineItems) ? record.lineItems as Prisma.InputJsonValue : ([] as unknown as Prisma.InputJsonValue),
+    address:              (record.address ?? null) as unknown as Prisma.InputJsonValue,
   };
 
   try {
@@ -268,6 +276,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (patch.contactPhone         !== undefined) data.contactPhone         = patch.contactPhone;
     if (patch.contractAmountCents  !== undefined) data.contractAmountCents  = patch.contractAmountCents;
     if (patch.lineItems            !== undefined) data.lineItems            = patch.lineItems as Prisma.InputJsonValue;
+    if (patch.address              !== undefined) data.address              = patch.address as Prisma.InputJsonValue;
 
     // When summaryFields is patched, re-parse the billing columns from the
     // merged summaryFields (existing + patch) so they stay in sync.

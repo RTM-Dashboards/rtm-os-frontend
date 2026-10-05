@@ -39,6 +39,7 @@ import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { getSessionUser } from "@/lib/auth";
 import type { BudgetLineItem } from "@/lib/sales/budget-engine";
+import type { MasterAddress } from "@/lib/sales/types";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -88,6 +89,11 @@ export interface SalesContractRecord {
    * Empty array for contracts created from proposals without line items.
    */
   lineItems: BudgetLineItem[];
+  /**
+   * Client's master business address, carried from the intake's masterAddress.
+   * Null for contracts created before this migration or without an intake.
+   */
+  address: MasterAddress | null;
   /** ISO string or null */
   signedDate: string | null;
   createdAt: string;
@@ -142,6 +148,7 @@ function rowToRecord(row: {
   setupFee: number | null;
   contractAmountCents: number | null;
   lineItems: unknown;
+  address: unknown;
   signedDate: string | null;
   createdAt: string;
   updatedAt: string;
@@ -168,6 +175,7 @@ function rowToRecord(row: {
     setupFee:            row.setupFee,
     contractAmountCents: row.contractAmountCents,
     lineItems:           Array.isArray(row.lineItems) ? (row.lineItems as BudgetLineItem[]) : [],
+    address:             (row.address ?? null) as MasterAddress | null,
     signedDate:          row.signedDate,
     createdAt:           row.createdAt,
     updatedAt:           row.updatedAt,
@@ -253,6 +261,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     setupFee:            incoming.setupFee            ?? null,
     contractAmountCents: incoming.contractAmountCents ?? null,
     lineItems:           (Array.isArray(incoming.lineItems) ? incoming.lineItems : []) as unknown as Prisma.InputJsonValue,
+    address:             (incoming.address ?? null) as unknown as Prisma.InputJsonValue,
     signedDate:          incoming.signedDate          ?? null,
     updatedAt:           now,
   };
