@@ -337,6 +337,13 @@ model User {
   // Will power the "Last Active" column on the Team Members page.
   lastLoginAt String?
 
+  // Main/Support assignment within a department.
+  // NULL = not applicable (no department, or department doesn't use routing yet).
+  // TRUE = Main: workload routing and open task count point here.
+  // FALSE = Support: identical permissions, works from their Main's book.
+  // Only Account Management uses this today; field is optional everywhere else.
+  isMain      Boolean? @map("is_main")
+
   // Audit timestamps — ISO-8601 strings, matching existing model conventions
   createdAt   String   @default("")
   updatedAt   String   @default("")
@@ -758,24 +765,19 @@ model Project {
   // Parent business — plain column, no FK constraint.
   businessId    String
 
+  // Display name — typically the client's company or domain display name.
   name          String   @default("")
 
-  // The service this project delivers (e.g. "SEO", "PPC", "Web Design").
-  service       String   @default("")
-
-  // See valid status values in the comment above.
+  // One project per domain. Valid statuses: "planned" | "active" | "on_hold" | "complete" | "cancelled"
   status        String   @default("planned")
 
-  // Internal owner of this project.
+  // Account Management user assigned to this project (User.id, nullable string).
+  // Empty string = unassigned.
   assignedAM    String   @default("")
 
   // ISO-8601 strings, nullable until set.
   startDate     String?
   endDate       String?
-
-  // Structured deliverable or scope data, read/written as a whole.
-  // Shape is enforced by the application layer, not the database.
-  deliverables  Json?
 
   // Audit timestamps — ISO-8601 strings, matching existing model conventions
   createdAt     String   @default("")
@@ -783,6 +785,64 @@ model Project {
 
   @@index([businessId])
   @@map("projects")
+}
+
+// ── ProjectCategory ───────────────────────────────────────────────────────────
+// One row per service sold, belonging to a project.
+// serviceId links back to service_catalog_items.id (plain string, no FK).
+// department is denormalised from the catalogue so department-scoped queries
+// do not require a join.
+model ProjectCategory {
+  id           String @id
+  projectId    String @map("project_id")
+  serviceId    String @default("") @map("service_id")
+  serviceLabel String @default("") @map("service_label")
+  department   String @default("")
+  createdAt    String @default("") @map("created_at")
+
+  @@index([projectId])
+  @@map("project_categories")
+}
+
+// ── TaskListTemplate ──────────────────────────────────────────────────────────
+// One row per service. AMs configure this in the task list editor (later run).
+// groups is a Json array of:
+//   { kind: "setup" | "recurring", heading: string,
+//     tasks: [{ label: string, offsetDays: number }] }
+// recurrenceRule is reserved; unused this run.
+model TaskListTemplate {
+  id             String  @id
+  serviceId      String  @default("") @map("service_id")
+  groups         Json    @default("[]")
+  recurrenceRule String? @map("recurrence_rule")
+  createdAt      String  @default("") @map("created_at")
+  updatedAt      String  @default("") @map("updated_at")
+
+  @@index([serviceId])
+  @@map("task_list_templates")
+}
+
+// ── Task ──────────────────────────────────────────────────────────────────────
+// One row per deliverable instance. Belongs to a ProjectCategory.
+// ownerId is a User.id (nullable — tasks may be unassigned at creation).
+// isSetup true = created at launch from the setup group of the template;
+//         false = recurring (not generated in this run).
+// status: "open" | "in_progress" | "done" | "skipped"
+// dueDate is an ISO-8601 date string, nullable.
+model Task {
+  id         String  @id
+  categoryId String  @map("category_id")
+  label      String  @default("")
+  status     String  @default("open")
+  ownerId    String? @map("owner_id")
+  dueDate    String? @map("due_date")
+  isSetup    Boolean @default(true) @map("is_setup")
+  createdAt  String  @default("") @map("created_at")
+  updatedAt  String  @default("") @map("updated_at")
+
+  @@index([categoryId])
+  @@index([ownerId])
+  @@map("tasks")
 }
 
 // ── SalesHandoff ──────────────────────────────────────────────────────────────

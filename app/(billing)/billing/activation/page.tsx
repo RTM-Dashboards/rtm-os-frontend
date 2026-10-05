@@ -763,6 +763,49 @@ export default function BillingActivationPage() {
     setExpanded(null);
     log(`✅ Cleared: ${name} (${domain}) → Account Management notified`);
     showToast(`${name} (${domain}) cleared — removed from Billing activation view`, "success");
+
+    // Launch the project for this business.
+    // Fire-and-forget: clearance has already succeeded; launch failure is
+    // logged but does not block or reverse the clearance.
+    try {
+      const launchRes = await fetch("/api/projects/launch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId: id }),
+      });
+      const launchData = await launchRes.json() as {
+        result?: {
+          skipped: boolean;
+          projectId: string | null;
+          assignedAMName: string | null;
+          noEligibleAM: boolean;
+          categoriesCreated: number;
+          tasksCreated: number;
+          errors: string[];
+        };
+        error?: string;
+      };
+      if (!launchRes.ok || launchData.error) {
+        log(`⚠ Project launch failed for ${name}: ${launchData.error ?? "unknown error"}`);
+      } else if (launchData.result?.skipped) {
+        log(`ℹ Project already exists for ${name} — launch skipped`);
+      } else {
+        const r = launchData.result!;
+        const amNote = r.noEligibleAM
+          ? "⚠ No Main AM available — project is unassigned"
+          : `Assigned to ${r.assignedAMName ?? "AM"}`;
+        log(
+          `✅ Project launched for ${name}: ` +
+          `${r.categoriesCreated} categor${r.categoriesCreated === 1 ? "y" : "ies"}, ` +
+          `${r.tasksCreated} task${r.tasksCreated === 1 ? "" : "s"}. ${amNote}`
+        );
+        if (r.errors.length > 0) {
+          log(`⚠ Launch partial errors: ${r.errors.join("; ")}`);
+        }
+      }
+    } catch (err) {
+      log(`⚠ Project launch network error for ${name}: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
 
   // Businesses that are invoice-cleared but not yet cleared for AM
