@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -54,6 +55,11 @@ function rowToRecord(row: PointOfContactRow): PointOfContactRecord {
 // ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above).
+  const { user, error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus! });
+  void user;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   const businessId = searchParams.get("businessId");
@@ -99,6 +105,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // Upsert by id.
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above).
+  const { user: postUser, error: postAuthError, status: postAuthStatus } = await getSessionUser(req);
+  if (postAuthError) return NextResponse.json({ error: postAuthError }, { status: postAuthStatus! });
+  void postUser;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -165,6 +176,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // ── DELETE ────────────────────────────────────────────────────────────────────
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above).
+  const { user: deleteUser, error: deleteAuthError, status: deleteAuthStatus } = await getSessionUser(req);
+  if (deleteAuthError) return NextResponse.json({ error: deleteAuthError }, { status: deleteAuthStatus! });
+  void deleteUser;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 

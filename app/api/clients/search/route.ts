@@ -26,6 +26,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { normalizeDomain } from "@/lib/clients/domain";
+import { getSessionUser } from "@/lib/auth";
 
 export interface ClientSearchBusiness {
   id: string;
@@ -50,6 +51,11 @@ export interface ClientSearchResult {
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above).
+  const { user, error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus! });
+  void user;
+
   const { searchParams } = new URL(req.url);
   const raw = (searchParams.get("q") ?? "").trim();
 

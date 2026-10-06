@@ -26,6 +26,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import type { Lead as PrismaLead } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -129,7 +130,12 @@ function toLeadRecord(row: PrismaLead): LeadRecord {
 // ── GET ────────────────────────────────────────────────────────────────────────
 // Returns all leads ordered newest-first (by createdAt desc, id desc).
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above).
+  const { user, error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus! });
+  void user;
+
   try {
     const rows = await prisma.lead.findMany({
       orderBy: [
@@ -156,6 +162,12 @@ export async function GET(): Promise<NextResponse> {
 // Returns { record, created: boolean }
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above). Leads POST stays open to all active
+  // users — reps below Manager create leads as normal work.
+  const { user: postUser, error: postAuthError, status: postAuthStatus } = await getSessionUser(req);
+  if (postAuthError) return NextResponse.json({ error: postAuthError }, { status: postAuthStatus! });
+  void postUser;
+
   let body: unknown;
   try {
     body = await req.json();

@@ -28,6 +28,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { parseBillingFields } from "@/lib/billing/handoff-summary-parser";
+import { getSessionUser } from "@/lib/auth";
 
 // ── Types (inline — matches the interface in lib/sales/handoff-engine.ts) ─────
 
@@ -122,6 +123,11 @@ function rowToRecord(row: HandoffRow): HandoffRecord {
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above).
+  const { user, error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus! });
+  void user;
+
   const { searchParams } = new URL(req.url);
 
   const id = searchParams.get("id");
@@ -160,6 +166,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // ── POST — upsert a handoff record ────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above). A Sales rep submitting their own
+  // signed contract to Billing is ordinary work — not Manager-only.
+  const { user: postUser, error: postAuthError, status: postAuthStatus } = await getSessionUser(req);
+  if (postAuthError) return NextResponse.json({ error: postAuthError }, { status: postAuthStatus! });
+  void postUser;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -228,6 +240,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // ── PATCH — partial update a handoff record ───────────────────────────────────
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above). Marking a handoff processed (or
+  // submitting it to Billing) is routine work for both Sales and Billing Members.
+  const { user: patchUser, error: patchAuthError, status: patchAuthStatus } = await getSessionUser(req);
+  if (patchAuthError) return NextResponse.json({ error: patchAuthError }, { status: patchAuthStatus! });
+  void patchUser;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) {

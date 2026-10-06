@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
+import { getSessionUser, requireRole } from "@/lib/auth";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,11 @@ function rowToRecord(row: ClientRow): ClientRecord {
 // ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above).
+  const { user, error: authError, status: authStatus } = await getSessionUser(req);
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus! });
+  void user;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
@@ -100,6 +106,12 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // Upsert by id.
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above). Creating a client from an approved
+  // handoff is routine Billing work — not Manager-only.
+  const { user: postUser, error: postAuthError, status: postAuthStatus } = await getSessionUser(req);
+  if (postAuthError) return NextResponse.json({ error: postAuthError }, { status: postAuthStatus! });
+  void postUser;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -168,6 +180,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // ── DELETE ────────────────────────────────────────────────────────────────────
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  // Auth: Manager or above.
+  const { user: deleteUser, error: deleteAuthError, status: deleteAuthStatus } = await getSessionUser(req);
+  if (deleteAuthError) return NextResponse.json({ error: deleteAuthError }, { status: deleteAuthStatus! });
+  const deleteRoleGate = requireRole(deleteUser!, "Manager");
+  if (deleteRoleGate) return NextResponse.json({ error: deleteRoleGate.error }, { status: deleteRoleGate.status });
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 

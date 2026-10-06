@@ -10,8 +10,15 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { launchProject } from "@/lib/projects/launch";
+import { getSessionUser } from "@/lib/auth";
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // Auth: any active user (Member or above). The activation page calls this
+  // immediately after clearance — requiring Manager here would block Billing Members.
+  const { user: postUser, error: postAuthError, status: postAuthStatus } = await getSessionUser(req);
+  if (postAuthError) return NextResponse.json({ error: postAuthError }, { status: postAuthStatus! });
+  void postUser;
+
   let body: unknown;
   try {
     body = await req.json();
