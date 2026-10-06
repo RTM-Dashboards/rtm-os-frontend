@@ -47,6 +47,12 @@ export interface TemplateTaskDef {
   offsetFrom: "launch" | "prereq";
   /** localId values of prerequisite tasks within this same group. */
   prereqIds: string[];
+  /**
+   * Recurring tasks only. How many days after completion to schedule the
+   * next occurrence. Zero or absent means the task does not recur.
+   * Only stored on tasks in a recurring group; ignored for setup tasks.
+   */
+  intervalDays?: number;
 }
 
 export interface TemplateGroup {
@@ -156,6 +162,7 @@ function parseGroups(raw: unknown): TemplateGroup[] {
       offsetFrom: "launch" | "prereq";
       prereqIds: string[];
       legacyIndices: number[];
+      intervalDays: number | undefined;
     }>;
   }> = [];
 
@@ -164,7 +171,16 @@ function parseGroups(raw: unknown): TemplateGroup[] {
     const rec = g as Record<string, unknown>;
     const kind: "setup" | "recurring" = rec.kind === "recurring" ? "recurring" : "setup";
     const heading = typeof rec.heading === "string" ? rec.heading : "";
-    const rawTasks: typeof parsed[0]["rawTasks"] = [];
+    const rawTasks: Array<{
+      localId: string;
+      label: string;
+      department: string;
+      offsetDays: number;
+      offsetFrom: "launch" | "prereq";
+      prereqIds: string[];
+      legacyIndices: number[];
+      intervalDays: number | undefined;
+    }> = [];
 
     if (Array.isArray(rec.tasks)) {
       for (const t of rec.tasks) {
@@ -191,6 +207,12 @@ function parseGroups(raw: unknown): TemplateGroup[] {
         const offsetFrom: "launch" | "prereq" =
           td.offsetFrom === "prereq" ? "prereq" : "launch";
 
+        // intervalDays: only valid for recurring tasks; positive integer only.
+        const intervalDays: number | undefined =
+          typeof td.intervalDays === "number" && td.intervalDays > 0
+            ? td.intervalDays
+            : undefined;
+
         rawTasks.push({
           localId,
           label:      typeof td.label      === "string" ? td.label      : "",
@@ -199,6 +221,7 @@ function parseGroups(raw: unknown): TemplateGroup[] {
           offsetFrom,
           prereqIds,
           legacyIndices,
+          intervalDays,
         });
         flatLocalIds.push(localId);
       }
@@ -220,14 +243,16 @@ function parseGroups(raw: unknown): TemplateGroup[] {
         }
         // Out-of-range legacy index: silently drop.
       }
-      tasks.push({
+      const taskDef: TemplateTaskDef = {
         localId:    rt.localId,
         label:      rt.label,
         department: rt.department,
         offsetDays: rt.offsetDays,
         offsetFrom: rt.offsetFrom,
         prereqIds:  Array.from(merged),
-      });
+      };
+      if (rt.intervalDays !== undefined) taskDef.intervalDays = rt.intervalDays;
+      tasks.push(taskDef);
       flatIdx++;
     }
     result.push({ kind: g.kind, heading: g.heading, tasks });

@@ -853,6 +853,12 @@ model Task {
   // Number of days to add to the anchor date to compute dueDate.
   // Copied from the template task at launch.
   offsetDays Int     @default(0) @map("offset_days")
+  // Whether this task is a recurring task (created from a recurring group).
+  // When true, marking it done creates the next occurrence.
+  isRecurring             Boolean @default(false) @map("is_recurring")
+  // How many days after completion to schedule the next occurrence.
+  // Only meaningful when isRecurring=true. Zero or absent = no recurrence.
+  recurrenceIntervalDays  Int     @default(0) @map("recurrence_interval_days")
   createdAt  String  @default("") @map("created_at")
   updatedAt  String  @default("") @map("updated_at")
 

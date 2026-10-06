@@ -69,6 +69,8 @@ export interface LaunchResult {
   categoriesCreated: number;
   /** number of tasks created across all categories */
   tasksCreated: number;
+  /** number of recurring tasks created (subset of tasksCreated) */
+  recurringTasksCreated: number;
   /** departments for which no active member exists; tasks left unassigned */
   emptyDepartments: string[];
   /** any per-category or per-task errors that occurred */
@@ -109,6 +111,11 @@ interface TemplateTaskDef {
   prereqIndices?: number[];
   /** Stable id unique within the template. */
   localId?: string;
+  /**
+   * Recurring tasks only. How many days after completion the next
+   * occurrence should be scheduled. Zero/absent = no recurrence.
+   */
+  intervalDays?: number;
 }
 
 interface TemplateGroup {
@@ -194,15 +201,16 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
 
   const result: LaunchResult = {
     businessId,
-    skipped:            false,
-    projectId:          null,
-    assignedAMId:       null,
-    assignedAMName:     null,
-    noEligibleAM:       false,
-    categoriesCreated:  0,
-    tasksCreated:       0,
-    emptyDepartments:   [],
-    errors:             [],
+    skipped:              false,
+    projectId:            null,
+    assignedAMId:         null,
+    assignedAMName:       null,
+    noEligibleAM:         false,
+    categoriesCreated:    0,
+    tasksCreated:         0,
+    recurringTasksCreated: 0,
+    emptyDepartments:     [],
+    errors:               [],
   };
 
   // Per-launch cache so we query each department at most once.
@@ -296,14 +304,36 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
   result.assignedAMName = assignedAMName;
 
   // ── 5. Create the project ─────────────────────────────────────────────────
+  // Set startDate from today (launch date). Set endDate from the contract
+  // termLengthMonths carried on the processed handoff, if available.
+  // RTM contracts go month-to-month after the term, so endDate is advisory
+  // and does NOT stop recurrence.
+  const projectStartDate = launchDate.toISOString().slice(0, 10);
+  let projectEndDate: string | null = null;
+
+  if (business.clientId) {
+    const handoff = await prisma.salesHandoff.findFirst({
+      where: { processedClientId: business.clientId },
+      select: { termLengthMonths: true },
+      orderBy: { processedAt: "desc" },
+    });
+    if (handoff?.termLengthMonths && handoff.termLengthMonths > 0) {
+      const endD = new Date(launchDate);
+      endD.setMonth(endD.getMonth() + handoff.termLengthMonths);
+      projectEndDate = endD.toISOString().slice(0, 10);
+    }
+  }
+
   const projectId = makeId("proj");
   const project = await prisma.project.create({
     data: {
       id:         projectId,
       businessId: business.id,
       name:       business.displayName || business.domain,
-      status:     "planned",
+      status:     "active",
       assignedAM: assignedAMId ?? "",
+      startDate:  projectStartDate,
+      endDate:    projectEndDate,
       createdAt:  now,
       updatedAt:  now,
     },
@@ -359,6 +389,13 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
         offsetFrom: "launch" | "prereq";
         /** Resolved to localId strings (may include legacy index translations). */
         prereqLocalIds: string[];
+        /** True when this task came from a recurring group. */
+        isRecurring: boolean;
+        /**
+         * Days after completion to schedule next occurrence.
+         * Only meaningful when isRecurring=true and > 0.
+         */
+        intervalDays: number;
       }
 
       const flatTasks: FlatTask[] = [];
@@ -368,28 +405,32 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
           ? (template.groups as unknown as TemplateGroup[])
           : [];
 
-        // Collect tasks in flat order so we can translate legacy indices.
-        const flatRaw: TemplateTaskDef[] = [];
+        // Collect setup AND recurring tasks in flat order.
+        // We keep them separate by group kind so we can set isRecurring correctly.
+        // Legacy index translation: indices are relative to the setup group only
+        // (recurring tasks cannot have prerequisites, so indices only matter for setup).
+        const setupRaw: TemplateTaskDef[] = [];
+        const recurringRaw: TemplateTaskDef[] = [];
         for (const group of groups) {
-          if (group.kind === "setup" && Array.isArray(group.tasks)) {
-            for (const t of group.tasks) {
-              flatRaw.push(t);
-            }
+          if (!Array.isArray(group.tasks)) continue;
+          if (group.kind === "setup") {
+            for (const t of group.tasks) setupRaw.push(t);
+          } else if (group.kind === "recurring") {
+            for (const t of group.tasks) recurringRaw.push(t);
           }
         }
 
-        // Build localId→position map for legacy index translation.
-        const localIdByIndex = flatRaw.map((t) => t.localId ?? "");
+        // Build localId→position map for legacy index translation (setup only).
+        const localIdByIndex = setupRaw.map((t) => t.localId ?? "");
 
-        for (const t of flatRaw) {
-          // Preferred: prereqIds (stable local id references).
+        // Process setup tasks (with dependency support).
+        for (const t of setupRaw) {
           const prereqLocalIds: string[] = [];
           const seen = new Set<string>();
 
           for (const id of t.prereqIds ?? []) {
             if (id && !seen.has(id)) { prereqLocalIds.push(id); seen.add(id); }
           }
-          // Legacy: prereqIndices — translate to localIds.
           for (const idx of t.prereqIndices ?? []) {
             const id = localIdByIndex[idx] ?? "";
             if (id && !seen.has(id)) { prereqLocalIds.push(id); seen.add(id); }
@@ -402,6 +443,34 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
             offsetDays:    t.offsetDays ?? 0,
             offsetFrom:    t.offsetFrom ?? "launch",
             prereqLocalIds,
+            isRecurring:   false,
+            intervalDays:  0,
+          });
+        }
+
+        // Process recurring tasks (no dependencies; intervalDays required).
+        for (const t of recurringRaw) {
+          const interval = typeof t.intervalDays === "number" && t.intervalDays > 0
+            ? t.intervalDays
+            : 0;
+          // Skip recurring tasks with no interval — they cannot recur and are
+          // not useful as plain one-off tasks either. Log and skip.
+          if (interval === 0) {
+            result.errors.push(
+              `Recurring task "${t.label}" has no interval and was skipped (set a repeat interval in the task list editor)`
+            );
+            continue;
+          }
+
+          flatTasks.push({
+            localId:       t.localId ?? "",
+            label:         t.label,
+            department:    t.department ?? "",
+            offsetDays:    t.offsetDays ?? 0,
+            offsetFrom:    "launch",   // recurring tasks always offset from launch
+            prereqLocalIds: [],
+            isRecurring:   true,
+            intervalDays:  interval,
           });
         }
       } else if (catalogItem) {
@@ -415,12 +484,14 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
           if (Array.isArray(group.bullets)) {
             for (const bullet of group.bullets) {
               flatTasks.push({
-                localId: "",
-                label: bullet,
-                department: categoryDept,
-                offsetDays: 0,
-                offsetFrom: "launch",
+                localId:      "",
+                label:        bullet,
+                department:   categoryDept,
+                offsetDays:   0,
+                offsetFrom:   "launch",
                 prereqLocalIds: [],
+                isRecurring:  false,
+                intervalDays: 0,
               });
             }
           }
@@ -450,6 +521,7 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
 
         // A task with offsetFrom="prereq" gets no due date at launch.
         // A task with offsetFrom="launch" gets offsetDays from launchDate.
+        // Recurring tasks always use offsetFrom="launch" at first occurrence.
         const hasPrerequisites = taskDef.offsetFrom === "prereq";
         const dueDate = hasPrerequisites ? null : addDays(launchDate, taskDef.offsetDays);
 
@@ -457,22 +529,25 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
           const taskId = makeId("task");
           await prisma.task.create({
             data: {
-              id:         taskId,
+              id:                     taskId,
               categoryId,
-              label:      taskDef.label,
-              status:     "open",
+              label:                  taskDef.label,
+              status:                 "open",
               ownerId,
-              department: dept || null,
+              department:             dept || null,
               dueDate,
-              offsetFrom: taskDef.offsetFrom,
-              offsetDays: taskDef.offsetDays,
-              isSetup:    true,
-              createdAt:  now,
-              updatedAt:  now,
+              offsetFrom:             taskDef.offsetFrom,
+              offsetDays:             taskDef.offsetDays,
+              isSetup:                !taskDef.isRecurring,
+              isRecurring:            taskDef.isRecurring,
+              recurrenceIntervalDays: taskDef.intervalDays,
+              createdAt:              now,
+              updatedAt:              now,
             },
           });
           if (taskDef.localId) taskIdByLocalId.set(taskDef.localId, taskId);
           result.tasksCreated++;
+          if (taskDef.isRecurring) result.recurringTasksCreated++;
         } catch (err) {
           result.errors.push(
             `Task "${taskDef.label}": ${err instanceof Error ? err.message : String(err)}`

@@ -52,6 +52,134 @@ function addDays(dateStr: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+// ── makeId helper ────────────────────────────────────────────────────────────
+
+function makeId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// ── pickOwner (workload router) ──────────────────────────────────────────────
+//
+// Returns the id of the active member of `department` with the fewest
+// open/in_progress tasks. Ties broken alphabetically by name.
+// Returns null when no active member exists.
+
+async function pickOwner(department: string): Promise<string | null> {
+  const members = await prisma.user.findMany({
+    where: { department, status: "active" },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  if (members.length === 0) return null;
+
+  const taskCounts = await Promise.all(
+    members.map(async (m) => {
+      const count = await prisma.task.count({
+        where: { ownerId: m.id, status: { in: ["open", "in_progress"] } },
+      });
+      return { m, count };
+    }),
+  );
+  taskCounts.sort((a, b) => a.count - b.count);
+  return taskCounts[0].m.id;
+}
+
+// ── createNextOccurrence ─────────────────────────────────────────────────────
+//
+// Called after a recurring task is marked done. Creates the next occurrence
+// for the same category with a due date of (closingDate + intervalDays).
+//
+// STOPS if:
+//   - project.status is "complete" or "cancelled"
+//   - business.cancellationStatus is "Cancelled"
+//
+// Dependencies: NOT copied forward. The prior occurrences are already done;
+//   copying deps would block the new task on completed work forever.
+//
+// Failure: logged, not surfaced. The mark-done already returned 200.
+
+async function createNextOccurrence(
+  task: {
+    id: string;
+    categoryId: string;
+    label: string;
+    department: string | null;
+    recurrenceIntervalDays: number;
+    offsetDays: number;
+  },
+  closingDateStr: string,  // ISO date of task completion
+): Promise<void> {
+  try {
+    // Resolve project and business via category.
+    const category = await prisma.projectCategory.findUnique({
+      where: { id: task.categoryId },
+      select: { projectId: true },
+    });
+    if (!category) {
+      console.error(`[recurring] category not found for task ${task.id}`);
+      return;
+    }
+
+    const project = await prisma.project.findUnique({
+      where: { id: category.projectId },
+      select: { id: true, status: true, businessId: true },
+    });
+    if (!project) {
+      console.error(`[recurring] project not found for category ${task.categoryId}`);
+      return;
+    }
+
+    // Stop if project is closed.
+    if (project.status === "complete" || project.status === "cancelled") {
+      console.log(`[recurring] project ${project.id} is ${project.status} — no new occurrence`);
+      return;
+    }
+
+    // Stop if business is cancelled.
+    const business = await prisma.business.findUnique({
+      where: { id: project.businessId },
+      select: { cancellationStatus: true },
+    });
+    if (business?.cancellationStatus === "Cancelled") {
+      console.log(`[recurring] business ${project.businessId} is Cancelled — no new occurrence`);
+      return;
+    }
+
+    // Due date = closing date + interval.
+    const newDueDate = addDays(closingDateStr, task.recurrenceIntervalDays);
+    const now = new Date().toISOString();
+
+    // Route to least-loaded active member of the same department.
+    const dept = task.department ?? "";
+    const ownerId = dept ? await pickOwner(dept) : null;
+
+    await prisma.task.create({
+      data: {
+        id:                     makeId("task"),
+        categoryId:             task.categoryId,
+        label:                  task.label,
+        status:                 "open",
+        ownerId,
+        department:             dept || null,
+        dueDate:                newDueDate,
+        offsetFrom:             "launch",
+        offsetDays:             task.offsetDays,
+        isSetup:                false,
+        isRecurring:            true,
+        recurrenceIntervalDays: task.recurrenceIntervalDays,
+        createdAt:              now,
+        updatedAt:              now,
+      },
+    });
+
+    console.log(`[recurring] created next occurrence of "${task.label}" due ${newDueDate}`);
+  } catch (err) {
+    // Non-fatal — mark-done already succeeded.
+    console.error(`[recurring] failed to create next occurrence for task ${task.id}:`, err);
+  }
+}
+
+
 // ── Cascade ───────────────────────────────────────────────────────────────────
 //
 // runCascade(closedTaskId):
@@ -197,12 +325,36 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       data: { status: "done", updatedAt: now },
     });
 
-    // ── Cascade ───────────────────────────────────────────────────────────────
+    // ── Cascade (setup/dependency tasks) ─────────────────────────────────────
     // Run after the primary update. Fire-and-forget pattern: cascade failures
     // do not roll back or affect the HTTP response for the mark-done action.
     // The cascade is awaited so the HTTP response reflects a complete state, but
     // individual sub-task update failures are swallowed inside runCascade.
     await runCascade(taskId);
+
+    // ── Next occurrence (recurring tasks only) ────────────────────────────────
+    // If this task is recurring and has a positive interval, create the next
+    // occurrence. The due date is the closing date plus the interval.
+    // This is completion-driven: the clock runs from when the work was done,
+    // not from when it was originally due.
+    //
+    // createNextOccurrence handles its own stop conditions (project closed,
+    // business cancelled) and swallows its own errors — mark-done already
+    // returned success; the next-occurrence creation is best-effort.
+    if (task.isRecurring && task.recurrenceIntervalDays > 0) {
+      const closingDate = updated.updatedAt.slice(0, 10); // "YYYY-MM-DD"
+      await createNextOccurrence(
+        {
+          id:                     task.id,
+          categoryId:             task.categoryId,
+          label:                  task.label,
+          department:             task.department,
+          recurrenceIntervalDays: task.recurrenceIntervalDays,
+          offsetDays:             task.offsetDays,
+        },
+        closingDate,
+      );
+    }
 
     return NextResponse.json({
       id: updated.id,

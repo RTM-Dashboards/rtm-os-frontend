@@ -65,7 +65,7 @@ function makeLocalId(): string {
   return "t-" + Math.random().toString(36).slice(2, 7);
 }
 
-function blankTask(): TemplateTaskDef {
+function blankTask(isRecurring = false): TemplateTaskDef {
   return {
     localId:    makeLocalId(),
     label:      "",
@@ -73,11 +73,20 @@ function blankTask(): TemplateTaskDef {
     offsetDays: 0,
     offsetFrom: "launch",
     prereqIds:  [],
+    ...(isRecurring ? { intervalDays: 30 } : {}),
   };
 }
 
-function pastedTask(label: string): TemplateTaskDef {
-  return { localId: makeLocalId(), label, department: "", offsetDays: 0, offsetFrom: "launch", prereqIds: [] };
+function pastedTask(label: string, isRecurring = false): TemplateTaskDef {
+  return {
+    localId: makeLocalId(),
+    label,
+    department: "",
+    offsetDays: 0,
+    offsetFrom: "launch",
+    prereqIds: [],
+    ...(isRecurring ? { intervalDays: 30 } : {}),
+  };
 }
 
 // ── Cycle detection (client-side mirror of server check) ──────────────────────
@@ -211,9 +220,11 @@ interface TaskRowProps {
   disabled:   boolean;
   /** True when this is the Setup group (prereqs only apply to setup). */
   isSetup:    boolean;
+  /** True when this is the Recurring group (shows interval field). */
+  isRecurring: boolean;
 }
 
-function TaskRow({ task, index, total, allTasks, displayLabels, onChange, onRemove, onMove, disabled, isSetup }: TaskRowProps) {
+function TaskRow({ task, index, total, allTasks, displayLabels, onChange, onRemove, onMove, disabled, isSetup, isRecurring }: TaskRowProps) {
   // The tasks Melissa can pick as prerequisites: every task in the group
   // except this task itself. Any task (above or below) is allowed.
   const prereqOptions = allTasks.filter((t) => t.localId !== task.localId);
@@ -336,6 +347,28 @@ function TaskRow({ task, index, total, allTasks, displayLabels, onChange, onRemo
             </select>
           </div>
         )}
+
+        {/* Repeat interval — only in Recurring group */}
+        {isRecurring && (
+          <div className="flex flex-col gap-1">
+            <label style={LABEL_STYLE}>Repeat every (days)</label>
+            <input
+              type="number"
+              min={1}
+              value={task.intervalDays ?? ""}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                onChange({ ...task, intervalDays: isNaN(v) || v < 1 ? undefined : v });
+              }}
+              disabled={disabled}
+              placeholder="e.g. 30"
+              style={{ ...INPUT_STYLE, width: "90px" }}
+            />
+            {!task.intervalDays && (
+              <span style={{ fontSize: 10, color: "#DC2626" }}>Required — task will not recur without an interval</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Prerequisites — only in Setup group, only when other tasks exist */}
@@ -397,18 +430,19 @@ interface GroupEditorProps {
 
 function GroupEditor({ kind, label, tasks, onChange, saving }: GroupEditorProps) {
   const isSetup = kind === "setup";
+  const isRecurring = kind === "recurring";
   const displayLabels = buildDisplayLabels(tasks);
 
   // Add one blank task.
   function addTask() {
-    onChange([...tasks, blankTask()]);
+    onChange([...tasks, blankTask(isRecurring)]);
   }
 
   // Add tasks from pasted multi-line text.
   function addPastedTasks(raw: string) {
     const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
     if (lines.length === 0) return;
-    onChange([...tasks, ...lines.map(pastedTask)]);
+    onChange([...tasks, ...lines.map((l) => pastedTask(l, isRecurring))]);
   }
 
   const pasteRef = useRef<HTMLTextAreaElement>(null);
@@ -561,6 +595,7 @@ function GroupEditor({ kind, label, tasks, onChange, saving }: GroupEditorProps)
               onMove={(dir) => moveTask(i, dir)}
               disabled={saving}
               isSetup={isSetup}
+              isRecurring={isRecurring}
             />
           ))
         )}
