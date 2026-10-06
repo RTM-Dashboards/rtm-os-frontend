@@ -19,6 +19,7 @@
 // See original route for full payload shape documentation.
 
 import { NextRequest, NextResponse } from "next/server";
+import { createVerify, verify as cryptoVerify } from "crypto";
 import { prisma } from "@/lib/db/prisma";
 import type { Lead as PrismaLead } from "@prisma/client";
 import { Prisma } from "@prisma/client";
@@ -32,6 +33,10 @@ import {
   searchContact,
   ghlCredentialsConfigured,
 } from "@/lib/ghl/client";
+import {
+  GHL_ED25519_PUBLIC_KEY,
+  GHL_RSA_PUBLIC_KEY,
+} from "@/lib/ghl/webhook-keys";
 
 // ── GHL real payload shape ────────────────────────────────────────────────────
 //
@@ -239,7 +244,7 @@ async function captureWebhookLog(opts: {
   rawPayload: unknown;
   ghlContactId: string;
   leadId?: string | null;
-  outcome: "created" | "updated" | "skipped" | "error";
+  outcome: "created" | "updated" | "skipped" | "error" | "sig-fail";
   outcomeDetail?: string;
 }): Promise<void> {
   try {
@@ -262,14 +267,105 @@ async function captureWebhookLog(opts: {
   }
 }
 
+// ── Signature verification ───────────────────────────────────────────────────
+//
+// A header is "absent" when it is missing, empty, or the literal "N/A".
+// Ed25519 (X-GHL-Signature) is checked first.  If that header is present we
+// verify against the Ed25519 key and never fall through to RSA — falling
+// through would let an attacker downgrade to the deprecated scheme.
+// If only X-WH-Signature is present we verify with the RSA key.
+// Neither present → 401.
+
+function isAbsent(h: string | null): boolean {
+  return !h || h.trim() === "" || h.trim() === "N/A";
+}
+
+function verifyEd25519(rawBody: string, signature: string): boolean {
+  try {
+    // Ed25519 uses the low-level crypto.verify (no digest string — pure EdDSA)
+    return cryptoVerify(
+      null,
+      Buffer.from(rawBody),
+      GHL_ED25519_PUBLIC_KEY,
+      Buffer.from(signature, "base64")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function verifyRsa(rawBody: string, signature: string): boolean {
+  try {
+    const verify = createVerify("sha256");
+    verify.update(rawBody);
+    return verify.verify(GHL_RSA_PUBLIC_KEY, signature, "base64");
+  } catch {
+    return false;
+  }
+}
+
 // ── POST handler ──────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  // ── Step 1: read the raw body ONCE ────────────────────────────────────────
+  // Must happen before any call to req.json() / req.text() would consume it.
+  // Verification runs over this exact string; the same string is then parsed.
+  let rawBody: string;
+  try {
+    rawBody = await req.text();
+  } catch {
+    return NextResponse.json({ error: String("Failed to read request body") }, { status: 400 });
+  }
+
+  // ── Step 2: signature verification ───────────────────────────────────────
+  const edSig = req.headers.get("x-ghl-signature");
+  const rsaSig = req.headers.get("x-wh-signature");
+
+  let sigVerified = false;
+  let sigScheme: string;
+
+  if (!isAbsent(edSig)) {
+    // Ed25519 header present — verify with Ed25519 ONLY, no RSA fallthrough
+    sigVerified = verifyEd25519(rawBody, edSig!);
+    sigScheme = "ed25519";
+  } else if (!isAbsent(rsaSig)) {
+    // Legacy RSA header present
+    sigVerified = verifyRsa(rawBody, rsaSig!);
+    sigScheme = "rsa";
+  } else {
+    // Neither header present
+    sigScheme = "none";
+  }
+
+  if (!sigVerified) {
+    const detail =
+      sigScheme === "none"
+        ? "No signature header (X-GHL-Signature or X-WH-Signature)"
+        : sigScheme === "ed25519"
+        ? "Ed25519 signature invalid"
+        : "RSA signature invalid";
+
+    console.warn(`[GHL Webhook] REJECTED — ${detail}`);
+
+    // Log the rejection without the body (body carries client data)
+    void captureWebhookLog({
+      receivedAt:    new Date().toISOString(),
+      rawPayload:    { _rejected: true, reason: detail },
+      ghlContactId:  "",
+      leadId:        null,
+      outcome:       "sig-fail",
+      outcomeDetail: detail,
+    });
+
+    return NextResponse.json({ error: String(detail) }, { status: 401 });
+  }
+
+  // ── Step 3: parse the already-read body ──────────────────────────────────
   let payload: GhlWebhookPayload;
   try {
-    payload = (await req.json()) as GhlWebhookPayload;
+    payload = JSON.parse(rawBody) as GhlWebhookPayload;
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: String("Invalid JSON") }, { status: 400 });
   }
 
   const now = new Date().toISOString();
