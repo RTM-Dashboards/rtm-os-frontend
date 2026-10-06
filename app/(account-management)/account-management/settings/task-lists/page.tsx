@@ -5,7 +5,8 @@
 //
 // Melissa picks a service from the catalogue, sees its task list (two fixed
 // groups: Setup and Recurring), and edits it. Each task has a label, a
-// department (from the ten canonical departments), and a due offset in days.
+// department (from the ten canonical departments), a due offset in days, an
+// offsetFrom setting ("launch" or "prereq"), and optional prerequisites.
 //
 // Gate: requireDepartment(user, "Account Management", "Member") — any active
 //   Account Management member passes; Executives and SystemAdmins pass too.
@@ -24,6 +25,26 @@
 // Two fixed groups: "Setup" (kind="setup") and "Recurring" (kind="recurring").
 //   Melissa cannot add or remove groups — just their tasks.
 //   A service with no template shows empty tasks in both groups (normal).
+//
+// BATCH TWO — stable local ids and prerequisites:
+//   Each task has a localId (assigned client-side or returned by the API).
+//   Prerequisites reference localIds. Reordering never changes a dep.
+//   offsetFrom defaults to "prereq" when a task has prerequisites; otherwise
+//   "launch". Melissa can change this freely. The default is described in E2.
+//
+//   Duplicate labels: when two tasks share a label, the prerequisite picker
+//   appends " (2)", " (3)" etc. to distinguish them visually. The actual
+//   stored reference is the localId, so the label collision is display-only.
+//
+//   Removing a task that others depend on: the dependency is cleared
+//   automatically. The tasks that depended on it keep their offsetFrom;
+//   Melissa sees them in a clean state and can re-add a dep if needed.
+//   (Rationale: refusing removal is too rigid when building long lists.
+//    Clearing is preferable to leaving a stale reference that silently
+//    does nothing at launch.)
+//
+//   Cycle check: the client duplicates the server's DFS check. A cycle is
+//   refused before the PUT is sent, naming the tasks involved.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -36,6 +57,75 @@ interface ServiceOption {
   id: string;
   label: string;
   department: string;
+}
+
+// ── ID helpers ────────────────────────────────────────────────────────────────
+
+function makeLocalId(): string {
+  return "t-" + Math.random().toString(36).slice(2, 7);
+}
+
+function blankTask(): TemplateTaskDef {
+  return {
+    localId:    makeLocalId(),
+    label:      "",
+    department: "",
+    offsetDays: 0,
+    offsetFrom: "launch",
+    prereqIds:  [],
+  };
+}
+
+function pastedTask(label: string): TemplateTaskDef {
+  return { localId: makeLocalId(), label, department: "", offsetDays: 0, offsetFrom: "launch", prereqIds: [] };
+}
+
+// ── Cycle detection (client-side mirror of server check) ──────────────────────
+//
+// Returns null when acyclic, or the localIds forming a cycle.
+// Only checks the setup group (where prereqs are meaningful).
+
+function findCycle(tasks: TemplateTaskDef[]): string[] | null {
+  const adj = new Map<string, string[]>();
+  for (const t of tasks) adj.set(t.localId, t.prereqIds ?? []);
+
+  const colour = new Map<string, number>(); // 0=white, 1=grey, 2=black
+  const parent = new Map<string, string | null>();
+  for (const t of tasks) { colour.set(t.localId, 0); parent.set(t.localId, null); }
+
+  function dfs(node: string): string[] | null {
+    colour.set(node, 1);
+    for (const dep of adj.get(node) ?? []) {
+      if (!colour.has(dep)) continue;
+      if (colour.get(dep) === 1) {
+        const cycle: string[] = [dep];
+        let cur = node;
+        while (cur !== dep) {
+          cycle.push(cur);
+          const p = parent.get(cur);
+          if (!p) break;
+          cur = p;
+        }
+        cycle.push(dep);
+        return cycle.reverse();
+      }
+      if (colour.get(dep) === 0) {
+        parent.set(dep, node);
+        const sub = dfs(dep);
+        if (sub) return sub;
+      }
+    }
+    colour.set(node, 2);
+    return null;
+  }
+
+  for (const t of tasks) {
+    if (colour.get(t.localId) === 0) {
+      const cycle = dfs(t.localId);
+      if (cycle) return cycle;
+    }
+  }
+  return null;
 }
 
 // ── Shared style constants ────────────────────────────────────────────────────
@@ -77,19 +167,73 @@ const FIXED_GROUPS: Array<{ kind: "setup" | "recurring"; label: string }> = [
   { kind: "recurring", label: "Recurring Tasks" },
 ];
 
+// ── Build display label map (handles duplicate task labels) ───────────────────
+//
+// If two tasks share the same label, append " (2)", " (3)" etc. so Melissa
+// can tell them apart in the prereq picker. The map is keyed by localId.
+
+function buildDisplayLabels(tasks: TemplateTaskDef[]): Map<string, string> {
+  const map = new Map<string, string>();
+  // Count occurrences of each label.
+  const counts = new Map<string, number>();
+  for (const t of tasks) {
+    const lbl = t.label || "(unlabelled)";
+    counts.set(lbl, (counts.get(lbl) ?? 0) + 1);
+  }
+  // Track which ordinal we're at for each label.
+  const seen = new Map<string, number>();
+  for (const t of tasks) {
+    const lbl = t.label || "(unlabelled)";
+    const count = counts.get(lbl) ?? 1;
+    if (count === 1) {
+      map.set(t.localId, lbl);
+    } else {
+      const ord = (seen.get(lbl) ?? 0) + 1;
+      seen.set(lbl, ord);
+      map.set(t.localId, ord === 1 ? lbl : `${lbl} (${ord})`);
+    }
+  }
+  return map;
+}
+
 // ── Task row editor ────────────────────────────────────────────────────────────
 
 interface TaskRowProps {
-  task: TemplateTaskDef;
-  index: number;
-  total: number;
-  onChange: (t: TemplateTaskDef) => void;
-  onRemove: () => void;
-  onMove:   (dir: -1 | 1) => void;
-  disabled: boolean;
+  task:       TemplateTaskDef;
+  index:      number;
+  total:      number;
+  /** All tasks in this group — for the prereq picker (excludes self). */
+  allTasks:   TemplateTaskDef[];
+  displayLabels: Map<string, string>;
+  onChange:   (t: TemplateTaskDef) => void;
+  onRemove:   () => void;
+  onMove:     (dir: -1 | 1) => void;
+  disabled:   boolean;
+  /** True when this is the Setup group (prereqs only apply to setup). */
+  isSetup:    boolean;
 }
 
-function TaskRow({ task, index, total, onChange, onRemove, onMove, disabled }: TaskRowProps) {
+function TaskRow({ task, index, total, allTasks, displayLabels, onChange, onRemove, onMove, disabled, isSetup }: TaskRowProps) {
+  // The tasks Melissa can pick as prerequisites: every task in the group
+  // except this task itself. Any task (above or below) is allowed.
+  const prereqOptions = allTasks.filter((t) => t.localId !== task.localId);
+
+  function togglePrereq(localId: string) {
+    const current = task.prereqIds ?? [];
+    const next = current.includes(localId)
+      ? current.filter((id) => id !== localId)
+      : [...current, localId];
+
+    // Auto-set offsetFrom to "prereq" when adding first prereq; leave alone otherwise.
+    const offsetFrom = next.length > 0 && current.length === 0
+      ? "prereq"
+      : task.offsetFrom;
+
+    onChange({ ...task, prereqIds: next, offsetFrom });
+  }
+
+  const hasPrereqs = (task.prereqIds ?? []).length > 0;
+
   return (
     <div
       className="rounded-lg border p-3 flex flex-col gap-2"
@@ -173,7 +317,70 @@ function TaskRow({ task, index, total, onChange, onRemove, onMove, disabled }: T
             style={{ ...INPUT_STYLE, width: "80px" }}
           />
         </div>
+
+        {/* Due date counts from — only in Setup group */}
+        {isSetup && (
+          <div className="flex flex-col gap-1">
+            <label style={LABEL_STYLE}>Due date counts from</label>
+            <select
+              className={SELECT_CLS}
+              style={SELECT_STYLE}
+              value={task.offsetFrom}
+              onChange={(e) =>
+                onChange({ ...task, offsetFrom: e.target.value as "launch" | "prereq" })
+              }
+              disabled={disabled}
+            >
+              <option value="launch">Project launch</option>
+              <option value="prereq">Prerequisites closing</option>
+            </select>
+          </div>
+        )}
       </div>
+
+      {/* Prerequisites — only in Setup group, only when other tasks exist */}
+      {isSetup && prereqOptions.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label style={LABEL_STYLE}>
+            Prerequisites
+            {hasPrereqs && (
+              <span style={{ fontWeight: 400, textTransform: "none", marginLeft: 6, color: "var(--rtm-text-secondary)" }}>
+                (this task waits on the selected tasks)
+              </span>
+            )}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {prereqOptions.map((opt) => {
+              const checked = (task.prereqIds ?? []).includes(opt.localId);
+              const lbl = displayLabels.get(opt.localId) ?? (opt.label || "(unlabelled)");
+              return (
+                <label
+                  key={opt.localId}
+                  className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: 6,
+                    border: `1px solid ${checked ? "#BFDBFE" : "var(--rtm-border)"}`,
+                    background: checked ? "#EFF6FF" : "var(--rtm-bg)",
+                    color: checked ? "#1D4ED8" : "var(--rtm-text-secondary)",
+                    opacity: disabled ? 0.5 : 1,
+                    cursor: disabled ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => !disabled && togglePrereq(opt.localId)}
+                    disabled={disabled}
+                    className="w-3 h-3"
+                  />
+                  {lbl}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -189,21 +396,19 @@ interface GroupEditorProps {
 }
 
 function GroupEditor({ kind, label, tasks, onChange, saving }: GroupEditorProps) {
+  const isSetup = kind === "setup";
+  const displayLabels = buildDisplayLabels(tasks);
+
   // Add one blank task.
   function addTask() {
-    onChange([...tasks, { label: "", department: "", offsetDays: 0 }]);
+    onChange([...tasks, blankTask()]);
   }
 
   // Add tasks from pasted multi-line text.
-  // Each non-empty line becomes one task with empty department and offset 0.
   function addPastedTasks(raw: string) {
-    const lines = raw
-      .split("\n")
-      .map((l) => l.trim())
-      .filter(Boolean);
+    const lines = raw.split("\n").map((l) => l.trim()).filter(Boolean);
     if (lines.length === 0) return;
-    const newTasks = lines.map((line) => ({ label: line, department: "", offsetDays: 0 }));
-    onChange([...tasks, ...newTasks]);
+    onChange([...tasks, ...lines.map(pastedTask)]);
   }
 
   const pasteRef = useRef<HTMLTextAreaElement>(null);
@@ -221,7 +426,14 @@ function GroupEditor({ kind, label, tasks, onChange, saving }: GroupEditorProps)
   }
 
   function removeTask(i: number) {
-    onChange(tasks.filter((_, idx) => idx !== i));
+    const removed = tasks[i];
+    const remaining = tasks.filter((_, idx) => idx !== i);
+    // Clear any prerequisite references to the removed task's localId.
+    const cleaned = remaining.map((t) => ({
+      ...t,
+      prereqIds: (t.prereqIds ?? []).filter((id) => id !== removed.localId),
+    }));
+    onChange(cleaned);
   }
 
   function moveTask(i: number, dir: -1 | 1) {
@@ -338,14 +550,17 @@ function GroupEditor({ kind, label, tasks, onChange, saving }: GroupEditorProps)
         ) : (
           tasks.map((task, i) => (
             <TaskRow
-              key={i}
+              key={task.localId}
               task={task}
               index={i}
               total={tasks.length}
+              allTasks={tasks}
+              displayLabels={displayLabels}
               onChange={(t) => updateTask(i, t)}
               onRemove={() => removeTask(i)}
               onMove={(dir) => moveTask(i, dir)}
               disabled={saving}
+              isSetup={isSetup}
             />
           ))
         )}
@@ -358,12 +573,12 @@ function GroupEditor({ kind, label, tasks, onChange, saving }: GroupEditorProps)
 
 export default function TaskListsPage() {
   // Service list
-  const [services, setServices]       = useState<ServiceOption[]>([]);
+  const [services, setServices]             = useState<ServiceOption[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [servicesError, setServicesError]     = useState<string | null>(null);
 
   // Selected service
-  const [selectedId, setSelectedId]   = useState<string>("");
+  const [selectedId, setSelectedId] = useState<string>("");
 
   // Template state (two fixed groups)
   const [setupTasks,     setSetupTasks]     = useState<TemplateTaskDef[]>([]);
@@ -371,8 +586,8 @@ export default function TaskListsPage() {
 
   // Load/save states
   const [templateLoading, setTemplateLoading] = useState(false);
-  const [saving, setSaving]                   = useState(false);
-  const [saveError, setSaveError]             = useState<string | null>(null);
+  const [saving,     setSaving]               = useState(false);
+  const [saveError,  setSaveError]            = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess]         = useState(false);
 
   // ── Load service list ──────────────────────────────────────────────────────
@@ -429,6 +644,19 @@ export default function TaskListsPage() {
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
     if (!selectedId) return;
+
+    // Client-side cycle check before sending the PUT.
+    // Only setup tasks can have prerequisites.
+    const cycle = findCycle(setupTasks);
+    if (cycle) {
+      // Build a readable list: look up labels from all tasks.
+      const allById = new Map(setupTasks.map((t) => [t.localId, t]));
+      const names = cycle
+        .map((id) => `"${allById.get(id)?.label || id}"`)
+        .join(" → ");
+      setSaveError(`Cannot save: cycle detected — ${names}`);
+      return;
+    }
 
     setSaving(true);
     setSaveError(null);
@@ -568,11 +796,11 @@ export default function TaskListsPage() {
               )}
 
               {/* Two fixed group editors */}
-              {FIXED_GROUPS.map(({ kind, label }) => (
+              {FIXED_GROUPS.map(({ kind, label: groupLabel }) => (
                 <GroupEditor
                   key={kind}
                   kind={kind}
-                  label={label}
+                  label={groupLabel}
                   tasks={kind === "setup" ? setupTasks : recurringTasks}
                   onChange={kind === "setup" ? setSetupTasks : setRecurringTasks}
                   saving={saving}

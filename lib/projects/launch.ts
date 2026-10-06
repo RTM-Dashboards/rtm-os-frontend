@@ -16,16 +16,18 @@
 //     still succeeds. LaunchResult.emptyDepartments lists affected departments.
 //   - Returns a LaunchResult describing what was created or why it was skipped.
 //
-//   DEPENDENCIES (Batch One):
-//   - Template tasks carry offsetFrom: "launch" | "prereq" and prereqIndices.
-//   - prereqIndices: the zero-based indices of prerequisite tasks within the
-//     flattened ordered setup-task list of the same template.
+//   DEPENDENCIES (Batch One + Two):
+//   - Template tasks carry offsetFrom: "launch" | "prereq" and prereqIds.
+//   - prereqIds: stable localId strings of prerequisite tasks within the same
+//     template. Reordering tasks never changes which task a dep points at.
 //   - Tasks with offsetFrom="launch" get a due date immediately (as before).
 //   - Tasks with offsetFrom="prereq" get no due date at launch; the cascade
 //     in /api/tasks/done fills the date when the last prerequisite closes.
-//   - task_dependencies rows are inserted for each valid prereqIndex. A
-//     prereqIndex that is out of range is silently skipped (the task still
-//     launches; the launch does not fail because a template was misconfigured).
+//   - task_dependencies rows are inserted for each valid prereqId. A localId
+//     that is not in the template is silently skipped (the task still launches;
+//     the launch does not fail because a template was misconfigured).
+//   - Legacy prereqIndices (Batch One format) are still accepted here as a
+//     safety net; they are translated to localIds using flat-list position.
 //
 // WHAT THIS RUN DOES NOT DO:
 //   - Recurring tasks are NOT generated. The template records whether a task
@@ -87,19 +89,26 @@ interface LineItem {
 //             "prereq"  → due date = lastPrereqCloseDate + offsetDays
 //                         (no date at launch; cascade fills it later)
 //
-// prereqIndices: zero-based indices into the flattened ordered setup-task list
-//   of this same template. For example, if the setup tasks are [A, B, C] and
-//   C waits on B (index 1), then C.prereqIndices = [1].
-//   An index that is out of range is silently ignored; the task still launches.
-//   This means a template referring to a nonexistent prerequisite simply
-//   creates the task with no dependency row — it behaves as an ordinary task.
+// prereqIds: stable localId strings of prerequisite tasks within the same template.
+//   A localId that is not in the template is silently ignored; the task still
+//   launches. This means a template with a stale prereqId (e.g. after a task
+//   was removed) creates the task with no dependency row — it behaves as an
+//   ordinary task.
+//
+//   Legacy prereqIndices are also supported here for safety; they are translated
+//   using flat-list position.
 
 interface TemplateTaskDef {
   label: string;
   department: string;
   offsetDays: number;
-  offsetFrom?: "launch" | "prereq"; // default "launch"
-  prereqIndices?: number[];          // indices into the flat setup-task list
+  offsetFrom?: "launch" | "prereq";  // default "launch"
+  /** Stable local ids of prerequisite tasks (Batch Two format). */
+  prereqIds?: string[];
+  /** Legacy index-based prerequisites (Batch One format). Still accepted. */
+  prereqIndices?: number[];
+  /** Stable id unique within the template. */
+  localId?: string;
 }
 
 interface TemplateGroup {
@@ -343,11 +352,13 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
       // Template prerequisite indices refer to positions in THIS flat list.
 
       interface FlatTask {
+        localId: string;       // stable local id (empty string for fallback tasks)
         label: string;
         department: string;
         offsetDays: number;
         offsetFrom: "launch" | "prereq";
-        prereqIndices: number[];
+        /** Resolved to localId strings (may include legacy index translations). */
+        prereqLocalIds: string[];
       }
 
       const flatTasks: FlatTask[] = [];
@@ -356,18 +367,42 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
         const groups = Array.isArray(template.groups)
           ? (template.groups as unknown as TemplateGroup[])
           : [];
+
+        // Collect tasks in flat order so we can translate legacy indices.
+        const flatRaw: TemplateTaskDef[] = [];
         for (const group of groups) {
           if (group.kind === "setup" && Array.isArray(group.tasks)) {
             for (const t of group.tasks) {
-              flatTasks.push({
-                label:         t.label,
-                department:    t.department ?? "",
-                offsetDays:    t.offsetDays ?? 0,
-                offsetFrom:    t.offsetFrom ?? "launch",
-                prereqIndices: t.prereqIndices ?? [],
-              });
+              flatRaw.push(t);
             }
           }
+        }
+
+        // Build localId→position map for legacy index translation.
+        const localIdByIndex = flatRaw.map((t) => t.localId ?? "");
+
+        for (const t of flatRaw) {
+          // Preferred: prereqIds (stable local id references).
+          const prereqLocalIds: string[] = [];
+          const seen = new Set<string>();
+
+          for (const id of t.prereqIds ?? []) {
+            if (id && !seen.has(id)) { prereqLocalIds.push(id); seen.add(id); }
+          }
+          // Legacy: prereqIndices — translate to localIds.
+          for (const idx of t.prereqIndices ?? []) {
+            const id = localIdByIndex[idx] ?? "";
+            if (id && !seen.has(id)) { prereqLocalIds.push(id); seen.add(id); }
+          }
+
+          flatTasks.push({
+            localId:       t.localId ?? "",
+            label:         t.label,
+            department:    t.department ?? "",
+            offsetDays:    t.offsetDays ?? 0,
+            offsetFrom:    t.offsetFrom ?? "launch",
+            prereqLocalIds,
+          });
         }
       } else if (catalogItem) {
         // Fall back to deliverableGroups bullets as tasks.
@@ -380,11 +415,12 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
           if (Array.isArray(group.bullets)) {
             for (const bullet of group.bullets) {
               flatTasks.push({
+                localId: "",
                 label: bullet,
                 department: categoryDept,
                 offsetDays: 0,
                 offsetFrom: "launch",
-                prereqIndices: [],
+                prereqLocalIds: [],
               });
             }
           }
@@ -393,11 +429,13 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
       // If neither template nor deliverableGroups has content, flatTasks stays []
       // and the category is empty — correct per spec.
 
-      // ── Create tasks, tracking their db ids by flat index ─────────────────
-      // We insert all tasks first, then insert dependency rows. This avoids
-      // any ordering constraint on which task must exist first.
+      // ── Create tasks, tracking their db ids by localId ────────────────────
+      // We insert all tasks first (building a localId→dbTaskId map), then
+      // insert dependency rows. This avoids ordering constraints and makes
+      // reordering safe: deps reference stable localIds, not positions.
 
-      const createdTaskIds: (string | null)[] = [];
+      // Map: template localId → created db task id (null if insert failed).
+      const taskIdByLocalId = new Map<string, string | null>();
 
       for (const taskDef of flatTasks) {
         const dept = taskDef.department.trim();
@@ -412,8 +450,8 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
 
         // A task with offsetFrom="prereq" gets no due date at launch.
         // A task with offsetFrom="launch" gets offsetDays from launchDate.
-        const hasPrerequsites = taskDef.offsetFrom === "prereq";
-        const dueDate = hasPrerequsites ? null : addDays(launchDate, taskDef.offsetDays);
+        const hasPrerequisites = taskDef.offsetFrom === "prereq";
+        const dueDate = hasPrerequisites ? null : addDays(launchDate, taskDef.offsetDays);
 
         try {
           const taskId = makeId("task");
@@ -433,37 +471,35 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
               updatedAt:  now,
             },
           });
-          createdTaskIds.push(taskId);
+          if (taskDef.localId) taskIdByLocalId.set(taskDef.localId, taskId);
           result.tasksCreated++;
         } catch (err) {
           result.errors.push(
             `Task "${taskDef.label}": ${err instanceof Error ? err.message : String(err)}`
           );
-          // Push null so index alignment is preserved for dep-row insertion.
-          createdTaskIds.push(null);
+          if (taskDef.localId) taskIdByLocalId.set(taskDef.localId, null);
         }
       }
 
       // ── Insert dependency rows ────────────────────────────────────────────
-      // For each task with prereqIndices, insert one task_dependencies row per
-      // valid index. An out-of-range index is silently skipped — the task
-      // behaves as if it has no dependency on that missing prerequisite.
-      // A null createdTaskId (failed task insert above) is also skipped.
+      // For each task with prereqLocalIds, insert one task_dependencies row per
+      // valid localId. A localId not found in the map (stale reference after a
+      // task was removed) is silently skipped — the task behaves as unrestricted.
+      // A null db task id (failed task insert above) is also skipped.
 
       const depNow = new Date().toISOString();
-      for (let i = 0; i < flatTasks.length; i++) {
-        const taskDef = flatTasks[i];
-        const taskId  = createdTaskIds[i];
+      for (const taskDef of flatTasks) {
+        if (!taskDef.localId) continue;
+        const taskId = taskIdByLocalId.get(taskDef.localId);
         if (!taskId) continue;
-        if (!taskDef.prereqIndices || taskDef.prereqIndices.length === 0) continue;
+        if (!taskDef.prereqLocalIds || taskDef.prereqLocalIds.length === 0) continue;
 
-        for (const prereqIdx of taskDef.prereqIndices) {
-          if (prereqIdx < 0 || prereqIdx >= createdTaskIds.length) {
-            // Out-of-range: silently skip. Template misconfiguration does not
-            // break the launch; the task is created as an unrestricted task.
+        for (const prereqLocalId of taskDef.prereqLocalIds) {
+          if (!taskIdByLocalId.has(prereqLocalId)) {
+            // Dangling ref (task removed from template): silently skip.
             continue;
           }
-          const prereqTaskId = createdTaskIds[prereqIdx];
+          const prereqTaskId = taskIdByLocalId.get(prereqLocalId);
           if (!prereqTaskId) continue; // prereq task failed to create; skip
 
           try {
@@ -479,7 +515,7 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
             // Dep insert failure is non-fatal. The task exists; it just won't
             // be blocked properly. Report it.
             result.errors.push(
-              `Dependency ${String(prereqIdx)}→${i} for task "${taskDef.label}": ` +
+              `Dependency "${prereqLocalId}"→"${taskDef.localId}" for task "${taskDef.label}": ` +
               (err instanceof Error ? err.message : String(err))
             );
           }
