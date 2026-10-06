@@ -25,6 +25,7 @@ export const workspaces: WorkspaceConfig[] = [
       { label: "Project List",             href: "/projects/view"},
       { label: "My Tasks",                href: "/account-management/tasks"},
       { label: "Client Portfolio",        href: "/account-management/client-portfolio"},
+      { label: "Import Existing Client",     href: "/account-management/clients/import"},
       { label: "Client Health",           href: "/account-management/client-health"},
       { label: "Communications",          href: "/account-management/communications"},
       { label: "Change Requests",         href: "/account-management/change-requests"},

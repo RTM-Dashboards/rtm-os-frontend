@@ -57,6 +57,8 @@ export interface BusinessRecord {
   assignedAt: string | null;
   // Provenance — NOT an identity key, NOT a matching key
   ghlOpportunityId: string | null;
+  // Reference to the signed contract (PandaDoc number or internal ref).
+  contractRef: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -89,6 +91,7 @@ function rowToRecord(row: BusinessRow): BusinessRecord {
     kickoffDate: row.kickoffDate ?? null,
     assignedAt: row.assignedAt ?? null,
     ghlOpportunityId: row.ghlOpportunityId ?? null,
+    contractRef: row.contractRef ?? "",
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -235,6 +238,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           ghlOpportunityId:   incoming.ghlOpportunityId !== undefined
             ? incoming.ghlOpportunityId
             : existing.ghlOpportunityId,
+          contractRef:        incoming.contractRef !== undefined
+            ? incoming.contractRef
+            : existing.contractRef,
           updatedAt: now,
         },
       });
@@ -275,6 +281,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           kickoffDate:         incoming.kickoffDate         ?? null,
           assignedAt:          incoming.assignedAt          ?? null,
           ghlOpportunityId:    incoming.ghlOpportunityId   ?? null,
+          contractRef:         incoming.contractRef          ?? "",
           createdAt:           now,
           updatedAt:           now,
         },
@@ -346,6 +353,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (patch.kickoffDate      !== undefined) data.kickoffDate      = patch.kickoffDate;
   if (patch.assignedAt       !== undefined) data.assignedAt       = patch.assignedAt;
   if (patch.ghlOpportunityId !== undefined) data.ghlOpportunityId = patch.ghlOpportunityId;
+  if (patch.contractRef      !== undefined) data.contractRef      = patch.contractRef;
 
   try {
     const existing = await prisma.business.findUnique({ where: { id } });

@@ -52,6 +52,23 @@ import { prisma } from "@/lib/db/prisma";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
+/**
+ * Options for the import path (existing client, no handoff).
+ *
+ * When supplied, launchProject uses these instead of looking up a SalesHandoff:
+ *   - lineItems: service line items to create categories for.
+ *   - assignedAMId: AM user id chosen on the import form (not by workload).
+ *   - skipSetupTasks: true — import path creates ONLY recurring tasks.
+ *
+ * When omitted, launchProject behaves exactly as before (Billing clearance path).
+ */
+export interface LaunchImportOptions {
+  lineItems: Array<{ serviceId: string; label: string; department: string }>;
+  assignedAMId: string;
+  assignedAMName: string;
+  skipSetupTasks: true;
+}
+
 export interface LaunchResult {
   /** businessId the launch ran for */
   businessId: string;
@@ -195,7 +212,10 @@ async function pickOwner(
 
 // ── Main launch function ───────────────────────────────────────────────────────
 
-export async function launchProject(businessId: string): Promise<LaunchResult> {
+export async function launchProject(
+  businessId: string,
+  importOptions?: LaunchImportOptions,
+): Promise<LaunchResult> {
   const now = new Date().toISOString();
   const launchDate = new Date();
 
@@ -236,12 +256,15 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
   }
 
   // ── 3. Resolve services sold ──────────────────────────────────────────────
-  // Primary: SalesHandoff.lineItems where processedClientId = business.clientId.
-  // The handoff is matched by clientId (set when Billing processed it).
-  // If multiple handoffs match (edge case), merge their lineItems deduped by serviceId.
+  // Import path: lineItems are supplied directly (no handoff lookup).
+  // Standard path: look up the SalesHandoff by processedClientId.
   let lineItems: LineItem[] = [];
 
-  if (business.clientId) {
+  if (importOptions) {
+    // Import path — use the caller-supplied line items directly.
+    lineItems = importOptions.lineItems;
+  } else if (business.clientId) {
+    // Standard Billing-clearance path — look up the processed handoff.
     const handoffs = await prisma.salesHandoff.findMany({
       where: { processedClientId: business.clientId },
       select: { lineItems: true },
@@ -262,56 +285,63 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
   }
 
   // ── 4. Assign AM to the project ───────────────────────────────────────────
-  // Among Account Management users with isMain=true, pick the one with the
-  // fewest open tasks (status='open' or 'in_progress'). Ties broken by name
-  // alphabetically (first in sort order wins — deterministic).
-  // THIS LOGIC IS UNCHANGED FROM THE PREVIOUS RUN.
-  const mainAMs = await prisma.user.findMany({
-    where: {
-      department: "Account Management",
-      isMain:     true,
-      status:     "active",
-    },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
-
+  // Import path: AM is chosen on the form — not by workload.
+  // Standard path: pick the Main AM with the fewest open tasks.
   let assignedAMId: string | null = null;
   let assignedAMName: string | null = null;
 
-  if (mainAMs.length === 0) {
-    result.noEligibleAM = true;
+  if (importOptions) {
+    // Import path — use the caller-supplied AM directly.
+    assignedAMId   = importOptions.assignedAMId;
+    assignedAMName = importOptions.assignedAMName;
+    if (!assignedAMId) {
+      result.noEligibleAM = true;
+    }
   } else {
-    const taskCounts = await Promise.all(
-      mainAMs.map(async (am) => {
-        const count = await prisma.task.count({
-          where: {
-            ownerId: am.id,
-            status:  { in: ["open", "in_progress"] },
-          },
-        });
-        return { am, count };
-      })
-    );
+    // Standard Billing-clearance path — pick by workload.
+    const mainAMs = await prisma.user.findMany({
+      where: {
+        department: "Account Management",
+        isMain:     true,
+        status:     "active",
+      },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
 
-    taskCounts.sort((a, b) => a.count - b.count);
-    const winner = taskCounts[0];
-    assignedAMId   = winner.am.id;
-    assignedAMName = winner.am.name;
+    if (mainAMs.length === 0) {
+      result.noEligibleAM = true;
+    } else {
+      const taskCounts = await Promise.all(
+        mainAMs.map(async (am) => {
+          const count = await prisma.task.count({
+            where: {
+              ownerId: am.id,
+              status:  { in: ["open", "in_progress"] },
+            },
+          });
+          return { am, count };
+        })
+      );
+
+      taskCounts.sort((a, b) => a.count - b.count);
+      const winner = taskCounts[0];
+      assignedAMId   = winner.am.id;
+      assignedAMName = winner.am.name;
+    }
   }
 
   result.assignedAMId   = assignedAMId;
   result.assignedAMName = assignedAMName;
 
   // ── 5. Create the project ─────────────────────────────────────────────────
-  // Set startDate from today (launch date). Set endDate from the contract
-  // termLengthMonths carried on the processed handoff, if available.
-  // RTM contracts go month-to-month after the term, so endDate is advisory
-  // and does NOT stop recurrence.
+  // startDate = today. endDate = from the handoff's termLengthMonths (standard path)
+  // or null for the import path (no handoff; client is already month-to-month).
   const projectStartDate = launchDate.toISOString().slice(0, 10);
   let projectEndDate: string | null = null;
 
-  if (business.clientId) {
+  if (!importOptions && business.clientId) {
+    // Standard Billing-clearance path: derive endDate from the processed handoff.
     const handoff = await prisma.salesHandoff.findFirst({
       where: { processedClientId: business.clientId },
       select: { termLengthMonths: true },
@@ -323,6 +353,8 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
       projectEndDate = endD.toISOString().slice(0, 10);
     }
   }
+  // Import path: endDate stays null. The client is already on a running
+  // engagement; there is no handoff term to reference.
 
   const projectId = makeId("proj");
   const project = await prisma.project.create({
@@ -424,7 +456,10 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
         const localIdByIndex = setupRaw.map((t) => t.localId ?? "");
 
         // Process setup tasks (with dependency support).
-        for (const t of setupRaw) {
+        // Import path: skip setup tasks — existing clients already have their
+        // setup work done. Only recurring tasks are created on import.
+        const processSetup = !importOptions?.skipSetupTasks;
+        for (const t of (processSetup ? setupRaw : [])) {
           const prereqLocalIds: string[] = [];
           const seen = new Set<string>();
 

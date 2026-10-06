@@ -682,6 +682,11 @@ model Business {
   // Do not build any GHL lookup or sync against this field.
   ghlOpportunityId    String?
 
+  // Reference to the signed contract (PandaDoc number or internal ref).
+  // Stored here so an AM can look up the contract without creating a Contract row.
+  // The Contract row is NOT created for imported clients — this is a reference only.
+  contractRef         String   @default("")
+
   // Audit timestamps — ISO-8601 strings, matching existing model conventions
   createdAt           String   @default("")
   updatedAt           String   @default("")
