@@ -26,6 +26,19 @@
 //   Categories: all categories are always returned for context.
 //   Tasks: filtered per department rules above.
 //   Within each category, tasks array holds only what the caller can see.
+//
+// ── BLOCKED / WAITING ─────────────────────────────────────────────────────────
+//   A task is BLOCKED when any of its prerequisites is not done.
+//   isBlocked is a derived field — never stored.
+//
+//   blockedBy: for each unfulfilled prerequisite, we return:
+//     { label: string, department: string | null }
+//   We return these even when the prerequisite task is in a different department
+//   that the caller cannot see — the label and department name are safe to
+//   expose because they identify what someone is waiting for, not the full task.
+//
+//   A task with no due date (dueDate === null) and at least one unmet prereq
+//   is WAITING — shown as "Waiting" not "Overdue" or undated.
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
@@ -43,6 +56,11 @@ function canSeeMoney(role: string, department: string | null): boolean {
 
 // ── Response shapes ────────────────────────────────────────────────────────────
 
+export interface BlockedByEntry {
+  label: string;
+  department: string | null;
+}
+
 export interface ScopedTask {
   id: string;
   label: string;
@@ -55,6 +73,9 @@ export interface ScopedTask {
   createdAt: string;
   updatedAt: string;
   isOverdue: boolean;
+  // Dependency fields
+  isBlocked: boolean;           // true when any prereq is not done
+  blockedBy: BlockedByEntry[];  // what it is waiting on (label + department)
 }
 
 export interface ScopedCategory {
@@ -193,6 +214,47 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       : [];
     const ownerMap = new Map(owners.map((u) => [u.id, u.name]));
 
+    // ── Resolve dependency / blocked state ────────────────────────────────────
+    // For every visible task, find its unmet prerequisites.
+    // We fetch all dependency rows for these tasks in one query, then load
+    // the prerequisite task details (label + department + status) in one query.
+    // We show the prereq label + department even if the prereq task is outside
+    // the caller's department — that is intentional (cross-dept waiting info).
+
+    const visibleTaskIds = tasks.map((t) => t.id);
+
+    // All dependency rows where the waiting task is one we can see.
+    const depRows = visibleTaskIds.length
+      ? await prisma.taskDependency.findMany({
+          where: { taskId: { in: visibleTaskIds } },
+          select: { taskId: true, requiresTaskId: true },
+        })
+      : [];
+
+    // Unique set of prerequisite task ids.
+    const allPrereqIds = [...new Set(depRows.map((d) => d.requiresTaskId))];
+
+    // Load prerequisite tasks — label, department, status.
+    // These may be outside the caller's department; we only expose label + dept.
+    const prereqTasks = allPrereqIds.length
+      ? await prisma.task.findMany({
+          where: { id: { in: allPrereqIds } },
+          select: { id: true, label: true, department: true, status: true },
+        })
+      : [];
+    const prereqMap = new Map(prereqTasks.map((p) => [p.id, p]));
+
+    // Build a map: taskId → BlockedByEntry[] (only unmet prereqs)
+    const blockedByMap = new Map<string, BlockedByEntry[]>();
+    for (const dep of depRows) {
+      const prereq = prereqMap.get(dep.requiresTaskId);
+      if (!prereq) continue;
+      if (prereq.status === "done") continue; // prereq is done; not blocking
+      const existing = blockedByMap.get(dep.taskId) ?? [];
+      existing.push({ label: prereq.label, department: prereq.department ?? null });
+      blockedByMap.set(dep.taskId, existing);
+    }
+
     // ── Assemble per-category task lists ──────────────────────────────────────
     const tasksByCat = new Map<string, typeof tasks>();
     for (const t of tasks) {
@@ -207,19 +269,26 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       serviceLabel: cat.serviceLabel,
       department: cat.department,
       createdAt: cat.createdAt,
-      tasks: (tasksByCat.get(cat.id) ?? []).map((t) => ({
-        id: t.id,
-        label: t.label,
-        department: t.department ?? null,
-        ownerId: t.ownerId ?? null,
-        ownerName: t.ownerId ? (ownerMap.get(t.ownerId) ?? null) : null,
-        dueDate: t.dueDate ?? null,
-        status: t.status,
-        isSetup: t.isSetup,
-        createdAt: t.createdAt,
-        updatedAt: t.updatedAt,
-        isOverdue: isOverdue(t.dueDate ?? null, t.status),
-      })),
+      tasks: (tasksByCat.get(cat.id) ?? []).map((t) => {
+        const blockedBy = blockedByMap.get(t.id) ?? [];
+        const isBlocked = blockedBy.length > 0;
+        return {
+          id: t.id,
+          label: t.label,
+          department: t.department ?? null,
+          ownerId: t.ownerId ?? null,
+          ownerName: t.ownerId ? (ownerMap.get(t.ownerId) ?? null) : null,
+          dueDate: t.dueDate ?? null,
+          status: t.status,
+          isSetup: t.isSetup,
+          createdAt: t.createdAt,
+          updatedAt: t.updatedAt,
+          // A blocked task with no due date is not overdue — it is waiting.
+          isOverdue: isBlocked ? false : isOverdue(t.dueDate ?? null, t.status),
+          isBlocked,
+          blockedBy,
+        };
+      }),
     }));
 
     // ── Assemble the final response ────────────────────────────────────────────

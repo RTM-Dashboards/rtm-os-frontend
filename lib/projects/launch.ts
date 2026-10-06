@@ -16,6 +16,17 @@
 //     still succeeds. LaunchResult.emptyDepartments lists affected departments.
 //   - Returns a LaunchResult describing what was created or why it was skipped.
 //
+//   DEPENDENCIES (Batch One):
+//   - Template tasks carry offsetFrom: "launch" | "prereq" and prereqIndices.
+//   - prereqIndices: the zero-based indices of prerequisite tasks within the
+//     flattened ordered setup-task list of the same template.
+//   - Tasks with offsetFrom="launch" get a due date immediately (as before).
+//   - Tasks with offsetFrom="prereq" get no due date at launch; the cascade
+//     in /api/tasks/done fills the date when the last prerequisite closes.
+//   - task_dependencies rows are inserted for each valid prereqIndex. A
+//     prereqIndex that is out of range is silently skipped (the task still
+//     launches; the launch does not fail because a template was misconfigured).
+//
 // WHAT THIS RUN DOES NOT DO:
 //   - Recurring tasks are NOT generated. The template records whether a task
 //     group is "setup" or "recurring"; only setup groups are processed here.
@@ -71,11 +82,24 @@ interface LineItem {
 }
 
 // ── Template task shape ───────────────────────────────────────────────────────
+//
+// offsetFrom: "launch"  → due date = launchDate + offsetDays (default, existing behaviour)
+//             "prereq"  → due date = lastPrereqCloseDate + offsetDays
+//                         (no date at launch; cascade fills it later)
+//
+// prereqIndices: zero-based indices into the flattened ordered setup-task list
+//   of this same template. For example, if the setup tasks are [A, B, C] and
+//   C waits on B (index 1), then C.prereqIndices = [1].
+//   An index that is out of range is silently ignored; the task still launches.
+//   This means a template referring to a nonexistent prerequisite simply
+//   creates the task with no dependency row — it behaves as an ordinary task.
 
 interface TemplateTaskDef {
   label: string;
   department: string;
   offsetDays: number;
+  offsetFrom?: "launch" | "prereq"; // default "launch"
+  prereqIndices?: number[];          // indices into the flat setup-task list
 }
 
 interface TemplateGroup {
@@ -314,20 +338,33 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
         where: { serviceId: item.serviceId },
       });
 
-      let taskDefs: Array<{ label: string; department: string; offsetDays: number }> = [];
+      // ── Flatten setup tasks from template ──────────────────────────────────
+      // We build a flat ordered list of all setup tasks across all setup groups.
+      // Template prerequisite indices refer to positions in THIS flat list.
+
+      interface FlatTask {
+        label: string;
+        department: string;
+        offsetDays: number;
+        offsetFrom: "launch" | "prereq";
+        prereqIndices: number[];
+      }
+
+      const flatTasks: FlatTask[] = [];
 
       if (template) {
-        // Use the template's setup groups. Each task carries its own department.
         const groups = Array.isArray(template.groups)
           ? (template.groups as unknown as TemplateGroup[])
           : [];
         for (const group of groups) {
           if (group.kind === "setup" && Array.isArray(group.tasks)) {
             for (const t of group.tasks) {
-              taskDefs.push({
-                label:      t.label,
-                department: t.department ?? "",
-                offsetDays: t.offsetDays ?? 0,
+              flatTasks.push({
+                label:         t.label,
+                department:    t.department ?? "",
+                offsetDays:    t.offsetDays ?? 0,
+                offsetFrom:    t.offsetFrom ?? "launch",
+                prereqIndices: t.prereqIndices ?? [],
               });
             }
           }
@@ -335,22 +372,34 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
       } else if (catalogItem) {
         // Fall back to deliverableGroups bullets as tasks.
         // No per-task department in this fallback; use the category's department.
+        // Fallback tasks never have prerequisites — no template means no deps.
         const deliverableGroups = Array.isArray(catalogItem.deliverableGroups)
           ? (catalogItem.deliverableGroups as unknown as DeliverableGroup[])
           : [];
         for (const group of deliverableGroups) {
           if (Array.isArray(group.bullets)) {
             for (const bullet of group.bullets) {
-              taskDefs.push({ label: bullet, department: categoryDept, offsetDays: 0 });
+              flatTasks.push({
+                label: bullet,
+                department: categoryDept,
+                offsetDays: 0,
+                offsetFrom: "launch",
+                prereqIndices: [],
+              });
             }
           }
         }
       }
-      // If neither template nor deliverableGroups has content, taskDefs stays []
+      // If neither template nor deliverableGroups has content, flatTasks stays []
       // and the category is empty — correct per spec.
 
-      // Create tasks, routing each to the right department member.
-      for (const taskDef of taskDefs) {
+      // ── Create tasks, tracking their db ids by flat index ─────────────────
+      // We insert all tasks first, then insert dependency rows. This avoids
+      // any ordering constraint on which task must exist first.
+
+      const createdTaskIds: (string | null)[] = [];
+
+      for (const taskDef of flatTasks) {
         const dept = taskDef.department.trim();
         let ownerId: string | null = null;
 
@@ -361,22 +410,80 @@ export async function launchProject(businessId: string): Promise<LaunchResult> {
           }
         }
 
-        const dueDate = addDays(launchDate, taskDef.offsetDays);
-        await prisma.task.create({
-          data: {
-            id:         makeId("task"),
-            categoryId,
-            label:      taskDef.label,
-            status:     "open",
-            ownerId,
-            department: dept || null,
-            dueDate,
-            isSetup:    true,
-            createdAt:  now,
-            updatedAt:  now,
-          },
-        });
-        result.tasksCreated++;
+        // A task with offsetFrom="prereq" gets no due date at launch.
+        // A task with offsetFrom="launch" gets offsetDays from launchDate.
+        const hasPrerequsites = taskDef.offsetFrom === "prereq";
+        const dueDate = hasPrerequsites ? null : addDays(launchDate, taskDef.offsetDays);
+
+        try {
+          const taskId = makeId("task");
+          await prisma.task.create({
+            data: {
+              id:         taskId,
+              categoryId,
+              label:      taskDef.label,
+              status:     "open",
+              ownerId,
+              department: dept || null,
+              dueDate,
+              offsetFrom: taskDef.offsetFrom,
+              offsetDays: taskDef.offsetDays,
+              isSetup:    true,
+              createdAt:  now,
+              updatedAt:  now,
+            },
+          });
+          createdTaskIds.push(taskId);
+          result.tasksCreated++;
+        } catch (err) {
+          result.errors.push(
+            `Task "${taskDef.label}": ${err instanceof Error ? err.message : String(err)}`
+          );
+          // Push null so index alignment is preserved for dep-row insertion.
+          createdTaskIds.push(null);
+        }
+      }
+
+      // ── Insert dependency rows ────────────────────────────────────────────
+      // For each task with prereqIndices, insert one task_dependencies row per
+      // valid index. An out-of-range index is silently skipped — the task
+      // behaves as if it has no dependency on that missing prerequisite.
+      // A null createdTaskId (failed task insert above) is also skipped.
+
+      const depNow = new Date().toISOString();
+      for (let i = 0; i < flatTasks.length; i++) {
+        const taskDef = flatTasks[i];
+        const taskId  = createdTaskIds[i];
+        if (!taskId) continue;
+        if (!taskDef.prereqIndices || taskDef.prereqIndices.length === 0) continue;
+
+        for (const prereqIdx of taskDef.prereqIndices) {
+          if (prereqIdx < 0 || prereqIdx >= createdTaskIds.length) {
+            // Out-of-range: silently skip. Template misconfiguration does not
+            // break the launch; the task is created as an unrestricted task.
+            continue;
+          }
+          const prereqTaskId = createdTaskIds[prereqIdx];
+          if (!prereqTaskId) continue; // prereq task failed to create; skip
+
+          try {
+            await prisma.taskDependency.create({
+              data: {
+                id:             makeId("dep"),
+                taskId,
+                requiresTaskId: prereqTaskId,
+                createdAt:      depNow,
+              },
+            });
+          } catch (err) {
+            // Dep insert failure is non-fatal. The task exists; it just won't
+            // be blocked properly. Report it.
+            result.errors.push(
+              `Dependency ${String(prereqIdx)}→${i} for task "${taskDef.label}": ` +
+              (err instanceof Error ? err.message : String(err))
+            );
+          }
+        }
       }
     } catch (err) {
       result.errors.push(

@@ -21,11 +21,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import type { ScopedProjectDetail, ScopedTask } from "@/app/api/projects/detail/route";
+import type { ScopedProjectDetail, ScopedTask, BlockedByEntry } from "@/app/api/projects/detail/route";
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
-type BadgeVariant = "success" | "warning" | "info" | "neutral" | "error" | "overdue";
+type BadgeVariant = "success" | "warning" | "info" | "neutral" | "error" | "overdue" | "blocked";
 
 const BADGE_STYLES: Record<BadgeVariant, React.CSSProperties> = {
   success: { background: "#ECFDF5", color: "#065F46", border: "1px solid #A7F3D0" },
@@ -33,7 +33,8 @@ const BADGE_STYLES: Record<BadgeVariant, React.CSSProperties> = {
   info:    { background: "#EFF6FF", color: "#1E40AF", border: "1px solid #BFDBFE" },
   neutral: { background: "#F8FAFC", color: "#475569", border: "1px solid #E2E8F0" },
   error:   { background: "#FEF2F2", color: "#991B1B", border: "1px solid #FECACA" },
-  overdue: { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" },
+  overdue:  { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" },
+  blocked:  { background: "#FFF7ED", color: "#9A3412", border: "1px solid #FED7AA" },
 };
 
 function Badge({ variant, label }: { variant: BadgeVariant; label: string }) {
@@ -55,7 +56,8 @@ function projectStatusVariant(s: string): BadgeVariant {
   }
 }
 
-function taskStatusVariant(s: string, overdue: boolean): BadgeVariant {
+function taskStatusVariant(s: string, overdue: boolean, blocked: boolean, waiting: boolean): BadgeVariant {
+  if (blocked || waiting) return "blocked";
   if (overdue) return "overdue";
   switch (s) {
     case "done":        return "success";
@@ -65,7 +67,9 @@ function taskStatusVariant(s: string, overdue: boolean): BadgeVariant {
   }
 }
 
-function taskStatusLabel(s: string, overdue: boolean): string {
+function taskStatusLabel(s: string, overdue: boolean, blocked: boolean, waiting: boolean): string {
+  if (blocked) return "Blocked";
+  if (waiting) return "Waiting";
   if (overdue) return "Overdue";
   switch (s) {
     case "done":        return "Done";
@@ -90,6 +94,26 @@ function fmtDate(d: string | null): string {
 
 // ── Task row ──────────────────────────────────────────────────────────────────
 
+// ── BlockedBy pill list ───────────────────────────────────────────────────────
+// Shows what a blocked task is waiting on: label + department.
+// Intentionally shown even when the prereq is in another department.
+function BlockedByList({ entries }: { entries: BlockedByEntry[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <div className="mt-1 space-y-0.5">
+      {entries.map((e, i) => (
+        <div key={i} className="text-[10px] flex items-center gap-1" style={{ color: "#9A3412" }}>
+          <span style={{ opacity: 0.6 }}>⏳</span>
+          <span className="font-semibold">{e.label}</span>
+          {e.department && (
+            <span style={{ opacity: 0.7 }}>({e.department})</span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function TaskRow({
   task,
   onMarkDone,
@@ -99,16 +123,24 @@ function TaskRow({
   onMarkDone: (id: string) => void;
   markingDone: boolean;
 }) {
-  const isDone = task.status === "done";
+  const isDone    = task.status === "done";
+  // Waiting: blocked + no due date yet (date not set because prereqs unmet)
+  const isWaiting = !isDone && task.isBlocked && !task.dueDate;
+
+  // Row background: done=green tint, blocked/waiting=orange tint, else default
+  const rowBg = isDone ? "#F0FDF4" : (task.isBlocked ? "#FFF7ED" : "var(--rtm-bg)");
+  const rowBgHover = isDone ? "#F0FDF4" : (task.isBlocked ? "#FFEDD5" : "var(--rtm-bg-alt, #F9FAFB)");
 
   return (
     <tr
-      style={{ background: isDone ? "#F0FDF4" : "var(--rtm-bg)", opacity: isDone ? 0.8 : 1 }}
-      onMouseEnter={(e) => { if (!isDone) (e.currentTarget as HTMLTableRowElement).style.background = "var(--rtm-bg-alt, #F9FAFB)"; }}
-      onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = isDone ? "#F0FDF4" : "var(--rtm-bg)"; }}
+      style={{ background: rowBg, opacity: isDone ? 0.8 : 1 }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = rowBgHover; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLTableRowElement).style.background = rowBg; }}
     >
       <td className="px-3 py-2.5 text-sm border-b" style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-primary)" }}>
         <span className={isDone ? "line-through opacity-60" : ""}>{task.label}</span>
+        {/* Blocked: show what this task is waiting on */}
+        {task.isBlocked && <BlockedByList entries={task.blockedBy} />}
       </td>
       <td className="px-3 py-2.5 text-xs border-b whitespace-nowrap" style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-muted)" }}>
         {task.department ?? "—"}
@@ -119,13 +151,13 @@ function TaskRow({
       <td className="px-3 py-2.5 text-xs border-b whitespace-nowrap" style={{ borderColor: "var(--rtm-border-light)", color: task.isOverdue ? "#DC2626" : "var(--rtm-text-muted)" }}>
         {task.dueDate
           ? new Date(task.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })
-          : "—"}
+          : (isWaiting ? <em style={{ color: "#9A3412" }}>Waiting…</em> : "—")}
         {task.isOverdue && " ⚠"}
       </td>
       <td className="px-3 py-2.5 border-b" style={{ borderColor: "var(--rtm-border-light)" }}>
         <Badge
-          variant={taskStatusVariant(task.status, task.isOverdue)}
-          label={taskStatusLabel(task.status, task.isOverdue)}
+          variant={taskStatusVariant(task.status, task.isOverdue, task.isBlocked, isWaiting)}
+          label={taskStatusLabel(task.status, task.isOverdue, task.isBlocked, isWaiting)}
         />
       </td>
       <td className="px-3 py-2.5 border-b" style={{ borderColor: "var(--rtm-border-light)" }}>

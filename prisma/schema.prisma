@@ -829,6 +829,10 @@ model TaskListTemplate {
 //         false = recurring (not generated in this run).
 // status: "open" | "in_progress" | "done" | "skipped"
 // dueDate is an ISO-8601 date string, nullable.
+//   - Tasks with offsetFrom="launch" get a date immediately at launch.
+//   - Tasks with offsetFrom="prereq" start with no date; the cascade fills it
+//     when the last prerequisite closes.
+// offsetDays is the number of days to add to the anchor date.
 model Task {
   id         String  @id
   categoryId String  @map("category_id")
@@ -841,6 +845,14 @@ model Task {
   // at launch; routing picks the member of this department with the
   // fewest open tasks. Null means unassigned / unknown.
   department String? @map("department")
+  // How the due date is anchored:
+  //   "launch"  — offsetDays from project launch date (default, existing behaviour).
+  //   "prereq"  — offsetDays from the day the last prerequisite closes.
+  // When "prereq" and prerequisites are unmet, dueDate stays null.
+  offsetFrom String  @default("launch") @map("offset_from")
+  // Number of days to add to the anchor date to compute dueDate.
+  // Copied from the template task at launch.
+  offsetDays Int     @default(0) @map("offset_days")
   createdAt  String  @default("") @map("created_at")
   updatedAt  String  @default("") @map("updated_at")
 
@@ -848,6 +860,30 @@ model Task {
   @@index([ownerId])
   @@index([department])
   @@map("tasks")
+}
+
+// ── TaskDependency ────────────────────────────────────────────────────────────
+// Join table: task_id must wait for requires_task_id to be "done".
+// Queried from both ends:
+//   - "what blocks task X?"  → WHERE task_id = X
+//   - "what does task Y unblock?" → WHERE requires_task_id = Y
+//
+// CYCLE PREVENTION: the application (cascade) guards against cycles via a
+// visited set during DFS traversal. A self-dependency (task depending on
+// itself) is refused by the unique index (task_id = requires_task_id would
+// only differ in column names, not values).
+//
+// A task can have SEVERAL prerequisites. The last one to close starts the clock.
+model TaskDependency {
+  id             String @id
+  taskId         String @map("task_id")          // the waiting task
+  requiresTaskId String @map("requires_task_id") // the prerequisite
+  createdAt      String @default("") @map("created_at")
+
+  @@unique([taskId, requiresTaskId])
+  @@index([taskId])
+  @@index([requiresTaskId])
+  @@map("task_dependencies")
 }
 
 // ── SalesHandoff ──────────────────────────────────────────────────────────────
