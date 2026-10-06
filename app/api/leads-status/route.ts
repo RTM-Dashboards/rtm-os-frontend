@@ -67,6 +67,7 @@
 //   into sync.
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { LeadStatus as PrismaLeadStatus } from "@prisma/client";
 
@@ -123,7 +124,11 @@ function toLeadStatusRecord(row: PrismaLeadStatus): LeadStatusRecord {
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const rows = await prisma.leadStatus.findMany({
       orderBy: { updatedAt: "desc" },
@@ -141,6 +146,10 @@ export async function GET(): Promise<NextResponse> {
 // Then mirror the same eleven user-driven fields to the leads row (dual-write).
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

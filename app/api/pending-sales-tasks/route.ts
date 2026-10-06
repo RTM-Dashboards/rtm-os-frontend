@@ -12,6 +12,7 @@
 //                                       (id must be present; dedup by id on read)
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -69,7 +70,11 @@ function writeTasks(tasks: WorkspaceTask[]): void {
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const tasks = readTasks();
   return NextResponse.json({ tasks });
 }
@@ -77,6 +82,10 @@ export async function GET(): Promise<NextResponse> {
 // ── POST ───────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

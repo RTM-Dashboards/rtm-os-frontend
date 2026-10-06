@@ -15,6 +15,7 @@
 //                                              → { client } | 404
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -45,6 +46,10 @@ function writeClients(clients: Record<string, unknown>[]): void {
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const clients = readClients();
   const id = req.nextUrl.searchParams.get("id");
 
@@ -60,6 +65,10 @@ export async function GET(req: NextRequest) {
 // ── POST — upsert a client record ─────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const body = (await req.json()) as Record<string, unknown>;
   if (!body.id) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
@@ -80,6 +89,10 @@ export async function POST(req: NextRequest) {
 // ── PATCH — partial update a client record ────────────────────────────────────
 
 export async function PATCH(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const id = req.nextUrl.searchParams.get("id");
   if (!id) {
     return NextResponse.json({ error: "id query param required" }, { status: 400 });

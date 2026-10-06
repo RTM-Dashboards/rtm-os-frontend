@@ -42,6 +42,7 @@
 //   { ok: false; error: string; errorCode: string }
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import {
   addContactTags,
@@ -97,6 +98,10 @@ async function retagContact(
 // ── POST ──────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

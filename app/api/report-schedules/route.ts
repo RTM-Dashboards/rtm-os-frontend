@@ -19,6 +19,7 @@
 // DELETE /api/report-schedules?id=<id>      → { ok: true }
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -83,7 +84,11 @@ function writeSchedules(schedules: ReportSchedule[]): void {
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const schedules = readSchedules();
   return NextResponse.json({ schedules });
 }
@@ -91,6 +96,10 @@ export async function GET(): Promise<NextResponse> {
 // ── POST ──────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -145,6 +154,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // ── PATCH ─────────────────────────────────────────────────────────────────────
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
@@ -189,6 +202,10 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 // ── DELETE ────────────────────────────────────────────────────────────────────
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 

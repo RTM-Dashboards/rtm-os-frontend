@@ -21,6 +21,7 @@
 //      (the Communications page calls that endpoint directly)
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -150,6 +151,10 @@ function readClients(): MasterClient[] {
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const clientId    = req.nextUrl.searchParams.get("clientId");
   const taskIdsOnly = req.nextUrl.searchParams.get("taskIds") === "true";
 

@@ -19,6 +19,7 @@
 //                                            (partial update — merges fields)
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import type { Opportunity as PrismaOpportunity } from "@prisma/client";
@@ -162,7 +163,11 @@ function toOpportunityRecord(row: PrismaOpportunity): OpportunityRecord {
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const rows = await prisma.opportunity.findMany({
       orderBy: [
@@ -182,6 +187,10 @@ export async function GET(): Promise<NextResponse> {
 // Upsert by id — last write wins (supports re-creation from same lead).
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -223,6 +232,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // Required: body.id (string). All other fields are optional and merged.
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

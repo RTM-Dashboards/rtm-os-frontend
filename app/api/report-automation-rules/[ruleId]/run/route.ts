@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 import type { AutomationRule, RulesStore } from "../../route";
@@ -23,7 +24,11 @@ type RouteContext = { params: Promise<{ ruleId: string }> };
  * It simply records a lastRun timestamp and increments the run counter.
  * Real automatic triggering is deferred (same reasoning as Scheduled Reporting auto-triggering).
  */
-export async function POST(_req: NextRequest, context: RouteContext) {
+export async function POST(req: NextRequest, context: RouteContext) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const { ruleId } = await context.params;
     const store = readStore();

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -46,7 +47,11 @@ function generateRuleId(): string {
 }
 
 // GET /api/report-automation-rules — list all rules
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const store = readStore();
     return NextResponse.json({ rules: store.rules });
@@ -57,6 +62,10 @@ export async function GET() {
 
 // POST /api/report-automation-rules — create a new rule
 export async function POST(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const body = (await req.json()) as Partial<AutomationRule>;
     const store = readStore();

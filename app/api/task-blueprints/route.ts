@@ -23,6 +23,7 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -87,6 +88,10 @@ function writeStore(store: BlueprintFile): void {
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const store = readStore();
   const id = req.nextUrl.searchParams.get("id");
 
@@ -107,6 +112,10 @@ export async function GET(req: NextRequest) {
 // ── POST — create a new blueprint ────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const body = (await req.json()) as {
     blueprint: TaskBlueprint;
     /** Lowercase service-name keys that should route to this blueprint */
@@ -153,6 +162,10 @@ export async function POST(req: NextRequest) {
 // ── PATCH — update an existing blueprint ─────────────────────────────────────
 
 export async function PATCH(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const id = req.nextUrl.searchParams.get("id");
   if (!id) {
     return NextResponse.json(

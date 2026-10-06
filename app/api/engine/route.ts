@@ -22,6 +22,7 @@
 // DELETE /api/engine?resource=milestones&id=<id> → deletes a single milestone
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -62,6 +63,10 @@ function writeStore(store: EngineStoreFile): void {
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const store = readStore();
   const resource = req.nextUrl.searchParams.get("resource");
 
@@ -78,6 +83,10 @@ export async function GET(req: NextRequest) {
 // ── POST — append new records ─────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const body = (await req.json()) as {
     projects?:   Record<string, unknown>[];
     milestones?: Record<string, unknown>[];
@@ -130,6 +139,10 @@ export async function POST(req: NextRequest) {
 // ── PATCH — update a single record ────────────────────────────────────────────
 
 export async function PATCH(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const resource = req.nextUrl.searchParams.get("resource");
   const id       = req.nextUrl.searchParams.get("id");
 
@@ -162,6 +175,10 @@ export async function PATCH(req: NextRequest) {
 // ── DELETE — remove records ─────────────────────────────────────────────────────
 
 export async function DELETE(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const resource = req.nextUrl.searchParams.get("resource");
   const id       = req.nextUrl.searchParams.get("id");
 

@@ -19,6 +19,7 @@
 // shape is not reproduced.
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 
@@ -131,7 +132,11 @@ function extractExtras(incoming: Record<string, unknown>): Record<string, unknow
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const rows = await prisma.proposal.findMany({
       orderBy: { createdAt: "asc" },
@@ -148,6 +153,10 @@ export async function GET(): Promise<NextResponse> {
 // Caller should send the full wizard state or a complete proposal record.
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -263,6 +272,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // Used for status transitions (Send Proposal → "sent") and lastSavedAt updates.
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

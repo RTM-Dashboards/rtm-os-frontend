@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 import type { AutomationRule, RulesStore } from "../route";
@@ -18,6 +19,10 @@ type RouteContext = { params: Promise<{ ruleId: string }> };
 
 // PATCH /api/report-automation-rules/[ruleId] — update a rule
 export async function PATCH(req: NextRequest, context: RouteContext) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const { ruleId } = await context.params;
     const body = (await req.json()) as Partial<AutomationRule>;
@@ -40,7 +45,11 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
 }
 
 // DELETE /api/report-automation-rules/[ruleId] — delete a rule
-export async function DELETE(_req: NextRequest, context: RouteContext) {
+export async function DELETE(req: NextRequest, context: RouteContext) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const { ruleId } = await context.params;
     const store = readStore();

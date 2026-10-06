@@ -12,6 +12,7 @@
 // Request and response conventions match /api/pipeline-stages exactly.
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 
 export interface LeadStageDefinition {
@@ -25,7 +26,11 @@ export interface LeadStageDefinition {
 
 // ─── GET ──────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   try {
     const rows = await prisma.leadStage.findMany({
       orderBy: { order: "asc" },
@@ -52,6 +57,10 @@ export async function GET(): Promise<NextResponse> {
 // ─── POST ─────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

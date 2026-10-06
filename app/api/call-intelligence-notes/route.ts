@@ -16,6 +16,7 @@
 //        → { clientId, note, updatedAt }
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -55,6 +56,10 @@ function writeStore(store: NotesStoreFile): void {
 // ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const clientId = req.nextUrl.searchParams.get("clientId");
   const store = readStore();
 
@@ -73,6 +78,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // ── PUT ───────────────────────────────────────────────────────────────────────
 
 export async function PUT(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const clientId = req.nextUrl.searchParams.get("clientId");
   if (!clientId) {
     return NextResponse.json({ error: "clientId query param required" }, { status: 400 });

@@ -14,6 +14,7 @@
 //                                    → { record: ReportRecord }
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -75,7 +76,11 @@ function writeRecords(records: ReportRecord[]): void {
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const records = readRecords();
   return NextResponse.json({ records });
 }
@@ -83,6 +88,10 @@ export async function GET(): Promise<NextResponse> {
 // ── POST ───────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -140,6 +149,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // Shared updateReportStatus mechanism — pass any subset of ReportRecord fields.
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

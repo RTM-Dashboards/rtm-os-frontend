@@ -14,6 +14,7 @@
 // DELETE /api/report-templates?templateId=... → { ok: true }
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -64,7 +65,11 @@ function writeTemplates(templates: ReportTemplate[]): void {
 
 // ── GET ───────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const templates = readTemplates();
   return NextResponse.json({ templates });
 }
@@ -72,6 +77,10 @@ export async function GET(): Promise<NextResponse> {
 // ── POST ──────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -120,6 +129,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // ── PATCH ─────────────────────────────────────────────────────────────────────
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -172,6 +185,10 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
 // Hard delete available via ?hardDelete=true for admin use.
 
 export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const { searchParams } = new URL(req.url);
   const templateId = searchParams.get("templateId");
   const hardDelete = searchParams.get("hardDelete") === "true";

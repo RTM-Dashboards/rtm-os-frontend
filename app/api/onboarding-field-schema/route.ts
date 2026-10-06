@@ -16,6 +16,7 @@
 // never impacted by the migration.
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -443,7 +444,11 @@ function writeSchema(schema: SchemaFile): void {
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
-export async function GET(): Promise<NextResponse> {
+export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const schema = readSchema();
   // Seed the file on first access so future reads are from disk.
   if (!fs.existsSync(DATA_FILE)) {
@@ -455,6 +460,10 @@ export async function GET(): Promise<NextResponse> {
 // ── PUT ────────────────────────────────────────────────────────────────────────
 
 export async function PUT(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

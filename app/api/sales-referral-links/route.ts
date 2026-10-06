@@ -12,6 +12,7 @@
 // PATCH /api/sales-referral-links                      → body: { id, ...partialFields }
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -64,6 +65,10 @@ function writeRecords(records: ReferralLinkRecord[]): void {
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const records = readRecords();
 
   const id = req.nextUrl.searchParams.get("id");
@@ -85,6 +90,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 // ── POST — upsert a referral link record ──────────────────────────────────────
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();
@@ -139,6 +148,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // ── PATCH — partial update ────────────────────────────────────────────────────
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   let body: unknown;
   try {
     body = await req.json();

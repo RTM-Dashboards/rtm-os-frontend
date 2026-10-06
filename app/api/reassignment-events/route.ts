@@ -6,6 +6,7 @@
 // POST /api/reassignment-events               → body: ReassignmentEvent → { event }
 
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import fs from "fs";
 import path from "path";
 
@@ -48,7 +49,11 @@ function writeEvents(events: ReassignmentEvent[]): void {
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const events = readEvents();
   return NextResponse.json({ events });
 }
@@ -56,6 +61,10 @@ export async function GET(_req: NextRequest) {
 // ── POST — append a new reassignment event ────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const { user, error, status } = await getSessionUser(req);
+  if (error) return NextResponse.json({ error }, { status: status! });
+  void user;
+
   const body = (await req.json()) as Partial<ReassignmentEvent>;
   if (!body.clientId || !body.from || !body.to) {
     return NextResponse.json({ error: "clientId, from, and to are required" }, { status: 400 });
