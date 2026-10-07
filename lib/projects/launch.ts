@@ -49,6 +49,7 @@
 //   surfaced than hidden — the caller should log the result.
 
 import { prisma } from "@/lib/db/prisma";
+import { addBusinessDays } from "@/lib/dates";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -154,6 +155,8 @@ function makeId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
+// Calendar addDays retained for non-task-offset uses (e.g. project end-date
+// estimates).  Task due-date offsets use addBusinessDays from lib/dates.ts.
 function addDays(base: Date, days: number): string {
   const d = new Date(base);
   d.setDate(d.getDate() + days);
@@ -558,7 +561,8 @@ export async function launchProject(
         // A task with offsetFrom="launch" gets offsetDays from launchDate.
         // Recurring tasks always use offsetFrom="launch" at first occurrence.
         const hasPrerequisites = taskDef.offsetFrom === "prereq";
-        const dueDate = hasPrerequisites ? null : addDays(launchDate, taskDef.offsetDays);
+        const launchDateStr = launchDate.toISOString().slice(0, 10);
+        const dueDate = hasPrerequisites ? null : addBusinessDays(launchDateStr, taskDef.offsetDays);
 
         try {
           const taskId = makeId("task");
