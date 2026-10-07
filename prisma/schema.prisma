@@ -816,15 +816,44 @@ model ProjectCategory {
 //     tasks: [{ label: string, offsetDays: number }] }
 // recurrenceRule is reserved; unused this run.
 model TaskListTemplate {
-  id             String  @id
-  serviceId      String  @default("") @map("service_id")
-  groups         Json    @default("[]")
-  recurrenceRule String? @map("recurrence_rule")
-  createdAt      String  @default("") @map("created_at")
-  updatedAt      String  @default("") @map("updated_at")
+  id                   String  @id
+  serviceId            String  @default("") @map("service_id")
+  groups               Json    @default("[]")
+  recurrenceRule       String? @map("recurrence_rule")
+  // Restored blueprint-level fields (20261008)
+  name                 String  @default("") @map("name")
+  department           String  @default("") @map("department")
+  servicePackage       String  @default("") @map("service_package")
+  mappedLineItem       String  @default("") @map("mapped_line_item")
+  description          String  @default("") @map("description")
+  activationTrigger    String  @default("") @map("activation_trigger")
+  estimatedTotalHours  Decimal @default(0)  @map("estimated_total_hours")
+  isActive             Boolean @default(true) @map("is_active")
+  version              String  @default("") @map("version")
+  createdAt            String  @default("") @map("created_at")
+  updatedAt            String  @default("") @map("updated_at")
+
+  aliases              BlueprintServiceAlias[]
 
   @@index([serviceId])
   @@map("task_list_templates")
+}
+
+// ── BlueprintServiceAlias ─────────────────────────────────────────────────────
+// Many service alias strings → one task_list_template.
+// "google ads", "meta ads", "onboarding" etc. are aliases that do not match
+// a service catalogue id. They route to a template via this table.
+// Cascade delete: removing a template removes its aliases.
+model BlueprintServiceAlias {
+  id         String           @id
+  templateId String           @map("template_id")
+  alias      String           @unique
+  createdAt  String           @default("") @map("created_at")
+  template   TaskListTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@index([alias])
+  @@map("blueprint_service_aliases")
 }
 
 // ── Task ──────────────────────────────────────────────────────────────────────
@@ -864,6 +893,11 @@ model Task {
   // How many days after completion to schedule the next occurrence.
   // Only meaningful when isRecurring=true. Zero or absent = no recurrence.
   recurrenceIntervalDays  Int     @default(0) @map("recurrence_interval_days")
+  // Restored per-task fields from blueprint (20261008)
+  ownerRole       String?  @map("owner_role")
+  estimatedHours  Decimal? @map("estimated_hours")
+  priority        String?  @map("priority")
+  description     String?  @map("description")
   createdAt  String  @default("") @map("created_at")
   updatedAt  String  @default("") @map("updated_at")
 

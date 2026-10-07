@@ -76,6 +76,11 @@ export interface ScopedTask {
   // Dependency fields
   isBlocked: boolean;           // true when any prereq is not done
   blockedBy: BlockedByEntry[];  // what it is waiting on (label + department)
+  // Restored per-task fields from blueprint (RF2 run, 20261008)
+  ownerRole: string | null;
+  estimatedHours: number | null;
+  priority: string | null;
+  description: string | null;
 }
 
 export interface ScopedCategory {
@@ -287,6 +292,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           isOverdue: isBlocked ? false : isOverdue(t.dueDate ?? null, t.status),
           isBlocked,
           blockedBy,
+          // Restored per-task fields
+          ownerRole:      t.ownerRole      ?? null,
+          estimatedHours: t.estimatedHours !== null ? Number(t.estimatedHours) : null,
+          priority:       t.priority       ?? null,
+          description:    t.description    ?? null,
         };
       }),
     }));

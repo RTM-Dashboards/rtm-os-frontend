@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 
 // 
@@ -29,11 +29,13 @@ interface TemplateTask {
   name: string;
   department: Department;
   ownerRole: string;
+  estimatedHours: number;
   targetCompletionDays: number;
   priority: TaskPriority;
   dependency: string;
   dueOffset: string;
   status: DependencyStatus;
+  description: string;
 }
 
 // Line Item SLA - primary source inherited by task templates
@@ -72,8 +74,30 @@ interface TaskTemplate {
 
 // ---------------------------------------------------------------------------
 // Adapter: BlueprintApiRecord → TaskTemplate
-// Blueprints come from /api/task-blueprints (file-backed, single source of truth).
+// Blueprints come from /api/task-blueprints (Postgres-backed, single source of truth).
 // ---------------------------------------------------------------------------
+
+// Engine-level task def (matches task_list_templates groups[].tasks[]).
+interface TemplateTaskDef {
+  localId: string;
+  label: string;
+  department: string;
+  offsetDays: number;
+  offsetFrom: "launch" | "prereq";
+  prereqIds: string[];
+  intervalDays?: number;
+  // Restored per-task fields
+  ownerRole?: string;
+  estimatedHours?: number;
+  priority?: string;
+  description?: string;
+}
+
+interface TemplateGroup {
+  kind: "setup" | "recurring";
+  heading: string;
+  tasks: TemplateTaskDef[];
+}
 
 interface BlueprintApiTask {
   id: string;
@@ -85,6 +109,10 @@ interface BlueprintApiTask {
   dependsOnId?: string;
   dueDaysOffset: number;
   description?: string;
+  localId?: string;
+  offsetFrom?: "launch" | "prereq";
+  prereqIds?: string[];
+  intervalDays?: number;
 }
 
 interface BlueprintApiRecord {
@@ -98,7 +126,22 @@ interface BlueprintApiRecord {
   estimatedTotalHours: number;
   tasks: BlueprintApiTask[];
   isActive: boolean;
+  /** Full group structure from Postgres — present for edit. */
+  groups?: TemplateGroup[];
   lastUpdated: string;
+  version: string;
+}
+
+// All blueprint-level fields for the editor form
+interface BlueprintMeta {
+  name: string;
+  department: string;
+  servicePackage: string;
+  mappedLineItem: string;
+  description: string;
+  activationTrigger: string;
+  estimatedTotalHours: number;
+  isActive: boolean;
   version: string;
 }
 
@@ -133,11 +176,13 @@ function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
     name: bpt.name,
     department: DEPT_MAP[bpt.department] ?? dept,
     ownerRole: bpt.ownerRole,
+    estimatedHours: bpt.estimatedHours,
     targetCompletionDays: bpt.dueDaysOffset,
-    priority: bpt.priority === "Urgent" ? "High" : (bpt.priority as TaskPriority),
+    priority: bpt.priority === "Urgent" ? "High" : ((bpt.priority || "High") as TaskPriority),
     dependency: bpt.dependsOnId ?? "None",
     dueOffset: `Day ${bpt.dueDaysOffset}`,
     status: "Required" as DependencyStatus,
+    description: bpt.description ?? "",
   }));
 
   const defaultSLA: LineItemSLARef = {
@@ -174,152 +219,489 @@ function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
 }
 
 // ---------------------------------------------------------------------------
-// CreateTemplateModal
-// Collects all TaskBlueprint fields, including task checklist builder and
-// service-mapping entries (Activation Mapping concept).
-// On save: POST /api/task-blueprints and call onCreated(newTemplate).
+// TemplateEditorModal — create or edit a task_list_templates row.
+//
+// Create: select a service from the catalogue, build setup + recurring groups.
+// Edit:   loaded with existing groups; saves via PATCH /api/task-blueprints?id=<serviceId>.
+//
+// Features carried from the duplicate editor (now deleted):
+//   - Two fixed groups (Setup, Recurring).
+//   - Prerequisite picker in the Setup group.
+//   - Paste-lines textarea (each line becomes a task).
+//   - Reorder arrows (never rewire prereqIds).
+//   - Client-side cycle check naming the tasks.
+//   - Server-side cycle check on POST/PATCH (422 with names).
 // ---------------------------------------------------------------------------
 
-interface TaskRowDraft {
-  _key: string;
-  name: string;
-  department: string;
-  ownerRole: string;
-  estimatedHours: number;
-  priority: string;
-  dueDaysOffset: number;
-  description: string;
-  dependsOnId: string;
+// ── ID helper ──────────────────────────────────────────────────────────────
+function makeLocalId(): string {
+  return "t-" + Math.random().toString(36).slice(2, 7);
 }
 
-function CreateTemplateModal({
-  onClose,
-  onCreated,
+// ── Blank task factories ───────────────────────────────────────────────────
+function blankTask(isRecurring = false): TemplateTaskDef {
+  return {
+    localId:    makeLocalId(),
+    label:      "",
+    department: "",
+    offsetDays: 0,
+    offsetFrom: "launch",
+    prereqIds:  [],
+    ...(isRecurring ? { intervalDays: 30 } : {}),
+  };
+}
+
+function pastedTask(label: string, isRecurring = false): TemplateTaskDef {
+  return {
+    localId:    makeLocalId(),
+    label,
+    department: "",
+    offsetDays: 0,
+    offsetFrom: "launch",
+    prereqIds:  [],
+    ...(isRecurring ? { intervalDays: 30 } : {}),
+  };
+}
+
+// ── Client-side cycle detection ────────────────────────────────────────────
+function findCycleClient(tasks: TemplateTaskDef[]): string[] | null {
+  const adj = new Map<string, string[]>();
+  for (const t of tasks) adj.set(t.localId, t.prereqIds ?? []);
+  const colour = new Map<string, number>();
+  const parent = new Map<string, string | null>();
+  for (const t of tasks) { colour.set(t.localId, 0); parent.set(t.localId, null); }
+
+  function dfs(node: string): string[] | null {
+    colour.set(node, 1);
+    for (const dep of adj.get(node) ?? []) {
+      if (!colour.has(dep)) continue;
+      if (colour.get(dep) === 1) {
+        const cycle: string[] = [dep];
+        let cur: string = node;
+        while (cur !== dep) { cycle.push(cur); const p = parent.get(cur); if (!p) break; cur = p; }
+        cycle.push(dep);
+        return cycle.reverse();
+      }
+      if (colour.get(dep) === 0) { parent.set(dep, node); const sub = dfs(dep); if (sub) return sub; }
+    }
+    colour.set(node, 2);
+    return null;
+  }
+
+  for (const t of tasks) { if (colour.get(t.localId) === 0) { const c = dfs(t.localId); if (c) return c; } }
+  return null;
+}
+
+// ── Display-label map (handles duplicate task labels in prereq picker) ──────
+function buildDisplayLabels(tasks: TemplateTaskDef[]): Map<string, string> {
+  const map = new Map<string, string>();
+  const counts = new Map<string, number>();
+  for (const t of tasks) counts.set(t.label || "(unlabelled)", (counts.get(t.label || "(unlabelled)") ?? 0) + 1);
+  const seen = new Map<string, number>();
+  for (const t of tasks) {
+    const lbl = t.label || "(unlabelled)";
+    const count = counts.get(lbl) ?? 1;
+    if (count === 1) { map.set(t.localId, lbl); }
+    else { const ord = (seen.get(lbl) ?? 0) + 1; seen.set(lbl, ord); map.set(t.localId, ord === 1 ? lbl : `${lbl} (${ord})`); }
+  }
+  return map;
+}
+
+// ── Shared input style ─────────────────────────────────────────────────────
+const EDITOR_INPUT: React.CSSProperties = {
+  background: "var(--rtm-bg)",
+  borderColor: "var(--rtm-border)",
+  color: "var(--rtm-text-primary)",
+  padding: "5px 8px",
+  borderRadius: "6px",
+  borderWidth: 1,
+  borderStyle: "solid",
+  fontSize: 12,
+  outline: "none",
+};
+
+const EDITOR_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 600,
+  color: "var(--rtm-text-muted)",
+  display: "block",
+  marginBottom: 3,
+  textTransform: "uppercase",
+  letterSpacing: "0.04em",
+};
+
+const VALID_DEPARTMENTS_EDITOR = [
+  "Account Management", "SEO", "GBP", "Paid Advertising", "Meta Ads",
+  "Reporting", "Web Development", "Creative", "Billing",
+];
+
+// ── EditorTaskRow ──────────────────────────────────────────────────────────
+function EditorTaskRow({
+  task, index, total, allTasks, displayLabels, onChange, onRemove, onMove, disabled, isSetup, isRecurring,
+}: {
+  task: TemplateTaskDef; index: number; total: number;
+  allTasks: TemplateTaskDef[]; displayLabels: Map<string, string>;
+  onChange: (t: TemplateTaskDef) => void; onRemove: () => void;
+  onMove: (dir: -1 | 1) => void; disabled: boolean;
+  isSetup: boolean; isRecurring: boolean;
+}) {
+  const prereqOptions = allTasks.filter((t) => t.localId !== task.localId);
+
+  function togglePrereq(localId: string) {
+    const current = task.prereqIds ?? [];
+    const next = current.includes(localId) ? current.filter((id) => id !== localId) : [...current, localId];
+    const offsetFrom = next.length > 0 && current.length === 0 ? "prereq" : task.offsetFrom;
+    onChange({ ...task, prereqIds: next, offsetFrom });
+  }
+
+  const hasPrereqs = (task.prereqIds ?? []).length > 0;
+
+  return (
+    <div className="rounded-lg border p-3 flex flex-col gap-2" style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}>
+      <div className="flex items-start gap-2">
+        <div className="flex flex-col gap-0.5 flex-shrink-0 mt-0.5">
+          <button type="button" onClick={() => onMove(-1)} disabled={disabled || index === 0} title="Move up"
+            className="text-xs px-1 py-0.5 rounded border disabled:opacity-30"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-muted)", lineHeight: 1 }}>▲</button>
+          <button type="button" onClick={() => onMove(1)} disabled={disabled || index === total - 1} title="Move down"
+            className="text-xs px-1 py-0.5 rounded border disabled:opacity-30"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-muted)", lineHeight: 1 }}>▼</button>
+        </div>
+        <div className="flex-1 min-w-0">
+          <label style={EDITOR_LABEL}>Label</label>
+          <input type="text" value={task.label} onChange={(e) => onChange({ ...task, label: e.target.value })}
+            disabled={disabled} placeholder="Task label" style={{ ...EDITOR_INPUT, width: "100%" }} />
+        </div>
+        <button type="button" onClick={onRemove} disabled={disabled} title="Remove task"
+          className="text-xs px-2 py-1 rounded border mt-4 flex-shrink-0 disabled:opacity-40"
+          style={{ borderColor: "#FECACA", color: "#DC2626", background: "#FEF2F2" }}>Remove</button>
+      </div>
+
+      <div className="flex gap-3 flex-wrap">
+        <div className="flex flex-col gap-1">
+          <label style={EDITOR_LABEL}>Department</label>
+          <select value={task.department} onChange={(e) => onChange({ ...task, department: e.target.value })}
+            disabled={disabled}
+            className="text-xs font-medium rounded-lg border px-2 py-1 focus:outline-none"
+            style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+            <option value="">— not set —</option>
+            {VALID_DEPARTMENTS_EDITOR.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </div>
+        <div className="flex flex-col gap-1">
+          <label style={EDITOR_LABEL}>Due offset (days)</label>
+          <input type="number" min={0} value={task.offsetDays}
+            onChange={(e) => { const v = parseInt(e.target.value, 10); onChange({ ...task, offsetDays: isNaN(v) ? 0 : Math.max(0, v) }); }}
+            disabled={disabled} style={{ ...EDITOR_INPUT, width: "80px" }} />
+        </div>
+        {isSetup && (
+          <div className="flex flex-col gap-1">
+            <label style={EDITOR_LABEL}>Due date counts from</label>
+            <select value={task.offsetFrom}
+              onChange={(e) => onChange({ ...task, offsetFrom: e.target.value as "launch" | "prereq" })}
+              disabled={disabled}
+              className="text-xs font-medium rounded-lg border px-2 py-1 focus:outline-none"
+              style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+              <option value="launch">Project launch</option>
+              <option value="prereq">Prerequisites closing</option>
+            </select>
+          </div>
+        )}
+        {isRecurring && (
+          <div className="flex flex-col gap-1">
+            <label style={EDITOR_LABEL}>Repeat every (days)</label>
+            <input type="number" min={1} value={task.intervalDays ?? ""}
+              onChange={(e) => { const v = parseInt(e.target.value, 10); onChange({ ...task, intervalDays: isNaN(v) || v < 1 ? undefined : v }); }}
+              disabled={disabled} placeholder="e.g. 30" style={{ ...EDITOR_INPUT, width: "90px" }} />
+            {!task.intervalDays && <span style={{ fontSize: 10, color: "#DC2626" }}>Required</span>}
+          </div>
+        )}
+      </div>
+
+      {/* Restored per-task fields: ownerRole, estimatedHours, priority, description */}
+      <div className="flex gap-3 flex-wrap">
+        <div className="flex flex-col gap-1">
+          <label style={EDITOR_LABEL}>Owner Role</label>
+          <input type="text" value={task.ownerRole ?? ""} onChange={(e) => onChange({ ...task, ownerRole: e.target.value || undefined })}
+            disabled={disabled} placeholder="e.g. SEO Lead" style={{ ...EDITOR_INPUT, width: "130px" }} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label style={EDITOR_LABEL}>Est. Hours</label>
+          <input type="number" min={0} step={0.25} value={task.estimatedHours ?? ""}
+            onChange={(e) => { const v = parseFloat(e.target.value); onChange({ ...task, estimatedHours: isNaN(v) ? undefined : v }); }}
+            disabled={disabled} placeholder="0" style={{ ...EDITOR_INPUT, width: "70px" }} />
+        </div>
+        <div className="flex flex-col gap-1">
+          <label style={EDITOR_LABEL}>Priority</label>
+          <select value={task.priority ?? "High"} onChange={(e) => onChange({ ...task, priority: e.target.value })}
+            disabled={disabled}
+            className="text-xs font-medium rounded-lg border px-2 py-1 focus:outline-none"
+            style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+            <option value="Urgent">Urgent</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div className="flex flex-col gap-1">
+        <label style={EDITOR_LABEL}>Description</label>
+        <input type="text" value={task.description ?? ""} onChange={(e) => onChange({ ...task, description: e.target.value || undefined })}
+          disabled={disabled} placeholder="What this task involves (optional)"
+          style={{ ...EDITOR_INPUT, width: "100%" }} />
+      </div>
+
+      {isSetup && prereqOptions.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <label style={EDITOR_LABEL}>
+            Prerequisites
+            {hasPrereqs && <span style={{ fontWeight: 400, textTransform: "none", marginLeft: 6, color: "var(--rtm-text-secondary)" }}>(waits on selected)</span>}
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {prereqOptions.map((opt) => {
+              const checked = (task.prereqIds ?? []).includes(opt.localId);
+              const lbl = displayLabels.get(opt.localId) ?? (opt.label || "(unlabelled)");
+              return (
+                <label key={opt.localId} className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
+                  style={{ padding: "3px 8px", borderRadius: 6, border: `1px solid ${checked ? "#BFDBFE" : "var(--rtm-border)"}`,
+                    background: checked ? "#EFF6FF" : "var(--rtm-bg)", color: checked ? "#1D4ED8" : "var(--rtm-text-secondary)",
+                    opacity: disabled ? 0.5 : 1, cursor: disabled ? "not-allowed" : "pointer" }}>
+                  <input type="checkbox" checked={checked} onChange={() => !disabled && togglePrereq(opt.localId)} disabled={disabled} className="w-3 h-3" />
+                  {lbl}
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── EditorGroupPanel ───────────────────────────────────────────────────────
+function EditorGroupPanel({
+  kind, label, tasks, onChange, saving,
+}: { kind: "setup" | "recurring"; label: string; tasks: TemplateTaskDef[]; onChange: (t: TemplateTaskDef[]) => void; saving: boolean }) {
+  const isSetup = kind === "setup";
+  const isRecurring = kind === "recurring";
+  const displayLabels = buildDisplayLabels(tasks);
+  const pasteRef = useRef<HTMLTextAreaElement>(null);
+  const [pasteMode, setPasteMode] = useState(false);
+  const [pasteValue, setPasteValue] = useState("");
+
+  function addTask() { onChange([...tasks, blankTask(isRecurring)]); }
+
+  function commitPaste() {
+    const lines = pasteValue.split("\n").map((l) => l.trim()).filter(Boolean);
+    if (lines.length > 0) onChange([...tasks, ...lines.map((l) => pastedTask(l, isRecurring))]);
+    setPasteValue(""); setPasteMode(false);
+  }
+
+  function updateTask(i: number, t: TemplateTaskDef) { onChange(tasks.map((ex, idx) => idx === i ? t : ex)); }
+
+  function removeTask(i: number) {
+    const removed = tasks[i];
+    const remaining = tasks.filter((_, idx) => idx !== i);
+    const cleaned = remaining.map((t) => ({ ...t, prereqIds: (t.prereqIds ?? []).filter((id) => id !== removed.localId) }));
+    onChange(cleaned);
+  }
+
+  function moveTask(i: number, dir: -1 | 1) {
+    const next = [...tasks];
+    const swap = i + dir;
+    if (swap < 0 || swap >= next.length) return;
+    [next[i], next[swap]] = [next[swap], next[i]];
+    onChange(next);
+  }
+
+  return (
+    <div className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+      <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: "1px solid var(--rtm-border-light)" }}>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>{label}</h3>
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: kind === "setup" ? "#EFF6FF" : "#F5F3FF", color: kind === "setup" ? "#1D4ED8" : "#7C3AED",
+              border: `1px solid ${kind === "setup" ? "#BFDBFE" : "#DDD6FE"}` }}>
+            {tasks.length} task{tasks.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setPasteMode(!pasteMode)} disabled={saving}
+            className="text-xs font-semibold px-3 py-1 rounded-lg border transition-colors"
+            style={{ background: pasteMode ? "#EFF6FF" : "var(--rtm-bg)", borderColor: pasteMode ? "#BFDBFE" : "var(--rtm-border)",
+              color: pasteMode ? "#1D4ED8" : "var(--rtm-text-secondary)" }}>Paste lines</button>
+          <button type="button" onClick={addTask} disabled={saving}
+            className="text-xs font-semibold px-3 py-1 rounded-lg"
+            style={{ background: "#1B4FD8", color: "#fff", border: "none" }}>+ Add task</button>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-3">
+        {pasteMode && (
+          <div className="rounded-lg border p-3" style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}>
+            <label className="text-xs font-semibold block mb-1" style={{ color: "#1D4ED8" }}>Paste task labels — one per line</label>
+            <textarea ref={pasteRef} rows={4} value={pasteValue} onChange={(e) => setPasteValue(e.target.value)}
+              placeholder={"Write a blog post\nOptimize meta tags\nSubmit sitemap"}
+              style={{ ...EDITOR_INPUT, width: "100%", resize: "vertical", fontFamily: "inherit" }} />
+            <div className="flex gap-2 mt-2">
+              <button type="button" onClick={commitPaste} disabled={saving || pasteValue.trim() === ""}
+                className="text-xs font-semibold px-3 py-1 rounded-lg disabled:opacity-50"
+                style={{ background: "#1B4FD8", color: "#fff", border: "none" }}>Add as tasks</button>
+              <button type="button" onClick={() => { setPasteMode(false); setPasteValue(""); }}
+                className="text-xs font-semibold px-3 py-1 rounded-lg border"
+                style={{ borderColor: "#BFDBFE", color: "#1D4ED8", background: "transparent" }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {tasks.length === 0 ? (
+          <div className="text-center py-8 rounded-lg border border-dashed"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-muted)" }}>
+            <p className="text-xs">No tasks yet. Use &quot;+ Add task&quot; or &quot;Paste lines&quot;.</p>
+          </div>
+        ) : tasks.map((task, i) => (
+          <EditorTaskRow key={task.localId} task={task} index={i} total={tasks.length}
+            allTasks={tasks} displayLabels={displayLabels}
+            onChange={(t) => updateTask(i, t)} onRemove={() => removeTask(i)}
+            onMove={(dir) => moveTask(i, dir)} disabled={saving}
+            isSetup={isSetup} isRecurring={isRecurring} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── TemplateEditorModal ───────────────────────────────────────────────────
+//
+// editingServiceId: null = create, string = edit existing.
+// Blueprint-level meta defaults
+const BLANK_META: BlueprintMeta = {
+  name: "", department: "", servicePackage: "", mappedLineItem: "",
+  description: "", activationTrigger: "Invoice Paid",
+  estimatedTotalHours: 0, isActive: true, version: "1.0",
+};
+
+const ACTIVATION_TRIGGERS_LIST = [
+  "Invoice Paid","Contract Signed","Proposal Approved","Client Activated",
+  "Upsell Approved","Renewal Signed","Cancellation Requested","Offboarding Approved",
+];
+
+function TemplateEditorModal({
+  onClose, onSaved, editingServiceId, initialGroups, initialMeta,
 }: {
   onClose: () => void;
-  onCreated: (t: TaskTemplate) => void;
+  onSaved: (bp: BlueprintApiRecord) => void;
+  editingServiceId: string | null;
+  initialGroups: TemplateGroup[];
+  initialMeta: BlueprintMeta;
 }) {
+  const isEditing = editingServiceId !== null;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // Header fields
-  const [name, setName] = useState("");
-  const [department, setDepartment] = useState<string>("Account Management");
-  const [servicePackage, setServicePackage] = useState("Custom");
-  const [mappedLineItem, setMappedLineItem] = useState("");
-  const [description, setDescription] = useState("");
-  const [activationTrigger, setActivationTrigger] = useState("Invoice Paid");
-  const [estimatedTotalHours, setEstimatedTotalHours] = useState(0);
-  const [version, setVersion] = useState("1.0");
-  const [isActive, setIsActive] = useState(true);
+  // Blueprint-level meta fields — all editable
+  const [meta, setMeta] = useState<BlueprintMeta>(initialMeta);
 
-  // Service mapping entries (Activation Mapping)
-  const [serviceMappingInput, setServiceMappingInput] = useState("");
+  // Service picker (create only)
+  const [services, setServices] = useState<Array<{ id: string; label: string }>>([]);
+  const [serviceId, setServiceId] = useState(editingServiceId ?? "");
+  const [servicesLoading, setServicesLoading] = useState(!isEditing);
+
+  // Activation mapping keys (create only)
+  const [mappingInput, setMappingInput] = useState("");
   const [serviceMappings, setServiceMappings] = useState<string[]>([]);
 
-  // Task checklist rows
-  const [taskRows, setTaskRows] = useState<TaskRowDraft[]>([]);
+  // Two fixed groups
+  const [setupTasks,     setSetupTasks]     = useState<TemplateTaskDef[]>(
+    initialGroups.find((g) => g.kind === "setup")?.tasks     ?? []
+  );
+  const [recurringTasks, setRecurringTasks] = useState<TemplateTaskDef[]>(
+    initialGroups.find((g) => g.kind === "recurring")?.tasks ?? []
+  );
 
-  const addTaskRow = () => {
-    setTaskRows((prev) => [
-      ...prev,
-      {
-        _key: `new-${Date.now()}-${Math.random()}`,
-        name: "",
-        department,
-        ownerRole: "",
-        estimatedHours: 1,
-        priority: "High",
-        dueDaysOffset: 1,
-        description: "",
-        dependsOnId: "",
-      },
-    ]);
-  };
+  useEffect(() => {
+    if (isEditing) return;
+    fetch("/api/sales/service-catalog?all=1")
+      .then((r) => r.json())
+      .then((d) => {
+        const rows = (d.services ?? []) as Array<{ id: string; label: string }>;
+        setServices(rows);
+        setServicesLoading(false);
+      })
+      .catch(() => setServicesLoading(false));
+  }, [isEditing]);
 
-  const updateTaskRow = (key: string, field: keyof TaskRowDraft, value: string | number) => {
-    setTaskRows((prev) =>
-      prev.map((r) => (r._key === key ? { ...r, [field]: value } : r))
-    );
-  };
-
-  const removeTaskRow = (key: string) => {
-    setTaskRows((prev) => prev.filter((r) => r._key !== key));
-  };
-
-  const moveTaskRow = (key: string, dir: -1 | 1) => {
-    setTaskRows((prev) => {
-      const idx = prev.findIndex((r) => r._key === key);
-      if (idx < 0) return prev;
-      const next = idx + dir;
-      if (next < 0 || next >= prev.length) return prev;
-      const arr = [...prev];
-      [arr[idx], arr[next]] = [arr[next], arr[idx]];
-      return arr;
-    });
-  };
-
-  const addServiceMapping = () => {
-    const v = serviceMappingInput.trim().toLowerCase();
-    if (v && !serviceMappings.includes(v)) {
-      setServiceMappings((prev) => [...prev, v]);
-    }
-    setServiceMappingInput("");
-  };
-
-  const removeServiceMapping = (key: string) => {
-    setServiceMappings((prev) => prev.filter((k) => k !== key));
+  const addMapping = () => {
+    const v = mappingInput.trim().toLowerCase();
+    if (v && !serviceMappings.includes(v)) setServiceMappings((p) => [...p, v]);
+    setMappingInput("");
   };
 
   const handleSave = async () => {
-    if (!name.trim()) { setError("Template name is required."); return; }
-    if (!mappedLineItem.trim()) { setError("Mapped line item is required."); return; }
-    setSaving(true);
-    setError("");
+    if (!isEditing && !serviceId) { setError("Select a service."); return; }
+    if (!meta.name.trim()) { setError("Blueprint name is required."); return; }
 
-    const today = new Date().toISOString().split("T")[0];
-    const bpId = `bp-${Date.now().toString(16)}`;
+    // Client-side cycle check.
+    const cycle = findCycleClient(setupTasks);
+    if (cycle) {
+      const allById = new Map(setupTasks.map((t) => [t.localId, t]));
+      const names = cycle.map((id) => `"${allById.get(id)?.label || id}"`).join(" → ");
+      setError(`Cannot save: cycle detected — ${names}`);
+      return;
+    }
 
-    const newBlueprint: BlueprintApiRecord = {
-      id: bpId,
-      name: name.trim(),
-      department,
-      servicePackage,
-      mappedLineItem: mappedLineItem.trim(),
-      description: description.trim(),
-      activationTrigger,
-      estimatedTotalHours,
-      isActive,
-      lastUpdated: today,
-      version: version.trim() || "1.0",
-      tasks: taskRows.map((r, i) => ({
-        id: `${bpId}-t${i + 1}`,
-        name: r.name.trim() || `Task ${i + 1}`,
-        department: r.department,
-        ownerRole: r.ownerRole.trim() || "Team Member",
-        estimatedHours: Number(r.estimatedHours) || 1,
-        priority: r.priority,
-        dueDaysOffset: Number(r.dueDaysOffset) || 1,
-        description: r.description.trim() || undefined,
-        dependsOnId: r.dependsOnId.trim() || undefined,
-      })),
-    };
+    setSaving(true); setError("");
+    const groups: TemplateGroup[] = [
+      { kind: "setup",     heading: "Setup",     tasks: setupTasks },
+      { kind: "recurring", heading: "Recurring", tasks: recurringTasks },
+    ];
 
     try {
-      const res = await fetch("/api/task-blueprints", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          blueprint: newBlueprint,
-          serviceMappings,
-        }),
-      });
-      if (!res.ok) {
-        const j = (await res.json()) as { error?: string };
-        throw new Error(j.error ?? `HTTP ${res.status}`);
+      let res: Response;
+      if (isEditing) {
+        res = await fetch(`/api/task-blueprints?id=${encodeURIComponent(editingServiceId!)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            groups,
+            name:                meta.name,
+            department:          meta.department,
+            servicePackage:      meta.servicePackage,
+            mappedLineItem:      meta.mappedLineItem,
+            description:         meta.description,
+            activationTrigger:   meta.activationTrigger,
+            estimatedTotalHours: meta.estimatedTotalHours,
+            isActive:            meta.isActive,
+            version:             meta.version,
+          }),
+        });
+      } else {
+        const allMappings = [...new Set([serviceId, ...serviceMappings])];
+        res = await fetch("/api/task-blueprints", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            blueprint: {
+              id:                  serviceId,
+              name:                meta.name || serviceId,
+              department:          meta.department,
+              servicePackage:      meta.servicePackage,
+              mappedLineItem:      meta.mappedLineItem,
+              description:         meta.description,
+              activationTrigger:   meta.activationTrigger,
+              estimatedTotalHours: meta.estimatedTotalHours,
+              isActive:            meta.isActive,
+              version:             meta.version,
+              groups,
+            },
+            serviceMappings: allMappings,
+          }),
+        });
       }
-      const tpl = blueprintToTemplate(newBlueprint);
-      onCreated(tpl);
+
+      const data = (await res.json()) as { blueprint?: BlueprintApiRecord; error?: string };
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+      onSaved(data.blueprint!);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Save failed.");
@@ -328,406 +710,178 @@ function CreateTemplateModal({
     }
   };
 
-  const DEPT_OPTIONS: string[] = [
-    "Account Management", "SEO", "GBP", "PPC", "Meta Ads",
-    "Reporting", "Web Development", "Design", "Content",
-    "Billing", "Sales", "AI Automation", "IT & Security",
-  ];
-  const TRIGGER_OPTIONS = [
-    "Invoice Paid", "Contract Signed", "Client Activated",
-    "Proposal Approved", "Upsell Approved", "Renewal Signed",
-    "Cancellation Requested", "Offboarding Approved",
-  ];
-  const PRIORITY_OPTIONS = ["Urgent", "High", "Medium", "Low"];
-  const SP_OPTIONS = [
-    "Custom", "SEO Only", "SEO + GBP", "PPC + Landing Page",
-    "Full Service", "Reporting Only", "Website Build", "AI Automation",
-    "Upsell", "Renewal",
-  ];
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex justify-end"
-      style={{ background: "rgba(0,0,0,0.45)" }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div
-        className="h-full w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl"
-        style={{ background: "var(--rtm-surface)" }}
-      >
+    <div className="fixed inset-0 z-50 flex justify-end" style={{ background: "rgba(0,0,0,0.45)" }}
+      onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="h-full w-full max-w-2xl flex flex-col overflow-hidden shadow-2xl"
+        style={{ background: "var(--rtm-surface)" }}>
+
         {/* Header */}
-        <div
-          className="flex items-start justify-between px-6 py-5"
-          style={{ borderBottom: "1px solid var(--rtm-border)", background: "#EFF6FF" }}
-        >
+        <div className="flex items-start justify-between px-6 py-5"
+          style={{ borderBottom: "1px solid var(--rtm-border)", background: "#EFF6FF" }}>
           <div>
             <div className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: "#1D4ED8" }}>
-              New Task Template
+              {isEditing ? "Edit Task Template" : "New Task Template"}
             </div>
             <h2 className="text-lg font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
-              Create Task Blueprint
+              {isEditing ? (meta.name || editingServiceId) : "Create Task Blueprint"}
             </h2>
             <p className="text-xs mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
-              Defines tasks generated when a matching service is activated.
-              Immediately usable by the AM Activation Wizard.
+              Tasks generated when a project is launched for this service.
             </p>
           </div>
-          <button
-            onClick={onClose}
+          <button onClick={onClose}
             className="ml-4 flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-lg hover:opacity-70"
-            style={{ background: "rgba(0,0,0,0.08)", color: "var(--rtm-text-primary)" }}
-          >
-            ×
-          </button>
+            style={{ background: "rgba(0,0,0,0.08)", color: "var(--rtm-text-primary)" }}>×</button>
         </div>
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-          {/* ── Core fields ── */}
-          <section className="space-y-4">
-            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Template Details</div>
+          {/* Service picker (create only) */}
+          {!isEditing && (
+            <section className="space-y-3">
+              <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Service</div>
+              {servicesLoading ? (
+                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading services…</p>
+              ) : (
+                <select value={serviceId} onChange={(e) => setServiceId(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                  <option value="">— choose a service —</option>
+                  {services.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                </select>
+              )}
+              {/* Activation mapping */}
+              <div>
+                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Additional service-name aliases</label>
+                <p className="text-xs mb-2" style={{ color: "var(--rtm-text-secondary)" }}>Other lowercase keys that should route to this template (e.g. &ldquo;seo / gbp&rdquo;).</p>
+                <div className="flex gap-2">
+                  <input type="text" value={mappingInput} onChange={(e) => setMappingInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addMapping()}
+                    placeholder="e.g. seo / gbp"
+                    className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }} />
+                  <button type="button" onClick={addMapping}
+                    className="px-3 py-2 rounded-lg text-sm font-bold"
+                    style={{ background: "var(--rtm-blue)", color: "#fff" }}>+ Add</button>
+                </div>
+                {serviceMappings.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {serviceMappings.map((k) => (
+                      <span key={k} className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold"
+                        style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}>
+                        {k}
+                        <button type="button" onClick={() => setServiceMappings((p) => p.filter((x) => x !== k))}
+                          className="ml-1 opacity-60 hover:opacity-100 font-black text-sm">×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
 
-            <div className="grid grid-cols-2 gap-4">
+
+          {/* Blueprint meta fields — always visible, create and edit */}
+          <section className="space-y-3">
+            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Blueprint Details</div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
-                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Template Name *</label>
-                <input
-                  type="text" value={name} onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. LSA Launch Blueprint"
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                />
+                <label style={EDITOR_LABEL}>Name *</label>
+                <input type="text" value={meta.name} onChange={(e) => setMeta((m) => ({ ...m, name: e.target.value }))}
+                  disabled={saving} placeholder="e.g. SEO Launch Blueprint"
+                  style={{ ...EDITOR_INPUT, width: "100%" }} />
               </div>
-
               <div>
-                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Department *</label>
-                <select
-                  value={department} onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                >
-                  {DEPT_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+                <label style={EDITOR_LABEL}>Department</label>
+                <input type="text" value={meta.department} onChange={(e) => setMeta((m) => ({ ...m, department: e.target.value }))}
+                  disabled={saving} placeholder="e.g. SEO"
+                  style={{ ...EDITOR_INPUT, width: "100%" }} />
+              </div>
+              <div>
+                <label style={EDITOR_LABEL}>Version</label>
+                <input type="text" value={meta.version} onChange={(e) => setMeta((m) => ({ ...m, version: e.target.value }))}
+                  disabled={saving} placeholder="e.g. 1.0"
+                  style={{ ...EDITOR_INPUT, width: "100%" }} />
+              </div>
+              <div>
+                <label style={EDITOR_LABEL}>Service Package</label>
+                <input type="text" value={meta.servicePackage} onChange={(e) => setMeta((m) => ({ ...m, servicePackage: e.target.value }))}
+                  disabled={saving} placeholder="e.g. SEO Only"
+                  style={{ ...EDITOR_INPUT, width: "100%" }} />
+              </div>
+              <div>
+                <label style={EDITOR_LABEL}>Mapped Line Item</label>
+                <input type="text" value={meta.mappedLineItem} onChange={(e) => setMeta((m) => ({ ...m, mappedLineItem: e.target.value }))}
+                  disabled={saving} placeholder="e.g. SEO Management"
+                  style={{ ...EDITOR_INPUT, width: "100%" }} />
+              </div>
+              <div>
+                <label style={EDITOR_LABEL}>Activation Trigger</label>
+                <select value={meta.activationTrigger} onChange={(e) => setMeta((m) => ({ ...m, activationTrigger: e.target.value }))}
+                  disabled={saving}
+                  className="text-xs font-medium rounded-lg border px-2 py-1 focus:outline-none"
+                  style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
+                  {ACTIVATION_TRIGGERS_LIST.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
-
               <div>
-                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Service Package</label>
-                <select
-                  value={servicePackage} onChange={(e) => setServicePackage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                >
-                  {SP_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <label style={EDITOR_LABEL}>Est. Total Hours</label>
+                <input type="number" min={0} step={0.5} value={meta.estimatedTotalHours}
+                  onChange={(e) => { const v = parseFloat(e.target.value); setMeta((m) => ({ ...m, estimatedTotalHours: isNaN(v) ? 0 : v })); }}
+                  disabled={saving} style={{ ...EDITOR_INPUT, width: "90px" }} />
               </div>
-
-              <div>
-                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Mapped Line Item *</label>
-                <input
-                  type="text" value={mappedLineItem} onChange={(e) => setMappedLineItem(e.target.value)}
-                  placeholder="e.g. LSA Management"
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Activation Trigger</label>
-                <select
-                  value={activationTrigger} onChange={(e) => setActivationTrigger(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                >
-                  {TRIGGER_OPTIONS.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Est. Total Hours</label>
-                <input
-                  type="number" min={0} step={0.5}
-                  value={estimatedTotalHours}
-                  onChange={(e) => setEstimatedTotalHours(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Version</label>
-                <input
-                  type="text" value={version} onChange={(e) => setVersion(e.target.value)}
-                  placeholder="1.0"
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                />
-              </div>
-
               <div className="col-span-2">
-                <label className="text-xs font-bold block mb-1" style={{ color: "var(--rtm-text-primary)" }}>Description</label>
-                <textarea
-                  rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe what this blueprint covers..."
-                  className="w-full px-3 py-2 rounded-lg text-sm outline-none resize-none"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                />
+                <label style={EDITOR_LABEL}>Description</label>
+                <textarea rows={2} value={meta.description} onChange={(e) => setMeta((m) => ({ ...m, description: e.target.value }))}
+                  disabled={saving} placeholder="What this blueprint does and when it fires."
+                  style={{ ...EDITOR_INPUT, width: "100%", resize: "vertical", fontFamily: "inherit" }} />
               </div>
-
-              <div className="col-span-2 flex items-center gap-2">
-                <input
-                  type="checkbox" id="isActive" checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                  className="w-4 h-4 accent-blue-600"
-                />
-                <label htmlFor="isActive" className="text-sm font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
-                  Active (immediately usable by the Activation Wizard)
-                </label>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="isActive" checked={meta.isActive}
+                  onChange={(e) => setMeta((m) => ({ ...m, isActive: e.target.checked }))}
+                  disabled={saving} className="w-4 h-4" />
+                <label htmlFor="isActive" className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Active (routes service lookups here)</label>
               </div>
             </div>
           </section>
 
-          {/* ── Activation Mapping (SERVICE_TO_BLUEPRINT) ── */}
+          {/* Setup tasks */}
           <section className="space-y-3">
-            <div>
-              <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Activation Mapping</div>
-              <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
-                Add service name keys (lowercase) that should activate this blueprint.
-                E.g. <code className="font-mono bg-blue-50 px-1 rounded">lsa</code>,&nbsp;
-                <code className="font-mono bg-blue-50 px-1 rounded">local service ads</code>.
-                The AM Wizard matches contracted service names against these keys.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={serviceMappingInput}
-                onChange={(e) => setServiceMappingInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addServiceMapping()}
-                placeholder="e.g. lsa or local service ads"
-                className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
-                style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-              />
-              <button
-                type="button"
-                onClick={addServiceMapping}
-                className="px-3 py-2 rounded-lg text-sm font-bold"
-                style={{ background: "var(--rtm-blue)", color: "#fff" }}
-              >
-                + Add
-              </button>
-            </div>
-            {serviceMappings.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {serviceMappings.map((k) => (
-                  <span
-                    key={k}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold"
-                    style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" }}
-                  >
-                    {k}
-                    <button
-                      type="button"
-                      onClick={() => removeServiceMapping(k)}
-                      className="ml-1 opacity-60 hover:opacity-100 font-black text-sm"
-                    >×</button>
-                  </span>
-                ))}
-              </div>
-            )}
-            {serviceMappings.length === 0 && (
-              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                No mappings added. Template will still appear in the table but won&apos;t
-                auto-activate from service names until mappings are set.
-              </p>
-            )}
+            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Setup Tasks</div>
+            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>Run once at project launch. Supports prerequisites and &ldquo;due date counts from&rdquo;.</p>
+            <EditorGroupPanel kind="setup" label="Setup Tasks" tasks={setupTasks} onChange={setSetupTasks} saving={saving} />
           </section>
 
-          {/* ── Task Checklist Builder ── */}
+          {/* Recurring tasks */}
           <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Task Checklist</div>
-                <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
-                  Tasks generated when this blueprint is activated. Add, remove, and reorder rows.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={addTaskRow}
-                className="px-3 py-1.5 rounded-lg text-xs font-bold"
-                style={{ background: "var(--rtm-blue)", color: "#fff" }}
-              >
-                + Add Task
-              </button>
-            </div>
-
-            {taskRows.length === 0 && (
-              <div
-                className="rounded-xl p-6 text-center"
-                style={{ background: "var(--rtm-bg)", border: "2px dashed var(--rtm-border)" }}
-              >
-                <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
-                  No tasks yet. Click &ldquo;+ Add Task&rdquo; to build the checklist.
-                </p>
-              </div>
-            )}
-
-            {taskRows.map((row, i) => (
-              <div
-                key={row._key}
-                className="rounded-xl p-4 space-y-3"
-                style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-black w-5 text-center" style={{ color: "var(--rtm-text-muted)" }}>
-                    {i + 1}
-                  </span>
-                  <div className="flex-1">
-                    <input
-                      type="text"
-                      value={row.name}
-                      onChange={(e) => updateTaskRow(row._key, "name", e.target.value)}
-                      placeholder="Task name"
-                      className="w-full px-3 py-1.5 rounded-lg text-sm font-semibold outline-none"
-                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => moveTaskRow(row._key, -1)}
-                    disabled={i === 0}
-                    className="w-7 h-7 rounded flex items-center justify-center text-sm opacity-60 hover:opacity-100 disabled:opacity-20"
-                    style={{ background: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    title="Move up"
-                  >↑</button>
-                  <button
-                    type="button"
-                    onClick={() => moveTaskRow(row._key, 1)}
-                    disabled={i === taskRows.length - 1}
-                    className="w-7 h-7 rounded flex items-center justify-center text-sm opacity-60 hover:opacity-100 disabled:opacity-20"
-                    style={{ background: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    title="Move down"
-                  >↓</button>
-                  <button
-                    type="button"
-                    onClick={() => removeTaskRow(row._key)}
-                    className="w-7 h-7 rounded flex items-center justify-center text-sm text-red-500 hover:bg-red-50"
-                    title="Remove task"
-                  >×</button>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 pl-7">
-                  <div>
-                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Department</label>
-                    <select
-                      value={row.department}
-                      onChange={(e) => updateTaskRow(row._key, "department", e.target.value)}
-                      className="w-full px-2 py-1 rounded text-xs outline-none"
-                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    >
-                      {DEPT_OPTIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Owner Role</label>
-                    <input
-                      type="text"
-                      value={row.ownerRole}
-                      onChange={(e) => updateTaskRow(row._key, "ownerRole", e.target.value)}
-                      placeholder="e.g. SEO Specialist"
-                      className="w-full px-2 py-1 rounded text-xs outline-none"
-                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Priority</label>
-                    <select
-                      value={row.priority}
-                      onChange={(e) => updateTaskRow(row._key, "priority", e.target.value)}
-                      className="w-full px-2 py-1 rounded text-xs outline-none"
-                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    >
-                      {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Est. Hours</label>
-                    <input
-                      type="number" min={0.25} step={0.25}
-                      value={row.estimatedHours}
-                      onChange={(e) => updateTaskRow(row._key, "estimatedHours", Number(e.target.value))}
-                      className="w-full px-2 py-1 rounded text-xs outline-none"
-                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Due Day Offset</label>
-                    <input
-                      type="number" min={0}
-                      value={row.dueDaysOffset}
-                      onChange={(e) => updateTaskRow(row._key, "dueDaysOffset", Number(e.target.value))}
-                      className="w-full px-2 py-1 rounded text-xs outline-none"
-                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Depends On (task ID)</label>
-                    <input
-                      type="text"
-                      value={row.dependsOnId}
-                      onChange={(e) => updateTaskRow(row._key, "dependsOnId", e.target.value)}
-                      placeholder="Optional"
-                      className="w-full px-2 py-1 rounded text-xs outline-none"
-                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <label className="text-[10px] font-bold block mb-0.5" style={{ color: "var(--rtm-text-muted)" }}>Description (optional)</label>
-                    <input
-                      type="text"
-                      value={row.description}
-                      onChange={(e) => updateTaskRow(row._key, "description", e.target.value)}
-                      placeholder="What does this task involve?"
-                      className="w-full px-2 py-1 rounded text-xs outline-none"
-                      style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
+            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Recurring Tasks</div>
+            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>Repeat indefinitely. Each task requires a repeat interval (days).</p>
+            <EditorGroupPanel kind="recurring" label="Recurring Tasks" tasks={recurringTasks} onChange={setRecurringTasks} saving={saving} />
           </section>
 
           {error && (
-            <div className="rounded-lg px-4 py-3 text-sm font-semibold" style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
+            <div className="rounded-lg px-4 py-3 text-sm font-semibold"
+              style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
               {error}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div
-          className="px-6 py-4 flex items-center gap-3 flex-wrap"
-          style={{ borderTop: "1px solid var(--rtm-border)" }}
-        >
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
+        <div className="px-6 py-4 flex items-center gap-3 flex-wrap"
+          style={{ borderTop: "1px solid var(--rtm-border)" }}>
+          <button type="button" onClick={handleSave} disabled={saving}
             className="px-5 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-50"
-            style={{ background: "var(--rtm-blue)" }}
-          >
-            {saving ? "Saving..." : "Create Template"}
+            style={{ background: "var(--rtm-blue)" }}>
+            {saving ? "Saving…" : isEditing ? "Save changes" : "Create Template"}
           </button>
-          <button
-            type="button"
-            onClick={onClose}
+          <button type="button" onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm font-semibold"
-            style={{ color: "var(--rtm-text-muted)" }}
-          >
-            Cancel
-          </button>
+            style={{ color: "var(--rtm-text-muted)" }}>Cancel</button>
           <span className="ml-auto text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-            {taskRows.length} task{taskRows.length !== 1 ? "s" : ""} · {serviceMappings.length} service mapping{serviceMappings.length !== 1 ? "s" : ""}
+            {setupTasks.length} setup · {recurringTasks.length} recurring
           </span>
         </div>
       </div>
@@ -866,9 +1020,11 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
 function TemplateDrawer({
   template,
   onClose,
+  onEdit,
 }: {
   template: TaskTemplate;
   onClose: () => void;
+  onEdit: (templateId: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<
     "overview"| "tasks"| "dependencies"| "workload"| "activation"| "notes">("overview");
@@ -1021,7 +1177,7 @@ function TemplateDrawer({
                 <table className="w-full text-sm min-w-[600px]">
                   <thead>
                     <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)"}}>
-                      {["Task Name", "Department", "Owner Role", "Target Days", "Priority", "Dep.", "Due", "Status"].map((col) => (
+                      {["Task Name", "Description", "Dept.", "Owner Role", "Est.Hrs", "Due", "Priority", "Status"].map((col) => (
                         <th key={col} className="px-3 py-2.5 text-left text-[10px] font-black uppercase tracking-wider"style={{ color: "var(--rtm-text-muted)"}}>
                           {col}
                         </th>
@@ -1037,12 +1193,14 @@ function TemplateDrawer({
                         <td className="px-3 py-2.5">
                           <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{task.name}</span>
                         </td>
+                        <td className="px-3 py-2.5 text-xs" style={{ color: "var(--rtm-text-secondary)", maxWidth: 160 }}>
+                          {task.description || <span style={{ color: "var(--rtm-text-muted)" }}>—</span>}
+                        </td>
                         <td className="px-3 py-2.5"><DeptBadge dept={task.department} /></td>
-                        <td className="px-3 py-2.5 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{task.ownerRole}</td>
-                        <td className="px-3 py-2.5 text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{task.targetCompletionDays}d</td>
-                        <td className="px-3 py-2.5"><PriorityBadge priority={task.priority} /></td>
-                        <td className="px-3 py-2.5 text-xs"style={{ color: "var(--rtm-text-muted)"}}>{task.dependency === "None"? "-": task.dependency.slice(0, 16) + (task.dependency.length > 16 ? "...": "")}</td>
+                        <td className="px-3 py-2.5 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{task.ownerRole || "—"}</td>
+                        <td className="px-3 py-2.5 text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{task.estimatedHours ? `${task.estimatedHours}h` : "—"}</td>
                         <td className="px-3 py-2.5 text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>{task.dueOffset}</td>
+                        <td className="px-3 py-2.5"><PriorityBadge priority={task.priority} /></td>
                         <td className="px-3 py-2.5"><DepStatusBadge status={task.status} /></td>
                       </tr>
                     ))}
@@ -1238,7 +1396,9 @@ function TemplateDrawer({
           className="px-6 py-4 flex items-center gap-2 flex-wrap"style={{ borderTop: "1px solid var(--rtm-border)"}}
         >
           <button
-            className="px-4 py-2 rounded-lg text-sm font-bold text-white"style={{ background: "var(--rtm-blue)"}}
+            className="px-4 py-2 rounded-lg text-sm font-bold text-white"
+            style={{ background: "var(--rtm-blue)"}}
+            onClick={() => { onClose(); onEdit(template.id); }}
           >
             Edit Template
           </button>
@@ -1269,6 +1429,8 @@ function TemplateDrawer({
 export default function TaskTemplatesPage() {
   // ── Live data from /api/task-blueprints ───────────────────────────────────
   const [TASK_TEMPLATES, setTaskTemplates] = useState<TaskTemplate[]>([]);
+  /** Raw blueprint records keyed by serviceId, for the Edit button. */
+  const [rawBlueprints, setRawBlueprints] = useState<Map<string, BlueprintApiRecord>>(new Map());
   const [loadError, setLoadError] = useState("");
 
   const loadTemplates = useCallback(async () => {
@@ -1277,6 +1439,7 @@ export default function TaskTemplatesPage() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = (await res.json()) as { blueprints: BlueprintApiRecord[] };
       setTaskTemplates(data.blueprints.map(blueprintToTemplate));
+      setRawBlueprints(new Map(data.blueprints.map((b) => [b.id, b])));
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load templates.");
     }
@@ -1286,7 +1449,36 @@ export default function TaskTemplatesPage() {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [showCreateModal, setShowCreateModal] = useState(false);
+  /** null = create mode; string = serviceId of template being edited */
+  const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
+  /** Groups loaded for the template being edited */
+  const [editingGroups, setEditingGroups] = useState<TemplateGroup[]>([]);
+  /** Meta fields loaded for the template being edited */
+  const [editingMeta, setEditingMeta] = useState<BlueprintMeta>(BLANK_META);
   const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(null);
+
+  function openEditor(bp?: BlueprintApiRecord) {
+    if (bp?.groups) {
+      setEditingServiceId(bp.id);
+      setEditingGroups(bp.groups);
+      setEditingMeta({
+        name:                bp.name,
+        department:          bp.department,
+        servicePackage:      bp.servicePackage,
+        mappedLineItem:      bp.mappedLineItem,
+        description:         bp.description,
+        activationTrigger:   bp.activationTrigger,
+        estimatedTotalHours: bp.estimatedTotalHours,
+        isActive:            bp.isActive,
+        version:             bp.version,
+      });
+    } else {
+      setEditingServiceId(null);
+      setEditingGroups([]);
+      setEditingMeta(BLANK_META);
+    }
+    setShowCreateModal(true);
+  }
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDept, setFilterDept] = useState<Department | "All">("All");
   const [filterType, setFilterType] = useState<TemplateType | "All">("All");
@@ -1379,7 +1571,7 @@ export default function TaskTemplatesPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold text-white transition-opacity hover:opacity-90"style={{ background: "var(--rtm-blue)"}}
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => openEditor()}
           >
             + New Task Template
           </button>
@@ -1675,6 +1867,7 @@ export default function TaskTemplatesPage() {
                             View
                           </button>
                           <button
+                            onClick={() => openEditor(rawBlueprints.get(template.id))}
                             className="text-[11px] font-semibold px-2 py-1 rounded-lg hover:opacity-80 transition-opacity border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}
                           >
                             Edit
@@ -2155,16 +2348,21 @@ export default function TaskTemplatesPage() {
         <TemplateDrawer
           template={selectedTemplate}
           onClose={() => setSelectedTemplate(null)}
+          onEdit={(templateId) => {
+            setSelectedTemplate(null);
+            openEditor(rawBlueprints.get(templateId));
+          }}
         />
       )}
 
-      {/*  Create Template Modal  */}
+      {/*  Create / Edit Template Modal  */}
       {showCreateModal && (
-        <CreateTemplateModal
-          onClose={() => setShowCreateModal(false)}
-          onCreated={(newTemplate) => {
-            setTaskTemplates((prev) => [...prev, newTemplate]);
-          }}
+        <TemplateEditorModal
+          onClose={() => { setShowCreateModal(false); setEditingServiceId(null); setEditingGroups([]); setEditingMeta(BLANK_META); }}
+          onSaved={() => { void loadTemplates(); }}
+          editingServiceId={editingServiceId}
+          initialGroups={editingGroups}
+          initialMeta={editingMeta}
         />
       )}
     </div>

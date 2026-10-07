@@ -134,6 +134,11 @@ interface TemplateTaskDef {
    * occurrence should be scheduled. Zero/absent = no recurrence.
    */
   intervalDays?: number;
+  // Restored per-task fields (RF2 run, 20261008)
+  ownerRole?: string;
+  estimatedHours?: number;
+  priority?: string;
+  description?: string;
 }
 
 interface TemplateGroup {
@@ -431,6 +436,11 @@ export async function launchProject(
          * Only meaningful when isRecurring=true and > 0.
          */
         intervalDays: number;
+        // Restored per-task fields (RF2 run, 20261008)
+        ownerRole: string | null;
+        estimatedHours: number | null;
+        priority: string | null;
+        description: string | null;
       }
 
       const flatTasks: FlatTask[] = [];
@@ -475,14 +485,18 @@ export async function launchProject(
           }
 
           flatTasks.push({
-            localId:       t.localId ?? "",
-            label:         t.label,
-            department:    t.department ?? "",
-            offsetDays:    t.offsetDays ?? 0,
-            offsetFrom:    t.offsetFrom ?? "launch",
+            localId:        t.localId ?? "",
+            label:          t.label,
+            department:     t.department ?? "",
+            offsetDays:     t.offsetDays ?? 0,
+            offsetFrom:     t.offsetFrom ?? "launch",
             prereqLocalIds,
-            isRecurring:   false,
-            intervalDays:  0,
+            isRecurring:    false,
+            intervalDays:   0,
+            ownerRole:      t.ownerRole      ?? null,
+            estimatedHours: typeof t.estimatedHours === "number" ? t.estimatedHours : null,
+            priority:       t.priority       ?? null,
+            description:    t.description    ?? null,
           });
         }
 
@@ -501,14 +515,18 @@ export async function launchProject(
           }
 
           flatTasks.push({
-            localId:       t.localId ?? "",
-            label:         t.label,
-            department:    t.department ?? "",
-            offsetDays:    t.offsetDays ?? 0,
-            offsetFrom:    "launch",   // recurring tasks always offset from launch
+            localId:        t.localId ?? "",
+            label:          t.label,
+            department:     t.department ?? "",
+            offsetDays:     t.offsetDays ?? 0,
+            offsetFrom:     "launch",   // recurring tasks always offset from launch
             prereqLocalIds: [],
-            isRecurring:   true,
-            intervalDays:  interval,
+            isRecurring:    true,
+            intervalDays:   interval,
+            ownerRole:      t.ownerRole      ?? null,
+            estimatedHours: typeof t.estimatedHours === "number" ? t.estimatedHours : null,
+            priority:       t.priority       ?? null,
+            description:    t.description    ?? null,
           });
         }
       } else if (catalogItem) {
@@ -522,14 +540,18 @@ export async function launchProject(
           if (Array.isArray(group.bullets)) {
             for (const bullet of group.bullets) {
               flatTasks.push({
-                localId:      "",
-                label:        bullet,
-                department:   categoryDept,
-                offsetDays:   0,
-                offsetFrom:   "launch",
+                localId:        "",
+                label:          bullet,
+                department:     categoryDept,
+                offsetDays:     0,
+                offsetFrom:     "launch",
                 prereqLocalIds: [],
-                isRecurring:  false,
-                intervalDays: 0,
+                isRecurring:    false,
+                intervalDays:   0,
+                ownerRole:      null,
+                estimatedHours: null,
+                priority:       null,
+                description:    null,
               });
             }
           }
@@ -580,8 +602,13 @@ export async function launchProject(
               isSetup:                !taskDef.isRecurring,
               isRecurring:            taskDef.isRecurring,
               recurrenceIntervalDays: taskDef.intervalDays,
-              createdAt:              now,
-              updatedAt:              now,
+              // Restored per-task fields from template (RF2 run, 20261008)
+              ownerRole:      taskDef.ownerRole,
+              estimatedHours: taskDef.estimatedHours,
+              priority:       taskDef.priority,
+              description:    taskDef.description,
+              createdAt:      now,
+              updatedAt:      now,
             },
           });
           if (taskDef.localId) taskIdByLocalId.set(taskDef.localId, taskId);

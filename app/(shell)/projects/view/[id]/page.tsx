@@ -141,6 +141,18 @@ function TaskRow({
         <span className={isDone ? "line-through opacity-60" : ""}>{task.label}</span>
         {/* Blocked: show what this task is waiting on */}
         {task.isBlocked && <BlockedByList entries={task.blockedBy} />}
+        {task.description && (
+          <div className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)", fontStyle: "italic" }}>{task.description}</div>
+        )}
+      </td>
+      <td className="px-3 py-2.5 text-xs border-b whitespace-nowrap" style={{ borderColor: "var(--rtm-border-light)" }}>
+        {task.priority ? (
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 9999,
+            background: task.priority === "Urgent" ? "#FEE2E2" : task.priority === "High" ? "#FEF2F2" : task.priority === "Medium" ? "#FFFBEB" : "#F8FAFC",
+            color:      task.priority === "Urgent" ? "#991B1B" : task.priority === "High" ? "#DC2626" : task.priority === "Medium" ? "#D97706" : "#94A3B8",
+          }}>{task.priority}</span>
+        ) : "—"}
       </td>
       <td className="px-3 py-2.5 text-xs border-b whitespace-nowrap" style={{ borderColor: "var(--rtm-border-light)", color: "var(--rtm-text-muted)" }}>
         {task.department ?? "—"}
@@ -416,7 +428,7 @@ export default function ProjectDetailPage() {
               <table className="min-w-full">
                 <thead>
                   <tr>
-                    {["Task", "Department", "Owner", "Due Date", "Status", "Action"].map((h) => (
+                    {["Task", "Priority", "Department", "Owner", "Due Date", "Status", "Action"].map((h) => (
                       <th key={h}
                         className="text-left text-xs font-semibold uppercase tracking-wide px-3 py-2 whitespace-nowrap border-b"
                         style={{ color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg-alt, #F9FAFB)" }}>
