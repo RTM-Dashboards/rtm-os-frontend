@@ -1,147 +1,72 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { ENGINE_STORE } from "@/lib/engine/mock-data";
-import type { Task, Project, DepartmentName, ProjectDepartment } from "@/lib/engine/types";
-import { MASTER_CLIENTS } from "@/lib/mock/master-clients";
-import type { MasterClient } from "@/lib/mock/master-clients";
-
 // =============================================================================
 // Department Activation
 // Route: /tasks/department-activation
 //
-// ADMIN-WIDE VIEW of real department task workloads for activated client
-// projects, sourced entirely from ENGINE_STORE + MASTER_CLIENTS.
+// ADMIN-WIDE view of real department task workloads for activated client
+// projects. Data source: Postgres via /api/projects/scoped (project list +
+// task counts) and /api/projects/detail (per-project task detail).
 //
-// Data derivation:
-//   - "Client projects"  → ENGINE_STORE.projects where clientId is set
-//   - "Dept queue"       → ENGINE_STORE.tasks grouped by department,
-//                          scoped to those client projects
-//   - "Blueprint tasks"  → same ENGINE_STORE.tasks where source = "Task Blueprint"
+// VISIBILITY RULES (enforced by the API, not by this page):
+//   Executives and SystemAdmins see everything.
+//   AM Manager sees all projects and all tasks.
+//   AM Member sees projects where they are the assignedAM, all tasks.
+//   Everyone else: projects where they own >= 1 task; only their dept's tasks.
+//   monthlyValueCents is absent from the API for non-AM / non-Executive callers.
 //
-// AM's 2-step wizard (/account-management/projects) is the
-// sole activation mechanism. This page reflects its outputs.
+// REMOVED FROM MOCK VERSION:
+//   - ENGINE_STORE / MASTER_CLIENTS imports (no Postgres equivalent).
+//   - "Blueprint Tasks" sub-grouping (source field does not exist in Postgres tasks).
+//   - activatedAt / activationStatus per department (not stored in Postgres).
+//   - Blueprint task count KPI (no source field in Postgres tasks).
+//   - Unassigned count KPI (removed rather than faked).
+//
+// EMPTY STATE:
+//   Projects and tasks are empty right now. The page will show
+//   "No activated client projects yet" -- honest and correct.
 // =============================================================================
 
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
+import type { ScopedProjectListItem } from "@/app/api/projects/scoped/route";
+import type { ScopedProjectDetail, ScopedTask, ScopedCategory } from "@/app/api/projects/detail/route";
+
 // ---------------------------------------------------------------------------
-// Real-data helpers
+// Derived types
 // ---------------------------------------------------------------------------
 
-/** Projects that were created for a real MASTER_CLIENTS client. */
-function getClientProjects(projects: Project[]): Project[] {
-  return projects.filter(
-    (p) =>
-      p.clientId &&
-      p.clientId !== "" &&
-      // Exclude department queue containers (their ids all start with proj-wt-)
-      !p.id.startsWith("proj-wt-")
-  );
-}
-
-/** Tasks belonging to real client projects (non-queue containers). */
-function getClientTasks(clientProjects: Project[], tasks: Task[]): Task[] {
-  const ids = new Set(clientProjects.map((p) => p.id));
-  return tasks.filter((t) => ids.has(t.projectId));
-}
-
-/** Group tasks by department. */
-function groupByDept(tasks: Task[]): Map<DepartmentName, Task[]> {
-  const map = new Map<DepartmentName, Task[]>();
-  for (const t of tasks) {
-    const bucket = map.get(t.department) ?? [];
-    bucket.push(t);
-    map.set(t.department, bucket);
-  }
-  return map;
-}
-
-/**
- * Metadata about an activated department sourced directly from project.departments[].
- * Used to surface zero-task departments that are explicitly activated.
- */
-export interface ActivatedDeptMeta {
-  /** "Active" | "Pending" | "Not Started" — from ProjectDepartment.activationStatus.
-   *  Absent on seeded records: fall back to "Active" when the dept has tasks (compat). */
-  activationStatus: "Active" | "Pending" | "Not Started";
-  /** ISO timestamp, present on wizard-created records. */
-  activatedAt?: string;
-  /** Owner name from the project department entry. */
-  owner: string;
-}
-
-/**
- * Build a map of department → ActivatedDeptMeta by scanning all client projects.
- * A department is included when:
- *   - It has an explicit activationStatus of "Active", OR
- *   - It has no activationStatus (pre-field seeded data) AND has at least one task (compat).
- * When multiple projects have the same department, the earliest activatedAt wins
- * (or the one with tasks if both are present).
- */
-function buildActivatedDeptMeta(
-  clientProjects: Project[],
-): Map<DepartmentName, ActivatedDeptMeta> {
-  const map = new Map<DepartmentName, ActivatedDeptMeta>();
-
-  for (const project of clientProjects) {
-    for (const dept of project.departments as ProjectDepartment[]) {
-      const deptName = dept.department;
-      const hasExplicitActive = dept.activationStatus === "Active";
-      const hasTasks = dept.taskIds.length > 0;
-      // Include if explicitly active, OR if legacy seeded (no field) but has tasks
-      if (!hasExplicitActive && !hasTasks) continue;
-
-      const status = dept.activationStatus ?? "Active"; // compat: treat legacy+tasks as Active
-      const candidate: ActivatedDeptMeta = {
-        activationStatus: status,
-        activatedAt: dept.activatedAt,
-        owner: dept.owner,
-      };
-
-      const existing = map.get(deptName);
-      if (!existing) {
-        map.set(deptName, candidate);
-      } else {
-        // Prefer the earliest activatedAt; if timestamps tie or missing, keep existing
-        if (
-          candidate.activatedAt &&
-          (!existing.activatedAt || candidate.activatedAt < existing.activatedAt)
-        ) {
-          map.set(deptName, candidate);
-        }
-      }
-    }
-  }
-
-  return map;
+interface DeptTaskRow {
+  task: ScopedTask;
+  category: ScopedCategory;
+  project: ScopedProjectListItem;
 }
 
 // ---------------------------------------------------------------------------
 // Style helpers
 // ---------------------------------------------------------------------------
 
-const DEPT_COLORS: Record<string, { bg: string; color: string; border: string; ring: string }> = {
-  SEO:                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE", ring: "ring-blue-200" },
-  GBP:                { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0", ring: "ring-emerald-200" },
-  PPC:                { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE", ring: "ring-violet-200" },
-  "Meta Ads":         { bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD", ring: "ring-sky-200" },
-  LSA:                { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A", ring: "ring-amber-200" },
-  Reporting:          { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1", ring: "ring-slate-200" },
-  "Web Development":  { bg: "#ECFEFF", color: "#0891B2", border: "#A5F3FC", ring: "ring-cyan-200" },
-  Design:             { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3", ring: "ring-rose-200" },
-  "Account Management": { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0", ring: "ring-green-200" },
-  Content:            { bg: "#FAFAF5", color: "#65A30D", border: "#D9F99D", ring: "ring-lime-200" },
+const DEPT_COLORS: Record<string, { bg: string; color: string; border: string }> = {
+  SEO:                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+  GBP:                { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
+  PPC:                { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE" },
+  "Meta Ads":         { bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" },
+  LSA:                { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
+  Reporting:          { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1" },
+  "Web Development":  { bg: "#ECFEFF", color: "#0891B2", border: "#A5F3FC" },
+  Design:             { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3" },
+  "Account Management": { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0" },
+  Content:            { bg: "#FAFAF5", color: "#65A30D", border: "#D9F99D" },
 };
 
-const DEFAULT_DEPT_STYLE = {
-  bg: "#F8FAFC",
-  color: "#475569",
-  border: "#CBD5E1",
-  ring: "ring-slate-200",
-};
+const DEFAULT_DEPT_STYLE = { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1" };
+
+function deptStyle(dept: string) {
+  return DEPT_COLORS[dept] ?? DEFAULT_DEPT_STYLE;
+}
 
 function DeptBadge({ dept }: { dept: string }) {
-  const c = DEPT_COLORS[dept] ?? DEFAULT_DEPT_STYLE;
+  const c = deptStyle(dept);
   return (
     <span
       className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 rounded-full"
@@ -152,54 +77,47 @@ function DeptBadge({ dept }: { dept: string }) {
   );
 }
 
-function taskStatusStyle(status: string) {
+function taskStatusStyle(status: string): React.CSSProperties {
   switch (status) {
-    case "Completed":    return { background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" };
-    case "In Progress":  return { background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" };
-    case "Open":         return { background: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" };
-    case "Blocked":      return { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" };
-    case "Waiting":      return { background: "#FFFBEB", color: "#B45309", border: "1px solid #FDE68A" };
-    case "Review":       return { background: "#FAF5FF", color: "#7C3AED", border: "1px solid #DDD6FE" };
-    case "Cancelled":    return { background: "#F1F5F9", color: "#94A3B8", border: "1px solid #E2E8F0" };
-    default:             return { background: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" };
+    case "done":        return { background: "#ECFDF5", color: "#059669", border: "1px solid #A7F3D0" };
+    case "in_progress": return { background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE" };
+    case "open":        return { background: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" };
+    default:            return { background: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" };
   }
 }
 
-function priorityStyle(priority: string) {
+function taskStatusLabel(status: string): string {
+  switch (status) {
+    case "done":        return "Done";
+    case "in_progress": return "In Progress";
+    case "open":        return "Open";
+    default:            return status;
+  }
+}
+
+function priorityStyle(priority: string | null): React.CSSProperties {
   switch (priority) {
-    case "Urgent": return { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" };
-    case "High":   return { background: "#FFF7ED", color: "#C2410C", border: "1px solid #FED7AA" };
-    case "Medium": return { background: "#FFFBEB", color: "#B45309", border: "1px solid #FDE68A" };
-    case "Low":    return { background: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" };
+    case "urgent": return { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" };
+    case "high":   return { background: "#FFF7ED", color: "#C2410C", border: "1px solid #FED7AA" };
+    case "medium": return { background: "#FFFBEB", color: "#B45309", border: "1px solid #FDE68A" };
+    case "low":    return { background: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" };
     default:       return { background: "#F8FAFC", color: "#64748B", border: "1px solid #E2E8F0" };
   }
 }
 
-// ---------------------------------------------------------------------------
-// KPI Card
-// ---------------------------------------------------------------------------
-
-function KpiCard({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number | string;
-  color?: string;
-}) {
+function KpiCard({ label, value, color }: { label: string; value: number | string; color?: string }) {
   return (
     <div
       className="rounded-xl px-4 py-3"
       style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
     >
-      <div className={`text-2xl font-black ${color ?? ""}`} style={!color ? { color: "var(--rtm-text-primary)" } : undefined}>
+      <div
+        className={`text-2xl font-black ${color ?? ""}`}
+        style={!color ? { color: "var(--rtm-text-primary)" } : undefined}
+      >
         {value}
       </div>
-      <div
-        className="mt-1 text-[11px] font-semibold leading-tight"
-        style={{ color: "var(--rtm-text-secondary)" }}
-      >
+      <div className="mt-1 text-[11px] font-semibold leading-tight" style={{ color: "var(--rtm-text-secondary)" }}>
         {label}
       </div>
     </div>
@@ -207,309 +125,52 @@ function KpiCard({
 }
 
 // ---------------------------------------------------------------------------
-// Task Detail Drawer
+// Department Section
 // ---------------------------------------------------------------------------
-
-function TaskDrawer({
-  task,
-  project,
-  clients,
-  onClose,
-}: {
-  task: Task;
-  project: Project | undefined;
-  clients: MasterClient[];
-  onClose: () => void;
-}) {
-  const mc = project?.clientId
-    ? clients.find((c) => c.id === project.clientId)
-    : undefined;
-
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-xl bg-white shadow-2xl flex flex-col h-full overflow-hidden">
-        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-gray-200 bg-gray-50">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs text-gray-400 uppercase tracking-wide font-medium">
-              Task Detail
-            </span>
-            <h2 className="text-lg font-bold text-gray-900">{task.title}</h2>
-            <div className="flex items-center gap-2 flex-wrap mt-1">
-              <DeptBadge dept={task.department} />
-              <span
-                className="inline-flex items-center rounded-full text-xs font-semibold px-2 py-0.5"
-                style={taskStatusStyle(task.status)}
-              >
-                {task.status}
-              </span>
-              <span
-                className="inline-flex items-center rounded-full text-xs font-semibold px-2 py-0.5"
-                style={priorityStyle(task.priority)}
-              >
-                {task.priority}
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="ml-4 mt-1 text-gray-400 hover:text-gray-700 text-xl font-bold leading-none"
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              ["Client", task.clientName],
-              ["Project", task.projectName],
-              ["Service", task.service],
-              ["Source", task.source],
-              ["Assigned To", task.assignedUserName ?? "Unassigned"],
-              ["Due Date", task.dueDate],
-              ["Est. Hours", task.estimatedHours?.toString() ?? "—"],
-              ["Type", task.type],
-            ].map(([k, v]) => (
-              <div key={k} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                <span className="text-xs text-gray-400 uppercase tracking-wide">{k}</span>
-                <p className="text-sm font-semibold text-gray-800 mt-0.5">{v}</p>
-              </div>
-            ))}
-          </div>
-
-          {task.description && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-xs font-bold text-blue-800 uppercase tracking-wide mb-1">
-                Description
-              </p>
-              <p className="text-sm text-blue-900">{task.description}</p>
-            </div>
-          )}
-
-          {mc && (
-            <div className="bg-gray-50 rounded-lg border border-gray-200 divide-y divide-gray-100">
-              <div className="px-4 py-2.5 flex justify-between">
-                <span className="text-xs text-gray-500">Monthly Value</span>
-                <span className="text-xs font-semibold">${mc.monthlyValue.toLocaleString()}/mo</span>
-              </div>
-              <div className="px-4 py-2.5 flex justify-between">
-                <span className="text-xs text-gray-500">Client Health</span>
-                <span className="text-xs font-semibold">{mc.clientHealth}</span>
-              </div>
-              <div className="px-4 py-2.5 flex justify-between">
-                <span className="text-xs text-gray-500">AM</span>
-                <span className="text-xs font-semibold">{mc.assignedAM}</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex gap-2 flex-wrap shrink-0">
-          {project && (
-            <Link
-              href={`/projects/${project.id}`}
-              className="px-4 py-2 text-xs font-bold rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-            >
-              Manage Project →
-            </Link>
-          )}
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Department Section — queue + blueprint tasks for one department
-// ---------------------------------------------------------------------------
-
-function DeptStatusBadge({
-  status,
-  activatedAt,
-}: {
-  status: "Active" | "Pending" | "Not Started";
-  activatedAt?: string;
-}) {
-  const styles: Record<string, { bg: string; color: string; border: string }> = {
-    Active:        { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0" },
-    Pending:       { bg: "#FFFBEB", color: "#B45309", border: "#FDE68A" },
-    "Not Started": { bg: "#F8FAFC", color: "#64748B", border: "#E2E8F0" },
-  };
-  const s = styles[status] ?? styles["Not Started"];
-  const dateLabel = activatedAt
-    ? new Date(activatedAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
-  return (
-    <span className="inline-flex items-center gap-1.5">
-      <span
-        className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
-        style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
-      >
-        {status}
-      </span>
-      {dateLabel && (
-        <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
-          {dateLabel}
-        </span>
-      )}
-    </span>
-  );
-}
 
 function DepartmentSection({
   dept,
-  tasks,
-  projects,
+  rows,
   search,
-  onSelectTask,
-  deptMeta,
 }: {
-  dept: DepartmentName;
-  tasks: Task[];
-  projects: Project[];
+  dept: string;
+  rows: DeptTaskRow[];
   search: string;
-  onSelectTask: (t: Task) => void;
-  deptMeta?: ActivatedDeptMeta;
 }) {
-  const c = DEPT_COLORS[dept] ?? DEFAULT_DEPT_STYLE;
+  const c = deptStyle(dept);
 
   const filtered = search.trim()
-    ? tasks.filter(
-        (t) =>
-          t.title.toLowerCase().includes(search.toLowerCase()) ||
-          t.clientName.toLowerCase().includes(search.toLowerCase())
+    ? rows.filter(
+        (r) =>
+          r.task.label.toLowerCase().includes(search.toLowerCase()) ||
+          r.project.displayName.toLowerCase().includes(search.toLowerCase()) ||
+          r.project.name.toLowerCase().includes(search.toLowerCase())
       )
-    : tasks;
+    : rows;
 
-  const blueprintTasks  = filtered.filter((t) => t.source === "Task Blueprint");
-  const otherTasks      = filtered.filter((t) => t.source !== "Task Blueprint");
+  if (filtered.length === 0) return null;
 
-  const open      = filtered.filter((t) => t.status === "Open" || t.status === "In Progress").length;
-  const blocked   = filtered.filter((t) => t.status === "Blocked").length;
-  const completed = filtered.filter((t) => t.status === "Completed").length;
-
-  // If no tasks AND no explicit activation meta, hide the section entirely.
-  // Departments with activationStatus=Active but zero tasks are still shown (empty state).
-  const isExplicitlyActive = deptMeta?.activationStatus === "Active";
-  if (filtered.length === 0 && !isExplicitlyActive) return null;
-
-  const projectById = new Map(projects.map((p) => [p.id, p]));
-
-  const renderTaskRow = (t: Task, idx: number, arr: Task[]) => (
-    <tr
-      key={t.id}
-      className="hover:bg-blue-50/20 cursor-pointer transition-colors"
-      style={{
-        borderBottom: idx < arr.length - 1 ? "1px solid var(--rtm-border-light)" : undefined,
-      }}
-      onClick={() => onSelectTask(t)}
-    >
-      <td className="px-4 py-2.5">
-        <div className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>
-          {t.title}
-        </div>
-        {t.description && (
-          <div
-            className="text-[10px] mt-0.5 line-clamp-1"
-            style={{ color: "var(--rtm-text-muted)" }}
-          >
-            {t.description}
-          </div>
-        )}
-      </td>
-      <td
-        className="px-4 py-2.5 text-xs whitespace-nowrap"
-        style={{ color: "var(--rtm-text-secondary)" }}
-      >
-        {t.clientName}
-      </td>
-      <td className="px-4 py-2.5 whitespace-nowrap">
-        <span
-          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
-          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)" }}
-        >
-          {t.service}
-        </span>
-      </td>
-      <td className="px-4 py-2.5 whitespace-nowrap">
-        <span
-          className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold"
-          style={priorityStyle(t.priority)}
-        >
-          {t.priority}
-        </span>
-      </td>
-      <td
-        className="px-4 py-2.5 text-xs whitespace-nowrap"
-        style={{ color: "var(--rtm-text-secondary)" }}
-      >
-        {t.dueDate}
-      </td>
-      <td
-        className="px-4 py-2.5 text-xs whitespace-nowrap"
-        style={{
-          color: t.assignedUserName ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)",
-        }}
-      >
-        {t.assignedUserName ?? "Unassigned"}
-      </td>
-      <td className="px-4 py-2.5 whitespace-nowrap">
-        <span
-          className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold"
-          style={taskStatusStyle(t.status)}
-        >
-          {t.status}
-        </span>
-      </td>
-      <td className="px-4 py-2.5 whitespace-nowrap">
-        <span
-          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px]"
-          style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", border: "1px solid var(--rtm-border)" }}
-        >
-          {t.source}
-        </span>
-      </td>
-    </tr>
-  );
+  const open      = filtered.filter((r) => r.task.status === "open" || r.task.status === "in_progress").length;
+  const blocked   = filtered.filter((r) => r.task.isBlocked).length;
+  const completed = filtered.filter((r) => r.task.status === "done").length;
 
   return (
     <div
       className="rounded-xl overflow-hidden"
       style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
     >
-      {/* Department header */}
       <div
         className="flex items-center justify-between px-5 py-3"
         style={{ borderBottom: "1px solid var(--rtm-border)", background: c.bg }}
       >
         <div className="flex items-center gap-3">
-          <span className="font-bold text-sm" style={{ color: c.color }}>
-            {dept}
-          </span>
+          <span className="font-bold text-sm" style={{ color: c.color }}>{dept}</span>
           <span
             className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold"
             style={{ background: "white", color: c.color, border: `1px solid ${c.border}` }}
           >
             {filtered.length} task{filtered.length !== 1 ? "s" : ""}
           </span>
-          {/* Department Status indicator */}
-          {deptMeta && (
-            <DeptStatusBadge
-              status={deptMeta.activationStatus}
-              activatedAt={deptMeta.activatedAt}
-            />
-          )}
         </div>
         <div className="flex items-center gap-3 text-xs font-semibold" style={{ color: c.color }}>
           <span>{open} open</span>
@@ -522,101 +183,101 @@ function DepartmentSection({
         </div>
       </div>
 
-      {/* ── Blueprint Tasks ── */}
-      {blueprintTasks.length > 0 && (
-        <>
-          <div
-            className="px-5 py-2 text-[11px] font-bold uppercase tracking-wide"
-            style={{
-              color: "var(--rtm-text-secondary)",
-              background: "var(--rtm-bg)",
-              borderBottom: "1px solid var(--rtm-border-light)",
-            }}
-          >
-            Blueprint-Activated Tasks ({blueprintTasks.length})
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
-              <thead
-                style={{
-                  background: "var(--rtm-bg)",
-                  borderBottom: "2px solid var(--rtm-border)",
-                }}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[700px]">
+          <thead style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)" }}>
+            <tr>
+              {["Task", "Project / Client", "Service", "Priority", "Due Date", "Assigned To", "Status"].map((h) => (
+                <th
+                  key={h}
+                  className="px-4 py-2 text-left text-[11px] font-black uppercase tracking-wide whitespace-nowrap"
+                  style={{ color: "var(--rtm-text-secondary)" }}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r, idx) => (
+              <tr
+                key={r.task.id}
+                className="hover:bg-blue-50/20 transition-colors"
+                style={{ borderBottom: idx < filtered.length - 1 ? "1px solid var(--rtm-border-light)" : undefined }}
               >
-                <tr>
-                  {["Task", "Client", "Service", "Priority", "Due Date", "Assigned To", "Status", "Source"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-2 text-left text-[11px] font-black uppercase tracking-wide whitespace-nowrap"
-                        style={{ color: "var(--rtm-text-secondary)" }}
-                      >
-                        {h}
-                      </th>
-                    )
+                <td className="px-4 py-2.5">
+                  <div className="font-semibold text-sm" style={{ color: "var(--rtm-text-primary)" }}>
+                    {r.task.label}
+                  </div>
+                  {r.task.isBlocked && (
+                    <div className="text-[10px] mt-0.5 font-semibold text-red-600">
+                      Blocked by: {r.task.blockedBy.map((b) => b.label).join(", ")}
+                    </div>
                   )}
-                </tr>
-              </thead>
-              <tbody>
-                {blueprintTasks.map((t, idx) => renderTaskRow(t, idx, blueprintTasks))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {/* ── Other Tasks ── */}
-      {otherTasks.length > 0 && (
-        <>
-          <div
-            className="px-5 py-2 text-[11px] font-bold uppercase tracking-wide"
-            style={{
-              color: "var(--rtm-text-secondary)",
-              background: "var(--rtm-bg)",
-              borderTop: blueprintTasks.length > 0 ? "1px solid var(--rtm-border)" : undefined,
-              borderBottom: "1px solid var(--rtm-border-light)",
-            }}
-          >
-            Other Tasks ({otherTasks.length})
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
-              <thead
-                style={{
-                  background: "var(--rtm-bg)",
-                  borderBottom: "2px solid var(--rtm-border)",
-                }}
-              >
-                <tr>
-                  {["Task", "Client", "Service", "Priority", "Due Date", "Assigned To", "Status", "Source"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-2 text-left text-[11px] font-black uppercase tracking-wide whitespace-nowrap"
-                        style={{ color: "var(--rtm-text-secondary)" }}
-                      >
-                        {h}
-                      </th>
-                    )
+                  {r.task.description && !r.task.isBlocked && (
+                    <div className="text-[10px] mt-0.5 line-clamp-1" style={{ color: "var(--rtm-text-muted)" }}>
+                      {r.task.description}
+                    </div>
                   )}
-                </tr>
-              </thead>
-              <tbody>
-                {otherTasks.map((t, idx) => renderTaskRow(t, idx, otherTasks))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {/* Empty state — either search miss or activated dept with no tasks yet */}
-      {filtered.length === 0 && (
-        <div className="px-5 py-8 text-center text-sm" style={{ color: "var(--rtm-text-muted)" }}>
-          {isExplicitlyActive
-            ? "Department activated — no tasks assigned yet."
-            : "No tasks match your search in this department."}
-        </div>
-      )}
+                </td>
+                <td className="px-4 py-2.5 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+                  <div className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {r.project.displayName || r.project.name}
+                  </div>
+                  <div className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+                    {r.category.serviceLabel}
+                  </div>
+                </td>
+                <td className="px-4 py-2.5 whitespace-nowrap">
+                  <span
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                    style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)" }}
+                  >
+                    {r.category.serviceLabel}
+                  </span>
+                </td>
+                <td className="px-4 py-2.5 whitespace-nowrap">
+                  {r.task.priority && (
+                    <span
+                      className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold"
+                      style={priorityStyle(r.task.priority)}
+                    >
+                      {r.task.priority.charAt(0).toUpperCase() + r.task.priority.slice(1)}
+                    </span>
+                  )}
+                </td>
+                <td
+                  className="px-4 py-2.5 text-xs whitespace-nowrap"
+                  style={{ color: r.task.isOverdue ? "#DC2626" : "var(--rtm-text-secondary)", fontWeight: r.task.isOverdue ? 600 : undefined }}
+                >
+                  {r.task.dueDate
+                    ? new Date(r.task.dueDate + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                    : "—"}
+                  {r.task.isOverdue && " ⚑"}
+                </td>
+                <td
+                  className="px-4 py-2.5 text-xs whitespace-nowrap"
+                  style={{ color: r.task.ownerName ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)" }}
+                >
+                  {r.task.ownerName ?? "Unassigned"}
+                </td>
+                <td className="px-4 py-2.5 whitespace-nowrap">
+                  <span
+                    className="inline-flex items-center rounded px-2 py-0.5 text-[11px] font-semibold"
+                    style={
+                      r.task.isBlocked
+                        ? { background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }
+                        : taskStatusStyle(r.task.status)
+                    }
+                  >
+                    {r.task.isBlocked ? "Blocked" : taskStatusLabel(r.task.status)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -627,133 +288,130 @@ function DepartmentSection({
 
 export default function DepartmentActivationPage() {
   const [search, setSearch] = useState("");
-  const [deptFilter, setDeptFilter] = useState<DepartmentName | "All">("All");
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [deptFilter, setDeptFilter] = useState<string>("All");
+  const [projects, setProjects] = useState<ScopedProjectListItem[]>([]);
+  const [details, setDetails] = useState<Map<string, ScopedProjectDetail>>(new Map());
+  const [loadingProjects, setLoadingProjects] = useState(true);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Live data — shallow-copy seed arrays (not mutable ENGINE_STORE refs) so
-  // wizard push() calls don't silently contaminate state before the API refresh.
-  const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...ENGINE_STORE.projects]);
-  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
-  const [liveClients,  setLiveClients]  = useState<MasterClient[]>(() => [...MASTER_CLIENTS]);
+  const loadAll = useCallback(async () => {
+    setLoadingProjects(true);
+    setLoadError(null);
+    setProjects([]);
+    setDetails(new Map());
 
-  const refreshData = useCallback(async () => {
+    let projectList: ScopedProjectListItem[] = [];
     try {
-      const [projectsRes, tasksRes, clientsRes] = await Promise.all([
-        fetch("/api/engine?resource=projects"),
-        fetch("/api/engine?resource=tasks"),
-        fetch("/api/master-clients"),
-      ]);
-      if (projectsRes.ok) {
-        const d = await projectsRes.json() as { projects: Project[] };
-        setLiveProjects(d.projects);
-      }
-      if (tasksRes.ok) {
-        const d = await tasksRes.json() as { tasks: Task[] };
-        setLiveTasks(d.tasks);
-      }
-      if (clientsRes.ok) {
-        const d = await clientsRes.json() as { clients: MasterClient[] };
-        setLiveClients(d.clients);
-      }
-    } catch {
-      // Keep using seed data on fetch failure — non-fatal
+      const res = await fetch("/api/projects/scoped");
+      const data = (await res.json()) as { records?: ScopedProjectListItem[]; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? `HTTP ${res.status}`);
+      projectList = data.records ?? [];
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : String(err));
+      setLoadingProjects(false);
+      return;
     }
+    setProjects(projectList);
+    setLoadingProjects(false);
+
+    if (projectList.length === 0) return;
+
+    setLoadingDetails(true);
+    const detailMap = new Map<string, ScopedProjectDetail>();
+    await Promise.all(
+      projectList.map(async (p) => {
+        try {
+          const res = await fetch(`/api/projects/detail?id=${encodeURIComponent(p.id)}`);
+          if (res.ok) {
+            const data = (await res.json()) as { record?: ScopedProjectDetail };
+            if (data.record) detailMap.set(p.id, data.record);
+          }
+        } catch {
+          // best-effort
+        }
+      })
+    );
+    setDetails(new Map(detailMap));
+    setLoadingDetails(false);
   }, []);
 
-  useEffect(() => { void refreshData(); }, [refreshData]);
+  useEffect(() => {
+    void loadAll();
+  }, [loadAll]);
 
-  // ── Derive real data ──────────────────────────────────────────────────────
+  const { deptRows, allDepts, kpis } = useMemo(() => {
+    const rows: DeptTaskRow[] = [];
+    for (const [projId, detail] of details.entries()) {
+      const project = projects.find((p) => p.id === projId);
+      if (!project) continue;
+      for (const cat of detail.categories) {
+        for (const task of cat.tasks) {
+          rows.push({ task, category: cat, project });
+        }
+      }
+    }
 
-  const { clientProjects, clientTasks, deptBreakdown, activatedDeptMeta, kpis } = useMemo(() => {
-    const clientProjects   = getClientProjects(liveProjects);
-    const clientTasks      = getClientTasks(clientProjects, liveTasks);
-    const deptBreakdown    = groupByDept(clientTasks);
-    const activatedDeptMeta = buildActivatedDeptMeta(clientProjects);
+    const byDept = new Map<string, DeptTaskRow[]>();
+    for (const r of rows) {
+      const dept = r.category.department ?? "Other";
+      const arr = byDept.get(dept) ?? [];
+      arr.push(r);
+      byDept.set(dept, arr);
+    }
 
-    // Active dept count = union of task-holding depts + explicitly activated depts with zero tasks
-    const activeDeptsCount = activatedDeptMeta.size;
+    const allDepts = Array.from(byDept.keys()).sort();
 
     const kpis = {
-      clientProjects:   clientProjects.length,
-      totalTasks:       clientTasks.length,
-      blueprintTasks:   clientTasks.filter((t) => t.source === "Task Blueprint").length,
-      openTasks:        clientTasks.filter((t) => t.status === "Open" || t.status === "In Progress").length,
-      blockedTasks:     clientTasks.filter((t) => t.status === "Blocked").length,
-      completedTasks:   clientTasks.filter((t) => t.status === "Completed").length,
-      deptsActive:      activeDeptsCount,
-      unassigned:       clientTasks.filter((t) => !t.assignedUserName || t.assignedUserName === "Unassigned").length,
+      clientProjects: projects.length,
+      totalTasks:     rows.length,
+      open:           rows.filter((r) => r.task.status === "open" || r.task.status === "in_progress").length,
+      blocked:        rows.filter((r) => r.task.isBlocked).length,
+      done:           rows.filter((r) => r.task.status === "done").length,
+      overdue:        rows.filter((r) => r.task.isOverdue).length,
+      deptsActive:    byDept.size,
     };
 
-    return { clientProjects, clientTasks, deptBreakdown, activatedDeptMeta, kpis };
-  }, [liveProjects, liveTasks]);
+    return { deptRows: byDept, allDepts, kpis };
+  }, [projects, details]);
 
-  // All departments to show in filter = union of task-holding + explicitly activated (zero-task)
-  const allDepts = useMemo<DepartmentName[]>(
-    () => Array.from(activatedDeptMeta.keys()),
-    [activatedDeptMeta]
-  );
-
-  // Display breakdown: merge task-based map with zero-task activated depts
-  const displayBreakdown = useMemo<Map<DepartmentName, Task[]>>(() => {
-    // Build a merged map: every activated dept gets an entry (even empty arrays)
-    const merged = new Map<DepartmentName, Task[]>();
-    for (const dept of activatedDeptMeta.keys()) {
-      merged.set(dept, deptBreakdown.get(dept) ?? []);
-    }
-    if (deptFilter === "All") return merged;
-    const filtered = merged.get(deptFilter as DepartmentName);
-    return filtered !== undefined
-      ? new Map([[deptFilter as DepartmentName, filtered]])
-      : new Map();
-  }, [activatedDeptMeta, deptBreakdown, deptFilter]);
-
-  const selectedTaskProject = selectedTask
-    ? clientProjects.find((p) => p.id === selectedTask.projectId)
-    : undefined;
+  const displayDepts = deptFilter === "All" ? allDepts : allDepts.filter((d) => d === deptFilter);
+  const loading = loadingProjects || loadingDetails;
 
   return (
     <div className="space-y-6">
-      {/* ── Header ── */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <p
-              className="text-[11px] font-bold uppercase tracking-widest"
-              style={{ color: "var(--rtm-blue)" }}
-            >
+            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-blue)" }}>
               Projects &amp; Tasks
             </p>
             <span className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>›</span>
-            <p
-              className="text-[11px] font-semibold uppercase tracking-widest"
-              style={{ color: "var(--rtm-text-muted)" }}
-            >
+            <p className="text-[11px] font-semibold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>
               Department Activation
             </p>
           </div>
-          <h1
-            className="text-2xl font-bold tracking-tight"
-            style={{ color: "var(--rtm-text-primary)" }}
-          >
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>
             Department Activation
           </h1>
-          <p
-            className="mt-1 text-sm max-w-xl"
-            style={{ color: "var(--rtm-text-secondary)" }}
-          >
-            Real engine tasks for activated client projects, grouped by department. Blueprint-activated
-            and manually created tasks are shown separately. Activate clients via the{" "}
-            <Link
-              href="/account-management/projects"
-              className="font-semibold underline"
-              style={{ color: "var(--rtm-blue)" }}
-            >
+          <p className="mt-1 text-sm max-w-xl" style={{ color: "var(--rtm-text-secondary)" }}>
+            Real tasks for activated client projects, grouped by department. Data is read from
+            Postgres and scoped to what you are permitted to see. Activate clients via the{" "}
+            <Link href="/account-management/projects" className="font-semibold underline" style={{ color: "var(--rtm-blue)" }}>
               AM Projects wizard
             </Link>
             .
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => void loadAll()}
+            className="px-4 py-2 text-sm font-semibold rounded-lg border"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}
+          >
+            ↻ Refresh
+          </button>
           <Link
             href="/account-management/projects"
             className="px-4 py-2 text-sm font-bold rounded-lg text-white"
@@ -764,78 +422,25 @@ export default function DepartmentActivationPage() {
           <Link
             href="/tasks/activation-engine"
             className="px-4 py-2 text-sm font-semibold rounded-lg border"
-            style={{
-              borderColor: "var(--rtm-border)",
-              color: "var(--rtm-text-primary)",
-              background: "var(--rtm-surface)",
-            }}
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)" }}
           >
             Activation Engine
-          </Link>
-          <Link
-            href="/tasks/templates"
-            className="px-4 py-2 text-sm font-semibold rounded-lg border"
-            style={{
-              borderColor: "var(--rtm-border)",
-              color: "var(--rtm-text-primary)",
-              background: "var(--rtm-surface)",
-            }}
-          >
-            Task Templates
           </Link>
         </div>
       </div>
 
-      {/* ── Flow breadcrumb ── */}
-      <div
-        className="rounded-xl p-4 flex flex-wrap items-center gap-2"
-        style={{ background: "var(--rtm-blue-xlight)", border: "1px solid #BFDBFE" }}
-      >
-        {[
-          "AM Wizard Activates Client",
-          "Engine Project Created",
-          "Blueprints Applied",
-          "Tasks Generated",
-          "Dept Assignment",
-          "Delivery Begins",
-        ].map((step, i, arr) => (
-          <span key={step} className="flex items-center gap-2">
-            <span
-              className="text-xs font-semibold px-2 py-0.5 rounded-full bg-white"
-              style={{ color: "#1E40AF", border: "1px solid #BFDBFE" }}
-            >
-              {step}
-            </span>
-            {i < arr.length - 1 && (
-              <span className="font-black" style={{ color: "#93C5FD" }}>
-                →
-              </span>
-            )}
-          </span>
-        ))}
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+        <KpiCard label="Client Projects"     value={loading ? "…" : kpis.clientProjects} color="text-blue-700" />
+        <KpiCard label="Total Tasks"         value={loading ? "…" : kpis.totalTasks}     color="text-slate-700" />
+        <KpiCard label="Open / In Progress" value={loading ? "…" : kpis.open}           color="text-blue-700" />
+        <KpiCard label="Blocked"             value={loading ? "…" : kpis.blocked}        color={kpis.blocked > 0 ? "text-red-600" : "text-slate-400"} />
+        <KpiCard label="Done"               value={loading ? "…" : kpis.done}           color="text-emerald-600" />
+        <KpiCard label="Overdue"             value={loading ? "…" : kpis.overdue}        color={kpis.overdue > 0 ? "text-amber-600" : "text-slate-400"} />
+        <KpiCard label="Depts Active"        value={loading ? "…" : kpis.deptsActive}    color="text-teal-700" />
       </div>
 
-      {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <KpiCard label="Client Projects" value={kpis.clientProjects} color="text-blue-700" />
-        <KpiCard label="Total Tasks"     value={kpis.totalTasks}     color="text-slate-700" />
-        <KpiCard label="Blueprint Tasks" value={kpis.blueprintTasks} color="text-violet-600" />
-        <KpiCard label="Open / In Progress" value={kpis.openTasks}   color="text-blue-700" />
-        <KpiCard
-          label="Blocked"
-          value={kpis.blockedTasks}
-          color={kpis.blockedTasks > 0 ? "text-red-600" : "text-slate-400"}
-        />
-        <KpiCard label="Completed"     value={kpis.completedTasks}   color="text-emerald-600" />
-        <KpiCard label="Depts Active"  value={kpis.deptsActive}      color="text-teal-700" />
-        <KpiCard
-          label="Unassigned"
-          value={kpis.unassigned}
-          color={kpis.unassigned > 0 ? "text-amber-600" : "text-slate-400"}
-        />
-      </div>
-
-      {/* ── Filters ── */}
+      {/* Filters */}
       <div
         className="rounded-xl px-4 py-3 flex flex-wrap gap-3 items-center"
         style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
@@ -846,286 +451,146 @@ export default function DepartmentActivationPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-56 px-3 py-1.5 rounded-lg text-sm outline-none"
-          style={{
-            background: "var(--rtm-bg)",
-            border: "1px solid var(--rtm-border)",
-            color: "var(--rtm-text-primary)",
-          }}
+          style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
         />
         <select
           value={deptFilter}
-          onChange={(e) => setDeptFilter(e.target.value as DepartmentName | "All")}
+          onChange={(e) => setDeptFilter(e.target.value)}
           className="px-3 py-1.5 rounded-lg text-sm outline-none"
-          style={{
-            background: "var(--rtm-bg)",
-            border: "1px solid var(--rtm-border)",
-            color: "var(--rtm-text-primary)",
-          }}
+          style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
         >
           <option value="All">All Departments</option>
           {allDepts.map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
+            <option key={d} value={d}>{d}</option>
           ))}
         </select>
         {(search || deptFilter !== "All") && (
           <button
-            onClick={() => {
-              setSearch("");
-              setDeptFilter("All");
-            }}
+            onClick={() => { setSearch(""); setDeptFilter("All"); }}
             className="text-xs font-semibold"
             style={{ color: "var(--rtm-text-muted)" }}
           >
             Clear filters
           </button>
         )}
-        <span
-          className="ml-auto text-xs font-semibold"
-          style={{ color: "var(--rtm-text-muted)" }}
-        >
-          {kpis.clientProjects} client project{kpis.clientProjects !== 1 ? "s" : ""} ·{" "}
-          {kpis.totalTasks} tasks across {kpis.deptsActive} department
-          {kpis.deptsActive !== 1 ? "s" : ""}
+        <span className="ml-auto text-xs font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+          {kpis.clientProjects} project{kpis.clientProjects !== 1 ? "s" : ""} · {kpis.totalTasks} task{kpis.totalTasks !== 1 ? "s" : ""} across {kpis.deptsActive} dept{kpis.deptsActive !== 1 ? "s" : ""}
         </span>
       </div>
 
-      {/* ── Department Sections ── */}
-      {displayBreakdown.size === 0 ? (
-        <div
-          className="rounded-xl px-5 py-16 text-center"
-          style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
-        >
-          <p className="text-base font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
-            {clientProjects.length === 0
-              ? "No activated client projects yet."
-              : "No tasks match the current filters."}
-          </p>
-          {clientProjects.length === 0 && (
-            <div className="mt-4">
-              <Link
-                href="/account-management/projects"
-                className="inline-flex items-center px-4 py-2 text-sm font-bold rounded-lg text-white"
-                style={{ background: "var(--rtm-blue)" }}
-              >
-                Activate a Client via AM Wizard →
-              </Link>
-            </div>
-          )}
+      {/* Error */}
+      {loadError && (
+        <div className="rounded-xl px-5 py-4 text-sm font-semibold text-red-700" style={{ background: "#FEF2F2", border: "1px solid #FECACA" }}>
+          {loadError}{" "}
+          <button onClick={() => void loadAll()} className="underline font-bold ml-2">Retry</button>
         </div>
-      ) : (
-        Array.from(displayBreakdown.entries()).map(([dept, tasks]) => (
-          <DepartmentSection
-            key={dept}
-            dept={dept}
-            tasks={tasks}
-            projects={clientProjects}
-            search={search}
-            onSelectTask={setSelectedTask}
-            deptMeta={activatedDeptMeta.get(dept)}
-          />
-        ))
       )}
 
-      {/* ── Client Projects Summary ── */}
-      {clientProjects.length > 0 && (
-        <div
-          className="rounded-xl overflow-hidden"
-          style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
-        >
-          <div
-            className="px-5 py-4"
-            style={{ borderBottom: "1px solid var(--rtm-border)" }}
-          >
-            <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>
-              Activated Client Projects
-            </h2>
-            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-              Engine projects with a MASTER_CLIENTS{" "}
-              <code className="bg-gray-100 px-1 rounded text-[10px]">clientId</code> — created by
-              the AM wizard.
-            </p>
+      {/* Loading */}
+      {loadingProjects && !loadError && (
+        <div className="rounded-xl px-5 py-16 text-center" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+          <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading…</p>
+        </div>
+      )}
+
+      {!loadingProjects && loadingDetails && projects.length > 0 && (
+        <div className="rounded-xl px-5 py-4 text-xs text-center" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-muted)" }}>
+          Loading task detail for {projects.length} project{projects.length !== 1 ? "s" : ""}…
+        </div>
+      )}
+
+      {/* Empty — no projects */}
+      {!loadingProjects && !loadError && projects.length === 0 && (
+        <div className="rounded-xl px-5 py-16 text-center" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+          <p className="text-base font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+            No activated client projects yet.
+          </p>
+          <p className="text-xs mt-2 max-w-sm mx-auto" style={{ color: "var(--rtm-text-muted)" }}>
+            Projects will appear here once Account Management activates a client. Account Management is importing real clients today.
+          </p>
+          <div className="mt-5">
+            <Link
+              href="/account-management/projects"
+              className="inline-flex items-center px-4 py-2 text-sm font-bold rounded-lg text-white"
+              style={{ background: "var(--rtm-blue)" }}
+            >
+              Activate a Client via AM Wizard →
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Empty — projects exist but no tasks */}
+      {!loadingProjects && !loadingDetails && !loadError && projects.length > 0 && kpis.totalTasks === 0 && (
+        <div className="rounded-xl px-5 py-16 text-center" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+          <p className="text-base font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+            No tasks found across {projects.length} project{projects.length !== 1 ? "s" : ""}.
+          </p>
+          <p className="text-xs mt-2" style={{ color: "var(--rtm-text-muted)" }}>
+            Tasks will appear here once they are created via the activation wizard.
+          </p>
+        </div>
+      )}
+
+      {/* Department sections */}
+      {!loadingProjects && !loadError && kpis.totalTasks > 0 &&
+        displayDepts.map((dept) => {
+          const rows = deptRows.get(dept) ?? [];
+          return <DepartmentSection key={dept} dept={dept} rows={rows} search={search} />;
+        })}
+
+      {/* Client Projects Summary */}
+      {!loadingProjects && !loadError && projects.length > 0 && (
+        <div className="rounded-xl overflow-hidden" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+          <div className="px-5 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
+            <h2 className="text-sm font-extrabold" style={{ color: "var(--rtm-text-primary)" }}>Client Projects</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>All projects visible to you — scoped from Postgres.</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
-              <thead
-                style={{
-                  background: "var(--rtm-bg)",
-                  borderBottom: "2px solid var(--rtm-border)",
-                }}
-              >
+            <table className="w-full text-sm min-w-[600px]">
+              <thead style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)" }}>
                 <tr>
-                  {["Project", "Client", "AM", "Status", "Health", "Tasks", "Departments"].map(
-                    (h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-wider whitespace-nowrap"
-                        style={{ color: "var(--rtm-text-secondary)" }}
-                      >
-                        {h}
-                      </th>
-                    )
-                  )}
+                  {["Project / Client", "AM", "Status", "Open Tasks", "Done Tasks"].map((h) => (
+                    <th key={h} className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-wider whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>
+                      {h}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
-                {clientProjects.map((p, idx) => {
-                  const projectTaskCount = clientTasks.filter((t) => t.projectId === p.id).length;
-                  return (
-                    <tr
-                      key={p.id}
-                      className="hover:bg-blue-50/20"
-                      style={{
-                        borderBottom:
-                          idx < clientProjects.length - 1
-                            ? "1px solid var(--rtm-border-light)"
-                            : undefined,
-                      }}
-                    >
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/projects/${p.id}`}
-                          className="font-semibold hover:underline text-sm"
-                          style={{ color: "var(--rtm-blue)" }}
-                        >
-                          {p.name}
-                        </Link>
-                      </td>
-                      <td
-                        className="px-4 py-3 text-xs whitespace-nowrap"
-                        style={{ color: "var(--rtm-text-primary)" }}
-                      >
-                        {p.client}
-                      </td>
-                      <td
-                        className="px-4 py-3 text-xs whitespace-nowrap"
-                        style={{ color: "var(--rtm-text-secondary)" }}
-                      >
-                        {p.accountManager}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold"
-                          style={{
-                            background:
-                              p.status === "In Progress"
-                                ? "#EFF6FF"
-                                : p.status === "Completed"
-                                ? "#ECFDF5"
-                                : "#F8FAFC",
-                            color:
-                              p.status === "In Progress"
-                                ? "#1D4ED8"
-                                : p.status === "Completed"
-                                ? "#059669"
-                                : "#64748B",
-                            borderColor:
-                              p.status === "In Progress"
-                                ? "#BFDBFE"
-                                : p.status === "Completed"
-                                ? "#A7F3D0"
-                                : "#E2E8F0",
-                          }}
-                        >
-                          {p.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold"
-                          style={{
-                            background:
-                              p.health === "Green"
-                                ? "#ECFDF5"
-                                : p.health === "Yellow"
-                                ? "#FFFBEB"
-                                : "#FEF2F2",
-                            color:
-                              p.health === "Green"
-                                ? "#059669"
-                                : p.health === "Yellow"
-                                ? "#B45309"
-                                : "#DC2626",
-                            borderColor:
-                              p.health === "Green"
-                                ? "#A7F3D0"
-                                : p.health === "Yellow"
-                                ? "#FDE68A"
-                                : "#FECACA",
-                          }}
-                        >
-                          {p.health}
-                        </span>
-                      </td>
-                      <td
-                        className="px-4 py-3 text-xs font-semibold"
-                        style={{ color: "var(--rtm-text-primary)" }}
-                      >
-                        {projectTaskCount}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {p.departments.slice(0, 3).map((d) => (
-                            <DeptBadge key={d.department} dept={d.department} />
-                          ))}
-                          {p.departments.length > 3 && (
-                            <span
-                              className="text-[10px]"
-                              style={{ color: "var(--rtm-text-muted)" }}
-                            >
-                              +{p.departments.length - 3}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {projects.map((p, idx) => (
+                  <tr key={p.id} className="hover:bg-blue-50/20" style={{ borderBottom: idx < projects.length - 1 ? "1px solid var(--rtm-border-light)" : undefined }}>
+                    <td className="px-4 py-3">
+                      <Link href={`/projects/${p.id}`} className="font-semibold hover:underline text-sm" style={{ color: "var(--rtm-blue)" }}>
+                        {p.displayName || p.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: "var(--rtm-text-secondary)" }}>{p.assignedAMName ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold"
+                        style={p.status === "active" ? { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" } : p.status === "planned" ? { background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" } : { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" }}>
+                        {p.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{p.openTaskCount}</td>
+                    <td className="px-4 py-3 text-xs font-semibold" style={{ color: "#059669" }}>{p.doneTaskCount}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* ── Footer note ── */}
-      <div
-        className="rounded-xl px-5 py-4 text-xs"
-        style={{
-          background: "var(--rtm-bg)",
-          border: "1px solid var(--rtm-border)",
-          color: "var(--rtm-text-muted)",
-        }}
-      >
-        All tasks shown here are real engine records created via the AM activation wizard.
-        Task lifecycle and ownership management is handled through{" "}
-        <Link
-          href="/tasks"
-          className="font-semibold hover:underline"
-          style={{ color: "var(--rtm-blue)" }}
-        >
-          Global Tasks
-        </Link>
+      {/* Footer */}
+      <div className="rounded-xl px-5 py-4 text-xs" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-muted)" }}>
+        All tasks shown are real records from Postgres scoped to your visibility level. Task
+        lifecycle and ownership management is handled through{" "}
+        <Link href="/tasks" className="font-semibold hover:underline" style={{ color: "var(--rtm-blue)" }}>Global Tasks</Link>
         . To activate a new client, use the{" "}
-        <Link
-          href="/account-management/projects"
-          className="font-semibold hover:underline"
-          style={{ color: "var(--rtm-blue)" }}
-        >
-          AM Projects wizard
-        </Link>
+        <Link href="/account-management/projects" className="font-semibold hover:underline" style={{ color: "var(--rtm-blue)" }}>AM Projects wizard</Link>
         .
       </div>
-
-      {/* ── Task Detail Drawer ── */}
-      {selectedTask && (
-        <TaskDrawer
-          task={selectedTask}
-          project={selectedTaskProject}
-          clients={liveClients}
-          onClose={() => setSelectedTask(null)}
-        />
-      )}
     </div>
   );
 }

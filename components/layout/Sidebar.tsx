@@ -70,7 +70,6 @@ const navItems: NavItem[] = [
     section: "overview",
     badge: "124",
     children: [
-      { label: "Project List",           href: "/projects/view"},
       { label: "Task Blueprints",        href: "/tasks/templates"},
       { label: "Activation Rules",      href: "/tasks/activation-rules"},
       { label: "Activation Engine",     href: "/tasks/activation-engine"},
