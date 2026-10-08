@@ -28,7 +28,7 @@ const IconCommand = ({ className }: { className?: string }) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
   </svg>
 );
-import { NOTIFICATIONS } from "@/lib/notifications";
+import { useEffect } from "react";
 
 interface NavItem {
   label: string;
@@ -183,10 +183,24 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose, user }: SidebarProps) {
   const pathname = usePathname();
 
-  // Live notification badge count
-  const notifUnread = NOTIFICATIONS.filter(
-    (n) => n.status === "Unread"|| n.status === "Escalated").length;
-  const notifBadge = notifUnread >= 100 ? "99+": notifUnread > 0 ? String(notifUnread) : undefined;
+  // Live notification badge — fetched from DB, not mock data
+  const [notifUnread, setNotifUnread] = useState<number>(0);
+  useEffect(() => {
+    let mounted = true;
+    async function fetchCount() {
+      try {
+        const res = await fetch("/api/notifications/count", { credentials: "include" });
+        if (res.ok && mounted) {
+          const data = await res.json() as { unread: number };
+          setNotifUnread(data.unread ?? 0);
+        }
+      } catch { /* non-critical */ }
+    }
+    void fetchCount();
+    const t = setInterval(() => { void fetchCount(); }, 60_000);
+    return () => { mounted = false; clearInterval(t); };
+  }, []);
+  const notifBadge = notifUnread >= 100 ? "99+" : notifUnread > 0 ? String(notifUnread) : undefined;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => ({
     "/seo-local":                true,

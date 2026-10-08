@@ -348,6 +348,10 @@ model User {
   createdAt   String   @default("")
   updatedAt   String   @default("")
 
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsRaised   Notification[] @relation("NotificationRaisedBy")
+  notificationsResolved Notification[] @relation("NotificationResolvedBy")
+
   @@map("users")
 }
 // ── PipelineStage ─────────────────────────────────────────────────────────────
@@ -832,6 +836,11 @@ model TaskListTemplate {
   version              String  @default("") @map("version")
   createdAt            String  @default("") @map("created_at")
   updatedAt            String  @default("") @map("updated_at")
+  // SLA policy fields — set by Account Management; nullable until filled
+  firstResponseDays    Int?    @map("first_response_days")
+  targetCompletionDays Int?    @map("target_completion_days")
+  dueDateOffsetDays    Int?    @map("due_date_offset_days")
+  escalationAfterDays  Int?    @map("escalation_after_days")
 
   aliases              BlueprintServiceAlias[]
 
@@ -1528,4 +1537,40 @@ model OnboardingRecord {
   @@index([clientId])
   @@index([businessId])
   @@map("onboarding_records")
+}
+
+// ── Notification ──────────────────────────────────────────────────────────────
+// One table for all in-app notifications, including escalations.
+// Escalation columns are nullable; NULL = plain notification.
+// emailed_at is provided for future email delivery; always NULL in this run.
+
+model Notification {
+  id          String   @id
+  recipientId String   @map("recipient_id")
+  type        String   // task_assigned | concern_raised | concern_escalated | concern_resolved
+  message     String
+  link        String
+  readAt      DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt   DateTime  @map("created_at") @db.Timestamptz(6) @default(now())
+  emailedAt   DateTime? @map("emailed_at") @db.Timestamptz(6)
+
+  // Escalation-only fields (null for plain notifications)
+  concernAboutType   String?  @map("concern_about_type")
+  concernAboutId     String?  @map("concern_about_id")
+  raisedById         String?  @map("raised_by_id")
+  escalationLevel    Int?     @map("escalation_level")
+  escalationParentId String?  @map("escalation_parent_id")
+  resolvedAt         DateTime? @map("resolved_at") @db.Timestamptz(6)
+  resolvedById       String?  @map("resolved_by_id")
+
+  recipient  User          @relation("NotificationRecipient", fields: [recipientId], references: [id])
+  raisedBy   User?         @relation("NotificationRaisedBy",  fields: [raisedById],  references: [id])
+  resolvedBy User?         @relation("NotificationResolvedBy",fields: [resolvedById],references: [id])
+  parent     Notification? @relation("EscalationChain", fields: [escalationParentId], references: [id])
+  children   Notification[] @relation("EscalationChain")
+
+  @@index([recipientId])
+  @@index([recipientId, readAt])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
 }

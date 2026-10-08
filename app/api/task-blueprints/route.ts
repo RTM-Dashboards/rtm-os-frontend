@@ -64,6 +64,11 @@ export interface TaskBlueprint {
   lastUpdated: string;
   version: string;
   groups?: TemplateGroup[];
+  // SLA policy fields — null until set by Account Management
+  firstResponseDays:    number | null;
+  targetCompletionDays: number | null;
+  dueDateOffsetDays:    number | null;
+  escalationAfterDays:  number | null;
 }
 
 export interface TemplateTaskDef {
@@ -99,6 +104,11 @@ export interface NewBlueprintPayload {
   estimatedTotalHours?: number;
   isActive?: boolean;
   version?: string;
+  // SLA policy fields — null clears, undefined leaves unchanged
+  firstResponseDays?:    number | null;
+  targetCompletionDays?: number | null;
+  dueDateOffsetDays?:    number | null;
+  escalationAfterDays?:  number | null;
   groups?: TemplateGroup[];
   tasks?: Array<{
     id?: string;
@@ -302,6 +312,10 @@ interface TltRow {
   isActive: boolean;
   version: string;
   updatedAt: string;
+  firstResponseDays:    number | null;
+  targetCompletionDays: number | null;
+  dueDateOffsetDays:    number | null;
+  escalationAfterDays:  number | null;
 }
 
 // ── rowToBlueprint ────────────────────────────────────────────────────────────
@@ -351,6 +365,10 @@ function rowToBlueprint(row: TltRow): TaskBlueprint {
     lastUpdated:         row.updatedAt.slice(0, 10),
     version:             row.version,
     groups,
+    firstResponseDays:    row.firstResponseDays    ?? null,
+    targetCompletionDays: row.targetCompletionDays ?? null,
+    dueDateOffsetDays:    row.dueDateOffsetDays    ?? null,
+    escalationAfterDays:  row.escalationAfterDays  ?? null,
   };
 }
 
@@ -463,6 +481,11 @@ function blueprintFields(bp: Partial<NewBlueprintPayload>) {
     ...(bp.estimatedTotalHours !== undefined ? { estimatedTotalHours: bp.estimatedTotalHours } : {}),
     ...(bp.isActive            !== undefined ? { isActive:            bp.isActive            } : {}),
     ...(bp.version             !== undefined ? { version:             bp.version             } : {}),
+    // SLA fields — explicit undefined means "do not touch"; null means "clear"
+    ...(bp.firstResponseDays    !== undefined ? { firstResponseDays:    bp.firstResponseDays    } : {}),
+    ...(bp.targetCompletionDays !== undefined ? { targetCompletionDays: bp.targetCompletionDays } : {}),
+    ...(bp.dueDateOffsetDays    !== undefined ? { dueDateOffsetDays:    bp.dueDateOffsetDays    } : {}),
+    ...(bp.escalationAfterDays  !== undefined ? { escalationAfterDays:  bp.escalationAfterDays  } : {}),
   };
 }
 

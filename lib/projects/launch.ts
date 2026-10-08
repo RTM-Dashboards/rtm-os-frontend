@@ -50,6 +50,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { addBusinessDays } from "@/lib/dates";
+import { notifyTaskAssigned } from "@/lib/notifications/send";
 import {
   ONBOARDING_FIELD_SCHEMA,
   type AMOnboardingFieldDef,
@@ -704,6 +705,17 @@ export async function launchProject(
           });
           if (taskDef.localId) onbTaskIdByLocalId.set(taskDef.localId, taskId);
           result.tasksCreated++;
+          // Notify the owner that this task has been assigned to them.
+          // notifyTaskAssigned never throws; a failure is logged, not re-raised.
+          if (ownerId) {
+            notifyTaskAssigned({
+              ownerId,
+              taskId,
+              taskLabel:   taskDef.label,
+              projectId:   project.id,
+              projectName: project.name,
+            }).catch(() => { /* swallowed — launch must not fail on notification errors */ });
+          }
         } catch (err) {
           result.errors.push(
             `Onboarding task "${taskDef.label}": ${
@@ -991,6 +1003,18 @@ export async function launchProject(
           if (taskDef.localId) taskIdByLocalId.set(taskDef.localId, taskId);
           result.tasksCreated++;
           if (taskDef.isRecurring) result.recurringTasksCreated++;
+          // Notify the owner that this task has been assigned to them.
+          // Only for setup tasks (recurring tasks fire on completion, not launch).
+          // notifyTaskAssigned never throws.
+          if (ownerId && !taskDef.isRecurring) {
+            notifyTaskAssigned({
+              ownerId,
+              taskId,
+              taskLabel:   taskDef.label,
+              projectId:   project.id,
+              projectName: project.name,
+            }).catch(() => { /* swallowed — launch must not fail on notification errors */ });
+          }
         } catch (err) {
           result.errors.push(
             `Task "${taskDef.label}": ${err instanceof Error ? err.message : String(err)}`

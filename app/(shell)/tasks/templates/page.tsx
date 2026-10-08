@@ -38,17 +38,6 @@ interface TemplateTask {
   description: string;
 }
 
-// Line Item SLA - primary source inherited by task templates
-interface LineItemSLARef {
-  firstResponseSLA: string;
-  targetCompletionDays: number;
-  dueDateOffset: number;
-  escalationAfterDays: number;
-  clientUpdateFrequency: string;
-  slaPriority: "Standard"| "Priority"| "Rush"| "Custom";
-  slaStatus: "Active"| "Pending Review"| "Needs Approval"| "Inactive";
-}
-
 interface TaskTemplate {
   id: string;
   name: string;
@@ -56,8 +45,6 @@ interface TaskTemplate {
   type: TemplateType;
   mappedLineItem: string;
   taskCount: number;
-  targetCompletionDays: number;
-  firstResponseSLA: string;
   activationTrigger: ActivationTrigger;
   status: TemplateStatus;
   lastUpdated: string;
@@ -68,8 +55,11 @@ interface TaskTemplate {
   monthlyTaskCount: number;
   quarterlyTaskCount: number;
   marginContribution: string;
-  // SLA inherited from mapped line item - primary source
-  lineItemSLA: LineItemSLARef;
+  // SLA policy fields — null means not yet set by Account Management
+  firstResponseDays:    number | null;
+  targetCompletionDays: number | null;
+  dueDateOffsetDays:    number | null;
+  escalationAfterDays:  number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +120,11 @@ interface BlueprintApiRecord {
   groups?: TemplateGroup[];
   lastUpdated: string;
   version: string;
+  // SLA policy fields from DB — null means not set
+  firstResponseDays:    number | null;
+  targetCompletionDays: number | null;
+  dueDateOffsetDays:    number | null;
+  escalationAfterDays:  number | null;
 }
 
 // All blueprint-level fields for the editor form
@@ -143,6 +138,11 @@ interface BlueprintMeta {
   estimatedTotalHours: number;
   isActive: boolean;
   version: string;
+  // SLA policy fields — null means not set
+  firstResponseDays:    number | null;
+  targetCompletionDays: number | null;
+  dueDateOffsetDays:    number | null;
+  escalationAfterDays:  number | null;
 }
 
 const DEPT_MAP: Record<string, Department> = {
@@ -185,16 +185,6 @@ function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
     description: bpt.description ?? "",
   }));
 
-  const defaultSLA: LineItemSLARef = {
-    firstResponseSLA: "1 business day",
-    targetCompletionDays: bp.estimatedTotalHours,
-    dueDateOffset: 0,
-    escalationAfterDays: 7,
-    clientUpdateFrequency: "Weekly",
-    slaPriority: "Standard",
-    slaStatus: "Active",
-  };
-
   return {
     id: bp.id,
     name: bp.name,
@@ -202,8 +192,6 @@ function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
     type,
     mappedLineItem: bp.mappedLineItem,
     taskCount: bp.tasks.length,
-    targetCompletionDays: bp.estimatedTotalHours,
-    firstResponseSLA: "1 Business Day",
     activationTrigger: trigger,
     status: bp.isActive ? "Active" : "Inactive",
     lastUpdated: bp.lastUpdated,
@@ -214,7 +202,11 @@ function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
     monthlyTaskCount: bp.tasks.length,
     quarterlyTaskCount: bp.tasks.length * 3,
     marginContribution: "High",
-    lineItemSLA: defaultSLA,
+    // SLA fields from DB — null until Account Management sets them
+    firstResponseDays:    bp.firstResponseDays    ?? null,
+    targetCompletionDays: bp.targetCompletionDays ?? null,
+    dueDateOffsetDays:    bp.dueDateOffsetDays    ?? null,
+    escalationAfterDays:  bp.escalationAfterDays  ?? null,
   };
 }
 
@@ -579,6 +571,8 @@ const BLANK_META: BlueprintMeta = {
   name: "", department: "", servicePackage: "", mappedLineItem: "",
   description: "", activationTrigger: "Invoice Paid",
   estimatedTotalHours: 0, isActive: true, version: "1.0",
+  firstResponseDays: null, targetCompletionDays: null,
+  dueDateOffsetDays: null, escalationAfterDays: null,
 };
 
 const ACTIVATION_TRIGGERS_LIST = [
@@ -673,6 +667,10 @@ function TemplateEditorModal({
             estimatedTotalHours: meta.estimatedTotalHours,
             isActive:            meta.isActive,
             version:             meta.version,
+            firstResponseDays:    meta.firstResponseDays,
+            targetCompletionDays: meta.targetCompletionDays,
+            dueDateOffsetDays:    meta.dueDateOffsetDays,
+            escalationAfterDays:  meta.escalationAfterDays,
           }),
         });
       } else {
@@ -692,6 +690,10 @@ function TemplateEditorModal({
               estimatedTotalHours: meta.estimatedTotalHours,
               isActive:            meta.isActive,
               version:             meta.version,
+              firstResponseDays:    meta.firstResponseDays,
+              targetCompletionDays: meta.targetCompletionDays,
+              dueDateOffsetDays:    meta.dueDateOffsetDays,
+              escalationAfterDays:  meta.escalationAfterDays,
               groups,
             },
             serviceMappings: allMappings,
@@ -843,6 +845,70 @@ function TemplateEditorModal({
                   onChange={(e) => setMeta((m) => ({ ...m, isActive: e.target.checked }))}
                   disabled={saving} className="w-4 h-4" />
                 <label htmlFor="isActive" className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Active (routes service lookups here)</label>
+              </div>
+            </div>
+          </section>
+
+          {/* SLA Policy fields — set by Account Management */}
+          <section className="space-y-3">
+            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Service Level Agreement</div>
+            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>RTM delivery policy for this blueprint. Leave blank until confirmed. All values are in days.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label style={EDITOR_LABEL}>First Response (business days)</label>
+                <input
+                  type="number" min={1} step={1}
+                  value={meta.firstResponseDays ?? ""}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setMeta((m) => ({ ...m, firstResponseDays: isNaN(v) || v < 1 ? null : v }));
+                  }}
+                  disabled={saving}
+                  placeholder="e.g. 1"
+                  style={{ ...EDITOR_INPUT, width: "100%" }}
+                />
+              </div>
+              <div>
+                <label style={EDITOR_LABEL}>Target Completion (business days)</label>
+                <input
+                  type="number" min={1} step={1}
+                  value={meta.targetCompletionDays ?? ""}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setMeta((m) => ({ ...m, targetCompletionDays: isNaN(v) || v < 1 ? null : v }));
+                  }}
+                  disabled={saving}
+                  placeholder="e.g. 30"
+                  style={{ ...EDITOR_INPUT, width: "100%" }}
+                />
+              </div>
+              <div>
+                <label style={EDITOR_LABEL}>Due Date Offset (calendar days from activation)</label>
+                <input
+                  type="number" min={0} step={1}
+                  value={meta.dueDateOffsetDays ?? ""}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setMeta((m) => ({ ...m, dueDateOffsetDays: isNaN(v) || v < 0 ? null : v }));
+                  }}
+                  disabled={saving}
+                  placeholder="e.g. 0"
+                  style={{ ...EDITOR_INPUT, width: "100%" }}
+                />
+              </div>
+              <div>
+                <label style={EDITOR_LABEL}>Escalation After (calendar days)</label>
+                <input
+                  type="number" min={1} step={1}
+                  value={meta.escalationAfterDays ?? ""}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10);
+                    setMeta((m) => ({ ...m, escalationAfterDays: isNaN(v) || v < 1 ? null : v }));
+                  }}
+                  disabled={saving}
+                  placeholder="e.g. 7"
+                  style={{ ...EDITOR_INPUT, width: "100%" }}
+                />
               </div>
             </div>
           </section>
@@ -1081,9 +1147,9 @@ function TemplateDrawer({
         <div className="grid grid-cols-4 gap-0"style={{ borderBottom: "1px solid var(--rtm-border)"}}>
           {[
             { label: "Tasks", value: template.taskCount },
-            { label: "Target Completion", value: `${template.targetCompletionDays}d` },
-            { label: "Department", value: template.department.split("")[0] },
-            { label: "Trigger", value: template.activationTrigger.split("")[0] + "..."},
+            { label: "Target Completion", value: template.targetCompletionDays !== null ? `${template.targetCompletionDays}bd` : "Not set" },
+            { label: "Department", value: template.department },
+            { label: "Trigger", value: template.activationTrigger },
           ].map((s, i) => (
             <div
               key={s.label}
@@ -1171,7 +1237,7 @@ function TemplateDrawer({
           {activeTab === "tasks"&& (
             <div className="space-y-3">
               <div className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}>
-                Task Breakdown - {template.taskCount} tasks · {template.targetCompletionDays}d target
+                Task Breakdown – {template.taskCount} tasks
               </div>
               <div className="overflow-x-auto rounded-xl"style={{ border: "1px solid var(--rtm-border)"}}>
                 <table className="w-full text-sm min-w-[600px]">
@@ -1251,29 +1317,22 @@ function TemplateDrawer({
           {activeTab === "workload"&& (
             <div className="space-y-4">
               {/* Line Item SLA - PRIMARY SOURCE */}
-              <div className="rounded-xl p-4"style={{ background: "#EFF6FF", border: "2px solid #BFDBFE"}}>
-                <div className="flex items-center gap-2 mb-3">
-                  
-                  <div className="text-xs font-black uppercase tracking-wide"style={{ color: "#1D4ED8"}}>Mapped Line Item SLA - Primary Delivery Source</div>
-                  <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: template.lineItemSLA.slaPriority === "Rush"? "#FFF1F2": template.lineItemSLA.slaPriority === "Priority"? "#EFF6FF": "#F3F4F6", color: template.lineItemSLA.slaPriority === "Rush"? "#BE123C": template.lineItemSLA.slaPriority === "Priority"? "#1D4ED8": "#374151"}}>{template.lineItemSLA.slaPriority}</span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="rounded-xl p-4" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}>
+                <div className="text-xs font-black uppercase tracking-wide mb-3" style={{ color: "var(--rtm-text-muted)"}}>SLA Policy</div>
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "First Response SLA", value: template.lineItemSLA.firstResponseSLA, color: "#1D4ED8"},
-                    { label: "Target Completion", value: `${template.lineItemSLA.targetCompletionDays} business days`, color: "#059669"},
-                    { label: "Due Date Offset", value: template.lineItemSLA.dueDateOffset > 0 ? `Day ${template.lineItemSLA.dueDateOffset}` : "Immediate", color: "#374151"},
-                    { label: "Escalation After", value: `${template.lineItemSLA.escalationAfterDays} days`, color: "#C2410C"},
-                    { label: "Client Updates", value: template.lineItemSLA.clientUpdateFrequency, color: "#047857"},
-                    { label: "SLA Status", value: template.lineItemSLA.slaStatus, color: template.lineItemSLA.slaStatus === "Active"? "#15803D": "#C2410C"},
+                    { label: "First Response", value: template.firstResponseDays !== null ? `${template.firstResponseDays} business day${template.firstResponseDays === 1 ? "" : "s"}` : null },
+                    { label: "Target Completion", value: template.targetCompletionDays !== null ? `${template.targetCompletionDays} business day${template.targetCompletionDays === 1 ? "" : "s"}` : null },
+                    { label: "Due Date Offset", value: template.dueDateOffsetDays !== null ? `Day ${template.dueDateOffsetDays}` : null },
+                    { label: "Escalation After", value: template.escalationAfterDays !== null ? `${template.escalationAfterDays} day${template.escalationAfterDays === 1 ? "" : "s"}` : null },
                   ].map((r) => (
-                    <div key={r.label} className="rounded-lg p-2.5"style={{ background: "rgba(255,255,255,0.8)", border: "1px solid #BFDBFE"}}>
-                      <div className="text-[9px] font-bold uppercase tracking-wide mb-1"style={{ color: "#6B7280"}}>{r.label}</div>
-                      <div className="text-xs font-black"style={{ color: r.color }}>{r.value}</div>
+                    <div key={r.label} className="rounded-lg p-3" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}>
+                      <div className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)"}}>{r.label}</div>
+                      <div className="text-sm font-semibold" style={{ color: r.value !== null ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)"}}>
+                        {r.value ?? "Not set"}
+                      </div>
                     </div>
                   ))}
-                </div>
-                <div className="mt-2 text-[10px]"style={{ color: "#1E40AF"}}>
-                  i This SLA is inherited from the line item <strong>{template.mappedLineItem}</strong>. Department SLA is fallback only.
                 </div>
               </div>
 
@@ -1471,6 +1530,10 @@ export default function TaskTemplatesPage() {
         estimatedTotalHours: bp.estimatedTotalHours,
         isActive:            bp.isActive,
         version:             bp.version,
+        firstResponseDays:    bp.firstResponseDays    ?? null,
+        targetCompletionDays: bp.targetCompletionDays ?? null,
+        dueDateOffsetDays:    bp.dueDateOffsetDays    ?? null,
+        escalationAfterDays:  bp.escalationAfterDays  ?? null,
       });
     } else {
       setEditingServiceId(null);
@@ -1599,7 +1662,7 @@ export default function TaskTemplatesPage() {
           <Link
             href="/tasks/workload-planning"className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
           >
-             Dept. Throughput View
+             Workload Planning
           </Link>
         </div>
       </div>
@@ -1800,49 +1863,55 @@ export default function TaskTemplatesPage() {
                         </div>
                       </td>
 
-                      {/* Department */}
+                      {/* Department — plain text */}
                       <td className="px-4 py-3">
-                        <DeptBadge dept={template.department} />
+                        <span className="text-xs" style={{ color: "var(--rtm-text-primary)"}}>{template.department}</span>
                       </td>
 
-                      {/* Type */}
+                      {/* Type — plain text */}
                       <td className="px-4 py-3">
-                        <TypeBadge type={template.type} />
+                        <span className="text-xs" style={{ color: "var(--rtm-text-primary)"}}>{template.type}</span>
                       </td>
 
-                      {/* Mapped Line Item */}
+                      {/* Mapped Line Item — plain text */}
                       <td className="px-4 py-3">
-                        <span className="text-xs font-semibold"style={{ color: "var(--rtm-text-primary)"}}>
+                        <span className="text-xs" style={{ color: "var(--rtm-text-primary)"}}>
                           {template.mappedLineItem}
                         </span>
                       </td>
 
-                      {/* Task Count */}
+                      {/* Task Count — plain */}
                       <td className="px-4 py-3">
-                        <span
-                          className="text-xs font-bold px-2.5 py-1 rounded-full"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
-                        >
-                          {template.taskCount} tasks
+                        <span className="text-xs" style={{ color: "var(--rtm-text-secondary)"}}>
+                          {template.taskCount}
                         </span>
                       </td>
 
-                      {/* Line Item SLA columns - primary source */}
+                      {/* SLA columns — stored per blueprint, null = Not set */}
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-[11px] font-semibold"style={{ color: "#1D4ED8"}}> {template.lineItemSLA.firstResponseSLA}</span>
+                        <span className="text-xs" style={{ color: template.firstResponseDays !== null ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)"}}>
+                          {template.firstResponseDays !== null ? `${template.firstResponseDays} bd` : "Not set"}
+                        </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-[11px] font-bold"style={{ color: "#059669"}}>{template.lineItemSLA.targetCompletionDays} biz days</span>
+                        <span className="text-xs" style={{ color: template.targetCompletionDays !== null ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)"}}>
+                          {template.targetCompletionDays !== null ? `${template.targetCompletionDays} bd` : "Not set"}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>
-                        {template.lineItemSLA.dueDateOffset > 0 ? `Day ${template.lineItemSLA.dueDateOffset}` : "Immediate"}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-xs" style={{ color: template.dueDateOffsetDays !== null ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)"}}>
+                          {template.dueDateOffsetDays !== null ? `Day ${template.dueDateOffsetDays}` : "Not set"}
+                        </span>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap"style={{ color: "#C2410C"}}>
-                        After {template.lineItemSLA.escalationAfterDays}d
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-xs" style={{ color: template.escalationAfterDays !== null ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)"}}>
+                          {template.escalationAfterDays !== null ? `After ${template.escalationAfterDays}d` : "Not set"}
+                        </span>
                       </td>
 
-                      {/* Activation Trigger */}
+                      {/* Activation Trigger — plain text */}
                       <td className="px-4 py-3">
-                        <TriggerBadge trigger={template.activationTrigger} />
+                        <span className="text-xs" style={{ color: "var(--rtm-text-primary)"}}>{template.activationTrigger}</span>
                       </td>
 
                       {/* Status */}
@@ -2134,53 +2203,37 @@ export default function TaskTemplatesPage() {
                     {previewTemplate.department}
                   </div>
                   <div className="text-xs mt-1"style={{ color: "var(--rtm-text-secondary)"}}>
-                    Target: {previewTemplate.targetCompletionDays}d · {previewTemplate.monthlyTaskCount} tasks/mo
+                    {previewTemplate.monthlyTaskCount} tasks/mo
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Line Item SLA overview - primary source */}
+          {/* SLA overview for preview */}
           <div
             className="rounded-xl p-5"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
           >
-            <div className="flex items-center gap-2 mb-4">
-              
-              <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>
-                SLA from Mapped Line Item - {previewTemplate.mappedLineItem}
-              </h2>
-              <span className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#EFF6FF", color: "#1D4ED8", border: "1px solid #BFDBFE"}}>Primary Source</span>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-3">
+            <h2 className="text-sm font-extrabold mb-4"style={{ color: "var(--rtm-text-primary)"}}>
+              SLA Policy – {previewTemplate.name}
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "First Response SLA", value: previewTemplate.lineItemSLA.firstResponseSLA, color: "#1D4ED8", bg: "#EFF6FF"},
-                { label: "Target Completion", value: `${previewTemplate.lineItemSLA.targetCompletionDays} biz days`, color: "#059669", bg: "#F0FDF4"},
-                { label: "Due Date Offset", value: previewTemplate.lineItemSLA.dueDateOffset > 0 ? `Day ${previewTemplate.lineItemSLA.dueDateOffset}` : "Immediate", color: "#374151", bg: "#F3F4F6"},
-                { label: "Escalation After", value: `${previewTemplate.lineItemSLA.escalationAfterDays} days`, color: "#C2410C", bg: "#FFF7ED"},
-                { label: "Client Updates", value: previewTemplate.lineItemSLA.clientUpdateFrequency, color: "#047857", bg: "#ECFDF5"},
-                { label: "SLA Priority", value: previewTemplate.lineItemSLA.slaPriority, color: "#6D28D9", bg: "#F5F3FF"},
+                { label: "First Response", value: previewTemplate.firstResponseDays !== null ? `${previewTemplate.firstResponseDays} business day${previewTemplate.firstResponseDays === 1 ? "" : "s"}` : null },
+                { label: "Target Completion", value: previewTemplate.targetCompletionDays !== null ? `${previewTemplate.targetCompletionDays} business day${previewTemplate.targetCompletionDays === 1 ? "" : "s"}` : null },
+                { label: "Due Date Offset", value: previewTemplate.dueDateOffsetDays !== null ? `Day ${previewTemplate.dueDateOffsetDays}` : null },
+                { label: "Escalation After", value: previewTemplate.escalationAfterDays !== null ? `${previewTemplate.escalationAfterDays} day${previewTemplate.escalationAfterDays === 1 ? "" : "s"}` : null },
               ].map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-xl p-3 flex items-center gap-2"style={{ background: stat.bg, border: `1px solid ${stat.color}20` }}
+                  className="rounded-lg p-3"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)" }}
                 >
-                  <span
-                    className="w-7 h-7 rounded flex items-center justify-center text-[10px] font-bold flex-shrink-0"style={{ background: `${stat.color}20`, color: stat.color }}
-                  >
-                    {String(stat.label).slice(0, 2).toUpperCase()}
-                  </span>
-                  <div>
-                    <div className="text-xs font-black"style={{ color: stat.color }}>{stat.value}</div>
-                    <div className="text-[9px] font-semibold"style={{ color: "var(--rtm-text-muted)"}}>{stat.label}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)"}}>{stat.label}</div>
+                  <div className="text-sm font-semibold" style={{ color: stat.value !== null ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)"}}>
+                    {stat.value ?? "Not set"}
                   </div>
                 </div>
               ))}
-            </div>
-            <div className="rounded-lg px-3 py-2"style={{ background: "#FFFBEB", border: "1px solid #FDE68A"}}>
-              <p className="text-[10px]"style={{ color: "#92400E"}}>
-                Note: Department SLA is a fallback default only. The line item SLA above governs this template&apos;s delivery commitment.
-              </p>
             </div>
           </div>
         </div>
@@ -2323,7 +2376,7 @@ export default function TaskTemplatesPage() {
             { label: "Activation Engine", href: "/billing/activation"},
             { label: "Task Engine", href: "/tasks"},
             { label: "Onboarding", href: "/account-management/onboarding"},
-            { label: "Department Throughput", href: "/tasks/workload-planning"},
+            { label: "Workload Planning", href: "/tasks/workload-planning"},
             { label: "Activation Rules", href: "/tasks/activation-rules"},
             { label: "Clients", href: "/clients"},
           ].map((r) => (
