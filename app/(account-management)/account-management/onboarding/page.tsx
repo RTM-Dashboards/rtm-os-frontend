@@ -262,13 +262,14 @@ function QueueClientRow({
       <td className="px-4 py-3">
         <div className="flex flex-col gap-1">
           {!project ? (
-            // No project: send AM to Projects page with this client pre-selected
-            // so the 2-step wizard auto-opens for the specific client clicked.
+            // No engine-store project, but clearance already created a Postgres
+            // project via launchProject. The wizard path is retired. Link to the
+            // Postgres project management view instead.
             <Link
-              href={`/account-management/projects?activateClientId=${client.id}`}
-              className="rounded-lg bg-blue-600 border border-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition-colors text-center"
+              href="/projects"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors text-center"
             >
-              Activate Project →
+              View Projects →
             </Link>
           ) : obRecord ? (
             // Project + record exist: open onboarding form directly
@@ -414,16 +415,16 @@ function QueueTab({
       {/* Flow explainer */}
       <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 flex flex-wrap items-center gap-3">
         <span className="text-xs font-bold text-blue-700 uppercase tracking-wide">Flow:</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-300 bg-white px-3 py-1 text-xs font-semibold text-blue-700">
-          1 · Activate Project (wizard)
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
+          1 · Billing clears client → project created in Postgres
         </span>
         <span className="text-blue-300 text-sm">→</span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-          2 · Onboarding Task #1 auto-created
+          2 · AM opens onboarding form
         </span>
         <span className="text-blue-300 text-sm">→</span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-          3 · AM opens form → fills fields + kickoff
+          3 · AM fills fields + kickoff
         </span>
         <span className="text-blue-300 text-sm">→</span>
         <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-white px-3 py-1 text-xs font-semibold text-emerald-700">
@@ -609,12 +610,8 @@ function RecordsTab({ allRecords, onOpenRecord }: { allRecords: AMOnboardingReco
         <div className="text-slate-300 text-5xl mb-4">🗂️</div>
         <h2 className="text-lg font-bold text-slate-700 mb-1">No onboarding records yet</h2>
         <p className="text-sm text-slate-400 max-w-md mx-auto">
-          Onboarding records are created automatically when you activate a project for a cleared
-          client via the{" "}
-          <Link href="/account-management/projects" className="text-blue-600 underline">
-            Project Activation Center
-          </Link>
-          .
+          Onboarding records are created when a project is activated. Projects are created
+          automatically when Billing clears a client.
         </p>
       </div>
     );

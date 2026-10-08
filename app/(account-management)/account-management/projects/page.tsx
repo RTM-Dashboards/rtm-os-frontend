@@ -31,12 +31,9 @@ import React, { useState, useCallback, useMemo, useEffect, Suspense } from "reac
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ENGINE_STORE, BLUEPRINTS } from "@/lib/engine/mock-data";
-import { appendToEngineStore } from "@/lib/engine/api";
-import type { Project, Task, Milestone, DepartmentName } from "@/lib/engine/types";
+import type { Project, Task, DepartmentName } from "@/lib/engine/types";
 import {
-  createEngineProject,
   blueprintIdsForServices,
-  deriveProjectName,
   SERVICE_TO_BLUEPRINT,
   genId,
 } from "@/lib/engine/create-project";
@@ -53,60 +50,7 @@ import {
 import { KpiCard } from "@/components/ui";
 
 
-// Adapt a BusinessClient to the minimum MasterClient shape createEngineProject needs.
-// Fields not in BusinessClient default to empty/null equivalents.
-import type { MasterClient } from "@/lib/mock/master-clients";
-function toMasterClientShim(c: BusinessClient): MasterClient {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return {
-    id: c.id,
-    slug: c.id,
-    clientName: c.clientName,
-    email: c.email,
-    industry: "",
-    avatarColor: "#6366f1",
-    salesStatus: "",
-    salesOwner: "",
-    billingStatus: "Paid" as const,
-    invoiceStatus: "Paid" as const,
-    paymentStatus: "Paid" as const,
-    cancellationStatus: "None" as const,
-    upgradeDowngradeStatus: "None" as const,
-    cleared: c.cleared,
-    activeServices: c.activeServices,
-    monthlyValue: c.monthlyValue,
-    billingOwner: "",
-    assignedAM: c.assignedAM,
-    activationStatus: c.activationStatus as MasterClient["activationStatus"],
-    onboardingStatus: c.onboardingStatus,
-    renewalDate: c.renewalDate ?? "—",
-    renewalStatus: c.renewalStatus,
-    clientHealth: "Good" as const,
-    priority: "Medium" as const,
-    currentStatus: "Active" as const,
-    workflowStatus: "In Progress" as const,
-    lastActivity: "",
-    nextRequiredAction: "",
-    notes: "",
-    activationChecklist: {
-      invoicePaid: true,
-      billingCleared: c.cleared,
-      contractConfirmed: true,
-      servicesConfirmed: c.activeServices.length > 0,
-      clientContactVerified: true,
-      amAssigned: !!c.assignedAM,
-      activationTasksCreated: false,
-      onboardingRecordCreated: false,
-      kickoffNeeded: !c.kickoffCompleted,
-      kickoffCallCompleted: c.kickoffCompleted,
-    },
-    recentEvents: [],
-    stripeCustomerId: null,
-    stripeInvoiceId: null,
-    stripeSubscriptionId: null,
-    stripeSyncStatus: "Not Connected" as const,
-  } as MasterClient;
-}
+
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 
@@ -182,8 +126,8 @@ function createFollowUpEntry(
 }
 
 // ── Wizard-local helpers ──────────────────────────────────────────────────────
-// (createEngineProject, blueprintIdsForServices, deriveProjectName, and
-//  SERVICE_TO_BLUEPRINT are now imported from @/lib/engine/create-project)
+// (blueprintIdsForServices and SERVICE_TO_BLUEPRINT imported from @/lib/engine/create-project)
+// Note: createEngineProject and appendToEngineStore retired — wizard creation disabled.
 
 const DEPT_LABELS: Partial<Record<DepartmentName, string>> = {
   "Account Management": "Account Management",
@@ -441,25 +385,11 @@ function ActivationWizard({
     setState((prev) => ({ ...prev, step: 2 }));
   };
 
+  // Engine-store project creation is retired. Projects are now created only
+  // through Billing clearance (→ launchProject → Postgres).
+  // This handler is intentionally disabled; the Step 2 confirm button is removed.
   const handleStep2Confirm = async () => {
-    // Pass the full explicit blueprint IDs so createEngineProject uses them
-    // rather than re-deriving from services (which would miss manually-added blueprints)
-    const { project, tasks, milestone } = await createEngineProject(
-      toMasterClientShim(client),
-      state.selectedServices,
-      allBlueprintIds
-    );
-    // Write to file-backed API only — refreshData() will re-fetch and set
-    // liveProjects/liveTasks from the authoritative file store.
-    // Direct ENGINE_STORE.push() calls were removed because they mutated the
-    // same array reference held as React state (via the useState initializer),
-    // causing duplicate-key warnings on the next render before refreshData
-    // replaced the array.
-    await appendToEngineStore({ projects: [project], tasks, milestones: [milestone] });
-    // Activation state is tracked via Engine project + task records
-    // Business.activationStatus is updated separately through the onboarding flow
-    setState((prev) => ({ ...prev, step: "done", createdProject: project }));
-    onComplete(project);
+    // no-op: creation path retired
   };
 
   if (state.step === 1) {
@@ -638,23 +568,21 @@ function ActivationWizard({
             ))}
           </div>
         </div>
-        <div className="rounded-xl border border-blue-100 bg-blue-50 px-5 py-4">
-          <p className="text-sm font-bold text-blue-800">
-            Ready to create:{" "}
-            <span className="font-normal">
-              {deriveProjectName(client.clientName, state.selectedServices)}
-            </span>
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 space-y-1">
+          <p className="text-sm font-bold text-amber-800">
+            Project creation via this wizard is no longer available.
           </p>
-          <p className="text-xs text-blue-700 mt-0.5">
-            {totalPreviewTasks + 1} tasks will be generated after you confirm.
+          <p className="text-xs text-amber-700">
+            Projects are created automatically when Billing clears a client (via Billing Activation → Postgres).
+            If this client’s project was not created, check the Billing Activation page or contact your administrator.
           </p>
         </div>
         <div className="flex gap-3">
           <button
-            onClick={() => void handleStep2Confirm()}
-            className="rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700"
+            onClick={onCancel}
+            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
           >
-            Activate Departments &amp; Create Project →
+            ← Back
           </button>
         </div>
       </div>

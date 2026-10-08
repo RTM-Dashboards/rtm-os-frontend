@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import type { ProjectRecord } from "@/lib/sales/project-config";
 import {
   getProjects,
   getAllTasks,
@@ -150,70 +149,6 @@ function RowActions({ project }: { project: Project }) {
 }
 
 // ---------------------------------------------------------------------------
-// Mock onboarding projects (created from billing handoff)
-// ---------------------------------------------------------------------------
-
-const MOCK_ONBOARDING_PROJECTS: ProjectRecord[] = [
-  {
-    id: "prj-onb-001",
-    projectNumber: "PRJ-2025-4821",
-    clientName: "Summit Landscaping",
-    contractNumber: "CTR-2025-0041",
-    handoffId: "hof-001",
-    proposalId: "",
-    status: "not-started",
-    priority: "high",
-    phase: "onboarding",
-    services: [],
-    totalMonthlyValue: 2400,
-    totalSetupFees: 0,
-    assignedAM: "Jake Monroe",
-    createdAt: new Date().toISOString(),
-    startDate: new Date().toISOString().split("T")[0],
-    estimatedLaunchDate: "",
-    notes: "",
-  },
-  {
-    id: "prj-onb-002",
-    projectNumber: "PRJ-2025-3317",
-    clientName: "Apex Roofing LLC",
-    contractNumber: "CTR-2025-0038",
-    handoffId: "hof-002",
-    proposalId: "",
-    status: "not-started",
-    priority: "high",
-    phase: "onboarding",
-    services: [],
-    totalMonthlyValue: 3800,
-    totalSetupFees: 500,
-    assignedAM: null,
-    createdAt: new Date().toISOString(),
-    startDate: new Date().toISOString().split("T")[0],
-    estimatedLaunchDate: "",
-    notes: "",
-  },
-  {
-    id: "prj-onb-003",
-    projectNumber: "PRJ-2025-2094",
-    clientName: "Greenleaf Dental",
-    contractNumber: "CTR-2025-0035",
-    handoffId: "hof-003",
-    proposalId: "",
-    status: "not-started",
-    priority: "medium",
-    phase: "onboarding",
-    services: [],
-    totalMonthlyValue: 1900,
-    totalSetupFees: 0,
-    assignedAM: "Dana W.",
-    createdAt: new Date().toISOString(),
-    startDate: new Date().toISOString().split("T")[0],
-    estimatedLaunchDate: "",
-    notes: "",
-  },
-];
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -275,45 +210,10 @@ function NewProjectModal({
 
   const valid = form.name.trim() && form.client.trim() && form.accountManager && form.launchDate;
 
+  // Engine-store project creation is retired. Projects are created only through
+  // Billing clearance (→ launchProject → Postgres). This modal is disabled.
   async function handleSubmit() {
-    if (!valid) return;
-    setSaving(true);
-    setError(null);
-
-    const now = new Date().toISOString();
-    const newProject: Project = {
-      id:              genProjectId(),
-      name:            form.name.trim(),
-      client:          form.client.trim(),
-      clientSlug:      form.client.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
-      servicePackage:  form.servicePackage,
-      contractSummary: `${form.servicePackage} — Created via Projects page`,
-      owner:           form.accountManager,
-      accountManager:  form.accountManager,
-      departments:     [],
-      launchDate:      form.launchDate,
-      status:          "Draft",
-      health:          "Green",
-      priority:        "Medium",
-      milestoneIds:    [],
-      taskIds:         [],
-      activityLog:     [],
-      createdAt:       now,
-      updatedAt:       now,
-    };
-
-    try {
-      const res = await fetch("/api/engine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projects: [newProject] }),
-      });
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      onCreated(newProject);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save project");
-      setSaving(false);
-    }
+    setError("Project creation via this form is disabled. Projects are created automatically when Billing clears a client.");
   }
 
   return (
@@ -335,7 +235,7 @@ function NewProjectModal({
               New Project
             </h2>
             <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-              Creates a project in the engine and appears immediately in the list.
+              Projects are created automatically when Billing clears a client.
             </p>
           </div>
           <button
@@ -488,11 +388,12 @@ function NewProjectModal({
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!valid || saving}
-            className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40"
+            disabled
+            className="text-sm px-4 py-2 rounded-lg font-bold disabled:opacity-40 cursor-not-allowed"
             style={{ background: "var(--rtm-blue)", color: "#fff" }}
+            title="Project creation via this form is disabled. Projects are created automatically when Billing clears a client."
           >
-            {saving ? "Creating…" : "Create Project"}
+            Create Project
           </button>
         </div>
       </div>
@@ -652,43 +553,6 @@ export default function GlobalProjectsPage() {
 
       {/* ── CONTENT ── */}
       <div className="flex-1 px-6 py-5 max-w-[1600px] mx-auto w-full">
-
-        {/* ── New projects onboarding alert banner ── */}
-        {MOCK_ONBOARDING_PROJECTS.length > 0 && (
-          <div
-            className="flex items-center justify-between gap-4 rounded-xl px-4 py-3 border mb-5"
-            style={{
-              background: "#FFFBEB",
-              borderColor: "#FDE68A",
-            }}
-          >
-            <div className="flex items-center gap-2.5">
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ background: "#D97706" }}
-              />
-              <p
-                className="text-xs font-semibold"
-                style={{ color: "#92400E" }}
-              >
-                {MOCK_ONBOARDING_PROJECTS.length} new project
-                {MOCK_ONBOARDING_PROJECTS.length !== 1 ? "s" : ""} awaiting
-                onboarding kickoff.
-              </p>
-            </div>
-            <Link
-              href="#new-projects"
-              className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg border hover:opacity-80 transition-opacity"
-              style={{
-                background: "#D97706",
-                color: "#fff",
-                borderColor: "#D97706",
-              }}
-            >
-              View New Projects
-            </Link>
-          </div>
-        )}
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3 mb-6">
