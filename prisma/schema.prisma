@@ -898,12 +898,16 @@ model Task {
   estimatedHours  Decimal? @map("estimated_hours")
   priority        String?  @map("priority")
   description     String?  @map("description")
+  // Set at launch for the "Complete Onboarding Checklist" task (bpt-004-5).
+  // Null for all other tasks. Links the task to its onboarding_records row.
+  onboardingRecordId String? @map("onboarding_record_id")
   createdAt  String  @default("") @map("created_at")
   updatedAt  String  @default("") @map("updated_at")
 
   @@index([categoryId])
   @@index([ownerId])
   @@index([department])
+  @@index([onboardingRecordId])
   @@map("tasks")
 }
 
@@ -1486,4 +1490,42 @@ model Contract {
   @@index([proposalId])
   @@index([status])
   @@map("contracts")
+}
+
+// ── OnboardingRecord ──────────────────────────────────────────────────────────
+// One row per project. Created by launchProject at the moment the project is
+// born. Prefilled from the SalesHandoff and Client rows.
+//
+// fieldAssignments: Record<fieldId, FieldAssignment> — 25 fields, stored as
+//   JSONB. Always read and written whole. Config-driven by
+//   ONBOARDING_FIELD_SCHEMA; adding a field means no schema migration.
+//
+// salesPrefill: SalesPrefillData — snapshot of Sales data at launch time.
+//   Stored so the form can show what Sales collected even if the handoff
+//   is later modified or archived.
+//
+// Links: projectId, businessId, clientId are plain text (no FK constraints,
+//   matching the rest of this codebase).
+
+model OnboardingRecord {
+  id               String  @id
+  projectId        String?
+  businessId       String  @default("")
+  clientId         String  @default("")
+  // Valid statuses: "Draft" | "AM In Progress" | "Sent to Client" |
+  //   "Client Responded" | "Ready for Kickoff" | "Complete"
+  status           String  @default("AM In Progress")
+  // When set, auto-derivation is bypassed. Null = auto-derived.
+  statusOverride   String?
+  // Snapshot of Sales-collected data at launch time.
+  salesPrefill     Json    @default("{}")
+  // 25-field assignment map. Schema: Record<fieldId, FieldAssignment>.
+  fieldAssignments Json    @default("{}")
+  createdAt        String  @default("")
+  updatedAt        String  @default("")
+
+  @@index([projectId])
+  @@index([clientId])
+  @@index([businessId])
+  @@map("onboarding_records")
 }

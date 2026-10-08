@@ -50,6 +50,10 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { addBusinessDays } from "@/lib/dates";
+import {
+  ONBOARDING_FIELD_SCHEMA,
+  type AMOnboardingFieldDef,
+} from "@/lib/mock/am-onboarding-field-schema";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -91,6 +95,8 @@ export interface LaunchResult {
   recurringTasksCreated: number;
   /** departments for which no active member exists; tasks left unassigned */
   emptyDepartments: string[];
+  /** id of the onboarding record created at launch, or null if creation failed */
+  onboardingRecordId: string | null;
   /** any per-category or per-task errors that occurred */
   errors: string[];
 }
@@ -168,6 +174,89 @@ function addDays(base: Date, days: number): string {
   return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
 
+// ── Onboarding record helpers ────────────────────────────────────────────────
+//
+// These are local to launch.ts so we can build and write the record without
+// calling the HTTP API (which requires a session).
+
+/** Minimal SalesPrefillData shape for the field-assignment builder. */
+interface SalesPrefillData {
+  clientName: string;
+  email: string;
+  industry: string;
+  salesOwner: string;
+  activeServices: string[];
+  monthlyValue: number;
+  primaryContact?: string;
+  phone?: string;
+  website?: string;
+  location?: string;
+  businessSize?: string;
+}
+
+/** Minimal FieldAssignment shape matching the shared type. */
+interface FieldAssignment {
+  fieldId: string;
+  status: "unset" | "am-filling" | "am-filled" | "pending-client" | "client-responded";
+  value: string;
+  assignedAt: string;
+  sentToClientAt?: string;
+}
+
+function getSalesPrefillValue(
+  field: AMOnboardingFieldDef,
+  prefill: SalesPrefillData,
+): string {
+  if (!field.salesPrefillKey) return "";
+  const raw = (prefill as unknown as Record<string, unknown>)[field.salesPrefillKey];
+  if (raw === undefined || raw === null) return "";
+  if (Array.isArray(raw)) return raw.join(", ");
+  if (typeof raw === "number") return raw > 0 ? String(raw) : "";
+  return String(raw);
+}
+
+function buildFieldAssignments(
+  prefill: SalesPrefillData,
+  assignedAMName: string | null,
+): Record<string, FieldAssignment> {
+  const now = new Date().toISOString();
+  const result: Record<string, FieldAssignment> = {};
+
+  for (const field of ONBOARDING_FIELD_SCHEMA) {
+    const prefillValue = getSalesPrefillValue(field, prefill);
+
+    if (field.defaultAssignee === "client") {
+      result[field.id] = {
+        fieldId:       field.id,
+        status:        "pending-client",
+        value:         "",
+        assignedAt:    now,
+        sentToClientAt: undefined,
+      };
+    } else {
+      const hasPrefill = prefillValue.length > 0;
+      result[field.id] = {
+        fieldId:    field.id,
+        status:     hasPrefill ? "am-filled" : "unset",
+        value:      prefillValue,
+        assignedAt: now,
+      };
+    }
+  }
+
+  // Always prefill the assignedAM field from the chosen AM.
+  if (assignedAMName) {
+    result["assignedAM"] = {
+      fieldId:    "assignedAM",
+      status:     "am-filled",
+      value:      assignedAMName,
+      assignedAt: now,
+    };
+  }
+
+  return result;
+}
+
 // ── Workload router ────────────────────────────────────────────────────────────
 //
 // Given a department name, return the id of the active member with the fewest
@@ -238,6 +327,7 @@ export async function launchProject(
     tasksCreated:         0,
     recurringTasksCreated: 0,
     emptyDepartments:     [],
+    onboardingRecordId:   null,
     errors:               [],
   };
 
@@ -380,6 +470,293 @@ export async function launchProject(
   });
 
   result.projectId = project.id;
+
+  // ── 5b. Create the onboarding record ──────────────────────────────────────────────
+  // Every project gets an onboarding record. Created here for ALL projects,
+  // regardless of which services were sold. Prefilled from the handoff and
+  // the client row.
+  //
+  // Import path: imported clients are existing clients whose setup work is done.
+  // They still get an onboarding record so staff can see client context and the
+  // AM has a place to capture contact details. The record starts in
+  // "AM In Progress" status with no Sales handoff data (none exists for
+  // imported clients); the AM fills it manually. The record is the AM's home
+  // base for client context, not just a launch form.
+
+  // Build the prefill from the handoff and client data resolved above.
+  // Import path has no handoff; we use what we have from business/lineItems/AM.
+  let handoffForPrefill: {
+    clientName?: string | null;
+    contactName?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    domain?: string | null;
+    address?: unknown;
+    termLengthMonths?: number | null;
+    monthlyValueCents?: number | null;
+    preparedBy?: string;
+  } | null = null;
+
+  if (!importOptions && business.clientId) {
+    const hof = await prisma.salesHandoff.findFirst({
+      where: { processedClientId: business.clientId },
+      select: {
+        clientName:        true,
+        contactName:       true,
+        contactEmail:      true,
+        contactPhone:      true,
+        domain:            true,
+        address:           true,
+        termLengthMonths:  true,
+        monthlyValueCents: true,
+        preparedBy:        true,
+      },
+      orderBy: { processedAt: "desc" },
+    });
+    handoffForPrefill = hof;
+  }
+
+  // Load the client row for any fields not on the handoff.
+  const clientRow = business.clientId
+    ? await prisma.client.findFirst({
+        where: { id: business.clientId },
+        select: { fullName: true, email: true, phone: true, company: true, address: true },
+      })
+    : null;
+
+  // Derive "City, State" from an address JSONB blob.
+  function extractLocation(addr: unknown): string {
+    if (!addr || typeof addr !== "object") return "";
+    const a = addr as Record<string, unknown>;
+    const city  = typeof a.city  === "string" ? a.city.trim()  : "";
+    const state = typeof a.state === "string" ? a.state.trim() : "";
+    if (city && state) return `${city}, ${state}`;
+    return city || state;
+  }
+
+  const salesPrefill: SalesPrefillData = {
+    clientName:     handoffForPrefill?.clientName   || clientRow?.company         || business.displayName || "",
+    email:          handoffForPrefill?.contactEmail  || clientRow?.email           || "",
+    industry:       "",  // not carried on handoff or client; AM fills manually
+    salesOwner:     handoffForPrefill?.preparedBy   || "",
+    activeServices: lineItems.map((li) => li.label).filter(Boolean),
+    monthlyValue:   handoffForPrefill?.monthlyValueCents
+                      ? handoffForPrefill.monthlyValueCents / 100
+                      : (business.monthlyValueCents / 100),
+    primaryContact: handoffForPrefill?.contactName   || clientRow?.fullName        || "",
+    phone:          handoffForPrefill?.contactPhone   || clientRow?.phone           || "",
+    website:        handoffForPrefill?.domain         || business.domain            || "",
+    location:       extractLocation(handoffForPrefill?.address) ||
+                    extractLocation(clientRow?.address),
+  };
+
+  const fieldAssignments = buildFieldAssignments(salesPrefill, assignedAMName);
+
+  // Set contractTermMonths from the handoff term length if it matches a known
+  // option value ("1", "3", "6", "12", "24").
+  if (handoffForPrefill?.termLengthMonths && handoffForPrefill.termLengthMonths > 0) {
+    const termId    = "contractTermMonths";
+    const allowed   = ["1", "3", "6", "12", "24"];
+    const termStr   = String(handoffForPrefill.termLengthMonths);
+    if (allowed.includes(termStr)) {
+      fieldAssignments[termId] = {
+        fieldId:    termId,
+        status:     "am-filled",
+        value:      termStr,
+        assignedAt: now,
+      };
+    }
+  }
+
+  const onboardingRecordId = makeId("onb");
+  try {
+    await prisma.onboardingRecord.create({
+      data: {
+        id:               onboardingRecordId,
+        projectId:        project.id,
+        businessId:       business.id,
+        clientId:         business.clientId || "",
+        status:           "AM In Progress",
+        statusOverride:   null,
+        salesPrefill:     salesPrefill as object,
+        fieldAssignments: fieldAssignments as object,
+        createdAt:        now,
+        updatedAt:        now,
+      },
+    });
+    result.onboardingRecordId = onboardingRecordId;
+    // Update business.onboardingStatus to reflect that onboarding has started.
+    await prisma.business.update({
+      where: { id: business.id },
+      data:  { onboardingStatus: "in_progress" },
+    });
+  } catch (err) {
+    result.errors.push(
+      `Onboarding record: ${err instanceof Error ? err.message : String(err)}`
+    );
+    // Non-fatal: the project is still usable. Staff can see the error.
+  }
+
+  // ── 5c. Always run the onboarding blueprint ─────────────────────────────────────
+  // Every new client is onboarded. The blueprint (tlt-bp004, service id
+  // "account-management") is NOT a service anyone purchases. It runs
+  // unconditionally for every project, before service categories below.
+  // The onboarding category is created outside the lineItems loop so that
+  // the six tasks always exist regardless of which services were sold.
+  //
+  // "Complete Onboarding Checklist" (bpt-004-5) receives the onboarding
+  // record id. That task's work IS the 25-field form. Opening it routes to
+  // the onboarding record.
+
+  const ONBOARDING_SERVICE_ID            = "account-management";
+  const ONBOARDING_CHECKLIST_LOCAL_ID    = "bpt-004-5"; // Complete Onboarding Checklist
+
+  try {
+    const onbTemplate = await prisma.taskListTemplate.findFirst({
+      where: { serviceId: ONBOARDING_SERVICE_ID },
+    });
+
+    if (!onbTemplate) {
+      result.errors.push(
+        `Onboarding blueprint not found (serviceId=${ONBOARDING_SERVICE_ID}). Six onboarding tasks were not created.`
+      );
+    } else {
+      const onbCategoryId = makeId("cat");
+      await prisma.projectCategory.create({
+        data: {
+          id:           onbCategoryId,
+          projectId:    project.id,
+          serviceId:    ONBOARDING_SERVICE_ID,
+          serviceLabel: onbTemplate.name,
+          department:   "Account Management",
+          createdAt:    now,
+        },
+      });
+      result.categoriesCreated++;
+
+      // Parse setup tasks from the blueprint.
+      interface OnbTemplateGroup {
+        kind: "setup" | "recurring";
+        tasks: TemplateTaskDef[];
+      }
+      const onbGroups = Array.isArray(onbTemplate.groups)
+        ? (onbTemplate.groups as unknown as OnbTemplateGroup[])
+        : [];
+      const onbSetupTasks: TemplateTaskDef[] = [];
+      for (const g of onbGroups) {
+        if (g.kind === "setup" && Array.isArray(g.tasks)) {
+          for (const t of g.tasks) onbSetupTasks.push(t);
+        }
+      }
+
+      // localId → index map for legacy prereqIndices translation.
+      const onbLocalIdByIndex = onbSetupTasks.map((t) => t.localId ?? "");
+
+      // Create tasks; track localId → db task id.
+      const onbTaskIdByLocalId = new Map<string, string | null>();
+
+      for (const taskDef of onbSetupTasks) {
+        const dept = (taskDef.department || "Account Management").trim();
+        // Prefer the project's assigned AM for all onboarding tasks; fall back
+        // to department workload routing if no AM was assigned.
+        const ownerId = assignedAMId ?? (await pickOwner(dept, ownerCache));
+        if (ownerId === null && !result.emptyDepartments.includes(dept)) {
+          result.emptyDepartments.push(dept);
+        }
+
+        const hasPrereqs    = taskDef.offsetFrom === "prereq";
+        const launchDateStr = launchDate.toISOString().slice(0, 10);
+        const dueDate       = hasPrereqs
+          ? null
+          : addBusinessDays(launchDateStr, taskDef.offsetDays ?? 0);
+
+        // The "Complete Onboarding Checklist" task carries the record id.
+        const isChecklistTask = taskDef.localId === ONBOARDING_CHECKLIST_LOCAL_ID;
+
+        try {
+          const taskId = makeId("task");
+          await prisma.task.create({
+            data: {
+              id:                     taskId,
+              categoryId:             onbCategoryId,
+              label:                  taskDef.label,
+              status:                 "open",
+              ownerId,
+              department:             dept || null,
+              dueDate,
+              offsetFrom:             taskDef.offsetFrom ?? "launch",
+              offsetDays:             taskDef.offsetDays ?? 0,
+              isSetup:                true,
+              isRecurring:            false,
+              recurrenceIntervalDays: 0,
+              ownerRole:              taskDef.ownerRole       ?? null,
+              estimatedHours:         typeof taskDef.estimatedHours === "number"
+                                        ? taskDef.estimatedHours
+                                        : null,
+              priority:               taskDef.priority        ?? null,
+              description:            taskDef.description     ?? null,
+              onboardingRecordId:     isChecklistTask && result.onboardingRecordId
+                                        ? result.onboardingRecordId
+                                        : null,
+              createdAt:              now,
+              updatedAt:              now,
+            },
+          });
+          if (taskDef.localId) onbTaskIdByLocalId.set(taskDef.localId, taskId);
+          result.tasksCreated++;
+        } catch (err) {
+          result.errors.push(
+            `Onboarding task "${taskDef.label}": ${
+              err instanceof Error ? err.message : String(err)
+            }`
+          );
+          if (taskDef.localId) onbTaskIdByLocalId.set(taskDef.localId, null);
+        }
+      }
+
+      // Insert dependency rows for the onboarding tasks.
+      const onbDepNow = new Date().toISOString();
+      for (const taskDef of onbSetupTasks) {
+        if (!taskDef.localId) continue;
+        const taskId = onbTaskIdByLocalId.get(taskDef.localId);
+        if (!taskId) continue;
+        const prereqIds: string[] = [];
+        const seenDep = new Set<string>();
+        for (const id of taskDef.prereqIds ?? []) {
+          if (id && !seenDep.has(id)) { prereqIds.push(id); seenDep.add(id); }
+        }
+        for (const idx of taskDef.prereqIndices ?? []) {
+          const id = onbLocalIdByIndex[idx] ?? "";
+          if (id && !seenDep.has(id)) { prereqIds.push(id); seenDep.add(id); }
+        }
+        for (const prereqLocalId of prereqIds) {
+          if (!onbTaskIdByLocalId.has(prereqLocalId)) continue;
+          const prereqTaskId = onbTaskIdByLocalId.get(prereqLocalId);
+          if (!prereqTaskId) continue;
+          try {
+            await prisma.taskDependency.create({
+              data: {
+                id:             makeId("dep"),
+                taskId,
+                requiresTaskId: prereqTaskId,
+                createdAt:      onbDepNow,
+              },
+            });
+          } catch (err) {
+            result.errors.push(
+              `Onboarding dep "${prereqLocalId}"→"${taskDef.localId}": ${
+                err instanceof Error ? err.message : String(err)
+              }`
+            );
+          }
+        }
+      }
+    }
+  } catch (err) {
+    result.errors.push(
+      `Onboarding blueprint: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
 
   // ── 6. Create categories and tasks ────────────────────────────────────────
   for (const item of lineItems) {

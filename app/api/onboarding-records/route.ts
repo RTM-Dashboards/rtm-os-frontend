@@ -1,6 +1,6 @@
 // RTM OS — Onboarding Records API Route
 //
-// Persistence layer: reads/writes data/onboarding-records.json (project root).
+// Persistence layer: Postgres via Prisma (onboarding_records table).
 //
 // ── Auth model ────────────────────────────────────────────────────────────────
 //
@@ -36,8 +36,7 @@
 //   DELETE /api/onboarding-records?id=<id>         → { ok }      — STAFF ONLY
 
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db/prisma";
 import { getSessionUser, requireDepartment } from "@/lib/auth";
 import { verifyToken } from "@/lib/onboarding-token";
 import {
@@ -93,15 +92,12 @@ export interface AMOnboardingRecord {
   id: string;
   clientId: string;
   status: OnboardingIntakeStatus;
+  statusOverride: OnboardingIntakeStatus | null;
   salesPrefill: SalesPrefillData;
   fieldAssignments: Record<string, FieldAssignment>;
   createdAt: string;
   updatedAt: string;
   projectId: string | null;
-}
-
-interface RecordFile {
-  records: AMOnboardingRecord[];
 }
 
 // ── Client-writable field ids ──────────────────────────────────────────────────
@@ -110,11 +106,6 @@ interface RecordFile {
 // defaultAssignee === "client" may be patched via a client token. This list
 // is read once from the shared schema so it stays in sync with any schema
 // changes without modifying this route.
-//
-// AM-owned fields (defaultAssignee === "am") — including salesPrefill,
-// status, statusOverride, monthlyValue, assignedAM, kickoffCallDate, etc. —
-// are never in this set. A client PATCH may only update fieldAssignments
-// entries for client-assignee fields, and only the "value" sub-field.
 
 const CLIENT_WRITABLE_FIELD_IDS: ReadonlySet<string> = new Set(
   ONBOARDING_FIELD_SCHEMA
@@ -122,33 +113,34 @@ const CLIENT_WRITABLE_FIELD_IDS: ReadonlySet<string> = new Set(
     .map((f) => f.id)
 );
 
-// ── File path ──────────────────────────────────────────────────────────────────
+// ── DB row → AMOnboardingRecord ───────────────────────────────────────────────
 
-const DATA_FILE = path.join(process.cwd(), "data", "onboarding-records.json");
-
-// ── File I/O ───────────────────────────────────────────────────────────────────
-
-function readRecords(): AMOnboardingRecord[] {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as RecordFile;
-    if (!Array.isArray(parsed.records)) throw new Error("bad shape");
-    return parsed.records;
-  } catch {
-    return [];
-  }
-}
-
-function writeRecords(records: AMOnboardingRecord[]): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ records }, null, 2), "utf-8");
+function rowToRecord(row: {
+  id: string;
+  clientId: string;
+  projectId: string | null;
+  status: string;
+  statusOverride: string | null;
+  salesPrefill: unknown;
+  fieldAssignments: unknown;
+  createdAt: string;
+  updatedAt: string;
+}): AMOnboardingRecord {
+  return {
+    id:               row.id,
+    clientId:         row.clientId,
+    projectId:        row.projectId,
+    status:           row.status as OnboardingIntakeStatus,
+    statusOverride:   (row.statusOverride as OnboardingIntakeStatus | null) ?? null,
+    salesPrefill:     (row.salesPrefill   as SalesPrefillData) ?? {},
+    fieldAssignments: (row.fieldAssignments as Record<string, FieldAssignment>) ?? {},
+    createdAt:        row.createdAt,
+    updatedAt:        row.updatedAt,
+  };
 }
 
 // ── Auth helpers ───────────────────────────────────────────────────────────────
 
-/** Returns an error response if the caller does not have a staff session
- *  with Account Management access. Returns null if access is granted. */
 async function requireStaffAccess(
   req: NextRequest
 ): Promise<NextResponse | null> {
@@ -163,8 +155,6 @@ async function requireStaffAccess(
   return null;
 }
 
-/** Verifies a client token from the URL against the expected record id.
- *  Returns a response if denied, or null if the token is valid. */
 function checkClientToken(
   token: string,
   expectedRecordId: string
@@ -187,7 +177,6 @@ function checkClientToken(
         { status: 401 }
       );
     }
-    // malformed or invalid — do not distinguish to callers
     return NextResponse.json(
       {
         error:
@@ -197,7 +186,6 @@ function checkClientToken(
     );
   }
 
-  // Scope check: token must be scoped to this exact record
   if (result.payload.recordId !== expectedRecordId) {
     return NextResponse.json(
       {
@@ -208,53 +196,53 @@ function checkClientToken(
     );
   }
 
-  return null; // valid
+  return null;
 }
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+  const id       = searchParams.get("id");
   const clientId = searchParams.get("clientId");
-  const token = searchParams.get("token");
+  const token    = searchParams.get("token");
 
   // ── Client token path: GET ?id=<id>&token=<t> ──────────────────────────────
   if (id && token) {
     const denied = checkClientToken(token, id);
     if (denied) return denied;
 
-    const records = readRecords();
-    const record = records.find((r) => r.id === id);
-    if (!record) {
+    const row = await prisma.onboardingRecord.findUnique({ where: { id } });
+    if (!row) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json({ record });
+    return NextResponse.json({ record: rowToRecord(row) });
   }
 
-  // ── Staff path: all other GET forms require a session ─────────────────────
+  // ── Staff path ─────────────────────────────────────────────────────────────
   const denied = await requireStaffAccess(req);
   if (denied) return denied;
 
-  const records = readRecords();
-
   if (id) {
-    const record = records.find((r) => r.id === id);
-    if (!record) {
+    const row = await prisma.onboardingRecord.findUnique({ where: { id } });
+    if (!row) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json({ record });
+    return NextResponse.json({ record: rowToRecord(row) });
   }
 
   if (clientId) {
-    const record = records.find((r) => r.clientId === clientId);
-    if (!record) {
+    const row = await prisma.onboardingRecord.findFirst({ where: { clientId } });
+    if (!row) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    return NextResponse.json({ record });
+    return NextResponse.json({ record: rowToRecord(row) });
   }
 
-  return NextResponse.json({ records });
+  const rows = await prisma.onboardingRecord.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  return NextResponse.json({ records: rows.map(rowToRecord) });
 }
 
 // ── POST (upsert by id) ────────────────────────────────────────────────────────
@@ -273,33 +261,46 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   const incoming = body as AMOnboardingRecord;
   if (!incoming || typeof incoming.id !== "string" || typeof incoming.clientId !== "string") {
-    return NextResponse.json({ error: "Body must be an AMOnboardingRecord with id and clientId" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Body must be an AMOnboardingRecord with id and clientId" },
+      { status: 400 }
+    );
   }
 
-  const records = readRecords();
-  const idx = records.findIndex((r) => r.id === incoming.id);
   const now = new Date().toISOString();
-  const record: AMOnboardingRecord = { ...incoming, updatedAt: now };
 
-  if (idx !== -1) {
-    records[idx] = record;
-  } else {
-    records.push(record);
-  }
+  const row = await prisma.onboardingRecord.upsert({
+    where: { id: incoming.id },
+    create: {
+      id:               incoming.id,
+      projectId:        incoming.projectId ?? null,
+      businessId:       "",   // not known from the store API; blank is safe
+      clientId:         incoming.clientId,
+      status:           incoming.status ?? "AM In Progress",
+      statusOverride:   incoming.statusOverride ?? null,
+      salesPrefill:     (incoming.salesPrefill ?? {}) as object,
+      fieldAssignments: (incoming.fieldAssignments ?? {}) as object,
+      createdAt:        incoming.createdAt ?? now,
+      updatedAt:        now,
+    },
+    update: {
+      projectId:        incoming.projectId ?? null,
+      status:           incoming.status,
+      statusOverride:   incoming.statusOverride ?? null,
+      salesPrefill:     (incoming.salesPrefill ?? {}) as object,
+      fieldAssignments: (incoming.fieldAssignments ?? {}) as object,
+      updatedAt:        now,
+    },
+  });
 
-  try {
-    writeRecords(records);
-    return NextResponse.json({ record });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  return NextResponse.json({ record: rowToRecord(row) });
 }
 
 // ── PATCH (partial update by id) ───────────────────────────────────────────────
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+  const id    = searchParams.get("id");
   const token = searchParams.get("token");
 
   if (!id) {
@@ -313,13 +314,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const records = readRecords();
-  const idx = records.findIndex((r) => r.id === id);
-  if (idx === -1) {
+  const existingRow = await prisma.onboardingRecord.findUnique({ where: { id } });
+  if (!existingRow) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const now = new Date().toISOString();
+  const existing = rowToRecord(existingRow);
 
   // ── Client token path ─────────────────────────────────────────────────────
   if (token) {
@@ -327,17 +328,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     if (denied) return denied;
 
     // Restrict what the client may write.
-    //
-    // A client PATCH may only update fieldAssignments entries, and only for
-    // fields where defaultAssignee === "client". Top-level record fields
-    // (status, salesPrefill, statusOverride, projectId, createdAt, etc.) are
-    // never writable by a client token.
-    //
-    // Allowed structure:
-    //   { fieldAssignments: { [clientFieldId]: Partial<FieldAssignment> } }
-    //
-    // Any key outside fieldAssignments, or any fieldAssignments key that maps
-    // to an AM-owned field, is silently dropped — the client cannot write it.
+    // Only fieldAssignments entries for client-assignee fields may be updated.
+    // Top-level record fields are never writable by a client token.
 
     const incoming = body as Record<string, unknown>;
     const incomingAssignments = (
@@ -347,25 +339,20 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
         : {}
     ) as Record<string, unknown>;
 
-    // Build restricted fieldAssignments: only client-writable field ids
     const restrictedAssignments: Record<string, FieldAssignment> = {
-      ...records[idx].fieldAssignments,
+      ...existing.fieldAssignments,
     };
     let wrote = 0;
     for (const [fieldId, patch] of Object.entries(incomingAssignments)) {
       if (!CLIENT_WRITABLE_FIELD_IDS.has(fieldId)) {
-        // Silently drop AM-owned field writes
-        continue;
+        continue; // silently drop AM-owned field writes
       }
-      const existing = restrictedAssignments[fieldId] ?? {
+      const ex = restrictedAssignments[fieldId] ?? {
         fieldId,
         status: "unset" as FieldStatus,
-        value: "",
+        value:  "",
         assignedAt: now,
       };
-      // Allow only value and status transitions that make sense for a client:
-      // they may update value, and status may move to "client-responded".
-      // They may not move status to am-filled, am-filling, etc.
       const patchObj = patch as Partial<FieldAssignment>;
       const allowedStatus: FieldStatus | undefined =
         patchObj.status === "client-responded" ||
@@ -374,8 +361,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
           : undefined;
 
       restrictedAssignments[fieldId] = {
-        ...existing,
-        value: typeof patchObj.value === "string" ? patchObj.value : existing.value,
+        ...ex,
+        value:  typeof patchObj.value === "string" ? patchObj.value : ex.value,
         ...(allowedStatus ? { status: allowedStatus } : {}),
         ...(patchObj.clientRespondedAt
           ? { clientRespondedAt: patchObj.clientRespondedAt }
@@ -385,7 +372,6 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     }
 
     if (wrote === 0 && Object.keys(incomingAssignments).length > 0) {
-      // All submitted fields were AM-owned — refuse rather than silently succeed
       return NextResponse.json(
         {
           error:
@@ -395,19 +381,15 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const record: AMOnboardingRecord = {
-      ...records[idx],
-      fieldAssignments: restrictedAssignments,
-      updatedAt: now,
-    };
-    records[idx] = record;
+    const updatedRow = await prisma.onboardingRecord.update({
+      where: { id },
+      data: {
+        fieldAssignments: restrictedAssignments as object,
+        updatedAt:        now,
+      },
+    });
 
-    try {
-      writeRecords(records);
-      return NextResponse.json({ record });
-    } catch (err) {
-      return NextResponse.json({ error: String(err) }, { status: 500 });
-    }
+    return NextResponse.json({ record: rowToRecord(updatedRow) });
   }
 
   // ── Staff path ────────────────────────────────────────────────────────────
@@ -415,22 +397,21 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (denied) return denied;
 
   const patch = body as Partial<AMOnboardingRecord>;
-  const record: AMOnboardingRecord = {
-    ...records[idx],
-    ...patch,
-    id: records[idx].id,           // never overwrite id
-    clientId: records[idx].clientId, // never overwrite clientId
-    updatedAt: now,
-  };
 
-  records[idx] = record;
+  const updatedRow = await prisma.onboardingRecord.update({
+    where: { id },
+    data: {
+      // Never allow id or clientId to be overwritten via PATCH.
+      ...(patch.projectId        !== undefined ? { projectId:        patch.projectId }                       : {}),
+      ...(patch.status           !== undefined ? { status:           patch.status }                          : {}),
+      ...(patch.statusOverride   !== undefined ? { statusOverride:   patch.statusOverride ?? null }          : {}),
+      ...(patch.salesPrefill     !== undefined ? { salesPrefill:     patch.salesPrefill as object }          : {}),
+      ...(patch.fieldAssignments !== undefined ? { fieldAssignments: patch.fieldAssignments as object }      : {}),
+      updatedAt: now,
+    },
+  });
 
-  try {
-    writeRecords(records);
-    return NextResponse.json({ record });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  return NextResponse.json({ record: rowToRecord(updatedRow) });
 }
 
 // ── DELETE (remove by id) ──────────────────────────────────────────────────────
@@ -447,18 +428,11 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "?id= required for DELETE" }, { status: 400 });
   }
 
-  const records = readRecords();
-  const idx = records.findIndex((r) => r.id === id);
-  if (idx === -1) {
+  const existing = await prisma.onboardingRecord.findUnique({ where: { id } });
+  if (!existing) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  records.splice(idx, 1);
-
-  try {
-    writeRecords(records);
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  await prisma.onboardingRecord.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
 }
