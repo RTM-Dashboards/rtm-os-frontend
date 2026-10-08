@@ -1552,12 +1552,8 @@ export default function TaskTemplatesPage() {
   //  Derived data 
 
   const totalTemplates = TASK_TEMPLATES.length;
-  const activeTemplates = TASK_TEMPLATES.filter((t) => t.status === "Active").length;
-  const inactiveTemplates = TASK_TEMPLATES.filter((t) => t.status === "Inactive").length;
-  const activationReady = TASK_TEMPLATES.filter((t) => t.activationReady).length;
   const totalTasksDefined = TASK_TEMPLATES.reduce((s, t) => s + t.taskCount, 0);
-  const mappedLineItems = new Set(TASK_TEMPLATES.map((t) => t.mappedLineItem)).size;
-  const deptsCovered = new Set(TASK_TEMPLATES.map((t) => t.department)).size;
+  const unmappedItems: number = 4;
 
   //  Filter 
 
@@ -1667,62 +1663,16 @@ export default function TaskTemplatesPage() {
         </div>
       </div>
 
-      {/*  Operational bridge banner  */}
-      <div
-        className="rounded-xl p-4 flex flex-wrap items-center gap-3"style={{ background: "#EFF6FF", border: "1px solid #BFDBFE"}}
-      >
-        
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-black uppercase tracking-wider mb-1"style={{ color: "#1D4ED8"}}>
-            Task Operations Bridge
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5 text-xs font-semibold"style={{ color: "#1E40AF"}}>
-            {[
-              "Finance Line Items",
-              "→",
-              "Proposal Generator",
-              "→",
-              "Contract Generator",
-              "→",
-              "Billing",
-              "→",
-              "Activation Engine",
-              "→",
-              "Department Throughput",
-              "→",
-              "Client Delivery",
-            ].map((step, i) =>
-              step === "→"? (
-                <span key={i} className="text-blue-400 font-black">{step}</span>
-              ) : (
-                <span key={i} className="px-2 py-0.5 rounded-full bg-white border border-blue-200">{step}</span>
-              )
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/*  KPI cards  */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
-        {[
-          { label: "Total Templates", value: totalTemplates, color: "var(--rtm-blue)", bg: "var(--rtm-blue-light)"},
-          { label: "Active Templates", value: activeTemplates, color: "#059669", bg: "#ECFDF5"},
-          { label: "Inactive Templates", value: inactiveTemplates, color: "#94A3B8", bg: "#F8FAFC"},
-          { label: "Mapped Line Items", value: mappedLineItems, color: "#7C3AED", bg: "#FAF5FF"},
-          { label: "Unmapped Items", value: 4, color: "#D97706", bg: "#FFFBEB"},
-          { label: "Total Tasks Defined", value: totalTasksDefined, color: "#0891B2", bg: "#ECFEFF"},
-          { label: "Depts. Covered", value: deptsCovered, color: "#16A34A", bg: "#F0FDF4"},
-          { label: "Activation Ready", value: activationReady, color: "#C2410C", bg: "#FFF7ED"},
-        ].map(({ label, value, color }) => (
-          <div
-            key={label}
-            className="rounded-xl p-3 text-center"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
-          >
-            <div className="text-2xl font-black"style={{ color }}>{value}</div>
-            <div className="text-[10px] font-semibold mt-1 leading-tight"style={{ color: "var(--rtm-text-secondary)"}}>{label}</div>
-          </div>
-        ))}
-      </div>
+      {/*  Summary line — only what the table does not already show  */}
+      {unmappedItems > 0 && (
+        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+          <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{unmappedItems} line item{unmappedItems !== 1 ? "s" : ""} unmapped</span>
+          {" — "}
+          open each blueprint and set a Mapped Line Item to enable activation.
+          {" "}
+          <span style={{ color: "var(--rtm-text-muted)" }}>{totalTasksDefined} tasks defined across {totalTemplates} blueprint{totalTemplates !== 1 ? "s" : ""}.</span>
+        </p>
+      )}
 
       {/*  Section tabs  */}
       <div className="flex gap-1 p-1 rounded-xl"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", width: "fit-content"}}>
