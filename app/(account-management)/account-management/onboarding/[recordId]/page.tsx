@@ -766,31 +766,77 @@ function KickoffCallWidget({
 
 // ─── Copy client link ──────────────────────────────────────────────────────────
 
-/** Builds the shareable client-facing onboarding URL for a given record. */
-function buildClientLink(recordId: string): string {
-  return `${window.location.origin}/client-onboarding/${recordId}`;
+/**
+ * Fetches a fresh signed client-portal token from the staff endpoint, then
+ * builds and returns the full link.
+ *
+ * POST /api/onboarding-client-token is staff-only (Account Management session
+ * required). It returns a 30-day HMAC-signed token scoped to this record.
+ * The AM copies the link and sends it to the client by hand.
+ */
+async function fetchClientLink(recordId: string): Promise<string> {
+  const res = await fetch("/api/onboarding-client-token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ recordId }),
+  });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `HTTP ${res.status}`);
+  }
+  const data = (await res.json()) as { link: string };
+  // Replace the server-side origin (may be empty in dev) with the browser origin
+  const url = new URL(data.link, window.location.origin);
+  url.hostname = window.location.hostname;
+  url.port = window.location.port;
+  url.protocol = window.location.protocol;
+  return url.toString();
 }
 
 function CopyClientLinkButton({ recordId }: { recordId: string }) {
-  const [copied, setCopied] = useState(false);
-  function handleCopy() {
-    const url = buildClientLink(recordId);
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
+  const [state, setState] = useState<"idle" | "loading" | "copied" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  async function handleCopy() {
+    if (state === "loading") return;
+    setState("loading");
+    setErrorMsg(null);
+    try {
+      const url = await fetchClientLink(recordId);
+      await navigator.clipboard.writeText(url);
+      setState("copied");
+      setTimeout(() => setState("idle"), 2500);
+    } catch (err) {
+      setState("error");
+      setErrorMsg(err instanceof Error ? err.message : "Failed to generate link");
+      setTimeout(() => { setState("idle"); setErrorMsg(null); }, 4000);
+    }
   }
+
   return (
-    <button
-      onClick={handleCopy}
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
-        copied
-          ? "border-[#059669]/30 bg-[#059669]/5 text-[#059669]"
-          : "border-[#1d709f]/40 bg-[#1d709f]/5 text-[#1d709f] hover:bg-[#1d709f]/10"
-      }`}
-    >
-      {copied ? "Link copied!" : "Copy Client Link"}
-    </button>
+    <span className="inline-flex flex-col items-end gap-0.5">
+      <button
+        onClick={() => void handleCopy()}
+        disabled={state === "loading"}
+        className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${
+          state === "copied"
+            ? "border-[#059669]/30 bg-[#059669]/5 text-[#059669]"
+            : state === "error"
+            ? "border-[#DC2626]/30 bg-[#DC2626]/5 text-[#DC2626]"
+            : "border-[#1d709f]/40 bg-[#1d709f]/5 text-[#1d709f] hover:bg-[#1d709f]/10"
+        }`}
+      >
+        {state === "loading" && (
+          <span className="inline-block w-3 h-3 border-2 border-[#1d709f]/30 border-t-[#1d709f] rounded-full animate-spin" />
+        )}
+        {state === "copied" ? "Link copied! (30 days)" : state === "error" ? "Failed" : "Copy Client Link"}
+      </button>
+      {errorMsg && (
+        <span className="text-[10px] text-[#DC2626] font-medium max-w-[200px] text-right leading-tight">
+          {errorMsg}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -832,8 +878,8 @@ function FinishAndPrepareButton({
     setBusy(true);
     try {
       const { transitionedCount } = await bulkMarkUnsetPendingClient(recordId);
-      // Copy client link - reuse exact same logic as CopyClientLinkButton
-      const url = buildClientLink(recordId);
+      // Fetch a signed client link (same logic as CopyClientLinkButton)
+      const url = await fetchClientLink(recordId);
       await navigator.clipboard.writeText(url);
       const fieldWord = transitionedCount === 1 ? "field" : "fields";
       const msg =
@@ -842,7 +888,7 @@ function FinishAndPrepareButton({
           : "No unset fields - link copied!";
       onDone(msg);
     } catch {
-      onDone("Done - link copied (clipboard may be unavailable).");
+      onDone("Done - link may not have been copied (try Copy Client Link button).");
     } finally {
       setBusy(false);
     }

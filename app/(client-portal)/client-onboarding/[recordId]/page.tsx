@@ -31,11 +31,6 @@ import React, {
   use,
   useMemo,
 } from "react";
-import {
-  getOnboardingRecordById,
-  setFieldAssignment,
-  simulateClientResponse,
-} from "@/lib/mock/am-onboarding-store";
 import type { AMOnboardingRecord, FieldAssignment } from "@/lib/mock/am-onboarding-store";
 import { ONBOARDING_FIELD_SCHEMA, ONBOARDING_SECTIONS } from "@/lib/mock/am-onboarding-field-schema";
 import type { AMOnboardingFieldDef } from "@/lib/mock/am-onboarding-field-schema";
@@ -452,14 +447,78 @@ function SidebarSectionItem({
 
 // ─── Main client view ─────────────────────────────────────────────────────────
 
-function ClientOnboardingView({ recordId }: { recordId: string }) {
+// ── Token-invalid / expired screen ──────────────────────────────────────────
+
+function TokenErrorScreen({
+  reason,
+  recordId,
+}: {
+  reason: "missing" | "expired" | "invalid";
+  recordId: string;
+}) {
+  const isExpired = reason === "expired";
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{ background: "#F7F9FC" }}
+    >
+      <div className="max-w-md w-full bg-white rounded-2xl border border-[#E4E8F0] shadow-sm p-8 text-center">
+        <div className="text-5xl mb-4">{isExpired ? "⏰" : "🔒"}</div>
+        <h1 className="text-lg font-bold text-[#0F1C38] mb-2">
+          {isExpired ? "Your link has expired" : "Link not valid"}
+        </h1>
+        <p className="text-sm text-[#5A6A85] mb-3">
+          {isExpired
+            ? "This onboarding link has expired. Please contact your account manager to get a fresh link sent to you."
+            : "This link is missing or invalid. Please use the link your account manager sent you, or contact them for a new one."}
+        </p>
+        <p className="text-[11px] text-[#9AAABB] font-mono">{recordId}</p>
+      </div>
+    </div>
+  );
+}
+
+function ClientOnboardingView({
+  recordId,
+  token,
+}: {
+  recordId: string;
+  token: string | null;
+}) {
+  // ── Token guard ─────────────────────────────────────────────────────────────
+  // If there is no token at all, show the invalid screen immediately.
+  // Expired/invalid tokens are detected on the first fetch below.
+  const [tokenError, setTokenError] = useState<
+    "missing" | "expired" | "invalid" | null
+  >(token ? null : "missing");
+
   // ── Record state ────────────────────────────────────────────────────────────
   const [record, setRecord] = useState<AMOnboardingRecord | null | undefined>(undefined);
 
   const loadRecord = useCallback(async () => {
-    const r = await getOnboardingRecordById(recordId);
-    setRecord(r ?? null);
-  }, [recordId]);
+    if (!token) return;
+    try {
+      const res = await fetch(
+        `/api/onboarding-records?id=${encodeURIComponent(recordId)}&token=${encodeURIComponent(token)}`,
+        { cache: "no-store" }
+      );
+      if (res.status === 401) {
+        const body = (await res.json()) as { error?: string };
+        const msg = body.error ?? "";
+        setTokenError(msg.toLowerCase().includes("expired") ? "expired" : "invalid");
+        setRecord(null);
+        return;
+      }
+      if (!res.ok) {
+        setRecord(null);
+        return;
+      }
+      const data = (await res.json()) as { record: AMOnboardingRecord };
+      setRecord(data.record ?? null);
+    } catch {
+      setRecord(null);
+    }
+  }, [recordId, token]);
 
   useEffect(() => {
     void loadRecord();
@@ -514,7 +573,7 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
       if (debounceTimers.current[fieldId]) {
         clearTimeout(debounceTimers.current[fieldId]);
       }
-      if (!record) return;
+      if (!record || !token) return;
       const assignment = record.fieldAssignments[fieldId];
       if (assignment?.status === "client-responded") return;
 
@@ -522,7 +581,22 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
 
       debounceTimers.current[fieldId] = setTimeout(async () => {
         try {
-          await setFieldAssignment(record.id, fieldId, { value });
+          const res = await fetch(
+            `/api/onboarding-records?id=${encodeURIComponent(record.id)}&token=${encodeURIComponent(token)}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fieldAssignments: {
+                  [fieldId]: {
+                    value,
+                    status: "pending-client",
+                  },
+                },
+              }),
+            }
+          );
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
           setSaveStates((prev) => ({ ...prev, [fieldId]: "saved" }));
           setTimeout(() => {
             setSaveStates((prev) => ({ ...prev, [fieldId]: "idle" }));
@@ -532,7 +606,7 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
         }
       }, 800);
     },
-    [record]
+    [record, token]
   );
 
   // Clean up timers on unmount
@@ -604,15 +678,31 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
     debounceTimers.current = {};
 
     try {
+      const fieldsToSubmit = pendingFields.filter((f) => {
+        const val = draftValues[f.id] ?? "";
+        return val.trim() !== "" || f.type === "checkbox";
+      });
+      const now = new Date().toISOString();
+      // Submit each field as client-responded via the token-gated PATCH
       await Promise.all(
-        pendingFields
-          .filter((f) => {
-            const val = draftValues[f.id] ?? "";
-            return val.trim() !== "" || f.type === "checkbox";
-          })
-          .map((f) =>
-            simulateClientResponse(record.id, f.id, draftValues[f.id] ?? "")
-          )
+        fieldsToSubmit.map((f) =>
+          fetch(
+            `/api/onboarding-records?id=${encodeURIComponent(record.id)}&token=${encodeURIComponent(token ?? "")}`,
+            {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                fieldAssignments: {
+                  [f.id]: {
+                    value: draftValues[f.id] ?? "",
+                    status: "client-responded",
+                    clientRespondedAt: now,
+                  },
+                },
+              }),
+            }
+          ).then((res) => { if (!res.ok) throw new Error(`HTTP ${res.status}`); })
+        )
       );
       await loadRecord();
       setSubmitSuccess(true);
@@ -621,7 +711,7 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
     } finally {
       setSubmitting(false);
     }
-  }, [record, draftValues, loadRecord]);
+  }, [record, draftValues, loadRecord, token]);
 
   // ── Per-section computed data ──────────────────────────────────────────────
   const sectionData = useMemo(() => {
@@ -668,6 +758,11 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
   }, [currentStep]);
 
   // ─────────────────────────────────────────────────────────────────────────────
+  // Render: token error
+  if (tokenError) {
+    return <TokenErrorScreen reason={tokenError} recordId={recordId} />;
+  }
+
   // Render: loading
   if (record === undefined) {
     return (
@@ -1201,9 +1296,13 @@ function ClientOnboardingView({ recordId }: { recordId: string }) {
 
 export default function ClientOnboardingPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ recordId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { recordId } = use(params);
-  return <ClientOnboardingView recordId={recordId} />;
+  const sp = use(searchParams);
+  const token = typeof sp.token === "string" ? sp.token : null;
+  return <ClientOnboardingView recordId={recordId} token={token} />;
 }
