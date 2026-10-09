@@ -8,7 +8,8 @@ import type { DiscountTierRow, DiscountTypeRow } from "@/app/api/sales/discount-
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const QUANTITY_UNITS = ["flat", "location", "campaign", "page"] as const;
-const DEPARTMENTS = ["SEO", "GBP", "PPC", "LSA", "Meta Ads", "Web Development", "Content", "Analytics"] as const;
+import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
+const DEPARTMENTS = VALID_DEPARTMENTS;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -511,7 +512,7 @@ function ServiceEditor({
 }) {
   const [label, setLabel] = useState(existing?.label ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
-  const [department, setDepartment] = useState(existing?.department ?? "SEO");
+  const [department, setDepartment] = useState(existing?.department ?? VALID_DEPARTMENTS[0]);
   const [quantityUnit, setQuantityUnit] = useState(existing?.quantityUnit ?? "flat");
   const [quantityOptionsStr, setQuantityOptionsStr] = useState((existing?.quantityOptions ?? [1]).join(", "));
   const [defaultQuantity, setDefaultQuantity] = useState(String(existing?.defaultQuantity ?? 1));

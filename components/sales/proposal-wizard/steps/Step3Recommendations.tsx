@@ -8,17 +8,19 @@ import type { RecommendationItem, RecommendationResult } from "@/lib/sales/recom
 import type { ProposalWizardState } from "../ProposalWizard";
 
 // ─── Chip → Department map ─────────────────────────────────────────────────────
-// Maps service-interest chip labels to their database department names.
+// Maps service-interest chip labels to the canonical database department names.
+// Two chips (SEO and GBP) now map to the same department (SEO & Local);
+// two chips (PPC and Meta Ads) now map to Paid Advertising.
 // A chip not in this map (Content, Reporting) matches no department and
 // the fallback will surface it by name.
 
 const CHIP_TO_DEPARTMENT: Record<string, string> = {
-  SEO: "SEO",
-  GBP: "GBP",
-  PPC: "PPC",
-  LSA: "LSA",
-  "Meta Ads": "Meta Ads",
-  Website: "Web Development",
+  SEO:          "SEO & Local",
+  GBP:          "SEO & Local",
+  PPC:          "Paid Advertising",
+  LSA:          "Local Service Ads",
+  "Meta Ads":   "Paid Advertising",
+  Website:      "Web Development & Design",
 };
 
 // ─── Fallback catalogue item ───────────────────────────────────────────────────

@@ -17,6 +17,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionUser, requireRole } from "@/lib/auth";
+import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
 import type { ServiceCatalogRow, DeliverableGroup } from "../route";
 
 function parseGroups(raw: unknown): DeliverableGroup[] {
@@ -135,7 +136,21 @@ export async function PATCH(
       "deliverableGroups",
     ];
     for (const f of patchableFields) {
-      if (f in b) data[f] = b[f];
+      if (f in b) {
+        // Validate department against canonical list when it is being patched.
+        if (f === "department") {
+          const d = typeof b[f] === "string" ? (b[f] as string).trim() : "";
+          if (!VALID_DEPARTMENTS.includes(d as (typeof VALID_DEPARTMENTS)[number])) {
+            return NextResponse.json(
+              { error: `department "${d}" is not one of the ${VALID_DEPARTMENTS.length} valid departments` },
+              { status: 400 },
+            );
+          }
+          data[f] = d;
+        } else {
+          data[f] = b[f];
+        }
+      }
     }
 
     const updated = await prisma.serviceCatalogItem.update({ where: { id }, data });

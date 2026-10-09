@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
+import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
 import { getSessionUser, requireRole } from "@/lib/auth";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -160,6 +161,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
   }
 
+  // Validate department against canonical list.
+  const rawDept = typeof b.department === "string" ? b.department.trim() : "";
+  if (!VALID_DEPARTMENTS.includes(rawDept as (typeof VALID_DEPARTMENTS)[number])) {
+    return NextResponse.json(
+      { error: `department "${rawDept}" is not one of the ${VALID_DEPARTMENTS.length} valid departments` },
+      { status: 400 },
+    );
+  }
+
   const now = new Date().toISOString();
 
   try {
@@ -182,7 +192,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         minMonthlyPrice,
         maxMonthlyPrice,
         setupFeeEditable: typeof b.setupFeeEditable === "boolean" ? b.setupFeeEditable : false,
-        department: typeof b.department === "string" ? b.department : "",
+        department: rawDept,
         isRecurring: typeof b.isRecurring === "boolean" ? b.isRecurring : true,
         isActive: true,
         isDefault: typeof b.isDefault === "boolean" ? b.isDefault : false,

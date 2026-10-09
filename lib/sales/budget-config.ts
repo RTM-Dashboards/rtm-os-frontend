@@ -58,7 +58,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 800,
     maxMonthlyPrice: 3500,
     setupFeeEditable: true,
-    department: "SEO",
+    department: "SEO & Local",
     isRecurring: true,
   },
   {
@@ -75,7 +75,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 0,
     maxMonthlyPrice: 0,
     setupFeeEditable: true,
-    department: "SEO",
+    department: "SEO & Local",
     isRecurring: false,
   },
   {
@@ -92,7 +92,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 0,
     maxMonthlyPrice: 0,
     setupFeeEditable: true,
-    department: "SEO",
+    department: "SEO & Local",
     isRecurring: false,
   },
   {
@@ -109,7 +109,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 600,
     maxMonthlyPrice: 2500,
     setupFeeEditable: false,
-    department: "SEO",
+    department: "SEO & Local",
     isRecurring: true,
   },
   {
@@ -126,7 +126,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 400,
     maxMonthlyPrice: 1200,
     setupFeeEditable: false,
-    department: "SEO",
+    department: "SEO & Local",
     isRecurring: true,
   },
   // ── GBP ──────────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 300,
     maxMonthlyPrice: 800,
     setupFeeEditable: false,
-    department: "GBP",
+    department: "SEO & Local",
     isRecurring: true,
   },
   {
@@ -161,7 +161,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 0,
     maxMonthlyPrice: 0,
     setupFeeEditable: true,
-    department: "GBP",
+    department: "SEO & Local",
     isRecurring: false,
   },
   // ── PPC ──────────────────────────────────────────────────────────────────
@@ -179,7 +179,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 600,
     maxMonthlyPrice: 3000,
     setupFeeEditable: false,
-    department: "PPC",
+    department: "Paid Advertising",
     isRecurring: true,
   },
   {
@@ -196,7 +196,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 0,
     maxMonthlyPrice: 0,
     setupFeeEditable: true,
-    department: "PPC",
+    department: "Paid Advertising",
     isRecurring: false,
   },
   // ── LSA ───────────────────────────────────────────────────────────────────
@@ -214,7 +214,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 250,
     maxMonthlyPrice: 700,
     setupFeeEditable: true,
-    department: "LSA",
+    department: "Local Service Ads",
     isRecurring: true,
   },
   // ── Meta Ads ──────────────────────────────────────────────────────────────
@@ -232,7 +232,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 600,
     maxMonthlyPrice: 2500,
     setupFeeEditable: false,
-    department: "Meta Ads",
+    department: "Paid Advertising",
     isRecurring: true,
   },
   {
@@ -249,7 +249,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 0,
     maxMonthlyPrice: 0,
     setupFeeEditable: true,
-    department: "Meta Ads",
+    department: "Paid Advertising",
     isRecurring: false,
   },
   // ── Website ───────────────────────────────────────────────────────────────
@@ -267,7 +267,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 0,
     maxMonthlyPrice: 0,
     setupFeeEditable: true,
-    department: "Web Development",
+    department: "Web Development & Design",
     isRecurring: false,
   },
   {
@@ -284,7 +284,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 150,
     maxMonthlyPrice: 500,
     setupFeeEditable: false,
-    department: "Web Development",
+    department: "Web Development & Design",
     isRecurring: true,
   },
   {
@@ -301,7 +301,7 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
     minMonthlyPrice: 50,
     maxMonthlyPrice: 200,
     setupFeeEditable: false,
-    department: "Web Development",
+    department: "Web Development & Design",
     isRecurring: true,
   },
 ];

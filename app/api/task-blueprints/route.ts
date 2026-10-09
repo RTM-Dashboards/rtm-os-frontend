@@ -30,6 +30,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionUser, requireDepartment } from "@/lib/auth";
+import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -602,6 +603,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Claim conflict: ${conflictErr}` }, { status: 409 });
     }
 
+    // Validate top-level department against canonical list.
+    if (bp.department !== undefined && bp.department !== "") {
+      if (!VALID_DEPARTMENTS.includes(bp.department as (typeof VALID_DEPARTMENTS)[number])) {
+        return NextResponse.json(
+          { error: `department "${bp.department}" is not one of the ${VALID_DEPARTMENTS.length} valid departments` },
+          { status: 400 },
+        );
+      }
+    }
+
     if (existing) {
       const updated = await prisma.taskListTemplate.update({
         where: { id: existing.id },
@@ -695,6 +706,16 @@ export async function PATCH(req: NextRequest) {
       const conflictErr = await checkClaimConflicts(body.claimedServiceIds, existing.id);
       if (conflictErr) {
         return NextResponse.json({ error: `Claim conflict: ${conflictErr}` }, { status: 409 });
+      }
+    }
+
+    // Validate top-level department against canonical list.
+    if (body.department !== undefined && body.department !== "") {
+      if (!VALID_DEPARTMENTS.includes(body.department as (typeof VALID_DEPARTMENTS)[number])) {
+        return NextResponse.json(
+          { error: `department "${body.department}" is not one of the ${VALID_DEPARTMENTS.length} valid departments` },
+          { status: 400 },
+        );
       }
     }
 

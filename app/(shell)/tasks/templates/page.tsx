@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { VALID_DEPARTMENTS, type Department as VocabDepartment } from "@/lib/auth/vocab";
 
 // 
 // Task Blueprints (formerly Task Template Library)
@@ -18,8 +19,8 @@ type TemplateType =
 type ActivationTrigger =
   | "Proposal Approved"| "Contract Signed"| "Invoice Paid"| "Client Activated"| "Upsell Approved"| "Renewal Signed"| "Cancellation Requested"| "Offboarding Approved";
 
-type Department =
-  | "SEO"| "GBP"| "Paid Advertising"| "Meta Ads"| "Reporting"| "Web Development"| "Creative"| "Account Management"| "Billing";
+// Department type sourced from vocab (the ten canonical departments).
+type Department = VocabDepartment;
 
 type DependencyStatus = "Required"| "Optional"| "Blocked"| "Waiting"| "Ready";
 type TemplateStatus = "Active"| "Inactive"| "Draft";
@@ -149,16 +150,30 @@ interface BlueprintMeta {
   claimedServiceIds: string[];
 }
 
+// DEPT_MAP: maps any legacy stored value to a valid Department for display.
+// After DN-dept-names migration all stored values are already canonical;
+// this map keeps legacy keys as pass-through safety in case any old data remains.
 const DEPT_MAP: Record<string, Department> = {
-  "SEO":                "SEO",
-  "GBP":                "GBP",
-  "PPC":                "Paid Advertising",
-  "Meta Ads":           "Meta Ads",
-  "Reporting":          "Reporting",
-  "Web Development":    "Web Development",
-  "Design":             "Creative",
-  "Account Management": "Account Management",
-  "Billing":            "Billing",
+  // Canonical (post-migration) — pass-through
+  "Account Management":       "Account Management",
+  "Sales":                    "Sales",
+  "Billing":                  "Billing",
+  "Content":                  "Content",
+  "Web Development & Design": "Web Development & Design",
+  "SEO & Local":              "SEO & Local",
+  "Paid Advertising":         "Paid Advertising",
+  "Reporting":                "Reporting",
+  "Local Service Ads":        "Local Service Ads",
+  "IT & Security":            "IT & Security",
+  // Legacy — map to canonical for any residual old data
+  "SEO":             "SEO & Local",
+  "GBP":             "SEO & Local",
+  "PPC":             "Paid Advertising",
+  "Meta Ads":        "Paid Advertising",
+  "LSA":             "Local Service Ads",
+  "Web Development": "Web Development & Design",
+  "Design":          "Web Development & Design",
+  "Creative":        "Web Development & Design",
 };
 
 function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
@@ -326,10 +341,7 @@ const EDITOR_LABEL: React.CSSProperties = {
   letterSpacing: "0.04em",
 };
 
-const VALID_DEPARTMENTS_EDITOR = [
-  "Account Management", "SEO", "GBP", "Paid Advertising", "Meta Ads",
-  "Reporting", "Web Development", "Creative", "Billing",
-];
+const VALID_DEPARTMENTS_EDITOR = VALID_DEPARTMENTS;
 
 // ── EditorTaskRow ──────────────────────────────────────────────────────────
 function EditorTaskRow({
@@ -805,9 +817,12 @@ function TemplateEditorModal({
               </div>
               <div>
                 <label style={EDITOR_LABEL}>Department</label>
-                <input type="text" value={meta.department} onChange={(e) => setMeta((m) => ({ ...m, department: e.target.value }))}
-                  disabled={saving} placeholder="e.g. SEO"
-                  style={{ ...EDITOR_INPUT, width: "100%" }} />
+                <select value={meta.department} onChange={(e) => setMeta((m) => ({ ...m, department: e.target.value }))}
+                  disabled={saving}
+                  style={{ ...EDITOR_INPUT, width: "100%" }}>
+                  <option value="">— choose department —</option>
+                  {VALID_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
               </div>
               <div>
                 <label style={EDITOR_LABEL}>Version</label>
@@ -1021,15 +1036,16 @@ function TemplateEditorModal({
 //  Design helpers 
 
 const DEPT_COLORS: Record<Department, { bg?: string; color?: string; border: string }> = {
-  "SEO":                { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE"},
-  "GBP":                { bg: "#ECFDF5", color: "#059669", border: "#A7F3D0"},
-  "Paid Advertising":   { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA"},
-  "Meta Ads":           { bg: "#FAF5FF", color: "#7C3AED", border: "#DDD6FE"},
-  "Reporting":          { bg: "#ECFEFF", color: "#0891B2", border: "#A5F3FC"},
-  "Web Development":    { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0"},
-  "Creative":           { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3"},
-  "Account Management": { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A"},
-  "Billing":            { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1"},
+  "Account Management":       { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
+  "Sales":                    { bg: "#F0F9FF", color: "#0369A1", border: "#BAE6FD" },
+  "Billing":                  { bg: "#F8FAFC", color: "#475569", border: "#CBD5E1" },
+  "Content":                  { bg: "#F0FDF4", color: "#16A34A", border: "#BBF7D0" },
+  "Web Development & Design": { bg: "#F5F3FF", color: "#7C3AED", border: "#DDD6FE" },
+  "SEO & Local":              { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE" },
+  "Paid Advertising":         { bg: "#FFF7ED", color: "#C2410C", border: "#FED7AA" },
+  "Reporting":                { bg: "#ECFEFF", color: "#0891B2", border: "#A5F3FC" },
+  "Local Service Ads":        { bg: "#FFF1F2", color: "#BE123C", border: "#FECDD3" },
+  "IT & Security":            { bg: "#F1F5F9", color: "#334155", border: "#E2E8F0" },
 };
 
 const TYPE_COLORS: Record<TemplateType, { bg?: string; color?: string }> = {
@@ -1677,10 +1693,7 @@ export default function TaskTemplatesPage() {
     "Client Onboarding",
   ];
 
-  const DEPARTMENTS_LIST: Department[] = [
-    "SEO", "GBP", "Paid Advertising", "Meta Ads",
-    "Reporting", "Web Development", "Creative", "Account Management", "Billing",
-  ];
+  const DEPARTMENTS_LIST: Department[] = [...VALID_DEPARTMENTS];
 
   const TEMPLATE_TYPES: TemplateType[] = [
     "Setup", "Onboarding", "Launch", "Monthly Management",

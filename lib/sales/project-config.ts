@@ -162,13 +162,13 @@ export const DEFAULT_LAUNCH_DURATION_DAYS: number = 30;
 // Maps service names to their fulfillment departments.
 
 export const DEPARTMENT_MAP: Record<string, string> = {
-  "SEO":                      "SEO",
-  "SEO AI Search Visibility": "SEO",
-  "Google Business Profile":  "GBP",
-  "Google Ads / PPC":         "PPC",
-  "Local Service Ads":        "LSA",
-  "Meta Ads":                 "Meta Ads",
-  "Website":                  "Web Development",
+  "SEO":                      "SEO & Local",
+  "SEO AI Search Visibility": "SEO & Local",
+  "Google Business Profile":  "SEO & Local",
+  "Google Ads / PPC":         "Paid Advertising",
+  "Local Service Ads":        "Local Service Ads",
+  "Meta Ads":                 "Paid Advertising",
+  "Website":                  "Web Development & Design",
   "Content":                  "Content",
   "Reporting":                "Reporting",
 };
