@@ -125,6 +125,8 @@ interface BlueprintApiRecord {
   targetCompletionDays: number | null;
   dueDateOffsetDays:    number | null;
   escalationAfterDays:  number | null;
+  // Catalogue service ids this blueprint claims (launchProject routing).
+  claimedServiceIds: string[];
 }
 
 // All blueprint-level fields for the editor form
@@ -143,6 +145,8 @@ interface BlueprintMeta {
   targetCompletionDays: number | null;
   dueDateOffsetDays:    number | null;
   escalationAfterDays:  number | null;
+  // Catalogue service ids this blueprint covers at launch.
+  claimedServiceIds: string[];
 }
 
 const DEPT_MAP: Record<string, Department> = {
@@ -573,6 +577,7 @@ const BLANK_META: BlueprintMeta = {
   estimatedTotalHours: 0, isActive: true, version: "1.0",
   firstResponseDays: null, targetCompletionDays: null,
   dueDateOffsetDays: null, escalationAfterDays: null,
+  claimedServiceIds: [],
 };
 
 const ACTIVATION_TRIGGERS_LIST = [
@@ -599,7 +604,7 @@ function TemplateEditorModal({
   // Service picker (create only)
   const [services, setServices] = useState<Array<{ id: string; label: string }>>([]);
   const [serviceId, setServiceId] = useState(editingServiceId ?? "");
-  const [servicesLoading, setServicesLoading] = useState(!isEditing);
+  const [servicesLoading, setServicesLoading] = useState(true);
 
   // Activation mapping keys (create only)
   const [mappingInput, setMappingInput] = useState("");
@@ -613,8 +618,9 @@ function TemplateEditorModal({
     initialGroups.find((g) => g.kind === "recurring")?.tasks ?? []
   );
 
+  // Load the full catalogue list for both the service picker (create) and the
+  // claim picker (edit). Always fetch so the edit form can show labels.
   useEffect(() => {
-    if (isEditing) return;
     fetch("/api/sales/service-catalog?all=1")
       .then((r) => r.json())
       .then((d) => {
@@ -671,6 +677,7 @@ function TemplateEditorModal({
             targetCompletionDays: meta.targetCompletionDays,
             dueDateOffsetDays:    meta.dueDateOffsetDays,
             escalationAfterDays:  meta.escalationAfterDays,
+            claimedServiceIds:    meta.claimedServiceIds,
           }),
         });
       } else {
@@ -694,6 +701,7 @@ function TemplateEditorModal({
               targetCompletionDays: meta.targetCompletionDays,
               dueDateOffsetDays:    meta.dueDateOffsetDays,
               escalationAfterDays:  meta.escalationAfterDays,
+              claimedServiceIds:    meta.claimedServiceIds,
               groups,
             },
             serviceMappings: allMappings,
@@ -847,6 +855,61 @@ function TemplateEditorModal({
                 <label htmlFor="isActive" className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>Active (routes service lookups here)</label>
               </div>
             </div>
+          </section>
+
+          {/* Claimed services — which catalogue services this blueprint covers */}
+          <section className="space-y-3">
+            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Services This Blueprint Covers</div>
+            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+              When a project is launched, sold services are matched to this blueprint by these ids.
+              A service can only be claimed by one blueprint. Onboarding and Reporting run on every
+              project unconditionally — do not claim them here.
+            </p>
+            {servicesLoading ? (
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading catalogue…</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {services.map((svc) => {
+                  const claimed = meta.claimedServiceIds.includes(svc.id);
+                  return (
+                    <label
+                      key={svc.id}
+                      className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
+                      style={{
+                        padding: "4px 10px",
+                        borderRadius: 8,
+                        border: `1px solid ${claimed ? "#BFDBFE" : "var(--rtm-border)"}`,
+                        background: claimed ? "#EFF6FF" : "var(--rtm-bg)",
+                        color: claimed ? "#1D4ED8" : "var(--rtm-text-secondary)",
+                        opacity: saving ? 0.5 : 1,
+                        cursor: saving ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        disabled={saving}
+                        checked={claimed}
+                        onChange={() => {
+                          const next = claimed
+                            ? meta.claimedServiceIds.filter((id) => id !== svc.id)
+                            : [...meta.claimedServiceIds, svc.id];
+                          setMeta((m) => ({ ...m, claimedServiceIds: next }));
+                        }}
+                        className="w-3 h-3"
+                      />
+                      <span className="font-semibold" style={{ fontSize: 11 }}>{svc.label}</span>
+                      <span style={{ fontSize: 10, opacity: 0.6 }}>({svc.id})</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+            {meta.claimedServiceIds.length > 0 && (
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                {meta.claimedServiceIds.length} service{meta.claimedServiceIds.length !== 1 ? "s" : ""} claimed: 
+                <span style={{ color: "var(--rtm-text-secondary)" }}>{meta.claimedServiceIds.join(", ")}</span>
+              </p>
+            )}
           </section>
 
           {/* SLA Policy fields — set by Account Management */}
@@ -1491,14 +1554,23 @@ export default function TaskTemplatesPage() {
   /** Raw blueprint records keyed by serviceId, for the Edit button. */
   const [rawBlueprints, setRawBlueprints] = useState<Map<string, BlueprintApiRecord>>(new Map());
   const [loadError, setLoadError] = useState("");
+  /** Live catalogue — used to compute real unmapped count. */
+  const [catalogueServices, setCatalogueServices] = useState<Array<{ id: string; label: string }>>([]);
 
   const loadTemplates = useCallback(async () => {
     try {
-      const res = await fetch("/api/task-blueprints");
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { blueprints: BlueprintApiRecord[] };
+      const [bpRes, catRes] = await Promise.all([
+        fetch("/api/task-blueprints"),
+        fetch("/api/sales/service-catalog?all=1"),
+      ]);
+      if (!bpRes.ok) throw new Error(`HTTP ${bpRes.status}`);
+      const data = (await bpRes.json()) as { blueprints: BlueprintApiRecord[] };
       setTaskTemplates(data.blueprints.map(blueprintToTemplate));
       setRawBlueprints(new Map(data.blueprints.map((b) => [b.id, b])));
+      if (catRes.ok) {
+        const catData = (await catRes.json()) as { services?: Array<{ id: string; label: string }> };
+        setCatalogueServices(catData.services ?? []);
+      }
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : "Failed to load templates.");
     }
@@ -1534,6 +1606,7 @@ export default function TaskTemplatesPage() {
         targetCompletionDays: bp.targetCompletionDays ?? null,
         dueDateOffsetDays:    bp.dueDateOffsetDays    ?? null,
         escalationAfterDays:  bp.escalationAfterDays  ?? null,
+        claimedServiceIds:    bp.claimedServiceIds    ?? [],
       });
     } else {
       setEditingServiceId(null);
@@ -1553,7 +1626,24 @@ export default function TaskTemplatesPage() {
 
   const totalTemplates = TASK_TEMPLATES.length;
   const totalTasksDefined = TASK_TEMPLATES.reduce((s, t) => s + t.taskCount, 0);
-  const unmappedItems: number = 4;
+
+  // Real unmapped count: catalogue services with no blueprint covering them.
+  // A service is covered if: (a) a template's serviceId equals it, or
+  // (b) a template's claimedServiceIds contains it.
+  // Services reserved for unconditional blueprints (account-management,
+  // reporting) are excluded from this count since they are never sold.
+  const UNCONDITIONAL_SERVICE_IDS = new Set(["account-management", "reporting"]);
+  const coveredServiceIds = new Set<string>();
+  for (const [sid, bp] of rawBlueprints) {
+    coveredServiceIds.add(sid); // template's own serviceId
+    for (const claimed of bp.claimedServiceIds ?? []) {
+      coveredServiceIds.add(claimed);
+    }
+  }
+  const uncoveredCatalogueServices = catalogueServices.filter(
+    (svc) => !coveredServiceIds.has(svc.id) && !UNCONDITIONAL_SERVICE_IDS.has(svc.id)
+  );
+  const unmappedItems = uncoveredCatalogueServices.length;
 
   //  Filter 
 
@@ -1665,10 +1755,23 @@ export default function TaskTemplatesPage() {
 
       {/*  Summary line — only what the table does not already show  */}
       {unmappedItems > 0 && (
+        <div className="rounded-xl px-4 py-3" style={{ background: "#FFFBEB", border: "1px solid #FDE68A" }}>
+          <p className="text-sm" style={{ color: "#92400E" }}>
+            <span className="font-bold">{unmappedItems} catalogue service{unmappedItems !== 1 ? "s" : ""} have no blueprint:</span>
+            {" "}
+            {uncoveredCatalogueServices.map((s) => (
+              <span key={s.id} className="inline-block mr-2 font-semibold" style={{ color: "#78350F" }}>{s.label} <span style={{ fontWeight: 400, opacity: 0.7 }}>({s.id})</span></span>
+            ))}
+          </p>
+          <p className="text-xs mt-1" style={{ color: "#B45309" }}>
+            Projects launched selling these services will have empty categories and Melissa will be notified.
+            Use &ldquo;+ New Task Template&rdquo; to create blueprints and claim these services.
+          </p>
+        </div>
+      )}
+      {unmappedItems === 0 && catalogueServices.length > 0 && (
         <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
-          <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{unmappedItems} line item{unmappedItems !== 1 ? "s" : ""} unmapped</span>
-          {" — "}
-          open each blueprint and set a Mapped Line Item to enable activation.
+          <span className="font-semibold" style={{ color: "#059669" }}>✓ All {catalogueServices.length} catalogue services have a blueprint.</span>
           {" "}
           <span style={{ color: "var(--rtm-text-muted)" }}>{totalTasksDefined} tasks defined across {totalTemplates} blueprint{totalTemplates !== 1 ? "s" : ""}.</span>
         </p>

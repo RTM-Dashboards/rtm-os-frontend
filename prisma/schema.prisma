@@ -788,6 +788,11 @@ model Project {
   startDate     String?
   endDate       String?
 
+  // Sold services that had no blueprint at launch time.
+  // Melissa uses this to know which blueprints she needs to create.
+  // An empty array means every service was covered.
+  flaggedServices String[] @default([]) @map("flagged_services")
+
   // Audit timestamps — ISO-8601 strings, matching existing model conventions
   createdAt     String   @default("")
   updatedAt     String   @default("")
@@ -841,6 +846,11 @@ model TaskListTemplate {
   targetCompletionDays Int?    @map("target_completion_days")
   dueDateOffsetDays    Int?    @map("due_date_offset_days")
   escalationAfterDays  Int?    @map("escalation_after_days")
+
+  // Catalogue service ids that this blueprint covers at project launch.
+  // Set by Melissa in the blueprint editor. launchProject resolves a sold
+  // service through this array when there is no direct serviceId match.
+  claimedServiceIds    String[] @default([]) @map("claimed_service_ids")
 
   aliases              BlueprintServiceAlias[]
 

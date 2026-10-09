@@ -69,6 +69,9 @@ export interface TaskBlueprint {
   targetCompletionDays: number | null;
   dueDateOffsetDays:    number | null;
   escalationAfterDays:  number | null;
+  // Catalogue service ids Melissa has claimed for this blueprint.
+  // launchProject uses this to route sold services to blueprints.
+  claimedServiceIds: string[];
 }
 
 export interface TemplateTaskDef {
@@ -109,6 +112,9 @@ export interface NewBlueprintPayload {
   targetCompletionDays?: number | null;
   dueDateOffsetDays?:    number | null;
   escalationAfterDays?:  number | null;
+  // Catalogue service ids this blueprint covers.
+  // undefined = do not change; [] = clear all claims.
+  claimedServiceIds?: string[];
   groups?: TemplateGroup[];
   tasks?: Array<{
     id?: string;
@@ -316,6 +322,7 @@ interface TltRow {
   targetCompletionDays: number | null;
   dueDateOffsetDays:    number | null;
   escalationAfterDays:  number | null;
+  claimedServiceIds:    string[];
 }
 
 // ── rowToBlueprint ────────────────────────────────────────────────────────────
@@ -369,6 +376,7 @@ function rowToBlueprint(row: TltRow): TaskBlueprint {
     targetCompletionDays: row.targetCompletionDays ?? null,
     dueDateOffsetDays:    row.dueDateOffsetDays    ?? null,
     escalationAfterDays:  row.escalationAfterDays  ?? null,
+    claimedServiceIds:    Array.isArray(row.claimedServiceIds) ? row.claimedServiceIds : [],
   };
 }
 
@@ -486,7 +494,46 @@ function blueprintFields(bp: Partial<NewBlueprintPayload>) {
     ...(bp.targetCompletionDays !== undefined ? { targetCompletionDays: bp.targetCompletionDays } : {}),
     ...(bp.dueDateOffsetDays    !== undefined ? { dueDateOffsetDays:    bp.dueDateOffsetDays    } : {}),
     ...(bp.escalationAfterDays  !== undefined ? { escalationAfterDays:  bp.escalationAfterDays  } : {}),
+    // Claim: undefined = do not touch; array = replace.
+    ...(bp.claimedServiceIds !== undefined ? { claimedServiceIds: bp.claimedServiceIds } : {}),
   };
+}
+
+// ── checkClaimConflicts ———————————————————————————————————————————————
+//
+// Returns an error string if any of the requested service ids is already
+// claimed by a DIFFERENT template. The check is done before the write;
+// the caller returns 409 on a non-null return value.
+// excludeTemplateId: the id of the template being saved (skip its own claims).
+
+async function checkClaimConflicts(
+  serviceIds: string[],
+  excludeTemplateId: string,
+): Promise<string | null> {
+  if (serviceIds.length === 0) return null;
+
+  // Find all templates that claim any of the requested ids, excluding ourselves.
+  const rows = await prisma.taskListTemplate.findMany({
+    where: {
+      claimedServiceIds: { hasSome: serviceIds },
+      NOT: { id: excludeTemplateId },
+    },
+    select: { serviceId: true, name: true, claimedServiceIds: true },
+  });
+
+  if (rows.length === 0) return null;
+
+  const conflicts: string[] = [];
+  for (const row of rows) {
+    for (const sid of row.claimedServiceIds) {
+      if (serviceIds.includes(sid)) {
+        conflicts.push(
+          `"${sid}" is already claimed by blueprint "${row.name || row.serviceId}"`
+        );
+      }
+    }
+  }
+  return conflicts.length > 0 ? conflicts.join("; ") : null;
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -548,6 +595,13 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.taskListTemplate.findFirst({ where: { serviceId: canonicalServiceId } });
     let row: TltRow;
 
+    // Check claim conflicts before writing.
+    const newClaims = bp.claimedServiceIds ?? [];
+    const conflictErr = await checkClaimConflicts(newClaims, existing?.id ?? "");
+    if (conflictErr) {
+      return NextResponse.json({ error: `Claim conflict: ${conflictErr}` }, { status: 409 });
+    }
+
     if (existing) {
       const updated = await prisma.taskListTemplate.update({
         where: { id: existing.id },
@@ -575,6 +629,7 @@ export async function POST(req: NextRequest) {
           estimatedTotalHours: bp.estimatedTotalHours ?? 0,
           isActive:            bp.isActive            ?? true,
           version:             bp.version             ?? "",
+          claimedServiceIds:   newClaims,
         },
       });
       row = created as unknown as TltRow;
@@ -633,6 +688,14 @@ export async function PATCH(req: NextRequest) {
     if (cycle) {
       const names = cycle.map((id) => `"${labelForId(id, groups)}"`).join(" → ");
       return NextResponse.json({ error: `Cycle detected: ${names}` }, { status: 422 });
+    }
+
+    // Check claim conflicts before writing.
+    if (body.claimedServiceIds !== undefined) {
+      const conflictErr = await checkClaimConflicts(body.claimedServiceIds, existing.id);
+      if (conflictErr) {
+        return NextResponse.json({ error: `Claim conflict: ${conflictErr}` }, { status: 409 });
+      }
     }
 
     const now     = new Date().toISOString();

@@ -50,7 +50,7 @@
 
 import { prisma } from "@/lib/db/prisma";
 import { addBusinessDays } from "@/lib/dates";
-import { notifyTaskAssigned } from "@/lib/notifications/send";
+import { notifyTaskAssigned, createNotification } from "@/lib/notifications/send";
 import {
   ONBOARDING_FIELD_SCHEMA,
   type AMOnboardingFieldDef,
@@ -100,6 +100,12 @@ export interface LaunchResult {
   onboardingRecordId: string | null;
   /** any per-category or per-task errors that occurred */
   errors: string[];
+  /**
+   * Catalogue service ids that were sold but had no blueprint (neither by
+   * direct serviceId match nor by claim). The project is still created;
+   * these services get an empty category. Melissa is notified.
+   */
+  uncoveredServices: string[];
 }
 
 // ── BudgetLineItem (subset we need) ──────────────────────────────────────────
@@ -330,6 +336,7 @@ export async function launchProject(
     emptyDepartments:     [],
     onboardingRecordId:   null,
     errors:               [],
+    uncoveredServices:    [],
   };
 
   // Per-launch cache so we query each department at most once.
@@ -770,6 +777,181 @@ export async function launchProject(
     );
   }
 
+  // ── 5d. Always run the Monthly Reporting blueprint ──────────────────────────
+  // Like Client Onboarding, Monthly Reporting (serviceId="reporting") runs on
+  // every project regardless of what was sold. Reporting is not a purchasable
+  // service; it has no catalogue row. Its blueprint is tlt-bp005.
+
+  const REPORTING_SERVICE_ID = "reporting";
+
+  try {
+    const repTemplate = await prisma.taskListTemplate.findFirst({
+      where: { serviceId: REPORTING_SERVICE_ID },
+    });
+
+    if (!repTemplate) {
+      result.errors.push(
+        `Monthly Reporting blueprint not found (serviceId=${REPORTING_SERVICE_ID}). Reporting tasks were not created.`
+      );
+    } else {
+      const repCategoryId = makeId("cat");
+      await prisma.projectCategory.create({
+        data: {
+          id:           repCategoryId,
+          projectId:    project.id,
+          serviceId:    REPORTING_SERVICE_ID,
+          serviceLabel: repTemplate.name,
+          department:   repTemplate.department || "Reporting",
+          createdAt:    now,
+        },
+      });
+      result.categoriesCreated++;
+
+      interface RepTemplateGroup {
+        kind: "setup" | "recurring";
+        tasks: TemplateTaskDef[];
+      }
+      const repGroups = Array.isArray(repTemplate.groups)
+        ? (repTemplate.groups as unknown as RepTemplateGroup[])
+        : [];
+      const repSetupTasks: TemplateTaskDef[] = [];
+      for (const g of repGroups) {
+        if (g.kind === "setup" && Array.isArray(g.tasks)) {
+          for (const t of g.tasks) repSetupTasks.push(t);
+        }
+      }
+
+      const repLocalIdByIndex = repSetupTasks.map((t) => t.localId ?? "");
+      const repTaskIdByLocalId = new Map<string, string | null>();
+
+      for (const taskDef of repSetupTasks) {
+        const dept   = (taskDef.department || "Reporting").trim();
+        const ownerId = await pickOwner(dept, ownerCache);
+        if (ownerId === null && !result.emptyDepartments.includes(dept)) {
+          result.emptyDepartments.push(dept);
+        }
+        const hasPrereqs    = taskDef.offsetFrom === "prereq";
+        const launchDateStr = launchDate.toISOString().slice(0, 10);
+        const dueDate       = hasPrereqs ? null : addBusinessDays(launchDateStr, taskDef.offsetDays ?? 0);
+
+        try {
+          const taskId = makeId("task");
+          await prisma.task.create({
+            data: {
+              id:                     taskId,
+              categoryId:             repCategoryId,
+              label:                  taskDef.label,
+              status:                 "open",
+              ownerId,
+              department:             dept || null,
+              dueDate,
+              offsetFrom:             taskDef.offsetFrom ?? "launch",
+              offsetDays:             taskDef.offsetDays ?? 0,
+              isSetup:                true,
+              isRecurring:            false,
+              recurrenceIntervalDays: 0,
+              ownerRole:              taskDef.ownerRole       ?? null,
+              estimatedHours:         typeof taskDef.estimatedHours === "number"
+                                        ? taskDef.estimatedHours
+                                        : null,
+              priority:               taskDef.priority        ?? null,
+              description:            taskDef.description     ?? null,
+              onboardingRecordId:     null,
+              createdAt:              now,
+              updatedAt:              now,
+            },
+          });
+          if (taskDef.localId) repTaskIdByLocalId.set(taskDef.localId, taskId);
+          result.tasksCreated++;
+          if (ownerId) {
+            notifyTaskAssigned({
+              ownerId,
+              taskId,
+              taskLabel:   taskDef.label,
+              projectId:   project.id,
+              projectName: project.name,
+            }).catch(() => { /* swallowed */ });
+          }
+        } catch (err) {
+          result.errors.push(
+            `Reporting task "${taskDef.label}": ${
+              err instanceof Error ? err.message : String(err)
+            }`
+          );
+          if (taskDef.localId) repTaskIdByLocalId.set(taskDef.localId, null);
+        }
+      }
+
+      // Insert dependency rows.
+      const repDepNow = new Date().toISOString();
+      for (const taskDef of repSetupTasks) {
+        if (!taskDef.localId) continue;
+        const taskId = repTaskIdByLocalId.get(taskDef.localId);
+        if (!taskId) continue;
+        const prereqIds: string[] = [];
+        const seenDep = new Set<string>();
+        for (const id of taskDef.prereqIds ?? []) {
+          if (id && !seenDep.has(id)) { prereqIds.push(id); seenDep.add(id); }
+        }
+        for (const idx of taskDef.prereqIndices ?? []) {
+          const id = repLocalIdByIndex[idx] ?? "";
+          if (id && !seenDep.has(id)) { prereqIds.push(id); seenDep.add(id); }
+        }
+        for (const prereqLocalId of prereqIds) {
+          if (!repTaskIdByLocalId.has(prereqLocalId)) continue;
+          const prereqTaskId = repTaskIdByLocalId.get(prereqLocalId);
+          if (!prereqTaskId) continue;
+          try {
+            await prisma.taskDependency.create({
+              data: {
+                id:             makeId("dep"),
+                taskId,
+                requiresTaskId: prereqTaskId,
+                createdAt:      repDepNow,
+              },
+            });
+          } catch (err) {
+            result.errors.push(
+              `Reporting dep "${prereqLocalId}"→"${taskDef.localId}": ${
+                err instanceof Error ? err.message : String(err)
+              }`
+            );
+          }
+        }
+      }
+    }
+  } catch (err) {
+    result.errors.push(
+      `Monthly Reporting blueprint: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
+  // ── 5e. Build claim index ───────────────────────────────────────────────────────
+  // Load all blueprints that claim catalogue service ids, and build a map
+  // serviceId → template.id so the line-item loop can resolve by claim.
+  // This is done once before the loop so we do not re-query inside it.
+  //
+  // Two blueprints claiming the same service id is prevented at save time;
+  // but if it happened (e.g. by direct DB edit), we take the first result.
+
+  const claimIndex = new Map<string, string>(); // catalogueServiceId → template.serviceId
+  try {
+    const allTemplates = await prisma.taskListTemplate.findMany({
+      select: { serviceId: true, claimedServiceIds: true },
+    });
+    for (const tpl of allTemplates) {
+      for (const sid of tpl.claimedServiceIds) {
+        if (!claimIndex.has(sid)) {
+          claimIndex.set(sid, tpl.serviceId);
+        }
+      }
+    }
+  } catch (err) {
+    result.errors.push(
+      `Claim index load: ${err instanceof Error ? err.message : String(err)}`
+    );
+  }
+
   // ── 6. Create categories and tasks ────────────────────────────────────────
   for (const item of lineItems) {
     // Resolve department label from catalogue (for the category row).
@@ -802,9 +984,29 @@ export async function launchProject(
       result.categoriesCreated++;
 
       // Resolve task list template for this service.
-      const template = await prisma.taskListTemplate.findFirst({
+      // Priority: direct serviceId match, then claim table.
+      // A deleted-service claim (id not in catalogue) cannot break a launch —
+      // findFirst simply returns null and the category is created empty/flagged.
+      let template = await prisma.taskListTemplate.findFirst({
         where: { serviceId: item.serviceId },
       });
+
+      if (!template) {
+        // Try claim index: some blueprint has listed this serviceId in
+        // its claimedServiceIds array.
+        const claimedBlueprintServiceId = claimIndex.get(item.serviceId);
+        if (claimedBlueprintServiceId) {
+          template = await prisma.taskListTemplate.findFirst({
+            where: { serviceId: claimedBlueprintServiceId },
+          });
+        }
+      }
+
+      // Flag uncovered services. The category is still created (above); it will
+      // just be empty. The flag is stored on the result and on the project row.
+      if (!template) {
+        result.uncoveredServices.push(item.serviceId);
+      }
 
       // ── Flatten setup tasks from template ──────────────────────────────────
       // We build a flat ordered list of all setup tasks across all setup groups.
@@ -1066,6 +1268,91 @@ export async function launchProject(
     } catch (err) {
       result.errors.push(
         `Service ${item.serviceId}: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+  }
+
+  // ── 7. Flag uncovered services ──────────────────────────────────────────────────
+  // If any sold services had no blueprint, write them onto the project row so
+  // they are visible without a notification, and send one notification to the
+  // Account Management manager (or Executive if no manager exists).
+  //
+  // Notification routing:
+  //   - Account Management manager (first alphabetically by name).
+  //   - If no manager: any Executive (matching raiseEscalation's logic).
+  //   - If no Executive: any SystemAdmin.
+  //   - If none of the above: log only; launch still succeeds.
+  //
+  // This block must not throw. All errors go to result.errors.
+
+  if (result.uncoveredServices.length > 0) {
+    // Persist the flag on the project row.
+    try {
+      await prisma.project.update({
+        where: { id: project.id },
+        data:  { flaggedServices: result.uncoveredServices },
+      });
+    } catch (err) {
+      result.errors.push(
+        `Flag persist: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+
+    // Find the notification recipient.
+    const serviceList = result.uncoveredServices.join(", ");
+    const notifMessage =
+      `Project “${project.name}” was launched with services that have no task blueprint: ${serviceList}. ` +
+      `Please create blueprints for these services so the work is tracked.`;
+    const notifLink = `/tasks/templates`;
+
+    try {
+      let recipientId: string | null = null;
+
+      // 1. Account Management manager.
+      const amManager = await prisma.user.findFirst({
+        where:   { department: "Account Management", role: "Manager", status: "active" },
+        select:  { id: true },
+        orderBy: { name: "asc" },
+      });
+      if (amManager) recipientId = amManager.id;
+
+      // 2. Any Executive.
+      if (!recipientId) {
+        const exec = await prisma.user.findFirst({
+          where:   { role: "Executive", status: "active" },
+          select:  { id: true },
+          orderBy: { name: "asc" },
+        });
+        if (exec) recipientId = exec.id;
+      }
+
+      // 3. Any SystemAdmin.
+      if (!recipientId) {
+        const sa = await prisma.user.findFirst({
+          where:   { role: "SystemAdmin", status: "active" },
+          select:  { id: true },
+          orderBy: { name: "asc" },
+        });
+        if (sa) recipientId = sa.id;
+      }
+
+      if (recipientId) {
+        createNotification({
+          recipientId,
+          type:             "uncovered_service",
+          message:          notifMessage,
+          link:             notifLink,
+          concernAboutType: "project",
+          concernAboutId:   project.id,
+        }).catch(() => { /* swallowed — launch must not fail on notification errors */ });
+      } else {
+        result.errors.push(
+          `Uncovered-service notification: no Account Management manager, Executive, or SystemAdmin found.`
+        );
+      }
+    } catch (err) {
+      result.errors.push(
+        `Uncovered-service notification: ${err instanceof Error ? err.message : String(err)}`
       );
     }
   }
