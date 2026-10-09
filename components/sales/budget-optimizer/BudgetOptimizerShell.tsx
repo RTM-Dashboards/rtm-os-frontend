@@ -322,7 +322,11 @@ export function BudgetOptimizerShell({
       Pick<BudgetLineItem, "quantity" | "unitMonthlyPrice" | "setupFee">
     >
   ) {
-    const updated = buildLineItemFromService(serviceId, changes);
+    // Always pass the prefetched DB definition so that services added via the
+    // config page (whose ids are not in BUDGET_SERVICE_CATALOG) do not cause
+    // buildLineItemFromService to throw "Unknown serviceId".
+    const prefetched = getCatalogServiceById(serviceId);
+    const updated = buildLineItemFromService(serviceId, changes, prefetched);
     setLineItems((prev) =>
       prev.map((i) => (i.serviceId === serviceId ? updated : i))
     );

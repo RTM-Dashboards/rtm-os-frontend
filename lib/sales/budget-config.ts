@@ -9,22 +9,14 @@ import type { DiscountType } from "./types";
 
 // ─── Service Identity ─────────────────────────────────────────────────────────
 
-export type BudgetServiceId =
-  | "seo"
-  | "seo-setup"
-  | "seo-technical"
-  | "seo-local"
-  | "seo-ai-search"
-  | "gbp"
-  | "gbp-optimization"
-  | "ppc"
-  | "ppc-setup"
-  | "lsa"
-  | "meta-ads"
-  | "meta-ads-setup"
-  | "website"
-  | "website-maintenance"
-  | "website-hosting";
+// BudgetServiceId is the primary key that travels through the system: it is
+// stored in BudgetLineItem.serviceId, matched by launchProject task blueprints,
+// and used to look up a service in the database. The database is the source of
+// truth — any active row's id is a valid BudgetServiceId, including rows added
+// via the config page that are not listed in BUDGET_SERVICE_CATALOG below.
+// Keeping this as `string` (rather than a closed literal union) ensures that
+// services added by managers without a code deploy are usable immediately.
+export type BudgetServiceId = string;
 
 export type QuantityUnit = "location" | "campaign" | "flat" | "page";
 
