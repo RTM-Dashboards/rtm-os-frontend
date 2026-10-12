@@ -2,42 +2,23 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import {
-  getAllTasks,
-  getProjects,
-  getDepartmentTaskKPIs,
-  DEPARTMENT_WORKSPACE_FILTERS,
-  type Project,
-  type Task,
-  type DepartmentName,
-  type TaskStatus,
-  type TaskPriority,
-  type TaskSource,
-} from "@/lib/engine";
+import type { TaskListItem } from "@/app/api/tasks/route";
 
 // =============================================================================
 // RTM OS — Global Tasks View
 // Route: /projects/tasks
-// All tasks from the engine, filterable by department.
-// Department pages consume this via filter — they do NOT own tasks.
+// Data source: Postgres via /api/tasks
 // =============================================================================
 
-const TS_CFG: Record<TaskStatus, { bg: string; color: string; dot: string }> = {
-  "Open":       { bg: "#EFF6FF", color: "#1D4ED8", dot: "#3B82F6" },
-  "In Progress":{ bg: "#FEF9C3", color: "#A16207", dot: "#EAB308" },
-  "Waiting":    { bg: "#F8FAFC", color: "#64748B", dot: "#94A3B8" },
-  "Review":     { bg: "#FAF5FF", color: "#6D28D9", dot: "#8B5CF6" },
-  "Blocked":    { bg: "#FEF2F2", color: "#DC2626", dot: "#EF4444" },
-  "Completed":  { bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
-  "Cancelled":  { bg: "#F8FAFC", color: "#94A3B8", dot: "#CBD5E1" },
+const STATUS_CFG: Record<string, { bg: string; color: string; dot: string }> = {
+  "open":        { bg: "#EFF6FF", color: "#1D4ED8", dot: "#3B82F6" },
+  "in_progress": { bg: "#FEF9C3", color: "#A16207", dot: "#EAB308" },
+  "done":        { bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
+  "skipped":     { bg: "#F8FAFC", color: "#94A3B8", dot: "#CBD5E1" },
 };
 
-const PRIORITY_COLOR: Record<TaskPriority, string> = {
-  Low: "#64748B", Medium: "#D97706", High: "#DC2626", Urgent: "#7C3AED",
-};
-
-function TsBadge({ status }: { status: TaskStatus }) {
-  const c = TS_CFG[status];
+function TaskStatusBadge({ status }: { status: string }) {
+  const c = STATUS_CFG[status] ?? STATUS_CFG["open"];
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
       style={{ background: c.bg, color: c.color }}>
@@ -57,98 +38,43 @@ function Avatar({ name }: { name: string }) {
   );
 }
 
-function RowActions({ task }: { task: Task }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="relative">
-      <button onClick={() => setOpen(!open)} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
-        style={{ color: "#94A3B8" }}>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
-          <circle cx="12" cy="5" r="2" /><circle cx="12" cy="12" r="2" /><circle cx="12" cy="19" r="2" />
-        </svg>
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 z-50 w-40 rounded-xl shadow-xl bg-white py-1.5"
-            style={{ border: "1px solid var(--rtm-border)" }}>
-            {[
-              { label: "View Task",    href: `/projects/tasks/${task.id}` },
-              { label: "View Project", href: `/projects/${task.projectId}` },
-            ].map((a) => (
-              <Link key={a.label} href={a.href} onClick={() => setOpen(false)}
-                className="block px-3.5 py-2 text-sm hover:bg-gray-50"
-                style={{ color: "var(--rtm-text-primary)" }}>
-                {a.label}
-              </Link>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
 export default function GlobalTasksPage() {
-  // Shallow-copy seed arrays so ENGINE_STORE mutations don't contaminate state
-  // before the authoritative API fetch replaces these arrays.
-  const [allTasks, setAllTasks] = useState<Task[]>(() => [...getAllTasks()]);
-  const [projects, setProjects] = useState<Project[]>(() => [...getProjects()]);
+  const [allTasks, setAllTasks] = useState<TaskListItem[]>([]);
+  const [loading, setLoading]   = useState(true);
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/engine?resource=tasks").then((r) => r.ok ? r.json() : null),
-      fetch("/api/engine?resource=projects").then((r) => r.ok ? r.json() : null),
-    ]).then(([td, pd]) => {
-      if (td?.tasks) setAllTasks(td.tasks as Task[]);
-      if (pd?.projects) setProjects(pd.projects as Project[]);
-    }).catch(() => {});
-  }, []);
-
-  const [deptFilter, setDeptFilter]     = useState<DepartmentName | "All">("All");
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | "All">("All");
-  const [sourceFilter, setSourceFilter] = useState<TaskSource | "All">("All");
+  const [deptFilter,   setDeptFilter]   = useState("All");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [projectFilter, setProjectFilter] = useState("All");
   const [search, setSearch] = useState("");
 
-  const departments: (DepartmentName | "All")[] = [
-    "All",
-    "Account Management","Sales","Billing","SEO","GBP","PPC","Meta Ads","LSA",
-    "Reporting","Web Development","Design","Content","AI Automation","IT & Security",
-  ];
-  const statuses: (TaskStatus | "All")[] = ["All","Open","In Progress","Waiting","Review","Blocked","Completed","Cancelled"];
-  const sources: (TaskSource | "All")[]  = ["All","Task Blueprint","Workflow Automation","Manual","Recurring"];
-  const projectOptions = ["All", ...projects.map((p) => p.name)];
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then((r) => r.ok ? r.json() : { tasks: [] })
+      .then((d: { tasks: TaskListItem[] }) => setAllTasks(d.tasks ?? []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const allDepts    = Array.from(new Set(allTasks.map((t) => t.department).filter(Boolean))).sort() as string[];
+  const allStatuses = ["All", "open", "in_progress", "done", "skipped"];
+  const allProjects = Array.from(new Set(allTasks.map((t) => t.projectName).filter(Boolean))).sort();
 
   const filtered = useMemo(() => {
     return allTasks.filter((t) => {
-      if (deptFilter   !== "All" && t.department !== deptFilter)   return false;
-      if (statusFilter !== "All" && t.status !== statusFilter)     return false;
-      if (sourceFilter !== "All" && t.source !== sourceFilter)     return false;
+      if (deptFilter    !== "All" && t.department  !== deptFilter)    return false;
+      if (statusFilter  !== "All" && t.status      !== statusFilter)  return false;
       if (projectFilter !== "All" && t.projectName !== projectFilter) return false;
       if (search) {
         const q = search.toLowerCase();
-        if (!t.title.toLowerCase().includes(q) && !t.clientName.toLowerCase().includes(q)) return false;
+        if (!t.label.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-  }, [allTasks, deptFilter, statusFilter, sourceFilter, projectFilter, search]);
-
-  // KPI for active dept filter
-  const deptKpis = deptFilter !== "All" ? getDepartmentTaskKPIs(deptFilter) : null;
-
-  // Group by department for quick view
-  const byDept = useMemo(() => {
-    return filtered.reduce<Record<string, Task[]>>((acc, t) => {
-      acc[t.department] = acc[t.department] ?? [];
-      acc[t.department].push(t);
-      return acc;
-    }, {});
-  }, [filtered]);
+  }, [allTasks, deptFilter, statusFilter, projectFilter, search]);
 
   return (
     <div className="flex flex-col min-h-screen" style={{ background: "var(--rtm-bg)" }}>
@@ -157,51 +83,17 @@ export default function GlobalTasksPage() {
       <div className="px-6 pt-6 pb-4" style={{ background: "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)" }}>
         <div className="max-w-[1600px] mx-auto">
           <div className="flex items-center gap-2 text-xs mb-3" style={{ color: "var(--rtm-text-muted)" }}>
-            <Link href="/projects" className="hover:underline" style={{ color: "var(--rtm-blue)" }}>Global Projects</Link>
+            <Link href="/projects" className="hover:underline" style={{ color: "var(--rtm-blue)" }}>Projects</Link>
             <span>/</span>
-            <span>Global Tasks</span>
+            <span>All Tasks</span>
           </div>
 
           <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
             <div>
-              <h1 className="text-2xl font-black mb-1" style={{ color: "var(--rtm-text-primary)" }}>Global Tasks</h1>
+              <h1 className="text-2xl font-black mb-1" style={{ color: "var(--rtm-text-primary)" }}>All Tasks</h1>
               <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
-                All tasks from the engine. Department pages filter this view by Department — they do not own tasks.
+                Live task data from Postgres. Tasks are generated when a project launches.
               </p>
-            </div>
-          </div>
-
-          {/* Department workspace filter legend */}
-          <div className="mb-4">
-            <p className="text-[10px] font-black uppercase tracking-wider mb-2" style={{ color: "var(--rtm-text-muted)" }}>
-              Department Workspace Filters — click to filter this view
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setDeptFilter("All")}
-                className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors"
-                style={{
-                  background: deptFilter === "All" ? "var(--rtm-blue)" : "var(--rtm-bg)",
-                  color: deptFilter === "All" ? "white" : "var(--rtm-text-secondary)",
-                  borderColor: deptFilter === "All" ? "var(--rtm-blue)" : "var(--rtm-border)",
-                }}
-              >
-                All Departments
-              </button>
-              {DEPARTMENT_WORKSPACE_FILTERS.map((f) => (
-                <button
-                  key={f.department}
-                  onClick={() => setDeptFilter(f.department)}
-                  className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors"
-                  style={{
-                    background: deptFilter === f.department ? "var(--rtm-blue)" : "var(--rtm-bg)",
-                    color: deptFilter === f.department ? "white" : "var(--rtm-text-secondary)",
-                    borderColor: deptFilter === f.department ? "var(--rtm-blue)" : "var(--rtm-border)",
-                  }}
-                >
-                  {f.department}
-                </button>
-              ))}
             </div>
           </div>
         </div>
@@ -209,29 +101,6 @@ export default function GlobalTasksPage() {
 
       {/* CONTENT */}
       <div className="flex-1 px-6 py-5 max-w-[1600px] mx-auto w-full">
-
-        {/* Dept KPI strip — shown when dept filter is active */}
-        {deptKpis && deptFilter !== "All" && (
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-5 p-4 rounded-xl"
-            style={{ background: "var(--rtm-surface)", border: "1px solid #BFDBFE" }}>
-            <div className="text-center">
-              <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>Total</p>
-              <p className="text-2xl font-black" style={{ color: "var(--rtm-blue)" }}>{deptKpis.total}</p>
-            </div>
-            {[
-              { label: "Open",       value: deptKpis.open,       color: "#1D4ED8" },
-              { label: "In Progress",value: deptKpis.inProgress, color: "#A16207" },
-              { label: "Review",     value: deptKpis.review,     color: "#6D28D9" },
-              { label: "Blocked",    value: deptKpis.blocked,    color: "#DC2626" },
-              { label: "Completed",  value: deptKpis.completed,  color: "#059669" },
-            ].map((m) => (
-              <div key={m.label} className="text-center">
-                <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>{m.label}</p>
-                <p className="text-2xl font-black" style={{ color: m.color }}>{m.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3 items-center p-4 rounded-xl mb-4"
@@ -241,14 +110,14 @@ export default function GlobalTasksPage() {
               fill="none" stroke="currentColor" strokeWidth="2" style={{ color: "var(--rtm-text-muted)" }}>
               <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
             </svg>
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tasks or clients..."
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search tasks…"
               className="w-full pl-9 pr-3 py-2 rounded-lg text-sm border outline-none"
               style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)" }} />
           </div>
           {[
-            { label: "Status",  value: statusFilter,  values: statuses,      set: setStatusFilter  as (v: string) => void },
-            { label: "Source",  value: sourceFilter,  values: sources,       set: setSourceFilter  as (v: string) => void },
-            { label: "Project", value: projectFilter, values: projectOptions, set: setProjectFilter },
+            { label: "Department", value: deptFilter,    values: ["All", ...allDepts],    set: setDeptFilter },
+            { label: "Status",     value: statusFilter,  values: allStatuses,             set: setStatusFilter },
+            { label: "Project",    value: projectFilter, values: ["All", ...allProjects], set: setProjectFilter },
           ].map((f) => (
             <div key={f.label} className="flex items-center gap-1.5">
               <span className="text-xs font-bold" style={{ color: "var(--rtm-text-secondary)" }}>{f.label}:</span>
@@ -264,114 +133,74 @@ export default function GlobalTasksPage() {
           </span>
         </div>
 
-        {/* Table */}
-        <div className="rounded-xl overflow-hidden"
-          style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[1200px]">
-              <thead>
-                <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)" }}>
-                  {["Task","Project","Client","Department","Service","Assignee","Source","Type","Priority","Status","Due Date","Deps","Actions"].map((col) => (
-                    <th key={col} className="px-3 py-3 text-left text-[11px] font-black uppercase tracking-wider"
-                      style={{ color: "var(--rtm-text-secondary)" }}>{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((t, i) => (
-                  <tr key={t.id} className="hover:bg-blue-50/30 transition-colors"
-                    style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--rtm-border-light)" : "none" }}>
-                    <td className="px-3 py-3 max-w-[200px]">
-                      <Link href={`/projects/tasks/${t.id}`}
-                        className="font-semibold text-sm hover:underline"
-                        style={{ color: "var(--rtm-blue)" }}>
-                        {t.title}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3">
-                      <Link href={`/projects/${t.projectId}`}
-                        className="text-xs hover:underline"
-                        style={{ color: "var(--rtm-text-secondary)" }}>
-                        {t.projectName}
-                      </Link>
-                    </td>
-                    <td className="px-3 py-3 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{t.clientName}</td>
-                    <td className="px-3 py-3">
-                      <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                        style={{ background: "#EFF6FF", color: "#1D4ED8" }}>
-                        {t.department}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-xs" style={{ color: "var(--rtm-text-muted)" }}>{t.service}</td>
-                    <td className="px-3 py-3">
-                      {t.assignedUserName
-                        ? <div className="flex items-center gap-1.5"><Avatar name={t.assignedUserName} /><span className="text-xs">{t.assignedUserName}</span></div>
-                        : <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</span>}
-                    </td>
-                    <td className="px-3 py-3">
-                      <span className="text-[11px] px-1.5 py-0.5 rounded font-semibold"
-                        style={{ background: "#FAF5FF", color: "#7C3AED" }}>
-                        {t.source}
-                      </span>
-                    </td>
-                    <td className="px-3 py-3 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{t.type}</td>
-                    <td className="px-3 py-3">
-                      <span className="text-xs font-bold" style={{ color: PRIORITY_COLOR[t.priority] }}>{t.priority}</span>
-                    </td>
-                    <td className="px-3 py-3"><TsBadge status={t.status} /></td>
-                    <td className="px-3 py-3 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate}</td>
-                    <td className="px-3 py-3">
-                      {t.dependencies.length > 0
-                        ? <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
-                            style={{ background: "#FEF2F2", color: "#DC2626" }}>{t.dependencies.length}</span>
-                        : <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</span>}
-                    </td>
-                    <td className="px-3 py-3"><RowActions task={t} /></td>
+        {/* Table or empty state */}
+        <div className="rounded-xl overflow-hidden" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
+          {loading ? (
+            <div className="text-center py-16 text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading…</div>
+          ) : allTasks.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-base font-semibold mb-2" style={{ color: "var(--rtm-text-primary)" }}>No tasks yet</p>
+              <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+                Tasks are generated automatically when a project launches.
+                Projects are created when Billing confirms payment and clears a client through the proposal.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[1000px]">
+                <thead>
+                  <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)" }}>
+                    {["Task","Project","Department","Owner","Priority","Status","Due Date"].map((col) => (
+                      <th key={col} className="px-3 py-3 text-left text-[11px] font-black uppercase tracking-wider"
+                        style={{ color: "var(--rtm-text-secondary)" }}>{col}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
-            {filtered.length === 0 && (
-              <div className="text-center py-16 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
-                No tasks match your filters.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Department filter guide */}
-        <div className="rounded-xl p-5 mt-4" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
-          <p className="text-xs font-black uppercase tracking-wide mb-3" style={{ color: "var(--rtm-text-secondary)" }}>
-            Department Workspace Connections
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {DEPARTMENT_WORKSPACE_FILTERS.map((f) => {
-              const count = allTasks.filter((t) => t.department === f.department).length;
-              return (
-                <div key={f.department}
-                  className="flex items-center justify-between p-3 rounded-lg"
-                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)" }}>
-                  <div>
-                    <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{f.label}</p>
-                    <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
-                      Filter: Department = {f.department}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold px-2 py-0.5 rounded"
-                      style={{ background: "#EFF6FF", color: "var(--rtm-blue)" }}>
-                      {count} tasks
-                    </span>
-                    <Link href={f.route}
-                      className="text-[11px] px-2 py-1 rounded-lg font-semibold border hover:bg-gray-50"
-                      style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
-                      Go
-                    </Link>
-                  </div>
+                </thead>
+                <tbody>
+                  {filtered.map((t, i) => (
+                    <tr key={t.id} className="hover:bg-blue-50/30 transition-colors"
+                      style={{ borderBottom: i < filtered.length - 1 ? "1px solid var(--rtm-border-light)" : "none" }}>
+                      <td className="px-3 py-3 max-w-[200px]">
+                        <Link href={`/projects/${t.projectId}#tasks`}
+                          className="font-semibold text-sm hover:underline"
+                          style={{ color: "var(--rtm-blue)" }}>
+                          {t.label}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3">
+                        <Link href={`/projects/${t.projectId}`}
+                          className="text-xs hover:underline"
+                          style={{ color: "var(--rtm-text-secondary)" }}>
+                          {t.projectName}
+                        </Link>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                          style={{ background: "#EFF6FF", color: "#1D4ED8" }}>
+                          {t.department ?? "—"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        {t.ownerName
+                          ? <div className="flex items-center gap-1.5"><Avatar name={t.ownerName} /><span className="text-xs">{t.ownerName}</span></div>
+                          : <span className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Unassigned</span>}
+                      </td>
+                      <td className="px-3 py-3 text-xs font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                        {t.priority ?? "—"}
+                      </td>
+                      <td className="px-3 py-3"><TaskStatusBadge status={t.status} /></td>
+                      <td className="px-3 py-3 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filtered.length === 0 && (
+                <div className="text-center py-16 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+                  No tasks match your filters.
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

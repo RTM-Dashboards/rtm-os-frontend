@@ -3,40 +3,29 @@
 /**
  * AM Projects - Health & Action Summary View
  *
- * DATA SOURCES:
- *   lib/engine/mock-data.ts          (ENGINE_STORE - Projects, Tasks)
- *   /api/businesses (Postgres — real activeServices, monthlyValueCents)
+ * DATA SOURCES (real Postgres only):
+ *   /api/projects/scoped  → Postgres projects with open/done task counts
+ *   /api/tasks            → Postgres tasks for off-track computation
+ *   /api/businesses       → real activeServices, monthlyValueCents
+ *   /api/onboarding-records?clientId= → onboarding record for each project
  *   lib/account-management/am-client-success-data.ts
- *                                    (COMMUNICATIONS - project communication history + Send Follow-up)
+ *                         → COMMUNICATIONS (project communication history)
+ *
+ * DATA REMOVED (had no Postgres source):
+ *   - engine project health (Green/Yellow/Red) — no health field in Project model
+ *   - engine task linkedOnboardingId — resolved via OnboardingRecord.projectId
  *
  * LOCKED ARCHITECTURE:
  *   This page is a HEALTH/ACTION SUMMARY only - NOT a task management UI.
  *   "Manage Tasks →" deep-links to the real Global Project Management detail view
- *   at /projects/[id] (app/(shell)/projects/[id]/page.tsx).
- *   Task creation/editing happens THERE, not here.
- *
- * FEATURES:
- *   - Project list with health status from engine project.health
- *   - "Tasks Off-Track" count per project: engine tasks that are Blocked
- *     OR (past dueDate AND not Completed/Cancelled) - computed, not fabricated
- *   - "Departments Needing Follow-up" - unique dept names from off-track tasks
- *   - Last communication date + "Send Follow-up" action → creates a real
- *     CommunicationEntry in COMMUNICATIONS (in-session persistence)
- *   - "Manage Tasks →" link to /projects/${project.id} (global PM detail view)
- *   - Contract/service data from real Business records (activeServices, monthlyValueCents)
- *   - 2-step "Activate Project" wizard retained (AM's primary workflow)
+ *   at /projects/[id].
  */
 
 import React, { useState, useCallback, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { ENGINE_STORE, BLUEPRINTS } from "@/lib/engine/mock-data";
-import type { Project, Task, DepartmentName } from "@/lib/engine/types";
-import {
-  blueprintIdsForServices,
-  SERVICE_TO_BLUEPRINT,
-  genId,
-} from "@/lib/engine/create-project";
+import type { ScopedProjectListItem } from "@/app/api/projects/scoped/route";
+import type { TaskListItem } from "@/app/api/tasks/route";
 import {
   fetchAMClients,
   type BusinessClient,
@@ -49,12 +38,7 @@ import {
 } from "@/lib/account-management/am-client-success-data";
 import { KpiCard } from "@/components/ui";
 
-
-
-
 // ── Date helpers ──────────────────────────────────────────────────────────────
-
-const TODAY_ISO = "2025-06-10"; // mock "today" matches demo data dates
 
 function fmt(iso: string | null | undefined): string {
   if (!iso) return "-";
@@ -65,32 +49,23 @@ function fmt(iso: string | null | undefined): string {
 // ── Off-track task computation ────────────────────────────────────────────────
 /**
  * A task is "off-track" if:
- *   - status === "Blocked", OR
- *   - dueDate is in the past AND status is not "Completed" or "Cancelled"
+ *   - dueDate is in the past AND status is not "done" or "skipped"
  *
- * Derived from real engine Task fields - no fabricated fields.
+ * Note: there is no "Blocked" status in the Postgres Task model.
+ * A task waiting on prerequisites has no dueDate until they close.
  */
-function getOffTrackTasks(projectId: string, tasksList?: Task[]): Task[] {
-  const tasks = tasksList ?? ENGINE_STORE.tasks;
-  return tasks.filter((t) => {
+const TODAY_ISO = new Date().toISOString().slice(0, 10);
+
+function getOffTrackTasks(projectId: string, tasksList: TaskListItem[]): TaskListItem[] {
+  return tasksList.filter((t) => {
     if (t.projectId !== projectId) return false;
-    if (t.status === "Blocked") return true;
-    if (
-      t.dueDate &&
-      t.dueDate < TODAY_ISO &&
-      t.status !== "Completed" &&
-      t.status !== "Cancelled"
-    )
-      return true;
+    if (t.dueDate && t.dueDate < TODAY_ISO && t.status !== "done" && t.status !== "skipped") return true;
     return false;
   });
 }
 
-/**
- * Returns unique department names from the off-track task list.
- */
-function getDepartmentsNeedingFollowUp(offTrackTasks: Task[]): DepartmentName[] {
-  const seen = new Set<DepartmentName>();
+function getDepartmentsNeedingFollowUp(offTrackTasks: TaskListItem[]): string[] {
+  const seen = new Set<string>();
   for (const t of offTrackTasks) {
     if (t.department) seen.add(t.department);
   }
@@ -101,19 +76,20 @@ function getDepartmentsNeedingFollowUp(offTrackTasks: Task[]): DepartmentName[] 
 
 function createFollowUpEntry(
   projectId: string,
-  clientName: string,
+  projectName: string,
   clientId: string | undefined,
-  accountManager: string,
+  accountManagerName: string,
   note: string
 ): CommunicationEntry {
   const now = new Date().toISOString();
   const dateStr = now.split("T")[0];
+  const id = `cm-followup-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
   return {
-    id: genId("cm-followup"),
+    id,
     clientId: clientId ?? undefined,
     engineProjectId: projectId,
-    client: clientName,
-    accountManager,
+    client: projectName,
+    accountManager: accountManagerName,
     type: "Follow-Up",
     date: dateStr,
     subject: "Project Follow-up",
@@ -125,54 +101,25 @@ function createFollowUpEntry(
   };
 }
 
-// ── Wizard-local helpers ──────────────────────────────────────────────────────
-// (blueprintIdsForServices and SERVICE_TO_BLUEPRINT imported from @/lib/engine/create-project)
-// Note: createEngineProject and appendToEngineStore retired — wizard creation disabled.
-
-const DEPT_LABELS: Partial<Record<DepartmentName, string>> = {
-  "Account Management": "Account Management",
-  "SEO":                "SEO",
-  "GBP":                "GBP",
-  "PPC":                "Paid Advertising",
-  "Meta Ads":           "Meta Ads",
-  "Reporting":          "Reporting",
-  "Web Development":    "Web Dev",
-  "Design":             "Design",
-};
-
-// ── Health badge helpers ──────────────────────────────────────────────────────
-
-function healthStyle(health: string): React.CSSProperties {
-  switch (health) {
-    case "Green":  return { background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0" };
-    case "Yellow": return { background: "#FFFBEB", color: "#B45309", borderColor: "#FDE68A" };
-    case "Red":    return { background: "#FEF2F2", color: "#991B1B", borderColor: "#FECACA" };
-    default:       return { background: "#F8FAFC", color: "#64748B", borderColor: "#E2E8F0" };
-  }
-}
-
 // ── Send Follow-up Modal ──────────────────────────────────────────────────────
 
 interface FollowUpModalProps {
-  project: Project;
-  accountManager: string;
+  project: ScopedProjectListItem;
+  accountManagerName: string;
   onClose: () => void;
   onSent: (entry: CommunicationEntry) => void;
 }
 
-function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowUpModalProps) {
+function SendFollowUpModal({ project, accountManagerName, onClose, onSent }: FollowUpModalProps) {
   const [note, setNote] = useState("");
   const [sent, setSent] = useState(false);
-
-  // clientId lookup not available without real client data in this component
-  const masterClient: { monthlyValue?: number; activeServices?: string[] } = {};
 
   const handleSend = () => {
     const entry = createFollowUpEntry(
       project.id,
-      project.client,
-      project.clientId,
-      accountManager,
+      project.name,
+      project.clientId || undefined,
+      accountManagerName,
       note
     );
     COMMUNICATIONS.push(entry);
@@ -189,21 +136,13 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
             <h2 className="text-lg font-bold text-slate-900">Follow-up Logged</h2>
             <p className="text-sm text-slate-500">
               Communication entry created for{" "}
-              <span className="font-semibold">{project.client}</span> and linked to this project.
-              You can view all comms in the{" "}
-              <Link
-                href="/account-management/communications"
-                className="text-blue-600 underline"
-              >
-                Communications module
+              <span className="font-semibold">{project.name}</span>.{" "}
+              <Link href="/account-management/communications" className="text-blue-600 underline">
+                View in Communications
               </Link>
-              .
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700"
-          >
+          <button onClick={onClose} className="w-full rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
             Done
           </button>
         </div>
@@ -218,41 +157,14 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
           <div>
             <h2 className="text-base font-bold text-slate-900">Send Follow-up</h2>
             <p className="text-sm text-slate-500 mt-0.5">
-              Client: <span className="font-semibold text-slate-700">{project.client}</span>
-              {" · "}Project:{" "}
-              <span className="font-semibold text-slate-700 text-xs">{project.name}</span>
+              Project: <span className="font-semibold text-slate-700 text-xs">{project.name}</span>
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 text-xl font-bold leading-none"
-          >
-            ×
-          </button>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl font-bold leading-none">×</button>
         </div>
 
-        {/* Contract context */}
-        {masterClient && (
-          <div className="rounded-lg border border-slate-100 bg-slate-50 px-4 py-3 text-xs space-y-1">
-            <p className="text-slate-500">
-              <span className="font-semibold text-slate-700">Services:</span>{" "}
-              {(masterClient.activeServices ?? []).join(", ") || "—"}
-            </p>
-            <p className="text-slate-500">
-              <span className="font-semibold text-slate-700">MRR:</span>{" "}
-              ${(masterClient.monthlyValue ?? 0).toLocaleString()}/mo
-            </p>
-            <p className="text-slate-500">
-              <span className="font-semibold text-slate-700">Billing owner:</span>{" "}
-{"Billing Team"}
-            </p>
-          </div>
-        )}
-
         <div className="space-y-2">
-          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">
-            Follow-up Note
-          </label>
+          <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide">Follow-up Note</label>
           <textarea
             className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
             placeholder="Describe the follow-up action, any blockers, next steps, or communication summary..."
@@ -263,16 +175,10 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
         </div>
 
         <div className="flex gap-3">
-          <button
-            onClick={handleSend}
-            className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700"
-          >
+          <button onClick={handleSend} className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">
             Log Follow-up →
           </button>
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          >
+          <button onClick={onClose} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
             Cancel
           </button>
         </div>
@@ -281,460 +187,204 @@ function SendFollowUpModal({ project, accountManager, onClose, onSent }: FollowU
   );
 }
 
-// ── 2-Step Activation Wizard ────────────────────────────────────────────────────────────────────
-
-type WizardStep = 1 | 2 | "done";
-interface WizardState {
-  client:             BusinessClient;
-  step:               WizardStep;
-  selectedServices:   string[];
-  manualBlueprintIds: string[];  // Part 3A: IDs added manually beyond auto-matched set
-  createdProject:     Project | null;
-}
+// ── Activation Wizard — creation retired, UI retained ────────────────────────
 
 function ActivationWizard({
   client,
-  onComplete,
   onCancel,
 }: {
-  client:     BusinessClient;
-  onComplete: (project: Project) => void;
-  onCancel:   () => void;
+  client: BusinessClient;
+  onCancel: () => void;
 }) {
-  const initialServices = client.activeServices.length > 0 ? client.activeServices : [];
-  const [state, setState] = useState<WizardState>({
-    client,
-    step:               1,
-    selectedServices:   initialServices,
-    manualBlueprintIds: [],
-    createdProject:     null,
-  });
+  return (
+    <div className="space-y-6">
+      <button onClick={onCancel} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+        ← Back to Projects
+      </button>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Activation Wizard</p>
+        <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Project Activation</h1>
+        <p className="text-sm text-slate-500 mt-1">
+          Client: <strong className="text-slate-700">{client.clientName}</strong>
+        </p>
+      </div>
 
-  // Dropdown state for "Add Another Blueprint"
-  const [addBpSelectValue, setAddBpSelectValue] = useState("");
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 space-y-1">
+        <p className="text-sm font-bold text-amber-800">Project creation via this wizard is no longer available.</p>
+        <p className="text-xs text-amber-700">
+          Projects are created automatically when Billing clears a client (via Billing Activation → Postgres).
+          If this client&apos;s project was not created, check the Billing Activation page or contact your administrator.
+        </p>
+      </div>
 
-  // Auto-matched blueprint IDs from services
-  const autoMatchedBpIds = useMemo(
-    () => blueprintIdsForServices(state.selectedServices, SERVICE_TO_BLUEPRINT),
-    [state.selectedServices]
-  );
-
-  // All blueprint IDs (auto-matched union manually added)
-  const allBlueprintIds = useMemo(
-    () => Array.from(new Set([...autoMatchedBpIds, ...state.manualBlueprintIds])),
-    [autoMatchedBpIds, state.manualBlueprintIds]
-  );
-
-  // Blueprints available to add manually (not already included)
-  const availableToAdd = useMemo(
-    () => BLUEPRINTS.filter((bp) => !allBlueprintIds.includes(bp.id)),
-    [allBlueprintIds]
-  );
-
-  const previewTasks = useMemo(
-    () =>
-      allBlueprintIds
-        .map((id) => BLUEPRINTS.find((b) => b.id === id))
-        .filter(Boolean)
-        .map((bp) => ({
-          bpId:     bp!.id,
-          bpName:   bp!.name,
-          tasks:    bp!.tasks,
-          isManual: !autoMatchedBpIds.includes(bp!.id),
-        })),
-    [allBlueprintIds, autoMatchedBpIds]
-  );
-
-  const affectedDepts = useMemo(() => {
-    const depts = new Set<DepartmentName>();
-    for (const grp of previewTasks) {
-      for (const t of grp.tasks) depts.add(t.department as DepartmentName);
-    }
-    return Array.from(depts);
-  }, [previewTasks]);
-
-  const toggleService = (svc: string) => {
-    setState((prev) => ({
-      ...prev,
-      selectedServices: prev.selectedServices.includes(svc)
-        ? prev.selectedServices.filter((s) => s !== svc)
-        : [...prev.selectedServices, svc],
-    }));
-  };
-
-  const addManualBlueprint = () => {
-    if (!addBpSelectValue) return;
-    setState((prev) => ({
-      ...prev,
-      manualBlueprintIds: [...prev.manualBlueprintIds, addBpSelectValue],
-    }));
-    setAddBpSelectValue("");
-  };
-
-  const removeManualBlueprint = (bpId: string) => {
-    setState((prev) => ({
-      ...prev,
-      manualBlueprintIds: prev.manualBlueprintIds.filter((id) => id !== bpId),
-    }));
-  };
-
-  const totalPreviewTasks = previewTasks.reduce((s, g) => s + g.tasks.length, 0);
-
-  const handleStep1Confirm = () => {
-    if (totalPreviewTasks === 0) return;
-    setState((prev) => ({ ...prev, step: 2 }));
-  };
-
-  // Engine-store project creation is retired. Projects are now created only
-  // through Billing clearance (→ launchProject → Postgres).
-  // This handler is intentionally disabled; the Step 2 confirm button is removed.
-  const handleStep2Confirm = async () => {
-    // no-op: creation path retired
-  };
-
-  if (state.step === 1) {
-    return (
-      <div className="space-y-6">
-        <button onClick={onCancel} className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-          ← Back to Projects
-        </button>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
-            Activation Wizard · Step 1 of 2
-          </p>
-          <h1 className="text-2xl font-bold text-slate-900 mt-0.5">
-            Load Task List from Templates
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Confirm the services for{" "}
-            <strong className="text-slate-700">{client.clientName}</strong>. Task Blueprints will
-            be matched to generate a real engine project and task list.
-          </p>
-        </div>
-
-        {/* Contracted Services */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
+      {client.activeServices.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-2">
           <h2 className="text-sm font-bold text-slate-800">Contracted Services</h2>
-          {initialServices.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {initialServices.map((svc) => (
-                <button
-                  key={svc}
-                  onClick={() => toggleService(svc)}
-                  className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors ${
-                    state.selectedServices.includes(svc)
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
-                  }`}
-                >
-                  {svc}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
-              <p className="text-sm font-semibold text-amber-800">
-                No services confirmed in billing yet.
-              </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                A generic Client Onboarding Blueprint will be applied.
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Blueprint preview (auto-matched + manually added) */}
-        {previewTasks.length > 0 && (
-          <div className="rounded-xl border border-blue-100 bg-blue-50 p-5 space-y-4">
-            <h2 className="text-sm font-bold text-blue-900">
-              Blueprints → {totalPreviewTasks} tasks will be generated
-            </h2>
-            {previewTasks.map(({ bpId, bpName, tasks, isManual }) => (
-              <div key={bpId} className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">{bpName}</p>
-                  {isManual && (
-                    <>
-                      <span className="inline-block rounded-full bg-violet-100 border border-violet-300 px-2 py-0.5 text-[10px] font-bold text-violet-700">
-                        Added manually
-                      </span>
-                      <button
-                        onClick={() => removeManualBlueprint(bpId)}
-                        className="text-[11px] text-red-500 hover:text-red-700 font-semibold ml-1"
-                      >
-                        × Remove
-                      </button>
-                    </>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {tasks.map((t) => (
-                    <span
-                      key={t.id}
-                      className="inline-block rounded bg-white border border-blue-200 px-2 py-0.5 text-[11px] font-medium text-blue-800"
-                    >
-                      {t.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Part 3A: Add Another Blueprint */}
-        <div className="rounded-xl border border-violet-200 bg-violet-50 p-5 space-y-3">
-          <h2 className="text-sm font-bold text-violet-900">Add Another Blueprint</h2>
-          <p className="text-xs text-violet-700">
-            Manually include an additional Task Blueprint beyond the auto-matched set (e.g. for
-            upsells or custom service inclusions).
-          </p>
-          {availableToAdd.length === 0 ? (
-            <p className="text-xs font-semibold text-violet-500 italic">
-              All available blueprints are already included.
-            </p>
-          ) : (
-            <div className="flex items-center gap-2">
-              <select
-                value={addBpSelectValue}
-                onChange={(e) => setAddBpSelectValue(e.target.value)}
-                className="flex-1 rounded-lg border border-violet-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-200"
-              >
-                <option value="">Select a blueprint to add…</option>
-                {availableToAdd.map((bp) => (
-                  <option key={bp.id} value={bp.id}>
-                    {bp.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={addManualBlueprint}
-                disabled={!addBpSelectValue}
-                className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-bold text-white hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-              >
-                + Add Blueprint
-              </button>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={handleStep1Confirm}
-            disabled={totalPreviewTasks === 0}
-            className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Confirm Task List →
-          </button>
-          <button
-            onClick={onCancel}
-            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (state.step === 2) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
-            Activation Wizard · Step 2 of 2
-          </p>
-          <h1 className="text-2xl font-bold text-slate-900 mt-0.5">Activate Departments</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Mark the following departments active for{" "}
-            <strong className="text-slate-700">{client.clientName}</strong>.
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-5 space-y-4">
-          <h2 className="text-sm font-bold text-slate-800">
-            Departments implicated by this project
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {affectedDepts.map((dept) => (
-              <div
-                key={dept}
-                className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 flex items-center gap-2"
-              >
-                <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
-                <span className="text-sm font-semibold text-emerald-800">
-                  {DEPT_LABELS[dept] ?? dept}
-                </span>
-              </div>
+          <div className="flex flex-wrap gap-2">
+            {client.activeServices.map((svc) => (
+              <span key={svc} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-semibold text-slate-700">
+                {svc}
+              </span>
             ))}
           </div>
         </div>
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 space-y-1">
-          <p className="text-sm font-bold text-amber-800">
-            Project creation via this wizard is no longer available.
-          </p>
-          <p className="text-xs text-amber-700">
-            Projects are created automatically when Billing clears a client (via Billing Activation → Postgres).
-            If this client’s project was not created, check the Billing Activation page or contact your administrator.
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={onCancel}
-            className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50"
-          >
-            ← Back
-          </button>
-        </div>
-      </div>
-    );
-  }
+      )}
 
-  return null;
+      <div className="flex gap-3">
+        <button onClick={onCancel} className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+          ← Back
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Onboarding record per project ────────────────────────────────────────────
+
+/** Fetch onboarding record id for a project via clientId → onboarding-records API */
+async function fetchOnboardingRecordIdForProject(
+  clientId: string,
+  projectId: string
+): Promise<string | null> {
+  if (!clientId) return null;
+  try {
+    const res = await fetch(`/api/onboarding-records?clientId=${encodeURIComponent(clientId)}`, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json() as { record?: { id: string; projectId: string | null } };
+    const rec = data.record;
+    if (rec && rec.projectId === projectId) return rec.id;
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 function ProjectsPageInner() {
   const searchParams = useSearchParams();
-  const [wizardClient,   setWizardClient]   = useState<BusinessClient | null>(null);
-  const [followUpProject, setFollowUpProject] = useState<Project | null>(null);
-  const [search,          setSearch]          = useState(
-    () => searchParams.get("search") ?? ""
-  );
-
-  // clientId to auto-launch the activation wizard for (passed from Onboarding Queue)
+  const [wizardClient,    setWizardClient]    = useState<BusinessClient | null>(null);
+  const [followUpProject, setFollowUpProject] = useState<ScopedProjectListItem | null>(null);
+  const [search,          setSearch]          = useState(() => searchParams.get("search") ?? "");
   const activateClientId = searchParams.get("activateClientId") ?? null;
-  // Track whether the auto-launch has already fired so it doesn't re-trigger on
-  // subsequent liveClients/liveProjects refreshes.
   const [autoLaunchFired, setAutoLaunchFired] = useState(false);
 
-  // Live data - shallow-copy seed arrays so wizard push() mutations don't
-  // silently contaminate state and cause duplicate keys on the next refresh.
-  const [liveProjects, setLiveProjects] = useState<Project[]>(() => [...ENGINE_STORE.projects]);
-  const [liveTasks,    setLiveTasks]    = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
+  const [liveProjects, setLiveProjects] = useState<ScopedProjectListItem[]>([]);
+  const [liveTasks,    setLiveTasks]    = useState<TaskListItem[]>([]);
   const [liveClients,  setLiveClients]  = useState<BusinessClient[]>([]);
+  // Map projectId → onboarding record id (null = no record, undefined = not loaded)
+  const [onboardingMap, setOnboardingMap] = useState<Map<string, string | null>>(new Map());
 
   const refreshData = useCallback(async () => {
     try {
-      const [projectsRes, tasksRes] = await Promise.all([
-        fetch("/api/engine?resource=projects"),
-        fetch("/api/engine?resource=tasks"),
+      const [projRes, taskRes] = await Promise.all([
+        fetch("/api/projects/scoped"),
+        fetch("/api/tasks"),
       ]);
-      if (projectsRes.ok) {
-        const d = await projectsRes.json() as { projects: Project[] };
-        setLiveProjects(d.projects);
+      if (projRes.ok) {
+        const d = await projRes.json() as { records: ScopedProjectListItem[] };
+        setLiveProjects(d.records ?? []);
       }
-      if (tasksRes.ok) {
-        const d = await tasksRes.json() as { tasks: Task[] };
-        setLiveTasks(d.tasks);
+      if (taskRes.ok) {
+        const d = await taskRes.json() as { tasks: TaskListItem[] };
+        setLiveTasks(d.tasks ?? []);
       }
-      // Load real businesses separately
       const bizData = await fetchAMClients().catch(() => []);
       setLiveClients(bizData);
     } catch {
-      // Keep engine data as-is; businesses will be empty array
+      // keep state on error
     }
   }, []);
 
   useEffect(() => { void refreshData(); }, [refreshData]);
 
-  /**
-   * Always fetch fresh businesses before opening the wizard to get the latest state.
-   */
+  // After projects load, pre-fetch onboarding record ids for all of them
+  useEffect(() => {
+    if (liveProjects.length === 0) return;
+    const newMap = new Map<string, string | null>();
+    Promise.all(
+      liveProjects.map(async (p) => {
+        if (!p.clientId) { newMap.set(p.id, null); return; }
+        const rid = await fetchOnboardingRecordIdForProject(p.clientId, p.id);
+        newMap.set(p.id, rid);
+      })
+    ).then(() => setOnboardingMap(new Map(newMap)));
+  }, [liveProjects]);
+
   const openWizardForClient = useCallback(async (clientId: string) => {
     try {
       const res = await fetch(`/api/businesses?id=${encodeURIComponent(clientId)}`);
       if (res.ok) {
-        const d = await res.json() as { record?: { id: string; domain: string; displayName: string; assignedAM: string; activeServices: string[]; monthlyValueCents: number; activationStatus: string; onboardingStatus: string; cleared: boolean; kickoffCompleted: boolean; kickoffDate: string | null; assignedAt: string | null; clientId: string; invoiceStatus: string; paymentStatus: string; renewalDate: string | null; renewalStatus: string; } };
+        const d = await res.json() as { record?: {
+          id: string; domain: string; displayName: string; assignedAM: string;
+          activeServices: string[]; monthlyValueCents: number; activationStatus: string;
+          onboardingStatus: string; cleared: boolean; kickoffCompleted: boolean;
+          kickoffDate: string | null; assignedAt: string | null; clientId: string;
+          invoiceStatus: string; paymentStatus: string; renewalDate: string | null;
+          renewalStatus: string; cancellationStatus: string; billingStatus: string;
+        }};
         if (d.record) {
-          // Map to BusinessClient shape
           const r = d.record;
           const bc: BusinessClient = {
-            id: r.id, clientId: r.clientId, displayName: r.displayName || r.domain, clientName: r.displayName || r.domain,
-            domain: r.domain, email: "", phone: "", invoiceStatus: r.invoiceStatus, paymentStatus: r.paymentStatus,
-            cancellationStatus: (r as Record<string, unknown>).cancellationStatus as string ?? "None",
-            billingStatus: (r as Record<string, unknown>).billingStatus as string ?? "Pending",
-            monthlyValue: Math.round(r.monthlyValueCents / 100), activeServices: r.activeServices, renewalDate: r.renewalDate,
-            renewalStatus: r.renewalStatus, assignedAM: r.assignedAM, activationStatus: r.activationStatus,
-            onboardingStatus: r.onboardingStatus, cleared: r.cleared, kickoffCompleted: r.kickoffCompleted,
+            id: r.id, clientId: r.clientId, displayName: r.displayName || r.domain,
+            clientName: r.displayName || r.domain, domain: r.domain, email: "", phone: "",
+            invoiceStatus: r.invoiceStatus, paymentStatus: r.paymentStatus,
+            cancellationStatus: r.cancellationStatus ?? "None",
+            billingStatus: r.billingStatus ?? "Pending",
+            monthlyValue: Math.round(r.monthlyValueCents / 100),
+            activeServices: r.activeServices, renewalDate: r.renewalDate,
+            renewalStatus: r.renewalStatus, assignedAM: r.assignedAM,
+            activationStatus: r.activationStatus, onboardingStatus: r.onboardingStatus,
+            cleared: r.cleared, kickoffCompleted: r.kickoffCompleted,
             kickoffDate: r.kickoffDate, assignedAt: r.assignedAt,
           };
           setWizardClient(bc);
           return;
         }
       }
-    } catch {
-      // Fall through to liveClients on fetch failure
-    }
-    // Fallback: use liveClients (already API-hydrated after refreshData)
+    } catch { /* fall through */ }
     const fallback = liveClients.find((c) => c.id === clientId) ?? null;
     setWizardClient(fallback);
   }, [liveClients]);
 
-  // Auto-launch the activation wizard when arriving from the Onboarding Queue
-  // with ?activateClientId=<id>. Runs once after live data is available.
+  // Auto-launch wizard for activateClientId from query param
   useEffect(() => {
     if (!activateClientId || autoLaunchFired || wizardClient) return;
-    // Only open the wizard if the client is still cleared and has no project yet
     const client = liveClients.find((c) => c.id === activateClientId);
     if (!client) return;
     const alreadyHasProject = liveProjects.some((p) => p.clientId === activateClientId);
-    if (alreadyHasProject) return; // already activated — don't re-open wizard
+    if (alreadyHasProject) return;
     setAutoLaunchFired(true);
     void openWizardForClient(activateClientId);
   }, [activateClientId, autoLaunchFired, wizardClient, liveClients, liveProjects, openWizardForClient]);
 
-  // All AM-created projects (have a clientId)
-  const amProjects = useMemo(
-    () => liveProjects.filter((p) => !!p.clientId),
-    [liveProjects]
-  );
+  // All projects are real Postgres projects
+  const amProjects = liveProjects;
 
   // Cleared clients without a project yet
   const clearedWithoutProject = useMemo(
-    () =>
-      liveClients.filter(
-        (c) =>
-          c.cleared &&
-          c.activationStatus !== "Active" &&
-          !amProjects.some((p) => p.clientId === c.id)
-      ),
+    () => liveClients.filter(
+      (c) => c.cleared && c.activationStatus !== "active" &&
+        !amProjects.some((p) => p.clientId === c.clientId)
+    ),
     [amProjects, liveClients]
   );
 
   // KPIs
   const total      = amProjects.length;
-  const inProgress = amProjects.filter(
-    (p) => p.status === "In Progress" || p.status === "Launched"
-  ).length;
-  const offTrackProjects = amProjects.filter((p) => {
-    const offTrack = getOffTrackTasks(p.id, liveTasks);
-    return offTrack.length > 0;
-  });
-  const offTrackCount = offTrackProjects.length;
+  const inProgress = amProjects.filter((p) => p.status === "active").length;
+  const offTrackProjects = amProjects.filter((p) => getOffTrackTasks(p.id, liveTasks).length > 0);
+  const offTrackCount    = offTrackProjects.length;
 
   const filtered = amProjects.filter((p) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return (
-      p.client.toLowerCase().includes(q) ||
-      p.name.toLowerCase().includes(q) ||
-      p.accountManager.toLowerCase().includes(q)
-    );
+    return p.name.toLowerCase().includes(q) || p.domain.toLowerCase().includes(q) ||
+      (p.assignedAMName ?? "").toLowerCase().includes(q);
   });
 
-  // Wizard completion - re-fetch live data after activation
-  const handleWizardComplete = useCallback(
-    (project: Project) => {
-      setWizardClient(null);
-      void refreshData();
-      void project; // suppress unused-var lint
-    },
-    [refreshData]
-  );
-
-  // Follow-up sent
-  const handleFollowUpSent = useCallback(() => {
+  const handleWizardComplete = useCallback(() => {
+    setWizardClient(null);
     void refreshData();
   }, [refreshData]);
 
@@ -742,7 +392,6 @@ function ProjectsPageInner() {
     return (
       <ActivationWizard
         client={wizardClient}
-        onComplete={handleWizardComplete}
         onCancel={() => setWizardClient(null)}
       />
     );
@@ -754,10 +403,10 @@ function ProjectsPageInner() {
       {followUpProject && (
         <SendFollowUpModal
           project={followUpProject}
-          accountManager={followUpProject.accountManager || "Account Manager"}
+          accountManagerName={followUpProject.assignedAMName ?? "Account Manager"}
           onClose={() => setFollowUpProject(null)}
-          onSent={(entry) => {
-            handleFollowUpSent();
+          onSent={() => {
+            void refreshData();
             setFollowUpProject(null);
           }}
         />
@@ -766,35 +415,24 @@ function ProjectsPageInner() {
       {/* Page header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-blue-600">
-            Account Management
-          </p>
-          <h1 className="text-2xl font-bold text-slate-900">Projects - Health & Action Summary</h1>
+          <p className="text-xs font-bold uppercase tracking-widest text-blue-600">Account Management</p>
+          <h1 className="text-2xl font-bold text-slate-900">Projects - Health &amp; Action Summary</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Project health, off-track tasks, department follow-ups, and communication context.
+            Project health, off-track tasks, and communication context.
             Task creation and editing lives in the{" "}
-            <Link href="/projects" className="text-blue-600 underline">
-              Global Project Management
-            </Link>{" "}
-            view.
+            <Link href="/projects" className="text-blue-600 underline">Global Project Management</Link> view.
           </p>
         </div>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <KpiCard title="Total Projects"        value={String(total)} />
-        <KpiCard title="In Progress"           value={String(inProgress)} />
-        <KpiCard
-          title="Projects with Off-Track Tasks"
-          value={String(offTrackCount)}
-          risk={offTrackCount > 0 ? "at-risk" : "healthy"}
-        />
-        <KpiCard
-          title="Awaiting Activation"
-          value={String(clearedWithoutProject.length)}
-          risk={clearedWithoutProject.length > 0 ? "at-risk" : "healthy"}
-        />
+        <KpiCard title="Total Projects"              value={String(total)} />
+        <KpiCard title="Active"                      value={String(inProgress)} />
+        <KpiCard title="Projects with Overdue Tasks" value={String(offTrackCount)}
+          risk={offTrackCount > 0 ? "at-risk" : "healthy"} />
+        <KpiCard title="Awaiting Activation"         value={String(clearedWithoutProject.length)}
+          risk={clearedWithoutProject.length > 0 ? "at-risk" : "healthy"} />
       </div>
 
       {/* Cleared clients awaiting activation */}
@@ -804,36 +442,25 @@ function ProjectsPageInner() {
             Cleared Clients Awaiting Project Activation ({clearedWithoutProject.length})
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-            {clearedWithoutProject.map((client) => {
-              const mc = liveClients.find((m) => m.id === client.id);
-              return (
-                <div
-                  key={client.id}
-                  className="rounded-lg border border-amber-200 bg-white px-4 py-3 flex items-center justify-between gap-3"
-                >
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">{client.clientName}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      AM: {client.assignedAM} ·{" "}
-                      {mc && mc.activeServices.length > 0
-                        ? mc.activeServices.join(", ")
-                        : "Services TBD"}
-                    </p>
-                    {mc && mc.monthlyValue > 0 && (
-                      <p className="text-xs text-slate-400">
-                        ${mc.monthlyValue.toLocaleString()}/mo
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => void openWizardForClient(client.id)}
-                    className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
-                  >
-                    Activate Project
-                  </button>
+            {clearedWithoutProject.map((client) => (
+              <div key={client.id} className="rounded-lg border border-amber-200 bg-white px-4 py-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold text-slate-800">{client.clientName}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    AM: {client.assignedAM} · {client.activeServices.length > 0 ? client.activeServices.join(", ") : "Services TBD"}
+                  </p>
+                  {client.monthlyValue > 0 && (
+                    <p className="text-xs text-slate-400">${client.monthlyValue.toLocaleString()}/mo</p>
+                  )}
                 </div>
-              );
-            })}
+                <button
+                  onClick={() => void openWizardForClient(client.id)}
+                  className="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700"
+                >
+                  Activate Project
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -842,11 +469,9 @@ function ProjectsPageInner() {
       {total === 0 ? (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-16 text-center">
           <div className="text-slate-300 text-5xl mb-4">📋</div>
-          <h2 className="text-lg font-bold text-slate-700 mb-1">No projects activated yet</h2>
+          <h2 className="text-lg font-bold text-slate-700 mb-1">No projects yet</h2>
           <p className="text-sm text-slate-400 max-w-md mx-auto">
-            Use{" "}
-            <strong className="text-slate-600">"Activate Project"</strong> on a cleared client
-            above to generate a real engine project and task list.
+            Projects are created automatically when Billing confirms payment and clears a client through the proposal.
           </p>
         </div>
       ) : (
@@ -855,7 +480,7 @@ function ProjectsPageInner() {
           <div className="flex flex-wrap items-center gap-3">
             <input
               type="text"
-              placeholder="Search projects or clients..."
+              placeholder="Search projects or domains..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 min-w-[200px] max-w-xs rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -867,151 +492,90 @@ function ProjectsPageInner() {
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="px-5 py-3 border-b border-slate-100 bg-slate-50">
               <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-                Project Health & Action Summary
+                Project Health &amp; Action Summary
               </p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50">
-                    {[
-                      "Project / Client",
-                      "Health",
-                      "Contract & Services",
-                      "Tasks Off-Track",
-                      "Depts. Needing Follow-up",
-                      "Last Communication",
-                      "Actions",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap"
-                      >
-                        {h}
-                      </th>
+                    {["Project / Domain","Account Manager","Status","Open Tasks","Overdue Tasks","Depts. Overdue","Last Communication","Actions"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {filtered.map((project) => {
-                    // Off-track tasks - computed from live engine data
                     const offTrackTasks = getOffTrackTasks(project.id, liveTasks);
                     const deptsNeedingFollowUp = getDepartmentsNeedingFollowUp(offTrackTasks);
-
-                    // Task progress
-                    const allTasks = liveTasks.filter(
-                      (t) => t.projectId === project.id
-                    );
-                    const doneTasks = allTasks.filter(
-                      (t) => t.status === "Completed"
-                    ).length;
-
-                    // Contract/service data from live clients
-                    const masterClient = liveClients.find(
-                      (c) => c.id === project.clientId
-                    );
-
-                    // Communication history for this project
+                    const masterClient = liveClients.find((c) => c.clientId === project.clientId);
                     const projectComms = getCommunicationsByProject(project.id);
                     const clientComms = project.clientId
                       ? getCommunicationsByClient(project.clientId)
-                      : getCommunicationsByClient(project.client);
+                      : [];
                     const allComms = [
                       ...projectComms,
-                      ...clientComms.filter(
-                        (c) => !projectComms.some((pc) => pc.id === c.id)
-                      ),
+                      ...clientComms.filter((c) => !projectComms.some((pc) => pc.id === c.id)),
                     ].sort((a, b) => b.date.localeCompare(a.date));
                     const latestComm = allComms[0];
-
-                    // Onboarding record link - use engine task's linkedOnboardingId
-                    const onbTask = liveTasks.find(
-                      (t) => t.projectId === project.id && !!t.linkedOnboardingId
-                    );
-                    const onboardingRecordId = onbTask?.linkedOnboardingId ?? null;
+                    const onboardingRecordId = onboardingMap.get(project.id) ?? null;
 
                     return (
-                      <tr
-                        key={project.id}
-                        className="hover:bg-slate-50 transition-colors align-top"
-                      >
-                        {/* Project / Client */}
+                      <tr key={project.id} className="hover:bg-slate-50 transition-colors align-top">
+                        {/* Project / Domain */}
                         <td className="px-4 py-4 min-w-[180px]">
-                          <p className="font-semibold text-slate-900 leading-snug">
-                            {project.name}
-                          </p>
-                          <p className="text-xs text-slate-400 mt-0.5">{project.client}</p>
-                          <p className="text-xs text-slate-400">
-                            AM: {project.accountManager || "-"}
-                          </p>
+                          <p className="font-semibold text-slate-900 leading-snug">{project.name}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{project.domain}</p>
                           <p className="text-xs text-slate-400 mt-0.5">
-                            {doneTasks}/{allTasks.length} tasks done
+                            {project.openTaskCount} open · {project.doneTaskCount} done
                           </p>
-                        </td>
-
-                        {/* Health */}
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span
-                            className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
-                            style={healthStyle(project.health)}
-                          >
-                            {project.health}
-                          </span>
-                          <p className="text-[11px] text-slate-400 mt-1">
-                            {project.status}
-                          </p>
-                        </td>
-
-                        {/* Contract & Services */}
-                        <td className="px-4 py-4 min-w-[160px]">
-                          {masterClient ? (
-                            <div className="space-y-1">
-                              <div className="flex flex-wrap gap-1">
-                                {masterClient.activeServices.map((s) => (
-                                  <span
-                                    key={s}
-                                    className="inline-block rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700"
-                                  >
-                                    {s}
-                                  </span>
-                                ))}
-                              </div>
-                              <p className="text-xs text-slate-500">
-                                ${(masterClient.monthlyValue ?? 0).toLocaleString()}/mo
-                              </p>
-                              <p className="text-[11px] text-slate-400">
-                                Billing: Billing Team
-                              </p>
+                          {masterClient && masterClient.activeServices.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {masterClient.activeServices.slice(0, 3).map((s) => (
+                                <span key={s} className="inline-block rounded-full bg-blue-50 border border-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">{s}</span>
+                              ))}
                             </div>
-                          ) : (
-                            <p className="text-xs text-slate-400 italic">
-                              {project.contractSummary || "-"}
-                            </p>
                           )}
                         </td>
 
-                        {/* Tasks Off-Track */}
+                        {/* Account Manager */}
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700">
+                          {project.assignedAMName ?? <span className="text-slate-400 italic text-xs">Unassigned</span>}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-4 py-4 whitespace-nowrap">
+                          <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold"
+                            style={{
+                              background: project.status === "active" ? "#ECFDF5" : project.status === "complete" ? "#F1F5F9" : "#F8FAFC",
+                              color: project.status === "active" ? "#059669" : "#64748B",
+                              borderColor: project.status === "active" ? "#A7F3D0" : "#E2E8F0",
+                            }}>
+                            {project.status}
+                          </span>
+                        </td>
+
+                        {/* Open Tasks */}
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-slate-700 font-semibold">
+                          {project.openTaskCount}
+                        </td>
+
+                        {/* Overdue Tasks */}
                         <td className="px-4 py-4 whitespace-nowrap">
                           {offTrackTasks.length === 0 ? (
                             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-                              ✓ On track
+                              On track
                             </span>
                           ) : (
                             <div className="space-y-1">
                               <span className="inline-flex items-center gap-1 rounded-full bg-red-50 border border-red-200 px-2.5 py-0.5 text-[11px] font-semibold text-red-700">
-                                {offTrackTasks.length} off-track
+                                {offTrackTasks.length} overdue
                               </span>
                               <div className="text-[10px] text-slate-500 space-y-0.5">
                                 {offTrackTasks.slice(0, 3).map((t) => (
-                                  <p key={t.id} className="truncate max-w-[140px]">
-                                    {t.status === "Blocked" ? "🔴" : "🟡"} {t.title}
-                                  </p>
+                                  <p key={t.id} className="truncate max-w-[140px]">🟡 {t.label}</p>
                                 ))}
-                                {offTrackTasks.length > 3 && (
-                                  <p className="text-slate-400">
-                                    +{offTrackTasks.length - 3} more
-                                  </p>
-                                )}
+                                {offTrackTasks.length > 3 && <p className="text-slate-400">+{offTrackTasks.length - 3} more</p>}
                               </div>
                             </div>
                           )}
@@ -1020,14 +584,11 @@ function ProjectsPageInner() {
                         {/* Depts Needing Follow-up */}
                         <td className="px-4 py-4">
                           {deptsNeedingFollowUp.length === 0 ? (
-                            <span className="text-xs text-slate-400">-</span>
+                            <span className="text-xs text-slate-400">—</span>
                           ) : (
                             <div className="flex flex-wrap gap-1">
                               {deptsNeedingFollowUp.map((dept) => (
-                                <span
-                                  key={dept}
-                                  className="inline-flex rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800"
-                                >
+                                <span key={dept} className="inline-flex rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
                                   {dept}
                                 </span>
                               ))}
@@ -1039,19 +600,10 @@ function ProjectsPageInner() {
                         <td className="px-4 py-4 min-w-[160px]">
                           {latestComm ? (
                             <div className="space-y-1">
-                              <p className="text-xs font-semibold text-slate-700">
-                                {fmt(latestComm.date)}
-                              </p>
-                              <p className="text-[11px] text-slate-500">
-                                {latestComm.type}
-                              </p>
-                              <p className="text-[11px] text-slate-400 max-w-[140px] truncate">
-                                {latestComm.subject}
-                              </p>
-                              <Link
-                                href="/account-management/communications"
-                                className="inline-flex text-[11px] text-blue-600 hover:underline"
-                              >
+                              <p className="text-xs font-semibold text-slate-700">{fmt(latestComm.date)}</p>
+                              <p className="text-[11px] text-slate-500">{latestComm.type}</p>
+                              <p className="text-[11px] text-slate-400 max-w-[140px] truncate">{latestComm.subject}</p>
+                              <Link href="/account-management/communications" className="inline-flex text-[11px] text-blue-600 hover:underline">
                                 View all comms →
                               </Link>
                             </div>
@@ -1063,28 +615,19 @@ function ProjectsPageInner() {
                         {/* Actions */}
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1.5 min-w-[130px]">
-                            {/* Manage Tasks → global PM detail view */}
-                            <Link
-                              href={`/projects/${project.id}`}
-                              className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 whitespace-nowrap"
-                            >
+                            <Link href={`/projects/${project.id}`}
+                              className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 whitespace-nowrap">
                               Manage Tasks →
                             </Link>
-
-                            {/* Send Follow-up → creates communication entry */}
                             <button
                               onClick={() => setFollowUpProject(project)}
                               className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 whitespace-nowrap"
                             >
                               Send Follow-up
                             </button>
-
-                            {/* View Onboarding (if record exists) — read-only record page */}
                             {onboardingRecordId && (
-                              <Link
-                                href={`/account-management/onboarding/${onboardingRecordId}/record`}
-                                className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 whitespace-nowrap"
-                              >
+                              <Link href={`/account-management/onboarding/${onboardingRecordId}/record`}
+                                className="inline-flex items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 whitespace-nowrap">
                                 Onboarding Record
                               </Link>
                             )}
@@ -1095,10 +638,7 @@ function ProjectsPageInner() {
                   })}
                   {filtered.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={7}
-                        className="px-4 py-10 text-center text-sm text-slate-400"
-                      >
+                      <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-400">
                         No projects match the current filter.
                       </td>
                     </tr>
@@ -1108,44 +648,31 @@ function ProjectsPageInner() {
             </div>
           </div>
 
-          {/* Off-track detail callout (if any) */}
+          {/* Off-track detail callout */}
           {offTrackCount > 0 && (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 space-y-3">
-              <h2 className="text-sm font-bold text-amber-900">
-                Projects with Off-Track Tasks - Action Required
-              </h2>
+              <h2 className="text-sm font-bold text-amber-900">Projects with Overdue Tasks — Action Required</h2>
               <div className="space-y-3">
                 {offTrackProjects.map((project) => {
                   const offTrackTasks = getOffTrackTasks(project.id, liveTasks);
                   const depts = getDepartmentsNeedingFollowUp(offTrackTasks);
                   return (
-                    <div
-                      key={project.id}
-                      className="rounded-lg border border-amber-200 bg-white px-4 py-3 flex flex-wrap items-start gap-4 justify-between"
-                    >
+                    <div key={project.id} className="rounded-lg border border-amber-200 bg-white px-4 py-3 flex flex-wrap items-start gap-4 justify-between">
                       <div className="space-y-1">
                         <p className="text-sm font-bold text-slate-800">{project.name}</p>
                         <p className="text-xs text-slate-500">
-                          {offTrackTasks.length} off-track task
-                          {offTrackTasks.length !== 1 ? "s" : ""} ·{" "}
-                          {depts.length > 0
-                            ? `Depts: ${depts.join(", ")}`
-                            : "No dept follow-up needed"}
+                          {offTrackTasks.length} overdue task{offTrackTasks.length !== 1 ? "s" : ""} ·{" "}
+                          {depts.length > 0 ? `Depts: ${depts.join(", ")}` : "No dept follow-up"}
                         </p>
                         <div className="text-[11px] text-slate-500 space-y-0.5">
                           {offTrackTasks.map((t) => (
-                            <p key={t.id}>
-                              {t.status === "Blocked" ? "🔴 Blocked" : "🟡 Overdue"} - {t.title}{" "}
-                              {t.dueDate ? `(due ${fmt(t.dueDate)})` : ""}
-                            </p>
+                            <p key={t.id}>🟡 Overdue - {t.label} {t.dueDate ? `(due ${fmt(t.dueDate)})` : ""}</p>
                           ))}
                         </div>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
-                        <Link
-                          href={`/projects/${project.id}`}
-                          className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 whitespace-nowrap"
-                        >
+                        <Link href={`/projects/${project.id}`}
+                          className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 whitespace-nowrap">
                           Manage Tasks →
                         </Link>
                         <button
@@ -1169,13 +696,7 @@ function ProjectsPageInner() {
 
 export default function ProjectsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center py-24 text-slate-400 text-sm">
-          Loading...
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="flex items-center justify-center py-24 text-slate-400 text-sm">Loading...</div>}>
       <ProjectsPageInner />
     </Suspense>
   );

@@ -8,8 +8,6 @@ import ExecutiveView from "@/components/collaboration/views/ExecutiveView";
 import ProjectDashboardPanel from "@/components/collaboration/ProjectDashboardPanel";
 import AISummaryPanel from "@/components/collaboration/AISummaryPanel";
 import { COLLABORATION_DATA } from "@/lib/collaboration/mock-data";
-import { ENGINE_STORE } from "@/lib/engine/mock-data";
-import type { Task } from "@/lib/engine/types";
 import type { TaskCollaboration, TaskComment, InternalNote, ClientNote, TaskWatcher } from "@/lib/collaboration/types";
 
 //
@@ -25,24 +23,21 @@ type TaskPriorityUI = "Low" | "Medium" | "High" | "Urgent";
 
 interface TaskSummaryItem {
   collab: TaskCollaboration;
-  engineTask: Task | null;
-  /** Derived from engineTask.status when available, else falls back to collab-level default */
+  engineTask: null;
   status: TaskStatusUI;
-  /** Derived from engineTask.priority when available, else falls back to collab-level default */
   priority: TaskPriorityUI;
 }
 
-// ── Fallback seed for first paint (avoids layout shift before API hydrates) ──
-function buildSummaries(tasks: Task[]): TaskSummaryItem[] {
-  return COLLABORATION_DATA.map((collab) => {
-    const engineTask = tasks.find((t) => t.id === collab.engineTaskId) ?? null;
-    return {
-      collab,
-      engineTask,
-      status: (engineTask?.status ?? "Open") as TaskStatusUI,
-      priority: (engineTask?.priority ?? "Medium") as TaskPriorityUI,
-    };
-  });
+// Collaboration tasks have no real engine backing (engine-store is retired).
+// Status and priority default to "Open" and "Medium" unless the collab record
+// carries explicit overrides in a future field.
+function buildSummaries(): TaskSummaryItem[] {
+  return COLLABORATION_DATA.map((collab) => ({
+    collab,
+    engineTask: null,
+    status: "Open" as TaskStatusUI,
+    priority: "Medium" as TaskPriorityUI,
+  }));
 }
 
 const VIEW_LABELS: Record<ViewMode, { label: string; icon?: string }> = {
@@ -103,26 +98,10 @@ export default function CollaborationPage() {
     []
   );
 
-  // Seed with ENGINE_STORE for first paint; hydrate from /api/engine on mount
-  const [engineTasks, setEngineTasks] = useState<Task[]>(() => [...ENGINE_STORE.tasks]);
-  const [loadingTasks, setLoadingTasks] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/engine?resource=tasks")
-      .then((r) => (r.ok ? (r.json() as Promise<{ tasks: Task[] }>) : null))
-      .then((data) => {
-        if (!cancelled && data) setEngineTasks(data.tasks);
-      })
-      .catch(() => { /* keep seed on failure */ })
-      .finally(() => { if (!cancelled) setLoadingTasks(false); });
-    return () => { cancelled = true; };
-  }, []);
-
-  const taskSummaries = buildSummaries(engineTasks);
-
-  // "Blocked" pill: real count of engine tasks with status === "Blocked"
-  const blockedEngineCount = engineTasks.filter((t) => t.status === "Blocked").length;
+  const taskSummaries = buildSummaries();
+  const loadingTasks = false;
+  // Blocked count from collab dependencies (no engine backing)
+  const blockedEngineCount = 0;
 
   // Unread notifications — from collab sidecar (local model only, not persisted)
   const allNotifCount = COLLABORATION_DATA.reduce(
@@ -262,11 +241,7 @@ export default function CollaborationPage() {
                       <h3 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>
                         {collab.taskName}
                       </h3>
-                      {item.engineTask && (
-                        <p className="text-[11px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-                          {item.engineTask.clientName} · {item.engineTask.department} · Due {item.engineTask.dueDate}
-                        </p>
-                      )}
+
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <span

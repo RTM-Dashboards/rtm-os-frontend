@@ -6,7 +6,7 @@
  *
  * DATA SOURCES (Phase 1 — real):
  *   /api/businesses + /api/clients  → real Business records (MRR, payment status, renewal, activation)
- *   /api/engine          → Projects + Tasks per client (task completion, blocked, overdue)
+ *   /api/projects/scoped + /api/tasks → Postgres projects + tasks per client
  *
  * HEALTH SCORE: derived from payment status, activation status, and engine task signals
  *   from lib/mock/master-clients.ts — NO parallel formula.
@@ -166,10 +166,11 @@ function buildVM(
     const rawTasks = tasksByClientId.get(c.id) ?? [];
     let taskSignals: TaskHealthSignals | null = null;
     if (rawTasks.length > 0) {
-      const completed = rawTasks.filter((t) => t.status === "Completed").length;
-      const blocked = rawTasks.filter((t) => t.status === "Waiting").length;
-      const overdue = rawTasks.filter(
-        (t) => t.dueDate && t.dueDate < today && t.status !== "Completed",
+      // Postgres statuses: "open" | "in_progress" | "done" | "skipped"
+      const completed = rawTasks.filter((t) => t.status === "done" || t.status === "Completed").length;
+      const blocked   = rawTasks.filter((t) => t.status === "in_progress").length;
+      const overdue   = rawTasks.filter(
+        (t) => t.dueDate && t.dueDate < today && t.status !== "done" && t.status !== "Completed" && t.status !== "skipped"
       ).length;
       taskSignals = {
         totalTasks: rawTasks.length,
@@ -1121,15 +1122,21 @@ export default function ClientHealthPage() {
     let cancelled = false;
     async function load() {
       try {
-        const [amClients, engRes] = await Promise.all([
+        const [amClients, projRes, taskRes] = await Promise.all([
           fetchAMClients(),
-          fetch("/api/engine"),
+          fetch("/api/projects/scoped"),
+          fetch("/api/tasks"),
         ]);
-        const engData = await engRes.json() as { projects: EngineProject[]; tasks: EngineTask[] };
         if (cancelled) return;
         setClients(amClients);
-        if (Array.isArray(engData.projects)) setEngineProjects(engData.projects);
-        if (Array.isArray(engData.tasks)) setEngineTasks(engData.tasks);
+        if (projRes.ok) {
+          const pd = await projRes.json() as { records: EngineProject[] };
+          if (Array.isArray(pd.records)) setEngineProjects(pd.records);
+        }
+        if (taskRes.ok) {
+          const td = await taskRes.json() as { tasks: EngineTask[] };
+          if (Array.isArray(td.tasks)) setEngineTasks(td.tasks);
+        }
       } catch {
         // No fallback — zero clients shown if fetch fails
       } finally {
@@ -1141,38 +1148,36 @@ export default function ClientHealthPage() {
   }, []);
 
   // ── Build per-client task map ─────────────────────────────────────────────
+  // Build per-business task map keyed by Business.id (= BusinessClient.id).
+  // Postgres ScopedProjectListItem and TaskListItem both carry businessId.
   const tasksByClientId = useMemo<Map<string, EngineTask[]>>(() => {
-    const projectsByClientId = new Map<string, string[]>(); // clientId → [projectId]
+    const bizByProjectId = new Map<string, string>();
     for (const p of engineProjects) {
-      if (p.clientId) {
-        const arr = projectsByClientId.get(p.clientId) ?? [];
-        arr.push(p.id);
-        projectsByClientId.set(p.clientId, arr);
-      }
+      const bizId = (p as unknown as Record<string, unknown>).businessId as string | undefined ?? "";
+      if (bizId) bizByProjectId.set(p.id, bizId);
     }
-    const tasksByClientId = new Map<string, EngineTask[]>();
+    const tasksByBizId = new Map<string, EngineTask[]>();
     for (const t of engineTasks) {
-      // Find which clientId owns this task's project
-      for (const [clientId, projIds] of projectsByClientId.entries()) {
-        if (projIds.includes(t.projectId)) {
-          const arr = tasksByClientId.get(clientId) ?? [];
-          arr.push(t);
-          tasksByClientId.set(clientId, arr);
-          break;
-        }
-      }
+      const bizId = (t as unknown as Record<string, unknown>).businessId as string | undefined
+        ?? bizByProjectId.get(t.projectId) ?? "";
+      if (!bizId) continue;
+      const arr = tasksByBizId.get(bizId) ?? [];
+      arr.push(t);
+      tasksByBizId.set(bizId, arr);
     }
-    return tasksByClientId;
+    return tasksByBizId;
   }, [engineProjects, engineTasks]);
 
   // ── Build engineProjectsByClientId ───────────────────────────────────────
+  // engineProjectsByBizId keyed by Business.id for the drawer.
   const engineProjectsByClientId = useMemo<Map<string, EngineProject[]>>(() => {
     const m = new Map<string, EngineProject[]>();
     for (const p of engineProjects) {
-      if (p.clientId) {
-        const arr = m.get(p.clientId) ?? [];
+      const bizId = (p as unknown as Record<string, unknown>).businessId as string | undefined ?? p.clientId ?? "";
+      if (bizId) {
+        const arr = m.get(bizId) ?? [];
         arr.push(p);
-        m.set(p.clientId, arr);
+        m.set(bizId, arr);
       }
     }
     return m;
