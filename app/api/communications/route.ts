@@ -1,11 +1,11 @@
 // RTM OS — Communications Aggregation API Route
 //
 // Aggregates ClientNotes from the Collaboration Hub persistence layer
-// (data/collaboration-store.json) across all real engine tasks belonging
+// (data/collaboration-store.json) across all Postgres tasks belonging
 // to a given client — or across ALL clients when no clientId is provided.
 //
-// The chain: master-clients → engine projects (by clientId) → taskIds
-//             → collaboration-store.json[taskId].clientNotes
+// The chain (Postgres): Business.clientId → Project.businessId
+//                       → ProjectCategory.projectId → Task.categoryId
 //
 // GET  /api/communications
 //       → { entries: AggregatedClientNote[] }  (all clients, all notes)
@@ -14,14 +14,17 @@
 //       → { entries: AggregatedClientNote[], clientName: string }
 //
 // GET  /api/communications?clientId=<mc-id>&taskIds=true
-//       → { taskMap: TaskOption[] }  (list of tasks for task picker in Log modal)
+//       → { taskOptions: TaskOption[] }  (list of tasks for task picker in Log modal)
 //
 // POST /api/communications  is NOT implemented here — writes go directly to
 //      POST /api/collaboration?taskId=<id>&resource=clientNotes
 //      (the Communications page calls that endpoint directly)
+//
+// Auth gate: getSessionUser — fails closed with 401 if no session.
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/db/prisma";
 import fs from "fs";
 import path from "path";
 
@@ -47,24 +50,6 @@ interface TaskCollabEntry {
 
 interface CollabStoreFile {
   tasks: Record<string, TaskCollabEntry>;
-}
-
-interface EngineProject {
-  id: string;
-  name: string;
-  clientId?: string;
-  clientSlug?: string;
-  client?: string;
-  taskIds: string[];
-}
-
-interface EngineTask {
-  id: string;
-  projectId: string;
-  title: string;
-  clientName?: string;
-  department?: string;
-  status?: string;
 }
 
 interface MasterClient {
@@ -107,7 +92,8 @@ export interface TaskOption {
 // ── File paths ─────────────────────────────────────────────────────────────────
 
 const COLLAB_FILE  = path.join(process.cwd(), "data", "collaboration-store.json");
-const ENGINE_FILE  = path.join(process.cwd(), "data", "engine-store.json");
+// master-clients.json is a real operator-managed file (AM metadata: assignedAM, avatarColor).
+// It is separate from engine-store.json and is NOT retired here.
 const CLIENTS_FILE = path.join(process.cwd(), "data", "master-clients.json");
 
 // ── File readers ───────────────────────────────────────────────────────────────
@@ -119,22 +105,6 @@ function readCollab(): CollabStoreFile {
     return { tasks: parsed.tasks ?? {} };
   } catch {
     return { tasks: {} };
-  }
-}
-
-function readEngine(): { projects: EngineProject[]; tasks: EngineTask[] } {
-  try {
-    const raw = fs.readFileSync(ENGINE_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as {
-      projects?: EngineProject[];
-      tasks?: EngineTask[];
-    };
-    return {
-      projects: parsed.projects ?? [],
-      tasks:    parsed.tasks    ?? [],
-    };
-  } catch {
-    return { projects: [], tasks: [] };
   }
 }
 
@@ -158,81 +128,156 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const clientId    = req.nextUrl.searchParams.get("clientId");
   const taskIdsOnly = req.nextUrl.searchParams.get("taskIds") === "true";
 
-  const { projects, tasks } = readEngine();
-  const clients             = readClients();
-  const collab              = readCollab();
+  const clients  = readClients();
+  const collab   = readCollab();
 
-  // Build lookup maps
-  const clientMap  = new Map<string, MasterClient>(clients.map((c) => [c.id, c]));
-  const taskMap    = new Map<string, EngineTask>(tasks.map((t) => [t.id, t]));
+  // Build master-clients lookup
+  const clientMap = new Map<string, MasterClient>(clients.map((c) => [c.id, c]));
 
-  // Build: clientId → projects
-  const projsByClient = new Map<string, EngineProject[]>();
-  for (const proj of projects) {
-    const cid = proj.clientId ?? "";
-    if (!cid) continue;
-    if (!projsByClient.has(cid)) projsByClient.set(cid, []);
-    projsByClient.get(cid)!.push(proj);
+  // ── Resolve Postgres: clientId → businessIds → projectIds → taskIds ────────
+  //
+  // Business.clientId is the master-clients id (string).
+  // Project.businessId links to Business.id.
+  // ProjectCategory.projectId links to Project.id.
+  // Task.categoryId links to ProjectCategory.id.
+  //
+  // We do this in three Prisma queries, using IN clauses to keep it efficient.
+
+  // 1. Find businesses by clientId (one or all)
+  const businesses = await prisma.business.findMany(
+    clientId ? { where: { clientId } } : undefined
+  );
+
+  if (businesses.length === 0) {
+    // No Postgres businesses for this client — return empty result
+    if (clientId) {
+      const client = clientMap.get(clientId);
+      if (taskIdsOnly) return NextResponse.json({ taskOptions: [] });
+      return NextResponse.json({ entries: [], clientName: client?.clientName ?? clientId });
+    }
+    return NextResponse.json({ entries: [] });
   }
 
-  // Determine which clientIds to aggregate
-  const targetClientIds: string[] = clientId
-    ? [clientId]
-    : Array.from(projsByClient.keys());
+  const bizIds   = businesses.map((b) => b.id);
+  const bizToClientId = new Map<string, string>(businesses.map((b) => [b.id, b.clientId]));
+
+  // 2. Find projects belonging to those businesses
+  const projects = await prisma.project.findMany({
+    where: { businessId: { in: bizIds } },
+    select: { id: true, name: true, businessId: true },
+  });
+
+  if (projects.length === 0) {
+    if (clientId) {
+      const client = clientMap.get(clientId);
+      if (taskIdsOnly) return NextResponse.json({ taskOptions: [] });
+      return NextResponse.json({ entries: [], clientName: client?.clientName ?? clientId });
+    }
+    return NextResponse.json({ entries: [] });
+  }
+
+  const projIds  = projects.map((p) => p.id);
+  const projMap  = new Map(projects.map((p) => [p.id, p]));
+
+  // 3. Find all categories for those projects
+  const categories = await prisma.projectCategory.findMany({
+    where: { projectId: { in: projIds } },
+    select: { id: true, projectId: true },
+  });
+
+  if (categories.length === 0) {
+    if (clientId) {
+      const client = clientMap.get(clientId);
+      if (taskIdsOnly) return NextResponse.json({ taskOptions: [] });
+      return NextResponse.json({ entries: [], clientName: client?.clientName ?? clientId });
+    }
+    return NextResponse.json({ entries: [] });
+  }
+
+  const catIds   = categories.map((c) => c.id);
+  const catToProjId = new Map<string, string>(categories.map((c) => [c.id, c.projectId]));
+
+  // 4. Find all tasks for those categories
+  const tasks = await prisma.task.findMany({
+    where: { categoryId: { in: catIds } },
+    select: { id: true, label: true, categoryId: true, department: true, status: true },
+  });
+
+  // Build task map and task → project + client maps
+  interface TaskRow {
+    id: string;
+    label: string;
+    categoryId: string;
+    department: string | null;
+    status: string;
+    projectId: string;
+    clientId: string;
+  }
+
+  const taskRows: TaskRow[] = tasks.map((t) => {
+    const projId   = catToProjId.get(t.categoryId) ?? "";
+    const proj     = projMap.get(projId);
+    const bizId    = proj?.businessId ?? "";
+    const cid      = bizToClientId.get(bizId) ?? "";
+    return {
+      id:         t.id,
+      label:      t.label,
+      categoryId: t.categoryId,
+      department: t.department,
+      status:     t.status,
+      projectId:  projId,
+      clientId:   cid,
+    };
+  });
 
   // ── Task picker mode ──────────────────────────────────────────────────────
   if (taskIdsOnly && clientId) {
-    const clientProjects = projsByClient.get(clientId) ?? [];
-    const taskOptions: TaskOption[] = [];
-    for (const proj of clientProjects) {
-      for (const tid of proj.taskIds ?? []) {
-        const task = taskMap.get(tid);
-        if (!task) continue;
-        taskOptions.push({
-          taskId:      tid,
-          taskTitle:   task.title,
-          projectId:   proj.id,
-          projectName: proj.name,
-          department:  task.department ?? "General",
-          status:      task.status    ?? "Unknown",
-        });
-      }
-    }
+    const taskOptions: TaskOption[] = taskRows
+      .filter((t) => t.clientId === clientId)
+      .map((t) => {
+        const proj = projMap.get(t.projectId);
+        return {
+          taskId:      t.id,
+          taskTitle:   t.label,
+          projectId:   t.projectId,
+          projectName: proj?.name ?? t.projectId,
+          department:  t.department ?? "General",
+          status:      t.status,
+        };
+      });
     return NextResponse.json({ taskOptions });
   }
 
   // ── Full aggregation ──────────────────────────────────────────────────────
+  const targetTaskRows = clientId
+    ? taskRows.filter((t) => t.clientId === clientId)
+    : taskRows;
+
   const entries: AggregatedClientNote[] = [];
 
-  for (const cid of targetClientIds) {
-    const client = clientMap.get(cid);
-    const clientName = client?.clientName ?? cid;
-    const assignedAM = client?.assignedAM ?? "";
-    const avatarColor = client?.avatarColor ?? "#6366f1";
+  for (const task of targetTaskRows) {
+    const entry = collab.tasks[task.id];
+    if (!entry || !entry.clientNotes || entry.clientNotes.length === 0) continue;
 
-    const clientProjects = projsByClient.get(cid) ?? [];
+    const mc          = clientMap.get(task.clientId);
+    const clientName  = mc?.clientName ?? task.clientId;
+    const assignedAM  = mc?.assignedAM ?? "";
+    const avatarColor = mc?.avatarColor ?? "#6366f1";
+    const proj        = projMap.get(task.projectId);
+    const projectName = proj?.name ?? task.projectId;
 
-    for (const proj of clientProjects) {
-      for (const tid of proj.taskIds ?? []) {
-        const task     = taskMap.get(tid);
-        const taskTitle = task?.title ?? tid;
-        const entry    = collab.tasks[tid];
-        if (!entry || !entry.clientNotes || entry.clientNotes.length === 0) continue;
-
-        for (const note of entry.clientNotes) {
-          entries.push({
-            ...note,
-            taskId:      tid,
-            taskTitle,
-            projectId:   proj.id,
-            projectName: proj.name,
-            clientId:    cid,
-            clientName,
-            assignedAM,
-            avatarColor,
-          });
-        }
-      }
+    for (const note of entry.clientNotes) {
+      entries.push({
+        ...note,
+        taskId:      task.id,
+        taskTitle:   task.label,
+        projectId:   task.projectId,
+        projectName,
+        clientId:    task.clientId,
+        clientName,
+        assignedAM,
+        avatarColor,
+      });
     }
   }
 

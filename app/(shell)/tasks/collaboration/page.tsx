@@ -17,26 +17,19 @@ import type { TaskCollaboration, TaskComment, InternalNote, ClientNote, TaskWatc
 
 type ViewMode = "overview" | "dashboard" | "ai-summary" | "dept-head" | "account-manager" | "executive";
 
-// Status/Priority types — mirror Task engine types for display
-type TaskStatusUI = "In Progress" | "Open" | "Waiting" | "Blocked" | "Review" | "Completed" | "Cancelled";
-type TaskPriorityUI = "Low" | "Medium" | "High" | "Urgent";
-
 interface TaskSummaryItem {
   collab: TaskCollaboration;
   engineTask: null;
-  status: TaskStatusUI;
-  priority: TaskPriorityUI;
+  // status and priority are not defaulted — no Postgres row for these tasks.
+  // The drawer receives undefined for both; it renders nothing for absent values.
 }
 
-// Collaboration tasks have no real engine backing (engine-store is retired).
-// Status and priority default to "Open" and "Medium" unless the collab record
-// carries explicit overrides in a future field.
+// Collaboration tasks have no Postgres task row: status and priority are unknown.
+// No defaults are invented. The drawer omits status/priority badges when absent.
 function buildSummaries(): TaskSummaryItem[] {
   return COLLABORATION_DATA.map((collab) => ({
     collab,
     engineTask: null,
-    status: "Open" as TaskStatusUI,
-    priority: "Medium" as TaskPriorityUI,
   }));
 }
 
@@ -47,23 +40,6 @@ const VIEW_LABELS: Record<ViewMode, { label: string; icon?: string }> = {
   "dept-head":        { label: "Department Head",  icon: "" },
   "account-manager":  { label: "Account Manager",  icon: "" },
   "executive":        { label: "Executive",        icon: "" },
-};
-
-const STATUS_COLORS: Record<TaskStatusUI, { bg?: string; color?: string }> = {
-  "In Progress": { bg: "#DBEAFE", color: "#1E40AF" },
-  "Open":        { bg: "#F3F4F6", color: "#374151" },
-  "Waiting":     { bg: "#FEF3C7", color: "#92400E" },
-  "Blocked":     { bg: "#FEE2E2", color: "#991B1B" },
-  "Review":      { bg: "#F3E8FF", color: "#6B21A8" },
-  "Completed":   { bg: "#D1FAE5", color: "#065F46" },
-  "Cancelled":   { bg: "#F3F4F6", color: "#6B7280" },
-};
-
-const PRIORITY_COLORS: Record<TaskPriorityUI, string> = {
-  Low:    "#6B7280",
-  Medium: "#D97706",
-  High:   "#DC2626",
-  Urgent: "#7C2D12",
 };
 
 export default function CollaborationPage() {
@@ -212,10 +188,9 @@ export default function CollaborationPage() {
             </p>
 
             {taskSummaries.map((item) => {
-              const { collab, status, priority } = item;
+              const { collab } = item;
               const blockedDeps = collab.dependencies.filter((d) => d.status === "Blocked").length;
               const unreadN = collab.notifications.filter((n) => !n.read).length;
-              const sc = STATUS_COLORS[status] ?? STATUS_COLORS["Open"];
               // Use live counts if the drawer has reported changes for this task
               const live = liveCollabMap[collab.taskId];
 
@@ -243,20 +218,8 @@ export default function CollaborationPage() {
                       </h3>
 
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span
-                        className="px-2.5 py-0.5 rounded-full text-xs font-semibold"
-                        style={{ background: sc.bg, color: sc.color }}
-                      >
-                        {status}
-                      </span>
-                      <span
-                        className="px-2.5 py-0.5 rounded-full text-xs font-semibold text-white"
-                        style={{ background: PRIORITY_COLORS[priority] }}
-                      >
-                        {priority}
-                      </span>
-                    </div>
+                    {/* Status and priority badges removed: no Postgres row for these tasks,
+                        so no real status or priority to display. */}
                   </div>
 
                   {/* Row 2 — Metrics (live counts win when available) */}
@@ -363,8 +326,7 @@ export default function CollaborationPage() {
         <TaskDetailDrawer
           collab={drawerTask.collab}
           engineTask={drawerTask.engineTask}
-          taskStatus={drawerTask.status}
-          taskPriority={drawerTask.priority}
+          // taskStatus and taskPriority omitted — no real Postgres row for these tasks
           onClose={() => setDrawerTask(null)}
           onCollabChange={(updated) => handleCollabChange(drawerTask.collab.taskId, updated)}
         />

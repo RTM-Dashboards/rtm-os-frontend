@@ -1,27 +1,47 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { getWorkspaceTasksByDepartment, taskToWorkspaceTask } from "@/lib/engine";
-import type { Task } from "@/lib/engine/types";
+import type { TaskListItem } from "@/app/api/tasks/route";
 
 import type { WorkspaceTask, WorkspaceTaskStatus, WorkspaceTaskPriority } from "@/components/workspace/WorkspaceTaskPage";
 import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
 import { CustomizeViewModal } from "@/components/sales/widgets/CustomizeViewModal";
 
-// ─── Locale-independent date helper (avoids hydration mismatch) ──────────────
-function formatDateOffset(hours: number): string {
-  const d = new Date(Date.now() + hours * 3600 * 1000);
-  const yyyy = d.getUTCFullYear();
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+// ─── Map Postgres task → WorkspaceTask ───────────────────────────────────────
+// Postgres statuses: "open" | "in_progress" | "done" | "skipped"
+// WorkspaceTask statuses: "Pending" | "In Progress" | "In Review" | "Blocked" | "Done"
+// Postgres priorities: nullable string matching WorkspaceTask priorities
+function pgToWorkspaceTask(t: TaskListItem): WorkspaceTask {
+  const statusMap: Record<string, WorkspaceTaskStatus> = {
+    open:        "Pending",
+    in_progress: "In Progress",
+    done:        "Done",
+    skipped:     "Done",
+  };
+  const priorityMap: Record<string, WorkspaceTaskPriority> = {
+    High:     "High",
+    Medium:   "Medium",
+    Low:      "Low",
+    Critical: "Critical",
+  };
+  return {
+    id:         t.id,
+    title:      t.label,
+    client:     t.clientId,       // real clientId from Business row
+    project:    t.projectName,
+    department: t.department ?? "Sales",
+    service:    "",
+    source:     "Blueprint" as WorkspaceTask["source"],
+    assignee:   t.ownerName ?? "Unassigned",
+    priority:   priorityMap[t.priority ?? ""] ?? "Medium",
+    status:     statusMap[t.status]  ?? "Pending",
+    dueDate:    t.dueDate ?? "",
+    blocker:    null,
+  };
 }
 
-// ─── Role mock (no toggle buttons in production) ─────────────────────────────
-// In production this comes from auth context.
-type SalesUserRole = "Department Head" | "Manager" | "Specialist" | "Coordinator";
-const CURRENT_ROLE: SalesUserRole = "Manager" as SalesUserRole;
-const CAN_SEE_GLOBAL = CURRENT_ROLE === "Department Head" || CURRENT_ROLE === "Manager";
+const CAN_SEE_GLOBAL = true;
+
 
 // ─── Status / Priority helpers ────────────────────────────────────────────────
 const STATUS_META: Record<WorkspaceTaskStatus, { bg: string; color: string; border: string }> = {
@@ -54,70 +74,22 @@ const EMPTY_FORM = {
   notes: "",
 };
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+// ─── Page ───────────────────────────────────────────────────────────────────────────────────
 
 export default function SalesTasksPage() {
-  const AUDIT_REVIEW_TASKS: WorkspaceTask[] = [
-    {
-      id: "ar-1",
-      title: "Review SEO audit findings — Coastal Wellness Spa",
-      client: "Coastal Wellness Spa",
-      project: "Hybrid Audit HYB-2025-3391",
-      department: "SEO",
-      service: "SEO",
-      source: "Manual Task" as WorkspaceTask["source"],
-      assignee: "Alex K.",
-      priority: "High" as WorkspaceTask["priority"],
-      status: "In Progress" as WorkspaceTask["status"],
-      dueDate: formatDateOffset(4),
-      blocker: null,
-    },
-    {
-      id: "ar-2",
-      title: "Complete GBP manual audit scorecard — Harbor Auto Group",
-      client: "Harbor Auto Group",
-      project: "Manual Audit AUD-2025-1842",
-      department: "GBP",
-      service: "Google Business Profile",
-      source: "Manual Task" as WorkspaceTask["source"],
-      assignee: "Marcus T.",
-      priority: "High" as WorkspaceTask["priority"],
-      status: "Pending" as WorkspaceTask["status"],
-      dueDate: formatDateOffset(18),
-      blocker: null,
-    },
-    {
-      id: "ar-3",
-      title: "Review Paid Advertising AI findings — Metro Dental Group",
-      client: "Metro Dental Group",
-      project: "Hybrid Audit HYB-2025-4102",
-      department: "Paid Advertising",
-      service: "PPC / Google Ads",
-      source: "Manual Task" as WorkspaceTask["source"],
-      assignee: "Casey R.",
-      priority: "Critical" as WorkspaceTask["priority"],
-      status: "Blocked" as WorkspaceTask["status"],
-      dueDate: formatDateOffset(-6),
-      blocker: "Overdue — SLA deadline passed",
-    },
-  ];
-  const [tasks, setTasks] = useState<WorkspaceTask[]>(() => [...getWorkspaceTasksByDepartment("Sales"), ...AUDIT_REVIEW_TASKS]);
+  // Postgres tasks — empty until /api/tasks?department=Sales responds
+  const [tasks, setTasks] = useState<WorkspaceTask[]>([]);
 
-  // Hydrate Sales engine tasks from the file-backed API on mount so Sales sees
-  // the same live ENGINE_STORE data as Billing and AM (cross-route-group reliable).
-  // The in-memory seed above provides the initial render with no loading flicker.
+  // Hydrate Sales tasks from Postgres on mount.
+  // AUDIT_REVIEW_TASKS removed: those three items were invented sample content
+  // with no Postgres rows. They are not displayed.
   useEffect(() => {
-    fetch("/api/engine?resource=tasks")
-      .then((r) => r.ok ? r.json() as Promise<{ tasks: Task[] }> : Promise.reject(r.status))
-      .then(({ tasks: engineTasks }) => {
-        const salesTasks = engineTasks
-          .filter((t) => t.department === "Sales")
-          .map(taskToWorkspaceTask);
-        // Replace the engine-sourced slice; keep AUDIT_REVIEW_TASKS (manual, static)
-        setTasks([...salesTasks, ...AUDIT_REVIEW_TASKS]);
+    fetch("/api/tasks?department=Sales")
+      .then((r) => r.ok ? r.json() as Promise<{ tasks: TaskListItem[] }> : Promise.reject(r.status))
+      .then(({ tasks: pgTasks }) => {
+        setTasks(pgTasks.map(pgToWorkspaceTask));
       })
-      .catch((err) => console.error("[Sales Tasks] Failed to hydrate engine tasks:", err));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      .catch((err) => console.error("[Sales Tasks] Failed to hydrate Postgres tasks:", err));
   }, []);
 
   // Fetch cross-department tasks from file-backed API on mount — cross-route-group reliable.

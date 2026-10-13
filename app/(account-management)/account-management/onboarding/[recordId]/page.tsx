@@ -74,9 +74,8 @@ import type {
   AMOnboardingFieldDef,
   AMOnboardingSection,
 } from "@/lib/mock/am-onboarding-field-schema";
-import { getAllProjects, getProjectByClientId } from "@/lib/mock/am-projects-store";
+import type { ProjectRecord } from "@/app/api/projects/route";
 import { markKickoffComplete as realMarkKickoff, markOnboardingComplete as realMarkOnboarding } from "@/lib/account-management/am-client-data";
-import { updateTaskStatus } from "@/lib/engine/api";
 
 // ─── Formatting helpers ────────────────────────────────────────────────────────
 
@@ -1137,7 +1136,7 @@ function CompleteOnboardingButton({
 }: {
   record: AMOnboardingRecord;
   onDone: (toastMessage: string) => void;
-  liveProjects: import("@/lib/engine/types").Project[];
+  liveProjects: ProjectRecord[];
   size?: "sm" | "lg";
 }) {
   const [dialogState, setDialogState] = useState<CompleteDialogState>({ open: false });
@@ -1173,23 +1172,16 @@ function CompleteOnboardingButton({
       // 1. Persist record as Complete (no field mutations)
       await completeOnboardingRecord(record.id);
 
-      // 2. Mark the engine Task #1 (Onboarding task) as Completed
-      const project = liveProjects.find((p) => p.clientId === record.clientId);
-      if (project) {
-        const tasksRes = await fetch(`/api/engine?resource=tasks`);
-        if (tasksRes.ok) {
-          const tasksData = (await tasksRes.json()) as { tasks: import("@/lib/engine/types").Task[] };
-          const onboardingTask = tasksData.tasks.find(
-            (t) => t.projectId === project.id && !!t.linkedOnboardingId
-          );
-          if (onboardingTask && onboardingTask.status !== "Completed") {
-            const now = new Date().toISOString();
-            await updateTaskStatus(onboardingTask.id, {
-              status: "Completed",
-              completionDate: now.slice(0, 10),
-              updatedAt: now,
-            });
-          }
+      // 2. Mark the Postgres onboarding task as done (if one exists)
+      //    Query by onboardingRecordId which is the Postgres Task.onboardingRecordId column.
+      //    If no task exists yet, skip silently — the record completion stands.
+      const onbTasksRes = await fetch(`/api/tasks?onboardingRecordId=${encodeURIComponent(record.id)}`);
+      if (onbTasksRes.ok) {
+        const onbData = (await onbTasksRes.json()) as { tasks: { id: string; status: string }[] };
+        const onbTask = onbData.tasks.find((t) => t.status !== "done" && t.status !== "skipped");
+        if (onbTask) {
+          // Use the Postgres /api/tasks/done route (PATCH ?id=<taskId>)
+          await fetch(`/api/tasks/done?id=${encodeURIComponent(onbTask.id)}`, { method: "PATCH" });
         }
       }
 
@@ -1441,7 +1433,7 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
   );
 
   const [record, setRecord] = useState<AMOnboardingRecord | null | undefined>(undefined);
-  const [liveProjects, setLiveProjects] = useState<import("@/lib/engine/types").Project[]>([]);
+  const [liveProjects, setLiveProjects] = useState<ProjectRecord[]>([]);
   const [toast, setToast] = useState<ToastState>({ visible: false, message: "" });
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1468,10 +1460,10 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
       .catch(() => {
         // Silent fail — static seed remains in use, no regression.
       });
-    fetch("/api/engine?resource=projects")
+    fetch("/api/projects")
       .then((r) => r.ok ? r.json() : null)
-      .then((d: { projects: import("@/lib/engine/types").Project[] } | null) => {
-        if (d?.projects) setLiveProjects(d.projects);
+      .then((d: { records: ProjectRecord[] } | null) => {
+        if (d?.records) setLiveProjects(d.records);
       })
       .catch(() => {});
   }, [loadRecord]);
@@ -1531,9 +1523,12 @@ function OnboardingDetailView({ recordId }: { recordId: string }) {
   }
 
   const summary = getFieldAssignmentSummary(record);
+  // freshProject: look up by record.projectId in Postgres projects.
+  // clientId-based lookup removed — Postgres ProjectRecord has no clientId field.
+  // getAllProjects/getProjectByClientId removed — those read engine mock data.
   const freshProject = record.projectId
-    ? (liveProjects.find((p) => p.id === record.projectId) ?? getAllProjects().find((p) => p.id === record.projectId))
-    : (liveProjects.find((p) => p.clientId === record.clientId) ?? getProjectByClientId(record.clientId));
+    ? liveProjects.find((p) => p.id === record.projectId)
+    : undefined;
 
   // Per-section data — uses live schema (hydrated from API; seeded from static on first paint)
   const sectionData = liveSections.map((sec) => {
