@@ -609,6 +609,10 @@ function TemplateEditorModal({
   const isEditing = editingServiceId !== null;
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Duplicate-claim warning: set when another blueprint already claims a service
+  // we are about to claim. The user can dismiss and proceed or go back.
+  const [claimWarning, setClaimWarning] = useState<string | null>(null);
+  const [claimWarningAcknowledged, setClaimWarningAcknowledged] = useState(false);
 
   // Blueprint-level meta fields — all editable
   const [meta, setMeta] = useState<BlueprintMeta>(initialMeta);
@@ -617,6 +621,11 @@ function TemplateEditorModal({
   const [services, setServices] = useState<Array<{ id: string; label: string }>>([]);
   const [serviceId, setServiceId] = useState(editingServiceId ?? "");
   const [servicesLoading, setServicesLoading] = useState(true);
+  // Toggle between catalogue picker and free-form identifier (create only)
+  const [useCustomId, setUseCustomId] = useState(false);
+  const [customIdInput, setCustomIdInput] = useState("");
+  // All existing template service ids — used to check uniqueness of custom ids
+  const [existingTemplateIds, setExistingTemplateIds] = useState<Set<string>>(new Set());
 
   // Activation mapping keys (create only)
   const [mappingInput, setMappingInput] = useState("");
@@ -632,15 +641,18 @@ function TemplateEditorModal({
 
   // Load the full catalogue list for both the service picker (create) and the
   // claim picker (edit). Always fetch so the edit form can show labels.
+  // Also load existing template ids so the custom-id path can validate uniqueness.
   useEffect(() => {
-    fetch("/api/sales/service-catalog?all=1")
-      .then((r) => r.json())
-      .then((d) => {
-        const rows = (d.services ?? []) as Array<{ id: string; label: string }>;
-        setServices(rows);
-        setServicesLoading(false);
-      })
-      .catch(() => setServicesLoading(false));
+    Promise.all([
+      fetch("/api/sales/service-catalog?all=1").then((r) => r.json()).catch(() => ({ services: [] })),
+      fetch("/api/task-blueprints").then((r) => r.json()).catch(() => ({ blueprints: [] })),
+    ]).then(([catData, bpData]) => {
+      const rows = (catData.services ?? []) as Array<{ id: string; label: string }>;
+      setServices(rows);
+      const bps = (bpData.blueprints ?? []) as Array<{ id: string }>;
+      setExistingTemplateIds(new Set(bps.map((b) => b.id.toLowerCase().trim())));
+      setServicesLoading(false);
+    }).catch(() => setServicesLoading(false));
   }, [isEditing]);
 
   const addMapping = () => {
@@ -650,7 +662,24 @@ function TemplateEditorModal({
   };
 
   const handleSave = async () => {
-    if (!isEditing && !serviceId) { setError("Select a service."); return; }
+    // Resolve the effective service id for create mode.
+    const effectiveId = !isEditing
+      ? (useCustomId ? customIdInput.trim().toLowerCase() : serviceId)
+      : editingServiceId ?? "";
+
+    if (!isEditing) {
+      if (!effectiveId) {
+        setError(useCustomId ? "Enter a non-catalogue identifier." : "Select a service.");
+        return;
+      }
+      if (useCustomId) {
+        if (/\s/.test(effectiveId)) { setError("Identifier must not contain spaces."); return; }
+        if (existingTemplateIds.has(effectiveId)) {
+          setError(`"${effectiveId}" is already in use by another blueprint.`);
+          return;
+        }
+      }
+    }
     if (!meta.name.trim()) { setError("Blueprint name is required."); return; }
 
     // Client-side cycle check.
@@ -662,7 +691,36 @@ function TemplateEditorModal({
       return;
     }
 
-    setSaving(true); setError("");
+    // Duplicate-claim check: before saving, verify that the claimedServiceIds
+    // we are about to write are not already claimed by a different blueprint.
+    // We check client-side by loading the full blueprint list. The server also
+    // enforces this (409), but we want to name the other blueprint in advance.
+    if (!claimWarningAcknowledged && meta.claimedServiceIds.length > 0) {
+      try {
+        const bpRes = await fetch("/api/task-blueprints");
+        if (bpRes.ok) {
+          const bpData = (await bpRes.json()) as { blueprints: BlueprintApiRecord[] };
+          const conflicts: string[] = [];
+          for (const bp of bpData.blueprints) {
+            // Skip this blueprint itself (when editing).
+            if (isEditing && bp.id === editingServiceId) continue;
+            for (const sid of meta.claimedServiceIds) {
+              if (bp.id === sid || (bp.claimedServiceIds ?? []).includes(sid)) {
+                conflicts.push(`"${bp.name || bp.id}" already claims "${sid}"`);
+              }
+            }
+          }
+          if (conflicts.length > 0) {
+            setClaimWarning(conflicts.join("; "));
+            return; // stop; user must acknowledge
+          }
+        }
+      } catch {
+        // If the check fails, proceed; server will catch it.
+      }
+    }
+
+    setSaving(true); setError(""); setClaimWarning(null);
     const groups: TemplateGroup[] = [
       { kind: "setup",     heading: "Setup",     tasks: setupTasks },
       { kind: "recurring", heading: "Recurring", tasks: recurringTasks },
@@ -693,14 +751,18 @@ function TemplateEditorModal({
           }),
         });
       } else {
-        const allMappings = [...new Set([serviceId, ...serviceMappings])];
+        // For catalogue path, include the selected service id in the mapping list.
+        // For custom-id path, no catalogue id to add.
+        const allMappings = useCustomId
+          ? [...new Set(serviceMappings)]
+          : [...new Set([effectiveId, ...serviceMappings])];
         res = await fetch("/api/task-blueprints", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             blueprint: {
-              id:                  serviceId,
-              name:                meta.name || serviceId,
+              id:                  effectiveId,
+              name:                meta.name || effectiveId,
               department:          meta.department,
               servicePackage:      meta.servicePackage,
               mappedLineItem:      meta.mappedLineItem,
@@ -763,9 +825,39 @@ function TemplateEditorModal({
           {/* Service picker (create only) */}
           {!isEditing && (
             <section className="space-y-3">
-              <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Service</div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Service</div>
+                <button
+                  type="button"
+                  onClick={() => { setUseCustomId((v) => !v); setServiceId(""); setCustomIdInput(""); }}
+                  className="text-xs font-semibold underline-offset-2 hover:underline"
+                  style={{ color: "var(--rtm-blue)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  {useCustomId ? "Use catalogue service instead" : "Not a catalogue service? Enter an identifier"}
+                </button>
+              </div>
               {servicesLoading ? (
                 <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading services…</p>
+              ) : useCustomId ? (
+                <div className="space-y-1">
+                  <input
+                    type="text"
+                    value={customIdInput}
+                    onChange={(e) => setCustomIdInput(e.target.value.replace(/\s/g, ""))}
+                    placeholder="e.g. internal-review, client-success-setup"
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                  />
+                  <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
+                    Lowercase only, no spaces. Must not already be in use. Used as the blueprint’s internal service id.
+                  </p>
+                  {customIdInput && /\s/.test(customIdInput) && (
+                    <p className="text-[11px] font-semibold" style={{ color: "#DC2626" }}>No spaces allowed.</p>
+                  )}
+                  {customIdInput && !(/\s/.test(customIdInput)) && existingTemplateIds.has(customIdInput.toLowerCase().trim()) && (
+                    <p className="text-[11px] font-semibold" style={{ color: "#DC2626" }}>Already in use by another blueprint.</p>
+                  )}
+                </div>
               ) : (
                 <select value={serviceId} onChange={(e) => setServiceId(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none"
@@ -773,6 +865,11 @@ function TemplateEditorModal({
                   <option value="">— choose a service —</option>
                   {services.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
+              )}
+              {useCustomId && (
+                <div className="rounded-lg px-3 py-2 text-xs" style={{ background: "#FFFBEB", border: "1px solid #FDE68A", color: "#92400E" }}>
+                  Non-catalogue blueprints are not matched by launchProject service lookups. They can be activated by seeded data or direct API call. They appear in the template list and can be edited and deleted normally.
+                </div>
               )}
               {/* Activation mapping */}
               <div>
@@ -1005,6 +1102,25 @@ function TemplateEditorModal({
             <EditorGroupPanel kind="recurring" label="Recurring Tasks" tasks={recurringTasks} onChange={setRecurringTasks} saving={saving} />
           </section>
 
+          {claimWarning && (
+            <div className="rounded-lg px-4 py-3 text-sm" style={{ background: "#FFFBEB", border: "1px solid #FDE68A", color: "#92400E" }}>
+              <p className="font-bold mb-1">⚠️ Duplicate claim detected</p>
+              <p className="mb-2">{claimWarning}</p>
+              <p className="mb-3">Claiming a service that another blueprint already handles will cause non-deterministic routing at launch. You can still save if you choose.</p>
+              <div className="flex gap-2">
+                <button type="button"
+                  onClick={() => { setClaimWarningAcknowledged(true); void handleSave(); }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold"
+                  style={{ background: "#D97706", color: "#fff" }}
+                >Save anyway</button>
+                <button type="button"
+                  onClick={() => { setClaimWarning(null); setClaimWarningAcknowledged(false); }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold border"
+                  style={{ borderColor: "#FDE68A", color: "#92400E", background: "transparent" }}
+                >Go back</button>
+              </div>
+            </div>
+          )}
           {error && (
             <div className="rounded-lg px-4 py-3 text-sm font-semibold"
               style={{ background: "#FEF2F2", color: "#DC2626", border: "1px solid #FECACA" }}>
@@ -1540,16 +1656,7 @@ function TemplateDrawer({
           >
             Edit Template
           </button>
-          <button
-            className="px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
-          >
-            Clone Template
-          </button>
-          <button
-            className="px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
-          >
-            Map Line Item
-          </button>
+
           <button
             className="ml-auto px-4 py-2 rounded-lg text-sm font-semibold"style={{ color: "var(--rtm-text-muted)"}}
             onClick={onClose}
@@ -1636,7 +1743,7 @@ export default function TaskTemplatesPage() {
   const [filterDept, setFilterDept] = useState<Department | "All">("All");
   const [filterType, setFilterType] = useState<TemplateType | "All">("All");
   const [filterStatus, setFilterStatus] = useState<TemplateStatus | "All">("All");
-  const [activeSection, setActiveSection] = useState<"templates"| "preview"| "import">("templates");
+  const [activeSection, setActiveSection] = useState<"templates"| "preview">("templates");
   const [previewLineItem, setPreviewLineItem] = useState("SEO Monthly");
 
   //  Derived data 
@@ -1738,27 +1845,7 @@ export default function TaskTemplatesPage() {
           >
             + New Task Template
           </button>
-          <button
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
-            onClick={() => setActiveSection("import")}
-          >
-            ↑ Import Template
-          </button>
-          <button
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
-          >
-            ↓ Export Template
-          </button>
-          <button
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
-          >
-             Clone Template
-          </button>
-          <button
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
-          >
-             Activation Mapping
-          </button>
+
           <Link
             href="/tasks/workload-planning"className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold border transition-colors"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", background: "var(--rtm-surface)"}}
           >
@@ -1800,7 +1887,7 @@ export default function TaskTemplatesPage() {
 
       {/*  Section tabs  */}
       <div className="flex gap-1 p-1 rounded-xl"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", width: "fit-content"}}>
-        {(["templates", "preview", "import"] as const).map((s) => (
+        {(["templates", "preview"] as const).map((s) => (
           <button
             key={s}
             onClick={() => setActiveSection(s)}
@@ -1809,7 +1896,7 @@ export default function TaskTemplatesPage() {
               color: activeSection === s ? "#fff": "var(--rtm-text-secondary)",
             }}
           >
-            {s === "templates"? "Templates": s === "preview"? "Preview Flow": "↑ Import / Upload"}
+            {s === "templates"? "Templates": "Preview Flow"}
           </button>
         ))}
       </div>
@@ -2015,11 +2102,7 @@ export default function TaskTemplatesPage() {
                           >
                             Edit
                           </button>
-                          <button
-                            className="text-[11px] font-semibold px-2 py-1 rounded-lg hover:opacity-80 transition-opacity border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)"}}
-                          >
-                            
-                          </button>
+
                         </div>
                       </td>
                     </tr>
@@ -2308,127 +2391,6 @@ export default function TaskTemplatesPage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/*  */}
-      {/* SECTION: Import / Upload */}
-      {/*  */}
-      {activeSection === "import"&& (
-        <div className="space-y-6">
-          <div
-            className="rounded-xl p-6"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
-          >
-            <h2 className="text-sm font-extrabold mb-1"style={{ color: "var(--rtm-text-primary)"}}>
-              ↑ Import Task Templates
-            </h2>
-            <p className="text-xs mb-6"style={{ color: "var(--rtm-text-secondary)"}}>
-              Upload a CSV, XLSX, or JSON file to bulk import task templates.
-            </p>
-
-            {/* File drop area */}
-            <div
-              className="rounded-xl border-2 border-dashed p-10 flex flex-col items-center justify-center gap-3 text-center cursor-pointer hover:opacity-80 transition-opacity"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-bg)"}}
-            >
-              
-              <div className="font-bold"style={{ color: "var(--rtm-text-primary)"}}>
-                Drop your file here or click to browse
-              </div>
-              <div className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>
-                Supported formats: CSV, XLSX, JSON
-              </div>
-              <div className="flex gap-2 mt-2">
-                {["CSV", "XLSX", "JSON"].map((fmt) => (
-                  <span
-                    key={fmt}
-                    className="text-xs font-bold px-3 py-1 rounded-full"style={{ background: "var(--rtm-blue-light)", color: "var(--rtm-blue)"}}
-                  >
-                    .{fmt.toLowerCase()}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Expected columns */}
-            <div className="mt-6">
-              <div className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}>
-                Expected Columns
-              </div>
-              <div className="overflow-x-auto rounded-xl"style={{ border: "1px solid var(--rtm-border)"}}>
-                <table className="w-full text-sm min-w-[700px]">
-                  <thead>
-                    <tr style={{ background: "var(--rtm-bg)", borderBottom: "2px solid var(--rtm-border)"}}>
-                      {["Column", "Type", "Required", "Example"].map((col) => (
-                        <th
-                          key={col}
-                          className="px-4 py-3 text-left text-[11px] font-black uppercase tracking-wider"style={{ color: "var(--rtm-text-secondary)"}}
-                        >
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[
-                      { column: "Template Name", type: "string", required: true, example: "SEO Setup Template"},
-                      { column: "Task Name", type: "string", required: true, example: "Technical Audit"},
-                      { column: "Department", type: "enum", required: true, example: "SEO"},
-                      { column: "Hours", type: "number", required: true, example: "5"},
-                      { column: "Priority", type: "enum", required: true, example: "High"},
-                      { column: "Dependency", type: "string", required: false, example: "GSC Access"},
-                      { column: "Activation Trigger", type: "enum", required: true, example: "Invoice Paid"},
-                      { column: "Template Type", type: "enum", required: true, example: "Setup"},
-                      { column: "Mapped Line Item", type: "string", required: true, example: "SEO Setup"},
-                      { column: "Due Offset", type: "string", required: false, example: "Day 3"},
-                    ].map((row, i) => (
-                      <tr
-                        key={row.column}
-                        style={{ borderBottom: i < 9 ? "1px solid var(--rtm-border-light)": "none"}}
-                      >
-                        <td className="px-4 py-3 font-mono text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>
-                          {row.column}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", border: "1px solid var(--rtm-border)"}}>
-                            {row.type}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {row.required ? (
-                            <span className="text-[11px] font-bold text-green-600"> Required</span>
-                          ) : (
-                            <span className="text-[11px] text-gray-400">Optional</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-xs font-mono"style={{ color: "var(--rtm-text-muted)"}}>
-                          {row.example}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Download template */}
-            <div className="mt-4 flex items-center gap-3">
-              <button
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold text-white"style={{ background: "var(--rtm-blue)"}}
-              >
-                ↓ Download CSV Template
-              </button>
-              <button
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
-              >
-                ↓ Download XLSX Template
-              </button>
-              <button
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border"style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)"}}
-              >
-                ↓ Download JSON Schema
-              </button>
             </div>
           </div>
         </div>

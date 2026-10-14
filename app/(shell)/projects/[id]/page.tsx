@@ -215,7 +215,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                 { label: "Total Tasks", value: allTasks.length },
                 { label: "Open",        value: openCount },
                 { label: "Done",        value: doneCount },
-                { label: "Blocked",     value: blockedCount },
+                { label: "Waiting",     value: blockedCount },
               ].map((m) => (
                 <div key={m.label} className="rounded-xl p-4" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
                   <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-secondary)" }}>{m.label}</p>
@@ -288,11 +288,13 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-3 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                        {t.dueDate && <span>Due: <b style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate}</b></span>}
+                        {t.dueDate
+                          ? <span>Due: <b style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate}</b></span>
+                          : t.isBlocked && t.blockedBy.length > 0
+                            ? <span style={{ color: "var(--rtm-text-secondary)" }}>After <b>{t.blockedBy[0].label}</b></span>
+                            : null
+                        }
                         {t.ownerName && <span>Owner: <b style={{ color: "var(--rtm-text-secondary)" }}>{t.ownerName}</b></span>}
-                        {t.isBlocked && (
-                          <span style={{ color: "#DC2626" }}>Blocked by: {t.blockedBy.map((b) => b.label).join(", ")}</span>
-                        )}
                       </div>
                     </div>
                   ))}
@@ -326,7 +328,7 @@ function CategoryCard({ cat }: { cat: ScopedCategory }) {
           <span>{cat.tasks.length} tasks</span>
           {done > 0 && <span style={{ color: "#059669" }}>{done} done</span>}
           {open > 0 && <span>{open} open</span>}
-          {blocked > 0 && <span style={{ color: "#DC2626" }}>{blocked} blocked</span>}
+          {blocked > 0 && <span style={{ color: "#6366F1" }}>{blocked} waiting</span>}
         </div>
       </div>
       {cat.tasks.length > 0 && (
@@ -338,7 +340,12 @@ function CategoryCard({ cat }: { cat: ScopedCategory }) {
                 {t.label}
               </span>
               <div className="flex items-center gap-2">
-                {t.dueDate && <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{t.dueDate}</span>}
+                {t.dueDate
+                  ? <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{t.dueDate}</span>
+                  : t.isBlocked && t.blockedBy.length > 0
+                    ? <span className="text-[10px]" style={{ color: "var(--rtm-text-secondary)" }}>After {t.blockedBy[0].label}</span>
+                    : null
+                }
                 <TaskStatusBadge status={t.status} />
               </div>
             </div>

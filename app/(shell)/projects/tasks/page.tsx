@@ -189,7 +189,14 @@ export default function GlobalTasksPage() {
                         {t.priority ?? "—"}
                       </td>
                       <td className="px-3 py-3"><TaskStatusBadge status={t.status} /></td>
-                      <td className="px-3 py-3 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate ?? "—"}</td>
+                      <td className="px-3 py-3 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+                        {t.dueDate
+                          ? t.dueDate
+                          : t.waitingOnLabel
+                            ? <span style={{ color: "var(--rtm-text-muted)", fontStyle: "italic" }}>After {t.waitingOnLabel}</span>
+                            : "—"
+                        }
+                      </td>
                     </tr>
                   ))}
                 </tbody>

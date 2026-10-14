@@ -605,12 +605,17 @@ export async function launchProject(
     // Non-fatal: the project is still usable. Staff can see the error.
   }
 
-  // ── 5c. Always run the onboarding blueprint ─────────────────────────────────────
-  // Every new client is onboarded. The blueprint (tlt-bp004, service id
-  // "account-management") is NOT a service anyone purchases. It runs
-  // unconditionally for every project, before service categories below.
-  // The onboarding category is created outside the lineItems loop so that
-  // the six tasks always exist regardless of which services were sold.
+  // ── 5c. Onboarding blueprint ───────────────────────────────────────────────────
+  // Standard path: the onboarding blueprint runs unconditionally for every new
+  // client. The blueprint (tlt-bp004, service id "account-management") is NOT a
+  // service anyone purchases. The category and its tasks are created for every
+  // new project so the six onboarding tasks appear on the AM's list.
+  //
+  // Import path: the onboarding RECORD is still created (above) so staff can see
+  // client context and the AM has a home base. But the six tasks from the
+  // blueprint are NOT created — the client has been with RTM for years and their
+  // onboarding work is long done. Creating a "Send Welcome Email" or
+  // "Conduct Kickoff Call" task for a client that signed two years ago is noise.
   //
   // "Complete Onboarding Checklist" (bpt-004-5) receives the onboarding
   // record id. That task's work IS the 25-field form. Opening it routes to
@@ -619,6 +624,10 @@ export async function launchProject(
   const ONBOARDING_SERVICE_ID            = "account-management";
   const ONBOARDING_CHECKLIST_LOCAL_ID    = "bpt-004-5"; // Complete Onboarding Checklist
 
+  // Import path: skip onboarding blueprint tasks and task_dependencies entirely.
+  // The onboarding record was already created above; that is the documentation.
+  // No task from the Client Onboarding blueprint should land on an imported client.
+  if (!importOptions) {
   try {
     const onbTemplate = await prisma.taskListTemplate.findFirst({
       where: { serviceId: ONBOARDING_SERVICE_ID },
@@ -776,6 +785,7 @@ export async function launchProject(
       `Onboarding blueprint: ${err instanceof Error ? err.message : String(err)}`
     );
   }
+  } // end if (!importOptions) — onboarding blueprint tasks skipped on import path
 
   // ── 5d. Always run the Monthly Reporting blueprint ──────────────────────────
   // Like Client Onboarding, Monthly Reporting (serviceId="reporting") runs on

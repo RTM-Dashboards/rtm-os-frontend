@@ -43,6 +43,12 @@ export interface TaskListItem {
   ownerId: string | null;
   ownerName: string | null;
   dueDate: string | null;
+  /**
+   * When dueDate is null and this task waits on a prerequisite, this is the
+   * label of the first unmet prerequisite task (e.g. "Technical SEO Audit").
+   * Null when dueDate is set or when there is no prerequisite.
+   */
+  waitingOnLabel: string | null;
   status: string;
   isSetup: boolean;
   isRecurring: boolean;
@@ -125,6 +131,37 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       : [];
     const ownerMap = new Map(owners.map((u) => [u.id, u.name]));
 
+    // Resolve waitingOnLabel: for tasks with no due date, find the label of
+    // the first unmet prerequisite so the UI can show "After <prereq>" instead
+    // of an empty date cell.
+    const nodateTasks = tasks.filter((t) => !t.dueDate && t.status !== "done");
+    let waitingOnMap = new Map<string, string>(); // taskId → prereq label
+    if (nodateTasks.length > 0) {
+      const nodateIds = nodateTasks.map((t) => t.id);
+      const deps = await prisma.taskDependency.findMany({
+        where: { taskId: { in: nodateIds } },
+        select: { taskId: true, requiresTaskId: true },
+      });
+      if (deps.length > 0) {
+        // Only load prereqs that exist in the current visible task set or in DB.
+        const prereqIds = [...new Set(deps.map((d) => d.requiresTaskId))];
+        const prereqTasks = await prisma.task.findMany({
+          where: { id: { in: prereqIds }, status: { not: "done" } },
+          select: { id: true, label: true },
+        });
+        const prereqLabelMap = new Map(prereqTasks.map((p) => [p.id, p.label]));
+        // For each no-date task, pick the first unmet prereq label.
+        const seen = new Set<string>();
+        for (const dep of deps) {
+          if (seen.has(dep.taskId)) continue; // already have one for this task
+          const prereqLabel = prereqLabelMap.get(dep.requiresTaskId);
+          if (prereqLabel) {
+            waitingOnMap.set(dep.taskId, prereqLabel);
+            seen.add(dep.taskId);
+          }
+        }
+      }
+    }
     const result: TaskListItem[] = tasks.map((t) => {
       const projId = catToProject.get(t.categoryId) ?? "";
       const proj   = projMap.get(projId);
@@ -141,6 +178,9 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         ownerId:        t.ownerId ?? null,
         ownerName:      t.ownerId ? (ownerMap.get(t.ownerId) ?? null) : null,
         dueDate:        t.dueDate ?? null,
+        waitingOnLabel: !t.dueDate && t.status !== "done"
+                          ? (waitingOnMap.get(t.id) ?? null)
+                          : null,
         status:         t.status,
         isSetup:        t.isSetup,
         isRecurring:    t.isRecurring,
