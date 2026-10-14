@@ -1596,6 +1596,7 @@ export default function TaskTemplatesPage() {
 
   // ── UI state ──────────────────────────────────────────────────────────────
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [unmappedExpanded, setUnmappedExpanded] = useState(false);
   /** null = create mode; string = serviceId of template being edited */
   const [editingServiceId, setEditingServiceId] = useState<string | null>(null);
   /** Groups loaded for the template being edited */
@@ -1768,18 +1769,25 @@ export default function TaskTemplatesPage() {
 
       {/*  Summary line — only what the table does not already show  */}
       {unmappedItems > 0 && (
-        <div className="rounded-xl px-4 py-3" style={{ background: "#FFFBEB", border: "1px solid #FDE68A" }}>
-          <p className="text-sm" style={{ color: "#92400E" }}>
-            <span className="font-bold">{unmappedItems} catalogue service{unmappedItems !== 1 ? "s" : ""} have no blueprint:</span>
-            {" "}
-            {uncoveredCatalogueServices.map((s) => (
-              <span key={s.id} className="inline-block mr-2 font-semibold" style={{ color: "#78350F" }}>{s.label} <span style={{ fontWeight: 400, opacity: 0.7 }}>({s.id})</span></span>
-            ))}
-          </p>
-          <p className="text-xs mt-1" style={{ color: "#B45309" }}>
-            Projects launched selling these services will have empty categories and Melissa will be notified.
-            Use &ldquo;+ New Task Template&rdquo; to create blueprints and claim these services.
-          </p>
+        <div className="flex items-center gap-2 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
+          <span>{unmappedItems} service{unmappedItems !== 1 ? "s" : ""} have no task list.</span>
+          <button
+            type="button"
+            onClick={() => setUnmappedExpanded((v) => !v)}
+            className="text-xs font-semibold underline-offset-2 hover:underline"
+            style={{ color: "var(--rtm-text-muted)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          >
+            {unmappedExpanded ? "Hide" : "Show"}
+          </button>
+          {unmappedExpanded && (
+            <span style={{ color: "var(--rtm-text-muted)" }}>
+              —
+              {uncoveredCatalogueServices.map((s, i) => (
+                <span key={s.id}>{i > 0 ? ", " : " "}{s.label}</span>
+              ))}.
+              {" "}Melissa will be notified when a project launches with an unclaimed service.
+            </span>
+          )}
         </div>
       )}
       {unmappedItems === 0 && catalogueServices.length > 0 && (

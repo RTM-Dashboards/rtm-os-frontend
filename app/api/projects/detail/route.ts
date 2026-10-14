@@ -187,21 +187,35 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     //
     // next/server.after is available from Next.js 15+. This project is on
     // Next.js 16.2.6 so it is safe to use.
-    after(async () => {
-      const result = await generateRecurringTasks(project.id).catch((err) => {
-        console.error("[recurring] generateRecurringTasks threw for project", project.id, err);
-        return null;
+    //
+    // The after() registration itself is wrapped in a try/catch so that if
+    // the runtime does not provide waitUntil (e.g. self-hosted, edge, or a
+    // Vercel plan that doesn't wire it), the registration failure stays local
+    // and does not propagate to the outer catch — which would return 500 and
+    // make the page appear broken.
+    try {
+      after(async () => {
+        const result = await generateRecurringTasks(project.id).catch((err) => {
+          console.error("[recurring] generateRecurringTasks threw for project", project.id, err);
+          return null;
+        });
+        if (result) {
+          console.log(
+            `[recurring] project=${project.id} ran=${result.ran}` +
+            ` generated=${result.generated} skippedDuplicate=${result.skippedDuplicate}` +
+            ` skippedPast=${result.skippedPast} errors=${result.errors.length}` +
+            (result.skipReason ? ` skipReason=${result.skipReason}` : "") +
+            (result.errors.length ? ` firstError=${result.errors[0]}` : ""),
+          );
+        }
       });
-      if (result) {
-        console.log(
-          `[recurring] project=${project.id} ran=${result.ran}` +
-          ` generated=${result.generated} skippedDuplicate=${result.skippedDuplicate}` +
-          ` skippedPast=${result.skippedPast} errors=${result.errors.length}` +
-          (result.skipReason ? ` skipReason=${result.skipReason}` : "") +
-          (result.errors.length ? ` firstError=${result.errors[0]}` : ""),
-        );
-      }
-    });
+    } catch (afterErr) {
+      // after() can throw if waitUntil is not available in the current runtime
+      // (e.g. self-hosted Next.js without the Vercel adapter, or certain edge
+      // environments). Log and continue — recurring generation is best-effort;
+      // it must never prevent the detail response from reaching the client.
+      console.error("[recurring] after() registration failed; recurring engine skipped:", afterErr);
+    }
 
     // ── Fetch business ────────────────────────────────────────────────────────
     const business = await prisma.business.findUnique({
