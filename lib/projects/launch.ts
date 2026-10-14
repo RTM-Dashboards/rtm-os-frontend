@@ -1179,6 +1179,18 @@ export async function launchProject(
 
         try {
           const taskId = makeId("task");
+          // For recurring tasks created at launch, set the recurring-engine
+          // tracking fields so the engine can:
+          //   (a) detect this first occurrence when looking for the "last occurrence"
+          //   (b) build the occurrence_key for idempotency.
+          // template is always non-null when isRecurring=true (recurring tasks
+          // only come from a template; the deliverableGroups fallback only
+          // creates setup tasks).
+          const launchOccurrenceKey =
+            taskDef.isRecurring && template && taskDef.localId && dueDate
+              ? `${template.id}:${taskDef.localId}:${categoryId}:${dueDate}`
+              : null;
+
           await prisma.task.create({
             data: {
               id:                     taskId,
@@ -1193,6 +1205,10 @@ export async function launchProject(
               isSetup:                !taskDef.isRecurring,
               isRecurring:            taskDef.isRecurring,
               recurrenceIntervalDays: taskDef.intervalDays,
+              // Recurring engine tracking fields (20261014_recurring_engine)
+              blueprintTaskId:        taskDef.isRecurring && taskDef.localId ? taskDef.localId : null,
+              blueprintTemplateId:    taskDef.isRecurring && template ? template.id : null,
+              occurrenceKey:          launchOccurrenceKey,
               // Restored per-task fields from template (RF2 run, 20261008)
               ownerRole:      taskDef.ownerRole,
               estimatedHours: taskDef.estimatedHours,

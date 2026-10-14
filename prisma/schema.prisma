@@ -920,6 +920,27 @@ model Task {
   // Set at launch for the "Complete Onboarding Checklist" task (bpt-004-5).
   // Null for all other tasks. Links the task to its onboarding_records row.
   onboardingRecordId String? @map("onboarding_record_id")
+  // ── Recurring engine fields (20261014_recurring_engine) ──────────────────
+  // blueprintTaskId: the localId of the blueprint task this row was generated
+  // from (e.g. "bpt-001-r1"). Null for setup tasks.
+  blueprintTaskId    String? @map("blueprint_task_id")
+  // blueprintTemplateId: the task_list_templates.id this row came from
+  // (e.g. "tlt-bp001"). Null for setup tasks.
+  blueprintTemplateId String? @map("blueprint_template_id")
+  // occurrenceKey: deterministic idempotency key for recurring occurrences.
+  // Format: "<templateId>:<blueprintTaskLocalId>:<categoryId>:<dueDate>"
+  // Null for setup tasks. The uniqueness constraint is enforced by a partial
+  // database index:
+  //   CREATE UNIQUE INDEX tasks_occurrence_key_unique ON tasks (occurrence_key)
+  //   WHERE occurrence_key IS NOT NULL;
+  // This index was created manually (not by Prisma) because Prisma does not
+  // support partial indexes. The @unique attribute has been intentionally
+  // omitted here: adding it would cause `prisma db push` to try to create a
+  // full standard unique index that conflicts with the existing partial one.
+  // Do NOT add @unique. Do NOT run `prisma migrate dev` without first dropping
+  // the manual index. The engine also guards via explicit occurrenceKey lookup
+  // before insert (see lib/projects/recurring.ts).
+  occurrenceKey      String? @map("occurrence_key")
   createdAt  String  @default("") @map("created_at")
   updatedAt  String  @default("") @map("updated_at")
 

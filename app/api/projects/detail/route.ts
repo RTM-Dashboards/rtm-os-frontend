@@ -40,10 +40,11 @@
 //   A task with no due date (dueDate === null) and at least one unmet prereq
 //   is WAITING — shown as "Waiting" not "Overdue" or undated.
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { ROLE_RANK } from "@/lib/auth/vocab";
+import { generateRecurringTasks } from "@/lib/projects/recurring";
 import type { Prisma } from "@prisma/client";
 
 // ── Money-visible predicate ────────────────────────────────────────────────────
@@ -173,6 +174,34 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       // AM Manager passes through
     }
     // Executive / SystemAdmin pass through
+
+    // ── Generate recurring tasks (lazy, idempotent) ────────────────────────────
+    // Run the recurring engine after the response is sent so the detail
+    // response is never delayed by it.
+    //
+    // after() is used here because Vercel tears down the function as soon as
+    // the response is sent. A plain fire-and-forget promise (.catch()) is
+    // killed before it resolves in production. after() schedules the work to
+    // run in the same execution context but after the response commits,
+    // guaranteeing it actually runs.
+    //
+    // next/server.after is available from Next.js 15+. This project is on
+    // Next.js 16.2.6 so it is safe to use.
+    after(async () => {
+      const result = await generateRecurringTasks(project.id).catch((err) => {
+        console.error("[recurring] generateRecurringTasks threw for project", project.id, err);
+        return null;
+      });
+      if (result) {
+        console.log(
+          `[recurring] project=${project.id} ran=${result.ran}` +
+          ` generated=${result.generated} skippedDuplicate=${result.skippedDuplicate}` +
+          ` skippedPast=${result.skippedPast} errors=${result.errors.length}` +
+          (result.skipReason ? ` skipReason=${result.skipReason}` : "") +
+          (result.errors.length ? ` firstError=${result.errors[0]}` : ""),
+        );
+      }
+    });
 
     // ── Fetch business ────────────────────────────────────────────────────────
     const business = await prisma.business.findUnique({
