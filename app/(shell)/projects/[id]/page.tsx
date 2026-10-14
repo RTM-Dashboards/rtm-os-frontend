@@ -100,6 +100,23 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => { void loadProject(); }, [loadProject]);
 
+  // All tasks across all categories.
+  // useMemo must be called unconditionally (Rules of Hooks), so it runs before
+  // the loading / not-found early returns. The null-safe fallback makes it
+  // safe to call before we know whether `project` is populated.
+  const allTasks: ScopedTask[] = useMemo(
+    () => project?.categories.flatMap((c) => c.tasks) ?? [],
+    [project],
+  );
+  const tasksByDept = useMemo(() => {
+    return allTasks.reduce<Record<string, ScopedTask[]>>((acc, t) => {
+      const key = t.department ?? "Unassigned";
+      acc[key] = acc[key] ?? [];
+      acc[key].push(t);
+      return acc;
+    }, {});
+  }, [allTasks]);
+
   if (loading || project === undefined) {
     return (
       <div className="flex items-center justify-center min-h-screen" style={{ background: "var(--rtm-bg)" }}>
@@ -122,17 +139,6 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
-
-  // All tasks across all categories
-  const allTasks: ScopedTask[] = project.categories.flatMap((c) => c.tasks);
-  const tasksByDept = useMemo(() => {
-    return allTasks.reduce<Record<string, ScopedTask[]>>((acc, t) => {
-      const key = t.department ?? "Unassigned";
-      acc[key] = acc[key] ?? [];
-      acc[key].push(t);
-      return acc;
-    }, {});
-  }, [allTasks]);
 
   const openCount    = allTasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
   const doneCount    = allTasks.filter((t) => t.status === "done").length;
