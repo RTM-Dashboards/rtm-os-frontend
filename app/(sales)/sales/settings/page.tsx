@@ -200,7 +200,7 @@ export default function SalesSettingsPage() {
         <div className="px-5 py-4 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <h2 className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>Workflow Configuration</h2>
           <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-            Read-only summary of current configuration sourced from lib/sales/.
+            Read-only summary of current configuration.
           </p>
         </div>
         <div className="p-5 space-y-6" style={{ background: "var(--rtm-bg)" }}>
@@ -254,8 +254,8 @@ export default function SalesSettingsPage() {
                 Configure
               </Link>
             </div>
-            <Row label="Services in catalog" value="Live — managed in database" />
-            <Row label="Discount tiers" value="Live — managed in database" />
+            <Row label="Services in catalog" value={20} />
+            <Row label="Discount tiers" value={5} />
           </div>
 
           {/* Service Catalogue (DB-backed) */}
@@ -267,7 +267,6 @@ export default function SalesSettingsPage() {
                 Configure
               </Link>
             </div>
-            <Row label="Source" value="Postgres — service_catalog_items table" />
             <Row label="Covers" value="Services, pricing, discounts" />
           </div>
 

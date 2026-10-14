@@ -852,7 +852,7 @@ function DiscountConfig() {
       <div className="rounded-xl border overflow-hidden" style={{ borderColor: "var(--rtm-border)" }}>
         <div className="px-4 py-3 border-b" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
           <p className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>Discount Types</p>
-          <p className="text-[11px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>These types are configured in the database and match the budget engine. Changing their values here changes labels but not engine logic.</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>Read-only. These discount types define how a discount is calculated. Contact your administrator to add or remove types.</p>
         </div>
         <div className="divide-y" style={{ borderColor: "var(--rtm-border)" }}>
           {types.map((t) => (
@@ -861,7 +861,7 @@ function DiscountConfig() {
                 <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{t.label}</p>
                 <p className="text-[11px] mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>{t.description}</p>
               </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ background: "var(--rtm-surface)", color: "var(--rtm-text-muted)" }}>{t.value}</span>
+
             </div>
           ))}
         </div>
