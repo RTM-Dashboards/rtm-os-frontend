@@ -345,12 +345,14 @@ export default function WorkspaceSidebar({ workspace, open, onClose, authUser }:
   const pathname = usePathname();
 
   // Build deduplicated navItems: use override if present, otherwise dedup source items.
+  // Items with hidden: true are excluded from the sidebar; their routes remain reachable.
   const dedupedNavItems = (() => {
     const sourceItems = WORKSPACE_NAV_OVERRIDES[workspace.slug] ?? workspace.navItems;
     const seenHref  = new Set<string>();
     const seenLabel = new Set<string>();
     const items: WorkspaceNavItem[] = [];
     for (const item of sourceItems) {
+      if (item.hidden) continue;
       if (seenHref.has(item.href)) continue;
       if (seenLabel.has(item.label)) continue;
       seenHref.add(item.href);

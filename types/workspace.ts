@@ -8,6 +8,12 @@ export interface WorkspaceNavItem {
   badge?: string;
   group?: string;  // Optional section divider label rendered above this item
   children?: { label: string; href: string }[];
+  /**
+   * When true, the item is excluded from the sidebar navigation.
+   * The page and its route are left intact — a direct URL still opens it.
+   * To restore an entry, remove `hidden: true` (or set it to `false`).
+   */
+  hidden?: boolean;
 }
 
 export interface WorkspaceConfig {

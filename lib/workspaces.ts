@@ -19,25 +19,37 @@ export const workspaces: WorkspaceConfig[] = [
     accentColor: "#1d709f",
     role: "Account Managers",
     navItems: [
-      { label: "Dashboard",               href: "/account-management"},
-      { label: "Onboarding Queue",        href: "/account-management/onboarding"},
-      { label: "Projects",               href: "/account-management/projects"},
-      { label: "My Tasks",                href: "/account-management/tasks"},
-      { label: "Client Portfolio",        href: "/account-management/client-portfolio"},
-      { label: "Import Existing Client",     href: "/account-management/clients/import"},
-      { label: "Client Health",           href: "/account-management/client-health"},
-      { label: "Communications",          href: "/account-management/communications"},
-      { label: "Change Requests",         href: "/account-management/change-requests"},
-      { label: "Renewals",                href: "/account-management/renewals"},
-      { label: "Expansion Opportunities", href: "/account-management/expansion"},
-      { label: "Cancellations",           href: "/account-management/cancellations"},
-      { label: "Offboarding",             href: "/account-management/offboarding"},
-      { label: "Account Assignments",     href: "/account-management/assignments"},
-      { label: "Check-ins",               href: "/account-management/checkins"},
-      { label: "My Reports",              href: "/account-management/reports"},
-      { label: "AM Performance Analytics", href: "/account-management/performance"},
-      { label: "Executive Account View",   href: "/account-management/executive"},
-      { label: "Settings",                href: "/account-management/settings"},
+      // ── REAL DATA ─────────────────────────────────────────────────────────
+      // These entries are backed by Postgres (via Prisma / live API routes).
+      { label: "Onboarding Queue",        href: "/account-management/onboarding",      group: "CLIENTS" },
+      { label: "Client Portfolio",        href: "/account-management/client-portfolio", group: "CLIENTS" },
+      { label: "Import Existing Client",  href: "/account-management/clients/import",  group: "CLIENTS" },
+      { label: "Client Health",           href: "/account-management/client-health",   group: "CLIENTS" },
+      { label: "Communications",          href: "/account-management/communications",  group: "CLIENTS" },
+      { label: "Renewals",                href: "/account-management/renewals",        group: "CLIENTS" },
+      { label: "Account Assignments",     href: "/account-management/assignments",     group: "CLIENTS" },
+      { label: "Projects",                href: "/account-management/projects",        group: "TASKS & PROJECTS" },
+      // Global project list — real Postgres data via /api/projects/scoped
+      { label: "All Projects",            href: "/projects",                           group: "TASKS & PROJECTS" },
+      // Task Blueprints — real Postgres data via /api/task-blueprints
+      { label: "Task Blueprints",         href: "/tasks/templates",                    group: "TASKS & PROJECTS" },
+      { label: "Team Members",            href: "/account-management/team-members",   group: "TEAM" },
+
+      // ── NOT READY (mock data) ─────────────────────────────────────────────
+      // hidden: true keeps the route alive; remove it when real data lands.
+      // To restore an entry: delete `hidden: true` from the nav item below.
+      { label: "Dashboard",               href: "/account-management",                hidden: true },
+      { label: "My Tasks",                href: "/account-management/tasks",           hidden: true },
+      { label: "Change Requests",         href: "/account-management/change-requests", hidden: true },
+      { label: "Expansion Opportunities", href: "/account-management/expansion",       hidden: true },
+      { label: "Cancellations",           href: "/account-management/cancellations",   hidden: true },
+      { label: "Offboarding",             href: "/account-management/offboarding",     hidden: true },
+      { label: "Check-ins",               href: "/account-management/checkins",        hidden: true },
+      { label: "My Reports",              href: "/account-management/reports",         hidden: true },
+      { label: "AM Performance Analytics", href: "/account-management/performance",   hidden: true },
+      { label: "Executive Account View",  href: "/account-management/executive",       hidden: true },
+      { label: "Settings",                href: "/account-management/settings",        hidden: true },
+      { label: "Roles and Permissions",   href: "/account-management/roles",           hidden: true },
     ],
   },
 

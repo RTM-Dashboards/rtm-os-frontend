@@ -323,15 +323,6 @@ function FilterBar({
   );
 }
 
-// ── Role switcher (dev/demo helper) ──────────────────────────────────────────
-
-const ROLE_OPTIONS: { value: WorkspaceUserRole; label: string }[] = [
-  { value: "department-member", label: "Department Member" },
-  { value: "department-lead",   label: "Department Lead"   },
-  { value: "manager",           label: "Manager / Operations" },
-  { value: "executive",         label: "Executive"           },
-];
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 interface WorkspaceTaskPageProps {
@@ -355,9 +346,8 @@ export default function WorkspaceTaskPage({
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<WorkspaceTask[]>(initialTasks);
 
-  // Role switcher (mock — demo/dev only)
-  const [mockRole, setMockRole] = useState<WorkspaceUserRole>(initialRole);
-  const userCtx = useMemo(() => buildUserCtx(mockRole, workspaceName), [mockRole, workspaceName]);
+  // Role is fixed to the value passed from the workspace (defaults to department-member).
+  const userCtx = useMemo(() => buildUserCtx(initialRole, workspaceName), [initialRole, workspaceName]);
 
   const activeTask = useMemo(
     () => tasks.find(t => t.id === activeTaskId) ?? null,
@@ -483,36 +473,6 @@ export default function WorkspaceTaskPage({
           <p className="text-sm mt-0.5" style={{ color: "var(--rtm-text-secondary, #475569)" }}>
             Filtered task view from the global project and task system.
           </p>
-        </div>
-
-        {/* ── Role switcher (mock demo) ── */}
-        <div style={{
-          ...cardStyle, padding: "10px 14px",
-          display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap",
-        }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--rtm-text-muted, #64748b)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Mock Role
-          </span>
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {ROLE_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => setMockRole(opt.value)}
-                style={{
-                  padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
-                  cursor: "pointer",
-                  background: mockRole === opt.value ? "#1d709f" : "var(--rtm-bg, #f8fafc)",
-                  color: mockRole === opt.value ? "#fff" : "var(--rtm-text-secondary, #475569)",
-                  border: `1px solid ${mockRole === opt.value ? "#1d709f" : "var(--rtm-border, #e2e8f0)"}`,
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <span style={{ fontSize: 11, color: "var(--rtm-text-muted, #94a3b8)", marginLeft: 4 }}>
-            {userCtx.hasProjectAccess ? "Project access: ON" : "Project access: OFF — project name shown as context only"}
-          </span>
         </div>
 
         {/* ── Source banner ── */}
