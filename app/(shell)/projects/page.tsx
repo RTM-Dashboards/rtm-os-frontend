@@ -70,7 +70,7 @@ function KpiCard({ label, value, sub }: { label: string; value: number | string;
 // Row actions menu
 // ---------------------------------------------------------------------------
 
-function RowActions({ project }: { project: ScopedProjectListItem }) {
+function RowActions({ project, basePath }: { project: ScopedProjectListItem; basePath: string }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -91,8 +91,8 @@ function RowActions({ project }: { project: ScopedProjectListItem }) {
             style={{ border: "1px solid var(--rtm-border)" }}
           >
             {[
-              { label: "View Project", href: `/projects/${project.id}` },
-              { label: "View Tasks",   href: `/projects/${project.id}#tasks` },
+              { label: "View Project", href: `${basePath}/${project.id}` },
+              { label: "View Tasks",   href: `${basePath}/${project.id}#tasks` },
             ].map((a) => (
               <Link
                 key={a.label}
@@ -117,7 +117,7 @@ function RowActions({ project }: { project: ScopedProjectListItem }) {
 
 type ViewMode = "projects" | "tasks";
 
-export default function GlobalProjectsPage() {
+export default function GlobalProjectsPage({ basePath = "/projects" }: { basePath?: string } = {}) {
   const [view, setView] = useState<ViewMode>("projects");
   const [statusFilter, setStatusFilter] = useState("All");
   const [search, setSearch] = useState("");
@@ -311,7 +311,7 @@ export default function GlobalProjectsPage() {
                         >
                           <td className="px-3 py-3 max-w-[220px]">
                             <Link
-                              href={`/projects/${p.id}`}
+                              href={`${basePath}/${p.id}`}
                               className="font-semibold hover:underline text-sm"
                               style={{ color: "var(--rtm-blue)" }}
                             >
@@ -348,7 +348,7 @@ export default function GlobalProjectsPage() {
                             <StatusBadge status={p.status} />
                           </td>
                           <td className="px-3 py-3">
-                            <RowActions project={p} />
+                            <RowActions project={p} basePath={basePath} />
                           </td>
                         </tr>
                       ))}
@@ -462,7 +462,7 @@ export default function GlobalProjectsPage() {
                           >
                             <td className="px-3 py-3 max-w-[200px]">
                               <Link
-                                href={`/projects/${t.projectId}#tasks`}
+                                href={`${basePath}/${t.projectId}#tasks`}
                                 className="font-semibold text-sm hover:underline"
                                 style={{ color: "var(--rtm-blue)" }}
                               >
@@ -471,7 +471,7 @@ export default function GlobalProjectsPage() {
                             </td>
                             <td className="px-3 py-3">
                               <Link
-                                href={`/projects/${t.projectId}`}
+                                href={`${basePath}/${t.projectId}`}
                                 className="text-xs hover:underline"
                                 style={{ color: "var(--rtm-text-secondary)" }}
                               >

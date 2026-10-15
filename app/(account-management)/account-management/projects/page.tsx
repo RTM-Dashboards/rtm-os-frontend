@@ -615,7 +615,7 @@ function ProjectsPageInner() {
                         {/* Actions */}
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1.5 min-w-[130px]">
-                            <Link href={`/projects/${project.id}`}
+                            <Link href={`/account-management/projects/${project.id}`}
                               className="inline-flex items-center justify-center rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 whitespace-nowrap">
                               Manage Tasks →
                             </Link>
@@ -671,7 +671,7 @@ function ProjectsPageInner() {
                         </div>
                       </div>
                       <div className="flex gap-2 flex-shrink-0">
-                        <Link href={`/projects/${project.id}`}
+                        <Link href={`/account-management/projects/${project.id}`}
                           className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 whitespace-nowrap">
                           Manage Tasks →
                         </Link>

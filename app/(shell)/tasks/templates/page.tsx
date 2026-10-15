@@ -4,14 +4,14 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { VALID_DEPARTMENTS, type Department as VocabDepartment } from "@/lib/auth/vocab";
 
-// 
+//
 // Task Blueprints (formerly Task Template Library)
 // Route: /tasks/templates
 // Master source of task blueprints for all services sold in RTM OS
 // Belongs to: Projects & Tasks → Task Blueprints
-// 
+//
 
-//  Types 
+//  Types
 
 type TemplateType =
   | "Setup"| "Onboarding"| "Launch"| "Monthly Management"| "Quarterly Review"| "Renewal"| "Offboarding"| "Cancellation"| "Upsell"| "Budget Reallocation";
@@ -56,7 +56,7 @@ interface TaskTemplate {
   monthlyTaskCount: number;
   quarterlyTaskCount: number;
   marginContribution: string;
-  // SLA policy fields — null means not yet set by Account Management
+  // SLA policy fields - null means not yet set by Account Management
   firstResponseDays:    number | null;
   targetCompletionDays: number | null;
   dueDateOffsetDays:    number | null;
@@ -117,11 +117,11 @@ interface BlueprintApiRecord {
   estimatedTotalHours: number;
   tasks: BlueprintApiTask[];
   isActive: boolean;
-  /** Full group structure from Postgres — present for edit. */
+  /** Full group structure from Postgres - present for edit. */
   groups?: TemplateGroup[];
   lastUpdated: string;
   version: string;
-  // SLA policy fields from DB — null means not set
+  // SLA policy fields from DB - null means not set
   firstResponseDays:    number | null;
   targetCompletionDays: number | null;
   dueDateOffsetDays:    number | null;
@@ -141,7 +141,7 @@ interface BlueprintMeta {
   estimatedTotalHours: number;
   isActive: boolean;
   version: string;
-  // SLA policy fields — null means not set
+  // SLA policy fields - null means not set
   firstResponseDays:    number | null;
   targetCompletionDays: number | null;
   dueDateOffsetDays:    number | null;
@@ -154,7 +154,7 @@ interface BlueprintMeta {
 // After DN-dept-names migration all stored values are already canonical;
 // this map keeps legacy keys as pass-through safety in case any old data remains.
 const DEPT_MAP: Record<string, Department> = {
-  // Canonical (post-migration) — pass-through
+  // Canonical (post-migration) - pass-through
   "Account Management":       "Account Management",
   "Sales":                    "Sales",
   "Billing":                  "Billing",
@@ -165,7 +165,7 @@ const DEPT_MAP: Record<string, Department> = {
   "Reporting":                "Reporting",
   "Local Service Ads":        "Local Service Ads",
   "IT & Security":            "IT & Security",
-  // Legacy — map to canonical for any residual old data
+  // Legacy - map to canonical for any residual old data
   "SEO":             "SEO & Local",
   "GBP":             "SEO & Local",
   "PPC":             "Paid Advertising",
@@ -221,7 +221,7 @@ function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
     monthlyTaskCount: bp.tasks.length,
     quarterlyTaskCount: bp.tasks.length * 3,
     marginContribution: "High",
-    // SLA fields from DB — null until Account Management sets them
+    // SLA fields from DB - null until Account Management sets them
     firstResponseDays:    bp.firstResponseDays    ?? null,
     targetCompletionDays: bp.targetCompletionDays ?? null,
     dueDateOffsetDays:    bp.dueDateOffsetDays    ?? null,
@@ -230,7 +230,7 @@ function blueprintToTemplate(bp: BlueprintApiRecord): TaskTemplate {
 }
 
 // ---------------------------------------------------------------------------
-// TemplateEditorModal — create or edit a task_list_templates row.
+// TemplateEditorModal - create or edit a task_list_templates row.
 //
 // Create: select a service from the catalogue, build setup + recurring groups.
 // Edit:   loaded with existing groups; saves via PATCH /api/task-blueprints?id=<serviceId>.
@@ -392,7 +392,7 @@ function EditorTaskRow({
             disabled={disabled}
             className="text-xs font-medium rounded-lg border px-2 py-1 focus:outline-none"
             style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
-            <option value="">— not set —</option>
+            <option value="">- not set -</option>
             {VALID_DEPARTMENTS_EDITOR.map((d) => <option key={d} value={d}>{d}</option>)}
           </select>
         </div>
@@ -547,7 +547,7 @@ function EditorGroupPanel({
       <div className="p-4 space-y-3">
         {pasteMode && (
           <div className="rounded-lg border p-3" style={{ background: "#EFF6FF", borderColor: "#BFDBFE" }}>
-            <label className="text-xs font-semibold block mb-1" style={{ color: "#1D4ED8" }}>Paste task labels — one per line</label>
+            <label className="text-xs font-semibold block mb-1" style={{ color: "#1D4ED8" }}>Paste task labels - one per line</label>
             <textarea ref={pasteRef} rows={4} value={pasteValue} onChange={(e) => setPasteValue(e.target.value)}
               placeholder={"Write a blog post\nOptimize meta tags\nSubmit sitemap"}
               style={{ ...EDITOR_INPUT, width: "100%", resize: "vertical", fontFamily: "inherit" }} />
@@ -614,7 +614,7 @@ function TemplateEditorModal({
   const [claimWarning, setClaimWarning] = useState<string | null>(null);
   const [claimWarningAcknowledged, setClaimWarningAcknowledged] = useState(false);
 
-  // Blueprint-level meta fields — all editable
+  // Blueprint-level meta fields - all editable
   const [meta, setMeta] = useState<BlueprintMeta>(initialMeta);
 
   // Service picker (create only)
@@ -624,7 +624,7 @@ function TemplateEditorModal({
   // Toggle between catalogue picker and free-form identifier (create only)
   const [useCustomId, setUseCustomId] = useState(false);
   const [customIdInput, setCustomIdInput] = useState("");
-  // All existing template service ids — used to check uniqueness of custom ids
+  // All existing template service ids - used to check uniqueness of custom ids
   const [existingTemplateIds, setExistingTemplateIds] = useState<Set<string>>(new Set());
 
   // Activation mapping keys (create only)
@@ -687,7 +687,7 @@ function TemplateEditorModal({
     if (cycle) {
       const allById = new Map(setupTasks.map((t) => [t.localId, t]));
       const names = cycle.map((id) => `"${allById.get(id)?.label || id}"`).join(" → ");
-      setError(`Cannot save: cycle detected — ${names}`);
+      setError(`Cannot save: cycle detected - ${names}`);
       return;
     }
 
@@ -837,7 +837,7 @@ function TemplateEditorModal({
                 </button>
               </div>
               {servicesLoading ? (
-                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading services…</p>
+                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading services...</p>
               ) : useCustomId ? (
                 <div className="space-y-1">
                   <input
@@ -849,7 +849,7 @@ function TemplateEditorModal({
                     style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}
                   />
                   <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>
-                    Lowercase only, no spaces. Must not already be in use. Used as the blueprint’s internal service id.
+                    Lowercase only, no spaces. Must not already be in use. Used as the blueprint's internal service id.
                   </p>
                   {customIdInput && /\s/.test(customIdInput) && (
                     <p className="text-[11px] font-semibold" style={{ color: "#DC2626" }}>No spaces allowed.</p>
@@ -862,7 +862,7 @@ function TemplateEditorModal({
                 <select value={serviceId} onChange={(e) => setServiceId(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg text-sm outline-none"
                   style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", color: "var(--rtm-text-primary)" }}>
-                  <option value="">— choose a service —</option>
+                  <option value="">- choose a service -</option>
                   {services.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                 </select>
               )}
@@ -902,7 +902,7 @@ function TemplateEditorModal({
           )}
 
 
-          {/* Blueprint meta fields — always visible, create and edit */}
+          {/* Blueprint meta fields - always visible, create and edit */}
           <section className="space-y-3">
             <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Blueprint Details</div>
             <div className="grid grid-cols-2 gap-3">
@@ -917,7 +917,7 @@ function TemplateEditorModal({
                 <select value={meta.department} onChange={(e) => setMeta((m) => ({ ...m, department: e.target.value }))}
                   disabled={saving}
                   style={{ ...EDITOR_INPUT, width: "100%" }}>
-                  <option value="">— choose department —</option>
+                  <option value="">- choose department -</option>
                   {VALID_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
@@ -969,62 +969,85 @@ function TemplateEditorModal({
             </div>
           </section>
 
-          {/* Claimed services — which catalogue services this blueprint covers */}
-          <section className="space-y-3">
-            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Services This Blueprint Covers</div>
-            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
-              When a project is launched, sold services are matched to this blueprint by these ids.
-              A service can only be claimed by one blueprint. Onboarding and Reporting run on every
-              project unconditionally — do not claim them here.
-            </p>
-            {servicesLoading ? (
-              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading catalogue…</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {services.map((svc) => {
-                  const claimed = meta.claimedServiceIds.includes(svc.id);
-                  return (
-                    <label
-                      key={svc.id}
-                      className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
-                      style={{
-                        padding: "4px 10px",
-                        borderRadius: 8,
-                        border: `1px solid ${claimed ? "#BFDBFE" : "var(--rtm-border)"}`,
-                        background: claimed ? "#EFF6FF" : "var(--rtm-bg)",
-                        color: claimed ? "#1D4ED8" : "var(--rtm-text-secondary)",
-                        opacity: saving ? 0.5 : 1,
-                        cursor: saving ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        disabled={saving}
-                        checked={claimed}
-                        onChange={() => {
-                          const next = claimed
-                            ? meta.claimedServiceIds.filter((id) => id !== svc.id)
-                            : [...meta.claimedServiceIds, svc.id];
-                          setMeta((m) => ({ ...m, claimedServiceIds: next }));
-                        }}
-                        className="w-3 h-3"
-                      />
-                      <span className="font-semibold" style={{ fontSize: 11 }}>{svc.label}</span>
-                      <span style={{ fontSize: 10, opacity: 0.6 }}>({svc.id})</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-            {meta.claimedServiceIds.length > 0 && (
-              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                {meta.claimedServiceIds.length} service{meta.claimedServiceIds.length !== 1 ? "s" : ""} claimed: 
-                <span style={{ color: "var(--rtm-text-secondary)" }}>{meta.claimedServiceIds.join(", ")}</span>
-              </p>
-            )}
-          </section>
+          {/* Claimed services — additional catalogue services this same task list also covers.
+               The blueprint's own primary service (set by the Service picker above, or the
+               blueprint's id in edit mode) is excluded here to avoid showing it twice.
+               launchProject uses these ids to route a line-item whose id does not directly
+               match the blueprint's own serviceId. */}
+          {(() => {
+            // Compute the primary service id so we can exclude it from the checkboxes.
+            // Create mode: the catalogue picker value, or the custom-id entry.
+            // Edit mode: the blueprint's own id (editingServiceId).
+            const primaryId = isEditing
+              ? (editingServiceId ?? "")
+              : (useCustomId ? customIdInput.trim().toLowerCase() : serviceId);
+            // Only show services that are not the primary service.
+            const additionalServices = services.filter((s) => s.id !== primaryId);
+            return (
+              <section className="space-y-3">
+                <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Additional Services This Blueprint Also Covers</div>
+                <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+                  If this same task list covers other sold services (beyond the primary service above),
+                  tick them here. When a project is launched, any matching line item is routed to this
+                  blueprint instead of requiring a separate one. A service can only be claimed by one
+                  blueprint. Onboarding and Reporting run on every project unconditionally — do not
+                  claim them here.
+                </p>
+                {servicesLoading ? (
+                  <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading catalogue…</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {additionalServices.map((svc) => {
+                      const claimed = meta.claimedServiceIds.includes(svc.id);
+                      return (
+                        <label
+                          key={svc.id}
+                          className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: 8,
+                            border: `1px solid ${claimed ? "#BFDBFE" : "var(--rtm-border)"}`,
+                            background: claimed ? "#EFF6FF" : "var(--rtm-bg)",
+                            color: claimed ? "#1D4ED8" : "var(--rtm-text-secondary)",
+                            opacity: saving ? 0.5 : 1,
+                            cursor: saving ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            disabled={saving}
+                            checked={claimed}
+                            onChange={() => {
+                              const next = claimed
+                                ? meta.claimedServiceIds.filter((id) => id !== svc.id)
+                                : [...meta.claimedServiceIds, svc.id];
+                              setMeta((m) => ({ ...m, claimedServiceIds: next }));
+                            }}
+                            className="w-3 h-3"
+                          />
+                          <span className="font-semibold" style={{ fontSize: 11 }}>{svc.label}</span>
+                          <span style={{ fontSize: 10, opacity: 0.6 }}>({svc.id})</span>
+                        </label>
+                      );
+                    })}
+                    {additionalServices.length === 0 && (
+                      <p className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>
+                        No other catalogue services available.
+                      </p>
+                    )}
+                  </div>
+                )}
+                {meta.claimedServiceIds.length > 0 && (
+                  <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                    {meta.claimedServiceIds.length} additional service{meta.claimedServiceIds.length !== 1 ? "s" : ""} claimed: 
+                    <span style={{ color: "var(--rtm-text-secondary)" }}>{meta.claimedServiceIds.join(", ")}</span>
+                  </p>
+                )}
+              </section>
+            );
+          })()}
 
-          {/* SLA Policy fields — set by Account Management */}
+          {/* SLA Policy fields - set by Account Management */}
           <section className="space-y-3">
             <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Service Level Agreement</div>
             <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>RTM delivery policy for this blueprint. Leave blank until confirmed. All values are in days.</p>
@@ -1135,7 +1158,7 @@ function TemplateEditorModal({
           <button type="button" onClick={handleSave} disabled={saving}
             className="px-5 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-50"
             style={{ background: "var(--rtm-blue)" }}>
-            {saving ? "Saving…" : isEditing ? "Save changes" : "Create Template"}
+            {saving ? "Saving..." : isEditing ? "Save changes" : "Create Template"}
           </button>
           <button type="button" onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm font-semibold"
@@ -1149,7 +1172,7 @@ function TemplateEditorModal({
   );
 }
 
-//  Design helpers 
+//  Design helpers
 
 const DEPT_COLORS: Record<Department, { bg?: string; color?: string; border: string }> = {
   "Account Management":       { bg: "#FFFBEB", color: "#D97706", border: "#FDE68A" },
@@ -1208,7 +1231,7 @@ const PRIORITY_COLORS: Record<TaskPriority, { bg?: string; color?: string }> = {
   "Low":    { bg: "#F8FAFC", color: "#94A3B8"},
 };
 
-//  Sub-components 
+//  Sub-components
 
 function DeptBadge({ dept }: { dept: Department }) {
   const c = DEPT_COLORS[dept];
@@ -1276,7 +1299,7 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
   );
 }
 
-//  Template Detail Drawer 
+//  Template Detail Drawer
 
 function TemplateDrawer({
   template,
@@ -1432,7 +1455,7 @@ function TemplateDrawer({
           {activeTab === "tasks"&& (
             <div className="space-y-3">
               <div className="text-xs font-bold mb-3"style={{ color: "var(--rtm-text-primary)"}}>
-                Task Breakdown – {template.taskCount} tasks
+                Task Breakdown - {template.taskCount} tasks
               </div>
               <div className="overflow-x-auto rounded-xl"style={{ border: "1px solid var(--rtm-border)"}}>
                 <table className="w-full text-sm min-w-[600px]">
@@ -1455,11 +1478,11 @@ function TemplateDrawer({
                           <span className="font-semibold text-xs"style={{ color: "var(--rtm-text-primary)"}}>{task.name}</span>
                         </td>
                         <td className="px-3 py-2.5 text-xs" style={{ color: "var(--rtm-text-secondary)", maxWidth: 160 }}>
-                          {task.description || <span style={{ color: "var(--rtm-text-muted)" }}>—</span>}
+                          {task.description || <span style={{ color: "var(--rtm-text-muted)" }}>-</span>}
                         </td>
                         <td className="px-3 py-2.5"><DeptBadge dept={task.department} /></td>
-                        <td className="px-3 py-2.5 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{task.ownerRole || "—"}</td>
-                        <td className="px-3 py-2.5 text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{task.estimatedHours ? `${task.estimatedHours}h` : "—"}</td>
+                        <td className="px-3 py-2.5 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>{task.ownerRole || "-"}</td>
+                        <td className="px-3 py-2.5 text-xs font-bold"style={{ color: "var(--rtm-text-primary)"}}>{task.estimatedHours ? `${task.estimatedHours}h` : "-"}</td>
                         <td className="px-3 py-2.5 text-xs font-semibold"style={{ color: "var(--rtm-text-secondary)"}}>{task.dueOffset}</td>
                         <td className="px-3 py-2.5"><PriorityBadge priority={task.priority} /></td>
                         <td className="px-3 py-2.5"><DepStatusBadge status={task.status} /></td>
@@ -1482,7 +1505,7 @@ function TemplateDrawer({
                     className="flex items-center justify-between px-4 py-3 rounded-xl"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)"}}
                   >
                     <div className="flex items-center gap-2">
-                      
+
                       <span className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{dep}</span>
                     </div>
                     <DepStatusBadge status="Required"/>
@@ -1633,7 +1656,7 @@ function TemplateDrawer({
                     { action: "Template created", by: "Admin", date: "2025-06-15"},
                   ].map((log, i) => (
                     <div key={i} className="flex items-center gap-3 text-xs"style={{ color: "var(--rtm-text-secondary)"}}>
-                      
+
                       <span className="font-semibold">{log.action}</span>
                       <span>by {log.by}</span>
                       <span className="ml-auto"style={{ color: "var(--rtm-text-muted)"}}>{log.date}</span>
@@ -1669,7 +1692,7 @@ function TemplateDrawer({
   );
 }
 
-//  Main Page 
+//  Main Page
 
 export default function TaskTemplatesPage() {
   // ── Live data from /api/task-blueprints ───────────────────────────────────
@@ -1677,7 +1700,7 @@ export default function TaskTemplatesPage() {
   /** Raw blueprint records keyed by serviceId, for the Edit button. */
   const [rawBlueprints, setRawBlueprints] = useState<Map<string, BlueprintApiRecord>>(new Map());
   const [loadError, setLoadError] = useState("");
-  /** Live catalogue — used to compute real unmapped count. */
+  /** Live catalogue - used to compute real unmapped count. */
   const [catalogueServices, setCatalogueServices] = useState<Array<{ id: string; label: string }>>([]);
 
   const loadTemplates = useCallback(async () => {
@@ -1746,7 +1769,7 @@ export default function TaskTemplatesPage() {
   const [activeSection, setActiveSection] = useState<"templates"| "preview">("templates");
   const [previewLineItem, setPreviewLineItem] = useState("SEO Monthly");
 
-  //  Derived data 
+  //  Derived data
 
   const totalTemplates = TASK_TEMPLATES.length;
   const totalTasksDefined = TASK_TEMPLATES.reduce((s, t) => s + t.taskCount, 0);
@@ -1769,7 +1792,7 @@ export default function TaskTemplatesPage() {
   );
   const unmappedItems = uncoveredCatalogueServices.length;
 
-  //  Filter 
+  //  Filter
 
   const filtered = TASK_TEMPLATES.filter((t) => {
     const q = searchQuery.toLowerCase();
@@ -1784,7 +1807,7 @@ export default function TaskTemplatesPage() {
     return matchSearch && matchDept && matchType && matchStatus;
   });
 
-  //  Preview 
+  //  Preview
 
   const previewTemplate = TASK_TEMPLATES.find(
     (t) => t.mappedLineItem.toLowerCase() === previewLineItem.toLowerCase()
@@ -1854,7 +1877,7 @@ export default function TaskTemplatesPage() {
         </div>
       </div>
 
-      {/*  Summary line — only what the table does not already show  */}
+      {/*  Summary line - only what the table does not already show  */}
       {unmappedItems > 0 && (
         <div className="flex items-center gap-2 text-sm" style={{ color: "var(--rtm-text-secondary)" }}>
           <span>{unmappedItems} service{unmappedItems !== 1 ? "s" : ""} have no task list.</span>
@@ -1868,7 +1891,7 @@ export default function TaskTemplatesPage() {
           </button>
           {unmappedExpanded && (
             <span style={{ color: "var(--rtm-text-muted)" }}>
-              —
+              -
               {uncoveredCatalogueServices.map((s, i) => (
                 <span key={s.id}>{i > 0 ? ", " : " "}{s.label}</span>
               ))}.
@@ -2024,31 +2047,31 @@ export default function TaskTemplatesPage() {
                         </div>
                       </td>
 
-                      {/* Department — plain text */}
+                      {/* Department - plain text */}
                       <td className="px-4 py-3">
                         <span className="text-xs" style={{ color: "var(--rtm-text-primary)"}}>{template.department}</span>
                       </td>
 
-                      {/* Type — plain text */}
+                      {/* Type - plain text */}
                       <td className="px-4 py-3">
                         <span className="text-xs" style={{ color: "var(--rtm-text-primary)"}}>{template.type}</span>
                       </td>
 
-                      {/* Mapped Line Item — plain text */}
+                      {/* Mapped Line Item - plain text */}
                       <td className="px-4 py-3">
                         <span className="text-xs" style={{ color: "var(--rtm-text-primary)"}}>
                           {template.mappedLineItem}
                         </span>
                       </td>
 
-                      {/* Task Count — plain */}
+                      {/* Task Count - plain */}
                       <td className="px-4 py-3">
                         <span className="text-xs" style={{ color: "var(--rtm-text-secondary)"}}>
                           {template.taskCount}
                         </span>
                       </td>
 
-                      {/* SLA columns — stored per blueprint, null = Not set */}
+                      {/* SLA columns - stored per blueprint, null = Not set */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs" style={{ color: template.firstResponseDays !== null ? "var(--rtm-text-primary)" : "var(--rtm-text-muted)"}}>
                           {template.firstResponseDays !== null ? `${template.firstResponseDays} bd` : "Not set"}
@@ -2070,7 +2093,7 @@ export default function TaskTemplatesPage() {
                         </span>
                       </td>
 
-                      {/* Activation Trigger — plain text */}
+                      {/* Activation Trigger - plain text */}
                       <td className="px-4 py-3">
                         <span className="text-xs" style={{ color: "var(--rtm-text-primary)"}}>{template.activationTrigger}</span>
                       </td>
@@ -2113,7 +2136,7 @@ export default function TaskTemplatesPage() {
 
             {filtered.length === 0 && (
               <div className="py-12 text-center"style={{ color: "var(--rtm-text-muted)"}}>
-                
+
                 <div className="text-sm font-semibold">No templates match your filters.</div>
               </div>
             )}
@@ -2137,7 +2160,7 @@ export default function TaskTemplatesPage() {
             <div
               className="px-5 py-4 flex items-center gap-2"style={{ background: "#FFFBEB", borderBottom: "1px solid #FDE68A"}}
             >
-              
+
               <h2 className="text-sm font-extrabold"style={{ color: "var(--rtm-text-primary)"}}>
                 Activation Rules Engine
               </h2>
@@ -2286,7 +2309,7 @@ export default function TaskTemplatesPage() {
               <div
                 className="w-full max-w-md rounded-xl p-4 flex items-center gap-4"style={{ background: "#EFF6FF", border: "2px solid #BFDBFE"}}
               >
-                
+
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider"style={{ color: "#1D4ED8"}}>Selected Line Item</div>
                   <div className="text-lg font-black"style={{ color: "#1D4ED8"}}>{previewLineItem}</div>
@@ -2300,7 +2323,7 @@ export default function TaskTemplatesPage() {
               <div
                 className="w-full max-w-md rounded-xl p-4 flex items-center gap-4"style={{ background: "#FAF5FF", border: "2px solid #DDD6FE"}}
               >
-                
+
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider"style={{ color: "#7C3AED"}}>Mapped Template</div>
                   <div className="text-lg font-black"style={{ color: "#7C3AED"}}>{previewTemplate.name}</div>
@@ -2316,7 +2339,7 @@ export default function TaskTemplatesPage() {
                 className="w-full max-w-md rounded-xl p-4"style={{ background: "#ECFDF5", border: "2px solid #A7F3D0"}}
               >
                 <div className="flex items-center gap-3 mb-3">
-                  
+
                   <div>
                     <div className="text-[10px] font-bold uppercase tracking-wider"style={{ color: "#059669"}}>Tasks Generated</div>
                     <div className="text-lg font-black"style={{ color: "#059669"}}>{previewTemplate.taskCount} Tasks</div>
@@ -2347,7 +2370,7 @@ export default function TaskTemplatesPage() {
                   border: `2px solid ${DEPT_COLORS[previewTemplate.department].border}`,
                 }}
               >
-                
+
                 <div>
                   <div
                     className="text-[10px] font-bold uppercase tracking-wider"style={{ color: DEPT_COLORS[previewTemplate.department].color }}
@@ -2372,7 +2395,7 @@ export default function TaskTemplatesPage() {
             className="rounded-xl p-5"style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)"}}
           >
             <h2 className="text-sm font-extrabold mb-4"style={{ color: "var(--rtm-text-primary)"}}>
-              SLA Policy – {previewTemplate.name}
+              SLA Policy - {previewTemplate.name}
             </h2>
             <div className="grid grid-cols-2 gap-3">
               {[

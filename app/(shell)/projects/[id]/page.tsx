@@ -75,7 +75,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 // Page
 // ---------------------------------------------------------------------------
 
-export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ProjectDetailPage({ params, backPath = "/projects" }: { params: Promise<{ id: string }>; backPath?: string }) {
   const { id } = use(params);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
@@ -132,7 +132,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
           <p className="text-sm font-semibold mb-4" style={{ color: "var(--rtm-text-secondary)" }}>
             Project not found.
           </p>
-          <Link href="/projects" className="text-sm hover:underline" style={{ color: "var(--rtm-blue)" }}>
+          <Link href={backPath} className="text-sm hover:underline" style={{ color: "var(--rtm-blue)" }}>
             Back to Projects
           </Link>
         </div>
@@ -159,7 +159,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
         <div className="max-w-[1200px] mx-auto">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs mb-3" style={{ color: "var(--rtm-text-muted)" }}>
-            <Link href="/projects" className="hover:underline" style={{ color: "var(--rtm-blue)" }}>Projects</Link>
+            <Link href={backPath} className="hover:underline" style={{ color: "var(--rtm-blue)" }}>Projects</Link>
             <span>/</span>
             <span>{project.name}</span>
           </div>
@@ -179,7 +179,7 @@ export default function ProjectDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
-              <Link href="/projects" className="px-3 py-1.5 rounded-lg text-xs font-semibold border hover:bg-gray-50"
+              <Link href={backPath} className="px-3 py-1.5 rounded-lg text-xs font-semibold border hover:bg-gray-50"
                 style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
                 Back
               </Link>
