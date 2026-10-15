@@ -420,7 +420,7 @@ function ProjectsPageInner() {
           <p className="text-sm text-slate-500 mt-1">
             Project health, off-track tasks, and communication context.
             Task creation and editing lives in the{" "}
-            <Link href="/projects" className="text-blue-600 underline">Global Project Management</Link> view.
+            <Link href="/account-management/all-projects" className="text-blue-600 underline">Global Project Management</Link> view.
           </p>
         </div>
       </div>

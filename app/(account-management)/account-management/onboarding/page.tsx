@@ -259,7 +259,7 @@ function QueueClientRow({
             // project via launchProject. The wizard path is retired. Link to the
             // Postgres project management view instead.
             <Link
-              href="/projects"
+              href="/account-management/all-projects"
               className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors text-center"
             >
               View Projects →

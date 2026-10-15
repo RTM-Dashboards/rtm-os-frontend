@@ -28,11 +28,13 @@ export const workspaces: WorkspaceConfig[] = [
       { label: "Communications",          href: "/account-management/communications",  group: "CLIENTS" },
       { label: "Renewals",                href: "/account-management/renewals",        group: "CLIENTS" },
       { label: "Account Assignments",     href: "/account-management/assignments",     group: "CLIENTS" },
-      { label: "Projects",                href: "/account-management/projects",        group: "TASKS & PROJECTS" },
+      { label: "Projects",                href: "/account-management/projects",                group: "TASKS & PROJECTS" },
       // Global project list — real Postgres data via /api/projects/scoped
-      { label: "All Projects",            href: "/projects",                           group: "TASKS & PROJECTS" },
+      // Route lives inside (account-management) group so AM sidebar stays.
+      { label: "All Projects",            href: "/account-management/all-projects",             group: "TASKS & PROJECTS" },
       // Task Blueprints — real Postgres data via /api/task-blueprints
-      { label: "Task Blueprints",         href: "/tasks/templates",                    group: "TASKS & PROJECTS" },
+      // Route lives inside (account-management) group so AM sidebar stays.
+      { label: "Task Blueprints",         href: "/account-management/tasks/templates",          group: "TASKS & PROJECTS" },
       { label: "Team Members",            href: "/account-management/team-members",   group: "TEAM" },
 
       // ── NOT READY (mock data) ─────────────────────────────────────────────
