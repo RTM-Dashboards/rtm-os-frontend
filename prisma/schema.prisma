@@ -842,10 +842,14 @@ model TaskListTemplate {
   createdAt            String  @default("") @map("created_at")
   updatedAt            String  @default("") @map("updated_at")
   // SLA policy fields — set by Account Management; nullable until filled
-  firstResponseDays    Int?    @map("first_response_days")
-  targetCompletionDays Int?    @map("target_completion_days")
-  dueDateOffsetDays    Int?    @map("due_date_offset_days")
-  escalationAfterDays  Int?    @map("escalation_after_days")
+  firstResponseDays                Int?     @map("first_response_days")
+  firstResponseExcludeWeekends     Boolean  @default(false) @map("first_response_exclude_weekends")
+  targetCompletionDays             Int?     @map("target_completion_days")
+  targetCompletionExcludeWeekends  Boolean  @default(false) @map("target_completion_exclude_weekends")
+  dueDateOffsetDays                Int?     @map("due_date_offset_days")
+  dueDateOffsetExcludeWeekends     Boolean  @default(false) @map("due_date_offset_exclude_weekends")
+  escalationAfterDays              Int?     @map("escalation_after_days")
+  escalationExcludeWeekends        Boolean  @default(false) @map("escalation_exclude_weekends")
 
   // Catalogue service ids that this blueprint covers at project launch.
   // Set by Melissa in the blueprint editor. launchProject resolves a sold

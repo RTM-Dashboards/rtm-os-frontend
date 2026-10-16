@@ -66,10 +66,14 @@ export interface TaskBlueprint {
   version: string;
   groups?: TemplateGroup[];
   // SLA policy fields — null until set by Account Management
-  firstResponseDays:    number | null;
-  targetCompletionDays: number | null;
-  dueDateOffsetDays:    number | null;
-  escalationAfterDays:  number | null;
+  firstResponseDays:                number | null;
+  firstResponseExcludeWeekends:     boolean;
+  targetCompletionDays:             number | null;
+  targetCompletionExcludeWeekends:  boolean;
+  dueDateOffsetDays:                number | null;
+  dueDateOffsetExcludeWeekends:     boolean;
+  escalationAfterDays:              number | null;
+  escalationExcludeWeekends:        boolean;
   // Catalogue service ids Melissa has claimed for this blueprint.
   // launchProject uses this to route sold services to blueprints.
   claimedServiceIds: string[];
@@ -109,10 +113,14 @@ export interface NewBlueprintPayload {
   isActive?: boolean;
   version?: string;
   // SLA policy fields — null clears, undefined leaves unchanged
-  firstResponseDays?:    number | null;
-  targetCompletionDays?: number | null;
-  dueDateOffsetDays?:    number | null;
-  escalationAfterDays?:  number | null;
+  firstResponseDays?:               number | null;
+  firstResponseExcludeWeekends?:    boolean;
+  targetCompletionDays?:            number | null;
+  targetCompletionExcludeWeekends?: boolean;
+  dueDateOffsetDays?:               number | null;
+  dueDateOffsetExcludeWeekends?:    boolean;
+  escalationAfterDays?:             number | null;
+  escalationExcludeWeekends?:       boolean;
   // Catalogue service ids this blueprint covers.
   // undefined = do not change; [] = clear all claims.
   claimedServiceIds?: string[];
@@ -319,11 +327,15 @@ interface TltRow {
   isActive: boolean;
   version: string;
   updatedAt: string;
-  firstResponseDays:    number | null;
-  targetCompletionDays: number | null;
-  dueDateOffsetDays:    number | null;
-  escalationAfterDays:  number | null;
-  claimedServiceIds:    string[];
+  firstResponseDays:                number | null;
+  firstResponseExcludeWeekends:     boolean;
+  targetCompletionDays:             number | null;
+  targetCompletionExcludeWeekends:  boolean;
+  dueDateOffsetDays:                number | null;
+  dueDateOffsetExcludeWeekends:     boolean;
+  escalationAfterDays:              number | null;
+  escalationExcludeWeekends:        boolean;
+  claimedServiceIds:                string[];
 }
 
 // ── rowToBlueprint ────────────────────────────────────────────────────────────
@@ -373,11 +385,15 @@ function rowToBlueprint(row: TltRow): TaskBlueprint {
     lastUpdated:         row.updatedAt.slice(0, 10),
     version:             row.version,
     groups,
-    firstResponseDays:    row.firstResponseDays    ?? null,
-    targetCompletionDays: row.targetCompletionDays ?? null,
-    dueDateOffsetDays:    row.dueDateOffsetDays    ?? null,
-    escalationAfterDays:  row.escalationAfterDays  ?? null,
-    claimedServiceIds:    Array.isArray(row.claimedServiceIds) ? row.claimedServiceIds : [],
+    firstResponseDays:                row.firstResponseDays                ?? null,
+    firstResponseExcludeWeekends:     row.firstResponseExcludeWeekends     ?? false,
+    targetCompletionDays:             row.targetCompletionDays             ?? null,
+    targetCompletionExcludeWeekends:  row.targetCompletionExcludeWeekends  ?? false,
+    dueDateOffsetDays:                row.dueDateOffsetDays                ?? null,
+    dueDateOffsetExcludeWeekends:     row.dueDateOffsetExcludeWeekends     ?? false,
+    escalationAfterDays:              row.escalationAfterDays              ?? null,
+    escalationExcludeWeekends:        row.escalationExcludeWeekends        ?? false,
+    claimedServiceIds:                Array.isArray(row.claimedServiceIds) ? row.claimedServiceIds : [],
   };
 }
 
@@ -491,10 +507,14 @@ function blueprintFields(bp: Partial<NewBlueprintPayload>) {
     ...(bp.isActive            !== undefined ? { isActive:            bp.isActive            } : {}),
     ...(bp.version             !== undefined ? { version:             bp.version             } : {}),
     // SLA fields — explicit undefined means "do not touch"; null means "clear"
-    ...(bp.firstResponseDays    !== undefined ? { firstResponseDays:    bp.firstResponseDays    } : {}),
-    ...(bp.targetCompletionDays !== undefined ? { targetCompletionDays: bp.targetCompletionDays } : {}),
-    ...(bp.dueDateOffsetDays    !== undefined ? { dueDateOffsetDays:    bp.dueDateOffsetDays    } : {}),
-    ...(bp.escalationAfterDays  !== undefined ? { escalationAfterDays:  bp.escalationAfterDays  } : {}),
+    ...(bp.firstResponseDays               !== undefined ? { firstResponseDays:               bp.firstResponseDays               } : {}),
+    ...(bp.firstResponseExcludeWeekends    !== undefined ? { firstResponseExcludeWeekends:    bp.firstResponseExcludeWeekends    } : {}),
+    ...(bp.targetCompletionDays            !== undefined ? { targetCompletionDays:            bp.targetCompletionDays            } : {}),
+    ...(bp.targetCompletionExcludeWeekends !== undefined ? { targetCompletionExcludeWeekends: bp.targetCompletionExcludeWeekends } : {}),
+    ...(bp.dueDateOffsetDays               !== undefined ? { dueDateOffsetDays:               bp.dueDateOffsetDays               } : {}),
+    ...(bp.dueDateOffsetExcludeWeekends    !== undefined ? { dueDateOffsetExcludeWeekends:    bp.dueDateOffsetExcludeWeekends    } : {}),
+    ...(bp.escalationAfterDays             !== undefined ? { escalationAfterDays:             bp.escalationAfterDays             } : {}),
+    ...(bp.escalationExcludeWeekends       !== undefined ? { escalationExcludeWeekends:       bp.escalationExcludeWeekends       } : {}),
     // Claim: undefined = do not touch; array = replace.
     ...(bp.claimedServiceIds !== undefined ? { claimedServiceIds: bp.claimedServiceIds } : {}),
   };

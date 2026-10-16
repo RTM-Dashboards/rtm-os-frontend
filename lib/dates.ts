@@ -58,3 +58,37 @@ export function addBusinessDays(dateStr: string, days: number): string {
 
   return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
 }
+
+// ── addCalendarDays ───────────────────────────────────────────────────────────
+//
+// Adds `days` plain calendar days to `dateStr` (YYYY-MM-DD).
+// No weekend skipping; the result may fall on a Saturday or Sunday.
+// Uses UTC to avoid DST shifts.
+//
+// Used when excludeWeekends is false (the default) for SLA day-count fields.
+
+export function addCalendarDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+}
+
+// ── addOffsetDays ─────────────────────────────────────────────────────────────
+//
+// Unified task due-date offset helper.
+//
+// When excludeWeekends is true  → delegates to addBusinessDays (Mon–Fri only).
+// When excludeWeekends is false → delegates to addCalendarDays (plain days).
+//
+// Default false = calendar days, matching Teamwork behaviour and the schema
+// DEFAULT false on the exclude_weekends columns.
+
+export function addOffsetDays(
+  dateStr: string,
+  days: number,
+  excludeWeekends: boolean,
+): string {
+  return excludeWeekends
+    ? addBusinessDays(dateStr, days)
+    : addCalendarDays(dateStr, days);
+}

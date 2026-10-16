@@ -462,34 +462,69 @@ export default function ImportClientPage() {
           {services.length === 0 ? (
             <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading catalogue…</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {services.map((svc) => {
-                const checked = form.serviceIds.includes(svc.id);
-                return (
-                  <label
-                    key={svc.id}
-                    className="flex items-start gap-2.5 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors"
-                    style={{
-                      borderColor: checked ? workspace.accentColor : "var(--rtm-border-light)",
-                      background:  checked ? "#EFF6FF"             : "var(--rtm-bg)",
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 flex-shrink-0"
-                      checked={checked}
-                      onChange={() => toggleService(svc.id)}
-                      disabled={saving}
-                    />
-                    <div>
-                      <p className="text-sm font-semibold leading-snug" style={{ color: "var(--rtm-text-primary)" }}>
-                        {svc.label}
-                      </p>
-                      <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>{svc.department}</p>
-                    </div>
-                  </label>
-                );
-              })}
+            <div className="space-y-2">
+              {/* Dropdown: only shows services not already selected */}
+              <select
+                disabled={saving || services.filter((s) => !form.serviceIds.includes(s.id)).length === 0}
+                value=""
+                onChange={(e) => { const id = e.target.value; if (id) toggleService(id); }}
+                className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                style={{
+                  border: "1px solid var(--rtm-border)",
+                  background: "var(--rtm-bg)",
+                  color: "var(--rtm-text-primary)",
+                }}
+              >
+                <option value="">
+                  {services.filter((s) => !form.serviceIds.includes(s.id)).length === 0
+                    ? "All services selected"
+                    : "— add a service —"}
+                </option>
+                {services
+                  .filter((s) => !form.serviceIds.includes(s.id))
+                  .map((svc) => (
+                    <option key={svc.id} value={svc.id}>
+                      {svc.label} — {svc.department}
+                    </option>
+                  ))}
+              </select>
+
+              {/* Selected services list with remove controls */}
+              {form.serviceIds.length > 0 ? (
+                <div className="space-y-1">
+                  {form.serviceIds.map((id) => {
+                    const svc = services.find((s) => s.id === id);
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-center justify-between rounded-lg border px-3 py-2"
+                        style={{ borderColor: workspace.accentColor, background: "#EFF6FF" }}
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold leading-snug" style={{ color: "var(--rtm-text-primary)" }}>
+                            {svc?.label ?? id}
+                          </p>
+                          {svc?.department && (
+                            <p className="text-[11px]" style={{ color: "var(--rtm-text-muted)" }}>{svc.department}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => toggleService(id)}
+                          className="ml-3 text-sm font-bold opacity-60 hover:opacity-100 disabled:opacity-30 flex-shrink-0"
+                          style={{ color: workspace.accentColor, background: "none", border: "none", cursor: saving ? "not-allowed" : "pointer" }}
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>No services selected yet.</p>
+              )}
             </div>
           )}
           {form.serviceIds.length > 0 && (

@@ -27,11 +27,8 @@ export const workspaces: WorkspaceConfig[] = [
       { label: "Client Health",           href: "/account-management/client-health",   group: "CLIENTS" },
       { label: "Communications",          href: "/account-management/communications",  group: "CLIENTS" },
       { label: "Renewals",                href: "/account-management/renewals",        group: "CLIENTS" },
-      { label: "Account Assignments",     href: "/account-management/assignments",     group: "CLIENTS" },
+      { label: "Account Assignments",     href: "/account-management/assignments",     group: "CLIENTS", hidden: true },
       { label: "Projects",                href: "/account-management/projects",                group: "TASKS & PROJECTS" },
-      // Global project list — real Postgres data via /api/projects/scoped
-      // Route lives inside (account-management) group so AM sidebar stays.
-      { label: "All Projects",            href: "/account-management/all-projects",             group: "TASKS & PROJECTS" },
       // Task Blueprints — real Postgres data via /api/task-blueprints
       // Route lives inside (account-management) group so AM sidebar stays.
       { label: "Task Blueprints",         href: "/account-management/tasks/templates",          group: "TASKS & PROJECTS" },

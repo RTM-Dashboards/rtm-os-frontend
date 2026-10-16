@@ -43,7 +43,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { ROLE_RANK } from "@/lib/auth/vocab";
-import { addBusinessDays } from "@/lib/dates";
+import { addOffsetDays } from "@/lib/dates";
 
 // ── addDays helper (ISO-8601 date string) ─────────────────────────────────────
 
@@ -253,10 +253,21 @@ async function runCascade(closedTaskId: string): Promise<void> {
 
       // Compute the new due date: latestClosedAt (date part) + offsetDays.
       const closedDate = latestClosedAt.slice(0, 10); // "YYYY-MM-DD"
-      // Use business-day arithmetic for task offsets (per-spec: weekends skipped).
-      // addBusinessDays handles offset 0 correctly (normalises weekend starts to
-      // the following Monday), so the > 0 guard is no longer needed.
-      const newDueDate = addBusinessDays(closedDate, dependent.offsetDays);
+      // Branch on the template's dueDateOffsetExcludeWeekends flag:
+      //   true  → business days (Mon–Fri only)
+      //   false → plain calendar days (default, matching Teamwork)
+      // Resolve the flag from the template identified by blueprintTemplateId.
+      // Tasks without a blueprintTemplateId (e.g. deliverableGroups fallback
+      // tasks) default to false (calendar days).
+      let excludeWknds = false;
+      if (dependent.blueprintTemplateId) {
+        const tmpl = await prisma.taskListTemplate.findUnique({
+          where:  { id: dependent.blueprintTemplateId },
+          select: { dueDateOffsetExcludeWeekends: true },
+        });
+        excludeWknds = tmpl?.dueDateOffsetExcludeWeekends ?? false;
+      }
+      const newDueDate = addOffsetDays(closedDate, dependent.offsetDays, excludeWknds);
 
       const now = new Date().toISOString();
       try {

@@ -49,7 +49,7 @@
 //   surfaced than hidden — the caller should log the result.
 
 import { prisma } from "@/lib/db/prisma";
-import { addBusinessDays } from "@/lib/dates";
+import { addOffsetDays } from "@/lib/dates";
 import { notifyTaskAssigned, createNotification } from "@/lib/notifications/send";
 import {
   ONBOARDING_FIELD_SCHEMA,
@@ -174,7 +174,8 @@ function makeId(prefix: string): string {
 }
 
 // Calendar addDays retained for non-task-offset uses (e.g. project end-date
-// estimates).  Task due-date offsets use addBusinessDays from lib/dates.ts.
+// estimates).  Task due-date offsets use addOffsetDays from lib/dates.ts,
+// which branches on the template's dueDateOffsetExcludeWeekends flag.
 function addDays(base: Date, days: number): string {
   const d = new Date(base);
   d.setDate(d.getDate() + days);
@@ -685,7 +686,7 @@ export async function launchProject(
         const launchDateStr = launchDate.toISOString().slice(0, 10);
         const dueDate       = hasPrereqs
           ? null
-          : addBusinessDays(launchDateStr, taskDef.offsetDays ?? 0);
+          : addOffsetDays(launchDateStr, taskDef.offsetDays ?? 0, onbTemplate.dueDateOffsetExcludeWeekends);
 
         // The "Complete Onboarding Checklist" task carries the record id.
         const isChecklistTask = taskDef.localId === ONBOARDING_CHECKLIST_LOCAL_ID;
@@ -842,7 +843,7 @@ export async function launchProject(
         }
         const hasPrereqs    = taskDef.offsetFrom === "prereq";
         const launchDateStr = launchDate.toISOString().slice(0, 10);
-        const dueDate       = hasPrereqs ? null : addBusinessDays(launchDateStr, taskDef.offsetDays ?? 0);
+        const dueDate       = hasPrereqs ? null : addOffsetDays(launchDateStr, taskDef.offsetDays ?? 0, repTemplate.dueDateOffsetExcludeWeekends);
 
         try {
           const taskId = makeId("task");
@@ -1185,7 +1186,7 @@ export async function launchProject(
         // Recurring tasks always use offsetFrom="launch" at first occurrence.
         const hasPrerequisites = taskDef.offsetFrom === "prereq";
         const launchDateStr = launchDate.toISOString().slice(0, 10);
-        const dueDate = hasPrerequisites ? null : addBusinessDays(launchDateStr, taskDef.offsetDays);
+        const dueDate = hasPrerequisites ? null : addOffsetDays(launchDateStr, taskDef.offsetDays, template?.dueDateOffsetExcludeWeekends ?? false);
 
         try {
           const taskId = makeId("task");

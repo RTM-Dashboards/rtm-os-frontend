@@ -122,10 +122,14 @@ interface BlueprintApiRecord {
   lastUpdated: string;
   version: string;
   // SLA policy fields from DB - null means not set
-  firstResponseDays:    number | null;
-  targetCompletionDays: number | null;
-  dueDateOffsetDays:    number | null;
-  escalationAfterDays:  number | null;
+  firstResponseDays:               number | null;
+  firstResponseExcludeWeekends:    boolean;
+  targetCompletionDays:            number | null;
+  targetCompletionExcludeWeekends: boolean;
+  dueDateOffsetDays:               number | null;
+  dueDateOffsetExcludeWeekends:    boolean;
+  escalationAfterDays:             number | null;
+  escalationExcludeWeekends:       boolean;
   // Catalogue service ids this blueprint claims (launchProject routing).
   claimedServiceIds: string[];
 }
@@ -142,10 +146,14 @@ interface BlueprintMeta {
   isActive: boolean;
   version: string;
   // SLA policy fields - null means not set
-  firstResponseDays:    number | null;
-  targetCompletionDays: number | null;
-  dueDateOffsetDays:    number | null;
-  escalationAfterDays:  number | null;
+  firstResponseDays:               number | null;
+  firstResponseExcludeWeekends:    boolean;
+  targetCompletionDays:            number | null;
+  targetCompletionExcludeWeekends: boolean;
+  dueDateOffsetDays:               number | null;
+  dueDateOffsetExcludeWeekends:    boolean;
+  escalationAfterDays:             number | null;
+  escalationExcludeWeekends:       boolean;
   // Catalogue service ids this blueprint covers at launch.
   claimedServiceIds: string[];
 }
@@ -587,8 +595,10 @@ const BLANK_META: BlueprintMeta = {
   name: "", department: "", servicePackage: "", mappedLineItem: "",
   description: "", activationTrigger: "Invoice Paid",
   estimatedTotalHours: 0, isActive: true, version: "1.0",
-  firstResponseDays: null, targetCompletionDays: null,
-  dueDateOffsetDays: null, escalationAfterDays: null,
+  firstResponseDays: null,               firstResponseExcludeWeekends: false,
+  targetCompletionDays: null,            targetCompletionExcludeWeekends: false,
+  dueDateOffsetDays: null,               dueDateOffsetExcludeWeekends: false,
+  escalationAfterDays: null,             escalationExcludeWeekends: false,
   claimedServiceIds: [],
 };
 
@@ -743,11 +753,15 @@ function TemplateEditorModal({
             estimatedTotalHours: meta.estimatedTotalHours,
             isActive:            meta.isActive,
             version:             meta.version,
-            firstResponseDays:    meta.firstResponseDays,
-            targetCompletionDays: meta.targetCompletionDays,
-            dueDateOffsetDays:    meta.dueDateOffsetDays,
-            escalationAfterDays:  meta.escalationAfterDays,
-            claimedServiceIds:    meta.claimedServiceIds,
+            firstResponseDays:               meta.firstResponseDays,
+            firstResponseExcludeWeekends:     meta.firstResponseExcludeWeekends,
+            targetCompletionDays:             meta.targetCompletionDays,
+            targetCompletionExcludeWeekends:  meta.targetCompletionExcludeWeekends,
+            dueDateOffsetDays:                meta.dueDateOffsetDays,
+            dueDateOffsetExcludeWeekends:     meta.dueDateOffsetExcludeWeekends,
+            escalationAfterDays:              meta.escalationAfterDays,
+            escalationExcludeWeekends:        meta.escalationExcludeWeekends,
+            claimedServiceIds:                meta.claimedServiceIds,
           }),
         });
       } else {
@@ -761,21 +775,25 @@ function TemplateEditorModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             blueprint: {
-              id:                  effectiveId,
-              name:                meta.name || effectiveId,
-              department:          meta.department,
-              servicePackage:      meta.servicePackage,
-              mappedLineItem:      meta.mappedLineItem,
-              description:         meta.description,
-              activationTrigger:   meta.activationTrigger,
-              estimatedTotalHours: meta.estimatedTotalHours,
-              isActive:            meta.isActive,
-              version:             meta.version,
-              firstResponseDays:    meta.firstResponseDays,
-              targetCompletionDays: meta.targetCompletionDays,
-              dueDateOffsetDays:    meta.dueDateOffsetDays,
-              escalationAfterDays:  meta.escalationAfterDays,
-              claimedServiceIds:    meta.claimedServiceIds,
+              id:                              effectiveId,
+              name:                            meta.name || effectiveId,
+              department:                      meta.department,
+              servicePackage:                  meta.servicePackage,
+              mappedLineItem:                  meta.mappedLineItem,
+              description:                     meta.description,
+              activationTrigger:               meta.activationTrigger,
+              estimatedTotalHours:             meta.estimatedTotalHours,
+              isActive:                        meta.isActive,
+              version:                         meta.version,
+              firstResponseDays:               meta.firstResponseDays,
+              firstResponseExcludeWeekends:    meta.firstResponseExcludeWeekends,
+              targetCompletionDays:            meta.targetCompletionDays,
+              targetCompletionExcludeWeekends: meta.targetCompletionExcludeWeekends,
+              dueDateOffsetDays:               meta.dueDateOffsetDays,
+              dueDateOffsetExcludeWeekends:    meta.dueDateOffsetExcludeWeekends,
+              escalationAfterDays:             meta.escalationAfterDays,
+              escalationExcludeWeekends:       meta.escalationExcludeWeekends,
+              claimedServiceIds:               meta.claimedServiceIds,
               groups,
             },
             serviceMappings: allMappings,
@@ -975,20 +993,22 @@ function TemplateEditorModal({
                launchProject uses these ids to route a line-item whose id does not directly
                match the blueprint's own serviceId. */}
           {(() => {
-            // Compute the primary service id so we can exclude it from the checkboxes.
+            // Compute the primary service id so we can exclude it from the dropdown.
             // Create mode: the catalogue picker value, or the custom-id entry.
             // Edit mode: the blueprint's own id (editingServiceId).
             const primaryId = isEditing
               ? (editingServiceId ?? "")
               : (useCustomId ? customIdInput.trim().toLowerCase() : serviceId);
-            // Only show services that are not the primary service.
-            const additionalServices = services.filter((s) => s.id !== primaryId);
+            // Only show services that are not the primary service and not already claimed.
+            const availableServices = services.filter(
+              (s) => s.id !== primaryId && !meta.claimedServiceIds.includes(s.id)
+            );
             return (
               <section className="space-y-3">
                 <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Additional Services This Blueprint Also Covers</div>
                 <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
                   If this same task list covers other sold services (beyond the primary service above),
-                  tick them here. When a project is launched, any matching line item is routed to this
+                  add them here. When a project is launched, any matching line item is routed to this
                   blueprint instead of requiring a separate one. A service can only be claimed by one
                   blueprint. Onboarding and Reporting run on every project unconditionally — do not
                   claim them here.
@@ -996,52 +1016,76 @@ function TemplateEditorModal({
                 {servicesLoading ? (
                   <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading catalogue…</p>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {additionalServices.map((svc) => {
-                      const claimed = meta.claimedServiceIds.includes(svc.id);
-                      return (
-                        <label
-                          key={svc.id}
-                          className="flex items-center gap-1.5 text-xs cursor-pointer select-none"
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: 8,
-                            border: `1px solid ${claimed ? "#BFDBFE" : "var(--rtm-border)"}`,
-                            background: claimed ? "#EFF6FF" : "var(--rtm-bg)",
-                            color: claimed ? "#1D4ED8" : "var(--rtm-text-secondary)",
-                            opacity: saving ? 0.5 : 1,
-                            cursor: saving ? "not-allowed" : "pointer",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            disabled={saving}
-                            checked={claimed}
-                            onChange={() => {
-                              const next = claimed
-                                ? meta.claimedServiceIds.filter((id) => id !== svc.id)
-                                : [...meta.claimedServiceIds, svc.id];
-                              setMeta((m) => ({ ...m, claimedServiceIds: next }));
-                            }}
-                            className="w-3 h-3"
-                          />
-                          <span className="font-semibold" style={{ fontSize: 11 }}>{svc.label}</span>
-                          <span style={{ fontSize: 10, opacity: 0.6 }}>({svc.id})</span>
-                        </label>
-                      );
-                    })}
-                    {additionalServices.length === 0 && (
+                  <div className="space-y-2">
+                    {/* Dropdown to pick a service to add */}
+                    <select
+                      disabled={saving || availableServices.length === 0}
+                      value=""
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        if (id && !meta.claimedServiceIds.includes(id)) {
+                          setMeta((m) => ({ ...m, claimedServiceIds: [...m.claimedServiceIds, id] }));
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                      style={{
+                        background: "var(--rtm-bg)",
+                        border: "1px solid var(--rtm-border)",
+                        color: availableServices.length === 0 ? "var(--rtm-text-muted)" : "var(--rtm-text-primary)",
+                        opacity: saving ? 0.5 : 1,
+                      }}
+                    >
+                      <option value="">
+                        {availableServices.length === 0
+                          ? "No other services available"
+                          : "— add a service —"}
+                      </option>
+                      {availableServices.map((svc) => (
+                        <option key={svc.id} value={svc.id}>{svc.label}</option>
+                      ))}
+                    </select>
+
+                    {/* Claimed services list with remove controls */}
+                    {meta.claimedServiceIds.length > 0 && (
+                      <div className="space-y-1">
+                        {meta.claimedServiceIds.map((id) => {
+                          const svc = services.find((s) => s.id === id);
+                          return (
+                            <div
+                              key={id}
+                              className="flex items-center justify-between px-3 py-1.5 rounded-lg"
+                              style={{ background: "#EFF6FF", border: "1px solid #BFDBFE" }}
+                            >
+                              <span className="text-xs font-semibold" style={{ color: "#1D4ED8" }}>
+                                {svc?.label ?? id}
+                                <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 6 }}>({id})</span>
+                              </span>
+                              <button
+                                type="button"
+                                disabled={saving}
+                                onClick={() =>
+                                  setMeta((m) => ({
+                                    ...m,
+                                    claimedServiceIds: m.claimedServiceIds.filter((x) => x !== id),
+                                  }))
+                                }
+                                className="text-xs font-bold ml-3 opacity-60 hover:opacity-100 disabled:opacity-30"
+                                style={{ color: "#1D4ED8", background: "none", border: "none", cursor: saving ? "not-allowed" : "pointer" }}
+                                title="Remove"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    {meta.claimedServiceIds.length === 0 && (
                       <p className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>
-                        No other catalogue services available.
+                        No additional services claimed.
                       </p>
                     )}
                   </div>
-                )}
-                {meta.claimedServiceIds.length > 0 && (
-                  <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                    {meta.claimedServiceIds.length} additional service{meta.claimedServiceIds.length !== 1 ? "s" : ""} claimed: 
-                    <span style={{ color: "var(--rtm-text-secondary)" }}>{meta.claimedServiceIds.join(", ")}</span>
-                  </p>
                 )}
               </section>
             );
@@ -1050,10 +1094,10 @@ function TemplateEditorModal({
           {/* SLA Policy fields - set by Account Management */}
           <section className="space-y-3">
             <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Service Level Agreement</div>
-            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>RTM delivery policy for this blueprint. Leave blank until confirmed. All values are in days.</p>
+            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>RTM delivery policy for this blueprint. Leave blank until confirmed. Durations are calendar days by default; tick &ldquo;Exclude weekends&rdquo; to count Mon–Fri only.</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label style={EDITOR_LABEL}>First Response (business days)</label>
+                <label style={EDITOR_LABEL}>First Response (days)</label>
                 <input
                   type="number" min={1} step={1}
                   value={meta.firstResponseDays ?? ""}
@@ -1065,9 +1109,17 @@ function TemplateEditorModal({
                   placeholder="e.g. 1"
                   style={{ ...EDITOR_INPUT, width: "100%" }}
                 />
+                <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer select-none" style={{ opacity: saving ? 0.5 : 1 }}>
+                  <input type="checkbox" className="w-3 h-3"
+                    checked={meta.firstResponseExcludeWeekends}
+                    disabled={saving}
+                    onChange={(e) => setMeta((m) => ({ ...m, firstResponseExcludeWeekends: e.target.checked }))}
+                  />
+                  <span style={{ fontSize: 11, color: "var(--rtm-text-muted)" }}>Exclude weekends</span>
+                </label>
               </div>
               <div>
-                <label style={EDITOR_LABEL}>Target Completion (business days)</label>
+                <label style={EDITOR_LABEL}>Target Completion (days)</label>
                 <input
                   type="number" min={1} step={1}
                   value={meta.targetCompletionDays ?? ""}
@@ -1079,9 +1131,17 @@ function TemplateEditorModal({
                   placeholder="e.g. 30"
                   style={{ ...EDITOR_INPUT, width: "100%" }}
                 />
+                <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer select-none" style={{ opacity: saving ? 0.5 : 1 }}>
+                  <input type="checkbox" className="w-3 h-3"
+                    checked={meta.targetCompletionExcludeWeekends}
+                    disabled={saving}
+                    onChange={(e) => setMeta((m) => ({ ...m, targetCompletionExcludeWeekends: e.target.checked }))}
+                  />
+                  <span style={{ fontSize: 11, color: "var(--rtm-text-muted)" }}>Exclude weekends</span>
+                </label>
               </div>
               <div>
-                <label style={EDITOR_LABEL}>Due Date Offset (calendar days from activation)</label>
+                <label style={EDITOR_LABEL}>Due Date Offset (days from activation)</label>
                 <input
                   type="number" min={0} step={1}
                   value={meta.dueDateOffsetDays ?? ""}
@@ -1093,9 +1153,17 @@ function TemplateEditorModal({
                   placeholder="e.g. 0"
                   style={{ ...EDITOR_INPUT, width: "100%" }}
                 />
+                <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer select-none" style={{ opacity: saving ? 0.5 : 1 }}>
+                  <input type="checkbox" className="w-3 h-3"
+                    checked={meta.dueDateOffsetExcludeWeekends}
+                    disabled={saving}
+                    onChange={(e) => setMeta((m) => ({ ...m, dueDateOffsetExcludeWeekends: e.target.checked }))}
+                  />
+                  <span style={{ fontSize: 11, color: "var(--rtm-text-muted)" }}>Exclude weekends</span>
+                </label>
               </div>
               <div>
-                <label style={EDITOR_LABEL}>Escalation After (calendar days)</label>
+                <label style={EDITOR_LABEL}>Escalation After (days)</label>
                 <input
                   type="number" min={1} step={1}
                   value={meta.escalationAfterDays ?? ""}
@@ -1107,6 +1175,14 @@ function TemplateEditorModal({
                   placeholder="e.g. 7"
                   style={{ ...EDITOR_INPUT, width: "100%" }}
                 />
+                <label className="flex items-center gap-1.5 mt-1.5 cursor-pointer select-none" style={{ opacity: saving ? 0.5 : 1 }}>
+                  <input type="checkbox" className="w-3 h-3"
+                    checked={meta.escalationExcludeWeekends}
+                    disabled={saving}
+                    onChange={(e) => setMeta((m) => ({ ...m, escalationExcludeWeekends: e.target.checked }))}
+                  />
+                  <span style={{ fontSize: 11, color: "var(--rtm-text-muted)" }}>Exclude weekends</span>
+                </label>
               </div>
             </div>
           </section>
@@ -1749,11 +1825,15 @@ export default function TaskTemplatesPage() {
         estimatedTotalHours: bp.estimatedTotalHours,
         isActive:            bp.isActive,
         version:             bp.version,
-        firstResponseDays:    bp.firstResponseDays    ?? null,
-        targetCompletionDays: bp.targetCompletionDays ?? null,
-        dueDateOffsetDays:    bp.dueDateOffsetDays    ?? null,
-        escalationAfterDays:  bp.escalationAfterDays  ?? null,
-        claimedServiceIds:    bp.claimedServiceIds    ?? [],
+        firstResponseDays:               bp.firstResponseDays               ?? null,
+        firstResponseExcludeWeekends:    bp.firstResponseExcludeWeekends    ?? false,
+        targetCompletionDays:            bp.targetCompletionDays            ?? null,
+        targetCompletionExcludeWeekends: bp.targetCompletionExcludeWeekends ?? false,
+        dueDateOffsetDays:               bp.dueDateOffsetDays               ?? null,
+        dueDateOffsetExcludeWeekends:    bp.dueDateOffsetExcludeWeekends    ?? false,
+        escalationAfterDays:             bp.escalationAfterDays             ?? null,
+        escalationExcludeWeekends:       bp.escalationExcludeWeekends       ?? false,
+        claimedServiceIds:               bp.claimedServiceIds               ?? [],
       });
     } else {
       setEditingServiceId(null);

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { RoleToggle } from "@/components/am-role-toggle";
-import { AM_NAMES, SARAH, type AMRole } from "@/lib/account-management/role-data";
+import { AM_NAMES, SARAH } from "@/lib/account-management/role-data";
 import {
   fetchAMClients,
   assignAM,
@@ -1041,8 +1040,6 @@ function AMView() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function AssignmentsPage() {
-  const [role, setRole] = useState<AMRole>("head");
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -1137,11 +1134,8 @@ export default function AssignmentsPage() {
         </p>
       </div>
 
-      {/* Role Toggle */}
-      <RoleToggle role={role} onRoleChange={setRole} />
-
-      {/* Role content */}
-      {role === "head" ? <HeadView /> : <AMView />}
+      {/* Head view is the only view on this page */}
+      <HeadView />
     </div>
   );
 }

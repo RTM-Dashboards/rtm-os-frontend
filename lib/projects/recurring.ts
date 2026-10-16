@@ -25,9 +25,10 @@
 //
 //   Calendar-day intervals.
 //     Recurrence intervals are calendar days (not business days). Task offsets
-//     inside a blueprint group use addBusinessDays (lib/dates.ts) and that
-//     stays unchanged. Only the recurrence interval (intervalDays field on the
-//     blueprint task) advances by plain calendar arithmetic.
+//     inside a blueprint group use addOffsetDays (lib/dates.ts), which branches
+//     on template.dueDateOffsetExcludeWeekends. Only the recurrence interval
+//     (intervalDays field on the blueprint task) advances by plain calendar
+//     arithmetic.
 //
 //   Owner continuity.
 //     A new occurrence inherits the owner of the most recent prior occurrence
@@ -57,7 +58,7 @@
 //     Uses only createNotification and notifyTaskAssigned from send.ts.
 
 import { prisma } from "@/lib/db/prisma";
-import { addBusinessDays } from "@/lib/dates";
+import { addOffsetDays } from "@/lib/dates";
 import { createNotification } from "@/lib/notifications/send";
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -345,15 +346,19 @@ export async function generateRecurringTasks(
           // If no prior occurrence exists, anchor = project.startDate + offsetDays.
           // If a prior occurrence exists, anchor = lastDueDate + intervalDays.
           //
-          // offsetDays uses addBusinessDays (matching launch.ts).
-          // intervalDays advances by calendar days (plain arithmetic).
+          // offsetDays branches on template.dueDateOffsetExcludeWeekends:
+          //   true  → addBusinessDays (Mon–Fri only)
+          //   false → addCalendarDays (plain calendar, default)
+          // intervalDays always advances by calendar days (plain arithmetic).
+
+          const excludeWknd = template.dueDateOffsetExcludeWeekends ?? false;
 
           let seriesAnchor: string;
 
           if (!lastOccurrence || !lastOccurrence.dueDate) {
             // No prior occurrence — compute from project start.
             const startDate = project.startDate ?? today;
-            seriesAnchor = addBusinessDays(startDate, taskDef.offsetDays);
+            seriesAnchor = addOffsetDays(startDate, taskDef.offsetDays, excludeWknd);
           } else {
             // Prior occurrence found — next due date is last + intervalDays.
             seriesAnchor = addCalendarDays(lastOccurrence.dueDate, taskDef.intervalDays);
