@@ -52,6 +52,12 @@ import { prisma } from "@/lib/db/prisma";
 import { addOffsetDays } from "@/lib/dates";
 import { notifyTaskAssigned, createNotification } from "@/lib/notifications/send";
 import {
+  applyBlueprintToProject,
+  buildWorkloadCache,
+  pickOwner as pickOwnerBatched,
+  type WorkloadCache,
+} from "@/lib/projects/apply-blueprint";
+import {
   ONBOARDING_FIELD_SCHEMA,
   type AMOnboardingFieldDef,
 } from "@/lib/mock/am-onboarding-field-schema";
@@ -267,52 +273,18 @@ function buildFieldAssignments(
 
 // ── Workload router ────────────────────────────────────────────────────────────
 //
-// Given a department name, return the id of the active member with the fewest
-// open/in_progress tasks. Ties broken alphabetically by name (first in sort
-// order wins — deterministic).
+// Delegates to the batched pickOwner from apply-blueprint.ts (Task 3).
+// ownerCache (WorkloadCache) is built once per launch via buildWorkloadCache
+// before the task loops run; each call here is a Map lookup — no DB query.
 //
-// Returns null when no active member exists in that department.
-//
-// The per-department member list and task counts are cached in the ownerCache
-// map so repeated calls for the same department (common within a launch) do
-// not re-query. The cache is local to the launch call; each launch starts fresh.
+// Signature retained for the onboarding and reporting paths that call it
+// synchronously; the async wrapper is kept for call-site compatibility.
 
 async function pickOwner(
   department: string,
-  ownerCache: Map<string, string | null>,
+  ownerCache: WorkloadCache,
 ): Promise<string | null> {
-  if (ownerCache.has(department)) {
-    return ownerCache.get(department) ?? null;
-  }
-
-  const members = await prisma.user.findMany({
-    where: { department, status: "active" },
-    select: { id: true, name: true },
-    orderBy: { name: "asc" },
-  });
-
-  if (members.length === 0) {
-    ownerCache.set(department, null);
-    return null;
-  }
-
-  const taskCounts = await Promise.all(
-    members.map(async (m) => {
-      const count = await prisma.task.count({
-        where: {
-          ownerId: m.id,
-          status:  { in: ["open", "in_progress"] },
-        },
-      });
-      return { m, count };
-    }),
-  );
-
-  // Sort ascending by count; name order (already sorted above) breaks ties.
-  taskCounts.sort((a, b) => a.count - b.count);
-  const winner = taskCounts[0].m.id;
-  ownerCache.set(department, winner);
-  return winner;
+  return pickOwnerBatched(department, ownerCache);
 }
 
 // ── Main launch function ───────────────────────────────────────────────────────
@@ -340,8 +312,11 @@ export async function launchProject(
     uncoveredServices:    [],
   };
 
-  // Per-launch cache so we query each department at most once.
-  const ownerCache = new Map<string, string | null>();
+  // Per-launch workload cache (Task 3 batch optimisation).
+  // Populated after lineItems are resolved so we know all departments needed.
+  // Starts empty; populated before the onboarding/reporting task loops via
+  // buildWorkloadCache().  pickOwner reads from it — zero queries per task.
+  let ownerCache: WorkloadCache = new Map<string, string | null>();
 
   // ── 1. Double-launch guard ─────────────────────────────────────────────────
   const existingProject = await prisma.project.findFirst({
@@ -624,6 +599,39 @@ export async function launchProject(
 
   const ONBOARDING_SERVICE_ID            = "account-management";
   const ONBOARDING_CHECKLIST_LOCAL_ID    = "bpt-004-5"; // Complete Onboarding Checklist
+
+  // ── Task 3: build the batched workload cache before any task loop ─────────────
+  // Collect all departments from the line items' templates so we can fetch
+  // all workload counts in two queries.  Departments for the fixed blueprints
+  // (onboarding = Account Management, reporting = Reporting) are added here too.
+  // The cache is reused by pickOwner throughout the onboarding, reporting, and
+  // service-line task loops below.
+  try {
+    const deptSet = new Set<string>(["Account Management", "Reporting"]);
+    for (const item of lineItems) {
+      if (item.department) deptSet.add(item.department);
+    }
+    // Also load template departments for line items that have a blueprint.
+    if (lineItems.length > 0) {
+      const allTpls = await prisma.taskListTemplate.findMany({
+        select: { groups: true },
+      });
+      for (const tpl of allTpls) {
+        const groups = Array.isArray(tpl.groups) ? (tpl.groups as unknown as Array<{ tasks?: Array<{ department?: string }> }>) : [];
+        for (const g of groups) {
+          for (const t of g.tasks ?? []) {
+            if (t.department) deptSet.add(t.department);
+          }
+        }
+      }
+    }
+    ownerCache = await buildWorkloadCache([...deptSet]);
+  } catch (err) {
+    result.errors.push(
+      `Workload cache: ${err instanceof Error ? err.message : String(err)}`
+    );
+    // Non-fatal: tasks will be unassigned but launch succeeds.
+  }
 
   // Import path: skip onboarding blueprint tasks and task_dependencies entirely.
   // The onboarding record was already created above; that is the documentation.
@@ -979,32 +987,14 @@ export async function launchProject(
         catalogLabel = catalogItem.label      || catalogLabel;
       }
 
-      // Create the category. department here is the category-level label;
-      // individual tasks have their own department from the template.
-      const categoryId = makeId("cat");
-      await prisma.projectCategory.create({
-        data: {
-          id:           categoryId,
-          projectId:    project.id,
-          serviceId:    item.serviceId,
-          serviceLabel: catalogLabel,
-          department:   categoryDept,
-          createdAt:    now,
-        },
-      });
-      result.categoriesCreated++;
-
-      // Resolve task list template for this service.
-      // Priority: direct serviceId match, then claim table.
-      // A deleted-service claim (id not in catalogue) cannot break a launch —
-      // findFirst simply returns null and the category is created empty/flagged.
+      // ── Delegate to applyBlueprintToProject ──────────────────────────────────
+      // Resolve the template id (direct or via claim index) then hand off to
+      // the extracted function. The deliverableGroups fallback is handled below
+      // when no template is found.
       let template = await prisma.taskListTemplate.findFirst({
         where: { serviceId: item.serviceId },
       });
-
       if (!template) {
-        // Try claim index: some blueprint has listed this serviceId in
-        // its claimedServiceIds array.
         const claimedBlueprintServiceId = claimIndex.get(item.serviceId);
         if (claimedBlueprintServiceId) {
           template = await prisma.taskListTemplate.findFirst({
@@ -1013,282 +1003,81 @@ export async function launchProject(
         }
       }
 
-      // Flag uncovered services. The category is still created (above); it will
-      // just be empty. The flag is stored on the result and on the project row.
-      if (!template) {
-        result.uncoveredServices.push(item.serviceId);
-      }
-
-      // ── Flatten setup tasks from template ──────────────────────────────────
-      // We build a flat ordered list of all setup tasks across all setup groups.
-      // Template prerequisite indices refer to positions in THIS flat list.
-
-      interface FlatTask {
-        localId: string;       // stable local id (empty string for fallback tasks)
-        label: string;
-        department: string;
-        offsetDays: number;
-        offsetFrom: "launch" | "prereq";
-        /** Resolved to localId strings (may include legacy index translations). */
-        prereqLocalIds: string[];
-        /** True when this task came from a recurring group. */
-        isRecurring: boolean;
-        /**
-         * Days after completion to schedule next occurrence.
-         * Only meaningful when isRecurring=true and > 0.
-         */
-        intervalDays: number;
-        // Restored per-task fields (RF2 run, 20261008)
-        ownerRole: string | null;
-        estimatedHours: number | null;
-        priority: string | null;
-        description: string | null;
-      }
-
-      const flatTasks: FlatTask[] = [];
-
       if (template) {
-        const groups = Array.isArray(template.groups)
-          ? (template.groups as unknown as TemplateGroup[])
-          : [];
-
-        // Collect setup AND recurring tasks in flat order.
-        // We keep them separate by group kind so we can set isRecurring correctly.
-        // Legacy index translation: indices are relative to the setup group only
-        // (recurring tasks cannot have prerequisites, so indices only matter for setup).
-        const setupRaw: TemplateTaskDef[] = [];
-        const recurringRaw: TemplateTaskDef[] = [];
-        for (const group of groups) {
-          if (!Array.isArray(group.tasks)) continue;
-          if (group.kind === "setup") {
-            for (const t of group.tasks) setupRaw.push(t);
-          } else if (group.kind === "recurring") {
-            for (const t of group.tasks) recurringRaw.push(t);
-          }
+        // Blueprint path: delegate entirely to applyBlueprintToProject.
+        const applyResult = await applyBlueprintToProject({
+          projectId:      project.id,
+          templateId:     template.id,
+          applyDate:      launchDate,
+          skipSetupTasks: importOptions?.skipSetupTasks ?? false,
+          workloadCache:  ownerCache,
+          projectName:    project.name,
+        });
+        result.categoriesCreated++;
+        result.tasksCreated          += applyResult.tasksCreated;
+        result.recurringTasksCreated += applyResult.recurringTasksCreated;
+        for (const dept of applyResult.emptyDepartments) {
+          if (!result.emptyDepartments.includes(dept)) result.emptyDepartments.push(dept);
         }
+        result.errors.push(...applyResult.errors);
+      } else {
+        // No template and no claim — either deliverableGroups fallback or
+        // uncovered service. Create the category manually then fall back.
+        const categoryId = makeId("cat");
+        await prisma.projectCategory.create({
+          data: {
+            id:           categoryId,
+            projectId:    project.id,
+            serviceId:    item.serviceId,
+            serviceLabel: catalogLabel,
+            department:   categoryDept,
+            createdAt:    now,
+          },
+        });
+        result.categoriesCreated++;
+        result.uncoveredServices.push(item.serviceId);
 
-        // Build localId→position map for legacy index translation (setup only).
-        const localIdByIndex = setupRaw.map((t) => t.localId ?? "");
-
-        // Process setup tasks (with dependency support).
-        // Import path: skip setup tasks — existing clients already have their
-        // setup work done. Only recurring tasks are created on import.
-        const processSetup = !importOptions?.skipSetupTasks;
-        for (const t of (processSetup ? setupRaw : [])) {
-          const prereqLocalIds: string[] = [];
-          const seen = new Set<string>();
-
-          for (const id of t.prereqIds ?? []) {
-            if (id && !seen.has(id)) { prereqLocalIds.push(id); seen.add(id); }
-          }
-          for (const idx of t.prereqIndices ?? []) {
-            const id = localIdByIndex[idx] ?? "";
-            if (id && !seen.has(id)) { prereqLocalIds.push(id); seen.add(id); }
-          }
-
-          flatTasks.push({
-            localId:        t.localId ?? "",
-            label:          t.label,
-            department:     t.department ?? "",
-            offsetDays:     t.offsetDays ?? 0,
-            offsetFrom:     t.offsetFrom ?? "launch",
-            prereqLocalIds,
-            isRecurring:    false,
-            intervalDays:   0,
-            ownerRole:      t.ownerRole      ?? null,
-            estimatedHours: typeof t.estimatedHours === "number" ? t.estimatedHours : null,
-            priority:       t.priority       ?? null,
-            description:    t.description    ?? null,
-          });
-        }
-
-        // Process recurring tasks (no dependencies; intervalDays required).
-        for (const t of recurringRaw) {
-          const interval = typeof t.intervalDays === "number" && t.intervalDays > 0
-            ? t.intervalDays
-            : 0;
-          // Skip recurring tasks with no interval — they cannot recur and are
-          // not useful as plain one-off tasks either. Log and skip.
-          if (interval === 0) {
-            result.errors.push(
-              `Recurring task "${t.label}" has no interval and was skipped (set a repeat interval in the task list editor)`
-            );
-            continue;
-          }
-
-          flatTasks.push({
-            localId:        t.localId ?? "",
-            label:          t.label,
-            department:     t.department ?? "",
-            offsetDays:     t.offsetDays ?? 0,
-            offsetFrom:     "launch",   // recurring tasks always offset from launch
-            prereqLocalIds: [],
-            isRecurring:    true,
-            intervalDays:   interval,
-            ownerRole:      t.ownerRole      ?? null,
-            estimatedHours: typeof t.estimatedHours === "number" ? t.estimatedHours : null,
-            priority:       t.priority       ?? null,
-            description:    t.description    ?? null,
-          });
-        }
-      } else if (catalogItem) {
-        // Fall back to deliverableGroups bullets as tasks.
-        // No per-task department in this fallback; use the category's department.
-        // Fallback tasks never have prerequisites — no template means no deps.
-        const deliverableGroups = Array.isArray(catalogItem.deliverableGroups)
-          ? (catalogItem.deliverableGroups as unknown as DeliverableGroup[])
-          : [];
-        for (const group of deliverableGroups) {
-          if (Array.isArray(group.bullets)) {
+        // deliverableGroups fallback: create tasks from catalogue bullets.
+        if (catalogItem) {
+          const deliverableGroups = Array.isArray(catalogItem.deliverableGroups)
+            ? (catalogItem.deliverableGroups as unknown as DeliverableGroup[])
+            : [];
+          for (const group of deliverableGroups) {
+            if (!Array.isArray(group.bullets)) continue;
             for (const bullet of group.bullets) {
-              flatTasks.push({
-                localId:        "",
-                label:          bullet,
-                department:     categoryDept,
-                offsetDays:     0,
-                offsetFrom:     "launch",
-                prereqLocalIds: [],
-                isRecurring:    false,
-                intervalDays:   0,
-                ownerRole:      null,
-                estimatedHours: null,
-                priority:       null,
-                description:    null,
-              });
+              const dept    = categoryDept;
+              const ownerId = dept ? await pickOwner(dept, ownerCache) : null;
+              if (dept && ownerId === null && !result.emptyDepartments.includes(dept)) {
+                result.emptyDepartments.push(dept);
+              }
+              const launchDateStr = launchDate.toISOString().slice(0, 10);
+              try {
+                const taskId = makeId("task");
+                await prisma.task.create({
+                  data: {
+                    id:                     taskId,
+                    categoryId,
+                    label:                  bullet,
+                    status:                 "open",
+                    ownerId,
+                    department:             dept || null,
+                    dueDate:                addOffsetDays(launchDateStr, 0, false),
+                    offsetFrom:             "launch",
+                    offsetDays:             0,
+                    isSetup:                true,
+                    isRecurring:            false,
+                    recurrenceIntervalDays: 0,
+                    createdAt:              now,
+                    updatedAt:              now,
+                  },
+                });
+                result.tasksCreated++;
+              } catch (err) {
+                result.errors.push(
+                  `Fallback task "${bullet}": ${err instanceof Error ? err.message : String(err)}`
+                );
+              }
             }
-          }
-        }
-      }
-      // If neither template nor deliverableGroups has content, flatTasks stays []
-      // and the category is empty — correct per spec.
-
-      // ── Create tasks, tracking their db ids by localId ────────────────────
-      // We insert all tasks first (building a localId→dbTaskId map), then
-      // insert dependency rows. This avoids ordering constraints and makes
-      // reordering safe: deps reference stable localIds, not positions.
-
-      // Map: template localId → created db task id (null if insert failed).
-      const taskIdByLocalId = new Map<string, string | null>();
-
-      for (const taskDef of flatTasks) {
-        const dept = taskDef.department.trim();
-        let ownerId: string | null = null;
-
-        if (dept) {
-          ownerId = await pickOwner(dept, ownerCache);
-          if (ownerId === null && !result.emptyDepartments.includes(dept)) {
-            result.emptyDepartments.push(dept);
-          }
-        }
-
-        // A task with offsetFrom="prereq" gets no due date at launch.
-        // A task with offsetFrom="launch" gets offsetDays from launchDate.
-        // Recurring tasks always use offsetFrom="launch" at first occurrence.
-        const hasPrerequisites = taskDef.offsetFrom === "prereq";
-        const launchDateStr = launchDate.toISOString().slice(0, 10);
-        const dueDate = hasPrerequisites ? null : addOffsetDays(launchDateStr, taskDef.offsetDays, template?.dueDateOffsetExcludeWeekends ?? false);
-
-        try {
-          const taskId = makeId("task");
-          // For recurring tasks created at launch, set the recurring-engine
-          // tracking fields so the engine can:
-          //   (a) detect this first occurrence when looking for the "last occurrence"
-          //   (b) build the occurrence_key for idempotency.
-          // template is always non-null when isRecurring=true (recurring tasks
-          // only come from a template; the deliverableGroups fallback only
-          // creates setup tasks).
-          const launchOccurrenceKey =
-            taskDef.isRecurring && template && taskDef.localId && dueDate
-              ? `${template.id}:${taskDef.localId}:${categoryId}:${dueDate}`
-              : null;
-
-          await prisma.task.create({
-            data: {
-              id:                     taskId,
-              categoryId,
-              label:                  taskDef.label,
-              status:                 "open",
-              ownerId,
-              department:             dept || null,
-              dueDate,
-              offsetFrom:             taskDef.offsetFrom,
-              offsetDays:             taskDef.offsetDays,
-              isSetup:                !taskDef.isRecurring,
-              isRecurring:            taskDef.isRecurring,
-              recurrenceIntervalDays: taskDef.intervalDays,
-              // Recurring engine tracking fields (20261014_recurring_engine)
-              blueprintTaskId:        taskDef.isRecurring && taskDef.localId ? taskDef.localId : null,
-              blueprintTemplateId:    taskDef.isRecurring && template ? template.id : null,
-              occurrenceKey:          launchOccurrenceKey,
-              // Restored per-task fields from template (RF2 run, 20261008)
-              ownerRole:      taskDef.ownerRole,
-              estimatedHours: taskDef.estimatedHours,
-              priority:       taskDef.priority,
-              description:    taskDef.description,
-              createdAt:      now,
-              updatedAt:      now,
-            },
-          });
-          if (taskDef.localId) taskIdByLocalId.set(taskDef.localId, taskId);
-          result.tasksCreated++;
-          if (taskDef.isRecurring) result.recurringTasksCreated++;
-          // Notify the owner that this task has been assigned to them.
-          // Only for setup tasks (recurring tasks fire on completion, not launch).
-          // notifyTaskAssigned never throws.
-          if (ownerId && !taskDef.isRecurring) {
-            notifyTaskAssigned({
-              ownerId,
-              taskId,
-              taskLabel:   taskDef.label,
-              projectId:   project.id,
-              projectName: project.name,
-            }).catch(() => { /* swallowed — launch must not fail on notification errors */ });
-          }
-        } catch (err) {
-          result.errors.push(
-            `Task "${taskDef.label}": ${err instanceof Error ? err.message : String(err)}`
-          );
-          if (taskDef.localId) taskIdByLocalId.set(taskDef.localId, null);
-        }
-      }
-
-      // ── Insert dependency rows ────────────────────────────────────────────
-      // For each task with prereqLocalIds, insert one task_dependencies row per
-      // valid localId. A localId not found in the map (stale reference after a
-      // task was removed) is silently skipped — the task behaves as unrestricted.
-      // A null db task id (failed task insert above) is also skipped.
-
-      const depNow = new Date().toISOString();
-      for (const taskDef of flatTasks) {
-        if (!taskDef.localId) continue;
-        const taskId = taskIdByLocalId.get(taskDef.localId);
-        if (!taskId) continue;
-        if (!taskDef.prereqLocalIds || taskDef.prereqLocalIds.length === 0) continue;
-
-        for (const prereqLocalId of taskDef.prereqLocalIds) {
-          if (!taskIdByLocalId.has(prereqLocalId)) {
-            // Dangling ref (task removed from template): silently skip.
-            continue;
-          }
-          const prereqTaskId = taskIdByLocalId.get(prereqLocalId);
-          if (!prereqTaskId) continue; // prereq task failed to create; skip
-
-          try {
-            await prisma.taskDependency.create({
-              data: {
-                id:             makeId("dep"),
-                taskId,
-                requiresTaskId: prereqTaskId,
-                createdAt:      depNow,
-              },
-            });
-          } catch (err) {
-            // Dep insert failure is non-fatal. The task exists; it just won't
-            // be blocked properly. Report it.
-            result.errors.push(
-              `Dependency "${prereqLocalId}"→"${taskDef.localId}" for task "${taskDef.label}": ` +
-              (err instanceof Error ? err.message : String(err))
-            );
           }
         }
       }

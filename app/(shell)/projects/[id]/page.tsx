@@ -14,6 +14,251 @@ import type { ScopedProjectDetail, ScopedTask, ScopedCategory } from "@/app/api/
 type Tab = "overview" | "categories" | "tasks";
 
 // ---------------------------------------------------------------------------
+// Apply Blueprint Modal
+// ---------------------------------------------------------------------------
+
+interface ApplyBlueprintModalProps {
+  projectId: string;
+  onClose: () => void;
+  onApplied: () => void;
+}
+
+function ApplyBlueprintModal({ projectId, onClose, onApplied }: ApplyBlueprintModalProps) {
+  const [templates, setTemplates] = useState<Array<{ id: string; name: string; serviceId: string }>>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [applying, setApplying] = useState(false);
+  const [resultMsg, setResultMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/task-blueprints", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { blueprints?: Array<{ id: string; name: string; serviceId: string }> } | null) => {
+        if (data?.blueprints) setTemplates(data.blueprints);
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => setLoadingTemplates(false));
+  }, []);
+
+  const handleApply = async () => {
+    if (!selectedTemplateId) return;
+    setApplying(true);
+    setResultMsg(null);
+    setErrorMsg(null);
+    try {
+      const res = await fetch("/api/projects/apply-blueprint", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ projectId, templateId: selectedTemplateId }),
+      });
+      const data = await res.json() as { result?: { tasksCreated: number; tasksSkippedDuplicate: number; categoriesCreated?: number }; error?: string };
+      if (!res.ok || data.error) {
+        setErrorMsg(data.error ?? "Apply failed");
+      } else {
+        const r = data.result!;
+        const skipped = r.tasksSkippedDuplicate ?? 0;
+        setResultMsg(
+          `Applied. ${r.tasksCreated} task(s) created${skipped > 0 ? `, ${skipped} skipped (already exist)` : ""}.`
+        );
+        onApplied();
+      }
+    } catch (err) {
+      setErrorMsg(String(err));
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.4)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="rounded-xl shadow-xl p-6 w-full max-w-md"
+        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+      >
+        <h2 className="text-base font-black mb-4" style={{ color: "var(--rtm-text-primary)" }}>
+          Apply Blueprint
+        </h2>
+        {loadingTemplates ? (
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Loading templates…</p>
+        ) : (
+          <>
+            <label className="block text-xs font-semibold mb-1" style={{ color: "var(--rtm-text-secondary)" }}>
+              Select Blueprint
+            </label>
+            <select
+              className="w-full rounded-lg px-3 py-2 text-sm mb-4"
+              style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)" }}
+              value={selectedTemplateId}
+              onChange={(e) => setSelectedTemplateId(e.target.value)}
+            >
+              <option value="">— choose a blueprint —</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name || t.serviceId}</option>
+              ))}
+            </select>
+          </>
+        )}
+        {resultMsg && (
+          <p className="text-sm mb-3 font-semibold" style={{ color: "#059669" }}>{resultMsg}</p>
+        )}
+        {errorMsg && (
+          <p className="text-sm mb-3 font-semibold" style={{ color: "#DC2626" }}>{errorMsg}</p>
+        )}
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+          >
+            {resultMsg ? "Close" : "Cancel"}
+          </button>
+          {!resultMsg && (
+            <button
+              onClick={() => { void handleApply(); }}
+              disabled={applying || !selectedTemplateId}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+              style={{
+                background: selectedTemplateId && !applying ? "var(--rtm-blue)" : "#CBD5E1",
+                color:      selectedTemplateId && !applying ? "#fff" : "#94A3B8",
+                cursor:     applying || !selectedTemplateId ? "not-allowed" : "pointer",
+              }}
+            >
+              {applying ? "Applying…" : "Apply"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Reassign Task Modal
+// ---------------------------------------------------------------------------
+
+interface ReassignModalProps {
+  taskId: string;
+  taskLabel: string;
+  currentOwnerName: string | null;
+  onClose: () => void;
+  onReassigned: (ownerId: string, ownerName: string) => void;
+}
+
+function ReassignModal({ taskId, taskLabel, currentOwnerName, onClose, onReassigned }: ReassignModalProps) {
+  const [users, setUsers] = useState<Array<{ id: string; name: string; department: string | null }>>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/tasks/reassign", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { users?: Array<{ id: string; name: string; department: string | null }> } | null) => {
+        if (data?.users) setUsers(data.users);
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => setLoadingUsers(false));
+  }, []);
+
+  const handleSave = async () => {
+    if (!selectedUserId) return;
+    setSaving(true);
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/tasks/reassign?id=${encodeURIComponent(taskId)}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ ownerId: selectedUserId }),
+      });
+      const data = await res.json() as { ownerName?: string; ownerId?: string; error?: string };
+      if (!res.ok || data.error) {
+        setErrorMsg(data.error ?? "Reassign failed");
+      } else {
+        onReassigned(data.ownerId!, data.ownerName!);
+        onClose();
+      }
+    } catch (err) {
+      setErrorMsg(String(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.4)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="rounded-xl shadow-xl p-6 w-full max-w-md"
+        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+      >
+        <h2 className="text-base font-black mb-1" style={{ color: "var(--rtm-text-primary)" }}>
+          Reassign Task
+        </h2>
+        <p className="text-xs mb-4" style={{ color: "var(--rtm-text-secondary)" }}>
+          {taskLabel}
+          {currentOwnerName ? ` (currently: ${currentOwnerName})` : ""}
+        </p>
+        {loadingUsers ? (
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Loading users…</p>
+        ) : (
+          <>
+            <label className="block text-xs font-semibold mb-1" style={{ color: "var(--rtm-text-secondary)" }}>
+              New Owner
+            </label>
+            <select
+              className="w-full rounded-lg px-3 py-2 text-sm mb-4"
+              style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)" }}
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+            >
+              <option value="">— choose a person —</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}{u.department ? ` (${u.department})` : ""}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+        {errorMsg && (
+          <p className="text-sm mb-3 font-semibold" style={{ color: "#DC2626" }}>{errorMsg}</p>
+        )}
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { void handleSave(); }}
+            disabled={saving || !selectedUserId}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold"
+            style={{
+              background: selectedUserId && !saving ? "var(--rtm-blue)" : "#CBD5E1",
+              color:      selectedUserId && !saving ? "#fff" : "#94A3B8",
+              cursor:     saving || !selectedUserId ? "not-allowed" : "pointer",
+            }}
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Styles
 // ---------------------------------------------------------------------------
 
@@ -81,6 +326,19 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
 
   const [project, setProject] = useState<ScopedProjectDetail | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+
+  // Apply-blueprint modal
+  const [showApplyModal, setShowApplyModal] = useState(false);
+
+  // Reassign modal
+  const [reassignTask, setReassignTask] = useState<{
+    id: string; label: string; ownerName: string | null;
+  } | null>(null);
+
+  // Local task override map so UI reflects reassignment without a full reload.
+  const [ownerOverrides, setOwnerOverrides] = useState<Map<string, { id: string; name: string }>>(
+    new Map()
+  );
 
   const loadProject = useCallback(async () => {
     try {
@@ -152,6 +410,7 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
   ];
 
   return (
+    <>
     <div className="flex flex-col min-h-screen" style={{ background: "var(--rtm-bg)" }}>
 
       {/* ── HEADER ── */}
@@ -179,6 +438,13 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
               </div>
             </div>
             <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => setShowApplyModal(true)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border hover:bg-blue-50"
+                style={{ borderColor: "var(--rtm-blue)", color: "var(--rtm-blue)" }}
+              >
+                Apply Blueprint
+              </button>
               <Link href={backPath} className="px-3 py-1.5 rounded-lg text-xs font-semibold border hover:bg-gray-50"
                 style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
                 Back
@@ -287,14 +553,29 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
                           )}
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-3 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                        {t.dueDate
-                          ? <span>Due: <b style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate}</b></span>
-                          : t.isBlocked && t.blockedBy.length > 0
-                            ? <span style={{ color: "var(--rtm-text-secondary)" }}>After <b>{t.blockedBy[0].label}</b></span>
-                            : null
-                        }
-                        {t.ownerName && <span>Owner: <b style={{ color: "var(--rtm-text-secondary)" }}>{t.ownerName}</b></span>}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap gap-3 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                          {t.dueDate
+                            ? <span>Due: <b style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate}</b></span>
+                            : t.isBlocked && t.blockedBy.length > 0
+                              ? <span style={{ color: "var(--rtm-text-secondary)" }}>After <b>{t.blockedBy[0].label}</b></span>
+                              : null
+                          }
+                          {(ownerOverrides.get(t.id)?.name ?? t.ownerName) && (
+                            <span>Owner: <b style={{ color: "var(--rtm-text-secondary)" }}>{ownerOverrides.get(t.id)?.name ?? t.ownerName}</b></span>
+                          )}
+                        </div>
+                        <button
+                          className="text-[11px] font-semibold hover:underline flex-shrink-0"
+                          style={{ color: "var(--rtm-blue)" }}
+                          onClick={() => setReassignTask({
+                            id:        t.id,
+                            label:     t.label,
+                            ownerName: ownerOverrides.get(t.id)?.name ?? t.ownerName ?? null,
+                          })}
+                        >
+                          Reassign
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -305,6 +586,32 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
         )}
       </div>
     </div>
+
+    {/* ── MODALS ── */}
+    {showApplyModal && (
+      <ApplyBlueprintModal
+        projectId={project.id}
+        onClose={() => setShowApplyModal(false)}
+        onApplied={() => { void loadProject(); }}
+      />
+    )}
+    {reassignTask && (
+      <ReassignModal
+        taskId={reassignTask.id}
+        taskLabel={reassignTask.label}
+        currentOwnerName={reassignTask.ownerName}
+        onClose={() => setReassignTask(null)}
+        onReassigned={(ownerId, ownerName) => {
+          setOwnerOverrides((prev) => {
+            const next = new Map(prev);
+            next.set(reassignTask.id, { id: ownerId, name: ownerName });
+            return next;
+          });
+          setReassignTask(null);
+        }}
+      />
+    )}
+    </>
   );
 }
 
