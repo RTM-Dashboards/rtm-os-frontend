@@ -11,6 +11,7 @@ import { Step2Audit } from "./steps/Step2Audit";
 import { Step3Recommendations } from "./steps/Step3Recommendations";
 import { Step4Budget } from "./steps/Step4Budget";
 import { Step5ProposalDraft } from "./steps/Step5ProposalDraft";
+import { getMissingRequiredFields } from "@/lib/sales/proposal-required-fields";
 
 // ─── Wizard State ─────────────────────────────────────────────────────────────
 
@@ -171,33 +172,23 @@ function createDefaultState(wizardId: string): ProposalWizardState {
 }
 
 // ─── Step validation ──────────────────────────────────────────────────────────
+//
+// validateStep returns true when ALL required fields for the step are
+// satisfied AND (for step 1) the intake is not flagged for follow-up.
+// It is used only to disable the Next/Complete button and to decide
+// whether handleNext should proceed.  Draft saving bypasses this entirely:
+// handleSaveDraft calls saveToDraft directly and never passes through
+// validateStep, so saving a draft with required fields empty always works.
 
 function validateStep(step: number, state: ProposalWizardState): boolean {
-  switch (step) {
-    case 1: {
-      const intakeRecord = state.intakeRecord as HomeServicesIntakeRecord | null;
-      const flagged = intakeRecord?.flaggedForFollowUp === true;
-      return (
-        !flagged &&
-        state.clientInfo.name.trim().length > 0 &&
-        state.clientInfo.businessName.trim().length > 0 &&
-        state.selectedGoals.length > 0
-      );
-    }
-    case 2:
-      return state.auditResult !== null;
-    case 3:
-      return state.approvedRecommendations.length > 0;
-    case 4:
-      return state.budgetResult !== null && state.lineItems.length > 0;
-    case 5:
-      return (
-        state.proposalDocument !== null &&
-        state.proposalDocument.completionPercentage >= 80
-      );
-    default:
-      return false;
+  // Step 1 has an extra gate: flagged-for-follow-up blocks advancing
+  // regardless of field completeness.
+  if (step === 1) {
+    const intakeRecord = state.intakeRecord as HomeServicesIntakeRecord | null;
+    if (intakeRecord?.flaggedForFollowUp === true) return false;
   }
+  // All other gates: the declarative required-field config must be fully satisfied.
+  return getMissingRequiredFields(step, state).length === 0;
 }
 
 // ─── Format timestamp ─────────────────────────────────────────────────────────
@@ -768,19 +759,40 @@ export function ProposalWizard({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Validation hint */}
-            {!currentStepValid && state.currentStep < 5 && (
-              <p className="text-xs" style={{ color: "#C2410C" }}>
-                {state.currentStep === 1
-                  ? (state.intakeRecord as HomeServicesIntakeRecord | null)?.flaggedForFollowUp
-                    ? "This intake is flagged for follow-up. Complete additional information before proceeding."
-                    : "Complete client info and select at least one goal."
-                  : state.currentStep === 2
-                  ? "Complete the audit to continue."
-                  : state.currentStep === 3
-                  ? "Approve at least one recommendation."
-                  : "Configure budget to continue."}
-              </p>
+            {/* Validation hint — names the specific missing fields by label */}
+            {!currentStepValid && (
+              (() => {
+                // Step 1: flagged-for-follow-up takes precedence over field list
+                const flagged =
+                  state.currentStep === 1 &&
+                  (state.intakeRecord as HomeServicesIntakeRecord | null)
+                    ?.flaggedForFollowUp === true;
+                if (flagged) {
+                  return (
+                    <p className="text-xs" style={{ color: "#C2410C" }}>
+                      This intake is flagged for follow-up. Complete additional
+                      information before proceeding.
+                    </p>
+                  );
+                }
+                const missing = getMissingRequiredFields(
+                  state.currentStep,
+                  state
+                );
+                if (missing.length === 0) return null;
+                return (
+                  <div style={{ color: "#C2410C" }}>
+                    <p className="text-xs font-semibold">
+                      Required to continue:
+                    </p>
+                    <ul className="text-xs list-disc list-inside mt-0.5">
+                      {missing.map((label) => (
+                        <li key={label}>{label}</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              })()
             )}
 
             {isLastStep ? (

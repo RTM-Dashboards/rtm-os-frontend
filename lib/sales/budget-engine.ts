@@ -7,15 +7,18 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import {
-  BUDGET_SERVICE_CATALOG,
   RECOMMENDATION_TO_BUDGET_MAP,
-  getBudgetServiceById,
   MAX_DISCOUNT_PERCENTAGE,
   MAX_FLAT_DISCOUNT_MONTHLY,
   MAX_FLAT_DISCOUNT_SETUP,
   type BudgetServiceId,
   type BudgetServiceDefinition,
 } from "./budget-config";
+// BUDGET_SERVICE_CATALOG and getBudgetServiceById are intentionally NOT imported
+// here at runtime. The hardcoded array is seed data only (scripts/seed-service-catalogue.ts).
+// Server-side service resolution uses getServiceByIdFromDb from catalogue-db.ts;
+// client-side components receive prefetched BudgetServiceDefinition[] from the DB API
+// and pass it as prefetchedDef to buildLineItemFromService.
 import {
   getServiceLineItems,
   getServiceById,
@@ -42,6 +45,27 @@ export interface BudgetLineItem {
   /** Computed: setupFee (flat — not multiplied by quantity) */
   setupSubtotal: number;
   isRecurring: boolean;
+
+  // ─── Price and name snapshot ──────────────────────────────────────────────────────────────────────────────
+  //
+  // These three fields capture the catalogue values AT THE MOMENT the line item
+  // was added to a proposal. A proposal is a document a client agrees to; it
+  // must not change retroactively because someone edited the catalogue.
+  //
+  // Proposal and contract display surfaces read these snapshot values, NOT the
+  // live service_catalog_items row. The live row is only read at the moment the
+  // item is first created (inside buildLineItemFromService).
+  //
+  // snapshotName           — service name as it read when added (== label at creation time)
+  // snapshotUnitMonthlyPrice — unit monthly price from the catalogue at that moment
+  // snapshotSetupFee       — setup fee from the catalogue at that moment
+  //
+  // Existing line items stored before this field existed will have undefined
+  // here; display code should fall back to label / unitMonthlyPrice / setupFee
+  // in that case so old proposals continue to render correctly.
+  snapshotName?: string;
+  snapshotUnitMonthlyPrice?: number;
+  snapshotSetupFee?: number;
 }
 
 // ─── Budget Result ────────────────────────────────────────────────────────────
@@ -128,8 +152,17 @@ export function computeBudget(
 // ─── buildLineItemFromService ─────────────────────────────────────────────────
 
 /**
- * Looks up service from BUDGET_SERVICE_CATALOG, applies optional overrides,
- * computes monthlySubtotal and setupSubtotal, and returns a complete BudgetLineItem.
+ * Builds a BudgetLineItem from a service definition.
+ *
+ * IMPORTANT: prefetchedDef MUST be supplied. The hardcoded BUDGET_SERVICE_CATALOG
+ * array is no longer used as a fallback — it is seed data only. Callers must
+ * provide the definition fetched from service_catalog_items:
+ *
+ *   Server-side: await getServiceByIdFromDb(id)  → catalogue-db.ts
+ *   Client-side: getCatalogServiceById(id) from the DB API fetch in BudgetOptimizerShell
+ *
+ * This ensures services added via the config page (not present in the seed array)
+ * always resolve correctly.
  */
 export function buildLineItemFromService(
   serviceId: BudgetServiceId,
@@ -138,10 +171,12 @@ export function buildLineItemFromService(
   >,
   prefetchedDef?: BudgetServiceDefinition
 ): BudgetLineItem {
-  const def = prefetchedDef ?? getBudgetServiceById(serviceId);
+  const def = prefetchedDef;
   if (!def) {
     throw new Error(
-      `[budget-engine] Unknown serviceId: "${serviceId}". Not found in service catalogue.`
+      `[budget-engine] Unknown serviceId: "${serviceId}". prefetchedDef was not supplied — ` +
+      `resolve the service via getServiceByIdFromDb (server) or the DB catalog API (client) ` +
+      `and pass it as the third argument.`
     );
   }
 
@@ -160,6 +195,11 @@ export function buildLineItemFromService(
     monthlySubtotal: quantity * unitMonthlyPrice,
     setupSubtotal: setupFee,
     isRecurring: def.isRecurring,
+    // Snapshot: freeze catalogue values at creation time so renaming or
+    // re-pricing a service in the config page cannot alter existing proposals.
+    snapshotName: def.label,
+    snapshotUnitMonthlyPrice: def.defaultMonthlyPrice,
+    snapshotSetupFee: def.defaultSetupFee,
   };
 }
 
@@ -194,13 +234,18 @@ export function buildLineItemsFromRecommendations(
 // ─── getAvailableServices ─────────────────────────────────────────────────────
 
 /**
- * Returns services from BUDGET_SERVICE_CATALOG that are not in existingIds.
+ * Returns services from dbCatalog that are not in existingIds.
+ *
+ * dbCatalog must be the list fetched from service_catalog_items (the DB),
+ * not the hardcoded seed array. On the client this comes from BudgetOptimizerShell;
+ * on the server use getServiceCatalogFromDb() from catalogue-db.ts.
  */
 export function getAvailableServices(
-  existingIds: BudgetServiceId[]
+  existingIds: BudgetServiceId[],
+  dbCatalog: BudgetServiceDefinition[]
 ): BudgetServiceDefinition[] {
   const existingSet = new Set(existingIds);
-  return BUDGET_SERVICE_CATALOG.filter((s) => !existingSet.has(s.id));
+  return dbCatalog.filter((s) => !existingSet.has(s.id));
 }
 
 // ─── Line Item Engine (pure functions) ────────────────────────────────────────────────

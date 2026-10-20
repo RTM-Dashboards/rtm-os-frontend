@@ -1528,6 +1528,13 @@ model Contract {
   address             Json?
 
   signedDate          String?
+
+  // Computed on sign: signedDate + termLengthMonths.
+  // ISO-8601 string, following the schema timestamp convention.
+  // NULL when signedDate is absent or termLengthMonths is unknown.
+  // Never invented from a null signedDate.
+  contractEndDate     String?
+
   createdAt           String   @default("")
   updatedAt           String   @default("")
 

@@ -96,8 +96,27 @@ export interface SalesContractRecord {
   address: MasterAddress | null;
   /** ISO string or null */
   signedDate: string | null;
+  /**
+   * Contract end date: signedDate + termLengthMonths, computed on sign and stored.
+   * ISO-8601 string, or null when signedDate is absent or termLengthMonths is unknown.
+   */
+  contractEndDate: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// ── computeContractEndDate ────────────────────────────────────────────────────
+// Returns the ISO end date if both signedDate and termLengthMonths are present;
+// null otherwise. Never invents a date from a null signedDate.
+function computeContractEndDate(
+  signedDate: string | null | undefined,
+  termLengthMonths: number | null | undefined
+): string | null {
+  if (!signedDate || !termLengthMonths) return null;
+  const d = new Date(signedDate);
+  if (isNaN(d.getTime())) return null;
+  d.setMonth(d.getMonth() + termLengthMonths);
+  return d.toISOString();
 }
 
 // ── Term length parser ─────────────────────────────────────────────────────────
@@ -150,6 +169,7 @@ function rowToRecord(row: {
   lineItems: unknown;
   address: unknown;
   signedDate: string | null;
+  contractEndDate: string | null;
   createdAt: string;
   updatedAt: string;
 }): SalesContractRecord {
@@ -177,6 +197,7 @@ function rowToRecord(row: {
     lineItems:           Array.isArray(row.lineItems) ? (row.lineItems as BudgetLineItem[]) : [],
     address:             (row.address ?? null) as MasterAddress | null,
     signedDate:          row.signedDate,
+    contractEndDate:     row.contractEndDate,
     createdAt:           row.createdAt,
     updatedAt:           row.updatedAt,
   };
@@ -263,6 +284,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     lineItems:           (Array.isArray(incoming.lineItems) ? incoming.lineItems : []) as unknown as Prisma.InputJsonValue,
     address:             (incoming.address ?? null) as unknown as Prisma.InputJsonValue,
     signedDate:          incoming.signedDate          ?? null,
+    // Compute contractEndDate whenever signedDate and termLengthMonths are both present.
+    // If signedDate is absent, leave null — do not invent an end date.
+    contractEndDate:     computeContractEndDate(incoming.signedDate, termLengthMonths),
     updatedAt:           now,
   };
 
@@ -322,10 +346,17 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     ? derivePaymentTermsLabel(patch.paymentTerm)
     : existing.paymentTerms;
 
-  const updateData: Record<string, unknown> = { updatedAt: now, termLengthMonths, paymentTerms };
+  // Compute contractEndDate whenever signedDate changes or termLengthMonths changes.
+  // Use the patched value when present; fall back to the existing stored value.
+  // Never invent an end date when signedDate is absent.
+  const effectiveSignedDate =
+    patch.signedDate !== undefined ? patch.signedDate : existing.signedDate;
+  const contractEndDate = computeContractEndDate(effectiveSignedDate, termLengthMonths);
+
+  const updateData: Record<string, unknown> = { updatedAt: now, termLengthMonths, paymentTerms, contractEndDate };
 
   // Copy every non-id patch field into the update object
-  const skipKeys = new Set(["id", "createdAt", "termLengthMonths", "paymentTerms"]);
+  const skipKeys = new Set(["id", "createdAt", "termLengthMonths", "paymentTerms", "contractEndDate"]);
   for (const [k, v] of Object.entries(patch)) {
     if (!skipKeys.has(k) && v !== undefined) {
       updateData[k] = v;

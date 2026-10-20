@@ -225,6 +225,9 @@ export function buildContractFromProposal(
     lineItems,
     address,
     signedDate: null,
+    // contractEndDate is null at creation time (no signedDate yet).
+    // Computed and stored by the API route when the contract is marked signed.
+    contractEndDate: null,
     createdAt: now,
     updatedAt: now,
   };

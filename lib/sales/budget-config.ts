@@ -306,8 +306,23 @@ export const BUDGET_SERVICE_CATALOG: BudgetServiceDefinition[] = [
   },
 ];
 
-// ─── Lookup Helper ────────────────────────────────────────────────────────────
-
+// ─── Lookup Helper (seed data only) ─────────────────────────────────────────
+//
+// getBudgetServiceById searches the hardcoded BUDGET_SERVICE_CATALOG array only.
+// It is intentionally NOT the runtime source of truth — at request time, all
+// service resolution goes through getServiceByIdFromDb in catalogue-db.ts, which
+// reads service_catalog_items in Postgres and therefore includes rows added via
+// the config page that are not present in this array.
+//
+// This function is retained here for two purposes:
+//   1. scripts/seed-service-catalogue.ts imports it to populate the DB from
+//      the canonical initial list.
+//   2. Client components that receive a prefetched BudgetServiceDefinition
+//      from the DB API may call buildLineItemFromService with the prefetchedDef
+//      parameter; the sync lookup is never needed at request time.
+//
+// Do NOT import this into production API routes or server-side request handlers.
+// Use getServiceByIdFromDb (catalogue-db.ts) instead.
 export function getBudgetServiceById(
   id: BudgetServiceId
 ): BudgetServiceDefinition | undefined {

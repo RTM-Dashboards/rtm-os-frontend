@@ -131,6 +131,17 @@ export interface DepartmentSummary {
 
 // ─── Full Audit Result ─────────────────────────────────────────────────────────
 
+/**
+ * Which mode produced this AuditResult.
+ *   ai       — AI Audit (Anthropic API, PageSpeed)
+ *   intake   — Intake Audit (citation / NAP data from intake form)
+ *   quick    — Quick Audit (rep slider estimates)
+ *   existing — Used an existing prior audit from the database
+ *   manual   — Manual Audit (department reviewer scorecard)
+ *   hybrid   — Hybrid Audit (intake baseline + department review)
+ */
+export type AuditSourceMode = "ai" | "intake" | "quick" | "existing" | "manual" | "hybrid";
+
 export interface AuditResult {
   // Metadata
   id: string;
@@ -140,6 +151,8 @@ export interface AuditResult {
   goalLabels: string[];
   generatedAt: string;
   status: "Draft" | "Complete" | "Ready For Recommendations";
+  /** Which mode produced this result — used for internal display only, not on client-facing output. */
+  sourceMode: AuditSourceMode;
 
   // Score
   overallScore: number;
@@ -420,7 +433,8 @@ export function runAuditEngine(
   answers: AuditAnswers,
   template: AuditTemplateConfig = DEFAULT_AUDIT_TEMPLATE,
   intakeId?: string,
-  options: AuditEngineOptions = {}
+  options: AuditEngineOptions = {},
+  sourceMode: AuditSourceMode = "quick"
 ): AuditResult {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
@@ -510,6 +524,7 @@ export function runAuditEngine(
     goalLabels,
     generatedAt: new Date().toISOString(),
     status,
+    sourceMode,
 
     overallScore,
     scoringLabel: threshold.label,
@@ -548,7 +563,7 @@ export function generateAuditForIntake(
 ): AuditResult {
   const sections = getSectionsForGoals(DEFAULT_AUDIT_TEMPLATE, goalIds);
   const answers = intakeAnswers ?? generateMockAnswers(sections, "average");
-  return runAuditEngine(goalIds, goalLabels, answers, DEFAULT_AUDIT_TEMPLATE, intakeId);
+  return runAuditEngine(goalIds, goalLabels, answers, DEFAULT_AUDIT_TEMPLATE, intakeId, {}, "intake");
 }
 
 // ─── Intake-Based Audit Functions ───────────────────────────────────────────

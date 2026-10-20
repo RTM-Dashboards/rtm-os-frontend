@@ -2,7 +2,6 @@
 
 import React, { useState, useCallback } from "react";
 import {
-  getBudgetServiceById as getBudgetServiceByIdSeed,
   type BudgetServiceId,
   type BudgetServiceDefinition,
 } from "@/lib/sales/budget-config";
@@ -219,7 +218,12 @@ function ServiceRow({
   catalogLookup,
 }: ServiceRowProps) {
   const [expanded, setExpanded] = useState(false);
-  const def = catalogLookup?.(item.serviceId) ?? getBudgetServiceByIdSeed(item.serviceId);
+  // catalogLookup is the DB-catalog lookup provided by BudgetOptimizerShell.
+  // The seed-array fallback (getBudgetServiceByIdSeed) has been removed: all
+  // services are resolved from the DB catalog so that rows added via the config
+  // page resolve correctly.  When the catalog has not yet loaded, def is
+  // undefined and the row renders with defaults.
+  const def = catalogLookup?.(item.serviceId);
   const catalogId = def?.catalogId ?? "";
   const lineItemDefs: ServiceLineItem[] = getServiceLineItems(catalogId);
 

@@ -31,172 +31,22 @@ import { AuditRequestStatusBadge } from "@/components/sales/audit-request/AuditR
 import { AiAuditPanel } from "@/components/sales/audit/AiAuditPanel";
 import type { AiAuditResult } from "@/lib/sales/types";
 
-// ─── Mock existing audits ─────────────────────────────────────────────────────
+// ─── Real prior audits ─────────────────────────────────────────────────────────
+// A prior audit is any proposal row that has a non-null auditResult object.
+// Fields are derived from stored proposal data — nothing is invented.
 
-interface MockAudit {
+interface PriorAudit {
+  /** The proposal id, used as the stable reference key. */
   id: string;
+  /** Display label: "<businessName> — <auditMode> audit — <date>" */
   name: string;
   client: string;
   date: string;
   score: number;
-  findingsCount: number;
-  criticalCount: number;
-  goalLabels: string[];
+  goalIds: string[];
+  /** The full stored AuditResult, ready to drop straight into wizard state. */
+  auditResult: AuditResult;
 }
-
-const MOCK_EXISTING_AUDITS: MockAudit[] = [
-  {
-    id: "audit-001",
-    name: "Summit Landscaping — Full Audit",
-    client: "Summit Landscaping",
-    date: "2025-06-01",
-    score: 42,
-    findingsCount: 14,
-    criticalCount: 3,
-    goalLabels: ["Generate More Leads", "Improve SEO", "Improve Google Business Profile"],
-  },
-  {
-    id: "audit-002",
-    name: "Metro Dental Group — Digital Presence",
-    client: "Metro Dental Group",
-    date: "2025-05-30",
-    score: 38,
-    findingsCount: 18,
-    criticalCount: 5,
-    goalLabels: ["Improve SEO", "Improve Google Business Profile", "Generate More Leads", "Improve Website Conversion"],
-  },
-  {
-    id: "audit-003",
-    name: "Blue Ridge Plumbing — Quick Audit",
-    client: "Blue Ridge Plumbing",
-    date: "2025-06-02",
-    score: 55,
-    findingsCount: 9,
-    criticalCount: 2,
-    goalLabels: ["Increase Phone Calls", "Improve PPC"],
-  },
-  {
-    id: "audit-004",
-    name: "Harbor Auto Group — Website Review",
-    client: "Harbor Auto Group",
-    date: "2025-06-03",
-    score: 31,
-    findingsCount: 22,
-    criticalCount: 6,
-    goalLabels: ["Improve SEO", "Improve PPC", "Website Redesign"],
-  },
-  {
-    id: "audit-005",
-    name: "Coastal Wellness Spa — Local SEO",
-    client: "Coastal Wellness Spa",
-    date: "2025-05-28",
-    score: 63,
-    findingsCount: 7,
-    criticalCount: 1,
-    goalLabels: ["Improve Meta Ads", "Improve Google Business Profile", "Improve SEO"],
-  },
-  // Audits from the Audit Intelligence Center (audits/page.tsx)
-  {
-    id: "aud-001",
-    name: "SEO Technical Audit — Summit Landscaping",
-    client: "Summit Landscaping",
-    date: "2025-06-05",
-    score: 74,
-    findingsCount: 7,
-    criticalCount: 1,
-    goalLabels: ["Improve SEO", "Improve Google Business Profile"],
-  },
-  {
-    id: "aud-002",
-    name: "GBP Audit — Blue Ridge Plumbing",
-    client: "Blue Ridge Plumbing",
-    date: "2025-06-07",
-    score: 31,
-    findingsCount: 11,
-    criticalCount: 3,
-    goalLabels: ["Improve Google Business Profile", "Generate More Leads"],
-  },
-  {
-    id: "aud-003",
-    name: "PPC Audit — Apex Roofing",
-    client: "Apex Roofing",
-    date: "2025-05-30",
-    score: 28,
-    findingsCount: 9,
-    criticalCount: 2,
-    goalLabels: ["Improve PPC", "Generate More Leads"],
-  },
-  {
-    id: "aud-004",
-    name: "Meta Ads Audit — Pinnacle HVAC",
-    client: "Pinnacle HVAC",
-    date: "2025-06-01",
-    score: 42,
-    findingsCount: 6,
-    criticalCount: 1,
-    goalLabels: ["Improve Meta Ads", "Generate More Leads"],
-  },
-  {
-    id: "aud-005",
-    name: "Website Audit — Morrison HVAC and Cooling",
-    client: "Morrison HVAC and Cooling",
-    date: "2025-05-18",
-    score: 19,
-    findingsCount: 14,
-    criticalCount: 4,
-    goalLabels: ["Website Redesign", "Improve SEO"],
-  },
-  {
-    id: "aud-006",
-    name: "LSA Audit — Coastal Plumbing Co.",
-    client: "Coastal Plumbing Co.",
-    date: "2025-06-03",
-    score: 38,
-    findingsCount: 5,
-    criticalCount: 1,
-    goalLabels: ["Increase Phone Calls", "Generate More Leads"],
-  },
-  {
-    id: "aud-007",
-    name: "GBP Audit — GreenWave Lawn Care",
-    client: "GreenWave Lawn Care",
-    date: "2025-06-08",
-    score: 41,
-    findingsCount: 8,
-    criticalCount: 0,
-    goalLabels: ["Improve Google Business Profile", "Generate More Leads"],
-  },
-  {
-    id: "aud-008",
-    name: "Competitor Audit — Summit Landscaping",
-    client: "Summit Landscaping",
-    date: "2025-05-24",
-    score: 58,
-    findingsCount: 4,
-    criticalCount: 0,
-    goalLabels: ["Generate More Leads", "Improve SEO"],
-  },
-  {
-    id: "aud-009",
-    name: "SEO Technical Audit — Morrison HVAC and Cooling",
-    client: "Morrison HVAC and Cooling",
-    date: "2025-06-02",
-    score: 44,
-    findingsCount: 6,
-    criticalCount: 1,
-    goalLabels: ["Improve SEO", "Generate More Leads"],
-  },
-  {
-    id: "aud-010",
-    name: "PPC Audit — Apex Roofing (Storm Campaign)",
-    client: "Apex Roofing",
-    date: "2025-06-05",
-    score: 47,
-    findingsCount: 5,
-    criticalCount: 1,
-    goalLabels: ["Improve PPC", "Generate More Leads"],
-  },
-];
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -272,17 +122,37 @@ function napStatusColor(status: NAPComparison["status"]): string {
 
 // ─── Audit summary card ────────────────────────────────────────────────────────
 
+const SOURCE_MODE_LABELS: Record<string, string> = {
+  ai:       "AI Audit",
+  intake:   "Intake Audit",
+  quick:    "Quick Audit",
+  existing: "Previous Audit",
+  manual:   "Manual Audit",
+  hybrid:   "Hybrid Audit",
+};
+
 function AuditSummaryCard({ auditResult }: { auditResult: AuditResult }) {
+  const sourceModeLabel = auditResult.sourceMode ? SOURCE_MODE_LABELS[auditResult.sourceMode] ?? auditResult.sourceMode : null;
   return (
     <div
       className="rounded-xl border p-5"
       style={{ background: "#F0FDF4", borderColor: "#BBF7D0" }}
     >
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-2 h-2 rounded-full" style={{ background: "#059669" }} />
-        <p className="text-sm font-bold" style={{ color: "#15803D" }}>
-          Audit result ready — recommendations will be generated in the next step.
-        </p>
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full" style={{ background: "#059669" }} />
+          <p className="text-sm font-bold" style={{ color: "#15803D" }}>
+            Audit result ready — recommendations will be generated in the next step.
+          </p>
+        </div>
+        {sourceModeLabel && (
+          <span
+            className="text-[10px] font-bold px-2.5 py-1 rounded-full border"
+            style={{ background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" }}
+          >
+            {sourceModeLabel}
+          </span>
+        )}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
@@ -943,6 +813,54 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
     state.selectedAuditId ?? preselectedAuditId ?? ""
   );
 
+  // Real prior audits loaded from the database.  An empty list is correct when
+  // no previous audits exist — it is not replaced with invented entries.
+  const [priorAudits, setPriorAudits] = useState<PriorAudit[]>([]);
+  const [priorAuditsLoading, setPriorAuditsLoading] = useState(false);
+
+  // Load prior audits once on mount
+  useEffect(() => {
+    setPriorAuditsLoading(true);
+    fetch("/api/sales-proposals")
+      .then((r) => r.ok ? r.json() : Promise.reject(r.status))
+      .then((data: { records?: unknown[] }) => {
+        const records = data.records ?? [];
+        const audits: PriorAudit[] = [];
+        for (const rec of records) {
+          const r = rec as Record<string, unknown>;
+          const ar = r.auditResult as Record<string, unknown> | null | undefined;
+          if (!ar || typeof ar !== "object" || ar === null) continue;
+          // Ensure it is a real AuditResult (has overallScore)
+          if (typeof ar.overallScore !== "number") continue;
+          const clientInfo = r.clientInfo as Record<string, unknown> | null | undefined;
+          const businessName =
+            (clientInfo?.businessName as string | undefined) ||
+            (clientInfo?.name as string | undefined) ||
+            "Unknown Client";
+          const auditMode = (r.auditMode as string | undefined) || "audit";
+          const generatedAt = (ar.generatedAt as string | undefined) ?? (r.updatedAt as string | undefined) ?? "";
+          const dateLabel = generatedAt
+            ? new Date(generatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : "Unknown date";
+          audits.push({
+            id: r.id as string,
+            name: `${businessName} — ${auditMode} audit — ${dateLabel}`,
+            client: businessName,
+            date: generatedAt,
+            score: ar.overallScore as number,
+            goalIds: (ar.goalIds as string[] | undefined) ?? [],
+            auditResult: ar as unknown as AuditResult,
+          });
+        }
+        // Most recent first
+        audits.sort((a, b) => b.date.localeCompare(a.date));
+        setPriorAudits(audits);
+      })
+      .catch(() => { /* network failure: empty list, do not fabricate */ })
+      .finally(() => setPriorAuditsLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Intake audit state
   const [intakeAuditResult, setIntakeAuditResult] = useState<IntakeAuditResult | null>(null);
   const [approvedKeywords, setApprovedKeywords] = useState<string[]>([]);
@@ -1018,7 +936,9 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
       goalIds,
       answers,
       DEFAULT_AUDIT_TEMPLATE,
-      undefined
+      undefined,
+      {},
+      "intake"
     );
 
     // Convert IntakeFinding[] from overallFindings into AuditFinding[] so the
@@ -1105,7 +1025,9 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
       goalIds,
       answers,
       DEFAULT_AUDIT_TEMPLATE,
-      undefined
+      undefined,
+      {},
+      "ai"
     );
 
     function capitalize<T extends string>(s: string): T {
@@ -1177,28 +1099,12 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
 
   function handleSelectExistingAudit(auditId: string) {
     setSelectedAuditId(auditId);
-    const mock = MOCK_EXISTING_AUDITS.find((a) => a.id === auditId);
-    if (!mock) return;
+    const prior = priorAudits.find((a) => a.id === auditId);
+    if (!prior) return;
 
-    const goalIds = state.selectedGoals;
-    const goalLabels = mock.goalLabels;
-    const answers: Record<string, boolean> = {};
-    const sections = getSectionsForGoals(DEFAULT_AUDIT_TEMPLATE, goalIds);
-    sections.forEach((sec) => {
-      sec.questions.forEach((q) => {
-        const seed = q.key.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        const rand = ((seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
-        answers[q.key] = rand < mock.score / 100;
-      });
-    });
-
-    const result = runAuditEngine(
-      goalIds.length > 0 ? goalIds : ["goal-leads"],
-      goalLabels,
-      answers,
-      DEFAULT_AUDIT_TEMPLATE,
-      auditId
-    );
+    // Use the stored AuditResult directly. Tag its sourceMode as "existing" so
+    // downstream readers can tell this came from a prior audit, not a new run.
+    const result: AuditResult = { ...prior.auditResult, sourceMode: "existing" };
 
     onUpdate({
       auditMode: "existing",
@@ -1232,7 +1138,9 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
       state.selectedGoals,
       answers,
       DEFAULT_AUDIT_TEMPLATE,
-      undefined
+      undefined,
+      {},
+      "quick"
     );
 
     onUpdate({
@@ -1264,7 +1172,7 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
           answers[q.key] = rand < baselinePassRate;
         });
       });
-      const auditResult = runAuditEngine(goalIds, goalIds, answers, DEFAULT_AUDIT_TEMPLATE, undefined);
+      const auditResult = runAuditEngine(goalIds, goalIds, answers, DEFAULT_AUDIT_TEMPLATE, undefined, {}, "hybrid");
       onUpdate({ auditMode: "existing", auditResult, selectedAuditId: null });
     }
     setShowRequestModal(false);
@@ -1304,7 +1212,7 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
         });
       });
 
-      const auditResult = runAuditEngine(goalIds, goalIds, answers, DEFAULT_AUDIT_TEMPLATE, undefined);
+      const auditResult = runAuditEngine(goalIds, goalIds, answers, DEFAULT_AUDIT_TEMPLATE, undefined, {}, "manual");
       onUpdate({ auditMode: "existing", auditResult, selectedAuditId: null });
     }
   }
@@ -1335,14 +1243,19 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const modeOptions: { id: AuditMode; label: string; disabled?: boolean; disabledTooltip?: string }[] = [
+  const modeOptions: { id: AuditMode; label: string; disabled?: boolean; disabledReason?: string }[] = [
     {
       id: "ai",
       label: "AI Audit",
       disabled: !hasWebsiteUrl,
-      disabledTooltip: "Enter the client website URL in Step 1 to enable AI Audit",
+      disabledReason: "Requires a website URL — add it in Step 1 under “Website URL”.",
     },
-    { id: "intake",   label: "Intake Audit",          disabled: !hasIntakeData },
+    {
+      id: "intake",
+      label: "Intake Audit",
+      disabled: !hasIntakeData,
+      disabledReason: "Requires intake data — the intake record must include a city in Step 1.",
+    },
     { id: "existing", label: "Use Existing Audit" },
     { id: "quick",    label: "Run Quick Audit" },
     { id: "manual",   label: "Request Manual Audit" },
@@ -1364,27 +1277,26 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
         </p>
         <div className="flex gap-3 flex-wrap">
           {modeOptions.map((opt) => (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => !opt.disabled && handleModeSwitch(opt.id)}
-              disabled={opt.disabled}
-              title={opt.disabled && opt.disabledTooltip ? opt.disabledTooltip : undefined}
-              className="px-5 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: mode === opt.id ? "#EFF6FF" : "var(--rtm-bg)",
-                borderColor: mode === opt.id ? "#1D4ED8" : "var(--rtm-border)",
-                color: mode === opt.id ? "#1D4ED8" : "var(--rtm-text-secondary)",
-              }}
-            >
-              {opt.label}
-              {opt.id === "intake" && !hasIntakeData && (
-                <span className="ml-1 text-[10px]">(no intake data)</span>
+            <div key={opt.id} className="flex flex-col gap-1">
+              <button
+                type="button"
+                onClick={() => !opt.disabled && handleModeSwitch(opt.id)}
+                disabled={opt.disabled}
+                className="px-5 py-2.5 rounded-lg border-2 text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  background: mode === opt.id ? "#EFF6FF" : "var(--rtm-bg)",
+                  borderColor: mode === opt.id ? "#1D4ED8" : "var(--rtm-border)",
+                  color: mode === opt.id ? "#1D4ED8" : "var(--rtm-text-secondary)",
+                }}
+              >
+                {opt.label}
+              </button>
+              {opt.disabled && opt.disabledReason && (
+                <p className="text-[10px] max-w-[160px] leading-snug" style={{ color: "#C2410C" }}>
+                  {opt.disabledReason}
+                </p>
               )}
-              {opt.id === "ai" && !hasWebsiteUrl && (
-                <span className="ml-1 text-[10px]">(no website URL)</span>
-              )}
-            </button>
+            </div>
           ))}
         </div>
       </div>
@@ -1456,35 +1368,62 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
             </p>
           </div>
           <div className="p-6 space-y-4">
-            <div>
-              <label
-                className="block text-[11px] font-bold uppercase tracking-wide mb-1"
-                style={{ color: "var(--rtm-text-muted)" }}
+            {/* Loading state */}
+            {priorAuditsLoading && (
+              <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+                Loading previous audits…
+              </p>
+            )}
+
+            {/* Empty state — shown when load is complete and there are no prior audits */}
+            {!priorAuditsLoading && priorAudits.length === 0 && (
+              <div
+                className="rounded-xl border px-5 py-6 text-center space-y-1"
+                style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}
               >
-                Completed Audits
-              </label>
-              <select
-                value={selectedAuditId}
-                onChange={(e) => handleSelectExistingAudit(e.target.value)}
-                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                style={{
-                  background: "var(--rtm-bg)",
-                  borderColor: "var(--rtm-border)",
-                  color: "var(--rtm-text-primary)",
-                }}
-              >
-                <option value="">Select an audit…</option>
-                {MOCK_EXISTING_AUDITS.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name} — Score: {a.score} — {a.date}
-                  </option>
-                ))}
-              </select>
-            </div>
+                <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
+                  No previous audits for this client.
+                </p>
+                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                  Run an AI Audit, Intake Audit, or Quick Audit to create the first one,
+                  then return here to select it in a future proposal.
+                </p>
+              </div>
+            )}
+
+            {/* Audit selector — only shown when prior audits are available */}
+            {!priorAuditsLoading && priorAudits.length > 0 && (
+              <div>
+                <label
+                  className="block text-[11px] font-bold uppercase tracking-wide mb-1"
+                  style={{ color: "var(--rtm-text-muted)" }}
+                >
+                  Previous Audits
+                </label>
+                <select
+                  value={selectedAuditId}
+                  onChange={(e) => handleSelectExistingAudit(e.target.value)}
+                  className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  style={{
+                    background: "var(--rtm-bg)",
+                    borderColor: "var(--rtm-border)",
+                    color: "var(--rtm-text-primary)",
+                  }}
+                >
+                  <option value="">Select a previous audit…</option>
+                  {priorAudits.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {selectedAuditId && (() => {
-              const audit = MOCK_EXISTING_AUDITS.find((a) => a.id === selectedAuditId);
+              const audit = priorAudits.find((a) => a.id === selectedAuditId);
               if (!audit) return null;
+              const ar = audit.auditResult;
               return (
                 <div
                   className="rounded-xl border p-5 space-y-3"
@@ -1500,7 +1439,7 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
                         label: "Findings",
                         value: (
                           <span className="text-xl font-black" style={{ color: "var(--rtm-text-primary)" }}>
-                            {audit.findingsCount}
+                            {ar.totalFindingCount ?? 0}
                           </span>
                         ),
                       },
@@ -1508,7 +1447,7 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
                         label: "Critical",
                         value: (
                           <span className="text-xl font-black" style={{ color: "#DC2626" }}>
-                            {audit.criticalCount}
+                            {ar.criticalCount ?? 0}
                           </span>
                         ),
                       },
@@ -1516,7 +1455,9 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
                         label: "Audit Date",
                         value: (
                           <span className="text-sm font-semibold" style={{ color: "var(--rtm-text-secondary)" }}>
-                            {audit.date}
+                            {audit.date
+                              ? new Date(audit.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                              : "—"}
                           </span>
                         ),
                       },
@@ -1533,22 +1474,38 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
                       </div>
                     ))}
                   </div>
-                  <div>
-                    <p className="text-[10px] font-bold mb-1" style={{ color: "var(--rtm-text-muted)" }}>
-                      GOALS AUDITED
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {audit.goalLabels.map((g) => (
-                        <span
-                          key={g}
-                          className="text-xs px-2.5 py-1 rounded-full border"
-                          style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}
-                        >
-                          {g}
-                        </span>
-                      ))}
+                  {ar.goalIds && ar.goalIds.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-bold mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+                        GOALS AUDITED
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {ar.goalIds.map((g) => (
+                          <span
+                            key={g}
+                            className="text-xs px-2.5 py-1 rounded-full border"
+                            style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}
+                          >
+                            {g}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
+                  {/* Show the audit source mode so readers can tell how this was produced */}
+                  {ar.sourceMode && (
+                    <div>
+                      <p className="text-[10px] font-bold mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+                        PRODUCED BY
+                      </p>
+                      <span
+                        className="text-xs font-semibold px-2.5 py-1 rounded-full border capitalize"
+                        style={{ background: "#F0F9FF", color: "#0369A1", borderColor: "#BAE6FD" }}
+                      >
+                        {ar.sourceMode} audit
+                      </span>
+                    </div>
+                  )}
                 </div>
               );
             })()}

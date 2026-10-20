@@ -282,9 +282,15 @@ export function BudgetOptimizerShell({
 
   function handleAddService(serviceId: BudgetServiceId) {
     const def = getCatalogServiceById(serviceId);
-    const newItem = def
-      ? buildLineItemFromService(serviceId, undefined, def)
-      : buildLineItemFromService(serviceId);
+    if (!def) {
+      // The DB catalog has not finished loading yet, or the service id is invalid.
+      // Do not call buildLineItemFromService without a prefetched definition —
+      // the seed array fallback has been removed.  The UI should not offer a
+      // service picker before the catalog is loaded, so this path is defensive only.
+      console.warn(`[BudgetOptimizerShell] handleAddService: definition for "${serviceId}" not yet loaded; skipping.`);
+      return;
+    }
+    const newItem = buildLineItemFromService(serviceId, undefined, def);
     setLineItems((prev) => [...prev, newItem]);
 
     if (def?.catalogId) {

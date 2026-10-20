@@ -507,6 +507,20 @@ function ContractDetailPanel({
         </div>
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Contract End Date
+          </p>
+          <p className="text-xs" style={{ color: contract.contractEndDate ? "var(--rtm-text-secondary)" : "var(--rtm-text-muted)" }}>
+            {contract.contractEndDate
+              ? new Date(contract.contractEndDate).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
+              : "—"}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
             Created
           </p>
           <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
@@ -838,6 +852,7 @@ export default function SalesContractsPage() {
                     "Monthly Value",
                     "Term",
                     "Signed Date",
+                    "End Date",
                     "Rep",
                     "Status",
                     "Actions",
@@ -923,6 +938,18 @@ export default function SalesContractsPage() {
                       >
                         {contract.signedDate
                           ? new Date(contract.signedDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })
+                          : "—"}
+                      </td>
+                      <td
+                        className="px-4 py-3 whitespace-nowrap"
+                        style={{ color: contract.contractEndDate ? "var(--rtm-text-secondary)" : "var(--rtm-text-muted)" }}
+                      >
+                        {contract.contractEndDate
+                          ? new Date(contract.contractEndDate).toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               year: "numeric",

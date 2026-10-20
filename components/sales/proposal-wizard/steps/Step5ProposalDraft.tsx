@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { buildProposalWithContext } from "@/lib/sales/proposal-engine";
+import { PROPOSAL_SECTIONS } from "@/lib/sales/proposal-config";
 import type { ProposalDocument } from "@/lib/sales/proposal-engine";
 import ProposalBuilderShell from "@/components/sales/proposal-builder/ProposalBuilderShell";
 import type { ProposalWizardState } from "../ProposalWizard";
@@ -161,48 +162,85 @@ export function Step5ProposalDraft({
       />
 
       {/* Actions */}
-      <div
-        className="rounded-xl border p-5 flex items-center justify-between gap-4 flex-wrap"
-        style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
-      >
-        <div>
-          <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
-            {isReady ? "Proposal is ready to send." : "Continue editing the proposal sections."}
-          </p>
-          <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-            {isReady
-              ? "All required sections are complete. Mark as ready to proceed to contracts."
-              : `${completionPct}% complete — ${100 - completionPct}% remaining to reach the 80% threshold.`}
-          </p>
-        </div>
-        <div className="flex gap-3">
-          {onSaveDraft && (
-            <button
-              type="button"
-              onClick={onSaveDraft}
-              className="px-5 py-2.5 rounded-lg border text-sm font-semibold transition-all hover:opacity-90"
-              style={{
-                background: "var(--rtm-surface)",
-                borderColor: "var(--rtm-border)",
-                color: "var(--rtm-text-secondary)",
-              }}
-            >
-              Save as Draft
-            </button>
-          )}
-          {onComplete && (
-            <button
-              type="button"
-              onClick={onComplete}
-              disabled={!isReady}
-              className="px-5 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: "#059669" }}
-            >
-              Mark as Ready
-            </button>
-          )}
-        </div>
-      </div>
+      {(() => {
+        // Find required sections that are not yet complete, so we can name them.
+        const incompleteSectionLabels = !isReady && state.proposalDocument
+          ? PROPOSAL_SECTIONS
+              .filter((def) => def.required)
+              .filter((def) => {
+                const sec = state.proposalDocument!.sections.find((s) => s.id === def.id);
+                return !sec || (sec.status !== "complete" && sec.status !== "locked");
+              })
+              .map((def) => def.label)
+          : [];
+
+        return (
+          <div
+            className="rounded-xl border p-5 flex items-start justify-between gap-4 flex-wrap"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                {isReady ? "Proposal is ready to send." : "Complete the required sections to unlock sending."}
+              </p>
+              {isReady ? (
+                <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
+                  All required sections are complete. Mark as ready to proceed to contracts.
+                </p>
+              ) : (
+                <div className="mt-1 space-y-1">
+                  <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+                    {completionPct}% complete — the proposal must reach 80% to unlock “Mark as Ready.”
+                  </p>
+                  {incompleteSectionLabels.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold mt-1" style={{ color: "#C2410C" }}>
+                        Sections still needed:
+                      </p>
+                      <ul className="mt-0.5 space-y-0.5">
+                        {incompleteSectionLabels.map((label) => (
+                          <li key={label} className="text-xs flex items-center gap-1.5" style={{ color: "#C2410C" }}>
+                            <span style={{ fontSize: 8 }}>&#9679;</span>
+                            {label}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-3 flex-shrink-0">
+              {onSaveDraft && (
+                <button
+                  type="button"
+                  onClick={onSaveDraft}
+                  className="px-5 py-2.5 rounded-lg border text-sm font-semibold transition-all hover:opacity-90"
+                  style={{
+                    background: "var(--rtm-surface)",
+                    borderColor: "var(--rtm-border)",
+                    color: "var(--rtm-text-secondary)",
+                  }}
+                >
+                  Save as Draft
+                </button>
+              )}
+              {onComplete && (
+                <button
+                  type="button"
+                  onClick={onComplete}
+                  disabled={!isReady}
+                  title={!isReady ? `Complete these sections first: ${incompleteSectionLabels.join(", ")}` : undefined}
+                  className="px-5 py-2.5 rounded-lg text-sm font-bold text-white transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: "#059669" }}
+                >
+                  Mark as Ready
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
