@@ -10,7 +10,10 @@
 //   Body: ServiceCatalogRow (without id — generated server-side as a slug)
 //   → { service: ServiceCatalogRow }
 //
-// Auth: requires Manager or higher. Config data is sales-sensitive.
+// Auth (GET):  any authenticated active user — blueprint authors across all
+//              departments need catalogue read to populate service pickers.
+// Auth (POST): requires Manager or higher — writing to the catalogue is
+//              a sales-configuration action, unchanged.
 // Error shape: { error: string } — matches all other routes.
 
 import { NextRequest, NextResponse } from "next/server";
@@ -93,11 +96,12 @@ function rowToApi(r: Awaited<ReturnType<typeof prisma.serviceCatalogItem.findUni
 // ─── GET ──────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
+  // Any authenticated active user may read the catalogue.
+  // Blueprint authoring (Account Management) and proposal creation (Sales)
+  // both need this list; scoping it to Manager excluded legitimate readers.
   const { user, error, status } = await getSessionUser(req);
   if (error) return NextResponse.json({ error }, { status: status ?? 401 });
-
-  const gate = requireRole(user!, "Manager");
-  if (gate) return NextResponse.json({ error: gate.error }, { status: gate.status });
+  // No role gate on reads — getSessionUser already enforces active status.
 
   const all = req.nextUrl.searchParams.get("all") === "1";
 

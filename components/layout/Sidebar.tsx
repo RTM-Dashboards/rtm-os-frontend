@@ -168,6 +168,23 @@ const sectionLabels: Record<string, string> = {
   settings:    "",
 };
 
+// ── Department → nav href mapping ─────────────────────────────────────────────
+// Mirrors the "departments" section of navItems above. Used to compute which
+// single workspace entry to show for non-Executive / non-SystemAdmin users.
+// Executive and SystemAdmin see every entry; everyone else sees only theirs.
+const DEPT_TO_HREF: Record<string, string> = {
+  "Account Management":      "/account-management",
+  "Sales":                    "/sales",
+  "Billing":                  "/billing",
+  "Content":                  "/content",
+  "Web Development & Design": "/web-development-design",
+  "SEO & Local":              "/seo-local",
+  "Paid Advertising":         "/paid-advertising",
+  "Reporting":                "/reporting",
+  "Local Service Ads":        "/local-service-ads",
+  "IT & Security":            "/it-security",
+};
+
 interface AuthUser {
   name: string;
   email: string;
@@ -178,10 +195,20 @@ interface SidebarProps {
   open: boolean;
   onClose: () => void;
   user: AuthUser | null;
+  /** Role from /api/me. Null while loading or on fetch error. */
+  role: string | null;
+  /** Department from /api/me. Null while loading, on error, or for unassigned users. */
+  department: string | null;
 }
 
-export default function Sidebar({ open, onClose, user }: SidebarProps) {
+export default function Sidebar({ open, onClose, user, role, department }: SidebarProps) {
   const pathname = usePathname();
+
+  // Module scoping: Executive and SystemAdmin see the full departments section.
+  // Everyone else sees only their own department's workspace entry.
+  // While role is still loading (null), show all — avoids flash of empty sidebar.
+  const isFullAccess = role === null || role === "Executive" || role === "SystemAdmin";
+  const ownDeptHref  = department ? (DEPT_TO_HREF[department] ?? null) : null;
 
   // Live notification badge — fetched from DB, not mock data
   const [notifUnread, setNotifUnread] = useState<number>(0);
@@ -215,7 +242,20 @@ export default function Sidebar({ open, onClose, user }: SidebarProps) {
     setExpandedItems((prev) => ({ ...prev, [href]: !prev[href] }));
   };
 
-  const grouped = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
+  // Build the visible item list: for the "departments" section, non-Executive /
+  // non-SystemAdmin users see only the single entry that matches their department.
+  // The hidden: true entries in workspaces.ts are a different concept — those are
+  // workspace nav items hidden within a workspace sidebar, not this global sidebar.
+  // This filter is additive on top of the existing navItems (which have no hidden
+  // field); it does not affect any other section.
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.section !== "departments") return true; // non-dept sections always visible
+    if (isFullAccess) return true;                   // Executive / SystemAdmin / loading
+    if (ownDeptHref === null) return true;           // unassigned user — show all, owner decides
+    return item.href === ownDeptHref;                // scoped: only their workspace
+  });
+
+  const grouped = visibleNavItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     const key = item.section ?? "other";
     if (!acc[key]) acc[key] = [];
     acc[key].push(item);
