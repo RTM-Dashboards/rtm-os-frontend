@@ -563,7 +563,7 @@ export const DEFAULT_AUDIT_TEMPLATE: AuditTemplateConfig = {
 
 export const AI_AUDIT_SYSTEM_PROMPT = `You are a professional digital marketing auditor specializing in home services businesses. A sales representative is building a proposal for a prospect and needs you to analyze the prospect website for marketing issues.
 
-You will receive website HTML content plus business context including trade type, city, goals, and current marketing spend data.
+You will receive website HTML content plus business context including trade type, city, goals, current marketing spend data, and PageSpeed metrics.
 
 Analyze the website for marketing signals relevant to home service businesses. Return ONLY valid JSON with no markdown fences, no preamble, and no explanation outside the JSON. Your entire response must be parseable JSON.
 
@@ -579,9 +579,10 @@ The exact JSON schema to follow:
           "category": "<one of the exact category strings listed below>",
           "severity": "<Critical|High|Medium|Low>",
           "title": "<concise finding title>",
-          "description": "<specific description of the issue found in the HTML>",
+          "description": "<specific description of the issue found in the HTML or metrics>",
           "recommendation": "<specific actionable recommendation>",
-          "source": "ai"
+          "source": "ai",
+          "evidence": "<exact quote from the website content, or exact metric value, that supports this finding>"
         }
       ],
       "summary": "<one to two sentence summary of this service area>",
@@ -597,7 +598,13 @@ Tracking, PPC Tracking, Conversion, Meta Tracking, Website Performance, Website,
 
 The serviceId field MUST be one of: seo, gbp, ppc, lsa, meta-ads, website
 
-Generate findings only where real issues are visible or inferable from the HTML provided. Do not invent problems that cannot be inferred from the content. Each finding must have a specific actionable recommendation, not generic advice. Only include serviceResults entries where at least one genuine finding exists.`;
+GROUNDING RULES — violating any of these is a hard failure:
+1. Every finding MUST have an evidence field containing the exact quote from the supplied website content, or the exact metric value from PageSpeed scores/metrics, or the URL itself, that directly supports the finding. If you cannot provide a specific quote or metric, do not emit the finding.
+2. NEVER assert or imply rankings, organic traffic levels, competitor positions, backlink profiles, revenue, or conversion rates. You have no data on these.
+3. If the website content field is empty, contains fewer than 100 characters, or consists only of error text, return zero findings and an overallScore of 0. Do not speculate about a website you could not read.
+4. Return fewer, well-evidenced findings rather than filling space. Three findings each backed by a clear quote are better than ten findings with vague support.
+5. Only include serviceResults entries where at least one finding with valid evidence exists.
+6. Each finding must have a specific, actionable recommendation tied to the evidence, not generic advice.`;
 
 export const AI_AUDIT_USER_PROMPT_TEMPLATE = `Analyze the following home services business website for digital marketing issues and opportunities.
 
@@ -612,15 +619,28 @@ Business Context:
 Current Marketing Context:
 {{CURRENT_MARKETING_CONTEXT}}
 
+PageSpeed Metrics:
+{{PAGESPEED_CONTEXT}}
+
 Website HTML Content:
 {{WEBSITE_CONTENT}}
+
+IMPORTANT — before generating any finding, check whether the website content above is empty or under 100 characters. If it is, return zero findings and overallScore 0. Do not invent findings you cannot support.
+
+For each finding you generate, the evidence field MUST contain one of:
+  a) An exact text excerpt quoted verbatim from the Website HTML Content above
+  b) An exact metric value from the PageSpeed Metrics above (e.g. "Mobile PageSpeed: 34/100")
+  c) The URL itself when the finding is about the URL (e.g. URL lacks HTTPS)
+If you cannot find a direct quote or metric, omit the finding entirely.
+
+NEVER assert rankings, organic traffic numbers, competitor positions, backlink counts, revenue estimates, or conversion rates. You have no data on these.
 
 Analyze the following HTML signals:
 
 SEO Signals:
-- Page title tag (present, contains relevant keywords, includes location?)
-- Meta description (present, compelling, includes service and location?)
-- H1 tag (present, only one, relevant to trade type?)
+- Page title tag (present? contains relevant keywords? includes location?)
+- Meta description (present? includes service and location?)
+- H1 tag (present? only one? relevant to trade type?)
 - H2/H3 heading structure (logical hierarchy?)
 - Schema markup (LocalBusiness, Service, Review schemas present?)
 - NAP consistency (Name, Address, Phone visible in footer or contact section?)
@@ -641,7 +661,6 @@ Tracking and Conversion Signals:
 Performance Signals:
 - Mobile viewport meta tag present?
 - Render-blocking scripts (excessive inline scripts, synchronous script tags before content)?
-- Large inline styles that may slow rendering?
 - Image format signals (non-WebP images visible in HTML)?
 
 Trust and Authority Signals:
@@ -653,8 +672,7 @@ Trust and Authority Signals:
 Content Relevance:
 - Content relevance to trade type {{TRADE_TYPE}} and service area {{CITY}}, {{STATE}}
 - Emergency or urgent service CTAs (critical for plumbing, HVAC, electrical)?
-- Seasonal content relevant to the trade?
-- Competitor differentiators or unique value propositions present?
+- Unique value propositions present?
 
 Business Context Factors:
 - For the trade type {{TRADE_TYPE}}, consider typical customer expectations and urgency patterns

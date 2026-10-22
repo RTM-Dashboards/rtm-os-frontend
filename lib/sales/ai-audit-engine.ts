@@ -1,7 +1,11 @@
 // RTM OS — AI Audit Engine
 // ─────────────────────────────────────────────────────────────────────────────
 // Pure functions: buildAiAuditPrompt, parseAiAuditResponse, getScoreLabel
-// Async API functions: fetchWebsiteContent, fetchPageSpeed, runAiAudit
+// Async: fetchWebsiteContent (server-side helper, kept here for tests/imports)
+//        runAiAudit (client-callable: delegates to POST /api/sales/ai-audit)
+//
+// All outbound calls to Anthropic and PageSpeed run server-side inside the
+// /api/sales/ai-audit route. ANTHROPIC_API_KEY is never bundled into client code.
 //
 // All prompt templates and scoring thresholds live in audit-config.ts only.
 // No prompt strings are hardcoded here.
@@ -10,9 +14,9 @@
 import {
   AI_AUDIT_SYSTEM_PROMPT,
   AI_AUDIT_USER_PROMPT_TEMPLATE,
-  PAGESPEED_API_BASE_URL,
   getAuditScoreLabel,
 } from "./audit-config";
+
 
 import type {
   HomeServicesIntakeRecord,
@@ -32,17 +36,22 @@ export function getScoreLabel(score: number): string {
 
 export function buildAiAuditPrompt(
   intake: HomeServicesIntakeRecord,
-  websiteContent: string
+  websiteContent: string,
+  pageSpeedContext: string = "PageSpeed data unavailable."
 ): { system: string; user: string } {
   const city = intake.masterAddress?.city ?? "Unknown";
   const state = intake.masterAddress?.state ?? "Unknown";
   const goals = intake.primaryGoals?.join(", ") || "Not specified";
   const websiteUrl = intake.website2?.url || intake.website || "Unknown";
 
+  // 4 000 chars covers the full <head> section plus above-the-fold body content on
+  // most home-services sites.  Keeping this tight is the single biggest lever
+  // for controlling Anthropic output-token count and therefore latency.
+  // (8 000 chars drove 2 000+ output tokens and 40+ second completions on real sites.)
   const contentSlice =
     websiteContent.trim().length > 0
-      ? websiteContent.slice(0, 8000)
-      : "Website content could not be fetched. Analyze based on business context only.";
+      ? websiteContent.slice(0, 4_000)
+      : "Website content could not be fetched. Return zero findings and overallScore 0.";
 
   const marketingLines: string[] = [];
 
@@ -82,6 +91,7 @@ export function buildAiAuditPrompt(
     .replace(/{{STATE}}/g, state)
     .replace(/{{GOALS}}/g, goals)
     .replace(/{{WEBSITE_URL}}/g, websiteUrl)
+    .replace(/{{PAGESPEED_CONTEXT}}/g, pageSpeedContext)
     .replace(/{{WEBSITE_CONTENT}}/g, contentSlice)
     .replace(/{{CURRENT_MARKETING_CONTEXT}}/g, marketingContext);
 
@@ -118,6 +128,7 @@ export function parseAiAuditResponse(
       recommendation:
         "Review the intake audit findings for initial recommendations.",
       source: "intake",
+      evidence: "AI response was not valid JSON",
     };
     return {
       websiteUrl,
@@ -152,46 +163,6 @@ export function parseAiAuditResponse(
 
   const allFindings: IntakeFinding[] = serviceResults.flatMap((sr) => sr.findings);
 
-  // Add PageSpeed-derived findings
-  if (pageSpeed !== null) {
-    const mobile = pageSpeed.mobileScore;
-
-    if (mobile < 50) {
-      allFindings.push({
-        id: "ai-pagespeed-critical",
-        category: "Website Performance",
-        severity: "critical",
-        title: "Critical Mobile Performance Issues",
-        description: `Mobile PageSpeed score is ${mobile}/100 — critically slow load times will cause high bounce rates on mobile.`,
-        recommendation:
-          "Optimize images, reduce render-blocking scripts, implement lazy loading, and consider a CDN.",
-        source: "ai",
-      });
-    } else if (mobile <= 70) {
-      allFindings.push({
-        id: "ai-pagespeed-high",
-        category: "Website Performance",
-        severity: "high",
-        title: "Poor Mobile Performance",
-        description: `Mobile PageSpeed score is ${mobile}/100 — slow mobile load times are negatively impacting rankings and user experience.`,
-        recommendation:
-          "Optimize images to WebP format, defer non-critical scripts, and enable browser caching to improve mobile load speed.",
-        source: "ai",
-      });
-    } else if (mobile <= 85) {
-      allFindings.push({
-        id: "ai-pagespeed-medium",
-        category: "Website Performance",
-        severity: "medium",
-        title: "Mobile Performance Needs Improvement",
-        description: `Mobile PageSpeed score is ${mobile}/100 — there are optimization opportunities that can improve rankings and conversion rates.`,
-        recommendation:
-          "Review PageSpeed Insights recommendations to address remaining performance opportunities.",
-        source: "ai",
-      });
-    }
-  }
-
   return {
     websiteUrl,
     pageSpeed,
@@ -204,11 +175,13 @@ export function parseAiAuditResponse(
 }
 
 // ─── Async: fetchWebsiteContent ───────────────────────────────────────────────
+// Server-side helper kept for tests and the API route.
+// Do not call this from client components.
 
 export async function fetchWebsiteContent(url: string): Promise<string> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 8_000);
 
     const response = await fetch(url, {
       signal: controller.signal,
@@ -222,82 +195,18 @@ export async function fetchWebsiteContent(url: string): Promise<string> {
     if (!response.ok) return "";
 
     const text = await response.text();
-    return text.slice(0, 10000);
+    return text.slice(0, 10_000);
   } catch {
     return "";
   }
 }
 
-// ─── Async: fetchPageSpeed ─────────────────────────────────────────────────────
-
-export async function fetchPageSpeed(
-  url: string
-): Promise<PageSpeedResult | null> {
-  try {
-    const mobileUrl = `${PAGESPEED_API_BASE_URL}?url=${encodeURIComponent(url)}&strategy=mobile&category=PERFORMANCE`;
-    const desktopUrl = `${PAGESPEED_API_BASE_URL}?url=${encodeURIComponent(url)}&strategy=desktop&category=PERFORMANCE`;
-
-    const [mobileResult, desktopResult] = await Promise.allSettled([
-      fetch(mobileUrl).then((r) => r.json()),
-      fetch(desktopUrl).then((r) => r.json()),
-    ]);
-
-    // Extract mobile data
-    let mobileScore = 0;
-    let lcp = "N/A";
-    let cls = "N/A";
-    let fid = "N/A";
-    const opportunities: string[] = [];
-
-    if (mobileResult.status === "fulfilled" && mobileResult.value?.lighthouseResult) {
-      const lr = mobileResult.value.lighthouseResult;
-      mobileScore = Math.round((lr.categories?.performance?.score ?? 0) * 100);
-      lcp = lr.audits?.["largest-contentful-paint"]?.displayValue ?? "N/A";
-      cls = lr.audits?.["cumulative-layout-shift"]?.displayValue ?? "N/A";
-      fid = lr.audits?.["total-blocking-time"]?.displayValue ?? "N/A";
-
-      // Top 3 opportunities
-      const audits = lr.audits ?? {};
-      for (const [key, audit] of Object.entries(audits) as [string, Record<string, unknown>][]) {
-        if (
-          typeof audit.score === "number" &&
-          audit.score < 0.9 &&
-          audit.details &&
-          opportunities.length < 3
-        ) {
-          const title = typeof audit.title === "string" ? audit.title : key;
-          opportunities.push(title);
-        }
-      }
-    }
-
-    // Extract desktop score
-    let desktopScore = 0;
-    let performanceScore = mobileScore;
-
-    if (desktopResult.status === "fulfilled" && desktopResult.value?.lighthouseResult) {
-      const lr = desktopResult.value.lighthouseResult;
-      desktopScore = Math.round((lr.categories?.performance?.score ?? 0) * 100);
-      performanceScore = Math.round((mobileScore + desktopScore) / 2);
-    }
-
-    return {
-      url,
-      performanceScore,
-      mobileScore,
-      desktopScore,
-      lcp,
-      cls,
-      fid,
-      opportunities,
-      fetchedAt: new Date().toISOString(),
-    };
-  } catch {
-    return null;
-  }
-}
-
 // ─── Async: runAiAudit ────────────────────────────────────────────────────────
+// Called from AiAuditPanel (client component).
+// Delegates entirely to POST /api/sales/ai-audit so that:
+//   - ANTHROPIC_API_KEY stays server-side only
+//   - PageSpeed calls run server-side with proper timeouts
+//   - Anthropic headers (x-api-key, anthropic-version) are set correctly
 
 export async function runAiAudit(
   intake: HomeServicesIntakeRecord
@@ -306,49 +215,17 @@ export async function runAiAudit(
   const generatedAt = new Date().toISOString();
 
   try {
-    // Step 1: Fetch website content and PageSpeed in parallel
-    const [websiteContentResult, pageSpeedResult] = await Promise.allSettled([
-      fetchWebsiteContent(websiteUrl),
-      fetchPageSpeed(websiteUrl),
-    ]);
-
-    const websiteContent =
-      websiteContentResult.status === "fulfilled"
-        ? websiteContentResult.value
-        : "";
-    const pageSpeed =
-      pageSpeedResult.status === "fulfilled" ? pageSpeedResult.value : null;
-
-    // Step 2: Build prompt
-    const { system, user } = buildAiAuditPrompt(intake, websiteContent);
-
-    // Step 3: Call Anthropic API
-    // Headers do NOT include anthropic-version or x-api-key
-    // The environment proxy handles authentication automatically
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("/api/sales/ai-audit", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 2000,
-        system,
-        messages: [{ role: "user", content: user }],
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(intake),
     });
 
     if (!response.ok) {
-      throw new Error(`Anthropic API error: ${response.status}`);
+      throw new Error(`Audit API error: ${response.status}`);
     }
 
-    const data = await response.json();
-
-    // Step 4: Extract response text
-    const text: string = data?.content?.[0]?.text ?? "";
-
-    // Step 5: Parse and return
-    return parseAiAuditResponse(text, websiteUrl, pageSpeed, generatedAt);
+    return (await response.json()) as AiAuditResult;
   } catch (err) {
     const errMsg =
       err instanceof Error ? err.message : "Unknown error during AI audit.";
@@ -362,6 +239,7 @@ export async function runAiAudit(
       recommendation:
         "Use the Intake Audit tab to review findings generated from intake data, or try again.",
       source: "intake",
+      evidence: "Client-side fetch to /api/sales/ai-audit failed",
     };
 
     return {

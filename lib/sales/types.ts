@@ -674,6 +674,8 @@ export interface IntakeFinding {
   description: string;
   recommendation: string;
   source: "intake" | "manual" | "system" | "ai";
+  /** Exact quote or metric from the supplied inputs that supports this finding. */
+  evidence?: string;
 }
 
 export interface IntakeAuditResult {
