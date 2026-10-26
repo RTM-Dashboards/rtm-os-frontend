@@ -282,17 +282,19 @@ function StatusBadge({ status }: { status: string }) {
 
 function TaskStatusBadge({ status }: { status: string }) {
   const CFG: Record<string, { bg: string; color: string; dot: string }> = {
-    "open":        { bg: "#EFF6FF", color: "#1D4ED8", dot: "#3B82F6" },
-    "in_progress": { bg: "#FEF9C3", color: "#A16207", dot: "#EAB308" },
-    "done":        { bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
-    "skipped":     { bg: "#F8FAFC", color: "#94A3B8", dot: "#CBD5E1" },
+    "open":           { bg: "#EFF6FF", color: "#1D4ED8", dot: "#3B82F6" },
+    "in_progress":    { bg: "#FEF9C3", color: "#A16207", dot: "#EAB308" },
+    "done":           { bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
+    "skipped":        { bg: "#F8FAFC", color: "#94A3B8", dot: "#CBD5E1" },
+    "pending_prereq": { bg: "#FDF4FF", color: "#7C3AED", dot: "#A855F7" },
   };
   const c = CFG[status] ?? CFG["open"];
+  const label = status === "pending_prereq" ? "Pending" : status;
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
       style={{ background: c.bg, color: c.color }}>
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.dot }} />
-      {status}
+      {label}
     </span>
   );
 }
@@ -400,7 +402,8 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
 
   const openCount    = allTasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
   const doneCount    = allTasks.filter((t) => t.status === "done").length;
-  const blockedCount = allTasks.filter((t) => t.isBlocked).length;
+  // Blocked = task-level prereqs unmet OR list-level prereq (pending_prereq status)
+  const blockedCount = allTasks.filter((t) => t.isBlocked || t.status === "pending_prereq").length;
   const overdueCount = allTasks.filter((t) => t.isOverdue).length;
 
   const TABS: { id: Tab; label: string }[] = [
@@ -555,11 +558,13 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
                       </div>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap gap-3 text-xs" style={{ color: "var(--rtm-text-muted)" }}>
-                          {t.dueDate
-                            ? <span>Due: <b style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate}</b></span>
-                            : t.isBlocked && t.blockedBy.length > 0
-                              ? <span style={{ color: "var(--rtm-text-secondary)" }}>After <b>{t.blockedBy[0].label}</b></span>
-                              : null
+                          {t.status === "pending_prereq" && t.dueDate
+                            ? <span style={{ color: "#7C3AED", fontStyle: "italic" }}>~{t.dueDate} <span style={{ fontSize: 10, opacity: 0.8 }}>(provisional)</span></span>
+                            : t.dueDate
+                              ? <span>Due: <b style={{ color: "var(--rtm-text-secondary)" }}>{t.dueDate}</b></span>
+                              : t.isBlocked && t.blockedBy.length > 0
+                                ? <span style={{ color: "var(--rtm-text-secondary)" }}>After <b>{t.blockedBy[0].label}</b></span>
+                                : null
                           }
                           {(ownerOverrides.get(t.id)?.name ?? t.ownerName) && (
                             <span>Owner: <b style={{ color: "var(--rtm-text-secondary)" }}>{ownerOverrides.get(t.id)?.name ?? t.ownerName}</b></span>
@@ -622,7 +627,8 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
 function CategoryCard({ cat }: { cat: ScopedCategory }) {
   const done    = cat.tasks.filter((t) => t.status === "done").length;
   const open    = cat.tasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
-  const blocked = cat.tasks.filter((t) => t.isBlocked).length;
+  // pending_prereq = list-level blocked (not yet startable)
+  const blocked = cat.tasks.filter((t) => t.isBlocked || t.status === "pending_prereq").length;
 
   return (
     <div className="rounded-xl p-5" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
@@ -647,11 +653,13 @@ function CategoryCard({ cat }: { cat: ScopedCategory }) {
                 {t.label}
               </span>
               <div className="flex items-center gap-2">
-                {t.dueDate
-                  ? <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{t.dueDate}</span>
-                  : t.isBlocked && t.blockedBy.length > 0
-                    ? <span className="text-[10px]" style={{ color: "var(--rtm-text-secondary)" }}>After {t.blockedBy[0].label}</span>
-                    : null
+                {t.status === "pending_prereq" && t.dueDate
+                  ? <span className="text-[10px] italic" style={{ color: "#7C3AED" }}>~{t.dueDate} (provisional)</span>
+                  : t.dueDate
+                    ? <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{t.dueDate}</span>
+                    : t.isBlocked && t.blockedBy.length > 0
+                      ? <span className="text-[10px]" style={{ color: "var(--rtm-text-secondary)" }}>After {t.blockedBy[0].label}</span>
+                      : null
                 }
                 <TaskStatusBadge status={t.status} />
               </div>

@@ -166,11 +166,11 @@ function buildVM(
     const rawTasks = tasksByClientId.get(c.id) ?? [];
     let taskSignals: TaskHealthSignals | null = null;
     if (rawTasks.length > 0) {
-      // Postgres statuses: "open" | "in_progress" | "done" | "skipped"
+      // Postgres statuses: "open" | "in_progress" | "done" | "skipped" | "pending_prereq"
       const completed = rawTasks.filter((t) => t.status === "done" || t.status === "Completed").length;
       const blocked   = rawTasks.filter((t) => t.status === "in_progress").length;
       const overdue   = rawTasks.filter(
-        (t) => t.dueDate && t.dueDate < today && t.status !== "done" && t.status !== "Completed" && t.status !== "skipped"
+        (t) => t.dueDate && t.dueDate < today && t.status !== "done" && t.status !== "Completed" && t.status !== "skipped" && t.status !== "pending_prereq"
       ).length;
       taskSignals = {
         totalTasks: rawTasks.length,

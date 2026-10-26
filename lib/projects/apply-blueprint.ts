@@ -25,6 +25,7 @@
 import { prisma } from "@/lib/db/prisma";
 import { addOffsetDays } from "@/lib/dates";
 import { notifyTaskAssigned } from "@/lib/notifications/send";
+import { makeId as makePrprereqId } from "@/lib/projects/blueprint-prerequisites";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -70,6 +71,14 @@ export interface ApplyBlueprintResult {
   emptyDepartments: string[];
   /** per-task errors (non-fatal) */
   errors: string[];
+  /**
+   * When a declared prerequisite blueprint is also on this project, the
+   * dependent category's tasks are created as pending_prereq and a binding
+   * is recorded here. Empty when no prerequisite bound.
+   */
+  listPrereqBound: boolean;
+  /** id of the prerequisite ProjectCategory that must finish first (or null) */
+  prereqCategoryId: string | null;
 }
 
 // ── WorkloadCache (Task 3) ────────────────────────────────────────────────────
@@ -174,6 +183,10 @@ interface TemplateTaskDef {
   localId?: string;
   intervalDays?: number;
   ownerRole?: string;
+  // Named assignee (Task 2): user.id selected in the blueprint editor.
+  // When present and the user is active, the task is assigned directly
+  // to this person instead of running department workload routing.
+  assigneeUserId?: string;
   estimatedHours?: number;
   priority?: string;
   description?: string;
@@ -195,6 +208,8 @@ interface FlatTask {
   isRecurring: boolean;
   intervalDays: number;
   ownerRole: string | null;
+  // Named assignee (Task 2): user.id from the blueprint task definition.
+  assigneeUserId: string | null;
   estimatedHours: number | null;
   priority: string | null;
   description: string | null;
@@ -234,6 +249,8 @@ export async function applyBlueprintToProject(
     tasksSkippedDuplicate: 0,
     emptyDepartments:      [],
     errors:                [],
+    listPrereqBound:       false,
+    prereqCategoryId:      null,
   };
 
   const now         = new Date().toISOString();
@@ -296,6 +313,7 @@ export async function applyBlueprintToProject(
         isRecurring:    false,
         intervalDays:   0,
         ownerRole:      t.ownerRole      ?? null,
+        assigneeUserId: typeof t.assigneeUserId === "string" && t.assigneeUserId ? t.assigneeUserId : null,
         estimatedHours: typeof t.estimatedHours === "number" ? t.estimatedHours : null,
         priority:       t.priority       ?? null,
         description:    t.description    ?? null,
@@ -323,6 +341,7 @@ export async function applyBlueprintToProject(
       isRecurring:    true,
       intervalDays:   interval,
       ownerRole:      t.ownerRole      ?? null,
+      assigneeUserId: typeof t.assigneeUserId === "string" && t.assigneeUserId ? t.assigneeUserId : null,
       estimatedHours: typeof t.estimatedHours === "number" ? t.estimatedHours : null,
       priority:       t.priority       ?? null,
       description:    t.description    ?? null,
@@ -383,6 +402,105 @@ export async function applyBlueprintToProject(
     });
   }
   result.categoryId = categoryId;
+
+  // ── 5b. List-level prerequisite binding ──────────────────────────────────
+  //
+  // Check whether any declared prerequisite blueprint is also applied to this
+  // project. If so, this list's tasks will be created as "pending_prereq" and
+  // a binding is recorded in project_list_prereq_bindings.
+  //
+  // A prerequisite only binds when:
+  //   (a) the blueprint declares it via blueprint_prerequisites, AND
+  //   (b) the prerequisite blueprint has a ProjectCategory on this project.
+  //
+  // An unbound prerequisite (the client did not buy the prerequisite service)
+  // changes nothing: the list behaves as it does today.
+
+  // Look up the internal PK for this template.
+  const internalTemplateId = template.id;
+
+  // Load any declared prerequisite blueprint ids for this blueprint.
+  const declaredPrereqs = await prisma.blueprintPrerequisite.findMany({
+    where:  { blueprintId: internalTemplateId },
+    select: { prerequisiteId: true },
+  });
+
+  let boundPrereqCategoryId: string | null = null;
+  let boundPrereqBlueprintId: string | null = null;
+
+  if (declaredPrereqs.length > 0) {
+    // Check whether an existing binding already covers this dep→project pair.
+    const existingBinding = await prisma.projectListPrereqBinding.findFirst({
+      where: { projectId, depCategoryId: categoryId, unblockedAt: null },
+      select: { id: true, prereqCategoryId: true },
+    });
+
+    if (!existingBinding) {
+      // Find a prerequisite blueprint that is already on this project.
+      for (const { prerequisiteId } of declaredPrereqs) {
+        // A blueprint's categories can be identified by looking at categories
+        // whose blueprintTemplateId matches (for tasks created by apply-blueprint)
+        // or by serviceId matching (for categories created at launch).
+        // The most reliable way: find a ProjectCategory on this project where
+        // any task has blueprintTemplateId = prerequisiteId, OR where the
+        // category's serviceId matches the blueprint's serviceId.
+        const prereqTemplate = await prisma.taskListTemplate.findUnique({
+          where:  { id: prerequisiteId },
+          select: { id: true, serviceId: true },
+        });
+        if (!prereqTemplate) continue;
+
+        // Find a category on this project for the prerequisite blueprint.
+        // Match by serviceId (covers both launch and apply-blueprint paths).
+        const prereqCat = await prisma.projectCategory.findFirst({
+          where: { projectId, serviceId: prereqTemplate.serviceId },
+          select: { id: true },
+        });
+
+        if (prereqCat) {
+          boundPrereqCategoryId  = prereqCat.id;
+          boundPrereqBlueprintId = prerequisiteId;
+          break; // first found wins; multiple prereqs all bind independently
+        }
+      }
+    }
+  }
+
+  // If bound: record the binding. Tasks will be created as "pending_prereq".
+  const isPendingPrereq = boundPrereqCategoryId !== null;
+  if (isPendingPrereq && boundPrereqCategoryId && boundPrereqBlueprintId) {
+    try {
+      await prisma.projectListPrereqBinding.upsert({
+        where:  { projectId_depCategoryId_prereqCategoryId: {
+          projectId,
+          depCategoryId:    categoryId,
+          prereqCategoryId: boundPrereqCategoryId,
+        }},
+        update: {},
+        create: {
+          id:                makePrprereqId("plpb"),
+          projectId,
+          depCategoryId:     categoryId,
+          prereqCategoryId:  boundPrereqCategoryId,
+          depBlueprintId:    internalTemplateId,
+          prereqBlueprintId: boundPrereqBlueprintId,
+          unblockedAt:       null,
+          createdAt:         now,
+        },
+      });
+      result.listPrereqBound  = true;
+      result.prereqCategoryId = boundPrereqCategoryId;
+    } catch (err) {
+      // Non-fatal: binding creation failing should not block task creation.
+      // Without the binding the tasks would be open (worse), but task creation
+      // still proceeds as pending_prereq since isPendingPrereq is true.
+      result.errors.push(
+        `Failed to record list prerequisite binding: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
 
   // ── 6. Idempotency: find existing tasks in this project for this serviceId ─
   //
@@ -450,8 +568,39 @@ export async function applyBlueprintToProject(
       }
     }
 
-    const dept    = taskDef.department.trim();
-    const ownerId = dept ? pickOwner(dept, workloadCache) : null;
+    const dept = taskDef.department.trim();
+
+    // ── Resolve owner (Task 3) ────────────────────────────────────────────────
+    // If the blueprint task names an assignee, try to use them directly.
+    // If that person is inactive/missing, fall back to department routing
+    // and record the fallback so the project can show it.
+    let ownerId: string | null = null;
+    let resolvedBlueprintAssigneeId: string | null = null;
+
+    if (taskDef.assigneeUserId) {
+      // Validate that the named person exists and is active.
+      const namedUser = await prisma.user.findFirst({
+        where:  { id: taskDef.assigneeUserId, status: "active" },
+        select: { id: true },
+      });
+      if (namedUser) {
+        // Named person is active — assign directly.
+        ownerId = namedUser.id;
+        resolvedBlueprintAssigneeId = namedUser.id;
+      } else {
+        // Named person is inactive or missing — fall back to department routing.
+        // Record the fallback so the apply result reports it.
+        result.errors.push(
+          `Task "${taskDef.label}": blueprint names assignee ${taskDef.assigneeUserId} who is ` +
+          `inactive or not found; fell back to department routing for "${dept || "(no dept)"}"`,
+        );
+        ownerId = dept ? pickOwner(dept, workloadCache) : null;
+      }
+    } else {
+      // No named assignee — use department routing as before.
+      ownerId = dept ? pickOwner(dept, workloadCache) : null;
+    }
+
     if (dept && ownerId === null && !result.emptyDepartments.includes(dept)) {
       result.emptyDepartments.push(dept);
     }
@@ -487,9 +636,18 @@ export async function applyBlueprintToProject(
           id:                     taskId,
           categoryId,
           label:                  taskDef.label,
-          status:                 "open",
+          // When a list-level prerequisite is bound, tasks are created as
+          // "pending_prereq" so they are visible but not workable. Their due
+          // dates are provisional and will be recomputed when the prereq finishes.
+          // Recurring tasks are not affected by list-level prerequisites because
+          // a recurring list that is a prerequisite would never complete.
+          status:                 isPendingPrereq ? "pending_prereq" : "open",
           ownerId,
           department:             dept || null,
+          // Due dates are provisional when pending_prereq: they will be recomputed
+          // from the completion date of the prerequisite list. We keep the
+          // computed date as a placeholder so the UI can show it is provisional,
+          // but it WILL change (that is the whole point).
           dueDate,
           offsetFrom:             taskDef.offsetFrom,
           offsetDays:             taskDef.offsetDays,
@@ -502,6 +660,10 @@ export async function applyBlueprintToProject(
           blueprintTemplateId:    taskDef.isRecurring ? template.id : null,
           occurrenceKey,
           ownerRole:              taskDef.ownerRole,
+          // blueprintAssigneeId: the verified active user.id at apply-time.
+          // NULL if no named assignee, or if the named person was inactive
+          // (in which case department routing was used and logged above).
+          blueprintAssigneeId:    resolvedBlueprintAssigneeId,
           estimatedHours:         taskDef.estimatedHours,
           priority:               taskDef.priority,
           description:            taskDef.description,

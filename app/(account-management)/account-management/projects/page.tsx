@@ -49,7 +49,7 @@ function fmt(iso: string | null | undefined): string {
 // ── Off-track task computation ────────────────────────────────────────────────
 /**
  * A task is "off-track" if:
- *   - dueDate is in the past AND status is not "done" or "skipped"
+ *   - dueDate is in the past AND status is not "done", "skipped", or "pending_prereq"
  *
  * Note: there is no "Blocked" status in the Postgres Task model.
  * A task waiting on prerequisites has no dueDate until they close.
@@ -59,7 +59,7 @@ const TODAY_ISO = new Date().toISOString().slice(0, 10);
 function getOffTrackTasks(projectId: string, tasksList: TaskListItem[]): TaskListItem[] {
   return tasksList.filter((t) => {
     if (t.projectId !== projectId) return false;
-    if (t.dueDate && t.dueDate < TODAY_ISO && t.status !== "done" && t.status !== "skipped") return true;
+    if (t.dueDate && t.dueDate < TODAY_ISO && t.status !== "done" && t.status !== "skipped" && t.status !== "pending_prereq") return true;
     return false;
   });
 }

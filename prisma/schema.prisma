@@ -858,8 +858,57 @@ model TaskListTemplate {
 
   aliases              BlueprintServiceAlias[]
 
+  // Prerequisite blueprints declared by Melissa in the blueprint editor.
+  // A dependent list's tasks are created in status="pending_prereq" when the
+  // prerequisite blueprint is also on the same project. The binding is runtime-
+  // recorded in project_list_prereq_bindings; this table is the declaration.
+  prerequisites        BlueprintPrerequisite[] @relation("BlueprintDependents")
+  dependents           BlueprintPrerequisite[] @relation("BlueprintPrerequisites")
+
   @@index([serviceId])
   @@map("task_list_templates")
+}
+
+// ── BlueprintPrerequisite ────────────────────────────────────────────────────
+// One row means: blueprint (blueprintId) must not start until prerequisite
+// (prerequisiteId) finishes on the same project.
+// Cycle and recurring-blueprint validation are enforced at save time by the
+// API route; they are not enforced at the DB level (no CHECK in Postgres for
+// graph cycles).
+model BlueprintPrerequisite {
+  id              String           @id
+  blueprintId     String           @map("blueprint_id")     // the waiting blueprint
+  prerequisiteId  String           @map("prerequisite_id")  // the blueprint that must finish
+  createdAt       String           @default("") @map("created_at")
+
+  blueprint       TaskListTemplate @relation("BlueprintDependents",   fields: [blueprintId],    references: [id], onDelete: Cascade)
+  prerequisite    TaskListTemplate @relation("BlueprintPrerequisites", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@unique([blueprintId, prerequisiteId])
+  @@index([blueprintId])
+  @@index([prerequisiteId])
+  @@map("blueprint_prerequisites")
+}
+
+// ── ProjectListPrereqBinding ──────────────────────────────────────────────────
+// Runtime record of a bound prerequisite on a specific project.
+// Created when both blueprints are applied to the same project.
+// unblockedAt: ISO-8601 string set when the prerequisite list finishes. NULL = still waiting.
+model ProjectListPrereqBinding {
+  id                 String  @id
+  projectId          String  @map("project_id")
+  depCategoryId      String  @map("dep_category_id")     // waiting category
+  prereqCategoryId   String  @map("prereq_category_id")  // must-finish category
+  depBlueprintId     String  @map("dep_blueprint_id")
+  prereqBlueprintId  String  @map("prereq_blueprint_id")
+  unblockedAt        String? @map("unblocked_at")         // ISO-8601; null = still waiting
+  createdAt          String  @default("") @map("created_at")
+
+  @@unique([projectId, depCategoryId, prereqCategoryId])
+  @@index([projectId])
+  @@index([depCategoryId])
+  @@index([prereqCategoryId])
+  @@map("project_list_prereq_bindings")
 }
 
 // ── BlueprintServiceAlias ─────────────────────────────────────────────────────
@@ -925,6 +974,13 @@ model Task {
   // Null for all other tasks. Links the task to its onboarding_records row.
   onboardingRecordId String? @map("onboarding_record_id")
   // ── Recurring engine fields (20261014_recurring_engine) ──────────────────
+  // blueprintAssigneeId: the user.id selected in the blueprint editor as the
+  // named assignee for this task definition.  Written at apply-time after
+  // verifying the user is active.  NULL means no named assignee was set or
+  // the named person was inactive at apply-time (department routing was used).
+  // Never updated by the recurring engine — a named assignee persists across
+  // occurrences by copying this value forward, not by re-routing.
+  blueprintAssigneeId String? @map("blueprint_assignee_id")
   // blueprintTaskId: the localId of the blueprint task this row was generated
   // from (e.g. "bpt-001-r1"). Null for setup tasks.
   blueprintTaskId    String? @map("blueprint_task_id")

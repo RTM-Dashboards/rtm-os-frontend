@@ -79,6 +79,9 @@ interface TemplateTaskDef {
   intervalDays?: number;
   // Restored per-task fields
   ownerRole?: string;
+  // Named assignee (Task 2): user.id from the picker.
+  // undefined = no named assignee; falls back to department routing at apply.
+  assigneeUserId?: string;
   estimatedHours?: number;
   priority?: string;
   description?: string;
@@ -95,6 +98,8 @@ interface BlueprintApiTask {
   name: string;
   department: string;
   ownerRole: string;
+  /** Named assignee user.id from the blueprint editor. */
+  assigneeUserId?: string;
   estimatedHours: number;
   priority: string;
   dependsOnId?: string;
@@ -351,15 +356,25 @@ const EDITOR_LABEL: React.CSSProperties = {
 
 const VALID_DEPARTMENTS_EDITOR = VALID_DEPARTMENTS;
 
+// ── UserPickerOption (Task 2) ─────────────────────────────────────────────
+
+interface UserPickerOption {
+  id: string;
+  name: string;
+  status: string; // "active" | "disabled"
+}
+
 // ── EditorTaskRow ──────────────────────────────────────────────────────────
 function EditorTaskRow({
-  task, index, total, allTasks, displayLabels, onChange, onRemove, onMove, disabled, isSetup, isRecurring,
+  task, index, total, allTasks, displayLabels, onChange, onRemove, onMove, disabled, isSetup, isRecurring, users,
 }: {
   task: TemplateTaskDef; index: number; total: number;
   allTasks: TemplateTaskDef[]; displayLabels: Map<string, string>;
   onChange: (t: TemplateTaskDef) => void; onRemove: () => void;
   onMove: (dir: -1 | 1) => void; disabled: boolean;
   isSetup: boolean; isRecurring: boolean;
+  /** Active + disabled users for the assignee picker (Task 2). */
+  users: UserPickerOption[];
 }) {
   const prereqOptions = allTasks.filter((t) => t.localId !== task.localId);
 
@@ -434,12 +449,27 @@ function EditorTaskRow({
         )}
       </div>
 
-      {/* Restored per-task fields: ownerRole, estimatedHours, priority, description */}
+      {/* Task assignee picker (Task 2) + ownerRole hint preservation */}
       <div className="flex gap-3 flex-wrap">
         <div className="flex flex-col gap-1">
-          <label style={EDITOR_LABEL}>Owner Role</label>
-          <input type="text" value={task.ownerRole ?? ""} onChange={(e) => onChange({ ...task, ownerRole: e.target.value || undefined })}
-            disabled={disabled} placeholder="e.g. SEO Lead" style={{ ...EDITOR_INPUT, width: "130px" }} />
+          <label style={EDITOR_LABEL}>Task Assignee</label>
+          <select
+            value={task.assigneeUserId ?? ""}
+            onChange={(e) => onChange({ ...task, assigneeUserId: e.target.value || undefined })}
+            disabled={disabled}
+            className="text-xs font-medium rounded-lg border px-2 py-1 focus:outline-none"
+            style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)", minWidth: "150px" }}>
+            <option value="">— unset (dept routing) —</option>
+            {users.filter((u) => u.status === "active").map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+          {/* Original freeform role text shown as a hint when no person is chosen yet */}
+          {!task.assigneeUserId && task.ownerRole && (
+            <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)", marginTop: 2 }}>
+              Hint: <em>{task.ownerRole}</em>
+            </span>
+          )}
         </div>
         <div className="flex flex-col gap-1">
           <label style={EDITOR_LABEL}>Est. Hours</label>
@@ -496,8 +526,8 @@ function EditorTaskRow({
 
 // ── EditorGroupPanel ───────────────────────────────────────────────────────
 function EditorGroupPanel({
-  kind, label, tasks, onChange, saving,
-}: { kind: "setup" | "recurring"; label: string; tasks: TemplateTaskDef[]; onChange: (t: TemplateTaskDef[]) => void; saving: boolean }) {
+  kind, label, tasks, onChange, saving, users,
+}: { kind: "setup" | "recurring"; label: string; tasks: TemplateTaskDef[]; onChange: (t: TemplateTaskDef[]) => void; saving: boolean; users: UserPickerOption[] }) {
   const isSetup = kind === "setup";
   const isRecurring = kind === "recurring";
   const displayLabels = buildDisplayLabels(tasks);
@@ -580,7 +610,7 @@ function EditorGroupPanel({
             allTasks={tasks} displayLabels={displayLabels}
             onChange={(t) => updateTask(i, t)} onRemove={() => removeTask(i)}
             onMove={(dir) => moveTask(i, dir)} disabled={saving}
-            isSetup={isSetup} isRecurring={isRecurring} />
+            isSetup={isSetup} isRecurring={isRecurring} users={users} />
         ))}
       </div>
     </div>
@@ -641,6 +671,9 @@ function TemplateEditorModal({
   const [mappingInput, setMappingInput] = useState("");
   const [serviceMappings, setServiceMappings] = useState<string[]>([]);
 
+  // Users for the task assignee picker (Task 2)
+  const [pickerUsers, setPickerUsers] = useState<UserPickerOption[]>([]);
+
   // Two fixed groups
   const [setupTasks,     setSetupTasks]     = useState<TemplateTaskDef[]>(
     initialGroups.find((g) => g.kind === "setup")?.tasks     ?? []
@@ -649,21 +682,42 @@ function TemplateEditorModal({
     initialGroups.find((g) => g.kind === "recurring")?.tasks ?? []
   );
 
+  // Blueprint prerequisites: ids of blueprints this one must wait for.
+  // Loaded from the server when editing; empty for new blueprints.
+  const [prereqBlueprintIds, setPrereqBlueprintIds] = useState<string[]>([]);
+  // All blueprints for the prerequisite picker (same fetch as claim picker).
+  const [allBlueprints, setAllBlueprints] = useState<Array<{ id: string; name: string; serviceId: string; groups?: unknown }>>([]);
+
   // Load the full catalogue list for both the service picker (create) and the
   // claim picker (edit). Always fetch so the edit form can show labels.
   // Also load existing template ids so the custom-id path can validate uniqueness.
+  // Also load all non-pending users for the task-assignee picker (Task 2).
+  // Also load existing prerequisites (edit only).
   useEffect(() => {
+    const prereqFetch = isEditing && editingServiceId
+      ? fetch(`/api/task-blueprints/prerequisites?blueprintId=${encodeURIComponent(editingServiceId)}`)
+          .then((r) => r.json())
+          .catch(() => ({ prerequisites: [] }))
+      : Promise.resolve({ prerequisites: [] });
+
     Promise.all([
       fetch("/api/sales/service-catalog?all=1").then((r) => r.json()).catch(() => ({ services: [] })),
       fetch("/api/task-blueprints").then((r) => r.json()).catch(() => ({ blueprints: [] })),
-    ]).then(([catData, bpData]) => {
+      fetch("/api/users?picker=1").then((r) => r.json()).catch(() => ({ users: [] })),
+      prereqFetch,
+    ]).then(([catData, bpData, userData, prereqData]) => {
       const rows = (catData.services ?? []) as Array<{ id: string; label: string }>;
       setServices(rows);
-      const bps = (bpData.blueprints ?? []) as Array<{ id: string }>;
+      const bps = (bpData.blueprints ?? []) as Array<{ id: string; name: string; serviceId?: string; groups?: unknown }>;
       setExistingTemplateIds(new Set(bps.map((b) => b.id.toLowerCase().trim())));
+      setAllBlueprints(bps.map((b) => ({ id: b.id, name: b.name || b.id, serviceId: b.serviceId ?? b.id, groups: b.groups })));
+      const uRows = (userData.users ?? []) as UserPickerOption[];
+      setPickerUsers(uRows);
+      const prereqIds = (prereqData.prerequisites ?? []) as string[];
+      setPrereqBlueprintIds(prereqIds);
       setServicesLoading(false);
     }).catch(() => setServicesLoading(false));
-  }, [isEditing]);
+  }, [isEditing, editingServiceId]);
 
   const addMapping = () => {
     const v = mappingInput.trim().toLowerCase();
@@ -803,6 +857,58 @@ function TemplateEditorModal({
 
       const data = (await res.json()) as { blueprint?: BlueprintApiRecord; error?: string };
       if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`);
+
+      // Save prerequisites: the blueprint id from the saved/patched blueprint.
+      // For edit mode: use editingServiceId (the internal PK, not the serviceId).
+      // For create mode: fetch the newly created blueprint to get its internal PK.
+      // The prerequisite API uses the internal task_list_templates.id as blueprintId.
+      // The blueprint's internal PK differs from serviceId; we need to resolve it.
+      if (prereqBlueprintIds.length > 0 || isEditing) {
+        // For edit, editingServiceId is the internal PK (passed as the query param to PATCH).
+        // For create, we need the PK from the just-saved blueprint.
+        // The rowToBlueprint function sets id = row.serviceId, so data.blueprint.id is the serviceId.
+        // We need the internal PK. Look it up if needed.
+        let internalBlueprintId: string | null = null;
+        if (isEditing && editingServiceId) {
+          internalBlueprintId = editingServiceId;
+        } else if (data.blueprint?.id) {
+          // For newly created: fetch the blueprint to get its internal id
+          // The id returned is serviceId; we need to look up the actual internal PK.
+          // Workaround: the GET ?id= endpoint can return the same blueprint; the PK
+          // is not exposed directly. Use the fact that for prerequisites we stored the
+          // internal PK as editingServiceId during edit. For create, prereqs are rare
+          // (usually set after creation via re-edit), but support it anyway:
+          // fetch the blueprint again and get its TLT id via a lookup.
+          // For simplicity, prerequisites on brand-new blueprints are saved via a
+          // second PATCH using the service id (the API resolves the same way).
+          internalBlueprintId = data.blueprint.id;
+        }
+        if (internalBlueprintId && prereqBlueprintIds.length > 0) {
+          const prereqRes = await fetch(
+            `/api/task-blueprints/prerequisites?blueprintId=${encodeURIComponent(internalBlueprintId)}`,
+            {
+              method:  "PUT",
+              headers: { "Content-Type": "application/json" },
+              body:    JSON.stringify({ prerequisiteIds: prereqBlueprintIds }),
+            },
+          );
+          if (!prereqRes.ok) {
+            const prereqData = (await prereqRes.json()) as { error?: string };
+            throw new Error(prereqData.error ?? `Prerequisites save failed: HTTP ${prereqRes.status}`);
+          }
+        } else if (internalBlueprintId && isEditing) {
+          // On edit with no prerequisites selected, clear any existing ones.
+          await fetch(
+            `/api/task-blueprints/prerequisites?blueprintId=${encodeURIComponent(internalBlueprintId)}`,
+            {
+              method:  "PUT",
+              headers: { "Content-Type": "application/json" },
+              body:    JSON.stringify({ prerequisiteIds: [] }),
+            },
+          );
+        }
+      }
+
       onSaved(data.blueprint!);
       onClose();
     } catch (err) {
@@ -1187,18 +1293,104 @@ function TemplateEditorModal({
             </div>
           </section>
 
+          {/* Blueprint prerequisites — which blueprints must finish first */}
+          <section className="space-y-3">
+            <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Prerequisite Blueprints</div>
+            <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+              Select blueprints that must fully complete on the same project before this list can start.
+              Only binds when both blueprints are applied to the same project. Recurring blueprints
+              cannot be prerequisites (they never complete). Cycles are refused at save time.
+            </p>
+            {servicesLoading ? (
+              <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading blueprints…</p>
+            ) : (() => {
+              // Exclude self and any blueprint that has a recurring group with tasks
+              // (recurring blueprints never complete and cannot be prerequisites).
+              const eligibleBPs = allBlueprints.filter((bp) => {
+                if (isEditing && bp.id === editingServiceId) return false; // exclude self
+                // Exclude recurring blueprints
+                if (Array.isArray(bp.groups)) {
+                  for (const g of bp.groups as Array<{ kind?: string; tasks?: Array<{ intervalDays?: number }> }>) {
+                    if (g.kind !== "recurring") continue;
+                    if (Array.isArray(g.tasks)) {
+                      for (const t of g.tasks) {
+                        if (typeof t.intervalDays === "number" && t.intervalDays > 0) return false;
+                      }
+                    }
+                  }
+                }
+                return true;
+              });
+              const availableBPs = eligibleBPs.filter((bp) => !prereqBlueprintIds.includes(bp.id));
+              return (
+                <div className="space-y-2">
+                  <select
+                    disabled={saving || availableBPs.length === 0}
+                    value=""
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      if (id && !prereqBlueprintIds.includes(id)) {
+                        setPrereqBlueprintIds((p) => [...p, id]);
+                      }
+                    }}
+                    className="w-full px-3 py-2 rounded-lg text-sm outline-none"
+                    style={{
+                      background:  "var(--rtm-bg)",
+                      border:      "1px solid var(--rtm-border)",
+                      color:       availableBPs.length === 0 ? "var(--rtm-text-muted)" : "var(--rtm-text-primary)",
+                      opacity:     saving ? 0.5 : 1,
+                    }}
+                  >
+                    <option value="">
+                      {availableBPs.length === 0
+                        ? "No eligible blueprints available"
+                        : "— add a prerequisite blueprint —"}
+                    </option>
+                    {availableBPs.map((bp) => (
+                      <option key={bp.id} value={bp.id}>{bp.name}</option>
+                    ))}
+                  </select>
+                  {prereqBlueprintIds.length > 0 && (
+                    <div className="space-y-1">
+                      {prereqBlueprintIds.map((id) => {
+                        const bp = allBlueprints.find((b) => b.id === id);
+                        return (
+                          <div key={id} className="flex items-center justify-between px-3 py-1.5 rounded-lg"
+                            style={{ background: "#FFF7ED", border: "1px solid #FED7AA" }}>
+                            <span className="text-xs font-semibold" style={{ color: "#C2410C" }}>
+                              {bp?.name ?? id}
+                              <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 6 }}>({id})</span>
+                            </span>
+                            <button type="button" disabled={saving}
+                              onClick={() => setPrereqBlueprintIds((p) => p.filter((x) => x !== id))}
+                              className="text-xs font-bold ml-3 opacity-60 hover:opacity-100 disabled:opacity-30"
+                              style={{ color: "#C2410C", background: "none", border: "none", cursor: saving ? "not-allowed" : "pointer" }}
+                              title="Remove prerequisite">×</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {prereqBlueprintIds.length === 0 && (
+                    <p className="text-xs italic" style={{ color: "var(--rtm-text-muted)" }}>No prerequisites declared.</p>
+                  )}
+                </div>
+              );
+            })()}
+          </section>
+
           {/* Setup tasks */}
           <section className="space-y-3">
             <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Setup Tasks</div>
             <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>Run once at project launch. Supports prerequisites and &ldquo;due date counts from&rdquo;.</p>
-            <EditorGroupPanel kind="setup" label="Setup Tasks" tasks={setupTasks} onChange={setSetupTasks} saving={saving} />
+            <EditorGroupPanel kind="setup" label="Setup Tasks" tasks={setupTasks} onChange={setSetupTasks} saving={saving} users={pickerUsers} />
           </section>
 
           {/* Recurring tasks */}
           <section className="space-y-3">
             <div className="text-xs font-black uppercase tracking-wider" style={{ color: "var(--rtm-text-muted)" }}>Recurring Tasks</div>
             <p className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>Repeat indefinitely. Each task requires a repeat interval (days).</p>
-            <EditorGroupPanel kind="recurring" label="Recurring Tasks" tasks={recurringTasks} onChange={setRecurringTasks} saving={saving} />
+            <EditorGroupPanel kind="recurring" label="Recurring Tasks" tasks={recurringTasks} onChange={setRecurringTasks} saving={saving} users={pickerUsers} />
           </section>
 
           {claimWarning && (

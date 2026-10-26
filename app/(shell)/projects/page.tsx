@@ -151,7 +151,7 @@ export default function GlobalProjectsPage({ basePath = "/projects" }: { basePat
   };
 
   const allStatuses = ["All", "active", "planned", "on_hold", "complete", "cancelled"];
-  const allTaskStatuses = ["All", "open", "in_progress", "done", "skipped"];
+  const allTaskStatuses = ["All", "open", "in_progress", "done", "skipped", "pending_prereq"];
   const allDepts = Array.from(new Set(tasks.map((t) => t.department).filter(Boolean))).sort() as string[];
 
   const filteredProjects = useMemo(() => {

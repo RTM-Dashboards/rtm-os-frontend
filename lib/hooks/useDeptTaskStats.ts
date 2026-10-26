@@ -6,8 +6,9 @@
  *
  * SLA formula: Math.round(((open - overdue) / open) * 100), returns 100 when open = 0.
  *
- * Postgres task statuses: "open" | "in_progress" | "done" | "skipped"
+ * Postgres task statuses: "open" | "in_progress" | "done" | "skipped" | "pending_prereq"
  * "done" and "skipped" are terminal — all others count as open.
+ * "pending_prereq" tasks count as open but are NOT counted overdue (their due dates are provisional).
  * dueDate is an ISO-8601 date string or null.
  */
 
@@ -50,11 +51,14 @@ export function useDeptTaskStats(): UseDeptTaskStatsResult {
           const dept = task.department ?? "Unknown";
           // Terminal statuses: "done" and "skipped"
           if (task.status === "done" || task.status === "skipped") continue;
+          // pending_prereq tasks are not yet startable; their dates are provisional.
+          // They count as open (so the queue is visible) but never as overdue.
 
           if (!deptMap.has(dept)) deptMap.set(dept, { open: 0, overdue: 0 });
           const entry = deptMap.get(dept)!;
           entry.open++;
-          if (task.dueDate && task.dueDate < today) entry.overdue++;
+          // pending_prereq dates are provisional; never counted overdue.
+          if (task.dueDate && task.dueDate < today && task.status !== "pending_prereq") entry.overdue++;
         }
 
         const result = new Map<string, DeptTaskStat>();

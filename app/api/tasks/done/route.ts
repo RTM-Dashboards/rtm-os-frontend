@@ -44,6 +44,7 @@ import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
 import { ROLE_RANK } from "@/lib/auth/vocab";
 import { addOffsetDays } from "@/lib/dates";
+import { tryUnblockDependentLists } from "@/lib/projects/blueprint-prerequisites";
 
 // ── addDays helper (ISO-8601 date string) ─────────────────────────────────────
 
@@ -331,6 +332,13 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: "Task is already done." }, { status: 400 });
     }
 
+    if (task.status === "pending_prereq") {
+      return NextResponse.json(
+        { error: "This task is waiting for a prerequisite list to finish. It cannot be worked until its prerequisite is complete." },
+        { status: 409 },
+      );
+    }
+
     // ── Update ────────────────────────────────────────────────────────────────
     const now = new Date().toISOString();
     const updated = await prisma.task.update({
@@ -344,6 +352,17 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     // The cascade is awaited so the HTTP response reflects a complete state, but
     // individual sub-task update failures are swallowed inside runCascade.
     await runCascade(taskId);
+
+    // ── List-level unblocking (blueprint prerequisites) ──────────────────────
+    // After the task-level cascade, check whether the task's category is now
+    // finished. If so, any dependent lists (whose prerequisite is this category)
+    // are unblocked: tasks transition from "pending_prereq" to "open" and their
+    // due dates are recomputed from the completion date of the prerequisite list.
+    //
+    // tryUnblockDependentLists handles its own errors internally (non-fatal).
+    await tryUnblockDependentLists(task.categoryId).catch((err) => {
+      console.error("[list-unblock] tryUnblockDependentLists threw:", err);
+    });
 
     // ── Next occurrence (recurring tasks only) ────────────────────────────────
     // If this task is recurring and has a positive interval, create the next

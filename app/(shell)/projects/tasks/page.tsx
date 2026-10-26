@@ -10,11 +10,12 @@ import type { TaskListItem } from "@/app/api/tasks/route";
 // Data source: Postgres via /api/tasks
 // =============================================================================
 
-const STATUS_CFG: Record<string, { bg: string; color: string; dot: string }> = {
-  "open":        { bg: "#EFF6FF", color: "#1D4ED8", dot: "#3B82F6" },
-  "in_progress": { bg: "#FEF9C3", color: "#A16207", dot: "#EAB308" },
-  "done":        { bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
-  "skipped":     { bg: "#F8FAFC", color: "#94A3B8", dot: "#CBD5E1" },
+const STATUS_CFG: Record<string, { bg: string; color: string; dot: string; label?: string }> = {
+  "open":           { bg: "#EFF6FF", color: "#1D4ED8", dot: "#3B82F6" },
+  "in_progress":    { bg: "#FEF9C3", color: "#A16207", dot: "#EAB308" },
+  "done":           { bg: "#ECFDF5", color: "#059669", dot: "#10B981" },
+  "skipped":        { bg: "#F8FAFC", color: "#94A3B8", dot: "#CBD5E1" },
+  "pending_prereq": { bg: "#FDF4FF", color: "#7C3AED", dot: "#A855F7", label: "Pending" },
 };
 
 function TaskStatusBadge({ status }: { status: string }) {
@@ -23,7 +24,7 @@ function TaskStatusBadge({ status }: { status: string }) {
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold whitespace-nowrap"
       style={{ background: c.bg, color: c.color }}>
       <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.dot }} />
-      {status}
+      {c.label ?? status}
     </span>
   );
 }
@@ -60,7 +61,7 @@ export default function GlobalTasksPage() {
   }, []);
 
   const allDepts    = Array.from(new Set(allTasks.map((t) => t.department).filter(Boolean))).sort() as string[];
-  const allStatuses = ["All", "open", "in_progress", "done", "skipped"];
+  const allStatuses = ["All", "open", "in_progress", "done", "skipped", "pending_prereq"];
   const allProjects = Array.from(new Set(allTasks.map((t) => t.projectName).filter(Boolean))).sort();
 
   const filtered = useMemo(() => {

@@ -100,6 +100,10 @@ interface BlueprintTask {
   offsetDays: number;
   intervalDays: number;   // calendar days between occurrences
   ownerRole?: string;
+  // Named assignee (Task 2): user.id selected in the blueprint editor.
+  // When present, recurring occurrences are assigned to this person
+  // directly (after active check), bypassing workload routing entirely.
+  assigneeUserId?: string;
   estimatedHours?: number;
   priority?: string;
   description?: string;
@@ -115,6 +119,7 @@ interface BlueprintGroup {
     offsetDays?: number;
     intervalDays?: number;
     ownerRole?: string;
+    assigneeUserId?: string;
     estimatedHours?: number;
     priority?: string;
     description?: string;
@@ -309,6 +314,7 @@ export async function generateRecurringTasks(
             offsetDays:     t.offsetDays     ?? 0,
             intervalDays:   interval,
             ownerRole:      t.ownerRole,
+            assigneeUserId: typeof t.assigneeUserId === "string" && t.assigneeUserId ? t.assigneeUserId : undefined,
             estimatedHours: typeof t.estimatedHours === "number" ? t.estimatedHours : undefined,
             priority:       t.priority,
             description:    t.description,
@@ -328,6 +334,8 @@ export async function generateRecurringTasks(
           // Find the most recent existing occurrence of this blueprint task
           // in this category (by blueprintTaskId + blueprintTemplateId + categoryId).
           // We sort by dueDate descending to get the latest.
+          // Also read blueprintAssigneeId so we know whether a previous occurrence
+          // was created with a named assignee (used for Task 4: reassignment wins).
           const lastOccurrence = await prisma.task.findFirst({
             where: {
               categoryId:          category.id,
@@ -336,9 +344,10 @@ export async function generateRecurringTasks(
             },
             orderBy: { dueDate: "desc" },
             select: {
-              id:      true,
-              dueDate: true,
-              ownerId: true,
+              id:                  true,
+              dueDate:             true,
+              ownerId:             true,
+              blueprintAssigneeId: true,
             },
           });
 
@@ -403,27 +412,103 @@ export async function generateRecurringTasks(
               continue;
             }
 
-            // Owner continuity:
-            //   Use lastOccurrence.ownerId if that user is still active and
-            //   still in taskDef.department. Otherwise use pickOwner.
+            // ── Owner resolution (Task 3 + Task 4) ────────────────────────────────
+            //
+            // Priority order:
+            //
+            // 1. Named assignee (blueprint assigneeUserId is set AND the person
+            //    is active): assign directly. This bypasses continuity entirely.
+            //    The blueprint author made an explicit choice; workload routing
+            //    must not override it.
+            //
+            // 2. Reassignment wins (Task 4): if the prior occurrence was
+            //    reassigned away from the blueprint's named assignee
+            //    (ownerId != blueprintAssigneeId), that reassignment is the
+            //    intent of the operator. Carry the reassigned owner forward
+            //    via the standard continuity path, not back to the blueprint's
+            //    person.
+            //
+            // 3. Owner continuity (no named assignee): inherit prior owner if
+            //    still active + in dept. Fall back to workload routing.
+
             let ownerId: string | null = null;
+            let resolvedBlueprintAssigneeId: string | null = null;
 
-            if (lastOccurrence?.ownerId) {
-              // Validate prior owner is still active + in the right department.
-              const priorOwner = await prisma.user.findFirst({
-                where: {
-                  id:         lastOccurrence.ownerId,
-                  status:     "active",
-                  department: taskDef.department || undefined,
-                },
-                select: { id: true },
-              });
-              ownerId = priorOwner?.id ?? null;
-            }
+            if (taskDef.assigneeUserId) {
+              // Named assignee path (Tasks 2 + 3).
+              // Check if the task was reassigned away from the blueprint person.
+              // lastOccurrence.blueprintAssigneeId is set when the task was
+              // originally created with a named assignee.
+              const wasReassigned =
+                lastOccurrence &&
+                lastOccurrence.blueprintAssigneeId !== null &&
+                lastOccurrence.ownerId !== lastOccurrence.blueprintAssigneeId;
 
-            // Re-pick if prior owner is not eligible.
-            if (!ownerId && taskDef.department) {
-              ownerId = await pickOwner(taskDef.department, ownerCache);
+              if (wasReassigned && lastOccurrence?.ownerId) {
+                // Task 4: a previous occurrence was reassigned away from the
+                // blueprint's named person. Carry the reassigned owner forward
+                // (standard continuity) rather than pushing back to the named
+                // person. The reassigned owner must still be active + in dept.
+                const continuedOwner = await prisma.user.findFirst({
+                  where: {
+                    id:         lastOccurrence.ownerId,
+                    status:     "active",
+                    department: taskDef.department || undefined,
+                  },
+                  select: { id: true },
+                });
+                ownerId = continuedOwner?.id ?? null;
+                // blueprintAssigneeId stays as the blueprint's named person
+                // so future runs can detect reassignment.
+                const namedUserActive = await prisma.user.findFirst({
+                  where:  { id: taskDef.assigneeUserId, status: "active" },
+                  select: { id: true },
+                });
+                resolvedBlueprintAssigneeId = namedUserActive?.id ?? null;
+                // If continuity failed (reassigned person also inactive), fall
+                // back to department routing.
+                if (!ownerId && taskDef.department) {
+                  ownerId = await pickOwner(taskDef.department, ownerCache);
+                }
+              } else {
+                // No reassignment: use the blueprint's named person (if active).
+                const namedUser = await prisma.user.findFirst({
+                  where:  { id: taskDef.assigneeUserId, status: "active" },
+                  select: { id: true },
+                });
+                if (namedUser) {
+                  ownerId = namedUser.id;
+                  resolvedBlueprintAssigneeId = namedUser.id;
+                } else {
+                  // Named person is inactive — fall back to department routing.
+                  result.errors.push(
+                    `template=${template.id} task=${taskDef.localId}: blueprint assignee ` +
+                    `${taskDef.assigneeUserId} is inactive; fell back to department routing`,
+                  );
+                  ownerId = taskDef.department
+                    ? await pickOwner(taskDef.department, ownerCache)
+                    : null;
+                }
+              }
+            } else {
+              // No named assignee: standard owner continuity (existing logic).
+              if (lastOccurrence?.ownerId) {
+                // Validate prior owner is still active + in the right department.
+                const priorOwner = await prisma.user.findFirst({
+                  where: {
+                    id:         lastOccurrence.ownerId,
+                    status:     "active",
+                    department: taskDef.department || undefined,
+                  },
+                  select: { id: true },
+                });
+                ownerId = priorOwner?.id ?? null;
+              }
+
+              // Re-pick if prior owner is not eligible.
+              if (!ownerId && taskDef.department) {
+                ownerId = await pickOwner(taskDef.department, ownerCache);
+              }
             }
 
             // Insert the occurrence.
@@ -442,10 +527,13 @@ export async function generateRecurringTasks(
                 isSetup:                false,
                 isRecurring:            true,
                 recurrenceIntervalDays: taskDef.intervalDays,
-                ownerRole:              taskDef.ownerRole      ?? null,
-                estimatedHours:         taskDef.estimatedHours ?? null,
-                priority:               taskDef.priority        ?? null,
-                description:            taskDef.description     ?? null,
+                ownerRole:              taskDef.ownerRole        ?? null,
+                // blueprintAssigneeId: carried forward from the blueprint def
+                // so future recurring runs can detect reassignment (Task 4).
+                blueprintAssigneeId:    resolvedBlueprintAssigneeId,
+                estimatedHours:         taskDef.estimatedHours  ?? null,
+                priority:               taskDef.priority         ?? null,
+                description:            taskDef.description      ?? null,
                 blueprintTaskId:        taskDef.localId,
                 blueprintTemplateId:    template.id,
                 occurrenceKey,

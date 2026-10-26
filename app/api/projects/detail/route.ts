@@ -79,6 +79,10 @@ export interface ScopedTask {
   blockedBy: BlockedByEntry[];  // what it is waiting on (label + department)
   // Restored per-task fields from blueprint (RF2 run, 20261008)
   ownerRole: string | null;
+  // blueprintAssigneeId: the user.id that the blueprint named as assignee at
+  // apply-time. NULL if none was set or the named person was inactive (fell
+  // back to department routing). Useful for reporting fallback in the project UI.
+  blueprintAssigneeId: string | null;
   estimatedHours: number | null;
   priority: string | null;
   description: string | null;
@@ -117,7 +121,8 @@ export interface ScopedProjectDetail {
 // ── Overdue helper ────────────────────────────────────────────────────────────
 function isOverdue(dueDate: string | null, status: string): boolean {
   if (!dueDate) return false;
-  if (status === "done") return false;
+  // Terminal / not-yet-startable statuses are never overdue.
+  if (status === "done" || status === "skipped" || status === "pending_prereq") return false;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const due = new Date(dueDate + "T00:00:00");
@@ -336,10 +341,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           isBlocked,
           blockedBy,
           // Restored per-task fields
-          ownerRole:      t.ownerRole      ?? null,
-          estimatedHours: t.estimatedHours !== null ? Number(t.estimatedHours) : null,
-          priority:       t.priority       ?? null,
-          description:    t.description    ?? null,
+          ownerRole:           t.ownerRole           ?? null,
+          blueprintAssigneeId: t.blueprintAssigneeId ?? null,
+          estimatedHours:      t.estimatedHours !== null ? Number(t.estimatedHours) : null,
+          priority:            t.priority            ?? null,
+          description:         t.description         ?? null,
         };
       }),
     }));

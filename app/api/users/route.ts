@@ -129,6 +129,26 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   const actor = user!;
 
+  // ── picker mode: ?picker=1 ───────────────────────────────────────────────
+  // Returns { id, name, status } for every non-pending user, sorted by name.
+  // Used by the blueprint editor's task-assignee picker (Task 2: blueprint
+  // assignee feature).
+  //
+  // Auth: any authenticated session (same gate as blueprint GET).
+  // The picker exposes only id/name/status — no emails, roles, or audit fields.
+  if (req.nextUrl.searchParams.get("picker") === "1") {
+    try {
+      const rows = await prisma.user.findMany({
+        where:   { status: { not: "pending" } },
+        select:  { id: true, name: true, status: true },
+        orderBy: { name: "asc" },
+      });
+      return NextResponse.json({ users: rows });
+    } catch (err) {
+      return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
+  }
+
   try {
     if (actor.role === "SystemAdmin" || actor.role === "Executive") {
       // Full visibility.

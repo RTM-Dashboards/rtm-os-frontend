@@ -39,6 +39,8 @@ export interface BlueprintTask {
   name: string;
   department: string;
   ownerRole: string;
+  /** Named assignee (Task 2): user.id from the blueprint editor picker. */
+  assigneeUserId?: string;
   estimatedHours: number;
   priority: string;
   dependsOnId?: string;
@@ -89,6 +91,10 @@ export interface TemplateTaskDef {
   intervalDays?: number;
   // Restored per-task fields
   ownerRole?: string;
+  // Named assignee (Task 2): user.id selected in the blueprint editor.
+  // Stored alongside ownerRole (the old freeform text).
+  // undefined / absent = no named assignee; falls back to department routing.
+  assigneeUserId?: string;
   estimatedHours?: number;
   priority?: string;
   description?: string;
@@ -130,6 +136,7 @@ export interface NewBlueprintPayload {
     name: string;
     department: string;
     ownerRole?: string;
+    assigneeUserId?: string;
     estimatedHours?: number;
     priority?: string;
     dueDaysOffset?: number;
@@ -243,10 +250,11 @@ function parseGroups(raw: unknown): TemplateGroup[] {
           offsetFrom,
           prereqIds,
           // Restored per-task fields
-          ownerRole:      typeof td.ownerRole     === "string" ? td.ownerRole     : undefined,
+          ownerRole:      typeof td.ownerRole      === "string" && td.ownerRole ? td.ownerRole : undefined,
+          assigneeUserId: typeof td.assigneeUserId === "string" && td.assigneeUserId ? td.assigneeUserId : undefined,
           estimatedHours: typeof td.estimatedHours === "number" ? td.estimatedHours : undefined,
-          priority:       typeof td.priority       === "string" ? td.priority       : undefined,
-          description:    typeof td.description    === "string" ? td.description    : undefined,
+          priority:       typeof td.priority        === "string" ? td.priority       : undefined,
+          description:    typeof td.description     === "string" ? td.description    : undefined,
         };
         if (intervalDays !== undefined) taskDef.intervalDays = intervalDays;
         tasks.push(taskDef);
@@ -297,6 +305,9 @@ function legacyTasksToGroups(
       offsetFrom,
       prereqIds,
       ownerRole:      t.ownerRole      ?? undefined,
+      assigneeUserId: (t as Record<string, unknown>).assigneeUserId
+        ? String((t as Record<string, unknown>).assigneeUserId)
+        : undefined,
       estimatedHours: t.estimatedHours ?? undefined,
       priority:       t.priority       ?? undefined,
       description:    t.description    ?? undefined,
@@ -360,6 +371,7 @@ function rowToBlueprint(row: TltRow): TaskBlueprint {
       name:           t.label,
       department:     t.department,
       ownerRole:      t.ownerRole      ?? "",
+      assigneeUserId: t.assigneeUserId ?? undefined,
       estimatedHours: t.estimatedHours ?? 0,
       priority:       t.priority       ?? "High",
       dueDaysOffset:  t.offsetDays,
