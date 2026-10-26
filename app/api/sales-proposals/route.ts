@@ -63,6 +63,9 @@ export interface SalesProposalRecord {
   sentAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // Audit-skip (Task 4)
+  noAudit: boolean;
+  noAuditReason: string | null;
   // Allow arbitrary extra wizard fields
   [key: string]: unknown;
 }
@@ -106,6 +109,8 @@ function rowToRecord(row: ProposalRow): SalesProposalRecord {
     sentAt: row.sentAt ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    noAudit: row.noAudit ?? false,
+    noAuditReason: row.noAuditReason ?? null,
   };
 }
 
@@ -118,6 +123,7 @@ const KNOWN_COLUMNS = new Set([
   "discountPercentage", "discount", "budgetResult", "proposalDocument",
   "intakeRecord", "aiAuditResult", "preselectedAuditId", "preselectedAuditType",
   "lastSavedAt", "sentAt", "createdAt", "updatedAt",
+  "noAudit", "noAuditReason",
 ]);
 
 function extractExtras(incoming: Record<string, unknown>): Record<string, unknown> {
@@ -214,6 +220,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           preselectedAuditType: incoming.preselectedAuditType !== undefined ? incoming.preselectedAuditType : existing.preselectedAuditType,
           lastSavedAt: incoming.lastSavedAt !== undefined ? incoming.lastSavedAt : existing.lastSavedAt,
           sentAt:      incoming.sentAt      !== undefined ? incoming.sentAt : existing.sentAt,
+          noAudit:     incoming.noAudit     !== undefined ? Boolean(incoming.noAudit) : existing.noAudit,
+          noAuditReason: incoming.noAuditReason !== undefined ? (incoming.noAuditReason as string | null) : existing.noAuditReason,
           extraFields: Object.keys(mergedExtras).length > 0 ? (mergedExtras as Prisma.InputJsonValue) : Prisma.JsonNull,
           updatedAt:   now,
         },
@@ -253,6 +261,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           preselectedAuditType: incoming.preselectedAuditType ?? null,
           lastSavedAt: incoming.lastSavedAt ?? null,
           sentAt: incoming.sentAt ?? null,
+          noAudit: Boolean(incoming.noAudit ?? false),
+          noAuditReason: (incoming.noAuditReason as string | null | undefined) ?? null,
           extraFields: Object.keys(extras).length > 0 ? (extras as Prisma.InputJsonValue) : Prisma.JsonNull,
           createdAt: now,
           updatedAt: now,
@@ -332,6 +342,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
         ...(patch.preselectedAuditType !== undefined && { preselectedAuditType: patch.preselectedAuditType }),
         ...(patch.lastSavedAt !== undefined && { lastSavedAt: patch.lastSavedAt }),
         ...(patch.sentAt      !== undefined && { sentAt: patch.sentAt }),
+        ...(patch.noAudit     !== undefined && { noAudit: Boolean(patch.noAudit) }),
+        ...(patch.noAuditReason !== undefined && { noAuditReason: patch.noAuditReason as string | null }),
         ...(Object.keys(mergedExtras).length > 0 && { extraFields: mergedExtras as Prisma.InputJsonValue }),
         updatedAt: new Date().toISOString(),
       },

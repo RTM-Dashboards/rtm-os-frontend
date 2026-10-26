@@ -8,6 +8,7 @@ import {
   createContract,
   fetchContractByProposalId,
 } from "@/lib/sales/contracts-store";
+import { fetchOverrides, type ProposalOverrideRecord } from "@/lib/sales/proposal-overrides-client";
 import type { BudgetLineItem } from "@/lib/sales/budget-engine";
 import dynamic from "next/dynamic";
 const ProposalWizard = dynamic(
@@ -98,6 +99,9 @@ interface Proposal {
   owner: string;
   services: ServiceCategory[];
   lineItems: LineItem[];
+  /** True when the wizard's audit was skipped. Internal-only marker. */
+  noAudit?: boolean;
+  noAuditReason?: string | null;
   /**
    * Agreed per-service line items from the Budget Optimizer, in BudgetLineItem shape.
    * Populated for wizard-created (API-backed) proposals; absent for mock proposals.
@@ -593,7 +597,21 @@ function ProposalTable({ proposals, onSelect, onEdit, onResume, onSend, onAccept
                 <td className="px-4 py-3 font-semibold"style={{ color: "#C2410C"}}>{fmt(p.setupTotal)}</td>
                 <td className="px-4 py-3 font-semibold"style={{ color: "#1D4ED8"}}>{fmt(p.recurringTotal)}/mo</td>
                 <td className="px-4 py-3 font-bold"style={{ color: "#047857"}}>{fmt(p.totalValue)}</td>
-                <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <StatusBadge status={p.status} />
+                    {/* No-audit marker — internal only (Task 4). Obvious so nobody sends by accident. */}
+                    {p.noAudit && (
+                      <span
+                        className="text-[10px] font-bold px-2 py-0.5 rounded-full border whitespace-nowrap"
+                        style={{ background: "#FFF7ED", color: "#C2410C", borderColor: "#FED7AA" }}
+                        title={p.noAuditReason ? `No-audit reason: ${p.noAuditReason}` : "No audit was completed for this proposal"}
+                      >
+                        ⚠️ NO AUDIT
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{p.createdDate}</td>
                 <td className="px-4 py-3"onClick={e => e.stopPropagation()}>
                   <div className="flex gap-1.5">
@@ -893,7 +911,7 @@ function DrawerPricingSummary({ proposal }: { proposal: Proposal }) {
 // Proposal Detail Drawer
 //
 
-type DrawerTab = "overview" | "services" | "lineitems" | "pricing" | "activity";
+type DrawerTab = "overview" | "services" | "lineitems" | "pricing" | "activity" | "overrides";
 
 function ProposalDetailDrawer({ proposal, onClose, onEdit, onSend, onAccept, onGenerateContract }: {
   proposal: Proposal;
@@ -908,7 +926,20 @@ function ProposalDetailDrawer({ proposal, onClose, onEdit, onSend, onAccept, onG
   const [activityLog, setActivityLog] = useState<{ date: string; event: string; user: string }[]>(
     proposal.activityTimeline
   );
+  // Override records fetched from proposal_overrides table (Task 3)
+  const [overrides, setOverrides] = useState<ProposalOverrideRecord[]>([]);
+  const [overridesLoading, setOverridesLoading] = useState(false);
   const { toast, showToast } = useProposalToast();
+
+  // Fetch overrides when the Overrides tab is first opened
+  React.useEffect(() => {
+    if (tab !== "overrides" || overrides.length > 0 || overridesLoading) return;
+    setOverridesLoading(true);
+    void fetchOverrides(proposal.id).then((rows) => {
+      setOverrides(rows);
+      setOverridesLoading(false);
+    });
+  }, [tab, proposal.id, overrides.length, overridesLoading]);
 
   async function handleDownloadPdf() {
     showToast("Preparing proposal PDF...");
@@ -1010,6 +1041,7 @@ function ProposalDetailDrawer({ proposal, onClose, onEdit, onSend, onAccept, onG
     { key: "lineitems", label: "Line Items" },
     { key: "pricing",   label: "Pricing" },
     { key: "activity",  label: "Activity" },
+    { key: "overrides", label: "Overrides ▲" },  // internal only (Task 3)
   ];
 
   const setupTotal = proposal.lineItems.reduce((s, l) => s + l.setupFee * l.quantity, 0);
@@ -1095,6 +1127,29 @@ function ProposalDetailDrawer({ proposal, onClose, onEdit, onSend, onAccept, onG
             {/* Overview */}
             {tab === "overview" && (
               <>
+                {/* No-audit marker — internal view only (Task 4). */}
+                {/* This banner does NOT appear on client-facing output. */}
+                {proposal.noAudit && (
+                  <div
+                    className="rounded-xl border px-5 py-4 flex items-start gap-3"
+                    style={{ background: "#FFF7ED", borderColor: "#FED7AA" }}
+                  >
+                    <span className="text-lg flex-shrink-0">⚠️</span>
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: "#C2410C" }}>
+                        This proposal was completed without an audit
+                      </p>
+                      {proposal.noAuditReason && (
+                        <p className="text-xs mt-1" style={{ color: "#92400E" }}>
+                          Reason recorded: {proposal.noAuditReason}
+                        </p>
+                      )}
+                      <p className="text-xs mt-1" style={{ color: "#B45309" }}>
+                        Do not send to the client until the absence of an audit has been reviewed.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <SalesIntelligence proposal={proposal} />
                 {/* Accept → Contract flow: shows the pipeline and the live Accept / Generate Contract buttons */}
                 <ProposalContractFlow
@@ -1220,6 +1275,69 @@ function ProposalDetailDrawer({ proposal, onClose, onEdit, onSend, onAccept, onG
               </Card>
             )}
 
+            {/* Overrides — internal only (Task 3) */}
+            {tab === "overrides" && (
+              <Card>
+                <CardHeader
+                  title="Field Overrides"
+                  subtitle="Internal record of manually overridden values — not visible to the client."
+                />
+                <div className="p-4 space-y-3">
+                  {overridesLoading && (
+                    <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading override records…</p>
+                  )}
+                  {!overridesLoading && overrides.length === 0 && (
+                    <div
+                      className="rounded-lg border px-4 py-6 text-center"
+                      style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}
+                    >
+                      <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-muted)" }}>
+                        No overrides recorded for this proposal.
+                      </p>
+                    </div>
+                  )}
+                  {overrides.map((ov) => (
+                    <div
+                      key={ov.id}
+                      className="rounded-lg border px-4 py-3 space-y-1.5"
+                      style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)" }}
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs font-bold" style={{ color: "var(--rtm-text-primary)" }}>
+                          {ov.fieldLabel || ov.fieldPath}
+                        </p>
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full border capitalize"
+                          style={{
+                            background: ov.overrideType === "manual-line-item" ? "#F0F9FF" : "#FFFBEB",
+                            color: ov.overrideType === "manual-line-item" ? "#0369A1" : "#D97706",
+                            borderColor: ov.overrideType === "manual-line-item" ? "#BAE6FD" : "#FDE68A",
+                          }}
+                        >
+                          {ov.overrideType.replace(/-/g, " ")}
+                        </span>
+                      </div>
+                      <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+                        {new Date(ov.overriddenAt).toLocaleString("en-US", {
+                          month: "short", day: "numeric", year: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
+                        {" "}· user {ov.overridingUserId}
+                      </p>
+                      {ov.priorValue !== null && ov.priorValue !== undefined && (
+                        <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+                          Prior: <span style={{ color: "var(--rtm-text-secondary)" }}>{JSON.stringify(ov.priorValue)}</span>
+                        </p>
+                      )}
+                      <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+                        New: <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{JSON.stringify(ov.newValue)}</span>
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
+
           </div>
         </div>
       </div>
@@ -1272,6 +1390,8 @@ interface SalesProposalApiRecord {
   updatedAt: string;
   lastSavedAt: string | null;
   sentAt: string | null;
+  noAudit?: boolean;
+  noAuditReason?: string | null;
   [key: string]: unknown;
 }
 
@@ -1406,6 +1526,8 @@ function apiRecordToProposal(r: SalesProposalApiRecord): Proposal {
     ],
     budgetLineItems,
     masterAddress: (r.intakeRecord as { masterAddress?: { street: string; suite: string; city: string; state: string; zip: string; country: string } | null } | null)?.masterAddress ?? null,
+    noAudit: r.noAudit ?? false,
+    noAuditReason: r.noAuditReason ?? null,
   };
 }
 

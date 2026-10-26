@@ -22,6 +22,7 @@ import type { ProposalDiscount } from "@/lib/sales/types";
 import { ServiceAllocationTable, type LineItemQuantities } from "./ServiceAllocationTable";
 import { BudgetSummaryPanel } from "./BudgetSummaryPanel";
 import { BudgetTotalsBar } from "./BudgetTotalsBar";
+import { recordOverride } from "@/lib/sales/proposal-overrides-client";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -53,6 +54,11 @@ export interface BudgetOptimizerShellProps {
   /** Pre-loaded discount type options from the DB.
    * When omitted, the shell fetches /api/sales/discount-config on mount. */
   discountTypeOptions?: DiscountTypeOption[];
+  /**
+   * The proposal id (wizardId) used to record override rows.
+   * When omitted, override recording is skipped silently.
+   */
+  proposalId?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -120,6 +126,7 @@ export function BudgetOptimizerShell({
   recommendedServiceLabels,
   clientName,
   discount: discountProp,
+  proposalId,
   onDiscountChange,
   onLineItemsChange,
   targetBudget: targetBudgetProp,
@@ -328,6 +335,43 @@ export function BudgetOptimizerShell({
       Pick<BudgetLineItem, "quantity" | "unitMonthlyPrice" | "setupFee">
     >
   ) {
+    // Custom line items (serviceId starts with "custom-") have no catalogue
+    // definition. Build the update directly from the existing item + changes
+    // so we do not call buildLineItemFromService (which would throw).
+    if (serviceId.startsWith("custom-")) {
+      setLineItems((prev) =>
+        prev.map((item) => {
+          if (item.serviceId !== serviceId) return item;
+          const quantity = changes.quantity ?? item.quantity;
+          const unitMonthlyPrice = changes.unitMonthlyPrice ?? item.unitMonthlyPrice;
+          const setupFee = changes.setupFee ?? item.setupFee;
+          return {
+            ...item,
+            quantity,
+            unitMonthlyPrice,
+            setupFee,
+            // Recompute derived fields so no stored total disagrees with items.
+            monthlySubtotal: quantity * unitMonthlyPrice,
+            setupSubtotal: setupFee,
+            // Keep snapshots current with manual edits (these are the authoritative values).
+            snapshotName: item.snapshotName ?? item.label,
+            snapshotUnitMonthlyPrice: changes.unitMonthlyPrice ?? item.snapshotUnitMonthlyPrice,
+            snapshotSetupFee: changes.setupFee ?? item.snapshotSetupFee,
+          };
+        })
+      );
+      // Also record in manualMonthlyPrices so effectiveLineItems (which uses
+      // applyLineItemSubtotalToBudgetItem) does not reset the subtotal via
+      // the empty lineItemDefs path.
+      if (changes.unitMonthlyPrice != null) {
+        setManualMonthlyPrices((prev) => ({
+          ...prev,
+          [serviceId]: changes.unitMonthlyPrice as number,
+        }));
+      }
+      return;
+    }
+
     // Always pass the prefetched DB definition so that services added via the
     // config page (whose ids are not in BUDGET_SERVICE_CATALOG) do not cause
     // buildLineItemFromService to throw "Unknown serviceId".
@@ -343,6 +387,18 @@ export function BudgetOptimizerShell({
         ...prev,
         [serviceId]: changes.unitMonthlyPrice as number,
       }));
+      // Record the override for permanent attribution (Task 3).
+      if (proposalId) {
+        const priorItem = lineItems.find((i) => i.serviceId === serviceId);
+        void recordOverride({
+          proposalId,
+          fieldPath: `lineItems[serviceId=${serviceId}].unitMonthlyPrice`,
+          fieldLabel: `${priorItem?.label ?? serviceId} — Monthly Price`,
+          priorValue: priorItem?.unitMonthlyPrice ?? null,
+          newValue: changes.unitMonthlyPrice,
+          overrideType: "price-override",
+        });
+      }
     }
   }
 
@@ -358,6 +414,58 @@ export function BudgetOptimizerShell({
     },
     []
   );
+
+  // ─── Manual line item (Task 2) ───────────────────────────────────────────
+  // Adds a line item not from the catalogue. The item:
+  //   - uses a unique custom-prefixed serviceId so it never collides with catalogue ids
+  //   - still carries all three snapshot fields (snapshotName, snapshotUnitMonthlyPrice,
+  //     snapshotSetupFee) so the proposal render reads the captured values, not a live row
+  //   - the subtotal is quantity × unitMonthlyPrice — computed by applyLineItemSubtotalToBudgetItem
+  //     on every render, so no stored total can ever disagree with the line items
+  //   - department is "Custom" so internal filtering still works
+  //   - isRecurring is true by default (monthly services); callers can adjust if needed
+  function handleAddManualLineItem({
+    label,
+    monthlyPrice,
+    setupFee,
+  }: {
+    label: string;
+    monthlyPrice: number;
+    setupFee: number;
+  }) {
+    const customId = `custom-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` as BudgetServiceId;
+    const newItem: BudgetLineItem = {
+      serviceId: customId,
+      label,
+      department: "Custom",
+      quantity: 1,
+      unitMonthlyPrice: monthlyPrice,
+      setupFee,
+      monthlySubtotal: monthlyPrice,   // quantity(1) × unitMonthlyPrice
+      setupSubtotal: setupFee,
+      isRecurring: true,
+      // Snapshot fields — captured at creation time exactly as a catalogue item would be
+      snapshotName: label,
+      snapshotUnitMonthlyPrice: monthlyPrice,
+      snapshotSetupFee: setupFee,
+    };
+    setLineItems((prev) => [...prev, newItem]);
+    // No lineItemQuantities entry needed — manual items have no sub-line-items.
+    // No manualMonthlyPrices entry: applyLineItemSubtotalToBudgetItem will use the
+    // unitMonthlyPrice directly since there is no catalogId to look up sub-items.
+
+    // Record override so the addition is permanently attributed (Task 3).
+    if (proposalId) {
+      void recordOverride({
+        proposalId,
+        fieldPath: `lineItems[id=${customId}].label`,
+        fieldLabel: `Manual Line Item: ${label}`,
+        priorValue: null,
+        newValue: { label, monthlyPrice, setupFee },
+        overrideType: "manual-line-item",
+      });
+    }
+  }
 
   function handleDiscountChange(updatedDiscount: ProposalDiscount) {
     setInternalDiscount(updatedDiscount);
@@ -467,6 +575,7 @@ export function BudgetOptimizerShell({
         onUpdate={handleUpdateLineItem}
         onRemove={handleRemoveService}
         onAdd={handleAddService}
+        onAddManual={handleAddManualLineItem}
         onLineItemQuantityChange={handleLineItemQuantityChange}
         availableServices={availableServices}
         catalogLookup={getCatalogServiceById}

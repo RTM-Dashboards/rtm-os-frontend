@@ -57,6 +57,12 @@ export interface ProposalWizardState {
   // True when clientInfo was prefilled from the linked Opportunity on first open.
   // Used to show a non-blocking "Pre-filled from opportunity" banner in Step 1.
   opportunityPrefilled?: boolean;
+  // ── Audit-skip (Task 4) ─────────────────────────────────────────────────────
+  // noAudit: true when the rep chose to proceed without an audit.
+  // noAuditReason: required text when noAudit is true. The wizard enforces
+  //   this before allowing the skip path to advance.
+  noAudit: boolean;
+  noAuditReason: string;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -168,6 +174,8 @@ function createDefaultState(wizardId: string): ProposalWizardState {
     preselectedAuditId: null,
     preselectedAuditType: null,
     opportunityPrefilled: false,
+    noAudit: false,
+    noAuditReason: "",
   };
 }
 
@@ -187,6 +195,16 @@ function validateStep(step: number, state: ProposalWizardState): boolean {
     const intakeRecord = state.intakeRecord as HomeServicesIntakeRecord | null;
     if (intakeRecord?.flaggedForFollowUp === true) return false;
   }
+
+  // Step 2 audit-skip path (Task 4):
+  // A rep may proceed without an audit when noAudit is true AND a non-empty
+  // reason has been provided. Both conditions are required; either alone is
+  // insufficient. The auditResult gate in STEP_2_REQUIRED is intentionally
+  // NOT bypassed for any other reason — this is the ONLY skip path.
+  if (step === 2 && state.noAudit) {
+    return state.noAuditReason.trim().length > 0;
+  }
+
   // All other gates: the declarative required-field config must be fully satisfied.
   return getMissingRequiredFields(step, state).length === 0;
 }
@@ -571,6 +589,16 @@ export function ProposalWizard({
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            {/* No-audit marker — internal only, visible in the wizard header */}
+            {state.noAudit && (
+              <span
+                className="text-[10px] font-bold px-2.5 py-1 rounded-full border flex items-center gap-1"
+                style={{ background: "#FFF7ED", color: "#C2410C", borderColor: "#FED7AA" }}
+                title={`No-audit reason: ${state.noAuditReason}`}
+              >
+                ⚠️ NO AUDIT
+              </span>
+            )}
             {/* Draft status */}
             <div className="flex items-center gap-2">
               <span

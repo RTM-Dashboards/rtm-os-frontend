@@ -102,6 +102,7 @@ export function Step4Budget({ state, onUpdate, approvedServiceNames }: Step4Budg
         onDiscountChange={handleDiscountChange}
         discount={discount}
         onProposalDiscountChange={handleProposalDiscountChange}
+        proposalId={state.wizardId}
       />
 
       {state.budgetResult && (
@@ -158,6 +159,7 @@ function BudgetOptimizerShellWrapper({
   onDiscountChange,
   discount,
   onProposalDiscountChange,
+  proposalId,
 }: {
   state: ProposalWizardState;
   /** Direct prop from ProposalWizard (render-time value) — takes priority over
@@ -168,6 +170,7 @@ function BudgetOptimizerShellWrapper({
   onDiscountChange: (discount: number) => void;
   discount: ProposalDiscount;
   onProposalDiscountChange: (discount: ProposalDiscount) => void;
+  proposalId?: string;
 }) {
   // Derive the service label list that BudgetOptimizerShell uses to bootstrap
   // its Service Allocation table.
@@ -213,6 +216,7 @@ function BudgetOptimizerShellWrapper({
       discount={discount}
       onDiscountChange={onProposalDiscountChange}
       onLineItemsChange={onLineItemsChange}
+      proposalId={proposalId}
     />
   );
 }

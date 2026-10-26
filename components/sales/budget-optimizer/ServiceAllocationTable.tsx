@@ -41,6 +41,12 @@ interface ServiceAllocationTableProps {
   ) => void;
   onRemove: (serviceId: BudgetServiceId) => void;
   onAdd: (serviceId: BudgetServiceId) => void;
+  /** Add a manual line item not from the catalogue. (Task 2) */
+  onAddManual?: (item: {
+    label: string;
+    monthlyPrice: number;
+    setupFee: number;
+  }) => void;
   onLineItemQuantityChange: (
     serviceId: BudgetServiceId,
     lineItemId: string,
@@ -507,6 +513,7 @@ export function ServiceAllocationTable({
   onUpdate,
   onRemove,
   onAdd,
+  onAddManual,
   onLineItemQuantityChange,
   availableServices,
   catalogLookup,
@@ -517,6 +524,24 @@ export function ServiceAllocationTable({
       onAdd(id);
       e.target.value = "";
     }
+  }
+
+  // ─── Manual line item form state (Task 2) ─────────────────────────────────
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [manualLabel, setManualLabel] = useState("");
+  const [manualMonthly, setManualMonthly] = useState("");
+  const [manualSetup, setManualSetup] = useState("");
+
+  function handleAddManualItem() {
+    const label = manualLabel.trim();
+    const monthlyPrice = parseFloat(manualMonthly) || 0;
+    const setupFee = parseFloat(manualSetup) || 0;
+    if (!label) return;
+    onAddManual?.({ label, monthlyPrice, setupFee });
+    setManualLabel("");
+    setManualMonthly("");
+    setManualSetup("");
+    setShowManualForm(false);
   }
 
   // ─── Empty State ───────────────────────────────────────────────────────────
@@ -712,6 +737,102 @@ export function ServiceAllocationTable({
           <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
             All available services have been added.
           </p>
+        </div>
+      )}
+
+      {/* ── Add Custom Line Item (Task 2) ─────────────────────────────────── */}
+      {/* A line item added here does NOT require the budget optimiser. It     */}
+      {/* still carries snapshot fields and the subtotal recomputes from its   */}
+      {/* unit price + quantity, so no stored total can disagree with items.   */}
+      {onAddManual && (
+        <div
+          className="px-5 py-4 border-t"
+          style={{ borderColor: "var(--rtm-border)" }}
+        >
+          {!showManualForm ? (
+            <button
+              type="button"
+              onClick={() => setShowManualForm(true)}
+              className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-80"
+              style={{ background: "#EFF6FF", color: "#1D4ED8", borderColor: "#BFDBFE" }}
+            >
+              + Add custom line item
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>
+                Custom Line Item
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+                    Label <span style={{ color: "#DC2626" }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={manualLabel}
+                    onChange={(e) => setManualLabel(e.target.value)}
+                    placeholder="e.g. Custom SEO Package"
+                    className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+                    Monthly Price ($)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={manualMonthly}
+                    onChange={(e) => setManualMonthly(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+                    Setup Fee ($)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={manualSetup}
+                    onChange={(e) => setManualSetup(e.target.value)}
+                    placeholder="0"
+                    className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    style={{ background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" }}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddManualItem}
+                  disabled={!manualLabel.trim()}
+                  className="text-xs font-bold px-4 py-2 rounded-lg text-white transition-all hover:opacity-90 disabled:opacity-40"
+                  style={{ background: "#1D4ED8" }}
+                >
+                  Add Line Item
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowManualForm(false); setManualLabel(""); setManualMonthly(""); setManualSetup(""); }}
+                  className="text-xs font-semibold px-4 py-2 rounded-lg border transition-all hover:opacity-80"
+                  style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+                >
+                  Cancel
+                </button>
+              </div>
+              <p className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>
+                The subtotal and all totals recompute from this item's price × quantity.
+                No stored total will disagree with the line items.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

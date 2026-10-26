@@ -55,7 +55,7 @@ interface Step2AuditProps {
   onUpdate: (updates: Partial<ProposalWizardState>) => void;
 }
 
-type AuditMode = "ai" | "intake" | "existing" | "quick" | "manual" | "hybrid";
+type AuditMode = "ai" | "intake" | "existing" | "quick" | "manual" | "hybrid" | "skip";
 
 // ─── Helpers: Score Badge ─────────────────────────────────────────────────────
 
@@ -801,6 +801,8 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
   const [mode, setMode] = useState<AuditMode>(() => {
     // If a pre-selected audit id is provided, jump straight to existing mode.
     if (preselectedAuditId) return "existing";
+    // Restore skip mode when the wizard was saved with noAudit=true
+    if ((state as ProposalWizardState & { noAudit?: boolean }).noAudit) return "skip";
     if (state.auditMode === "ai") return "ai";
     if (state.auditMode === "quick") return "quick";
     if (state.auditMode === "existing") return "existing";
@@ -1000,6 +1002,15 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
     setMode(newMode);
     if (newMode === "intake" && intakeAuditResult) {
       commitIntakeAuditToWizard(intakeAuditResult);
+    }
+    if (newMode === "skip") {
+      // Entering skip mode: set noAudit flag so validateStep(2) uses the skip
+      // gate instead of the auditResult gate. The reason is empty until typed.
+      onUpdate({ noAudit: true, noAuditReason: "" } as Partial<ProposalWizardState>);
+    } else {
+      // Switching away from skip mode: clear noAudit so the normal gate
+      // (auditResult !== null) is re-engaged.
+      onUpdate({ noAudit: false, noAuditReason: "" } as Partial<ProposalWizardState>);
     }
     // When switching away from AI mode, the wizard state auditResult is already set
     // from onAuditComplete — no additional action needed
@@ -1260,6 +1271,9 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
     { id: "quick",    label: "Run Quick Audit" },
     { id: "manual",   label: "Request Manual Audit" },
     { id: "hybrid",   label: "Request Hybrid Audit" },
+    // Audit-skip path (Task 4) — last in the list.
+    // Selecting this records a reason and sets noAudit=true on wizard state.
+    { id: "skip",     label: "Proceed Without Audit" },
   ];
 
   return (
@@ -1811,6 +1825,84 @@ export function Step2Audit({ state, onUpdate }: Step2AuditProps) {
                   You can proceed to Step 3 at any time. Pending department findings will appear as AI baseline until finalized.
                 </p>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Mode F — Proceed Without Audit (Task 4) */}
+      {/* This is the ONLY bypass for the audit gate. Arithmetic stays computed. */}
+      {/* The blocking behaviour for all other required fields remains unchanged. */}
+      {mode === "skip" && (
+        <div className="space-y-5">
+          {/* Internal-only warning — not client-facing */}
+          <div
+            className="rounded-xl border p-5"
+            style={{ background: "#FFF7ED", borderColor: "#FED7AA" }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-lg flex-shrink-0">⚠️</span>
+              <div>
+                <p className="text-sm font-bold mb-1" style={{ color: "#C2410C" }}>
+                  Proceeding Without an Audit
+                </p>
+                <p className="text-xs" style={{ color: "#92400E" }}>
+                  This proposal will be permanently marked as <strong>no-audit</strong> —
+                  visible to internal reviewers in the proposals list and on this proposal.
+                  The marker does <strong>not</strong> appear on the client-facing document.
+                  A reason is required before you can advance.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Reason field — required */}
+          <div
+            className="rounded-xl border p-5"
+            style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
+          >
+            <label
+              className="block text-[11px] font-bold uppercase tracking-wide mb-2"
+              style={{ color: "var(--rtm-text-muted)" }}
+            >
+              Reason for skipping audit <span style={{ color: "#DC2626" }}>*</span>
+            </label>
+            <textarea
+              rows={3}
+              value={(state as ProposalWizardState & { noAuditReason?: string }).noAuditReason ?? ""}
+              onChange={(e) => {
+                const reason = e.target.value;
+                onUpdate({
+                  noAudit: true,
+                  noAuditReason: reason,
+                } as Partial<ProposalWizardState>);
+              }}
+              placeholder="Required. Describe why an audit cannot be completed for this proposal…"
+              className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-orange-500 resize-none"
+              style={{
+                background: "var(--rtm-bg)",
+                borderColor: "var(--rtm-border)",
+                color: "var(--rtm-text-primary)",
+              }}
+            />
+            {!(state as ProposalWizardState & { noAuditReason?: string }).noAuditReason?.trim() && (
+              <p className="text-xs mt-1.5" style={{ color: "#C2410C" }}>
+                A reason is required to proceed without an audit.
+              </p>
+            )}
+          </div>
+
+          {/* Confirmation — shows when reason is filled */}
+          {(state as ProposalWizardState & { noAuditReason?: string }).noAuditReason?.trim() && (
+            <div
+              className="rounded-xl border px-5 py-4 flex items-center gap-3"
+              style={{ background: "#FFFBEB", borderColor: "#FDE68A" }}
+            >
+              <span className="text-sm font-bold" style={{ color: "#D97706" }}>⚠️</span>
+              <p className="text-xs font-semibold" style={{ color: "#92400E" }}>
+                Reason recorded. You may now advance to Step 3.
+                This proposal will carry a permanent internal no-audit marker.
+              </p>
             </div>
           )}
         </div>
