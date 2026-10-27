@@ -74,6 +74,12 @@ export interface SalesProposalRecord {
   // Audit-skip (Task 4)
   noAudit: boolean;
   noAuditReason: string | null;
+  // The RTM rep (session user id) who created this proposal.
+  // Null for rows created before the 20261028_proposal_owner migration.
+  createdByUserId: string | null;
+  // Resolved display name for the owner (joined from users table at read time).
+  // Null when createdByUserId is null or the user no longer exists.
+  createdByUserName: string | null;
   // Allow arbitrary extra wizard fields
   [key: string]: unknown;
 }
@@ -86,7 +92,7 @@ export interface SalesProposalRecord {
 
 type ProposalRow = Prisma.ProposalGetPayload<Record<string, never>>;
 
-function rowToRecord(row: ProposalRow): SalesProposalRecord {
+function rowToRecord(row: ProposalRow, userNameMap?: Map<string, string>): SalesProposalRecord {
   const extra = (row.extraFields ?? {}) as Record<string, unknown>;
   return {
     // Spread extra fields first so named columns always win on collision
@@ -119,6 +125,10 @@ function rowToRecord(row: ProposalRow): SalesProposalRecord {
     updatedAt: row.updatedAt,
     noAudit: row.noAudit ?? false,
     noAuditReason: row.noAuditReason ?? null,
+    createdByUserId: row.createdByUserId ?? null,
+    createdByUserName: row.createdByUserId
+      ? (userNameMap?.get(row.createdByUserId) ?? null)
+      : null,
   };
 }
 
@@ -131,7 +141,7 @@ const KNOWN_COLUMNS = new Set([
   "discountPercentage", "discount", "budgetResult", "proposalDocument",
   "intakeRecord", "aiAuditResult", "preselectedAuditId", "preselectedAuditType",
   "lastSavedAt", "sentAt", "createdAt", "updatedAt",
-  "noAudit", "noAuditReason",
+  "noAudit", "noAuditReason", "createdByUserId",
 ]);
 
 function extractExtras(incoming: Record<string, unknown>): Record<string, unknown> {
@@ -155,7 +165,24 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const rows = await prisma.proposal.findMany({
       orderBy: { createdAt: "asc" },
     });
-    const records = rows.map(rowToRecord);
+
+    // Resolve owner names in one query — collect all distinct non-null user ids
+    // from this result set, then fetch matching users. This is always 2 queries
+    // regardless of the number of proposals.
+    const ownerIds = [...new Set(
+      rows.map((r) => r.createdByUserId).filter((id): id is string => id !== null)
+    )];
+
+    let userNameMap = new Map<string, string>();
+    if (ownerIds.length > 0) {
+      const users = await prisma.user.findMany({
+        where:  { id: { in: ownerIds } },
+        select: { id: true, name: true },
+      });
+      userNameMap = new Map(users.map((u) => [u.id, u.name]));
+    }
+
+    const records = rows.map((r) => rowToRecord(r, userNameMap));
     return NextResponse.json({ records });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -169,7 +196,8 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, error, status } = await getSessionUser(req);
   if (error) return NextResponse.json({ error }, { status: status! });
-  void user;
+  // Capture the RTM user for ownership attribution on first creation.
+  const actorId = user!.id;
 
   let body: unknown;
   try {
@@ -271,6 +299,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           sentAt: incoming.sentAt ?? null,
           noAudit: Boolean(incoming.noAudit ?? false),
           noAuditReason: (incoming.noAuditReason as string | null | undefined) ?? null,
+          // Record the session user as the proposal owner — written once at creation.
+          createdByUserId: actorId,
           extraFields: Object.keys(extras).length > 0 ? (extras as Prisma.InputJsonValue) : Prisma.JsonNull,
           createdAt: now,
           updatedAt: now,

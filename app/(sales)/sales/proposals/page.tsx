@@ -573,7 +573,7 @@ function ProposalTable({ proposals, onSelect, onEdit, onResume, onSend, onAccept
         <table className="w-full text-xs"style={{ borderCollapse: "collapse", minWidth: "1100px"}}>
           <thead>
             <tr style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)"}}>
-              {["Proposal Name","Client","Owner","Services","Setup Fees","Recurring Fees","Total Value","Status","Created","Actions",""].map(h => (
+              {["Proposal Name","Client","Owner (RTM Rep)","Client Contact","Services","Setup Fees","Recurring Fees","Total Value","Status","Created","Actions",""].map(h => (
                 <th key={h} className="text-left px-4 py-3 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{h}</th>
               ))}
             </tr>
@@ -586,7 +586,8 @@ function ProposalTable({ proposals, onSelect, onEdit, onResume, onSend, onAccept
                   {p.name}
                 </td>
                 <td className="px-4 py-3"style={{ color: "var(--rtm-text-secondary)"}}>{p.client}</td>
-                <td className="px-4 py-3"style={{ color: "var(--rtm-text-secondary)"}}>{p.owner}</td>
+                <td className="px-4 py-3"style={{ color: p.owner ? "var(--rtm-text-secondary)" : "var(--rtm-text-muted)"}}>{p.owner || "—"}</td>
+                <td className="px-4 py-3"style={{ color: "var(--rtm-text-muted)"}}>{p.info.owner || "—"}</td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {p.services.slice(0, 3).map(s => <CategoryBadge key={s} cat={s} />)}
@@ -1064,7 +1065,10 @@ function ProposalDetailDrawer({ proposal, onClose, onEdit, onSend, onAccept, onG
               </div>
               <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>{proposal.name}</h2>
               <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-muted)" }}>
-                {proposal.client} · {proposal.owner} · Created {proposal.createdDate}
+                {proposal.client}
+                {proposal.info.owner ? <> · Contact: {proposal.info.owner}</> : null}
+                {proposal.owner ? <> · Owner: {proposal.owner}</> : null}
+                {" · Created "}{proposal.createdDate}
               </p>
             </div>
             <div className="flex gap-2 flex-shrink-0">
@@ -1393,6 +1397,10 @@ interface SalesProposalApiRecord {
   sentAt: string | null;
   noAudit?: boolean;
   noAuditReason?: string | null;
+  /** RTM rep (session user id) who created this proposal. Null for pre-migration rows. */
+  createdByUserId?: string | null;
+  /** Resolved display name for the owner — joined from users at read time. Null when id is null or user no longer exists. */
+  createdByUserName?: string | null;
   [key: string]: unknown;
 }
 
@@ -1406,7 +1414,9 @@ function mapWizardStatus(s: string): ProposalStatus {
   return "Draft"; // "draft"
 }
 
-// Shape an API record into the Proposal interface the existing UI expects
+// Shape an API record into the Proposal interface the existing UI expects.
+// owner = the RTM rep who created the proposal (createdByUserId).
+// The client's contact person is tracked separately in info.clientContact.
 function apiRecordToProposal(r: SalesProposalApiRecord): Proposal {
   const serviceNames = (r.approvedRecommendationServiceNames ?? []) as string[];
   const goals = (r.selectedGoals ?? []) as string[];
@@ -1462,7 +1472,16 @@ function apiRecordToProposal(r: SalesProposalApiRecord): Proposal {
       ? `${r.clientInfo.businessName} — Proposal`
       : `Proposal ${r.id.slice(-6)}`,
     client: r.clientInfo?.businessName || r.clientInfo?.name || "Unknown Client",
-    owner: r.clientInfo?.contactName || "—",
+    // owner = RTM rep's display name, resolved server-side.
+    // Falls back in order:
+    //   1. createdByUserName  — present when the user still exists
+    //   2. "Unknown user"     — createdByUserId set but user no longer exists
+    //   3. ""                 — no owner recorded (pre-migration rows)
+    owner: r.createdByUserName
+      ? r.createdByUserName
+      : r.createdByUserId
+        ? "Unknown user"
+        : "",
     services,
     lineItems: lineItemsRaw.map((li) => ({
       id: li.id ?? "",

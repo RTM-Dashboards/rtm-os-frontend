@@ -531,6 +531,12 @@ model Proposal {
   createdAt                       String   @default("")
   updatedAt                       String   @default("")
 
+  // ── Ownership ────────────────────────────────────────────────────────────────
+  // The RTM user who created this proposal (set from session on POST).
+  // Nullable: rows created before this migration have no attribution.
+  // No backfill — do not derive this from clientInfo.contactName.
+  createdByUserId                 String?  @map("created_by_user_id")
+
   @@map("proposals")
 }
 

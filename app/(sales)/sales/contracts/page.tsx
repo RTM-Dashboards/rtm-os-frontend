@@ -335,7 +335,17 @@ function RequestInvoiceButton({
   }
 
   return (
-    <div className="flex flex-col items-start gap-1">
+    <div className="flex flex-col items-start gap-1.5">
+      {/* Domain-missing notice — shown before the click so the rep is not surprised.
+          Points at the Add Domain control already present in the Domain column of this row.
+          Request Invoice is not disabled; the rep can still proceed and will receive the
+          Billing rejection, but they have been warned first. */}
+      {!contract.domain && (
+        <p className="text-[10px] font-semibold" style={{ color: "#B45309" }}>
+          ⚠️ No domain set — Billing will reject this handoff.{" "}
+          Use <strong>Add Domain</strong> in the Domain column first.
+        </p>
+      )}
       <button
         onClick={() => void handleClick()}
         disabled={creating}
@@ -521,6 +531,36 @@ function ContractDetailPanel({
         </div>
         <div>
           <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Setup Fee
+          </p>
+          <p className="text-sm font-bold" style={{ color: contract.setupFee != null && contract.setupFee > 0 ? "#C2410C" : "var(--rtm-text-muted)" }}>
+            {contract.setupFee != null
+              ? contract.setupFee === 0
+                ? "None"
+                : `$${contract.setupFee.toLocaleString()}`
+              : "—"}
+          </p>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
+            Client Address
+          </p>
+          {contract.address ? (
+            <div className="text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+              {contract.address.street && <p>{contract.address.street}{contract.address.suite ? `, ${contract.address.suite}` : ""}</p>}
+              {(contract.address.city || contract.address.state || contract.address.zip) && (
+                <p>{[contract.address.city, contract.address.state].filter(Boolean).join(", ")}{contract.address.zip ? ` ${contract.address.zip}` : ""}</p>
+              )}
+              {contract.address.country && contract.address.country !== "US" && contract.address.country !== "USA" && (
+                <p>{contract.address.country}</p>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>—</p>
+          )}
+        </div>
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>
             Created
           </p>
           <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
@@ -701,12 +741,6 @@ export default function SalesContractsPage() {
             >
               Contract Builder
             </h1>
-            <span
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
-              style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
-            >
-              Preview — Target State
-            </span>
           </div>
           <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
             Configuration-driven service agreement builder. Consumes proposal output and
