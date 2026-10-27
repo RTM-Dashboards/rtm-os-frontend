@@ -19,8 +19,16 @@
 // shape is not reproduced.
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser, requireDepartment } from "@/lib/auth";
+import { requireDept } from "@/lib/auth/vocab";
 import { prisma } from "@/lib/db/prisma";
+
+// ── Accept-transition guard ────────────────────────────────────────────────────
+// Product decision 22 October: accepting a proposal requires the Sales
+// department (or Executive / SystemAdmin via requireDepartment condition A).
+// The constant is resolved by name so a vocabulary rename fails loudly at
+// module load rather than silently pointing at the wrong department.
+const SALES_DEPT = requireDept("Sales");
 import { Prisma } from "@prisma/client";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -280,11 +288,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 // Partial update: merges supplied fields onto the existing record.
 // Required: body.id (string). All other fields are optional.
 // Used for status transitions (Send Proposal → "sent") and lastSavedAt updates.
+//
+// ── Accept-transition guard (product decision 22 October) ─────────────────────
+// When body.status === "accepted" the caller must be in the Sales department
+// OR be Executive / SystemAdmin. All other transitions (send, draft save,
+// lastSavedAt heartbeat, etc.) pass with any active session.
 
 export async function PATCH(req: NextRequest): Promise<NextResponse> {
   const { user, error, status } = await getSessionUser(req);
   if (error) return NextResponse.json({ error }, { status: status! });
-  void user;
 
   let body: unknown;
   try {
@@ -299,6 +311,17 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       { error: "Body must include id (string)" },
       { status: 400 }
     );
+  }
+
+  // ── Accept-transition guard ────────────────────────────────────────────────────────
+  // Scoped to this branch only: no other status transition or field update is
+  // affected. Sending, saving a draft, and lastSavedAt updates remain open to
+  // any active session as before.
+  if (patch.status === "accepted") {
+    const acceptGate = requireDepartment(user!, SALES_DEPT, "Member");
+    if (acceptGate) {
+      return NextResponse.json({ error: acceptGate.error }, { status: acceptGate.status });
+    }
   }
 
   try {

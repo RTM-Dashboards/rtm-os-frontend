@@ -30,10 +30,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db/prisma";
-import { ROLE_RANK, VALID_DEPARTMENTS } from "@/lib/auth/vocab";
+import { ROLE_RANK, VALID_DEPARTMENTS, requireDept } from "@/lib/auth/vocab";
 
-// FIX 4: Account Management department string, sourced from VALID_DEPARTMENTS.
-const ACCOUNT_MANAGEMENT_DEPT = VALID_DEPARTMENTS[0]; // "Account Management"
+// Account Management department string, resolved by name from VALID_DEPARTMENTS.
+// requireDept() throws at module load if the name is ever removed from the array.
+const ACCOUNT_MANAGEMENT_DEPT = requireDept("Account Management");
 
 // ── GET — list reassignable users ─────────────────────────────────────────────
 // Returns all active users the caller may assign to.

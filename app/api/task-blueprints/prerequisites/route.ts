@@ -28,7 +28,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionUser, requireDepartment } from "@/lib/auth";
-import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
+import { VALID_DEPARTMENTS, requireDept } from "@/lib/auth/vocab";
 import {
   detectCycle,
   getExistingEdges,
@@ -36,7 +36,8 @@ import {
   makeId,
 } from "@/lib/projects/blueprint-prerequisites";
 
-const AM_DEPT = VALID_DEPARTMENTS[0]; // "Account Management"
+// requireDept() throws at module load if the name is ever removed from the array.
+const AM_DEPT = requireDept("Account Management");
 
 async function authWrite(req: NextRequest) {
   const { user, error, status } = await getSessionUser(req);

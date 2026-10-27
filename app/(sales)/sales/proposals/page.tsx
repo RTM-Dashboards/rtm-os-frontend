@@ -9,6 +9,7 @@ import {
   fetchContractByProposalId,
 } from "@/lib/sales/contracts-store";
 import { fetchOverrides, type ProposalOverrideRecord } from "@/lib/sales/proposal-overrides-client";
+import { fetchCurrentUser } from "@/lib/users/users-api";
 import type { BudgetLineItem } from "@/lib/sales/budget-engine";
 import dynamic from "next/dynamic";
 const ProposalWizard = dynamic(
@@ -1543,6 +1544,23 @@ function ProposalsPageInner() {
   const [apiProposals, setApiProposals] = useState<Proposal[]>([]);
   const [apiLoading, setApiLoading] = useState(false);
 
+  // ── Accept-proposal permission (product decision 22 October) ──────────────────
+  // Only Sales department members (any role) and Executive / SystemAdmin can
+  // accept a proposal. The Accept control is hidden (not disabled) for all
+  // other users so they receive no error and no misleading affordance.
+  // Mirrors the requireDepartment(user, "Sales", "Member") gate in
+  // app/api/sales-proposals/route.ts PATCH handler.
+  const [canAccept, setCanAccept] = useState(false);
+  useEffect(() => {
+    void fetchCurrentUser().then((u) => {
+      if (!u) { setCanAccept(false); return; }
+      const isExecutiveOrAbove = u.role === "SystemAdmin" || u.role === "Executive";
+      const isSalesDept = u.department === "Sales";
+      setCanAccept(isExecutiveOrAbove || isSalesDept);
+    });
+  }, []);
+
+
   const loadApiProposals = React.useCallback(async () => {
     setApiLoading(true);
     try {
@@ -2032,7 +2050,7 @@ function ProposalsPageInner() {
             onEdit={editProposal}
             onResume={resumeWizardDraft}
             onSend={handleSendProposal}
-            onAccept={handleAcceptProposal}
+            onAccept={canAccept ? handleAcceptProposal : undefined}
             onGenerateContract={handleGenerateContract}
           />
         </>
@@ -2048,7 +2066,7 @@ function ProposalsPageInner() {
             editProposal(p);
           }}
           onSend={handleSendProposal}
-          onAccept={handleAcceptProposal}
+          onAccept={canAccept ? handleAcceptProposal : undefined}
           onGenerateContract={handleGenerateContract}
         />
       )}

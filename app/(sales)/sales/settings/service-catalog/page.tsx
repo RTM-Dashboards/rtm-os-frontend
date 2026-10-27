@@ -8,7 +8,11 @@ import type { DiscountTierRow, DiscountTypeRow } from "@/app/api/sales/discount-
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const QUANTITY_UNITS = ["flat", "location", "campaign", "page"] as const;
-import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
+import { VALID_DEPARTMENTS, requireDept } from "@/lib/auth/vocab";
+
+// Default department for new service-catalog items, resolved by name.
+// requireDept() throws at module load if "Account Management" is removed from VALID_DEPARTMENTS.
+const DEFAULT_CATALOG_DEPT = requireDept("Account Management");
 const DEPARTMENTS = VALID_DEPARTMENTS;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -512,7 +516,7 @@ function ServiceEditor({
 }) {
   const [label, setLabel] = useState(existing?.label ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
-  const [department, setDepartment] = useState(existing?.department ?? VALID_DEPARTMENTS[0]);
+  const [department, setDepartment] = useState(existing?.department ?? DEFAULT_CATALOG_DEPT);
   const [quantityUnit, setQuantityUnit] = useState(existing?.quantityUnit ?? "flat");
   const [quantityOptionsStr, setQuantityOptionsStr] = useState((existing?.quantityOptions ?? [1]).join(", "));
   const [defaultQuantity, setDefaultQuantity] = useState(String(existing?.defaultQuantity ?? 1));

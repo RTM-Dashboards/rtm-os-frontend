@@ -21,10 +21,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser, requireDepartment } from "@/lib/auth";
-import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
+import { VALID_DEPARTMENTS, requireDept } from "@/lib/auth/vocab";
 import { prisma } from "@/lib/db/prisma";
 
-const ACCOUNT_MANAGEMENT_DEPT = VALID_DEPARTMENTS[0]; // "Account Management"
+// requireDept() throws at module load if the name is ever removed from the array.
+const ACCOUNT_MANAGEMENT_DEPT = requireDept("Account Management");
 
 function makeId(prefix: string): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;

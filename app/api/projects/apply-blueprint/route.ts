@@ -23,13 +23,13 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser, requireDepartment } from "@/lib/auth";
-import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
+import { VALID_DEPARTMENTS, requireDept } from "@/lib/auth/vocab";
 import { prisma } from "@/lib/db/prisma";
 import { applyBlueprintToProject, buildWorkloadCache } from "@/lib/projects/apply-blueprint";
 
-// The canonical department string, read directly from VALID_DEPARTMENTS.
-// VALID_DEPARTMENTS[0] === "Account Management" per lib/auth/vocab.ts.
-const ACCOUNT_MANAGEMENT_DEPT = VALID_DEPARTMENTS[0]; // "Account Management"
+// The canonical department string, resolved by name from VALID_DEPARTMENTS.
+// requireDept() throws at module load if the name is ever removed from the array.
+const ACCOUNT_MANAGEMENT_DEPT = requireDept("Account Management");
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, error: authError, status: authStatus } = await getSessionUser(req);
