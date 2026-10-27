@@ -65,8 +65,9 @@ const SETTINGS_NAV: SettingsSection[] = [
     items: [
       { label: "Workflow Templates", href: "/settings/workflow-templates" },
       { label: "Workflow Rules",     href: "/settings/workflow-rules" },
-      { label: "Task Blueprints",    href: "/settings/task-blueprints" },
-      { label: "Automation Rules",   href: "/settings/automation-rules" },
+      { label: "Task Blueprints",     href: "/settings/task-blueprints" },
+      { label: "Project Templates",    href: "/settings/project-templates" },
+      { label: "Automation Rules",    href: "/settings/automation-rules" },
     ],
   },
   {

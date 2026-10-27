@@ -138,6 +138,197 @@ function ApplyBlueprintModal({ projectId, onClose, onApplied }: ApplyBlueprintMo
 }
 
 // ---------------------------------------------------------------------------
+// Apply Template Modal
+// ---------------------------------------------------------------------------
+
+interface ApplyTemplateModalProps {
+  projectId: string;
+  onClose:   () => void;
+  onApplied: () => void;
+}
+
+function ApplyTemplateModal({ projectId, onClose, onApplied }: ApplyTemplateModalProps) {
+  const [templates,      setTemplates]      = useState<Array<{ id: string; name: string; blueprints: unknown[] }>>([]);
+  const [loadingTpl,     setLoadingTpl]     = useState(true);
+  const [selectedTplId,  setSelectedTplId]  = useState("");
+  const [applying,       setApplying]       = useState(false);
+  const [resultMsg,      setResultMsg]      = useState<string | null>(null);
+  const [errorMsg,       setErrorMsg]       = useState<string | null>(null);
+  const [partialDetails, setPartialDetails] = useState<Array<{ name: string; ok: boolean; detail: string }>>([]);
+
+  useEffect(() => {
+    fetch("/api/project-templates", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { templates?: Array<{ id: string; name: string; blueprints: unknown[] }> } | null) => {
+        if (data?.templates) setTemplates(data.templates);
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => setLoadingTpl(false));
+  }, []);
+
+  const selectedTpl = templates.find((t) => t.id === selectedTplId) ?? null;
+  const noBlueprintsWarning = selectedTpl !== null && selectedTpl.blueprints.length === 0;
+
+  const handleApply = async () => {
+    if (!selectedTplId || noBlueprintsWarning) return;
+    setApplying(true);
+    setResultMsg(null);
+    setErrorMsg(null);
+    setPartialDetails([]);
+    try {
+      const res = await fetch("/api/projects/apply-template", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ projectId, templateId: selectedTplId }),
+      });
+      const data = await res.json() as {
+        results?: {
+          outcomes: Array<{ blueprintName: string; succeeded: boolean; result?: { tasksCreated: number; tasksSkippedDuplicate: number }; error?: string }>;
+          succeeded: number;
+          failed:    number;
+        };
+        error?: string;
+      };
+
+      if (data.error) {
+        setErrorMsg(data.error);
+      } else if (data.results) {
+        const { outcomes, succeeded, failed } = data.results;
+        // Build per-blueprint detail lines
+        const details = outcomes.map((o) => ({
+          name:   o.blueprintName,
+          ok:     o.succeeded,
+          detail: o.succeeded
+            ? `${o.result?.tasksCreated ?? 0} created${o.result?.tasksSkippedDuplicate ? `, ${o.result.tasksSkippedDuplicate} skipped` : ""}`
+            : (o.error ?? "Unknown error"),
+        }));
+        setPartialDetails(details);
+        if (failed === 0) {
+          setResultMsg(`Applied. ${succeeded} blueprint${succeeded === 1 ? "" : "s"} succeeded.`);
+          onApplied();
+        } else if (succeeded === 0) {
+          setErrorMsg(`All ${failed} blueprint${failed === 1 ? "" : "s"} failed — see details below.`);
+        } else {
+          setResultMsg(
+            `Partial: ${succeeded} succeeded, ${failed} failed — see details below.`
+          );
+          onApplied();
+        }
+      }
+    } catch (err) {
+      setErrorMsg(String(err));
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const canApply = !!selectedTplId && !noBlueprintsWarning && !applying;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.4)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="rounded-xl shadow-xl p-6 w-full max-w-md"
+        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}
+      >
+        <h2 className="text-base font-black mb-4" style={{ color: "var(--rtm-text-primary)" }}>
+          Apply Project Template
+        </h2>
+        {loadingTpl ? (
+          <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Loading templates…</p>
+        ) : (
+          <>
+            <label className="block text-xs font-semibold mb-1" style={{ color: "var(--rtm-text-secondary)" }}>
+              Select Template
+            </label>
+            <select
+              className="w-full rounded-lg px-3 py-2 text-sm mb-2"
+              style={{ border: "1px solid var(--rtm-border)", background: "var(--rtm-bg)", color: "var(--rtm-text-primary)" }}
+              value={selectedTplId}
+              onChange={(e) => {
+                setSelectedTplId(e.target.value);
+                setResultMsg(null);
+                setErrorMsg(null);
+                setPartialDetails([]);
+              }}
+            >
+              <option value="">— choose a template —</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            {noBlueprintsWarning && (
+              <p className="text-xs mb-3" style={{ color: "#B45309" }}>
+                This template has no blueprints and cannot be applied.
+              </p>
+            )}
+          </>
+        )}
+
+        {/* Per-blueprint outcome details */}
+        {partialDetails.length > 0 && (
+          <div className="mb-3 rounded-lg overflow-hidden" style={{ border: "1px solid var(--rtm-border)" }}>
+            {partialDetails.map((d, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-2 px-3 py-2 text-xs"
+                style={{
+                  borderBottom: i < partialDetails.length - 1 ? "1px solid var(--rtm-border)" : undefined,
+                  background:   d.ok ? "rgba(5,150,105,0.04)" : "rgba(220,38,38,0.04)",
+                }}
+              >
+                <span style={{ color: d.ok ? "#059669" : "#DC2626", flexShrink: 0 }}>
+                  {d.ok ? "✓" : "✗"}
+                </span>
+                <div>
+                  <span className="font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{d.name}</span>
+                  {" — "}
+                  <span style={{ color: d.ok ? "var(--rtm-text-secondary)" : "#DC2626" }}>{d.detail}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {resultMsg && (
+          <p className="text-sm mb-3 font-semibold" style={{ color: "#059669" }}>{resultMsg}</p>
+        )}
+        {errorMsg && (
+          <p className="text-sm mb-3 font-semibold" style={{ color: "#DC2626" }}>{errorMsg}</p>
+        )}
+
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+          >
+            {resultMsg ? "Close" : "Cancel"}
+          </button>
+          {!resultMsg && (
+            <button
+              onClick={handleApply}
+              disabled={!canApply}
+              className="px-4 py-1.5 rounded-lg text-xs font-semibold"
+              style={{
+                background: canApply ? "var(--rtm-blue)" : "#CBD5E1",
+                color:      canApply ? "#fff"            : "#94A3B8",
+                cursor:     canApply ? "pointer"         : "not-allowed",
+              }}
+            >
+              {applying ? "Applying…" : "Apply Template"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Reassign Task Modal
 // ---------------------------------------------------------------------------
 
@@ -330,7 +521,9 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
   const [loading, setLoading] = useState(true);
 
   // Apply-blueprint modal
-  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [showApplyModal,    setShowApplyModal]    = useState(false);
+  // Apply-template modal
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   // Reassign modal
   const [reassignTask, setReassignTask] = useState<{
@@ -447,6 +640,13 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
                 style={{ borderColor: "var(--rtm-blue)", color: "var(--rtm-blue)" }}
               >
                 Apply Blueprint
+              </button>
+              <button
+                onClick={() => setShowTemplateModal(true)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold border hover:bg-blue-50"
+                style={{ borderColor: "var(--rtm-blue)", color: "var(--rtm-blue)" }}
+              >
+                Apply Template
               </button>
               <Link href={backPath} className="px-3 py-1.5 rounded-lg text-xs font-semibold border hover:bg-gray-50"
                 style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}>
@@ -597,6 +797,13 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
       <ApplyBlueprintModal
         projectId={project.id}
         onClose={() => setShowApplyModal(false)}
+        onApplied={() => { void loadProject(); }}
+      />
+    )}
+    {showTemplateModal && (
+      <ApplyTemplateModal
+        projectId={project.id}
+        onClose={() => setShowTemplateModal(false)}
         onApplied={() => { void loadProject(); }}
       />
     )}

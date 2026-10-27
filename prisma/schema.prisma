@@ -928,8 +928,9 @@ model TaskListTemplate {
   // A dependent list's tasks are created in status="pending_prereq" when the
   // prerequisite blueprint is also on the same project. The binding is runtime-
   // recorded in project_list_prereq_bindings; this table is the declaration.
-  prerequisites        BlueprintPrerequisite[] @relation("BlueprintDependents")
-  dependents           BlueprintPrerequisite[] @relation("BlueprintPrerequisites")
+  prerequisites        BlueprintPrerequisite[]    @relation("BlueprintDependents")
+  dependents           BlueprintPrerequisite[]    @relation("BlueprintPrerequisites")
+  projectTemplates     ProjectTemplateBlueprint[]
 
   @@index([serviceId])
   @@map("task_list_templates")
@@ -1737,4 +1738,42 @@ model Notification {
   @@index([recipientId, readAt])
   @@index([createdAt(sort: Desc)])
   @@map("notifications")
+}
+
+// ── Project Templates (migration 20261027_project_templates) ──────────────────
+//
+// A project template is a named, ordered set of task-list blueprints that can
+// be applied to a project in one action.  It carries no assignment or SLA policy
+// of its own; those live on the blueprints and on the proposal.
+//
+// A template with no blueprints is allowed but cannot be applied; the UI shows
+// a "no blueprints" notice instead of an Apply button.
+
+model ProjectTemplate {
+  id          String   @id
+  name        String
+  description String   @default("")
+  isActive    Boolean  @default(true)  @map("is_active")
+  createdAt   String   @default("")    @map("created_at")
+  updatedAt   String   @default("")    @map("updated_at")
+
+  blueprints  ProjectTemplateBlueprint[]
+
+  @@map("project_templates")
+}
+
+model ProjectTemplateBlueprint {
+  id          String @id
+  templateId  String @map("template_id")
+  blueprintId String @map("blueprint_id")
+  position    Int    @default(0)
+
+  template    ProjectTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  blueprint   TaskListTemplate @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, blueprintId])
+  @@unique([templateId, position])
+  @@index([templateId], name: "idx_ptb_template")
+  @@index([blueprintId], name: "idx_ptb_blueprint")
+  @@map("project_template_blueprints")
 }
