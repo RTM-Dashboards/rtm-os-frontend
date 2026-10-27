@@ -1958,12 +1958,7 @@ function ProposalsPageInner() {
             <h1 className="text-xl font-medium" style={{ color: "var(--rtm-text-primary)" }}>
               Proposals
             </h1>
-            <span
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border"
-              style={{ background: "#FFFBEB", borderColor: "#FDE68A", color: "#92400E" }}
-            >
-              Preview — Target State
-            </span>
+
           </div>
           <p className="mt-1 text-sm" style={{ color: "var(--rtm-text-muted)" }}>
             Build and send client proposals.
