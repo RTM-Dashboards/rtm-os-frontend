@@ -4,7 +4,21 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { use } from "react";
 import type { ScopedProjectDetail, ScopedTask, ScopedCategory } from "@/app/api/projects/detail/route";
-import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
+import { VALID_DEPARTMENTS, ROLE_RANK } from "@/lib/auth/vocab";
+
+// ── canAddTask helper ─────────────────────────────────────────────────────────────
+// Mirrors the gate in app/api/projects/tasks/route.ts exactly:
+//   user.department === "Account Management" || ROLE_RANK[role] >= ROLE_RANK["Manager"]
+//
+// While me is loading (role === null) we default to false — no flash of
+// a control that then disappears. The modal only fires on explicit click;
+// the API enforces the same rule server-side.
+function resolveCanAddTask(role: string | null, department: string | null): boolean {
+  if (role === null) return false; // loading state—hide until resolved
+  const isAccountManagement = department === "Account Management";
+  const isManagerOrAbove    = (ROLE_RANK[role as keyof typeof ROLE_RANK] ?? 0) >= ROLE_RANK["Manager"];
+  return isAccountManagement || isManagerOrAbove;
+}
 
 // =============================================================================
 // RTM OS — Project Detail Page
@@ -31,6 +45,8 @@ function ApplyBlueprintModal({ projectId, onClose, onApplied }: ApplyBlueprintMo
   const [applying, setApplying] = useState(false);
   const [resultMsg, setResultMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // emptyDeptNote: informational — apply succeeded but some depts had no active member.
+  const [emptyDeptNote, setEmptyDeptNote] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/task-blueprints", { cache: "no-store" })
@@ -53,7 +69,7 @@ function ApplyBlueprintModal({ projectId, onClose, onApplied }: ApplyBlueprintMo
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({ projectId, templateId: selectedTemplateId }),
       });
-      const data = await res.json() as { result?: { tasksCreated: number; tasksSkippedDuplicate: number; categoriesCreated?: number }; error?: string };
+      const data = await res.json() as { result?: { tasksCreated: number; tasksSkippedDuplicate: number; categoriesCreated?: number; emptyDepartments?: string[] }; error?: string };
       if (!res.ok || data.error) {
         setErrorMsg(data.error ?? "Apply failed");
       } else {
@@ -62,6 +78,15 @@ function ApplyBlueprintModal({ projectId, onClose, onApplied }: ApplyBlueprintMo
         setResultMsg(
           `Applied. ${r.tasksCreated} task(s) created${skipped > 0 ? `, ${skipped} skipped (already exist)` : ""}.`
         );
+        // Surface empty-department info: apply succeeded, but tasks for these
+        // departments could not be assigned because no active member exists.
+        const emptyDepts = r.emptyDepartments ?? [];
+        if (emptyDepts.length > 0) {
+          const unassigned = emptyDepts.length === 1
+            ? `1 task left unassigned: ${emptyDepts[0]} has no active staff.`
+            : `${emptyDepts.length} departments have no active staff — their tasks were left unassigned: ${emptyDepts.join(", ")}.`;
+          setEmptyDeptNote(unassigned);
+        }
         onApplied();
       }
     } catch (err) {
@@ -106,6 +131,14 @@ function ApplyBlueprintModal({ projectId, onClose, onApplied }: ApplyBlueprintMo
         )}
         {resultMsg && (
           <p className="text-sm mb-3 font-semibold" style={{ color: "#059669" }}>{resultMsg}</p>
+        )}
+        {emptyDeptNote && (
+          <div
+            className="text-xs mb-3 rounded-lg px-3 py-2.5"
+            style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A" }}
+          >
+            <span className="font-bold">Note: </span>{emptyDeptNote}
+          </div>
         )}
         {errorMsg && (
           <p className="text-sm mb-3 font-semibold" style={{ color: "#DC2626" }}>{errorMsg}</p>
@@ -156,6 +189,8 @@ function ApplyTemplateModal({ projectId, onClose, onApplied }: ApplyTemplateModa
   const [resultMsg,      setResultMsg]      = useState<string | null>(null);
   const [errorMsg,       setErrorMsg]       = useState<string | null>(null);
   const [partialDetails, setPartialDetails] = useState<Array<{ name: string; ok: boolean; detail: string }>>([]);
+  // emptyDeptNote: informational — apply succeeded but some depts had no active member.
+  const [emptyDeptNote,  setEmptyDeptNote]  = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/project-templates", { cache: "no-store" })
@@ -184,7 +219,7 @@ function ApplyTemplateModal({ projectId, onClose, onApplied }: ApplyTemplateModa
       });
       const data = await res.json() as {
         results?: {
-          outcomes: Array<{ blueprintName: string; succeeded: boolean; result?: { tasksCreated: number; tasksSkippedDuplicate: number }; error?: string }>;
+          outcomes: Array<{ blueprintName: string; succeeded: boolean; result?: { tasksCreated: number; tasksSkippedDuplicate: number; emptyDepartments?: string[] }; error?: string }>;
           succeeded: number;
           failed:    number;
         };
@@ -204,6 +239,16 @@ function ApplyTemplateModal({ projectId, onClose, onApplied }: ApplyTemplateModa
             : (o.error ?? "Unknown error"),
         }));
         setPartialDetails(details);
+        // Aggregate empty departments across all succeeded blueprints.
+        const allEmptyDepts = [...new Set(
+          outcomes.flatMap((o) => o.succeeded ? (o.result?.emptyDepartments ?? []) : [])
+        )];
+        if (allEmptyDepts.length > 0) {
+          const unassigned = allEmptyDepts.length === 1
+            ? `1 task left unassigned: ${allEmptyDepts[0]} has no active staff.`
+            : `${allEmptyDepts.length} departments have no active staff — their tasks were left unassigned: ${allEmptyDepts.join(", ")}.`;
+          setEmptyDeptNote(unassigned);
+        }
         if (failed === 0) {
           setResultMsg(`Applied. ${succeeded} blueprint${succeeded === 1 ? "" : "s"} succeeded.`);
           onApplied();
@@ -254,6 +299,7 @@ function ApplyTemplateModal({ projectId, onClose, onApplied }: ApplyTemplateModa
                 setResultMsg(null);
                 setErrorMsg(null);
                 setPartialDetails([]);
+                setEmptyDeptNote(null);
               }}
             >
               <option value="">— choose a template —</option>
@@ -296,6 +342,14 @@ function ApplyTemplateModal({ projectId, onClose, onApplied }: ApplyTemplateModa
 
         {resultMsg && (
           <p className="text-sm mb-3 font-semibold" style={{ color: "#059669" }}>{resultMsg}</p>
+        )}
+        {emptyDeptNote && (
+          <div
+            className="text-xs mb-3 rounded-lg px-3 py-2.5"
+            style={{ background: "#FFFBEB", color: "#92400E", border: "1px solid #FDE68A" }}
+          >
+            <span className="font-bold">Note: </span>{emptyDeptNote}
+          </div>
         )}
         {errorMsg && (
           <p className="text-sm mb-3 font-semibold" style={{ color: "#DC2626" }}>{errorMsg}</p>
@@ -792,6 +846,24 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
     new Map()
   );
 
+  // ── Resolve add-task permission ─────────────────────────────────────────────────────────
+  // Fetched from /api/me (same endpoint the sidebar uses). Defaults to false
+  // while loading so the Add Task button stays hidden until we know the role.
+  const [meRole,       setMeRole]       = useState<string | null>(null);
+  const [meDepartment, setMeDepartment] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/me", { credentials: "include" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { role: string; department: string | null } | null) => {
+        if (data?.role) {
+          setMeRole(data.role);
+          setMeDepartment(data.department ?? null);
+        }
+      })
+      .catch(() => { /* non-critical — button stays hidden */ });
+  }, []);
+  const canAddTask = resolveCanAddTask(meRole, meDepartment);
+
   const loadProject = useCallback(async () => {
     try {
       const res = await fetch(`/api/projects/detail?id=${encodeURIComponent(id)}`);
@@ -985,6 +1057,7 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
               <CategoryCard
                 key={cat.id}
                 cat={cat}
+                canAddTask={canAddTask}
                 onAddTask={() => setAddTaskCategory({ id: cat.id, label: cat.serviceLabel })}
                 onAddSubtask={(parentId, parentLabel) => setAddTaskCategory({
                   id: cat.id, label: cat.serviceLabel,
@@ -1108,10 +1181,12 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
 
 function CategoryCard({
   cat,
+  canAddTask,
   onAddTask,
   onAddSubtask,
 }: {
   cat: ScopedCategory;
+  canAddTask: boolean;
   onAddTask: () => void;
   onAddSubtask: (parentId: string, parentLabel: string) => void;
 }) {
@@ -1145,13 +1220,15 @@ function CategoryCard({
             {open > 0 && <span>{open} open</span>}
             {blocked > 0 && <span style={{ color: "#6366F1" }}>{blocked} waiting</span>}
           </div>
-          <button
-            onClick={onAddTask}
-            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border hover:bg-blue-50 flex-shrink-0"
-            style={{ borderColor: "var(--rtm-blue)", color: "var(--rtm-blue)" }}
-          >
-            + Add Task
-          </button>
+          {canAddTask && (
+            <button
+              onClick={onAddTask}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border hover:bg-blue-50 flex-shrink-0"
+              style={{ borderColor: "var(--rtm-blue)", color: "var(--rtm-blue)" }}
+            >
+              + Add Task
+            </button>
+          )}
         </div>
       </div>
 
@@ -1213,14 +1290,16 @@ function CategoryCard({
                           : null
                     }
                     <TaskStatusBadge status={t.status} />
-                    <button
-                      onClick={() => onAddSubtask(t.id, t.label)}
-                      className="text-[10px] font-semibold hover:underline flex-shrink-0"
-                      style={{ color: "var(--rtm-blue)", opacity: 0.75 }}
-                      title="Add subtask"
-                    >
-                      +sub
-                    </button>
+                    {canAddTask && (
+                      <button
+                        onClick={() => onAddSubtask(t.id, t.label)}
+                        className="text-[10px] font-semibold hover:underline flex-shrink-0"
+                        style={{ color: "var(--rtm-blue)", opacity: 0.75 }}
+                        title="Add subtask"
+                      >
+                        +sub
+                      </button>
+                    )}
                   </div>
                 </div>
                 {/* Subtask rows — indented, left-border accent */}

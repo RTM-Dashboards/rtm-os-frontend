@@ -1,13 +1,64 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { RoleToggle } from "@/components/am-role-toggle";
 import {
-  ALL_TASKS,
   AM_NAMES,
   SARAH,
   type AMRole,
 } from "@/lib/account-management/role-data";
+import type { TaskListItem } from "@/app/api/tasks/route";
+
+// ── Real task record shape used by this page ──────────────────────────────────
+interface RealTask {
+  id: string;
+  task: string;
+  client: string;
+  assignedAM: string;
+  department: string;
+  service: string;
+  dueDate: string;
+  status: TaskStatusType;
+  priority: string;
+  notes: string;
+}
+
+function toRealTask(t: TaskListItem): RealTask {
+  const statusMap: Record<string, TaskStatusType> = {
+    open:           "Not Started",
+    in_progress:    "In Progress",
+    done:           "Completed",
+    skipped:        "Completed",
+    pending_prereq: "Not Started",
+  };
+  return {
+    id:          t.id,
+    task:        t.label,
+    client:      t.projectName ?? "",
+    assignedAM:  t.ownerName ?? "",
+    department:  t.department ?? "Account Management",
+    service:     t.department ?? "Account Management",
+    dueDate:     t.dueDate ?? "—",
+    status:      statusMap[t.status] ?? "Not Started",
+    priority:    t.priority ?? "Medium",
+    notes:       "",
+  };
+}
+
+function useLiveTasks() {
+  const [tasks, setTasks] = useState<RealTask[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { tasks: TaskListItem[] } | null) => {
+        if (d?.tasks) setTasks(d.tasks.map(toRealTask));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+  return { tasks, loading };
+}
 
 //  Helpers 
 
@@ -44,7 +95,10 @@ function templateStatusBadge(s: string) {
 }
 
 const ALL_STATUSES: TaskStatusType[] = ["Not Started", "In Progress", "Completed", "Blocked", "Waiting For Client", "Review"];
-const ALL_DEPTS = [...new Set(ALL_TASKS.map((t) => t.department))];
+const ALL_DEPTS = [
+  "Account Management", "SEO", "GBP", "Meta Ads", "Google Ads",
+  "Content", "Web Development", "Reporting", "Billing", "LSA",
+];
 
 //  Mock Data 
 
@@ -107,16 +161,7 @@ interface DeptTemplateRow {
   owner: string;
 }
 
-const DEPT_TEMPLATE_ROWS: DeptTemplateRow[] = [
-  { department: "Account Management", templateCount: 3, activeProjects: 12, owner: "Jordan Mills"},
-  { department: "SEO & Local", templateCount: 6, activeProjects: 18, owner: "Maya Torres"},
-  { department: "Paid Advertising", templateCount: 5, activeProjects: 11, owner: "Chris Blake"},
-  { department: "Content", templateCount: 4, activeProjects: 7, owner: "Ava Kim"},
-  { department: "Web Development", templateCount: 3, activeProjects: 4, owner: "Devon Park"},
-  { department: "Reporting", templateCount: 2, activeProjects: 22, owner: "Riley Chen"},
-  { department: "Billing", templateCount: 2, activeProjects: 15, owner: "Sam Nguyen"},
-  { department: "Sales", templateCount: 2, activeProjects: 6, owner: "Taylor Ross"},
-];
+const DEPT_TEMPLATE_ROWS : DeptTemplateRow[] = []; // Mock data removed — not yet connected to real source
 
 interface ClientTemplate {
   id: string;
@@ -127,14 +172,9 @@ interface ClientTemplate {
   lastUpdated: string;
 }
 
-const CLIENT_TEMPLATES: ClientTemplate[] = [
-  { id: "ct1", client: "Apex Roofing", template: "SEO Package", service: "SEO", taskCount: 14, lastUpdated: "2025-07-11"},
-  { id: "ct2", client: "Pacific Dental", template: "Growth Package", service: "SEO + Meta Ads", taskCount: 19, lastUpdated: "2025-07-09"},
-  { id: "ct3", client: "Harbor Auto", template: "Lead Generation Package", service: "Google Ads + Meta Ads", taskCount: 16, lastUpdated: "2025-07-07"},
-  { id: "ct4", client: "Summit Fitness", template: "Social Media Package", service: "Content + Meta Ads", taskCount: 11, lastUpdated: "2025-07-03"},
-  { id: "ct5", client: "Lakeside Dental", template: "Local SEO Package", service: "SEO + GBP", taskCount: 10, lastUpdated: "2025-06-29"},
-  { id: "ct6", client: "Metro HVAC", template: "Full Service Package", service: "SEO + Google Ads + Reporting", taskCount: 24, lastUpdated: "2025-06-25"},
-];
+// Client-specific templates are stored per-client in their project records.
+// This list is not yet wired to a real source.
+const CLIENT_TEMPLATES: ClientTemplate[] = [];
 
 interface BuilderTask {
   id: string;
@@ -179,15 +219,19 @@ const MOCK_GENERATED_TASKS: GeneratedTask[] = [
 //  Head View 
 
 function HeadView() {
+  const { tasks: liveTasks, loading } = useLiveTasks();
   const [filterAM, setFilterAM] = useState("All");
   const [filterDept, setFilterDept] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
-  const [tasks, setTasks] = useState(ALL_TASKS);
+  const [tasks, setTasks] = useState<RealTask[]>([]);
+
+  // Sync live data into local state (local-status overrides are UI-only)
+  useEffect(() => { setTasks(liveTasks); }, [liveTasks]);
 
   const filtered = tasks.filter((t) => {
-    if (filterAM !== "All"&& t.assignedAM !== filterAM) return false;
-    if (filterDept !== "All"&& t.department !== filterDept) return false;
-    if (filterStatus !== "All"&& t.status !== filterStatus) return false;
+    if (filterAM !== "All" && t.assignedAM !== filterAM) return false;
+    if (filterDept !== "All" && t.department !== filterDept) return false;
+    if (filterStatus !== "All" && t.status !== filterStatus) return false;
     return true;
   });
 
@@ -197,17 +241,20 @@ function HeadView() {
 
   return (
     <div className="space-y-6">
+      {loading && (
+        <p className="text-sm text-slate-400">Loading tasks from database…</p>
+      )}
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Total Tasks", value: ALL_TASKS.length, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200"},
-          { label: "In Progress", value: ALL_TASKS.filter((t) => t.status === "In Progress").length, color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200"},
-          { label: "Blocked", value: ALL_TASKS.filter((t) => t.status === "Blocked").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200"},
-          { label: "Completed", value: ALL_TASKS.filter((t) => t.status === "Completed").length, color: "text-green-700", bg: "bg-green-50", border: "border-green-200"},
-          { label: "Waiting For Client", value: ALL_TASKS.filter((t) => t.status === "Waiting For Client").length, color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200"},
-          { label: "Ready for Review", value: ALL_TASKS.filter((t) => t.status === "Review").length, color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200"},
-          { label: "High Priority", value: ALL_TASKS.filter((t) => t.priority === "High").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200"},
-          { label: "Not Started", value: ALL_TASKS.filter((t) => t.status === "Not Started").length, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200"},
+          { label: "Total Tasks", value: tasks.length, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200"},
+          { label: "In Progress", value: tasks.filter((t) => t.status === "In Progress").length, color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200"},
+          { label: "Blocked", value: tasks.filter((t) => t.status === "Blocked").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200"},
+          { label: "Completed", value: tasks.filter((t) => t.status === "Completed").length, color: "text-green-700", bg: "bg-green-50", border: "border-green-200"},
+          { label: "Waiting For Client", value: tasks.filter((t) => t.status === "Waiting For Client").length, color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200"},
+          { label: "Ready for Review", value: tasks.filter((t) => t.status === "Review").length, color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200"},
+          { label: "High Priority", value: tasks.filter((t) => t.priority === "High").length, color: "text-red-700", bg: "bg-red-50", border: "border-red-200"},
+          { label: "Not Started", value: tasks.filter((t) => t.status === "Not Started").length, color: "text-slate-700", bg: "bg-slate-50", border: "border-slate-200"},
         ].map(({ label, value, color, bg, border }) => (
           <div key={label} className={`rounded-2xl border ${border} ${bg} p-4 shadow-sm`}>
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">{label}</p>
@@ -294,7 +341,7 @@ function HeadView() {
           </table>
         </div>
         <div className="px-6 py-3 border-t border-slate-100">
-          <p className="text-xs text-slate-400">{filtered.length} of {ALL_TASKS.length} tasks shown</p>
+          <p className="text-xs text-slate-400">{filtered.length} of {tasks.length} tasks shown</p>
         </div>
       </section>
 
@@ -306,7 +353,7 @@ function HeadView() {
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-4">
           {AM_NAMES.map((am) => {
-            const amTasks = ALL_TASKS.filter((t) => t.assignedAM === am);
+            const amTasks = tasks.filter((t) => t.assignedAM === am);
             const blocked = amTasks.filter((t) => t.status === "Blocked").length;
             return (
               <div key={am} className="rounded-xl border border-slate-100 bg-slate-50 p-4">
@@ -329,7 +376,9 @@ function HeadView() {
 //  AM View 
 
 function AMView() {
-  const [myTasks, setMyTasks] = useState(ALL_TASKS.filter((t) => t.assignedAM === SARAH));
+  const { tasks: liveTasks } = useLiveTasks();
+  const [myTasks, setMyTasks] = useState<RealTask[]>([]);
+  useEffect(() => { setMyTasks(liveTasks.filter((t) => t.assignedAM === SARAH)); }, [liveTasks]);
   const [filterStatus, setFilterStatus] = useState("All");
   const [newNote, setNewNote] = useState<Record<string, string>>({});
 
@@ -1098,17 +1147,7 @@ interface Project {
   status: "Planning"| "Active"| "Waiting For Client"| "Blocked"| "Completed"| "Delayed";
 }
 
-const PROJECT_WORKSPACE_DATA: Project[] = [
-  { id: "pw1", project: "SEO Onboarding", client: "Apex Roofing", services: ["SEO", "GBP"], owner: "Jordan Mills", startDate: "2025-07-01", dueDate: "2025-07-31", progress: 65, status: "Active"},
-  { id: "pw2", project: "Meta Ads Launch", client: "Pacific Dental", services: ["Meta Ads", "Reporting"], owner: "Maya Torres", startDate: "2025-07-05", dueDate: "2025-07-20", progress: 30, status: "Waiting For Client"},
-  { id: "pw3", project: "Google Ads Setup", client: "Harbor Auto", services: ["Google Ads"], owner: "Chris Blake", startDate: "2025-06-15", dueDate: "2025-07-10", progress: 80, status: "Active"},
-  { id: "pw4", project: "Website Rebuild", client: "Summit Fitness", services: ["Web Dev", "SEO", "Content"], owner: "Devon Park", startDate: "2025-06-01", dueDate: "2025-08-31", progress: 45, status: "Active"},
-  { id: "pw5", project: "GBP Optimization", client: "Lakeside Dental", services: ["GBP"], owner: "Ava Kim", startDate: "2025-07-08", dueDate: "2025-07-15", progress: 10, status: "Planning"},
-  { id: "pw6", project: "Full Service Launch", client: "Metro HVAC", services: ["SEO", "Google Ads", "Reporting"], owner: "Riley Chen", startDate: "2025-06-20", dueDate: "2025-07-25", progress: 0, status: "Blocked"},
-  { id: "pw7", project: "Content Calendar Q3", client: "Apex Roofing", services: ["Content"], owner: "Ava Kim", startDate: "2025-07-01", dueDate: "2025-09-30", progress: 15, status: "Active"},
-  { id: "pw8", project: "Reporting Automation", client: "Pacific Dental", services: ["Reporting"], owner: "Riley Chen", startDate: "2025-05-01", dueDate: "2025-06-30", progress: 100, status: "Completed"},
-  { id: "pw9", project: "Meta Ads Refresh", client: "Harbor Auto", services: ["Meta Ads"], owner: "Maya Torres", startDate: "2025-07-10", dueDate: "2025-07-22", progress: 5, status: "Delayed"},
-];
+const PROJECT_WORKSPACE_DATA : Project[] = []; // Mock data removed — not yet connected to real source
 
 const PROJECT_STATUSES = ["Planning", "Active", "Waiting For Client", "Blocked", "Completed", "Delayed"] as const;
 
@@ -1136,18 +1175,7 @@ interface Milestone {
   dependency: string;
 }
 
-const MILESTONE_DATA: Milestone[] = [
-  { id: "ms1", milestone: "Project Kickoff", client: "Apex Roofing", owner: "Jordan Mills", dueDate: "2025-07-02", status: "Complete", dependency: "—"},
-  { id: "ms2", milestone: "Intake Complete", client: "Apex Roofing", owner: "Jordan Mills", dueDate: "2025-07-05", status: "Complete", dependency: "Project Kickoff"},
-  { id: "ms3", milestone: "Asset Collection Complete", client: "Apex Roofing", owner: "Ava Kim", dueDate: "2025-07-10", status: "In Progress", dependency: "Intake Complete"},
-  { id: "ms4", milestone: "Service Setup", client: "Pacific Dental", owner: "Maya Torres", dueDate: "2025-07-12", status: "Not Started", dependency: "Asset Collection Complete"},
-  { id: "ms5", milestone: "Department Launch", client: "Harbor Auto", owner: "Chris Blake", dueDate: "2025-07-15", status: "In Progress", dependency: "Service Setup"},
-  { id: "ms6", milestone: "First Report Sent", client: "Harbor Auto", owner: "Riley Chen", dueDate: "2025-07-20", status: "Not Started", dependency: "Department Launch"},
-  { id: "ms7", milestone: "Optimization Phase", client: "Summit Fitness", owner: "Devon Park", dueDate: "2025-08-01", status: "Not Started", dependency: "First Report Sent"},
-  { id: "ms8", milestone: "Renewal Review", client: "Metro HVAC", owner: "Jordan Mills", dueDate: "2025-09-01", status: "Blocked", dependency: "Optimization Phase"},
-  { id: "ms9", milestone: "Project Kickoff", client: "Lakeside Dental", owner: "Ava Kim", dueDate: "2025-07-09", status: "Overdue", dependency: "—"},
-  { id: "ms10", milestone: "Intake Complete", client: "Metro HVAC", owner: "Jordan Mills", dueDate: "2025-06-28", status: "Complete", dependency: "Project Kickoff"},
-];
+const MILESTONE_DATA : Milestone[] = []; // Mock data removed — not yet connected to real source
 
 function milestoneStatusBadge(s: string) {
   switch (s) {
@@ -1173,20 +1201,7 @@ interface KanbanTask {
   column: "Not Started"| "In Progress"| "Waiting For Client"| "Waiting For Department"| "Ready For Review"| "Completed"| "Blocked";
 }
 
-const KANBAN_TASKS: KanbanTask[] = [
-  { id: "k1", name: "Keyword Research Report", client: "Apex Roofing", department: "SEO & Local", owner: "Maya Torres", dueDate: "2025-07-14", priority: "High", column: "In Progress"},
-  { id: "k2", name: "Meta Ads Creative Pack", client: "Pacific Dental", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-12", priority: "High", column: "Waiting For Client"},
-  { id: "k3", name: "GBP Profile Audit", client: "Lakeside Dental", department: "SEO & Local", owner: "Ava Kim", dueDate: "2025-07-16", priority: "Medium", column: "Not Started"},
-  { id: "k4", name: "Monthly Report — June", client: "Harbor Auto", department: "Reporting", owner: "Riley Chen", dueDate: "2025-07-10", priority: "High", column: "Ready For Review"},
-  { id: "k5", name: "Blog Post Drafts x3", client: "Summit Fitness", department: "Content", owner: "Ava Kim", dueDate: "2025-07-18", priority: "Medium", column: "In Progress"},
-  { id: "k6", name: "Google Ads Negative Keywords", client: "Harbor Auto", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-11", priority: "Medium", column: "Blocked"},
-  { id: "k7", name: "Website Homepage Copy", client: "Summit Fitness", department: "Web Development", owner: "Devon Park", dueDate: "2025-07-20", priority: "High", column: "Waiting For Department"},
-  { id: "k8", name: "Billing Reconciliation", client: "Metro HVAC", department: "Billing", owner: "Sam Nguyen", dueDate: "2025-07-09", priority: "Low", column: "Completed"},
-  { id: "k9", name: "SEO Technical Audit", client: "Metro HVAC", department: "SEO & Local", owner: "Maya Torres", dueDate: "2025-07-22", priority: "High", column: "Not Started"},
-  { id: "k10", name: "Client Intro Call Notes", client: "Apex Roofing", department: "Account Management", owner: "Jordan Mills", dueDate: "2025-07-08", priority: "Medium", column: "Completed"},
-  { id: "k11", name: "Ad Copy Revisions", client: "Pacific Dental", department: "Paid Advertising", owner: "Chris Blake", dueDate: "2025-07-15", priority: "High", column: "Ready For Review"},
-  { id: "k12", name: "Landing Page Design", client: "Apex Roofing", department: "Web Development", owner: "Devon Park", dueDate: "2025-07-25", priority: "Medium", column: "Waiting For Department"},
-];
+const KANBAN_TASKS : KanbanTask[] = []; // Mock data removed — not yet connected to real source
 
 const KANBAN_COLUMNS = ["Not Started", "In Progress", "Waiting For Client", "Waiting For Department", "Ready For Review", "Completed", "Blocked"] as const;
 
@@ -1217,33 +1232,7 @@ interface TaskDetailData {
   comments: TaskDetailComment[];
 }
 
-const TASK_DETAIL_MOCK: TaskDetailData = {
-  id: "td1",
-  name: "Keyword Research Report",
-  client: "Apex Roofing",
-  service: "SEO",
-  department: "SEO & Local",
-  assignedUser: "Maya Torres",
-  dueDate: "2025-07-14",
-  priority: "High",
-  status: "In Progress",
-  description: "Conduct comprehensive keyword research for Apex Roofing targeting local roofing and repair terms. Identify primary, secondary, and long-tail keywords with volume and competition data.",
-  deliverables: [
-    "Keyword research spreadsheet (50+ keywords)",
-    "Competitor keyword gap analysis",
-    "Recommended content cluster topics",
-    "Priority keyword list for on-page optimization",
-  ],
-  dependencies: ["Intake Form Received", "GBP Audit Complete"],
-  blockers: [],
-  comments: [
-    { id: "c1", author: "Jordan Mills", date: "2025-07-10 09:12", text: "Client confirmed they want to focus on emergency roofing services and storm damage.", type: "internal"},
-    { id: "c2", author: "Maya Torres", date: "2025-07-10 10:45", text: "Handing off competitor list to SEO team for gap analysis. See attached doc.", type: "handoff"},
-    { id: "c3", author: "Jordan Mills", date: "2025-07-11 14:00", text: "AM Note: Client prefers to review the keyword list before we proceed with implementation.", type: "am_note"},
-    { id: "c4", author: "System", date: "2025-07-09 08:00", text: "Task created from SEO Onboarding template.", type: "activity"},
-    { id: "c5", author: "System", date: "2025-07-10 09:00", text: "Status changed from Not Started → In Progress by Maya Torres.", type: "status_change"},
-  ],
-};
+const TASK_DETAIL_MOCK = null; // Mock data removed — not yet connected to real source
 
 function commentTypeBadge(type: string) {
   switch (type) {
@@ -1280,16 +1269,7 @@ interface ApprovalItem {
   notes: string;
 }
 
-const APPROVAL_DATA: ApprovalItem[] = [
-  { id: "ap1", type: "AM Review", task: "Keyword Research Report", client: "Apex Roofing", assignedTo: "Jordan Mills", requestedDate: "2025-07-11", status: "Pending", notes: "Awaiting AM sign-off before sending to client."},
-  { id: "ap2", type: "Client Approval", task: "Meta Ads Creative Pack", client: "Pacific Dental", assignedTo: "Sarah Adams", requestedDate: "2025-07-10", status: "Revision Requested", notes: "Client requested changes to headline copy."},
-  { id: "ap3", type: "QA Approval", task: "Monthly Report — June", client: "Harbor Auto", assignedTo: "Riley Chen", requestedDate: "2025-07-09", status: "Approved", notes: "QA passed. Report ready to send."},
-  { id: "ap4", type: "Department Head Review", task: "Google Ads Negative Keywords", client: "Harbor Auto", assignedTo: "Chris Blake", requestedDate: "2025-07-08", status: "Pending", notes: "Blocked pending PPC head review."},
-  { id: "ap5", type: "Reporting Approval", task: "Q2 SEO Summary", client: "Metro HVAC", assignedTo: "Jordan Mills", requestedDate: "2025-07-07", status: "Not Required", notes: "Client opted out of formal approval flow."},
-  { id: "ap6", type: "AM Review", task: "Blog Post Drafts x3", client: "Summit Fitness", assignedTo: "Jordan Mills", requestedDate: "2025-07-12", status: "Rejected", notes: "Does not match client brand voice. Returned to content team."},
-  { id: "ap7", type: "Client Approval", task: "Website Homepage Copy", client: "Summit Fitness", assignedTo: "Sarah Adams", requestedDate: "2025-07-13", status: "Pending", notes: "Sent via email, awaiting response."},
-  { id: "ap8", type: "QA Approval", task: "Landing Page Design", client: "Apex Roofing", assignedTo: "Devon Park", requestedDate: "2025-07-14", status: "Pending", notes: "Design QA in progress."},
-];
+const APPROVAL_DATA : ApprovalItem[] = []; // Mock data removed — not yet connected to real source
 
 function approvalStatusBadge(s: string) {
   switch (s) {
@@ -1315,17 +1295,7 @@ interface ThroughputUser {
   queueStatus: "Available"| "On Track"| "At Risk"| "Overdue";
 }
 
-const WORKLOAD_DATA: ThroughputUser[] = [
-  { id: "wl1", user: "Jordan Mills", department: "Account Management", openTasks: 8, overdueTasks: 1, blockedTasks: 0, slaCompliance: 88, queueStatus: "On Track"},
-  { id: "wl2", user: "Maya Torres", department: "SEO & Local", openTasks: 14, overdueTasks: 3, blockedTasks: 1, slaCompliance: 72, queueStatus: "Overdue"},
-  { id: "wl3", user: "Chris Blake", department: "Paid Advertising", openTasks: 10, overdueTasks: 0, blockedTasks: 2, slaCompliance: 83, queueStatus: "At Risk"},
-  { id: "wl4", user: "Ava Kim", department: "Content", openTasks: 6, overdueTasks: 0, blockedTasks: 0, slaCompliance: 95, queueStatus: "On Track"},
-  { id: "wl5", user: "Devon Park", department: "Web Development", openTasks: 4, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available"},
-  { id: "wl6", user: "Riley Chen", department: "Reporting", openTasks: 11, overdueTasks: 2, blockedTasks: 0, slaCompliance: 82, queueStatus: "At Risk"},
-  { id: "wl7", user: "Sam Nguyen", department: "Billing", openTasks: 5, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available"},
-  { id: "wl8", user: "Sarah Adams", department: "Account Management", openTasks: 9, overdueTasks: 2, blockedTasks: 1, slaCompliance: 76, queueStatus: "Overdue"},
-  { id: "wl9", user: "Taylor Ross", department: "Sales", openTasks: 3, overdueTasks: 0, blockedTasks: 0, slaCompliance: 100, queueStatus: "Available"},
-];
+const WORKLOAD_DATA : ThroughputUser[] = []; // Mock data removed — not yet connected to real source
 
 function workloadStatusBadge(s: string) {
   switch (s) {
@@ -1351,13 +1321,7 @@ interface TimeEntry {
   notes: string;
 }
 
-const TIME_TRACKING_DATA: TimeEntry[] = [
-  { id: "tt1", task: "Keyword Research Report", client: "Apex Roofing", user: "Maya Torres", estimated: 4, logged: 2.5, billable: 2.5, nonBillable: 0, notes: "Ongoing — competitor gap still in progress"},
-  { id: "tt2", task: "Meta Ads Creative Pack", client: "Pacific Dental", user: "Chris Blake", estimated: 3, logged: 3, billable: 2, nonBillable: 1, notes: "1h non-billable revision requested by client"},
-  { id: "tt3", task: "Monthly Report — June", client: "Harbor Auto", user: "Riley Chen", estimated: 2, logged: 2, billable: 2, nonBillable: 0, notes: "Report completed and QA approved"},
-  { id: "tt4", task: "Blog Post Drafts x3", client: "Summit Fitness", user: "Ava Kim", estimated: 5, logged: 4, billable: 3, nonBillable: 1, notes: "Revision round counted as non-billable"},
-  { id: "tt5", task: "Website Homepage Copy", client: "Summit Fitness", user: "Devon Park", estimated: 6, logged: 1, billable: 1, nonBillable: 0, notes: "Waiting on client content before continuing"},
-];
+const TIME_TRACKING_DATA : TimeEntry[] = []; // Mock data removed — not yet connected to real source
 
 //  Automation Rules Mock Data 
 
@@ -1370,18 +1334,7 @@ interface AutomationRule {
   lastTriggered: string;
 }
 
-const AUTOMATION_RULES: AutomationRule[] = [
-  { id: "ar1", trigger: "Payment confirmed", action: "Create onboarding project", target: "Account Management", status: "Active", lastTriggered: "2025-07-10"},
-  { id: "ar2", trigger: "Service activated", action: "Generate department task package", target: "All Departments", status: "Active", lastTriggered: "2025-07-09"},
-  { id: "ar3", trigger: "Task blocked", action: "Notify assigned AM", target: "Account Management", status: "Active", lastTriggered: "2025-07-11"},
-  { id: "ar4", trigger: "Report approved by QA", action: "Mark report ready to send", target: "Reporting", status: "Active", lastTriggered: "2025-07-08"},
-  { id: "ar5", trigger: "Client approval needed", action: "Create follow-up task", target: "Account Management", status: "Active", lastTriggered: "2025-07-07"},
-  { id: "ar6", trigger: "Milestone overdue", action: "Escalate to department head", target: "All Departments", status: "Active", lastTriggered: "2025-07-06"},
-  { id: "ar7", trigger: "Project completed", action: "Trigger renewal review task", target: "Account Management", status: "Active", lastTriggered: "2025-07-05"},
-  { id: "ar8", trigger: "Intake form submitted", action: "Begin asset collection checklist", target: "Account Management", status: "Draft", lastTriggered: "—"},
-  { id: "ar9", trigger: "Task overdue 3+ days", action: "Send overdue alert to owner", target: "All Departments", status: "Paused", lastTriggered: "2025-07-01"},
-  { id: "ar10", trigger: "Department handoff note added", action: "Notify receiving department", target: "All Departments", status: "Active", lastTriggered: "2025-07-11"},
-];
+const AUTOMATION_RULES: AutomationRule[] = []; // Mock data removed
 
 function automationStatusBadge(s: string) {
   switch (s) {
@@ -1701,134 +1654,17 @@ function TaskBoardSection() {
 //  Task Detail Panel 
 
 function TaskDetailSection() {
-  const [task] = useState<TaskDetailData>(TASK_DETAIL_MOCK);
-  const [commentFilter, setCommentFilter] = useState("All");
-  const [newComment, setNewComment] = useState("");
-  const [newCommentType, setNewCommentType] = useState<TaskDetailComment["type"]>("internal");
-  const [comments, setComments] = useState<TaskDetailComment[]>(TASK_DETAIL_MOCK.comments);
-
-  const commentTypes: TaskDetailComment["type"][] = ["internal", "handoff", "am_note", "activity", "status_change"];
-  const filteredComments = commentFilter === "All"? comments : comments.filter((c) => c.type === commentFilter);
-
-  function addComment() {
-    if (!newComment.trim()) return;
-    const comment: TaskDetailComment = {
-      id: `c-${Date.now()}`,
-      author: "Jordan Mills",
-      date: new Date().toISOString().slice(0, 16).replace("T", ""),
-      text: newComment.trim(),
-      type: newCommentType,
-    };
-    setComments((prev) => [...prev, comment]);
-    setNewComment("");
-  }
-
   return (
-    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}id="task-detail">
+    <section className="rounded-xl border" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
       <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--rtm-border)" }}>
         <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-0.5">Task Detail</p>
         <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Task Detail &amp; Comments</h2>
-        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Deep view into a single task with full comment history.</p>
+        <p className="text-sm" style={{ color: "var(--rtm-text-secondary)" }}>Deep view into a single task. Select a task from the board above.</p>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
-        {/* Left: Task Info */}
-        <div className="space-y-4">
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
-            <h3 className="text-base font-bold text-slate-900">{task.name}</h3>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {[
-                ["Client", task.client],
-                ["Service", task.service],
-                ["Department", task.department],
-                ["Assigned User", task.assignedUser],
-                ["Due Date", task.dueDate],
-                ["Priority", task.priority],
-                ["Status", task.status],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <p className="font-bold uppercase tracking-widest text-slate-400">{label}</p>
-                  <p className="font-semibold text-slate-700 mt-0.5">{value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Description</p>
-            <p className="text-sm text-slate-700 leading-relaxed">{task.description}</p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-            <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Deliverables</p>
-            <ul className="space-y-1">
-              {task.deliverables.map((d) => (
-                <li key={d} className="flex items-start gap-2 text-sm text-slate-700">
-                  <span className="mt-0.5 text-emerald-500"></span>{d}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Dependencies</p>
-              {task.dependencies.length > 0 ? (
-                <ul className="space-y-1">
-                  {task.dependencies.map((d) => (
-                    <li key={d} className="text-xs text-slate-700 flex items-center gap-1"><span className="text-blue-400">↑</span>{d}</li>
-                  ))}
-                </ul>
-              ) : <p className="text-xs text-slate-400">None</p>}
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-              <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Blockers</p>
-              {task.blockers.length > 0 ? (
-                <ul className="space-y-1">
-                  {task.blockers.map((b) => (
-                    <li key={b} className="text-xs text-red-700 flex items-center gap-1"><span></span>{b}</li>
-                  ))}
-                </ul>
-              ) : <p className="text-xs text-emerald-600 font-semibold">No blockers</p>}
-            </div>
-          </div>
-        </div>
-        {/* Right: Comments */}
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-bold text-slate-700">Comments &amp; Activity</p>
-            <select value={commentFilter} onChange={(e) => setCommentFilter(e.target.value)} className="text-xs border border-slate-200 rounded-lg px-2 py-1">
-              <option value="All">All Types</option>
-              {commentTypes.map((t) => <option key={t} value={t}>{commentTypeLabel(t)}</option>)}
-            </select>
-          </div>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {filteredComments.map((c) => (
-              <div key={c.id} className={`rounded-xl border px-4 py-3 ${c.type === "activity"|| c.type === "status_change"? "border-slate-100 bg-slate-50": "border-slate-100 bg-white"}`}>
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2 py-0.5 text-xs font-semibold" style={commentTypeBadge(c.type)}>{commentTypeLabel(c.type)}</span>
-                  <span className="text-xs font-semibold text-slate-600">{c.author}</span>
-                  <span className="text-xs text-slate-400">{c.date}</span>
-                </div>
-                <p className="text-sm text-slate-700">{c.text}</p>
-              </div>
-            ))}
-            {filteredComments.length === 0 && (
-              <p className="text-xs text-slate-400 text-center py-4">No comments of this type.</p>
-            )}
-          </div>
-          {/* Add Comment */}
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: "var(--rtm-text-muted)" }}>Add Comment</p>
-            <select value={newCommentType} onChange={(e) => setNewCommentType(e.target.value as TaskDetailComment["type"])} className="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
-              {commentTypes.filter((t) => t !== "activity"&& t !== "status_change").map((t) => (
-                <option key={t} value={t}>{commentTypeLabel(t)}</option>
-              ))}
-            </select>
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              rows={3}
-              placeholder="Add a comment, note, or handoff detail…"className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400 resize-none"/>
-            <button onClick={addComment} className="text-xs font-semibold px-4 py-2 rounded-lg transition-colors" style={{ background: "var(--rtm-blue)", color: "#fff" }}>Post Comment</button>
-          </div>
-        </div>
+      <div className="p-10 text-center">
+        <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>
+          Task detail and comments will appear here once a task is selected. This view is not yet connected to real task data.
+        </p>
       </div>
     </section>
   );

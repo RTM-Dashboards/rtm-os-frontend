@@ -31,13 +31,9 @@ function SaveToast({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Genuine Account Management team — 3 real AMs + department head.
-// Mike T. (Sales) and Lisa P. (Billing) have been removed; they are not AMs.
-const teamMembers = [
-  { name: "Jordan M.", role: "Department Head", access: "Full Access", status: "Active", clients: 12, lastActive: "Today, 9:42 AM" },
-  { name: "Sarah K.", role: "Sr. Account Manager", access: "Edit", status: "Active", clients: 8, lastActive: "Today, 8:15 AM" },
-  { name: "Alex R.", role: "Account Manager", access: "Edit", status: "Active", clients: 4, lastActive: "Today, 10:00 AM" },
-];
+// Team members: not yet connected to a real data source.
+// Real team members will be loaded from Postgres users once the user management API is wired.
+const teamMembers: { name: string; role: string; access: string; status: string; clients: number; lastActive: string }[] = [];
 
 const workspacePermissions = [
   { label: "Manage Clients", enabled: true },
@@ -115,8 +111,8 @@ export default function AccountManagementSettingsPage() {
             J
           </div>
           <div className="flex-1">
-            <p className="font-bold text-sm"style={{ color: "var(--rtm-text-primary)"}}>Jordan M.</p>
-            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-secondary)"}}>jordan@rtm.io · Account Management Department Head</p>
+            <p className="font-bold text-sm" style={{ color: "var(--rtm-text-primary)" }}>Account Management Head</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>Department Head — not yet connected to real user record</p>
           </div>
           <span
             className="text-[11px] font-bold px-2.5 py-1 rounded-full"style={{ background: "#1B4FD818", color: "#1B4FD8"}}

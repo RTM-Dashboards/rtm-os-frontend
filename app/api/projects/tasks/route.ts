@@ -23,14 +23,17 @@
 //               isAdHoc } }
 //   → { error: string } on bad input / not found / permission denied
 //
-// ── Auth guard ────────────────────────────────────────────────────────────────
-// Matched from app/api/projects/apply-blueprint/route.ts:
-//   Account Management department (any active member, i.e. "Member" threshold),
-//   which also passes Executive and SystemAdmin via requireDepartment condition A.
+// ── Auth guard ──────────────────────────────────────────────────────────────────────────────
+// Permitted when ANY of the following is true:
+//   (A) user.department === "Account Management"  (any rank within AM)
+//   (B) ROLE_RANK[user.role] >= ROLE_RANK["Manager"]
+//       i.e. Manager, Executive, or SystemAdmin in any department
 //
-//   "Member" here means: any role rank ≥ Member within Account Management,
-//   i.e. the minimum bar is simply being an active Account Management person.
-//   requireDepartment is the same call used by apply-blueprint.
+// Combined gate (one expression):
+//   user.department === ACCOUNT_MANAGEMENT_DEPT || ROLE_RANK[user.role] >= ROLE_RANK["Manager"]
+//
+// A Member outside Account Management fails both conditions: denied.
+// Their Manager (or any Manager in any dept) passes condition B.
 //
 // ── Hand-made task identity ───────────────────────────────────────────────────
 //   is_ad_hoc = true   (distinguishes from blueprint/recurring tasks)
@@ -60,8 +63,8 @@
 //   can reassign later via /api/tasks/reassign.
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSessionUser, requireDepartment } from "@/lib/auth";
-import { VALID_DEPARTMENTS, requireDept } from "@/lib/auth/vocab";
+import { getSessionUser } from "@/lib/auth";
+import { VALID_DEPARTMENTS, ROLE_RANK, requireDept } from "@/lib/auth/vocab";
 import { prisma } from "@/lib/db/prisma";
 import { buildWorkloadCache, pickOwner } from "@/lib/projects/apply-blueprint";
 
@@ -78,10 +81,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const { user, error: authError, status: authStatus } = await getSessionUser(req);
   if (authError) return NextResponse.json({ error: authError }, { status: authStatus! });
 
-  // Matches app/api/projects/apply-blueprint/route.ts exactly:
-  //   requireDepartment(user!, ACCOUNT_MANAGEMENT_DEPT, "Member")
-  const deptGate = requireDepartment(user!, ACCOUNT_MANAGEMENT_DEPT, "Member");
-  if (deptGate) return NextResponse.json({ error: deptGate.error }, { status: deptGate.status });
+  // ── Add-task gate ────────────────────────────────────────────────────────────
+  // Permitted when ANY of the following is true for the authenticated active user:
+  //   (A) user.department === "Account Management"  (any rank within AM)
+  //   (B) ROLE_RANK[user.role] >= ROLE_RANK["Manager"]  (Manager, Executive, SystemAdmin)
+  //
+  // Combined: user.department === ACCOUNT_MANAGEMENT_DEPT ||
+  //           ROLE_RANK[user.role] >= ROLE_RANK["Manager"]
+  //
+  // A Member outside Account Management fails both conditions and is denied.
+  // Their Manager passes condition B.
+  const u = user!;
+  const isAccountManagement = u.department === ACCOUNT_MANAGEMENT_DEPT;
+  const isManagerOrAbove    = (ROLE_RANK[u.role] ?? 0) >= ROLE_RANK["Manager"];
+  if (!isAccountManagement && !isManagerOrAbove) {
+    return NextResponse.json(
+      { error: "Permission denied: Account Management members or Manager-and-above required." },
+      { status: 403 },
+    );
+  }
 
   // ── Parse body ─────────────────────────────────────────────────────────────
   let body: unknown;

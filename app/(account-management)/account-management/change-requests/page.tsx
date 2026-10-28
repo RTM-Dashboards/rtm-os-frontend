@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { MOCK_CHANGE_REQUESTS } from "@/lib/change-requests/mock-data";
+// MOCK_CHANGE_REQUESTS has been removed. The dashboard shows honest zero counts
+// until real change-request records are connected to Postgres.
+const EMPTY_CHANGE_REQUESTS: import("@/lib/change-requests/types").ChangeRequest[] = [];
 import type {
   ChangeRequest,
   ChangeRequestStatus,
@@ -62,28 +64,28 @@ function formatRevenue(impact: number): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function KPICards() {
-  const open = MOCK_CHANGE_REQUESTS.filter((r) =>
+  const open = EMPTY_CHANGE_REQUESTS.filter((r) =>
     ["Submitted", "Under Review", "Pending Approval"].includes(r.status)
   ).length;
-  const pendingReview = MOCK_CHANGE_REQUESTS.filter(
+  const pendingReview = EMPTY_CHANGE_REQUESTS.filter(
     (r) => r.status === "Under Review").length;
-  const pendingApproval = MOCK_CHANGE_REQUESTS.filter(
+  const pendingApproval = EMPTY_CHANGE_REQUESTS.filter(
     (r) => r.status === "Pending Approval").length;
-  const approved = MOCK_CHANGE_REQUESTS.filter(
+  const approved = EMPTY_CHANGE_REQUESTS.filter(
     (r) => r.status === "Approved"|| r.status === "Implemented").length;
-  const rejected = MOCK_CHANGE_REQUESTS.filter(
+  const rejected = EMPTY_CHANGE_REQUESTS.filter(
     (r) => r.status === "Rejected").length;
 
-  const revenueIncrease = MOCK_CHANGE_REQUESTS.filter(
+  const revenueIncrease = EMPTY_CHANGE_REQUESTS.filter(
     (r) => r.revenueImpact > 0
   ).reduce((s, r) => s + r.revenueImpact, 0);
 
-  const revenueReduction = MOCK_CHANGE_REQUESTS.filter(
+  const revenueReduction = EMPTY_CHANGE_REQUESTS.filter(
     (r) => r.revenueImpact < 0
   ).reduce((s, r) => s + r.revenueImpact, 0);
 
   const projectsImpacted = new Set(
-    MOCK_CHANGE_REQUESTS.flatMap((r) => r.projectsImpacted)
+    EMPTY_CHANGE_REQUESTS.flatMap((r) => r.projectsImpacted)
   ).size;
 
   const cards = [
@@ -198,7 +200,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
     "Custom Scope Change",
   ];
 
-  const filtered = MOCK_CHANGE_REQUESTS.filter((r) => {
+  const filtered = EMPTY_CHANGE_REQUESTS.filter((r) => {
     if (statusFilter !== "All"&& r.status !== statusFilter) return false;
     if (typeFilter !== "All"&& r.requestType !== typeFilter) return false;
     if (
@@ -356,7 +358,7 @@ function ChangeRequestTable({ onSelect, selectedId }: TableProps) {
       </div>
       <div className="px-6 py-3 border-t border-slate-100">
         <p className="text-xs text-slate-400">
-          {filtered.length} of {MOCK_CHANGE_REQUESTS.length} requests shown
+          {filtered.length} of {EMPTY_CHANGE_REQUESTS.length} requests shown
         </p>
       </div>
     </section>

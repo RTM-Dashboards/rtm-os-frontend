@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  CANCELLATION_REQUESTS,
   getOpenRequests,
   getSavedClients,
   getCancelledClients,
@@ -19,6 +18,10 @@ import {
   type RetentionStrategy,
   type SaveAttemptStep,
 } from "@/lib/account-management/cancellations-data";
+
+// Mock cancellation records removed. The Cancellations dashboard below shows
+// honest zero counts until real cancellation requests are connected to Postgres.
+const CANCELLATION_REQUESTS: CancellationRequest[] = [];
 import {
   CANCELLATION_REASONS,
   type PendingCancellationRequest,

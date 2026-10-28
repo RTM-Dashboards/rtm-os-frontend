@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  PORTFOLIO_CLIENTS,
-  RENEWAL_RECORDS,
-  EXPANSION_OPPORTUNITIES,
-  DEPARTMENT_STATUS,
-  type HealthStatus,
-} from "@/lib/account-management/am-client-success-data";
+// Mock data removed. Executive page will show honest empty states
+// until real portfolio, renewal, expansion, and department data sources are wired.
+import { type HealthStatus } from "@/lib/account-management/am-client-success-data";
+
+const PORTFOLIO_CLIENTS: { id: string; name: string; primaryContact: string; accountManager: string; services: string[]; projectCount: number; healthScore: number; healthStatus: HealthStatus; renewalStatus: string; mrr: number; arr: number; status: string; renewalDate: string; startDate: string; industry: string; location: string }[] = [];
+const RENEWAL_RECORDS: { id: string; client: string; renewalWindow: string; daysRemaining: number; renewalRisk: string; renewalStatus: string; assignedOwner: string; mrr: number; contractValue: string; probability: number }[] = [];
+const EXPANSION_OPPORTUNITIES: { id: string; client: string; opportunity: string; status: string; confidenceScore: number; estimatedRevenue: number }[] = [];
+const DEPARTMENT_STATUS: { department: string; openTasks: number; blockedWork: number; escalations: number; upcomingDeliverables: string[]; dependencies: string[] }[] = [];
 
 //  Helpers 
 
@@ -493,45 +494,14 @@ export default function ExecutivePage() {
               </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
-              {[
-                {
-                  icon: "",
-                  title: "Portfolio Overview",
-                  text: `The portfolio contains ${PORTFOLIO_CLIENTS.length} clients generating ${fmt(totalMrr)}/mo (${fmt(totalArr)}/yr ARR). ${PORTFOLIO_CLIENTS.filter(c => c.healthStatus === "Healthy").length} clients are healthy, while ${PORTFOLIO_CLIENTS.filter(c => c.healthStatus === "At Risk"|| c.healthStatus === "Critical").length} require immediate intervention.`,
-                },
-                {
-                  icon: "",
-                  title: "Current Risks",
-                  text: `${revenueAtRiskClients.length} accounts represent ${fmt(revenueAtRisk)}/mo in at-risk revenue. Lakeview Dental (renewal June 30, payment overdue) and Harbor View Realty (CRM stalled, VP escalation) are the most critical. Peak Performance HVAC has had no contact in 25 days with 2 overdue reports.`,
-                },
-                {
-                  icon: "",
-                  title: "Upcoming Deadlines",
-                  text: `${RENEWAL_RECORDS.filter(r => r.daysRemaining <= 30).length} renewals due within 30 days. Lakeview Dental and Harbor View Realty renewals are critical-risk. Pinnacle HVAC renewal is low-risk with expansion interest. Keystone Law Group renewal is in progress.`,
-                },
-                {
-                  icon: "",
-                  title: "Renewal Opportunities",
-                  text: `${RENEWAL_RECORDS.length} renewals tracked. ${RENEWAL_RECORDS.filter(r => r.renewalRisk === "Low").length} are low-risk. Total renewal ARR at stake this quarter: ${fmt(RENEWAL_RECORDS.reduce((a, r) => a + r.mrr, 0) * 12)}. Recommend prioritizing Pinnacle HVAC with an expansion add-on proposal to increase ARR.`,
-                },
-                {
-                  icon: "",
-                  title: "Expansion Opportunities",
-                  text: `${fmt(expansionPipeline)}/mo in expansion pipeline identified. LinkedIn Ads for CloudPath Tech (${fmt(2400)}/mo) is already closed. Pinnacle HVAC GBP upgrade (${fmt(1200)}/mo) is in negotiation with 95% confidence. NorthStar Dental multi-location expansion (${fmt(3800)}/mo) is high-priority.`,
-                },
-                {
-                  icon: "",
-                  title: "Recommended Executive Actions",
-                  text: "1) Escalate Lakeview Dental to leadership immediately — June 30 deadline. 2) VP call for Harbor View Realty CRM dispute. 3) Contact Peak Performance HVAC today. 4) Close Pinnacle HVAC expansion proposal. 5) Review department-wide blocked work in Paid Ads and Design (3 blocked each).",
-                },
-              ].map(({ icon, title, text }) => (
-                <div key={title} className="rounded-xl bg-white/10 backdrop-blur-sm p-4">
-                  <p className="text-sm font-bold text-white mb-1.5 flex items-center gap-2">
-                    <span>{icon}</span>{title}
-                  </p>
-                  <p className="text-sm text-blue-100 leading-relaxed">{text}</p>
-                </div>
-              ))}
+              <div className="rounded-xl bg-white/10 backdrop-blur-sm p-4 col-span-2">
+                <p className="text-sm font-bold text-white mb-1.5">AI Executive Summary</p>
+                <p className="text-sm text-blue-100 leading-relaxed">
+                  AI-generated portfolio insights will appear here once client records,
+                  renewal data, and expansion opportunities are connected to real Postgres sources.
+                  Currently the portfolio has <strong>{PORTFOLIO_CLIENTS.length}</strong> clients loaded.
+                </p>
+              </div>
             </div>
           </div>
         </div>

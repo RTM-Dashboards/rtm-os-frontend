@@ -168,6 +168,45 @@ const sectionLabels: Record<string, string> = {
   settings:    "",
 };
 
+// ── Role-based visibility ────────────────────────────────────────────────────
+//
+// Items tagged with a visibleTo constraint are hidden unless the user's role
+// satisfies it.  The check runs in visibleNavItems below, alongside the
+// existing department-scoping logic.
+//
+//   "all"          — every authenticated user (shared operational / personal)
+//   "adminOnly"    — Executive and SystemAdmin only
+//   "decisionNeeded" — leave visible; owner must decide before restricting
+//
+// Items with no tag are handled by the existing department-scoping logic
+// (departments section) or by the adminOnly rule on the admin section.
+type NavVisibility = "all" | "adminOnly" | "decisionNeeded";
+
+const NAV_VISIBILITY: Record<string, NavVisibility> = {
+  // overview section
+  "/executive":     "adminOnly",      // Executive Command Center
+  "/admin":         "adminOnly",      // Admin Overview
+  "/clients":       "decisionNeeded", // Clients — unclear if all staff need this; leave visible pending owner decision
+  "/projects":      "all",            // Projects & Tasks — shared operational; all staff use tasks
+  "/notifications": "all",            // Notifications — personal; every user has notifications
+
+  // operations section (Workflow Engine / Reporting & Intelligence)
+  // Classification uncertain; leave visible pending owner decision.
+  "/operations/workflows": "decisionNeeded",
+
+  // admin section — all items are administrative
+  "/admin/users":                 "adminOnly",
+  "/admin/workspaces":            "adminOnly",
+  "/admin/workflows":             "adminOnly",
+  "/admin/platform-operations":  "adminOnly",
+  "/admin/settings":             "adminOnly",
+
+  // settings section — personal settings page, visible to all
+  "/settings": "all",
+
+  // departments section — handled separately by department-scoping logic; no entry needed here
+};
+
 // ── Department → nav href mapping ─────────────────────────────────────────────
 // Mirrors the "departments" section of navItems above. Used to compute which
 // single workspace entry to show for non-Executive / non-SystemAdmin users.
@@ -204,11 +243,14 @@ interface SidebarProps {
 export default function Sidebar({ open, onClose, user, role, department }: SidebarProps) {
   const pathname = usePathname();
 
-  // Module scoping: Executive and SystemAdmin see the full departments section.
-  // Everyone else sees only their own department's workspace entry.
+  // ── Role gates ───────────────────────────────────────────────────────────
   // While role is still loading (null), show all — avoids flash of empty sidebar.
-  const isFullAccess = role === null || role === "Executive" || role === "SystemAdmin";
-  const ownDeptHref  = department ? (DEPT_TO_HREF[department] ?? null) : null;
+  // isFullAccess: sees everything (Executive + SystemAdmin + loading state).
+  // isAdminOnly:  sees adminOnly items too.
+  // Everyone else: sees "all" items + their own dept module only.
+  const isFullAccess  = role === null || role === "Executive" || role === "SystemAdmin";
+  const isAdminOnly   = isFullAccess; // same set: admins see admin items
+  const ownDeptHref   = department ? (DEPT_TO_HREF[department] ?? null) : null;
 
   // Live notification badge — fetched from DB, not mock data
   const [notifUnread, setNotifUnread] = useState<number>(0);
@@ -242,17 +284,38 @@ export default function Sidebar({ open, onClose, user, role, department }: Sideb
     setExpandedItems((prev) => ({ ...prev, [href]: !prev[href] }));
   };
 
-  // Build the visible item list: for the "departments" section, non-Executive /
-  // non-SystemAdmin users see only the single entry that matches their department.
-  // The hidden: true entries in workspaces.ts are a different concept — those are
-  // workspace nav items hidden within a workspace sidebar, not this global sidebar.
-  // This filter is additive on top of the existing navItems (which have no hidden
-  // field); it does not affect any other section.
+  // Build the visible item list.
+  //
+  // Two rules applied in sequence:
+  //
+  // 1. Role-based rule (applies to every section except "departments"):
+  //    — "adminOnly" items: visible to Executive and SystemAdmin only
+  //      (isAdminOnly / isFullAccess).  Hidden to everyone else.
+  //    — "decisionNeeded" items: left visible for all users until the owner
+  //      classifies them.  They appear in the "undecided" report section.
+  //    — "all" items: always visible.
+  //    — Untagged non-dept items: currently none; fall through as visible.
+  //
+  // 2. Department-scoping rule (departments section only):
+  //    — Executive / SystemAdmin / loading: see all department modules.
+  //    — Unassigned user (dept === null): show all; owner decides.
+  //    — Everyone else: only the module matching their own department.
   const visibleNavItems = navItems.filter((item) => {
-    if (item.section !== "departments") return true; // non-dept sections always visible
-    if (isFullAccess) return true;                   // Executive / SystemAdmin / loading
-    if (ownDeptHref === null) return true;           // unassigned user — show all, owner decides
-    return item.href === ownDeptHref;                // scoped: only their workspace
+    // ─ Rule 1: role-based visibility for non-dept sections ─
+    if (item.section !== "departments") {
+      const vis = NAV_VISIBILITY[item.href];
+      if (vis === "adminOnly") {
+        // Visible only to Executive and SystemAdmin (and while loading).
+        return isAdminOnly;
+      }
+      // "all", "decisionNeeded", or untagged: visible to everyone.
+      return true;
+    }
+
+    // ─ Rule 2: department-scoping for the departments section ─
+    if (isFullAccess) return true;          // Executive / SystemAdmin / loading
+    if (ownDeptHref === null) return true;  // unassigned user — show all, owner decides
+    return item.href === ownDeptHref;       // scoped: only their workspace
   });
 
   const grouped = visibleNavItems.reduce<Record<string, NavItem[]>>((acc, item) => {

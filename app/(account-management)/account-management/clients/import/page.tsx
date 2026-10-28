@@ -387,7 +387,7 @@ export default function ImportClientPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Business Name" required>
               <Input value={form.company} onChange={(v) => set("company", v)}
-                placeholder="Apex Roofing" disabled={saving} />
+                placeholder="Client name" disabled={saving} />
             </Field>
             <Field label="Domain" required hint="We normalise it — paste the full URL if you like.">
               <Input value={form.domain} onChange={(v) => set("domain", v)}

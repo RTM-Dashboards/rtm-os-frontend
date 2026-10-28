@@ -1,20 +1,70 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { RoleToggle } from "@/components/am-role-toggle";
 import { fetchAMClients, type BusinessClient } from "@/lib/account-management/am-client-data";
 import {
-  ALL_CLIENTS,
-  ALL_TASKS,
-  ALL_ONBOARDING,
-  ALL_RENEWALS,
-  ALL_HEALTH,
   AM_NAMES,
   SARAH,
-  getClientsByAM,
   type AMRole,
 } from "@/lib/account-management/role-data";
+import type { TaskListItem } from "@/app/api/tasks/route";
+
+// ── Real-data hooks used by both Head and AM views ──────────────────────
+
+// Map Postgres task status → display string (TaskStatusType equivalent)
+type RealTaskStatus = "Not Started" | "In Progress" | "Completed" | "Blocked" | "Waiting For Client" | "Review";
+
+interface RealTaskRow {
+  id: string;
+  task: string;
+  client: string;
+  assignedAM: string;
+  department: string;
+  dueDate: string;
+  status: RealTaskStatus;
+  priority: string;
+}
+
+function taskFromAPI(t: TaskListItem): RealTaskRow {
+  const statusMap: Record<string, RealTaskStatus> = {
+    open: "Not Started",
+    in_progress: "In Progress",
+    done: "Completed",
+    skipped: "Completed",
+    pending_prereq: "Not Started",
+  };
+  return {
+    id: t.id,
+    task: t.label,
+    client: t.projectName ?? "",
+    assignedAM: t.ownerName ?? "",
+    department: t.department ?? "",
+    dueDate: t.dueDate ?? "—",
+    status: statusMap[t.status] ?? "Not Started",
+    priority: t.priority ?? "Medium",
+  };
+}
+
+function useRealTasks() {
+  const [tasks, setTasks] = useState<RealTaskRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch("/api/tasks")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d: { tasks: TaskListItem[] } | null) => {
+        if (d?.tasks) setTasks(d.tasks.map(taskFromAPI));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+  return { tasks, loading };
+}
+
+// Empty proxy for removed mock constants (keeps reference sites compiling)
+// — none of ALL_CLIENTS, ALL_RENEWALS, ALL_HEALTH are imported any more;
+//   the functions below use real data instead.
 
 // ── Badge / style helpers ────────────────────────────────────────────────────
 
@@ -167,30 +217,25 @@ function ClearedClientSummaryCard() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function HeadView() {
-  // ── Derive urgent attention items from real data ───────────────────────────
-  const criticalClients = ALL_CLIENTS.filter(
-    (c) => c.healthStatus === "Critical" || c.healthStatus === "At Risk"
+  // ── Real data ───────────────────────────────────────────────────────────────────
+  const [realClients, setRealClients] = useState<BusinessClient[]>([]);
+  const { tasks: realTasks } = useRealTasks();
+
+  useEffect(() => {
+    fetchAMClients().then(setRealClients).catch(() => {});
+  }, []);
+
+  // ── Derived from real clients ──────────────────────────────────────────
+  const criticalClients = realClients.filter(
+    (c) => c.paymentStatus === "failed" || c.activationStatus === "suspended"
   );
-  const overduePayments = ALL_CLIENTS.filter((c) => c.paymentStatus === "Overdue");
-  const renewalsDue30 = ALL_RENEWALS.filter((r) => r.daysRemaining <= 30);
-  const renewalsDue90 = ALL_RENEWALS.filter((r) => r.daysRemaining <= 90);
-  const blockedTasks = ALL_TASKS.filter((t) => t.status === "Blocked");
-  const overdueTasks = ALL_TASKS.filter(
-    (t) =>
-      t.status !== "Completed" &&
-      t.dueDate <= "Jun 10" // today proxy for mock data
-  );
-  const revenueAtRisk = ALL_RENEWALS
-    .filter((r) => r.status === "High Risk" || r.status === "At Risk")
-    .reduce((sum, r) => {
-      const mo = parseFloat(r.contractValue.replace(/[^0-9.]/g, "")) / 12;
-      return sum + mo;
-    }, 0);
-  const avgHealth = Math.round(
-    ALL_HEALTH.reduce((a, h) => a + h.healthScore, 0) / ALL_HEALTH.length
+  const overduePayments = realClients.filter((c) => c.paymentStatus === "overdue");
+  const blockedTasks = realTasks.filter((t) => t.status === "Blocked");
+  const overdueTasks = realTasks.filter(
+    (t) => t.status !== "Completed" && t.dueDate !== "—"
   );
 
-  // ── Urgent fire-list items derived from real data ──────────────────────────
+  // ── Urgent fire-list built from real data ───────────────────────────────
   type FireItem = {
     client: string;
     am: string;
@@ -202,39 +247,18 @@ function HeadView() {
 
   const fireList: FireItem[] = [];
 
-  // Critical/At-Risk clients (from ALL_CLIENTS, deduped)
+  // Critical clients from real Postgres data
   for (const c of criticalClients) {
-    const health = ALL_HEALTH.find((h) => h.client === c.name);
-    const renewal = ALL_RENEWALS.find((r) => r.client === c.name);
     const issues: string[] = [];
-    if (c.paymentStatus === "Overdue") issues.push("payment overdue");
-    if (health?.deliverableStatus === "Blocked" || health?.deliverableStatus === "Delayed")
-      issues.push("deliverables blocked");
-    if (health?.reportingStatus === "Overdue") issues.push("report overdue");
-    if (renewal && renewal.daysRemaining <= 30) issues.push(`renewal in ${renewal.daysRemaining}d`);
+    if (c.paymentStatus === "failed") issues.push("payment failed");
+    if (c.activationStatus === "suspended") issues.push("account suspended");
     fireList.push({
-      client: c.name,
+      client: c.clientName,
       am: c.assignedAM,
-      issue:
-        issues.length > 0
-          ? issues.map((i) => i.charAt(0).toUpperCase() + i.slice(1)).join(" · ")
-          : health?.aiRecommendation ?? "Requires attention",
-      severity: c.healthStatus === "Critical" ? "Critical" : "High",
-      dueDate: renewal?.renewalDate ?? c.nextCheckin,
+      issue: issues.join(" · ") || "Requires immediate attention",
+      severity: "Critical",
+      dueDate: c.renewalDate ?? "—",
       href: "/account-management/client-health",
-    });
-  }
-
-  // Renewals due ≤ 30 days not already in list
-  for (const r of renewalsDue30) {
-    if (fireList.some((f) => f.client === r.client)) continue;
-    fireList.push({
-      client: r.client,
-      am: r.assignedAM,
-      issue: `Renewal in ${r.daysRemaining} days · Probability ${r.probability}%`,
-      severity: r.status === "High Risk" ? "High" : "Medium",
-      dueDate: r.renewalDate,
-      href: "/account-management/renewals",
     });
   }
 
@@ -246,7 +270,7 @@ function HeadView() {
       client: t.client,
       am: t.assignedAM,
       issue: `Task blocked: ${t.task} (${t.department})`,
-      severity: t.priority === "High" ? "High" : "Medium",
+      severity: t.priority === "High" || t.priority === "Urgent" ? "High" : "Medium",
       dueDate: t.dueDate,
       href: "/account-management/tasks-central",
     });
@@ -257,24 +281,20 @@ function HeadView() {
   const severityOrder: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
   fireList.sort((a, b) => (severityOrder[a.severity] ?? 9) - (severityOrder[b.severity] ?? 9));
 
-  // ── AM Workload table ───────────────────────────────────────────────────────
+  // ── AM Workload table from real data ─────────────────────────────────────
   const workloadRows = AM_NAMES.map((am) => {
-    const clients = getClientsByAM(am);
-    const onboarding = ALL_ONBOARDING.filter((o) => o.assignedAM === am).length;
-    const openT = ALL_TASKS.filter((t) => t.assignedAM === am && t.status !== "Completed").length;
-    const atRiskC = clients.filter(
-      (c) => c.riskLevel === "High" || c.riskLevel === "Critical"
-    ).length;
-    const renewals = ALL_RENEWALS.filter(
-      (r) => r.assignedAM === am && r.daysRemaining <= 90
+    const amClients = realClients.filter((c) => c.assignedAM === am);
+    const openT = realTasks.filter((t) => t.assignedAM === am && t.status !== "Completed").length;
+    const atRiskC = amClients.filter(
+      (c) => c.paymentStatus === "failed" || c.activationStatus === "suspended"
     ).length;
     const load =
-      clients.length >= 4 || atRiskC >= 2
+      amClients.length >= 4 || atRiskC >= 2
         ? "High Load"
-        : clients.length >= 3
+        : amClients.length >= 2
         ? "Active"
         : "Available";
-    return { am, clients: clients.length, onboarding, openT, atRiskC, renewals, load };
+    return { am, clients: amClients.length, onboarding: 0, openT, atRiskC, renewals: 0, load };
   });
 
   return (
@@ -296,34 +316,16 @@ function HeadView() {
             AI Summary
           </span>
         </div>
-        <div className="p-6 grid gap-4 sm:grid-cols-2">
-          {[
-            {
-              title: "Immediate Interventions Required",
-              text: "Lakeview Dental: payment 45 days overdue + renewal June 30 — executive call this week is non-negotiable. Harbor Auto: payment overdue, renewal Jul 11, lead volume down 28% — payment must be resolved before renewal window closes.",
-              urgency: "border-red-200 bg-white",
-            },
-            {
-              title: "AM Load & Throughput Risk",
-              text: "Sarah K. carries 2 critical accounts simultaneously. Alex R. has a blocked deliverable (Summit Landscaping LSA docs) preventing department launch. Consider redistributing 1 account from Sarah K. to Alex R. in Q3 to reduce critical-client concentration.",
-              urgency: "border-orange-200 bg-white",
-            },
-            {
-              title: "Renewal Opportunities This Window",
-              text: "Pinnacle HVAC (prob. 95%) — propose GBP + SEO upsell worth $1,200/mo before renewal. Apex Roofing (prob. 92%) — storm season LSA upsell at $800/mo. Both proposals should go out this week to close upsells before renewal.",
-              urgency: "border-green-200 bg-white",
-            },
-            {
-              title: "Recommended Manager Actions Today",
-              text: "1) Call Lakeview Dental executive. 2) Escalate Harbor Auto payment to billing. 3) Unblock Summit Landscaping LSA docs. 4) Send upsell proposals to Pinnacle HVAC and Apex Roofing. 5) Book Pacific Dental check-in within 48 hrs.",
-              urgency: "border-indigo-200 bg-white",
-            },
-          ].map(({ title, text, urgency }) => (
-            <div key={title} className={`rounded-xl border p-4 ${urgency}`}>
-              <p className="text-sm font-bold text-slate-800 mb-1.5">{title}</p>
-              <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
-            </div>
-          ))}
+        <div className="p-6">
+          <div className="rounded-xl border border-indigo-100 bg-white p-5">
+            <p className="text-sm font-bold text-slate-800 mb-1.5">Portfolio Intelligence</p>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              AI-generated portfolio summaries will appear here once more clients are onboarded and their
+              health data, renewals, and task history are connected. Currently showing{" "}
+              <strong>{realClients.length} client{realClients.length !== 1 ? "s" : ""}</strong> from the database.
+              The fire list, workload table, and task counts below reflect live Postgres data.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -336,7 +338,7 @@ function HeadView() {
           <KpiCard
             label="Clients At Risk / Critical"
             value={criticalClients.length}
-            sub={`of ${ALL_CLIENTS.length} active clients`}
+            sub={`of ${realClients.length} active clients`}
             urgent={criticalClients.length > 0}
           />
           <KpiCard
@@ -347,15 +349,15 @@ function HeadView() {
           />
           <KpiCard
             label="Renewals Due ≤ 90 Days"
-            value={renewalsDue90.length}
-            sub={`${renewalsDue30.length} critical (≤30 days)`}
-            urgent={renewalsDue30.length > 0}
+            value="—"
+            sub="Renewal tracking not yet connected"
+            urgent={false}
           />
           <KpiCard
             label="Revenue At Risk"
-            value={`$${(revenueAtRisk / 1000).toFixed(1)}K/mo`}
-            sub="from at-risk renewals"
-            urgent={revenueAtRisk > 0}
+            value="—"
+            sub="Renewal data not yet connected"
+            urgent={false}
           />
           <KpiCard
             label="Blocked Tasks"
@@ -371,12 +373,12 @@ function HeadView() {
           />
           <KpiCard
             label="Avg Portfolio Health"
-            value={`${avgHealth}/100`}
-            sub={avgHealth >= 75 ? "healthy" : avgHealth >= 60 ? "needs attention" : "at risk"}
+            value="—"
+            sub="Computed from client health page"
           />
           <KpiCard
             label="Active Clients"
-            value={ALL_CLIENTS.length}
+            value={realClients.length}
             sub="across all AMs"
           />
         </div>
@@ -547,10 +549,15 @@ function HeadView() {
 // ══════════════════════════════════════════════════════════════════════════════
 
 function AMView() {
-  const myClients = getClientsByAM(SARAH);
-  const myTasks = ALL_TASKS.filter((t) => t.assignedAM === SARAH);
-  const myRenewals = ALL_RENEWALS.filter((r) => r.assignedAM === SARAH);
-  const myHealth = ALL_HEALTH.filter((h) => h.assignedAM === SARAH);
+  // ── Real data for AM view ───────────────────────────────────────────────────
+  const [realClients, setRealClients] = useState<BusinessClient[]>([]);
+  const { tasks: realTasks } = useRealTasks();
+  useEffect(() => {
+    fetchAMClients().then(setRealClients).catch(() => {});
+  }, []);
+
+  const myClients = realClients.filter((c) => c.assignedAM === SARAH);
+  const myTasks = realTasks.filter((t) => t.assignedAM === SARAH);
 
   // ── Compute priority actions from real data ─────────────────────────────
   type ActionItem = {
@@ -564,55 +571,32 @@ function AMView() {
   };
 
   const actions: ActionItem[] = [];
-  const seen = new Set<string>(); // dedup by client+action key
+  const seen = new Set<string>();
 
-  // 1. Critical / At-Risk clients
+  // 1. Critical clients from real Postgres data
   const myAtRiskClients = myClients.filter(
-    (c) => c.healthStatus === "Critical" || c.healthStatus === "At Risk"
+    (c) => c.paymentStatus === "failed" || c.activationStatus === "suspended"
   );
   for (const c of myAtRiskClients) {
-    const health = myHealth.find((h) => h.client === c.name);
-    const renewal = myRenewals.find((r) => r.client === c.name);
     const issues: string[] = [];
-    if (c.paymentStatus === "Overdue") issues.push("payment overdue");
-    if (health?.deliverableStatus === "Blocked") issues.push("deliverables blocked");
-    if (health?.reportingStatus === "Overdue") issues.push("report overdue");
-    if (renewal && renewal.daysRemaining <= 30)
-      issues.push(`renewal in ${renewal.daysRemaining} days`);
-    const key = `${c.name}-health`;
+    if (c.paymentStatus === "failed") issues.push("payment failed");
+    if (c.activationStatus === "suspended") issues.push("account suspended");
+    const key = `${c.clientName}-health`;
     if (!seen.has(key)) {
       seen.add(key);
       actions.push({
-        client: c.name,
-        actionSummary: issues.length > 0 ? issues.join(" · ") : "Client health critical",
+        client: c.clientName,
+        actionSummary: issues.join(" · ") || "Client requires attention",
         source: "Client Health",
-        priority: c.healthStatus === "Critical" ? "Critical" : "High",
-        dueDate: c.nextCheckin,
-        suggestedAction: health?.aiRecommendation ?? "Review account and take action",
+        priority: "Critical",
+        dueDate: c.renewalDate ?? "—",
+        suggestedAction: "Review account and take action",
         href: "/account-management/client-health",
       });
     }
   }
 
-  // 2. Renewals due ≤ 30 days not already in list
-  const myUrgentRenewals = myRenewals.filter((r) => r.daysRemaining <= 30);
-  for (const r of myUrgentRenewals) {
-    const key = `${r.client}-renewal`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      actions.push({
-        client: r.client,
-        actionSummary: `Renewal in ${r.daysRemaining} days · ${r.probability}% probability`,
-        source: "Renewals",
-        priority: r.status === "High Risk" ? "High" : "Medium",
-        dueDate: r.renewalDate,
-        suggestedAction: r.nextAction,
-        href: "/account-management/renewals",
-      });
-    }
-  }
-
-  // 3. Blocked tasks
+  // 2. Blocked tasks from real Postgres data
   const myBlockedTasks = myTasks.filter((t) => t.status === "Blocked");
   for (const t of myBlockedTasks) {
     const key = `${t.client}-blocked-${t.id}`;
@@ -622,15 +606,15 @@ function AMView() {
         client: t.client,
         actionSummary: `Task blocked: "${t.task}"`,
         source: "Tasks",
-        priority: t.priority === "High" ? "High" : "Medium",
+        priority: t.priority === "High" || t.priority === "Urgent" ? "High" : "Medium",
         dueDate: t.dueDate,
-        suggestedAction: t.notes || "Unblock this task",
+        suggestedAction: "Unblock this task",
         href: "/account-management/tasks-central",
       });
     }
   }
 
-  // 4. Waiting-for-client tasks
+  // 3. Waiting-for-client tasks from real Postgres data
   const myWaitingTasks = myTasks.filter((t) => t.status === "Waiting For Client");
   for (const t of myWaitingTasks) {
     const key = `${t.client}-waiting-${t.id}`;
@@ -642,28 +626,8 @@ function AMView() {
         source: "Tasks",
         priority: "Medium",
         dueDate: t.dueDate,
-        suggestedAction: t.notes || "Follow up with client",
+        suggestedAction: "Follow up with client",
         href: "/account-management/tasks-central",
-      });
-    }
-  }
-
-  // 5. Renewals due ≤ 90 days (lower urgency)
-  const myRenewalsDue90 = myRenewals.filter(
-    (r) => r.daysRemaining > 30 && r.daysRemaining <= 90
-  );
-  for (const r of myRenewalsDue90) {
-    const key = `${r.client}-renewal90`;
-    if (!seen.has(key)) {
-      seen.add(key);
-      actions.push({
-        client: r.client,
-        actionSummary: `Renewal due in ${r.daysRemaining} days`,
-        source: "Renewals",
-        priority: r.upsellOpportunity ? "Medium" : "Low",
-        dueDate: r.renewalDate,
-        suggestedAction: r.nextAction,
-        href: "/account-management/renewals",
       });
     }
   }
@@ -672,11 +636,11 @@ function AMView() {
   const pOrder: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
   actions.sort((a, b) => (pOrder[a.priority] ?? 9) - (pOrder[b.priority] ?? 9));
 
-  // ── Quick KPIs ──────────────────────────────────────────────────────────
+  // ── Quick KPIs from real data ────────────────────────────────────────────
   const myOpenTasks = myTasks.filter((t) => t.status !== "Completed").length;
   const myAtRiskCount = myAtRiskClients.length;
-  const myRenewalsDue = myRenewals.filter((r) => r.daysRemaining <= 90).length;
-  const myCheckinsDue = myClients.filter((c) => c.nextCheckin <= "Jun 15, 2025").length;
+  const myRenewalsDue = 0; // Renewal tracking not yet connected to real data
+  const myCheckinsDue = 0; // Check-in tracking not yet connected to real data
 
   return (
     <div className="space-y-6">
@@ -694,30 +658,16 @@ function AMView() {
             My Portfolio
           </span>
         </div>
-        <div className="p-6 grid gap-4 sm:grid-cols-2">
-          {[
-            {
-              title: "Most Urgent Right Now",
-              text: "Lakeview Dental is your most critical account — payment is 45 days overdue and renewal is June 30. A missed renewal here is $18K/yr lost. Call the client today and escalate the payment to billing.",
-            },
-            {
-              title: "Today's Must-Do Actions",
-              text: "1) Call Lakeview Dental. 2) Send Harbor Auto payment reminder + escalate. 3) Prepare Lakeview renewal brief (due Jun 12). 4) Follow up on Harbor Auto GBP access request. 5) Send Apex Roofing storm season upsell proposal.",
-            },
-            {
-              title: "Upcoming Check-ins",
-              text: "Harbor Auto check-in is overdue (last contact May 15). Schedule immediately. Lakeview Dental check-in due Jun 10. Apex Roofing check-in due Jul 2 — storm season campaign should be the agenda.",
-            },
-            {
-              title: "Upsell Opportunities",
-              text: "Apex Roofing: LSA + Call Tracking ($800/mo) aligned to storm season. Harbor Auto: Display Ads expansion ($600/mo) once payment is resolved. Lakeview Dental: GBP Management add-on ($400/mo) if retained.",
-            },
-          ].map(({ title, text }) => (
-            <div key={title} className="rounded-xl border border-blue-100 bg-white p-4">
-              <p className="text-sm font-bold text-slate-800 mb-1.5">{title}</p>
-              <p className="text-sm text-slate-600 leading-relaxed">{text}</p>
-            </div>
-          ))}
+        <div className="p-6">
+          <div className="rounded-xl border border-blue-100 bg-white p-5">
+            <p className="text-sm font-bold text-slate-800 mb-1.5">Your Portfolio Today</p>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              AI-generated insights for your assigned clients will appear here once more clients are
+              onboarded and their health, renewal, and check-in data are connected.
+              Currently showing <strong>{myClients.length} client{myClients.length !== 1 ? "s" : ""}</strong> assigned to you.
+              Use the priority actions table below to see what needs attention now.
+            </p>
+          </div>
         </div>
       </section>
 
@@ -741,9 +691,9 @@ function AMView() {
           />
           <KpiCard
             label="Renewals Due ≤ 90d"
-            value={myRenewalsDue}
-            sub={`${myRenewals.filter((r) => r.daysRemaining <= 30).length} critical (≤30d)`}
-            urgent={myRenewals.filter((r) => r.daysRemaining <= 30).length > 0}
+            value="—"
+            sub="Renewal tracking not yet connected"
+            urgent={false}
           />
           <KpiCard
             label="Check-ins Due"
@@ -849,42 +799,36 @@ function AMView() {
         />
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {myClients.map((c) => {
-            const health = myHealth.find((h) => h.client === c.name);
-            const renewal = myRenewals.find((r) => r.client === c.name);
+            const isAtRisk = c.paymentStatus === "failed" || c.activationStatus === "suspended";
+            const health = c.activationStatus === "suspended" || c.paymentStatus === "failed"
+              ? "Critical"
+              : c.activationStatus === "active"
+              ? "Good"
+              : "Pending";
             return (
               <div
                 key={c.id}
                 className="rounded-xl border p-4 space-y-2"
                 style={{
-                  background:
-                    c.healthStatus === "Critical"
-                      ? "#FEF2F2"
-                      : c.healthStatus === "At Risk"
-                      ? "#FFFBEB"
-                      : "var(--rtm-surface)",
-                  borderColor:
-                    c.healthStatus === "Critical"
-                      ? "#FECACA"
-                      : c.healthStatus === "At Risk"
-                      ? "#FDE68A"
-                      : "var(--rtm-border)",
+                  background: isAtRisk ? "#FEF2F2" : "var(--rtm-surface)",
+                  borderColor: isAtRisk ? "#FECACA" : "var(--rtm-border)",
                 }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-bold text-slate-900">{c.name}</p>
-                    <p className="text-xs text-slate-400">{c.industry} · {c.location}</p>
+                    <p className="text-sm font-bold text-slate-900">{c.clientName}</p>
+                    <p className="text-xs text-slate-400">{c.domain}</p>
                   </div>
                   <span
                     className="inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold"
-                    style={healthBadgeStyle(c.healthStatus)}
+                    style={healthBadgeStyle(health)}
                   >
-                    {c.healthStatus}
+                    {health}
                   </span>
                 </div>
                 <div className="text-xs space-y-1">
                   <div className="flex gap-2 flex-wrap">
-                    {c.services.map((s) => (
+                    {c.activeServices.map((s) => (
                       <span
                         key={s}
                         className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600"
@@ -894,35 +838,24 @@ function AMView() {
                     ))}
                   </div>
                   <p className="text-slate-500">
-                    <span className="font-semibold text-slate-700">Next check-in:</span>{" "}
-                    {c.nextCheckin}
+                    <span className="font-semibold text-slate-700">Activation:</span>{" "}
+                    {c.activationStatus}
                   </p>
-                  {renewal && (
+                  {c.renewalDate && (
                     <p className="text-slate-500">
                       <span className="font-semibold text-slate-700">Renewal:</span>{" "}
-                      {renewal.renewalDate}{" "}
-                      <span
-                        className={`font-semibold ${
-                          renewal.daysRemaining <= 30
-                            ? "text-red-600"
-                            : renewal.daysRemaining <= 90
-                            ? "text-amber-600"
-                            : "text-green-600"
-                        }`}
-                      >
-                        ({renewal.daysRemaining}d)
-                      </span>
-                    </p>
-                  )}
-                  {health?.aiRecommendation && (
-                    <p className="text-slate-500 italic">
-                      AI: {health.aiRecommendation}
+                      {c.renewalDate}
                     </p>
                   )}
                 </div>
               </div>
             );
           })}
+          {myClients.length === 0 && (
+            <p className="text-sm text-slate-400 col-span-3 py-4">
+              No clients are currently assigned to {SARAH}.
+            </p>
+          )}
         </div>
         <div className="px-5 py-3 border-t border-slate-100 flex justify-end">
           <QuickLinkButton label="Full Client Portfolio" href="/account-management/client-portfolio" />

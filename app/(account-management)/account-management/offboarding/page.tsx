@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import {
-  OFFBOARDING_RECORDS,
   getActiveOffboardings,
   getCompletedOffboardings,
   getPendingAssetTransfers,
@@ -21,6 +20,10 @@ import {
   type DepartmentTaskStatus,
   type CancellationReason,
 } from "@/lib/account-management/offboarding-data";
+
+// Mock offboarding records removed. Dashboard shows honest zero counts
+// until real offboarding records are connected to Postgres.
+const OFFBOARDING_RECORDS: import("@/lib/account-management/offboarding-data").OffboardingRecord[] = [];
 
 // ══════════════════════════════════════════════════════════════════════════════
 // UTILITIES

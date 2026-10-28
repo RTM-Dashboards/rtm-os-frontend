@@ -8,83 +8,35 @@ const workspace = getWorkspace("account-management")!;
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 
+// Report KPIs: not yet connected to a real data source.
 const kpiCards = [
-  { label: "Reports Due This Week",            value: 7,  color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200"},
-  { label: "Reports Overdue",                  value: 3,  color: "text-red-700",    bg: "bg-red-50",    border: "border-red-200"},
-  { label: "Reports In QA",                    value: 4,  color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200"},
-  { label: "Reports Ready To Send",            value: 2,  color: "text-green-700",  bg: "bg-green-50",  border: "border-green-200"},
-  { label: "Reports Sent This Month",          value: 11, color: "text-teal-700",   bg: "bg-teal-50",   border: "border-teal-200"},
-  { label: "Clients Missing Reports",          value: 2,  color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200"},
-  { label: "Reports Waiting For Dept Input",   value: 5,  color: "text-amber-700",  bg: "bg-amber-50",  border: "border-amber-200"},
-  { label: "Reports Needing AM Review",        value: 4,  color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200"},
+  { label: "Reports Due This Week",          value: "—", color: "text-blue-700",   bg: "bg-blue-50",   border: "border-blue-200"},
+  { label: "Reports Overdue",                value: "—", color: "text-red-700",    bg: "bg-red-50",    border: "border-red-200"},
+  { label: "Reports In QA",                  value: "—", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200"},
+  { label: "Reports Ready To Send",          value: "—", color: "text-green-700",  bg: "bg-green-50",  border: "border-green-200"},
+  { label: "Reports Sent This Month",        value: "—", color: "text-teal-700",   bg: "bg-teal-50",   border: "border-teal-200"},
+  { label: "Clients Missing Reports",        value: "—", color: "text-orange-700", bg: "bg-orange-50", border: "border-orange-200"},
+  { label: "Reports Waiting For Dept Input", value: "—", color: "text-amber-700",  bg: "bg-amber-50",  border: "border-amber-200"},
+  { label: "Reports Needing AM Review",      value: "—", color: "text-indigo-700", bg: "bg-indigo-50", border: "border-indigo-200"},
 ];
 
-const clientReports = [
-  {
-    client: "Apex Roofing",        am: "Jordan M.", reportType: "Monthly Summary",  period: "Dec 2024", owner: "Jordan M.", deptSource: "SEO / Paid Media",  reportStatus: "Drafting",       qaStatus: "Pending",      amReview: "Not Started", clientApproval: "Not Started", lastSent: "Nov 5, 2024",  nextDue: "Jan 20, 2025", nextAction: "Complete Draft",
-  },
-  {
-    client: "Pacific Dental",      am: "Jordan M.", reportType: "Monthly Summary",  period: "Dec 2024", owner: "Sarah K.",  deptSource: "SEO / GBP",         reportStatus: "QA Review",      qaStatus: "In Review",    amReview: "Not Started", clientApproval: "Not Started", lastSent: "Nov 8, 2024",  nextDue: "Jan 22, 2025", nextAction: "Finish QA",
-  },
-  {
-    client: "Sunbelt HVAC",        am: "Sarah K.",  reportType: "Monthly Summary",  period: "Dec 2024", owner: "Sarah K.",  deptSource: "Paid Advertising",  reportStatus: "Overdue",        qaStatus: "Not Started",  amReview: "Not Started", clientApproval: "Not Started", lastSent: "Oct 15, 2024", nextDue: "Jan 10, 2025", nextAction: "Escalate — Overdue",
-  },
-  {
-    client: "Harbor Auto Group",   am: "Mike T.",   reportType: "Quarterly Review", period: "Q4 2024",  owner: "Mike T.",   deptSource: "Google Ads / LSA",  reportStatus: "AM Review",      qaStatus: "Approved",     amReview: "Pending",     clientApproval: "Not Started", lastSent: "Oct 10, 2024", nextDue: "Jan 25, 2025", nextAction: "AM Review Required",
-  },
-  {
-    client: "Metro Dental",        am: "Sarah K.",  reportType: "Monthly Summary",  period: "Dec 2024", owner: "Alex R.",   deptSource: "SEO / Content",     reportStatus: "Ready To Send",  qaStatus: "Approved",     amReview: "Approved",    clientApproval: "Not Started", lastSent: "Dec 5, 2024",  nextDue: "Jan 18, 2025", nextAction: "Send To Client",
-  },
-  {
-    client: "Summit Landscaping",  am: "Jordan M.", reportType: "Monthly Summary",  period: "Dec 2024", owner: "Jordan M.", deptSource: "GBP / Content",     reportStatus: "Sent",           qaStatus: "Approved",     amReview: "Approved",    clientApproval: "Received",    lastSent: "Jan 5, 2025",  nextDue: "Feb 5, 2025",  nextAction: "Schedule Q1 Report",
-  },
-  {
-    client: "Green Valley Pools",  am: "Alex R.",   reportType: "Monthly Summary",  period: "Dec 2024", owner: "Alex R.",   deptSource: "Meta Ads",          reportStatus: "Dept Input",     qaStatus: "Not Started",  amReview: "Not Started", clientApproval: "Not Started", lastSent: "Nov 20, 2024", nextDue: "Jan 15, 2025", nextAction: "Chase Meta Ads Input",
-  },
-  {
-    client: "Blue Ridge Plumbing", am: "Alex R.",   reportType: "Monthly Summary",  period: "Dec 2024", owner: "Alex R.",   deptSource: "Web Dev / SEO",     reportStatus: "Data Gathering", qaStatus: "Not Started",  amReview: "Not Started", clientApproval: "Not Started", lastSent: "Nov 12, 2024", nextDue: "Jan 20, 2025", nextAction: "Gather Data",
-  },
-];
+// Client reports: not yet connected to a real data source.
+const clientReports: {
+  client: string; am: string; reportType: string; period: string;
+  owner: string; deptSource: string; reportStatus: string; qaStatus: string;
+  amReview: string; clientApproval: string; lastSent: string; nextDue: string; nextAction: string;
+}[] = [];
 
-const pipelineStages = [
-  { stage: "Data Gathering",    count: 2, color: "bg-slate-100 text-slate-700 border-slate-200"},
-  { stage: "Department Input",  count: 3, color: "bg-amber-100 text-amber-700 border-amber-200"},
-  { stage: "Drafting",          count: 2, color: "bg-blue-100 text-blue-700 border-blue-200"},
-  { stage: "QA Review",         count: 2, color: "bg-violet-100 text-violet-700 border-violet-200"},
-  { stage: "AM Review",         count: 1, color: "bg-indigo-100 text-indigo-700 border-indigo-200"},
-  { stage: "Ready To Send",     count: 2, color: "bg-teal-100 text-teal-700 border-teal-200"},
-  { stage: "Sent",              count: 4, color: "bg-green-100 text-green-700 border-green-200"},
-  { stage: "Client Feedback",   count: 1, color: "bg-pink-100 text-pink-700 border-pink-200"},
-];
+// Pipeline stages: will be computed from real report records when wired.
+const pipelineStages: { stage: string; count: number; color: string }[] = [];
 
-const deptInputs = [
-  { dept: "SEO",               client: "Apex Roofing",       input: "Rankings snapshot + traffic report", owner: "Sarah K.",  due: "Jan 17", status: "In Progress", blocker: "—"},
-  { dept: "GBP",               client: "Pacific Dental",     input: "GBP insights export",                owner: "Mike T.",   due: "Jan 16", status: "Done",        blocker: "—"},
-  { dept: "Yelp",              client: "Harbor Auto Group",  input: "Yelp review summary",                owner: "Alex R.",   due: "Jan 18", status: "Pending",     blocker: "Platform access issue"},
-  { dept: "Paid Advertising",  client: "Sunbelt HVAC",       input: "Ad spend + conversion data",         owner: "Jordan M.", due: "Jan 10", status: "Overdue",     blocker: "Missing GA4 access"},
-  { dept: "Meta Ads",          client: "Green Valley Pools", input: "Campaign performance data",          owner: "Sarah K.",  due: "Jan 14", status: "Pending",     blocker: "Client ad account access"},
-  { dept: "Google Ads",        client: "Harbor Auto Group",  input: "Campaign report export",             owner: "Mike T.",   due: "Jan 17", status: "In Progress", blocker: "—"},
-  { dept: "LSA",               client: "Apex Roofing",       input: "Lead data + verification status",    owner: "Alex R.",   due: "Jan 18", status: "Pending",     blocker: "—"},
-  { dept: "Content",           client: "Summit Landscaping", input: "Published articles list",            owner: "Sarah K.",  due: "Jan 15", status: "Done",        blocker: "—"},
-  { dept: "Web Development",   client: "Blue Ridge Plumbing", input: "Site changes summary",              owner: "Mike T.",   due: "Jan 19", status: "Pending",     blocker: "Staging site still live"},
-  { dept: "Billing",           client: "Metro Dental",       input: "Invoice reconciliation",             owner: "Alex R.",   due: "Jan 14", status: "Done",        blocker: "—"},
-];
+// Department inputs: not yet connected to a real data source.
+const deptInputs: { dept: string; waitingOn: string; contact: string; dueDate: string; status: string }[] = [];
 
-const amReviewQueue = [
-  { client: "Harbor Auto Group",  report: "Q4 Quarterly Review",   am: "Mike T.",   due: "Jan 25", qaStatus: "Approved",  amStatus: "Pending"},
-  { client: "Pacific Dental",     report: "Dec Monthly Summary",   am: "Jordan M.", due: "Jan 22", qaStatus: "In Review", amStatus: "Not Started"},
-  { client: "Apex Roofing",       report: "Dec Monthly Summary",   am: "Jordan M.", due: "Jan 20", qaStatus: "Pending",   amStatus: "Not Started"},
-  { client: "Green Valley Pools", report: "Dec Monthly Summary",   am: "Alex R.",   due: "Jan 15", qaStatus: "Not Started", amStatus: "Not Started"},
-];
+// AM review queue: not yet connected to a real data source.
+const amReviewQueue: { client: string; report: string; am: string; due: string; qaStatus: string; amStatus: string }[] = [];
 
-const reportingRisks = [
-  { risk: "Overdue Report",              client: "Sunbelt HVAC",       detail: "Report is 10 days past due date. No dept input received.",       severity: "Critical"},
-  { risk: "Missing Department Input",    client: "Green Valley Pools", detail: "Meta Ads input not submitted. Client ad account access blocked.", severity: "High"},
-  { risk: "Data Issue Blocker",          client: "Yelp — Harbor Auto", detail: "Yelp platform access issue preventing data pull.",                severity: "Medium"},
-  { risk: "AM Review Overdue",           client: "Harbor Auto Group",  detail: "AM review pending 5 days. Client expects report by Jan 25.",      severity: "High"},
-  { risk: "Repeated Late Reports",       client: "Sunbelt HVAC",       detail: "3rd consecutive month with late delivery. Client flagged.",        severity: "Critical"},
-  { risk: "Paid Ads Input Overdue",      client: "Sunbelt HVAC",       detail: "GA4 access issue — Paid Advertising dept blocked.",               severity: "High"},
-];
+const reportRisks: { risk: string; client: string; detail: string; severity: string }[] = [];
 
 const severityStyle = (s: string) => {
   if (s === "Critical") return { background: "#FEF2F2", color: "#DC2626", borderColor: "#FECACA" };
@@ -151,7 +103,7 @@ export default function AccountReportsPage() {
           <div className="flex flex-wrap gap-2">
             <select value={filterAM} onChange={(e) => setFilterAM(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
               <option value="All">All AMs</option>
-              {["Jordan M.", "Sarah K.", "Mike T.", "Alex R."].map((am) => <option key={am}>{am}</option>)}
+              {([] as string[]).map((am) => <option key={am}>{am}</option>)}
             </select>
             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="text-sm border border-slate-200 rounded-lg px-3 py-1.5">
               <option value="All">All Statuses</option>
@@ -242,14 +194,14 @@ export default function AccountReportsPage() {
               {deptInputs.map((d, i) => (
                 <tr key={i} className="border-t transition-colors" style={{ borderColor: "var(--rtm-border-light)" }}>
                   <td className="px-4 py-3 font-semibold text-slate-700 whitespace-nowrap">{d.dept}</td>
-                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{d.client}</td>
-                  <td className="px-4 py-3 text-slate-600">{d.input}</td>
-                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{d.owner}</td>
-                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{d.due}</td>
+                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{d.waitingOn}</td>
+                  <td className="px-4 py-3 text-slate-600">{d.waitingOn}</td>
+                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{d.contact}</td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{d.dueDate}</td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold" style={statusStyle(d.status)}>{d.status}</span>
+                    <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold" style={statusStyle(d.status)}>{d.status}</span>
                   </td>
-                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">{d.blocker}</td>
+                  <td className="px-4 py-3 text-slate-500 whitespace-nowrap">—</td>
                 </tr>
               ))}
             </tbody>
@@ -301,7 +253,7 @@ export default function AccountReportsPage() {
           <p className="text-sm text-red-600">Reports and clients with active risks requiring immediate attention.</p>
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-          {reportingRisks.map((r, i) => (
+          {reportRisks.map((r, i) => (
             <div key={i} className="rounded-xl border bg-white p-4 border-slate-200">
               <div className="flex items-start justify-between gap-2 mb-2">
                 <p className="text-sm font-bold text-slate-800">{r.risk}</p>

@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  EXPANSION_OPPORTUNITIES,
   type ExpansionOpportunity,
   type ExpansionStatus,
 } from "@/lib/account-management/am-client-success-data";
+
+// Mock expansion opportunities removed — dashboard shows honest zero counts
+// until real expansion opportunities are connected to Postgres.
+const EXPANSION_OPPORTUNITIES: ExpansionOpportunity[] = [];
 import SubmitChangeRequestModal, {
   type PendingChangeRequest,
 } from "@/components/account-management/SubmitChangeRequestModal";
