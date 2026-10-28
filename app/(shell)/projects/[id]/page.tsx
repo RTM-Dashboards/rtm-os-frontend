@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { use } from "react";
 import type { ScopedProjectDetail, ScopedTask, ScopedCategory } from "@/app/api/projects/detail/route";
+import { VALID_DEPARTMENTS } from "@/lib/auth/vocab";
 
 // =============================================================================
 // RTM OS — Project Detail Page
@@ -329,6 +330,250 @@ function ApplyTemplateModal({ projectId, onClose, onApplied }: ApplyTemplateModa
 }
 
 // ---------------------------------------------------------------------------
+// Add Task Modal (hand-made / ad-hoc task)
+// ---------------------------------------------------------------------------
+
+const VALID_PRIORITIES_ADD = ["Urgent", "High", "Medium", "Low"] as const;
+
+interface AddTaskModalProps {
+  categoryId:    string;
+  categoryLabel: string;
+  onClose:       () => void;
+  onAdded:       () => void;
+}
+
+function AddTaskModal({ categoryId, categoryLabel, onClose, onAdded }: AddTaskModalProps) {
+  const [users,    setUsers]    = useState<Array<{ id: string; name: string; department: string | null }>>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Form fields
+  const [label,          setLabel]          = useState("");
+  const [description,    setDescription]    = useState("");
+  const [department,     setDepartment]     = useState("");
+  const [assigneeUserId, setAssigneeUserId] = useState("");
+  const [dueDate,        setDueDate]        = useState("");
+  const [priority,       setPriority]       = useState("High");
+  const [estimatedHours, setEstimatedHours] = useState("");
+
+  useEffect(() => {
+    // Reuse the reassign endpoint — it returns all active users.
+    fetch("/api/tasks/reassign", { cache: "no-store" })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { users?: Array<{ id: string; name: string; department: string | null }> } | null) => {
+        if (data?.users) setUsers(data.users);
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => setLoadingUsers(false));
+  }, []);
+
+  const handleSave = async () => {
+    if (!label.trim()) { setErrorMsg("Task name is required."); return; }
+    setSaving(true);
+    setErrorMsg(null);
+    try {
+      const body: Record<string, unknown> = { categoryId, label: label.trim() };
+      if (description.trim())    body.description    = description.trim();
+      if (department)            body.department     = department;
+      if (assigneeUserId)        body.assigneeUserId = assigneeUserId;
+      if (dueDate)               body.dueDate        = dueDate;
+      if (priority)              body.priority       = priority;
+      const hrs = parseFloat(estimatedHours);
+      if (!isNaN(hrs) && hrs >= 0) body.estimatedHours = hrs;
+
+      const res = await fetch("/api/projects/tasks", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify(body),
+      });
+      const data = await res.json() as { task?: { id: string }; error?: string };
+      if (!res.ok || data.error) {
+        setErrorMsg(data.error ?? "Failed to add task");
+      } else {
+        onAdded();
+        onClose();
+      }
+    } catch (err) {
+      setErrorMsg(String(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const INPUT_STYLE = {
+    border:     "1px solid var(--rtm-border)",
+    background: "var(--rtm-bg)",
+    color:      "var(--rtm-text-primary)",
+    borderRadius: 8,
+    padding:    "6px 10px",
+    fontSize:   13,
+    width:      "100%",
+  };
+  const LABEL_STYLE = {
+    fontSize: 11,
+    fontWeight: 700,
+    color: "var(--rtm-text-secondary)",
+    marginBottom: 3,
+    display: "block" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: "0.04em",
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0,0,0,0.4)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="rounded-xl shadow-xl p-6 w-full max-w-lg overflow-y-auto"
+        style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", maxHeight: "90vh" }}
+      >
+        <h2 className="text-base font-black mb-1" style={{ color: "var(--rtm-text-primary)" }}>
+          Add Task
+        </h2>
+        <p className="text-xs mb-4" style={{ color: "var(--rtm-text-secondary)" }}>
+          Category: <b>{categoryLabel}</b>
+        </p>
+
+        <div className="flex flex-col gap-3">
+          {/* Name */}
+          <div>
+            <label style={LABEL_STYLE}>Task Name *</label>
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="What needs to be done?"
+              style={INPUT_STYLE}
+              disabled={saving}
+            />
+          </div>
+
+          {/* Description */}
+          <div>
+            <label style={LABEL_STYLE}>Description</label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What this task involves (optional)"
+              style={INPUT_STYLE}
+              disabled={saving}
+            />
+          </div>
+
+          {/* Department + Assignee */}
+          <div className="flex gap-3 flex-wrap">
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label style={LABEL_STYLE}>Department</label>
+              <select
+                value={department}
+                onChange={(e) => { setDepartment(e.target.value); setAssigneeUserId(""); }}
+                style={{ ...INPUT_STYLE, width: "100%" }}
+                disabled={saving}
+              >
+                <option value="">— unset (dept routing) —</option>
+                {VALID_DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label style={LABEL_STYLE}>Assignee</label>
+              {loadingUsers ? (
+                <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Loading…</p>
+              ) : (
+                <select
+                  value={assigneeUserId}
+                  onChange={(e) => setAssigneeUserId(e.target.value)}
+                  style={{ ...INPUT_STYLE, width: "100%" }}
+                  disabled={saving}
+                >
+                  <option value="">— route by department —</option>
+                  {users.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}{u.department ? ` (${u.department})` : ""}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-[10px] mt-1" style={{ color: "var(--rtm-text-muted)" }}>
+                Leave unset to route by department.
+              </p>
+            </div>
+          </div>
+
+          {/* Due date + Priority */}
+          <div className="flex gap-3 flex-wrap">
+            <div style={{ flex: 1, minWidth: 140 }}>
+              <label style={LABEL_STYLE}>Due Date</label>
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                style={INPUT_STYLE}
+                disabled={saving}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 120 }}>
+              <label style={LABEL_STYLE}>Priority</label>
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value)}
+                style={{ ...INPUT_STYLE, width: "100%" }}
+                disabled={saving}
+              >
+                {VALID_PRIORITIES_ADD.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: 100 }}>
+              <label style={LABEL_STYLE}>Est. Hours</label>
+              <input
+                type="number"
+                min={0}
+                step={0.25}
+                value={estimatedHours}
+                onChange={(e) => setEstimatedHours(e.target.value)}
+                placeholder="0"
+                style={INPUT_STYLE}
+                disabled={saving}
+              />
+            </div>
+          </div>
+        </div>
+
+        {errorMsg && (
+          <p className="text-sm mt-3 font-semibold" style={{ color: "#DC2626" }}>{errorMsg}</p>
+        )}
+
+        <div className="flex gap-2 justify-end mt-4">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border"
+            style={{ borderColor: "var(--rtm-border)", color: "var(--rtm-text-secondary)" }}
+            disabled={saving}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => { void handleSave(); }}
+            disabled={saving || !label.trim()}
+            className="px-4 py-1.5 rounded-lg text-xs font-semibold"
+            style={{
+              background: !saving && label.trim() ? "var(--rtm-blue)" : "#CBD5E1",
+              color:      !saving && label.trim() ? "#fff" : "#94A3B8",
+              cursor:     saving || !label.trim() ? "not-allowed" : "pointer",
+            }}
+          >
+            {saving ? "Adding…" : "Add Task"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Reassign Task Modal
 // ---------------------------------------------------------------------------
 
@@ -530,6 +775,11 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
     id: string; label: string; ownerName: string | null;
   } | null>(null);
 
+  // Add Task (ad-hoc) modal
+  const [addTaskCategory, setAddTaskCategory] = useState<{
+    id: string; label: string;
+  } | null>(null);
+
   // Local task override map so UI reflects reassignment without a full reload.
   const [ownerOverrides, setOwnerOverrides] = useState<Map<string, { id: string; name: string }>>(
     new Map()
@@ -725,7 +975,11 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
               <div className="text-center py-16 text-sm" style={{ color: "var(--rtm-text-muted)" }}>No service categories defined.</div>
             )}
             {project.categories.map((cat) => (
-              <CategoryCard key={cat.id} cat={cat} />
+              <CategoryCard
+                key={cat.id}
+                cat={cat}
+                onAddTask={() => setAddTaskCategory({ id: cat.id, label: cat.serviceLabel })}
+              />
             ))}
           </div>
         )}
@@ -823,6 +1077,14 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
         }}
       />
     )}
+    {addTaskCategory && (
+      <AddTaskModal
+        categoryId={addTaskCategory.id}
+        categoryLabel={addTaskCategory.label}
+        onClose={() => setAddTaskCategory(null)}
+        onAdded={() => { void loadProject(); }}
+      />
+    )}
     </>
   );
 }
@@ -831,7 +1093,13 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
 // Category card
 // ---------------------------------------------------------------------------
 
-function CategoryCard({ cat }: { cat: ScopedCategory }) {
+function CategoryCard({
+  cat,
+  onAddTask,
+}: {
+  cat: ScopedCategory;
+  onAddTask: () => void;
+}) {
   const done    = cat.tasks.filter((t) => t.status === "done").length;
   const open    = cat.tasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
   // pending_prereq = list-level blocked (not yet startable)
@@ -844,21 +1112,57 @@ function CategoryCard({ cat }: { cat: ScopedCategory }) {
           <h3 className="font-bold text-base" style={{ color: "var(--rtm-text-primary)" }}>{cat.serviceLabel}</h3>
           <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>{cat.department}</p>
         </div>
-        <div className="flex items-center gap-3 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
-          <span>{cat.tasks.length} tasks</span>
-          {done > 0 && <span style={{ color: "#059669" }}>{done} done</span>}
-          {open > 0 && <span>{open} open</span>}
-          {blocked > 0 && <span style={{ color: "#6366F1" }}>{blocked} waiting</span>}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-xs" style={{ color: "var(--rtm-text-secondary)" }}>
+            <span>{cat.tasks.length} task{cat.tasks.length !== 1 ? "s" : ""}</span>
+            {done > 0 && <span style={{ color: "#059669" }}>{done} done</span>}
+            {open > 0 && <span>{open} open</span>}
+            {blocked > 0 && <span style={{ color: "#6366F1" }}>{blocked} waiting</span>}
+          </div>
+          <button
+            onClick={onAddTask}
+            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold border hover:bg-blue-50 flex-shrink-0"
+            style={{ borderColor: "var(--rtm-blue)", color: "var(--rtm-blue)" }}
+          >
+            + Add Task
+          </button>
         </div>
       </div>
-      {cat.tasks.length > 0 && (
+
+      {cat.tasks.length === 0 ? (
+        // Deliberately empty category: sold work with no tasks yet.
+        // Shown as an intentional "awaiting tasks" state, not a rendering failure.
+        <div
+          className="rounded-lg px-4 py-5 text-center"
+          style={{ background: "var(--rtm-bg)", border: "1px dashed var(--rtm-border)" }}
+        >
+          <p className="text-sm font-semibold mb-1" style={{ color: "var(--rtm-text-secondary)" }}>
+            No tasks yet
+          </p>
+          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>
+            This service was sold but tasks have not been added yet.
+            Use “+ Add Task” to create work items for this category.
+          </p>
+        </div>
+      ) : (
         <div className="flex flex-col gap-1.5">
           {cat.tasks.map((t) => (
             <div key={t.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg"
               style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)" }}>
-              <span className="text-xs font-semibold flex-1" style={{ color: "var(--rtm-text-primary)" }}>
-                {t.label}
-              </span>
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                  {t.label}
+                </span>
+                {/* Ad-hoc badge: distinguishes hand-made tasks from blueprint tasks */}
+                {t.isAdHoc && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                    style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #FDE68A" }}
+                  >
+                    Ad hoc
+                  </span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 {t.status === "pending_prereq" && t.dueDate
                   ? <span className="text-[10px] italic" style={{ color: "#7C3AED" }}>~{t.dueDate} (provisional)</span>

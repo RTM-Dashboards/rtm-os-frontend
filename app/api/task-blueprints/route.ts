@@ -424,6 +424,30 @@ function payloadToGroups(body: NewBlueprintPayload): TemplateGroup[] {
   ];
 }
 
+// ── validateGroupTaskDepartments ────────────────────────────────────────────────
+//
+// Returns an error string if any task inside any group carries a department
+// that is not in VALID_DEPARTMENTS. Returns null when all task departments
+// are canonical.
+//
+// The top-level blueprint department is validated separately (at call site).
+// This helper covers the per-task department fields stored inside groups JSONB.
+// An empty string task department is allowed (means "no department"; routing
+// falls back to the blueprint top-level department at apply time).
+
+function validateGroupTaskDepartments(groups: TemplateGroup[]): string | null {
+  for (const g of groups) {
+    for (const t of g.tasks) {
+      const dept = typeof t.department === "string" ? t.department.trim() : "";
+      if (dept === "") continue; // unset is valid
+      if (!VALID_DEPARTMENTS.includes(dept as (typeof VALID_DEPARTMENTS)[number])) {
+        return `Task "${t.label || "(unnamed)"}": department "${dept}" is not one of the ${VALID_DEPARTMENTS.length} valid departments`;
+      }
+    }
+  }
+  return null;
+}
+
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
 async function authRead(req: NextRequest) {
@@ -645,6 +669,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Validate per-task departments inside groups JSONB against canonical list.
+    const taskDeptErr = validateGroupTaskDepartments(groups);
+    if (taskDeptErr) {
+      return NextResponse.json({ error: taskDeptErr }, { status: 400 });
+    }
+
     if (existing) {
       const updated = await prisma.taskListTemplate.update({
         where: { id: existing.id },
@@ -749,6 +779,12 @@ export async function PATCH(req: NextRequest) {
           { status: 400 },
         );
       }
+    }
+
+    // Validate per-task departments inside groups JSONB against canonical list.
+    const taskDeptErr = validateGroupTaskDepartments(groups);
+    if (taskDeptErr) {
+      return NextResponse.json({ error: taskDeptErr }, { status: 400 });
     }
 
     const now     = new Date().toISOString();

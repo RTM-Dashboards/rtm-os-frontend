@@ -1074,6 +1074,13 @@ model Task {
   // the manual index. The engine also guards via explicit occurrenceKey lookup
   // before insert (see lib/projects/recurring.ts).
   occurrenceKey      String? @map("occurrence_key")
+  // isAdHoc: true for tasks created by hand by an account manager, not from a
+  // blueprint or recurring engine. Ad-hoc tasks are excluded from the
+  // apply-blueprint label-match duplicate guard so a blueprint task named "X"
+  // is not blocked by an existing ad-hoc task with the same label.
+  // The recurring engine already ignores them (it filters on blueprintTemplateId,
+  // which is always NULL for ad-hoc tasks). Default false keeps all existing rows.
+  isAdHoc            Boolean @default(false) @map("is_ad_hoc")
   createdAt  String  @default("") @map("created_at")
   updatedAt  String  @default("") @map("updated_at")
 

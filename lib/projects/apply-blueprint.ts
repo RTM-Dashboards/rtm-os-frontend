@@ -532,12 +532,15 @@ export async function applyBlueprintToProject(
   if (allCatIds.length > 0) {
     const existing = await prisma.task.findMany({
       where:  { categoryId: { in: allCatIds } },
-      select: { label: true, blueprintTaskId: true },
+      select: { label: true, blueprintTaskId: true, isAdHoc: true },
     });
     for (const e of existing) {
       if (e.blueprintTaskId) {
         existingByBlueprintId.add(e.blueprintTaskId);
-      } else {
+      } else if (!e.isAdHoc) {
+        // Only add to the label guard if this is a blueprint-generated task
+        // (blueprintTaskId NULL, not ad-hoc). Ad-hoc tasks are hand-made and
+        // must never block a blueprint task with the same name from being applied.
         existingByLabel.add(e.label);
       }
     }

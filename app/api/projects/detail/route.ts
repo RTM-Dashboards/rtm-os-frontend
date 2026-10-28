@@ -71,6 +71,7 @@ export interface ScopedTask {
   dueDate: string | null;
   status: string;
   isSetup: boolean;
+  isAdHoc: boolean;
   createdAt: string;
   updatedAt: string;
   isOverdue: boolean;
@@ -334,6 +335,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           dueDate: t.dueDate ?? null,
           status: t.status,
           isSetup: t.isSetup,
+          isAdHoc: t.isAdHoc,
           createdAt: t.createdAt,
           updatedAt: t.updatedAt,
           // A blocked task with no due date is not overdue — it is waiting.
