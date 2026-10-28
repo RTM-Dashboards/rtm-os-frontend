@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function PreviewBadge() {
   return (
@@ -35,6 +35,30 @@ function SaveToast({ onClose }: { onClose: () => void }) {
 // Real team members will be loaded from Postgres users once the user management API is wired.
 const teamMembers: { name: string; role: string; access: string; status: string; clients: number; lastActive: string }[] = [];
 
+interface MeUser {
+  name:       string;
+  email:      string;
+  role:       string | null;
+  department: string | null;
+}
+
+function useMe(): MeUser | null {
+  const [me, setMe] = useState<MeUser | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me", { credentials: "include" })
+      .then((r) => r.ok ? r.json() as Promise<MeUser> : Promise.reject(r.status))
+      .then((data) => { if (!cancelled) setMe(data); })
+      .catch(() => { /* non-critical; card stays in placeholder state */ });
+    return () => { cancelled = true; };
+  }, []);
+  return me;
+}
+
+function userInitial(name: string): string {
+  return (name.trim().split(/\s+/)[0]?.[0] ?? "").toUpperCase();
+}
+
 const workspacePermissions = [
   { label: "Manage Clients", enabled: true },
   { label: "Assign Tasks", enabled: true },
@@ -67,6 +91,7 @@ const accessColors: Record<string, string> = {
 };
 
 export default function AccountManagementSettingsPage() {
+  const me = useMe();
   const [permissions, setPermissions] = useState(workspacePermissions);
   const [notifications, setNotifications] = useState(notificationPrefs);
   const [showSaveToast, setShowSaveToast] = useState(false);
@@ -108,11 +133,15 @@ export default function AccountManagementSettingsPage() {
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"style={{ background: "var(--rtm-blue)"}}
           >
-            J
+            {me ? userInitial(me.name) : "…"}
           </div>
           <div className="flex-1">
-            <p className="font-bold text-sm" style={{ color: "var(--rtm-text-primary)" }}>Account Management Head</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>Department Head — not yet connected to real user record</p>
+            <p className="font-bold text-sm" style={{ color: "var(--rtm-text-primary)" }}>
+              {me ? me.name : "Loading…"}
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--rtm-text-secondary)" }}>
+              {me ? me.email : ""}
+            </p>
           </div>
           <span
             className="text-[11px] font-bold px-2.5 py-1 rounded-full"style={{ background: "#1B4FD818", color: "#1B4FD8"}}

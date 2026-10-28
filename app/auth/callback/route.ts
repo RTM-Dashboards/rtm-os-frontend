@@ -50,6 +50,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { landingRoute } from "@/lib/auth/landing-route";
 
 // Read the allowed domain from an environment variable so it can differ
 // between environments and be corrected without a code change or redeploy.
@@ -58,7 +59,6 @@ import { createClient } from "@/lib/supabase/server";
 const ALLOWED_DOMAIN = (
   process.env.AUTH_ALLOWED_EMAIL_DOMAIN ?? "realtimemarketing.com"
 ).toLowerCase();
-const DEFAULT_REDIRECT = "/admin";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
 
     const now = new Date().toISOString();
 
-    await prisma.user.upsert({
+    const upserted = await prisma.user.upsert({
       where: { id: user.id },
       update: {
         // Fields that reflect the current Google account state — safe to refresh.
@@ -157,7 +157,13 @@ export async function GET(request: NextRequest) {
         updatedAt: now,
         lastLoginAt: now,
       },
+      select: { role: true, department: true },
     });
+
+    // Compute the landing route from the upserted row so that a new user with
+    // no role is not sent to /admin — they will hit the auth wall there.
+    const destination = landingRoute(upserted.role, upserted.department);
+    return NextResponse.redirect(`${origin}${destination}`);
   } catch (upsertError) {
     // A2: upsert failure is now BLOCKING. A missing User row means the access
     // check in lib/auth/ will deny entry. Rather than let the user through to
@@ -173,6 +179,4 @@ export async function GET(request: NextRequest) {
       )}`
     );
   }
-
-  return NextResponse.redirect(`${origin}${DEFAULT_REDIRECT}`);
 }
