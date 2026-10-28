@@ -87,6 +87,9 @@ export interface ScopedTask {
   estimatedHours: number | null;
   priority: string | null;
   description: string | null;
+  // Subtask support (20261028_subtasks)
+  // null = top-level task; non-null = this task is a subtask of the given id.
+  parentTaskId: string | null;
 }
 
 export interface ScopedCategory {
@@ -336,6 +339,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           status: t.status,
           isSetup: t.isSetup,
           isAdHoc: t.isAdHoc,
+          parentTaskId:        t.parentTaskId ?? null,
           createdAt: t.createdAt,
           updatedAt: t.updatedAt,
           // A blocked task with no due date is not overdue — it is waiting.

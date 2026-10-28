@@ -1081,6 +1081,15 @@ model Task {
   // The recurring engine already ignores them (it filters on blueprintTemplateId,
   // which is always NULL for ad-hoc tasks). Default false keeps all existing rows.
   isAdHoc            Boolean @default(false) @map("is_ad_hoc")
+  // ── Subtask support (20261028_subtasks) ──────────────────────────────────
+  // parentTaskId: the Task.id of the parent task when this is a subtask.
+  // NULL = top-level task. Non-null = subtask (one level only).
+  // ON DELETE CASCADE: deleting a parent deletes its subtasks.
+  // Enforced depth (one level): API verifies parent.parentTaskId IS NULL.
+  // Same-category enforcement: API verifies parent.categoryId === this.categoryId.
+  parentTaskId       String? @map("parent_task_id")
+  parent             Task?   @relation("SubtaskParent", fields: [parentTaskId], references: [id], onDelete: Cascade)
+  subtasks           Task[]  @relation("SubtaskParent")
   createdAt  String  @default("") @map("created_at")
   updatedAt  String  @default("") @map("updated_at")
 
@@ -1088,6 +1097,7 @@ model Task {
   @@index([ownerId])
   @@index([department])
   @@index([onboardingRecordId])
+  @@index([parentTaskId])
   @@map("tasks")
 }
 

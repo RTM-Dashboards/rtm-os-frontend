@@ -57,6 +57,8 @@ export interface TaskListItem {
   description: string | null;
   createdAt: string;
   updatedAt: string;
+  // Subtask support: null = top-level, non-null = subtask of this task id.
+  parentTaskId: string | null;
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
@@ -189,6 +191,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         description:    t.description ?? null,
         createdAt:      t.createdAt,
         updatedAt:      t.updatedAt,
+        parentTaskId:   t.parentTaskId ?? null,
       };
     });
 

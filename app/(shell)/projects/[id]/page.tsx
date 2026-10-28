@@ -336,13 +336,15 @@ function ApplyTemplateModal({ projectId, onClose, onApplied }: ApplyTemplateModa
 const VALID_PRIORITIES_ADD = ["Urgent", "High", "Medium", "Low"] as const;
 
 interface AddTaskModalProps {
-  categoryId:    string;
-  categoryLabel: string;
-  onClose:       () => void;
-  onAdded:       () => void;
+  categoryId:      string;
+  categoryLabel:   string;
+  onClose:         () => void;
+  onAdded:         () => void;
+  parentTaskId?:   string;   // if set, create as subtask of this task
+  parentTaskLabel?: string;  // display label for the parent task
 }
 
-function AddTaskModal({ categoryId, categoryLabel, onClose, onAdded }: AddTaskModalProps) {
+function AddTaskModal({ categoryId, categoryLabel, onClose, onAdded, parentTaskId, parentTaskLabel }: AddTaskModalProps) {
   const [users,    setUsers]    = useState<Array<{ id: string; name: string; department: string | null }>>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [saving,   setSaving]   = useState(false);
@@ -381,6 +383,7 @@ function AddTaskModal({ categoryId, categoryLabel, onClose, onAdded }: AddTaskMo
       if (priority)              body.priority       = priority;
       const hrs = parseFloat(estimatedHours);
       if (!isNaN(hrs) && hrs >= 0) body.estimatedHours = hrs;
+      if (parentTaskId)          body.parentTaskId   = parentTaskId;
 
       const res = await fetch("/api/projects/tasks", {
         method:  "POST",
@@ -431,10 +434,13 @@ function AddTaskModal({ categoryId, categoryLabel, onClose, onAdded }: AddTaskMo
         style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)", maxHeight: "90vh" }}
       >
         <h2 className="text-base font-black mb-1" style={{ color: "var(--rtm-text-primary)" }}>
-          Add Task
+          {parentTaskId ? "Add Subtask" : "Add Task"}
         </h2>
         <p className="text-xs mb-4" style={{ color: "var(--rtm-text-secondary)" }}>
-          Category: <b>{categoryLabel}</b>
+          {parentTaskId
+            ? <><b>Subtask of:</b> {parentTaskLabel ?? parentTaskId}<br/><span style={{opacity:0.7}}>Category: {categoryLabel}</span></>
+            : <>Category: <b>{categoryLabel}</b></>
+          }
         </p>
 
         <div className="flex flex-col gap-3">
@@ -775,9 +781,10 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
     id: string; label: string; ownerName: string | null;
   } | null>(null);
 
-  // Add Task (ad-hoc) modal
+  // Add Task / Add Subtask modal
   const [addTaskCategory, setAddTaskCategory] = useState<{
     id: string; label: string;
+    parentTaskId?: string; parentTaskLabel?: string;
   } | null>(null);
 
   // Local task override map so UI reflects reassignment without a full reload.
@@ -931,10 +938,10 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
             {/* Task summary */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: "Total Tasks", value: allTasks.length },
-                { label: "Open",        value: openCount },
-                { label: "Done",        value: doneCount },
-                { label: "Waiting",     value: blockedCount },
+                { label: "Tasks & Subtasks", value: allTasks.length },
+                { label: "Open",             value: openCount },
+                { label: "Done",             value: doneCount },
+                { label: "Waiting",          value: blockedCount },
               ].map((m) => (
                 <div key={m.label} className="rounded-xl p-4" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
                   <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: "var(--rtm-text-secondary)" }}>{m.label}</p>
@@ -957,7 +964,7 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
               <Field label="Start Date"   value={project.startDate ?? "—"} />
               <Field label="End Date"     value={project.endDate ?? "—"} />
               <Field label="Services"     value={String(project.categories.length)} />
-              <Field label="Total Tasks"  value={String(allTasks.length)} />
+              <Field label="Tasks & Subtasks" value={String(allTasks.length)} />
               <Field label="Created"      value={project.createdAt} />
             </div>
 
@@ -979,6 +986,10 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
                 key={cat.id}
                 cat={cat}
                 onAddTask={() => setAddTaskCategory({ id: cat.id, label: cat.serviceLabel })}
+                onAddSubtask={(parentId, parentLabel) => setAddTaskCategory({
+                  id: cat.id, label: cat.serviceLabel,
+                  parentTaskId: parentId, parentTaskLabel: parentLabel,
+                })}
               />
             ))}
           </div>
@@ -1081,6 +1092,8 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
       <AddTaskModal
         categoryId={addTaskCategory.id}
         categoryLabel={addTaskCategory.label}
+        parentTaskId={addTaskCategory.parentTaskId}
+        parentTaskLabel={addTaskCategory.parentTaskLabel}
         onClose={() => setAddTaskCategory(null)}
         onAdded={() => { void loadProject(); }}
       />
@@ -1096,14 +1109,27 @@ export default function ProjectDetailPage({ params, backPath = "/projects" }: { 
 function CategoryCard({
   cat,
   onAddTask,
+  onAddSubtask,
 }: {
   cat: ScopedCategory;
   onAddTask: () => void;
+  onAddSubtask: (parentId: string, parentLabel: string) => void;
 }) {
+  // Counts include ALL tasks (subtasks are real work with real owners).
   const done    = cat.tasks.filter((t) => t.status === "done").length;
   const open    = cat.tasks.filter((t) => t.status === "open" || t.status === "in_progress").length;
   // pending_prereq = list-level blocked (not yet startable)
   const blocked = cat.tasks.filter((t) => t.isBlocked || t.status === "pending_prereq").length;
+  // Separate top-level tasks from subtasks for nested rendering.
+  const topLevelTasks = cat.tasks.filter((t) => !t.parentTaskId);
+  const subtasksByParent = new Map<string, typeof cat.tasks>();
+  for (const t of cat.tasks) {
+    if (t.parentTaskId) {
+      const arr = subtasksByParent.get(t.parentTaskId) ?? [];
+      arr.push(t);
+      subtasksByParent.set(t.parentTaskId, arr);
+    }
+  }
 
   return (
     <div className="rounded-xl p-5" style={{ background: "var(--rtm-surface)", border: "1px solid var(--rtm-border)" }}>
@@ -1146,36 +1172,93 @@ function CategoryCard({
         </div>
       ) : (
         <div className="flex flex-col gap-1.5">
-          {cat.tasks.map((t) => (
-            <div key={t.id} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg"
-              style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)" }}>
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
-                  {t.label}
-                </span>
-                {/* Ad-hoc badge: distinguishes hand-made tasks from blueprint tasks */}
-                {t.isAdHoc && (
-                  <span
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                    style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #FDE68A" }}
-                  >
-                    Ad hoc
-                  </span>
-                )}
+          {topLevelTasks.map((t) => {
+            const subs = subtasksByParent.get(t.id) ?? [];
+            const subsDone = subs.filter((s) => s.status === "done").length;
+            return (
+              <div key={t.id}>
+                {/* Parent task row */}
+                <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg"
+                  style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)" }}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                      {t.label}
+                    </span>
+                    {/* Ad-hoc badge */}
+                    {t.isAdHoc && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #FDE68A" }}>
+                        Ad hoc
+                      </span>
+                    )}
+                    {/* Subtask progress badge — shows even when all subtasks are done */}
+                    {subs.length > 0 && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                        style={{
+                          background: subsDone === subs.length ? "#ECFDF5" : "#EFF6FF",
+                          color:      subsDone === subs.length ? "#059669" : "#1D4ED8",
+                          border:     `1px solid ${subsDone === subs.length ? "#A7F3D0" : "#BFDBFE"}`,
+                        }}>
+                        {subsDone}/{subs.length} subtasks
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {t.status === "pending_prereq" && t.dueDate
+                      ? <span className="text-[10px] italic" style={{ color: "#7C3AED" }}>~{t.dueDate} (provisional)</span>
+                      : t.dueDate
+                        ? <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{t.dueDate}</span>
+                        : t.isBlocked && t.blockedBy.length > 0
+                          ? <span className="text-[10px]" style={{ color: "var(--rtm-text-secondary)" }}>After {t.blockedBy[0].label}</span>
+                          : null
+                    }
+                    <TaskStatusBadge status={t.status} />
+                    <button
+                      onClick={() => onAddSubtask(t.id, t.label)}
+                      className="text-[10px] font-semibold hover:underline flex-shrink-0"
+                      style={{ color: "var(--rtm-blue)", opacity: 0.75 }}
+                      title="Add subtask"
+                    >
+                      +sub
+                    </button>
+                  </div>
+                </div>
+                {/* Subtask rows — indented, left-border accent */}
+                {subs.map((s) => (
+                  <div key={s.id}
+                    className="flex items-center justify-between gap-2 px-3 py-1.5 rounded-lg mt-0.5"
+                    style={{
+                      background:  "var(--rtm-bg)",
+                      border:      "1px solid var(--rtm-border-light)",
+                      borderLeft:  "3px solid var(--rtm-blue)",
+                      marginLeft:  "20px",
+                    }}>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-[10px]" style={{ color: "#94A3B8" }}>↳</span>
+                      <span className="text-xs" style={{ color: "var(--rtm-text-primary)" }}>
+                        {s.label}
+                      </span>
+                      {s.isAdHoc && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: "#FEF3C7", color: "#92400E", border: "1px solid #FDE68A" }}>
+                          Ad hoc
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {s.dueDate && (
+                        <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{s.dueDate}</span>
+                      )}
+                      {s.ownerName && (
+                        <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{s.ownerName}</span>
+                      )}
+                      <TaskStatusBadge status={s.status} />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="flex items-center gap-2">
-                {t.status === "pending_prereq" && t.dueDate
-                  ? <span className="text-[10px] italic" style={{ color: "#7C3AED" }}>~{t.dueDate} (provisional)</span>
-                  : t.dueDate
-                    ? <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>{t.dueDate}</span>
-                    : t.isBlocked && t.blockedBy.length > 0
-                      ? <span className="text-[10px]" style={{ color: "var(--rtm-text-secondary)" }}>After {t.blockedBy[0].label}</span>
-                      : null
-                }
-                <TaskStatusBadge status={t.status} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

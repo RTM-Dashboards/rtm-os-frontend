@@ -98,6 +98,7 @@ async function resolveTask(taskId: string): Promise<TaskWithProject | null> {
         priority:            flat.priority,
         description:         flat.description,
         isAdHoc:             false,
+        parentTaskId:        null,
       },
       categoryId: flat.categoryId,
       serviceLabel: "",

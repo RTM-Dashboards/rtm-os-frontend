@@ -10,7 +10,14 @@
 //     dueDate?: string;         // ISO date string "YYYY-MM-DD"; optional
 //     priority?: string;        // "Urgent"|"High"|"Medium"|"Low"
 //     estimatedHours?: number;  // decimal hours
+//     parentTaskId?: string;    // if set, this task is a subtask of the given task
 //   }
+//
+// ── Subtask rules ──────────────────────────────────────────────────────────────
+//   - parentTaskId must exist and belong to the same category (enforced here)
+//   - parentTaskId's parent must be NULL (one level of nesting only)
+//   - A subtask cannot be its own ancestor (self-cycle refused)
+//   - Deleting a parent cascades to its subtasks (DB ON DELETE CASCADE)
 //   → { task: { id, label, status, ownerId, ownerName, department, dueDate,
 //               priority, estimatedHours, description, createdAt, updatedAt,
 //               isAdHoc } }
@@ -93,6 +100,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     dueDate,
     priority,
     estimatedHours,
+    parentTaskId,
   } = body as {
     categoryId?:     string;
     label?:          string;
@@ -102,6 +110,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     dueDate?:        string;
     priority?:       string;
     estimatedHours?: number;
+    parentTaskId?:   string;
   };
 
   // ── Validation ─────────────────────────────────────────────────────────────
@@ -154,6 +163,31 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   });
   if (!category) {
     return NextResponse.json({ error: `Category not found: ${categoryId}` }, { status: 404 });
+  }
+
+  // ── Resolve and validate parent task ──────────────────────────────────────
+  if (parentTaskId) {
+    const parent = await prisma.task.findUnique({
+      where:  { id: parentTaskId },
+      select: { id: true, categoryId: true, parentTaskId: true },
+    });
+    if (!parent) {
+      return NextResponse.json({ error: `parentTaskId not found: ${parentTaskId}` }, { status: 404 });
+    }
+    // Same category required — enforces same project implicitly.
+    if (parent.categoryId !== category.id) {
+      return NextResponse.json(
+        { error: "A subtask must belong to the same category as its parent task" },
+        { status: 400 },
+      );
+    }
+    // One level only: parent must not itself be a subtask.
+    if (parent.parentTaskId !== null) {
+      return NextResponse.json(
+        { error: "Subtasks cannot themselves have subtasks (maximum one level of nesting)" },
+        { status: 400 },
+      );
+    }
   }
 
   // ── Resolve owner ──────────────────────────────────────────────────────────
@@ -220,6 +254,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // is_ad_hoc = true: excludes this row from apply-blueprint's label-match
       // guard and makes it identifiable in the UI.
       isAdHoc:                true,
+      // parentTaskId: null for top-level tasks, or the parent task id for subtasks.
+      parentTaskId:           parentTaskId || null,
       // Optional fields from body.
       priority:               priority       || null,
       estimatedHours:         estimatedHours !== undefined ? estimatedHours : null,
@@ -244,6 +280,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       estimatedHours: task.estimatedHours !== null ? Number(task.estimatedHours) : null,
       description:    task.description,
       isAdHoc:        task.isAdHoc,
+      parentTaskId:   task.parentTaskId ?? null,
       createdAt:      task.createdAt,
       updatedAt:      task.updatedAt,
     },
