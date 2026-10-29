@@ -1,6 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+// ── Signed-in user (mirrors Account Management settings pattern) ───────────────
+interface MeUser {
+  name:       string;
+  email:      string;
+  role:       string | null;
+  department: string | null;
+}
+
+function useMe(): MeUser | null {
+  const [me, setMe] = useState<MeUser | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/me", { credentials: "include" })
+      .then((r) => r.ok ? r.json() as Promise<MeUser> : Promise.reject(r.status))
+      .then((data) => { if (!cancelled) setMe(data); })
+      .catch(() => { /* non-critical; card shows placeholder until resolved */ });
+    return () => { cancelled = true; };
+  }, []);
+  return me;
+}
+
+function userInitials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
+}
 
 function PreviewBadge() {
   return (
@@ -71,6 +97,7 @@ const accessColors: Record<string, string> = {
 };
 
 export default function BillingSettingsPage() {
+  const me = useMe();
   const [permissions, setPermissions] = useState(workspacePermissions);
   const [notifications, setNotifications] = useState(notificationPrefs);
   const [showSaveToast, setShowSaveToast] = useState(false);
@@ -106,10 +133,10 @@ export default function BillingSettingsPage() {
       <div className="rounded-xl border p-5"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
         <h3 className="text-sm font-bold mb-4"style={{ color: "var(--rtm-text-primary)"}}>Department Head / Workspace Admin</h3>
         <div className="flex items-center gap-4 p-4 rounded-lg"style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border-light)"}}>
-          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"style={{ background: "var(--rtm-blue)"}}>P</div>
+          <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"style={{ background: "var(--rtm-blue)"}}>{me ? userInitials(me.name) : "…"}</div>
           <div className="flex-1">
-            <p className="font-bold text-sm"style={{ color: "var(--rtm-text-primary)"}}>Priya N.</p>
-            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-secondary)"}}>priya@rtm.io · Billing Department Head</p>
+            <p className="font-bold text-sm"style={{ color: "var(--rtm-text-primary)"}}>{me ? me.name : "Loading…"}</p>
+            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-secondary)"}}>{me ? `${me.email} · Billing Department Head` : ""}</p>
           </div>
           <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"style={{ background: "#1B4FD818", color: "#1B4FD8"}}>Admin</span>
         </div>

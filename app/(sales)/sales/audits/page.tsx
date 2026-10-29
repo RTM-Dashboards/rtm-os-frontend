@@ -8,7 +8,7 @@ import {
   AUDIT_REQUEST_STATUS_COLORS,
 } from "@/lib/sales/audit-config";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 //
 // Types
@@ -115,411 +115,139 @@ interface Audit {
 }
 
 //
-// Mock Data — 10 Home Services Audits
+// Data mapping — proposals with real auditResult from Postgres
+// MOCK_AUDITS is intentionally removed; live data is fetched inside the page component.
+// The constant below is kept empty so the colour helpers and sub-components that
+// reference the Audit type still compile cleanly.
 //
 
+// ── Proposal → Audit mapper ──────────────────────────────────────────────────
+// Maps a SalesProposalRecord (with non-null auditResult) into the Audit shape
+// the existing UI expects.  Only fields that can be derived from real data
+// are populated; the rest use honest empty values.
+
+interface RawAuditResult {
+  id?: string;
+  status?: string;
+  overallScore?: number;
+  findings?: Array<{
+    id: string;
+    category: string;
+    severity: string;
+    priority: string;
+    questionLabel: string;
+    businessImpact: string;
+    estimatedRevenueImpact?: number;
+    relatedService?: string;
+  }>;
+  recommendations?: Array<{
+    id: string;
+    title?: string;
+    department?: string;
+    monthlyRevenue?: number;
+    priority?: string;
+  }>;
+  estimatedTotalMonthlyRevenue?: number;
+  generatedAt?: string;
+  templateId?: string;
+  totalFindingCount?: number;
+  criticalCount?: number;
+  highCount?: number;
+  mediumCount?: number;
+  lowCount?: number;
+}
+
+interface RawClientInfo {
+  businessName?: string;
+  name?: string;
+  website?: string;
+  industry?: string;
+}
+
+interface RawProposalRecord {
+  id: string;
+  status: string;
+  clientInfo?: RawClientInfo | null;
+  auditResult?: RawAuditResult | null;
+  createdByUserName?: string | null;
+  createdAt: string;
+  [key: string]: unknown;
+}
+
+function mapProposalToAudit(p: RawProposalRecord): Audit {
+  const ar = p.auditResult as RawAuditResult;
+  const ci = (p.clientInfo ?? {}) as RawClientInfo;
+  const businessName = ci.businessName || ci.name || "Unknown Client";
+
+  const findings: AuditFinding[] = (ar.findings ?? []).map((f, idx) => ({
+    id:             f.id ?? `f-${idx}`,
+    title:          f.questionLabel ?? f.category ?? "Finding",
+    severity:       (["Critical", "High", "Medium", "Low"].includes(f.severity ?? "") ? f.severity : "Medium") as FindingSeverity,
+    category:       f.category ?? "General",
+    description:    f.businessImpact ?? "",
+    recommendation: f.relatedService ?? "",
+    revenueImpact:  f.estimatedRevenueImpact ?? 0,
+    priority:       (["Critical", "High", "Medium", "Low"].includes(f.priority ?? "") ? f.priority : "Medium") as AuditPriority,
+  }));
+
+  const recommendedServices: RecommendedService[] = (ar.recommendations ?? []).map((r, idx) => ({
+    id:                `rs-${idx}`,
+    service:           r.title ?? "Service",
+    reason:            "",
+    impactScore:       0,
+    priority:          (["Critical", "High", "Medium", "Low"].includes(r.priority ?? "") ? r.priority : "Medium") as AuditPriority,
+    department:        r.department ?? "",
+    estimatedRevenue:  r.monthlyRevenue ?? 0,
+    proposalStatus:    "Not Added" as const,
+  }));
+
+  // Map proposal status to audit status
+  const statusMap: Record<string, AuditStatus> = {
+    draft:       "Not Started",
+    "in-progress": "In Progress",
+    sent:        "Completed",
+    accepted:    "Completed",
+    rejected:    "Completed",
+    complete:    "Completed",
+  };
+
+  return {
+    id:                  p.id,
+    auditName:           `Audit — ${businessName}`,
+    client:              businessName,
+    auditType:           "SEO Technical",   // no structured audit-type field on proposal
+    createdBy:           p.createdByUserName ?? "Sales",
+    createdDate:         ar.generatedAt
+                           ? new Date(ar.generatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                           : new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+    priority:            "Medium",
+    status:              statusMap[p.status] ?? "Pending",
+    issuesFound:         ar.totalFindingCount ?? findings.length,
+    revenueOpportunity:  ar.estimatedTotalMonthlyRevenue ?? 0,
+    proposalStatus:      p.status === "sent" || p.status === "accepted" ? "Sent" : "Not Started",
+    industry:            ci.industry ?? "",
+    website:             ci.website ?? "",
+    summary:             "",
+    overallScore:        ar.overallScore ?? 0,
+    findings,
+    recommendedServices,
+    recommendedLineItems: [],
+    competitors:         [],
+    timeline:            [{
+      id:     "tl-created",
+      date:   new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      event:  "Audit Created",
+      type:   "audit_created",
+      user:   p.createdByUserName ?? "Sales",
+      detail: "",
+    }],
+  };
+}
+
+// MOCK_AUDITS — intentionally empty. Real audit data comes from proposals with auditResult
+// fetched inside AuditIntelligenceCenterPage via /api/sales-proposals.
 const MOCK_AUDITS: Audit[] = [
-  // 1 — SEO Technical — Summit Landscaping
-  {
-    id: "aud-001",
-    auditName: "SEO Technical Audit — Summit Landscaping",
-    client: "Summit Landscaping",
-    auditType: "SEO Technical",
-    createdBy: "Jordan M.",
-    createdDate: "Jun 5, 2025",
-    priority: "High",
-    status: "Completed",
-    issuesFound: 7,
-    revenueOpportunity: 3200,
-    proposalStatus: "Draft",
-    industry: "Landscaping",
-    website: "summitlandscaping.com",
-    summary: "Strong site structure with critical indexing issues suppressing local rankings. Thin service pages and missing location schema identified.",
-    overallScore: 74,
-    findings: [
-      { id: "f001-1", title: "Missing Location Schema", severity: "Critical", category: "Technical SEO", description: "No LocalBusiness schema on any service area pages — losing rich result eligibility.", recommendation: "Implement LocalBusiness schema with service area markup.", revenueImpact: 900, priority: "High" },
-      { id: "f001-2", title: "Thin Service Pages", severity: "High", category: "Content", description: "Service pages average 140 words — insufficient for ranking in competitive landscaping searches.", recommendation: "Expand service pages to 700+ words with FAQ schema.", revenueImpact: 800, priority: "High" },
-      { id: "f001-3", title: "Missing Canonical Tags", severity: "High", category: "Technical SEO", description: "3 pages with duplicate content have no canonical tags — keyword cannibalization risk.", recommendation: "Add canonical tags to all duplicate or near-duplicate pages.", revenueImpact: 600, priority: "High" },
-      { id: "f001-4", title: "No XML Sitemap Submitted", severity: "Medium", category: "Crawlability", description: "Sitemap exists but not submitted to Google Search Console.", recommendation: "Submit sitemap in GSC and verify indexing.", revenueImpact: 400, priority: "Medium" },
-      { id: "f001-5", title: "Slow Mobile Page Speed", severity: "Medium", category: "Performance", description: "Mobile PageSpeed score 48 — large uncompressed images causing LCP delay.", recommendation: "Compress images, implement lazy loading, and defer non-critical JS.", revenueImpact: 300, priority: "Medium" },
-      { id: "f001-6", title: "Broken Internal Links (3)", severity: "Medium", category: "Technical SEO", description: "3 broken internal links found on services hub page.", recommendation: "Fix or redirect all broken links.", revenueImpact: 100, priority: "Low" },
-      { id: "f001-7", title: "Missing Meta Descriptions", severity: "Low", category: "On-Page SEO", description: "6 pages missing unique meta descriptions reducing click-through rate.", recommendation: "Write compelling meta descriptions for all key pages.", revenueImpact: 100, priority: "Low" },
-    ],
-    recommendedServices: [
-      { id: "rs001-1", service: "SEO Monthly Management", reason: "Ongoing content and technical optimization required to capture landscaping search demand.", impactScore: 92, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-      { id: "rs001-2", service: "GBP Monthly Management", reason: "GBP optimization needed to support local ranking improvements from SEO work.", impactScore: 84, priority: "High", department: "GBP", estimatedRevenue: 500, proposalStatus: "Not Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li001-1", lineItem: "SEO Setup & Onboarding", category: "SEO", department: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days", proposalStatus: "Not Added" },
-      { id: "li001-2", lineItem: "SEO Monthly Management", category: "SEO", department: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-001-1", date: "Jun 5, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M.", detail: "SEO Technical Audit created." },
-      { id: "tl-001-2", date: "Jun 5, 2025", event: "Finding Added", type: "finding_added", user: "Jordan M.", detail: "Critical: Missing Location Schema" },
-      { id: "tl-001-3", date: "Jun 5, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Status updated to Completed." },
-    ],
-  },
-
-  // 2 — GBP — Blue Ridge Plumbing
-  {
-    id: "aud-002",
-    auditName: "GBP Audit — Blue Ridge Plumbing",
-    client: "Blue Ridge Plumbing",
-    auditType: "GBP",
-    createdBy: "Sarah K.",
-    createdDate: "Jun 7, 2025",
-    priority: "Critical",
-    status: "Completed",
-    issuesFound: 11,
-    revenueOpportunity: 2800,
-    proposalStatus: "Sent",
-    industry: "Plumbing",
-    website: "blueridgeplumbing.com",
-    summary: "GBP profile critically underperforming. Only 18 reviews vs competitor average of 120. No posts in 4 months. Missing secondary service categories.",
-    overallScore: 31,
-    findings: [
-      { id: "f002-1", title: "Critically Low Review Volume", severity: "Critical", category: "GBP Reviews", description: "Only 18 reviews vs competitor average of 120. Missing local pack for primary plumbing terms.", recommendation: "Launch review generation campaign targeting 80+ reviews in 90 days.", revenueImpact: 1200, priority: "Critical" },
-      { id: "f002-2", title: "No GBP Posts in 4 Months", severity: "High", category: "GBP Posts", description: "GBP profile shows zero recent posts — losing engagement ranking signal.", recommendation: "Post weekly service highlights and emergency plumbing offers.", revenueImpact: 700, priority: "High" },
-      { id: "f002-3", title: "Only 4 Photos Uploaded", severity: "Critical", category: "GBP Photos", description: "Competitors average 60+ photos. Low photo count reduces profile trust.", recommendation: "Upload 30+ photos of team, vehicles, and completed jobs.", revenueImpact: 500, priority: "Critical" },
-      { id: "f002-4", title: "Missing Secondary Categories", severity: "High", category: "GBP Categories", description: "Only primary category set. Missing drain cleaning, water heaters, emergency plumbing.", recommendation: "Add all relevant secondary service categories.", revenueImpact: 300, priority: "High" },
-      { id: "f002-5", title: "No Q&A Section", severity: "Medium", category: "GBP Q&A", description: "Zero Q&A answers. Competitors have 10–20 answered questions.", recommendation: "Seed and answer 10 high-value plumbing questions.", revenueImpact: 100, priority: "Medium" },
-    ],
-    recommendedServices: [
-      { id: "rs002-1", service: "GBP Optimization", reason: "Profile critically underperforming — immediate intervention required.", impactScore: 97, priority: "Critical", department: "GBP", estimatedRevenue: 500, proposalStatus: "Added" },
-      { id: "rs002-2", service: "Review Generation Campaign", reason: "18 reviews vs 120 competitor average — urgent gap to close.", impactScore: 95, priority: "Critical", department: "GBP", estimatedRevenue: 300, proposalStatus: "Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li002-1", lineItem: "GBP Setup & Optimization", category: "GBP", department: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days", proposalStatus: "Added" },
-      { id: "li002-2", lineItem: "GBP Monthly Management", category: "GBP", department: "GBP", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing", proposalStatus: "Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-002-1", date: "Jun 7, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K." },
-      { id: "tl-002-2", date: "Jun 7, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: Low Review Volume" },
-      { id: "tl-002-3", date: "Jun 7, 2025", event: "Status Changed", type: "status_changed", user: "Sarah K.", detail: "Completed." },
-      { id: "tl-002-4", date: "Jun 8, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Sarah K.", detail: "Proposal sent to client." },
-    ],
-  },
-
-  // 3 — PPC — Apex Roofing
-  {
-    id: "aud-003",
-    auditName: "PPC Audit — Apex Roofing",
-    client: "Apex Roofing",
-    auditType: "PPC / Google Ads",
-    createdBy: "Mike T.",
-    createdDate: "May 30, 2025",
-    priority: "Critical",
-    status: "Completed",
-    issuesFound: 9,
-    revenueOpportunity: 4500,
-    proposalStatus: "Accepted",
-    industry: "Roofing",
-    website: "apexroofing.com",
-    summary: "PPC account running single broad match campaign with zero negative keywords. Conversion tracking firing on page view only — no true lead attribution.",
-    overallScore: 28,
-    findings: [
-      { id: "f003-1", title: "No Negative Keyword List", severity: "Critical", category: "PPC Structure", description: "Zero negative keywords. Budget wasting on irrelevant queries like 'roof repair DIY' and 'roofing jobs'.", recommendation: "Build 250+ roofing-specific negative keyword list immediately.", revenueImpact: 1800, priority: "Critical" },
-      { id: "f003-2", title: "Conversion Tracking on Page View Only", severity: "Critical", category: "PPC Tracking", description: "Only page view fires as conversion. Cannot attribute actual form submissions or calls.", recommendation: "Rebuild conversion tracking for form submissions and phone calls via GTM.", revenueImpact: 1400, priority: "Critical" },
-      { id: "f003-3", title: "Homepage as Landing Page", severity: "High", category: "Landing Pages", description: "All paid traffic sent to homepage. No dedicated roofing estimate landing page.", recommendation: "Build dedicated landing pages for roof repair, replacement, and storm damage.", revenueImpact: 900, priority: "High" },
-      { id: "f003-4", title: "Single Broad Match Campaign", severity: "High", category: "PPC Structure", description: "All keywords in one campaign with no intent segmentation.", recommendation: "Restructure into repair, replacement, storm, and brand campaigns.", revenueImpact: 400, priority: "High" },
-    ],
-    recommendedServices: [
-      { id: "rs003-1", service: "PPC Campaign Rebuild", reason: "Current account structure is wasting 60%+ of ad spend.", impactScore: 98, priority: "Critical", department: "Paid Advertising", estimatedRevenue: 1500, proposalStatus: "Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li003-1", lineItem: "PPC Campaign Setup", category: "PPC", department: "Paid Advertising", setupFee: 1200, recurringFee: 0, deliveryStandard: "14 days", proposalStatus: "Added" },
-      { id: "li003-2", lineItem: "PPC Monthly Management", category: "PPC", department: "Paid Advertising", setupFee: 0, recurringFee: 1500, deliveryStandard: "Ongoing", proposalStatus: "Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-003-1", date: "May 30, 2025", event: "Audit Created", type: "audit_created", user: "Mike T." },
-      { id: "tl-003-2", date: "May 31, 2025", event: "Finding Added", type: "finding_added", user: "Mike T.", detail: "Critical: No Negative Keywords" },
-      { id: "tl-003-3", date: "Jun 1, 2025", event: "Status Changed", type: "status_changed", user: "Mike T.", detail: "Completed." },
-      { id: "tl-003-4", date: "Jun 2, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Mike T.", detail: "Proposal accepted." },
-    ],
-  },
-
-  // 4 — Meta Ads — Pinnacle HVAC
-  {
-    id: "aud-004",
-    auditName: "Meta Ads Audit — Pinnacle HVAC",
-    client: "Pinnacle HVAC",
-    auditType: "Meta Ads",
-    createdBy: "Sarah K.",
-    createdDate: "Jun 1, 2025",
-    priority: "High",
-    status: "In Progress",
-    issuesFound: 6,
-    revenueOpportunity: 3100,
-    proposalStatus: "Not Started",
-    industry: "HVAC",
-    website: "pinnaclehvac.com",
-    summary: "No Meta Ads presence while 3 local HVAC competitors run active seasonal campaigns. Pixel installed but no events configured. Untapped retargeting audience.",
-    overallScore: 42,
-    findings: [
-      { id: "f004-1", title: "No Active Meta Campaigns", severity: "Critical", category: "Meta Ads", description: "Zero Meta campaigns while 3 competitors run active seasonal HVAC campaigns.", recommendation: "Launch retargeting and seasonal offer campaigns for cooling season.", revenueImpact: 1400, priority: "Critical" },
-      { id: "f004-2", title: "Pixel Installed — No Events", severity: "High", category: "Meta Tracking", description: "Meta Pixel present but zero custom events firing.", recommendation: "Configure Lead, Contact, and Quote Request events.", revenueImpact: 800, priority: "High" },
-      { id: "f004-3", title: "No Custom Audiences Built", severity: "High", category: "Meta Audiences", description: "No website visitor or customer lookalike audiences created.", recommendation: "Build website visitor, quote-requester, and 1% lookalike audiences.", revenueImpact: 600, priority: "High" },
-      { id: "f004-4", title: "No Seasonal Campaign Calendar", severity: "Medium", category: "Meta Strategy", description: "No seasonal strategy for cooling vs heating demand shifts.", recommendation: "Build seasonal campaign calendar aligned with HVAC demand peaks.", revenueImpact: 300, priority: "Medium" },
-    ],
-    recommendedServices: [
-      { id: "rs004-1", service: "Meta Ads Setup & Launch", reason: "3 competitors running visual campaigns — immediate opportunity gap.", impactScore: 94, priority: "High", department: "Paid Advertising", estimatedRevenue: 900, proposalStatus: "Not Added" },
-      { id: "rs004-2", service: "Meta Ads Monthly Management", reason: "Ongoing seasonal creative rotation required for HVAC demand cycles.", impactScore: 88, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li004-1", lineItem: "Meta Ads Account Setup", category: "Meta Ads", department: "Paid Advertising", setupFee: 900, recurringFee: 0, deliveryStandard: "10 days", proposalStatus: "Not Added" },
-      { id: "li004-2", lineItem: "Meta Ads Monthly Management", category: "Meta Ads", department: "Paid Advertising", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-004-1", date: "Jun 1, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K." },
-      { id: "tl-004-2", date: "Jun 1, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: No Active Meta Campaigns" },
-    ],
-  },
-
-  // 5 — Website — Morrison HVAC
-  {
-    id: "aud-005",
-    auditName: "Website Audit — Morrison HVAC and Cooling",
-    client: "Morrison HVAC and Cooling",
-    auditType: "Website",
-    createdBy: "Alex R.",
-    createdDate: "May 18, 2025",
-    priority: "Critical",
-    status: "Completed",
-    issuesFound: 14,
-    revenueOpportunity: 6800,
-    proposalStatus: "Accepted",
-    industry: "HVAC",
-    website: "morrisonhvac.com",
-    summary: "Severe website performance failures. PageSpeed 18 mobile. Autoplay video causing 7.2s LCP. 14 broken links from previous site migration. Site rebuild required.",
-    overallScore: 19,
-    findings: [
-      { id: "f005-1", title: "PageSpeed 18/100 Mobile", severity: "Critical", category: "Performance", description: "Autoplay background video causing LCP of 7.2s. Uncompressed images loading above fold.", recommendation: "Remove autoplay video, compress images, defer non-critical JS, implement lazy loading.", revenueImpact: 2800, priority: "Critical" },
-      { id: "f005-2", title: "14 Broken Internal Links", severity: "Critical", category: "Technical", description: "14 broken links across service and contact pages from site migration.", recommendation: "Implement 301 redirects for all broken URLs immediately.", revenueImpact: 1400, priority: "Critical" },
-      { id: "f005-3", title: "Not Mobile Responsive", severity: "Critical", category: "Mobile UX", description: "Tap targets too small, content overflows on mobile. 72% of traffic is mobile.", recommendation: "Full mobile responsive redesign required.", revenueImpact: 1800, priority: "Critical" },
-      { id: "f005-4", title: "No HTTPS on Subpages", severity: "Critical", category: "Security", description: "Mixed content warnings on 8 service pages — SSL not applied uniformly.", recommendation: "Force HTTPS sitewide and resolve all mixed content warnings.", revenueImpact: 800, priority: "Critical" },
-    ],
-    recommendedServices: [
-      { id: "rs005-1", service: "Website Redesign", reason: "Site requires complete rebuild — performance issues are beyond incremental repair.", impactScore: 99, priority: "Critical", department: "Web", estimatedRevenue: 5000, proposalStatus: "Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li005-1", lineItem: "Website Redesign", category: "Web", department: "Web", setupFee: 5000, recurringFee: 0, deliveryStandard: "60 days", proposalStatus: "Added" },
-      { id: "li005-2", lineItem: "Website Maintenance (Monthly)", category: "Web", department: "Web", setupFee: 0, recurringFee: 250, deliveryStandard: "Ongoing", proposalStatus: "Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-005-1", date: "May 18, 2025", event: "Audit Created", type: "audit_created", user: "Alex R." },
-      { id: "tl-005-2", date: "May 19, 2025", event: "Finding Added", type: "finding_added", user: "Alex R.", detail: "Critical: PageSpeed 18 Mobile" },
-      { id: "tl-005-3", date: "May 20, 2025", event: "Status Changed", type: "status_changed", user: "Alex R.", detail: "Completed." },
-      { id: "tl-005-4", date: "May 22, 2025", event: "Proposal Generated", type: "proposal_generated", user: "Alex R.", detail: "Proposal accepted." },
-    ],
-  },
-
-  // 6 — LSA — Coastal Plumbing
-  {
-    id: "aud-006",
-    auditName: "LSA Audit — Coastal Plumbing Co.",
-    client: "Coastal Plumbing Co.",
-    auditType: "LSA",
-    createdBy: "Jordan M.",
-    createdDate: "Jun 3, 2025",
-    priority: "High",
-    status: "Completed",
-    issuesFound: 5,
-    revenueOpportunity: 2400,
-    proposalStatus: "Draft",
-    industry: "Plumbing",
-    website: "coastalplumbingco.com",
-    summary: "LSA account not verified. License and insurance credentials missing from profile. Missing out on guaranteed top-of-page placement for emergency plumbing searches.",
-    overallScore: 38,
-    findings: [
-      { id: "f006-1", title: "LSA Account Not Verified", severity: "Critical", category: "LSA Verification", description: "Account created but verification not completed. No ads running.", recommendation: "Complete LSA verification: license upload, insurance proof, background check.", revenueImpact: 1200, priority: "Critical" },
-      { id: "f006-2", title: "Missing License Credentials", severity: "High", category: "LSA Compliance", description: "Plumbing license number not uploaded to LSA profile.", recommendation: "Upload current state plumbing license to LSA profile.", revenueImpact: 600, priority: "High" },
-      { id: "f006-3", title: "No Review Strategy for LSA", severity: "High", category: "LSA Reviews", description: "LSA ranking heavily influenced by Google review score. Currently 3.9 avg.", recommendation: "Launch post-service review campaign to improve average rating.", revenueImpact: 400, priority: "High" },
-      { id: "f006-4", title: "Service Area Too Broad", severity: "Medium", category: "LSA Targeting", description: "Service area set to entire county — wasting budget on areas outside service radius.", recommendation: "Restrict service area to 15-mile radius around primary location.", revenueImpact: 200, priority: "Medium" },
-    ],
-    recommendedServices: [
-      { id: "rs006-1", service: "LSA Account Setup & Management", reason: "Verified LSA account will capture top-of-page emergency plumbing searches immediately.", impactScore: 96, priority: "Critical", department: "LSA", estimatedRevenue: 800, proposalStatus: "Not Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li006-1", lineItem: "LSA Account Setup", category: "LSA", department: "LSA", setupFee: 600, recurringFee: 0, deliveryStandard: "5 days", proposalStatus: "Not Added" },
-      { id: "li006-2", lineItem: "LSA Monthly Management", category: "LSA", department: "LSA", setupFee: 0, recurringFee: 800, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-006-1", date: "Jun 3, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M." },
-      { id: "tl-006-2", date: "Jun 3, 2025", event: "Finding Added", type: "finding_added", user: "Jordan M.", detail: "Critical: LSA Account Not Verified" },
-      { id: "tl-006-3", date: "Jun 4, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed." },
-    ],
-  },
-
-  // 7 — GBP — GreenWave Lawn Care
-  {
-    id: "aud-007",
-    auditName: "GBP Audit — GreenWave Lawn Care",
-    client: "GreenWave Lawn Care",
-    auditType: "GBP",
-    createdBy: "Mike T.",
-    createdDate: "Jun 8, 2025",
-    priority: "High",
-    status: "Pending",
-    issuesFound: 8,
-    revenueOpportunity: 2100,
-    proposalStatus: "Not Started",
-    industry: "Landscaping",
-    website: "greenwavelawn.com",
-    summary: "GBP profile exists but lacks photos, posts, and secondary categories. 22 reviews at 4.1 average — below threshold for local pack visibility in competitive lawn care market.",
-    overallScore: 41,
-    findings: [
-      { id: "f007-1", title: "Low Review Volume for Market", severity: "High", category: "GBP Reviews", description: "22 reviews vs competitor average of 85. Losing local pack to review-rich competitors.", recommendation: "Launch post-service review automation targeting 60+ reviews in 60 days.", revenueImpact: 900, priority: "High" },
-      { id: "f007-2", title: "Zero GBP Posts", severity: "High", category: "GBP Posts", description: "No posts in the past 3 months — missing seasonal engagement signal for spring/summer.", recommendation: "Post weekly lawn care tips and seasonal offers starting immediately.", revenueImpact: 500, priority: "High" },
-      { id: "f007-3", title: "Only 8 Photos", severity: "High", category: "GBP Photos", description: "Competitors average 45+ photos. Low photo count reduces trust and click rate.", recommendation: "Upload 30+ before/after lawn care photos.", revenueImpact: 400, priority: "High" },
-      { id: "f007-4", title: "Missing Service Categories", severity: "Medium", category: "GBP Categories", description: "Only primary Lawn Care category set. Missing mulching, aeration, irrigation.", recommendation: "Add all secondary service categories relevant to offerings.", revenueImpact: 300, priority: "Medium" },
-    ],
-    recommendedServices: [
-      { id: "rs007-1", service: "GBP Monthly Management", reason: "Ongoing posting, review management, and optimization required to compete.", impactScore: 90, priority: "High", department: "GBP", estimatedRevenue: 500, proposalStatus: "Not Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li007-1", lineItem: "GBP Setup & Optimization", category: "GBP", department: "GBP", setupFee: 350, recurringFee: 0, deliveryStandard: "3 days", proposalStatus: "Not Added" },
-      { id: "li007-2", lineItem: "GBP Monthly Management", category: "GBP", department: "GBP", setupFee: 0, recurringFee: 500, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-007-1", date: "Jun 8, 2025", event: "Audit Created", type: "audit_created", user: "Mike T." },
-    ],
-  },
-
-  // 8 — Competitor — Summit Landscaping
-  {
-    id: "aud-008",
-    auditName: "Competitor Audit — Summit Landscaping",
-    client: "Summit Landscaping",
-    auditType: "Competitor",
-    createdBy: "Jordan M.",
-    createdDate: "May 24, 2025",
-    priority: "Medium",
-    status: "Completed",
-    issuesFound: 4,
-    revenueOpportunity: 1800,
-    proposalStatus: "Draft",
-    industry: "Landscaping",
-    website: "summitlandscaping.com",
-    summary: "3 local competitors outranking client for 180+ keywords. Top competitor running seasonal PPC during spring/summer. Client has strong review count advantage not being leveraged.",
-    overallScore: 58,
-    findings: [
-      { id: "f008-1", title: "180+ Competitor Keyword Gaps", severity: "High", category: "Keyword Strategy", description: "Competitors rank for 180 keywords where client has zero presence.", recommendation: "Build targeted content strategy to capture top 40 gap opportunities.", revenueImpact: 900, priority: "High" },
-      { id: "f008-2", title: "Competitor PPC Dominance in Spring", severity: "High", category: "Competitive PPC", description: "Top 2 competitors run aggressive spring/summer PPC. Client missing peak season revenue.", recommendation: "Launch seasonal PPC for spring landscape installation and lawn care.", revenueImpact: 600, priority: "High" },
-      { id: "f008-3", title: "Untapped Review Advantage", severity: "Medium", category: "GBP", description: "Client has 78 reviews — higher than competitors — but not highlighted in marketing.", recommendation: "Feature review count and rating prominently in ad copy and website.", revenueImpact: 200, priority: "Medium" },
-      { id: "f008-4", title: "Competitor Blog Outpacing Content", severity: "Medium", category: "Content", description: "Top competitor publishes 4 seasonal articles/month. Client has no blog.", recommendation: "Launch monthly content calendar targeting seasonal landscaping searches.", revenueImpact: 100, priority: "Low" },
-    ],
-    recommendedServices: [
-      { id: "rs008-1", service: "SEO Monthly Management", reason: "180+ keyword gaps require structured content strategy to compete.", impactScore: 91, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-      { id: "rs008-2", service: "PPC Campaign Setup", reason: "Missing peak-season paid presence vs 2 active competitors.", impactScore: 86, priority: "High", department: "Paid Advertising", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li008-1", lineItem: "SEO Monthly Management", category: "SEO", department: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-    ],
-    competitors: [
-      {
-        name: "Austin Pro Landscapes",
-        strengths: ["Top 3 for all major landscaping terms", "Active PPC", "148 Google reviews", "4.7 avg rating"],
-        weaknesses: ["No blog content", "Weak GBP posting cadence"],
-        opportunities: ["Irrigation and drainage specialty — competitor ignores it"],
-        threats: ["Established local brand — 12 years in market"],
-        recommendedActions: ["Target irrigation and drainage specialty keywords", "Build seasonal content calendar competitor lacks"],
-      },
-      {
-        name: "Green Thumb Austin",
-        strengths: ["Strong seasonal PPC", "Great before/after Instagram presence"],
-        weaknesses: ["Low review volume (32 reviews)", "Poor website design"],
-        opportunities: ["Review generation will outpace them quickly"],
-        threats: ["Active in peak-season paid advertising"],
-        recommendedActions: ["Leverage review advantage in ad copy", "Match and beat their PPC spend during spring season"],
-      },
-    ],
-    timeline: [
-      { id: "tl-008-1", date: "May 24, 2025", event: "Audit Created", type: "audit_created", user: "Jordan M." },
-      { id: "tl-008-2", date: "May 26, 2025", event: "Status Changed", type: "status_changed", user: "Jordan M.", detail: "Completed." },
-    ],
-  },
-
-  // 9 — SEO Technical — Morrison HVAC
-  {
-    id: "aud-009",
-    auditName: "SEO Technical Audit — Morrison HVAC and Cooling",
-    client: "Morrison HVAC and Cooling",
-    auditType: "SEO Technical",
-    createdBy: "Sarah K.",
-    createdDate: "Jun 2, 2025",
-    priority: "High",
-    status: "Completed",
-    issuesFound: 6,
-    revenueOpportunity: 2900,
-    proposalStatus: "Draft",
-    industry: "HVAC",
-    website: "morrisonhvac.com",
-    summary: "Site crawl reveals orphaned service pages, missing GSC submission, and zero structured data. Internal linking strategy is absent causing ranking dilution.",
-    overallScore: 44,
-    findings: [
-      { id: "f009-1", title: "Orphaned Service Pages", severity: "Critical", category: "Internal Linking", description: "4 service pages have zero internal links — invisible to both users and crawlers.", recommendation: "Add contextual internal links from hub pages and sitemap to all orphaned pages.", revenueImpact: 1100, priority: "Critical" },
-      { id: "f009-2", title: "GSC Not Connected", severity: "High", category: "Crawlability", description: "Google Search Console not connected — zero crawl data or error reporting.", recommendation: "Connect GSC immediately and submit sitemap.", revenueImpact: 700, priority: "High" },
-      { id: "f009-3", title: "No Structured Data", severity: "High", category: "Technical SEO", description: "Zero schema markup on any page. Missing HVAC service, LocalBusiness, and FAQ schema.", recommendation: "Implement LocalBusiness, Service, and FAQ schema on priority pages.", revenueImpact: 600, priority: "High" },
-      { id: "f009-4", title: "Duplicate Title Tags", severity: "Medium", category: "On-Page SEO", description: "5 pages share identical title tags — causing keyword cannibalization.", recommendation: "Write unique, keyword-targeted title tags for every page.", revenueImpact: 300, priority: "Medium" },
-      { id: "f009-5", title: "No Mobile-First Indexing Prep", severity: "Medium", category: "Performance", description: "Page lacks viewport meta tag on 2 pages — mobile rendering issues.", recommendation: "Ensure all pages have proper viewport meta tag and mobile styles.", revenueImpact: 200, priority: "Medium" },
-    ],
-    recommendedServices: [
-      { id: "rs009-1", service: "SEO Monthly Management", reason: "Multiple technical gaps need structured ongoing remediation.", impactScore: 93, priority: "High", department: "SEO", estimatedRevenue: 1200, proposalStatus: "Not Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li009-1", lineItem: "SEO Setup & Onboarding", category: "SEO", department: "SEO", setupFee: 1500, recurringFee: 0, deliveryStandard: "12 days", proposalStatus: "Not Added" },
-      { id: "li009-2", lineItem: "SEO Monthly Management", category: "SEO", department: "SEO", setupFee: 0, recurringFee: 1200, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-009-1", date: "Jun 2, 2025", event: "Audit Created", type: "audit_created", user: "Sarah K." },
-      { id: "tl-009-2", date: "Jun 3, 2025", event: "Finding Added", type: "finding_added", user: "Sarah K.", detail: "Critical: Orphaned Service Pages" },
-      { id: "tl-009-3", date: "Jun 3, 2025", event: "Status Changed", type: "status_changed", user: "Sarah K.", detail: "Completed." },
-    ],
-  },
-
-  // 10 — PPC — Apex Roofing (second)
-  {
-    id: "aud-010",
-    auditName: "PPC Audit — Apex Roofing (Storm Campaign)",
-    client: "Apex Roofing",
-    auditType: "PPC / Google Ads",
-    createdBy: "Mike T.",
-    createdDate: "Jun 5, 2025",
-    priority: "High",
-    status: "Needs Review",
-    issuesFound: 5,
-    revenueOpportunity: 3000,
-    proposalStatus: "Not Started",
-    industry: "Roofing",
-    website: "apexroofing.com",
-    summary: "Storm damage campaign launched post-hail event with poor targeting and no dedicated landing page. Cost per click 2.4x industry average for roofing. Campaign structure review needed.",
-    overallScore: 47,
-    findings: [
-      { id: "f010-1", title: "Storm Campaign CPC 2.4x Average", severity: "Critical", category: "PPC Performance", description: "Storm damage campaign paying $34 CPC vs $14 industry average for roofing — structural issue.", recommendation: "Restructure ad groups with tighter keyword grouping and match type control.", revenueImpact: 1400, priority: "Critical" },
-      { id: "f010-2", title: "No Storm Damage Landing Page", severity: "High", category: "Landing Pages", description: "All storm campaign traffic directed to general roofing page — Quality Score penalty.", recommendation: "Build dedicated storm damage estimate landing page matching ad copy.", revenueImpact: 900, priority: "High" },
-      { id: "f010-3", title: "Geographic Targeting Too Broad", severity: "High", category: "PPC Targeting", description: "Campaign targeting 50-mile radius — including areas outside company service zone.", recommendation: "Restrict targeting to zip codes within confirmed service area.", revenueImpact: 500, priority: "High" },
-      { id: "f010-4", title: "Ad Schedule Not Set", severity: "Medium", category: "PPC Optimization", description: "Ads running 24/7 including overnight hours when roofing office is closed.", recommendation: "Set ad schedule to business hours + 2 hours on either side.", revenueImpact: 200, priority: "Medium" },
-    ],
-    recommendedServices: [
-      { id: "rs010-1", service: "PPC Campaign Optimization", reason: "CPC 2.4x average is causing significant wasted spend on storm campaign.", impactScore: 94, priority: "Critical", department: "Paid Advertising", estimatedRevenue: 1500, proposalStatus: "Not Added" },
-    ],
-    recommendedLineItems: [
-      { id: "li010-1", lineItem: "PPC Monthly Management", category: "PPC", department: "Paid Advertising", setupFee: 0, recurringFee: 1500, deliveryStandard: "Ongoing", proposalStatus: "Not Added" },
-    ],
-    competitors: [],
-    timeline: [
-      { id: "tl-010-1", date: "Jun 5, 2025", event: "Audit Created", type: "audit_created", user: "Mike T." },
-      { id: "tl-010-2", date: "Jun 7, 2025", event: "Status Changed", type: "status_changed", user: "Mike T.", detail: "Needs Review — awaiting campaign performance data." },
-    ],
-  },
+  // no fabricated rows
 ];
 
 //
@@ -1740,57 +1468,18 @@ interface AuditRequestQueueItem {
   slaDeadline: string;
 }
 
+// MOCK_AUDIT_REQUESTS — removed; no real source exists for audit request queue.
+// AuditRequestQueueSection shows an honest empty state when this is empty.
 const MOCK_AUDIT_REQUESTS: AuditRequestQueueItem[] = [
-  {
-    id: "AUD-2025-1842",
-    clientName: "Summit Landscaping",
-    requestType: "Manual",
-    departments: ["SEO"],
-    status: "in-progress",
-    assignedReviewers: ["Alex K."],
-    requestedBy: "Jordan M.",
-    slaDeadline: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: "HYB-2025-3301",
-    clientName: "Blue Ridge Plumbing",
-    requestType: "Hybrid",
-    departments: ["GBP", "PPC"],
-    status: "ai-complete-pending-review",
-    assignedReviewers: ["Dana W.", "James R."],
-    requestedBy: "Sarah K.",
-    slaDeadline: new Date(Date.now() + 18 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: "AUD-2025-2817",
-    clientName: "Apex Roofing",
-    requestType: "Manual",
-    departments: ["PPC / Google Ads"],
-    status: "finalized",
-    assignedReviewers: ["James R."],
-    requestedBy: "Mike T.",
-    slaDeadline: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: "HYB-2025-4182",
-    clientName: "Pinnacle HVAC",
-    requestType: "Hybrid",
-    departments: ["SEO", "Meta Ads"],
-    status: "overdue",
-    assignedReviewers: ["Dana W.", "Lena P."],
-    requestedBy: "Sarah K.",
-    slaDeadline: new Date(Date.now() - 6 * 3600 * 1000).toISOString(),
-  },
-  {
-    id: "AUD-2025-8966",
-    clientName: "GreenWave Lawn Care",
-    requestType: "Manual",
-    departments: ["GBP"],
-    status: "pending-assignment",
-    assignedReviewers: [],
-    requestedBy: "Jordan M.",
-    slaDeadline: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-  },
+  // ── no fabricated rows — real audit requests will appear here once the
+  //    audit-request workflow is backed by a Postgres table ──
+  // {
+  //   id: "AUD-2025-1842",
+  //   clientName: "Summit Landscaping",
+  //   requestType: "Manual",
+  //   departments: ["SEO"],
+  // fake_placeholder_suppressed: true
+  // }
 ];
 
 function AuditRequestStatusBadgeLocal({ status }: { status: AuditRequestStatus }) {
@@ -2023,8 +1712,26 @@ export default function AuditIntelligenceCenterPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<AuditStatus | "All">("All");
   const [typeFilter, setTypeFilter] = useState<AuditType | "All">("All");
+  const [audits, setAudits] = useState<Audit[]>([]);
+  const [auditsLoading, setAuditsLoading] = useState(true);
 
-  const filtered = MOCK_AUDITS.filter((a) => {
+  // ── Fetch real audit data from proposals ─────────────────────────────────
+  // Proposals with a non-null auditResult are the real source of audit data.
+  // MOCK_AUDITS is intentionally empty; this fetch replaces it entirely.
+  useEffect(() => {
+    fetch("/api/sales-proposals", { credentials: "include" })
+      .then((r) => r.ok ? r.json() as Promise<{ records: RawProposalRecord[] }> : Promise.reject(r.status))
+      .then(({ records }) => {
+        const mapped = (records ?? [])
+          .filter((p) => p.auditResult != null)
+          .map(mapProposalToAudit);
+        setAudits(mapped);
+      })
+      .catch(() => { /* non-fatal — empty state shows */ })
+      .finally(() => setAuditsLoading(false));
+  }, []);
+
+  const filtered = audits.filter((a) => {
     if (statusFilter !== "All" && a.status !== statusFilter) return false;
     if (typeFilter !== "All" && a.auditType !== typeFilter) return false;
     if (searchQuery) {
@@ -2097,7 +1804,7 @@ export default function AuditIntelligenceCenterPage() {
       </div>
 
       {/* KPI Cards */}
-      <KPICards audits={MOCK_AUDITS} />
+      <KPICards audits={audits} />
 
       {/* Audit Types Filter */}
       <div className="rounded-xl border p-4" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
@@ -2173,7 +1880,19 @@ export default function AuditIntelligenceCenterPage() {
       </div>
 
       {/* Audit Table */}
-      <AuditTable audits={filtered} onSelect={setSelectedAudit} />
+      {auditsLoading ? (
+        <p className="text-sm py-6 text-center" style={{ color: "#94A3B8" }}>Loading audits…</p>
+      ) : audits.length === 0 ? (
+        <div className="rounded-xl border p-8 text-center" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--rtm-text-muted)" }}>No audits yet</p>
+          <p className="text-xs mt-1" style={{ color: "#94A3B8" }}>
+            Audits appear here once a proposal has been saved with audit results.
+            Use the “New Audit” button above to start one.
+          </p>
+        </div>
+      ) : (
+        <AuditTable audits={filtered} onSelect={setSelectedAudit} />
+      )}
 
       {/* Score Legend */}
       <div

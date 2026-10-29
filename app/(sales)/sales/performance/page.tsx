@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import { getWorkspace } from "@/lib/workspaces";
 import Link from "next/link";
@@ -349,18 +349,44 @@ function WinRateBadge({ rate }: { rate: number }) {
 
 //  Page 
 
+// ─ Opportunity shape from /api/sales-opportunities ──────────────────────────────
+interface OppRecord {
+  stage: string;
+  estimatedMonthlyValue: number;
+  assignedRep: string;
+  [key: string]: unknown;
+}
+
 export default function SalesPerformancePage() {
   const [dateRange, setDateRange] = useState<DateRange>("month");
   const [showCustomize, setShowCustomize] = useState(false);
   const { widgetOrder, isVisible } = useWidgetPreferences("performance");
+  const [opps, setOpps] = useState<OppRecord[]>([]);
 
-  // Computed KPI aggregates from mock data
-  const totalClosedWon = SALES_REPS.reduce((s, r) => s + r.closedWon, 0);
-  const totalClosedLost = SALES_REPS.reduce((s, r) => s + r.closedLost, 0);
-  const totalPipelineValue = SALES_REPS.reduce((s, r) => s + r.pipelineValue, 0);
-  const totalWeighted = SALES_REPS.reduce((s, r) => s + r.weightedRevenue, 0);
-  const overallWinRate = Math.round((totalClosedWon / (totalClosedWon + totalClosedLost)) * 100);
-  const closedWonRevenue = REVENUE_BY_SERVICE.reduce((s, r) => s + r.monthlyRevenue, 0);
+  useEffect(() => {
+    fetch("/api/sales-opportunities", { credentials: "include" })
+      .then((r) => r.ok ? r.json() as Promise<{ records: OppRecord[] }> : Promise.reject(r.status))
+      .then(({ records }) => setOpps(records ?? []))
+      .catch(() => {});
+  }, []);
+
+  // ─ KPI aggregates: computed from real opportunity rows where possible ───────
+  // Win/Loss KPIs require closed stages that don't exist in current data.
+  // Pipeline value and weighted revenue are computable from open opportunities.
+  // Rep-level breakdowns, lead-source attribution, and proposal funnel
+  // metrics have no real source yet — those sections show honest empty states.
+  const totalClosedWon = opps.filter(o => o.stage === "Proposal Approved" || o.stage === "Closed Won").length;
+  const totalClosedLost = opps.filter(o => o.stage === "Closed Lost").length;
+  const totalPipelineValue = opps
+    .filter(o => o.stage !== "Closed Won" && o.stage !== "Closed Lost" && o.stage !== "Proposal Approved")
+    .reduce((s, o) => s + (o.estimatedMonthlyValue ?? 0), 0);
+  const totalWeighted = Math.round(totalPipelineValue * 0.4); // rough weight — no probability field
+  const overallWinRate = totalClosedWon + totalClosedLost > 0
+    ? Math.round((totalClosedWon / (totalClosedWon + totalClosedLost)) * 100)
+    : 0;
+  const closedWonRevenue = opps
+    .filter(o => o.stage === "Proposal Approved" || o.stage === "Closed Won")
+    .reduce((s, o) => s + (o.estimatedMonthlyValue ?? 0), 0);
 
   return (
     <div className="space-y-8 pb-10">
@@ -531,27 +557,9 @@ export default function SalesPerformancePage() {
             </tr>
           </thead>
           <tbody>
-            {SALES_REPS.map((rep) => (
-              <tr key={rep.id} style={{ background: "var(--rtm-surface)"}}>
-                <Td>
-                  <span className="font-semibold">{rep.name}</span>
-                </Td>
-                <Td right>{rep.assignedLeads}</Td>
-                <Td right>{rep.openOpportunities}</Td>
-                <Td right>{rep.proposalsSent}</Td>
-                <Td right>
-                  <span style={{ color: "#059669", fontWeight: 600 }}>{rep.closedWon}</span>
-                </Td>
-                <Td right>
-                  <span style={{ color: "#DC2626", fontWeight: 600 }}>{rep.closedLost}</span>
-                </Td>
-                <Td right><WinRateBadge rate={rep.winRate} /></Td>
-                <Td right>{fmt$(rep.pipelineValue)}</Td>
-                <Td right>{fmt$(rep.weightedRevenue)}</Td>
-                <Td right muted>{rep.avgResponseTime}</Td>
-                <Td right><WinRateBadge rate={rep.followUpCompletionRate} /></Td>
-              </tr>
-            ))}
+            <tr><td colSpan={11} className="px-4 py-6 text-sm text-center" style={{ color: "#94A3B8" }}>
+              Rep-level performance metrics are not yet available. This table will populate once per-rep KPI tracking is added to the opportunity data model.
+            </td></tr>
           </tbody>
         </TableWrapper>
       </div>
@@ -577,24 +585,9 @@ export default function SalesPerformancePage() {
             </tr>
           </thead>
           <tbody>
-            {LEAD_SOURCES.map((ls) => (
-              <tr key={ls.source} style={{ background: "var(--rtm-surface)"}}>
-                <Td>
-                  <span className="font-semibold">{ls.source}</span>
-                </Td>
-                <Td right>{ls.ghlContacts}</Td>
-                <Td right>{ls.qualifiedLeads}</Td>
-                <Td right>{ls.oppsCreated}</Td>
-                <Td right>{ls.proposalsSent}</Td>
-                <Td right>
-                  <span style={{ color: "#059669", fontWeight: 600 }}>{ls.closedWon}</span>
-                </Td>
-                <Td right>{fmtFull$(ls.revenueGenerated)}</Td>
-                <Td right muted>{ls.costPerLead > 0 ? `$${ls.costPerLead}` : "—"}</Td>
-                <Td right muted>{ls.costPerAcquisition > 0 ? fmtFull$(ls.costPerAcquisition) : "—"}</Td>
-                <Td right><WinRateBadge rate={ls.conversionRate} /></Td>
-              </tr>
-            ))}
+            <tr><td colSpan={10} className="px-4 py-6 text-sm text-center" style={{ color: "#94A3B8" }}>
+              Lead source attribution data is not yet available. Metrics will appear here once opportunity lead sources are tracked with conversion outcomes.
+            </td></tr>
           </tbody>
         </TableWrapper>
       </div>
@@ -618,28 +611,9 @@ export default function SalesPerformancePage() {
             </tr>
           </thead>
           <tbody>
-            {GHL_PIPELINE_STAGES.map((stage) => (
-              <tr key={stage.ghlStage} style={{ background: "var(--rtm-surface)"}}>
-                <Td><span className="font-semibold">{stage.ghlStage}</span></Td>
-                <Td muted>{stage.rtmStage}</Td>
-                <Td right>{stage.oppCount}</Td>
-                <Td right>{stage.pipelineValue > 0 ? fmtFull$(stage.pipelineValue) : "—"}</Td>
-                <Td right>{stage.weightedRevenue > 0 ? fmtFull$(stage.weightedRevenue) : "—"}</Td>
-                <Td right muted>{stage.avgDaysInStage > 0 ? `${stage.avgDaysInStage}d` : "—"}</Td>
-                <Td right>
-                  {stage.conversionRate > 0 ? <WinRateBadge rate={stage.conversionRate} /> : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
-                </Td>
-                <Td right>
-                  {stage.dropOffRate > 0 ? (
-                    <span
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold"style={{ color: stage.dropOffRate > 30 ? "#DC2626": "#D97706", background: stage.dropOffRate > 30 ? "#FEF2F2": "#FFFBEB"}}
-                    >
-                      {stage.dropOffRate}%
-                    </span>
-                  ) : "—"}
-                </Td>
-              </tr>
-            ))}
+            <tr><td colSpan={8} className="px-4 py-6 text-sm text-center" style={{ color: "#94A3B8" }}>
+              Pipeline stage metrics are not yet available. This table will populate once opportunity stage transitions are tracked with timestamps.
+            </td></tr>
           </tbody>
         </TableWrapper>
       </div>
@@ -662,29 +636,9 @@ export default function SalesPerformancePage() {
             </tr>
           </thead>
           <tbody>
-            {PROPOSAL_STAGES.map((ps) => (
-              <tr key={ps.stage} style={{ background: "var(--rtm-surface)"}}>
-                <Td><span className="font-semibold">{ps.stage}</span></Td>
-                <Td right>{ps.count}</Td>
-                <Td right>{fmtFull$(ps.value)}</Td>
-                <Td right>
-                  {ps.approvedValue > 0
-                    ? <span style={{ color: "#059669", fontWeight: 600 }}>{fmtFull$(ps.approvedValue)}</span>
-                    : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
-                </Td>
-                <Td right>
-                  {ps.rejectedValue > 0
-                    ? <span style={{ color: "#DC2626", fontWeight: 600 }}>{fmtFull$(ps.rejectedValue)}</span>
-                    : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
-                </Td>
-                <Td right>
-                  {ps.approvalRate > 0
-                    ? <WinRateBadge rate={ps.approvalRate} />
-                    : <span style={{ color: "var(--rtm-text-muted)"}}>—</span>}
-                </Td>
-                <Td right muted>{ps.avgTimeToApproval}</Td>
-              </tr>
-            ))}
+            <tr><td colSpan={7} className="px-4 py-6 text-sm text-center" style={{ color: "#94A3B8" }}>
+              Proposal stage metrics are not yet available. Counts and values will appear here once proposal stage tracking is wired to Postgres.
+            </td></tr>
           </tbody>
         </TableWrapper>
       </div>
@@ -708,37 +662,9 @@ export default function SalesPerformancePage() {
             </tr>
           </thead>
           <tbody>
-            {HANDOFF_STAGES.map((hs) => (
-              <tr key={hs.stage} style={{ background: "var(--rtm-surface)"}}>
-                <Td>
-                  <span className="font-semibold">{hs.stage}</span>
-                  {hs.stage === "Blocked"&& (
-                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold"style={{ background: "#FEF2F2", color: "#DC2626"}}>
-                      BLOCKED
-                    </span>
-                  )}
-                </Td>
-                <Td right>{hs.count}</Td>
-                <Td right>{fmtFull$(hs.revenue)}</Td>
-                <Td right muted>{hs.avgDays > 0 ? `${hs.avgDays}d` : "—"}</Td>
-                <Td right>
-                  {hs.blocked > 0
-                    ? <span style={{ color: "#DC2626", fontWeight: 600 }}>{hs.blocked}</span>
-                    : <span style={{ color: "var(--rtm-text-muted)"}}>0</span>}
-                </Td>
-                <Td right>{hs.invoiceCreated}</Td>
-                <Td right>
-                  <span style={{ color: hs.invoicePaid > 0 ? "#059669": "var(--rtm-text-muted)", fontWeight: hs.invoicePaid > 0 ? 600 : 400 }}>
-                    {hs.invoicePaid}
-                  </span>
-                </Td>
-                <Td right>
-                  <span style={{ color: hs.readyForActivation > 0 ? "#2563EB": "var(--rtm-text-muted)", fontWeight: hs.readyForActivation > 0 ? 600 : 400 }}>
-                    {hs.readyForActivation}
-                  </span>
-                </Td>
-              </tr>
-            ))}
+            <tr><td colSpan={8} className="px-4 py-6 text-sm text-center" style={{ color: "#94A3B8" }}>
+              Handoff stage metrics are not yet available. Data will appear here once handoff records are tracked with stage timestamps and invoice linkage.
+            </td></tr>
           </tbody>
         </TableWrapper>
       </div>
@@ -770,23 +696,9 @@ export default function SalesPerformancePage() {
             </tr>
           </thead>
           <tbody>
-            {AFFILIATES.map((aff) => (
-              <tr key={aff.name} style={{ background: "var(--rtm-surface)"}}>
-                <Td><span className="font-semibold">{aff.name}</span></Td>
-                <Td right>{aff.referralLeads}</Td>
-                <Td right>{aff.qualifiedLeads}</Td>
-                <Td right>{aff.opportunities}</Td>
-                <Td right>
-                  <span style={{ color: "#059669", fontWeight: 600 }}>{aff.closedWon}</span>
-                </Td>
-                <Td right>{fmtFull$(aff.revenueGenerated)}</Td>
-                <Td right>
-                  <span style={{ color: "#D97706", fontWeight: 600 }}>{fmtFull$(aff.commissionPending)}</span>
-                </Td>
-                <Td right muted>{fmtFull$(aff.commissionPaid)}</Td>
-                <Td right><WinRateBadge rate={aff.conversionRate} /></Td>
-              </tr>
-            ))}
+            <tr><td colSpan={9} className="px-4 py-6 text-sm text-center" style={{ color: "#94A3B8" }}>
+              Affiliate revenue metrics are not yet available. Data will appear here once affiliate referrals are tracked end-to-end through the opportunity pipeline.
+            </td></tr>
           </tbody>
         </TableWrapper>
       </div>
@@ -816,27 +728,9 @@ export default function SalesPerformancePage() {
             </tr>
           </thead>
           <tbody>
-            {FOLLOWUP_PERFORMANCE.map((fp) => (
-              <tr key={fp.rep} style={{ background: "var(--rtm-surface)"}}>
-                <Td><span className="font-semibold">{fp.rep}</span></Td>
-                <Td right>{fp.dueFollowUps}</Td>
-                <Td right>
-                  <span style={{ color: "#059669", fontWeight: 600 }}>{fp.completedFollowUps}</span>
-                </Td>
-                <Td right>
-                  {fp.overdueFollowUps > 0
-                    ? <span style={{ color: "#DC2626", fontWeight: 600 }}>{fp.overdueFollowUps}</span>
-                    : <span style={{ color: "var(--rtm-text-muted)"}}>0</span>}
-                </Td>
-                <Td right><WinRateBadge rate={fp.completionRate} /></Td>
-                <Td right muted>{fp.avgResponseTime}</Td>
-                <Td right>
-                  <span style={{ color: fp.stalledRecovered > 0 ? "#2563EB": "var(--rtm-text-muted)", fontWeight: fp.stalledRecovered > 0 ? 600 : 400 }}>
-                    {fp.stalledRecovered}
-                  </span>
-                </Td>
-              </tr>
-            ))}
+            <tr><td colSpan={7} className="px-4 py-6 text-sm text-center" style={{ color: "#94A3B8" }}>
+              Follow-up performance metrics are not yet available. Data will appear here once follow-up completion tracking is wired to Postgres.
+            </td></tr>
           </tbody>
         </TableWrapper>
       </div>
@@ -849,78 +743,9 @@ export default function SalesPerformancePage() {
         <div
           className="rounded-xl border overflow-hidden"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
         >
-          {CONVERSION_FUNNEL.map((step, i) => {
-            const maxCount = CONVERSION_FUNNEL[0].count;
-            const widthPct = Math.round((step.count / maxCount) * 100);
-            const isFirst = i === 0;
-            const isLast = i === CONVERSION_FUNNEL.length - 1;
-            return (
-              <div
-                key={step.stage}
-                className="flex items-center gap-4 px-5 py-3"style={{ borderBottom: isLast ? "none": "1px solid var(--rtm-border)"}}
-              >
-                {/* Step number */}
-                <div
-                  className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"style={{
-                    background: isFirst ? workspace.accentColor : isLast ? "#059669": "var(--rtm-surface-alt, #f8fafc)",
-                    color: isFirst || isLast ? "#fff": "var(--rtm-text-muted)",
-                    border: `1px solid ${isFirst ? workspace.accentColor : isLast ? "#059669": "var(--rtm-border)"}`,
-                  }}
-                >
-                  {i + 1}
-                </div>
-
-                {/* Stage name */}
-                <div className="w-44 flex-shrink-0">
-                  <p className="text-sm font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{step.stage}</p>
-                </div>
-
-                {/* Bar */}
-                <div className="flex-1 min-w-0">
-                  <div className="w-full rounded-full overflow-hidden"style={{ height: 8, background: "var(--rtm-border)"}}>
-                    <div
-                      className="h-full rounded-full transition-all"style={{
-                        width: `${widthPct}%`,
-                        background: isFirst ? workspace.accentColor : isLast ? "#059669": "#2563EB",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Count */}
-                <div className="w-16 text-right flex-shrink-0">
-                  <span className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>{step.count}</span>
-                </div>
-
-                {/* Conversion rate */}
-                <div className="w-20 text-right flex-shrink-0">
-                  {i > 0 ? (
-                    <span
-                      className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={{
-                        background: step.conversionRate >= 70 ? "#ECFDF5": step.conversionRate >= 50 ? "#FFFBEB": "#FEF2F2",
-                        color: step.conversionRate >= 70 ? "#059669": step.conversionRate >= 50 ? "#D97706": "#DC2626",
-                      }}
-                    >
-                      {step.conversionRate}%
-                    </span>
-                  ) : (
-                    <span className="text-[11px]"style={{ color: "var(--rtm-text-muted)"}}>base</span>
-                  )}
-                </div>
-
-                {/* Revenue value */}
-                <div className="w-24 text-right flex-shrink-0">
-                  {step.revenueValue != null ? (
-                    <span className="text-xs font-semibold"style={{ color: "#059669"}}>
-                      {fmt$(step.revenueValue)}
-                    </span>
-                  ) : (
-                    <span className="text-xs"style={{ color: "var(--rtm-text-muted)"}}>—</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          <div className="px-5 py-6 text-sm text-center" style={{ color: "#94A3B8" }}>
+            Conversion funnel data is not yet available. Stage-level counts will appear once opportunity transitions are tracked with timestamps across the full funnel.
+          </div>
         </div>
       </div>
 
@@ -929,40 +754,8 @@ export default function SalesPerformancePage() {
         <div className="flex items-center gap-2 mb-1"><PreviewBadge /></div>
         <SectionHeader
           title="Revenue by Service"description="Monthly revenue, setup fees, average deal value, and upsell potential broken down by service type."/>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          {REVENUE_BY_SERVICE.map((svc) => (
-            <div
-              key={svc.service}
-              className="rounded-xl border p-4 space-y-3"style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)"}}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>{svc.service}</span>
-                <span
-                  className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={{ background: "#EFF6FF", color: "#2563EB"}}
-                >
-                  {svc.dealsSold} deals
-                </span>
-              </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs">
-                  <span style={{ color: "var(--rtm-text-muted)"}}>Monthly Revenue</span>
-                  <span className="font-semibold"style={{ color: "#059669"}}>{fmtFull$(svc.monthlyRevenue)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span style={{ color: "var(--rtm-text-muted)"}}>Setup Fees</span>
-                  <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fmtFull$(svc.setupFees)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span style={{ color: "var(--rtm-text-muted)"}}>Avg Deal Value</span>
-                  <span className="font-semibold"style={{ color: "var(--rtm-text-primary)"}}>{fmtFull$(svc.avgDealValue)}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span style={{ color: "var(--rtm-text-muted)"}}>Upsell Potential</span>
-                  <span className="font-semibold"style={{ color: "#D97706"}}>{fmtFull$(svc.upsellPotential)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
+        <div className="rounded-xl border px-5 py-6 text-sm text-center" style={{ borderColor: "var(--rtm-border)", color: "#94A3B8" }}>
+          Revenue-by-service breakdown is not yet available. Figures will appear once closed-won opportunities carry per-service revenue attribution.
         </div>
       </div>
 

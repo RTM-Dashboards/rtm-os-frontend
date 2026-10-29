@@ -1009,10 +1009,8 @@ function InvoiceDetailDrawer({ invoice, onClose, billingUsers }: { invoice: Invo
       content: (
         <div className="space-y-3">
           <p className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--rtm-text-muted)" }}>Internal Notes</p>
-          {[
-            { author: "Lisa P.",  time: "Jun 12 · 9:14 AM", text: "Client confirmed they received the invoice. Awaiting payment from accounting." },
-            { author: "Sarah K.", time: "Jun 10 · 2:30 PM", text: "Follow-up call scheduled for June 17. Client mentioned potential delay due to quarter-end close." },
-          ].map((note, i) => (
+          {/* Internal notes will appear here once linked to invoice records in the database. */}
+          {([] as { author: string; time: string; text: string }[]).map((note, i) => (
             <div key={i} className="rounded-lg border p-4 space-y-2" style={{ borderColor: "var(--rtm-border-light)", background: "var(--rtm-bg)" }}>
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{note.author}</p>
