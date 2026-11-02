@@ -1,24 +1,26 @@
 // RTM OS — Pending Cancellation Requests API Route
 //
-// Persistence layer: reads/writes data/pending-cancellation-requests.json (project root).
+// Persistence layer: Postgres table `pending_cancellation_requests`.
+// Migrated from data/pending-cancellation-requests.json (fs.writeFileSync)
+// which was silently discarded on every Vercel deploy.
 //
-// This is the file-backed persistence layer for the cross-workspace
-// AM → Billing cancellation signal, replacing the unreliable in-memory module
-// singleton that caused cross-route-group desync between the AM Cancellations
-// page ((account-management) route group) and the Billing Cancellations page
-// ((billing) route group).
+// External shape is unchanged:
+//   GET  /api/pending-cancellation-requests → { records: PendingCancellationRequest[] }
+//   POST /api/pending-cancellation-requests → body: AddCancellationRequestPayload
+//                                             → { record: PendingCancellationRequest }
+//                                             (server assigns id, billingStatus,
+//                                              requestedBy, amOwnerNotified)
 //
-// GET  /api/pending-cancellation-requests         → { records: PendingCancellationRequest[] }
-// POST /api/pending-cancellation-requests         → body: AddCancellationRequestPayload
-//                                                   → { record: PendingCancellationRequest }
-//                                                   (server assigns id, billingStatus, requestedBy, amOwnerNotified)
+// Auth guard: getSessionUser — matches the original file-backed route.
+//
+// id: auto-incremented as 'am-cr-N' using MAX(id) to avoid collisions across
+// multiple server instances (Postgres is authoritative, not in-memory counters).
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db/prisma";
 
-// ── Types (inline — do not import from client-side module) ────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type CancellationRequestReason =
   | "Not Performing"
@@ -58,55 +60,42 @@ export interface PendingCancellationRequest {
   amOwnerNotified: boolean;
 }
 
-// Payload accepted on POST — server fills in the server-managed fields.
 export type AddCancellationRequestPayload = Omit<
   PendingCancellationRequest,
   "id" | "billingStatus" | "requestedBy" | "amOwnerNotified"
 >;
 
-interface RecordFile {
-  records: PendingCancellationRequest[];
+// ── DB row type ───────────────────────────────────────────────────────────────
+
+interface RequestRow {
+  id: string;
+  client: string;
+  reason: string;
+  notes: string;
+  amOwner: string;
+  requestedDate: string;
+  requestedBy: string;
+  billingStatus: string;
+  mrrImpact: string;
+  billingOwner: string;
+  amOwnerNotified: boolean;
+  createdAt: string;
 }
 
-// ── File path ──────────────────────────────────────────────────────────────────
-
-const DATA_FILE = path.join(
-  process.cwd(),
-  "data",
-  "pending-cancellation-requests.json"
-);
-
-// ── File I/O ───────────────────────────────────────────────────────────────────
-
-function readRecords(): PendingCancellationRequest[] {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as RecordFile;
-    if (!Array.isArray(parsed.records)) throw new Error("bad shape");
-    return parsed.records;
-  } catch {
-    return [];
-  }
-}
-
-function writeRecords(records: PendingCancellationRequest[]): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ records }, null, 2), "utf-8");
-}
-
-// ── Id counter (in-memory within a single server process; file is source of truth) ──
-
-let _nextId = 1;
-
-function nextId(existing: PendingCancellationRequest[]): string {
-  // Derive a safe counter from existing ids to avoid collisions after restart.
-  const max = existing.reduce((n, r) => {
-    const m = r.id.match(/^am-cr-(\d+)$/);
-    return m ? Math.max(n, parseInt(m[1], 10)) : n;
-  }, 0);
-  _nextId = Math.max(_nextId, max + 1);
-  return `am-cr-${_nextId++}`;
+function rowToRecord(row: RequestRow): PendingCancellationRequest {
+  return {
+    id:               row.id,
+    client:           row.client,
+    reason:           row.reason as CancellationRequestReason,
+    notes:            row.notes,
+    amOwner:          row.amOwner,
+    requestedDate:    row.requestedDate,
+    requestedBy:      "AM",
+    billingStatus:    row.billingStatus as BillingCancellationStatus,
+    mrrImpact:        row.mrrImpact,
+    billingOwner:     row.billingOwner,
+    amOwnerNotified:  row.amOwnerNotified,
+  };
 }
 
 // ── GET ────────────────────────────────────────────────────────────────────────
@@ -116,8 +105,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (error) return NextResponse.json({ error }, { status: status! });
   void user;
 
-  const records = readRecords();
-  return NextResponse.json({ records });
+  const rows = await prisma.$queryRawUnsafe<RequestRow[]>(
+    `SELECT * FROM pending_cancellation_requests ORDER BY "createdAt" ASC`
+  );
+  return NextResponse.json({ records: rows.map(rowToRecord) });
 }
 
 // ── POST ───────────────────────────────────────────────────────────────────────
@@ -147,21 +138,46 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const records = readRecords();
+  const now = new Date().toISOString();
+
+  // Derive next id from the database — safe across multiple instances.
+  const maxRow = await prisma.$queryRawUnsafe<{ maxn: string | null }[]>(
+    `SELECT MAX(CAST(REPLACE(id, 'am-cr-', '') AS INTEGER)) AS maxn
+     FROM pending_cancellation_requests
+     WHERE id ~ '^am-cr-[0-9]+$'`
+  );
+  const maxN = parseInt(maxRow[0]?.maxn ?? "0", 10);
+  const id = `am-cr-${maxN + 1}`;
+
+  const requestedDate = payload.requestedDate ?? now;
+
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO pending_cancellation_requests
+       (id, client, reason, notes, "amOwner", "requestedDate", "requestedBy",
+        "billingStatus", "mrrImpact", "billingOwner", "amOwnerNotified", "createdAt")
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+    id,
+    payload.client,
+    payload.reason,
+    payload.notes ?? "",
+    payload.amOwner,
+    requestedDate,
+    "AM",
+    "Cancellation Requested",
+    payload.mrrImpact ?? "",
+    payload.billingOwner ?? "",
+    false,
+    now
+  );
+
   const record: PendingCancellationRequest = {
     ...payload,
-    id: nextId(records),
+    id,
+    requestedDate,
     requestedBy: "AM",
     billingStatus: "Cancellation Requested",
     amOwnerNotified: false,
   };
 
-  records.push(record);
-
-  try {
-    writeRecords(records);
-    return NextResponse.json({ record });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  return NextResponse.json({ record });
 }

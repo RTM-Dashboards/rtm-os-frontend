@@ -1,24 +1,22 @@
 // RTM OS — Renewal Status API Route
 //
-// Persistence layer: reads/writes data/renewal-status.json.
+// Persistence layer: Postgres table `renewal_status`.
+// Migrated from data/renewal-status.json (fs.writeFileSync) which was
+// silently discarded on every Vercel deploy.
 //
-// Mirrors the expansion-opportunity-status pattern exactly. Stores lightweight
-// renewal-decision overrides keyed by clientId so decisions survive page
-// refreshes without a full backend. The canonical client data stays in
-// lib/mock/master-clients.ts; only the AM-driven decision, notes, and
-// timestamps are persisted here.
+// External shape is unchanged:
+//   GET  /api/renewal-status → { records: RenewalStatusRecord[] }
+//   POST /api/renewal-status → body: { clientId: string; decision: string; notes?: string }
+//                              → { record: RenewalStatusRecord }
+//                              (server assigns/overwrites updatedAt; upsert by clientId)
 //
-// GET  /api/renewal-status    → { records: RenewalStatusRecord[] }
-// POST /api/renewal-status    → body: { clientId: string; decision: string; notes?: string }
-//                               → { record: RenewalStatusRecord }
-//                               (server assigns/overwrites updatedAt)
+// Auth guard: getSessionUser — matches the original file-backed route.
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db/prisma";
 
-// ── Types (inline — server-only route) ───────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type RenewalDecision =
   | "Pending"
@@ -30,34 +28,25 @@ export interface RenewalStatusRecord {
   clientId: string;
   decision: RenewalDecision;
   notes: string;
-  updatedAt: string; // ISO-8601
+  updatedAt: string;
 }
 
-interface StatusFile {
-  records: RenewalStatusRecord[];
+// ── DB row type ───────────────────────────────────────────────────────────────
+
+interface StatusRow {
+  clientId: string;
+  decision: string;
+  notes: string;
+  updatedAt: string;
 }
 
-// ── File path ─────────────────────────────────────────────────────────────────
-
-const DATA_FILE = path.join(process.cwd(), "data", "renewal-status.json");
-
-// ── File I/O ──────────────────────────────────────────────────────────────────
-
-function readRecords(): RenewalStatusRecord[] {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as StatusFile;
-    if (!Array.isArray(parsed.records)) throw new Error("bad shape");
-    return parsed.records;
-  } catch {
-    return [];
-  }
-}
-
-function writeRecords(records: RenewalStatusRecord[]): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ records }, null, 2), "utf-8");
+function rowToRecord(row: StatusRow): RenewalStatusRecord {
+  return {
+    clientId:  row.clientId,
+    decision:  row.decision as RenewalDecision,
+    notes:     row.notes,
+    updatedAt: row.updatedAt,
+  };
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -67,8 +56,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (error) return NextResponse.json({ error }, { status: status! });
   void user;
 
-  const records = readRecords();
-  return NextResponse.json({ records });
+  const rows = await prisma.$queryRawUnsafe<StatusRow[]>(
+    `SELECT * FROM renewal_status ORDER BY "updatedAt" DESC`
+  );
+  return NextResponse.json({ records: rows.map(rowToRecord) });
 }
 
 // ── POST ──────────────────────────────────────────────────────────────────────
@@ -85,11 +76,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const payload = body as {
-    clientId?: unknown;
-    decision?: unknown;
-    notes?: unknown;
-  };
+  const payload = body as { clientId?: unknown; decision?: unknown; notes?: unknown };
 
   if (
     !payload ||
@@ -102,42 +89,35 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const validDecisions: RenewalDecision[] = [
-    "Pending",
-    "Renew",
-    "Renew with Changes",
-    "Decline",
-  ];
+  const validDecisions: RenewalDecision[] = ["Pending", "Renew", "Renew with Changes", "Decline"];
   if (!validDecisions.includes(payload.decision as RenewalDecision)) {
     return NextResponse.json(
-      {
-        error: `decision must be one of: ${validDecisions.join(", ")}`,
-      },
+      { error: `decision must be one of: ${validDecisions.join(", ")}` },
       { status: 400 }
     );
   }
 
-  const records = readRecords();
+  const now = new Date().toISOString();
+
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO renewal_status ("clientId", decision, notes, "updatedAt")
+     VALUES ($1,$2,$3,$4)
+     ON CONFLICT ("clientId") DO UPDATE SET
+       decision   = EXCLUDED.decision,
+       notes      = EXCLUDED.notes,
+       "updatedAt" = EXCLUDED."updatedAt"`,
+    payload.clientId as string,
+    payload.decision as string,
+    typeof payload.notes === "string" ? payload.notes : "",
+    now
+  );
 
   const record: RenewalStatusRecord = {
-    clientId: payload.clientId as string,
-    decision: payload.decision as RenewalDecision,
-    notes: typeof payload.notes === "string" ? payload.notes : "",
-    updatedAt: new Date().toISOString(),
+    clientId:  payload.clientId as string,
+    decision:  payload.decision as RenewalDecision,
+    notes:     typeof payload.notes === "string" ? payload.notes : "",
+    updatedAt: now,
   };
 
-  // Upsert — one record per clientId.
-  const existing = records.findIndex((r) => r.clientId === record.clientId);
-  if (existing >= 0) {
-    records[existing] = record;
-  } else {
-    records.push(record);
-  }
-
-  try {
-    writeRecords(records);
-    return NextResponse.json({ record });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  return NextResponse.json({ record });
 }
