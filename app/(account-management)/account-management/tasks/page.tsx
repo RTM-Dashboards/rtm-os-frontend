@@ -11,7 +11,10 @@ import WorkspaceTaskPage, {
   type WorkspaceTask,
 } from "@/components/workspace/WorkspaceTaskPage";
 import { getWorkspace } from "@/lib/workspaces";
+import { requireDept } from "@/lib/auth/vocab";
 import type { TaskListItem } from "@/app/api/tasks/route";
+
+const DEPT = requireDept("Account Management");
 
 const workspace = getWorkspace("account-management")!;
 
@@ -39,8 +42,8 @@ function mapToWorkspaceTask(t: TaskListItem): WorkspaceTask {
     title:       t.label,
     client:      t.clientId ?? "",
     project:     t.projectName ?? "",
-    department:  t.department ?? "Account Management",
-    service:     t.department ?? "Account Management",
+    department:  t.department ?? DEPT,
+    service:     t.department ?? DEPT,
     source:      "Task Blueprint",
     assignee:    t.ownerName ?? "Unassigned",
     priority:    priorityMap[t.priority ?? ""] ?? "Medium",
@@ -55,7 +58,7 @@ export default function AccountManagementTasksPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/tasks?department=Account+Management")
+    fetch(`/api/tasks?department=${encodeURIComponent(DEPT)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { tasks: TaskListItem[] } | null) => {
         if (d?.tasks) setTasks(d.tasks.map(mapToWorkspaceTask));

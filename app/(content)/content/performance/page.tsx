@@ -53,86 +53,22 @@ interface UploadItem extends Record<string, unknown> {
   blocker: string;
 }
 
-//  Mock Data 
+//  Data — not yet connected to a real source
+//  When a CMS / analytics integration is available, populate these from the API.
+//  All arrays are empty until then; the tables and filters are ready.
 
-const contentItems: ContentItem[] = [
-  {
+const contentItems: ContentItem[] = [];
+
+/* placeholder — remove when real data lands
+const _unusedContentItemShape: ContentItem = {
     id: "c1",
-    client: "Apex Roofing Co.",
-    title: "Best Roofing Materials for Denver Homes",
+    client: "[example]",
+    title: "[example title]",
     type: "Blog",
-    keyword: "roofing materials denver",
-    seoTask: "SEO-1042",
+    keyword: "[example keyword]",
+    seoTask: "SEO-0000",
     publishStatus: "Published",
     uploadStatus: "Indexed",
-    publishedUrl: "apexroofing.com/blog/roofing-materials-denver",
-    pageViews: 3240,
-    engagementTime: "3m 42s",
-    formSubmissions: 18,
-    calls: 12,
-    bookedLeads: 6,
-    performanceStatus: "Top Performer",
-  },
-  {
-    id: "c2",
-    client: "Sunbelt HVAC",
-    title: "AC Repair Phoenix: What to Expect",
-    type: "Blog",
-    keyword: "ac repair phoenix",
-    seoTask: "SEO-1089",
-    publishStatus: "Published",
-    uploadStatus: "Indexed",
-    publishedUrl: "sunbelthvac.com/blog/ac-repair-phoenix",
-    pageViews: 2180,
-    engagementTime: "2m 55s",
-    formSubmissions: 11,
-    calls: 9,
-    bookedLeads: 4,
-    performanceStatus: "Top Performer",
-  },
-  {
-    id: "c3",
-    client: "Pacific Dental",
-    title: "Invisalign vs Braces: San Diego Guide",
-    type: "Service Page",
-    keyword: "invisalign san diego",
-    seoTask: "SEO-1103",
-    publishStatus: "Published",
-    uploadStatus: "Uploaded",
-    publishedUrl: "pacificdental.com/invisalign-san-diego",
-    pageViews: 1420,
-    engagementTime: "4m 10s",
-    formSubmissions: 22,
-    calls: 7,
-    bookedLeads: 9,
-    performanceStatus: "Top Performer",
-  },
-  {
-    id: "c4",
-    client: "Summit Landscaping",
-    title: "Spring Lawn Care Tips for Asheville",
-    type: "Blog",
-    keyword: "lawn care asheville nc",
-    seoTask: "SEO-1115",
-    publishStatus: "Published",
-    uploadStatus: "Indexed",
-    publishedUrl: "summitlandscaping.com/blog/spring-lawn-care",
-    pageViews: 680,
-    engagementTime: "1m 22s",
-    formSubmissions: 2,
-    calls: 1,
-    bookedLeads: 0,
-    performanceStatus: "Low Performer",
-  },
-  {
-    id: "c5",
-    client: "Blue Ridge Plumbing",
-    title: "Emergency Plumber Near Me: What To Do",
-    type: "Landing Page",
-    keyword: "emergency plumber near me",
-    seoTask: "SEO-1122",
-    publishStatus: "Scheduled",
-    uploadStatus: "Ready To Upload",
     publishedUrl: "",
     pageViews: 0,
     engagementTime: "—",
@@ -141,103 +77,11 @@ const contentItems: ContentItem[] = [
     bookedLeads: 0,
     performanceStatus: "New",
   },
-  {
-    id: "c6",
-    client: "Harbor Auto Group",
-    title: "Used Car Buying Guide: Denver 2024",
-    type: "Blog",
-    keyword: "used cars denver",
-    seoTask: "SEO-1131",
-    publishStatus: "Draft",
-    uploadStatus: "Client Approval",
-    publishedUrl: "",
-    pageViews: 0,
-    engagementTime: "—",
-    formSubmissions: 0,
-    calls: 0,
-    bookedLeads: 0,
-    performanceStatus: "New",
-  },
-  {
-    id: "c7",
-    client: "Metro Dental Group",
-    title: "Dental Implants Cost: What Phoenix Patients Pay",
-    type: "Service Page",
-    keyword: "dental implants cost phoenix",
-    seoTask: "SEO-1138",
-    publishStatus: "Published",
-    uploadStatus: "Indexed",
-    publishedUrl: "metrodental.com/dental-implants-cost",
-    pageViews: 1890,
-    engagementTime: "3m 05s",
-    formSubmissions: 16,
-    calls: 11,
-    bookedLeads: 7,
-    performanceStatus: "Average",
-  },
-  {
-    id: "c8",
-    client: "Apex Roofing Co.",
-    title: "How Long Does a Roof Last? Expert Answer",
-    type: "Blog",
-    keyword: "how long does roof last",
-    seoTask: "SEO-1144",
-    publishStatus: "Draft",
-    uploadStatus: "Needs Revision",
-    publishedUrl: "",
-    pageViews: 0,
-    engagementTime: "—",
-    formSubmissions: 0,
-    calls: 0,
-    bookedLeads: 0,
-    performanceStatus: "New",
-  },
-  {
-    id: "c9",
-    client: "Sunbelt HVAC",
-    title: "Furnace Repair Phoenix: Signs You Need Help Now",
-    type: "Blog",
-    keyword: "furnace repair phoenix",
-    seoTask: "SEO-1149",
-    publishStatus: "Draft",
-    uploadStatus: "SEO Review",
-    publishedUrl: "",
-    pageViews: 0,
-    engagementTime: "—",
-    formSubmissions: 0,
-    calls: 0,
-    bookedLeads: 0,
-    performanceStatus: "New",
-  },
-  {
-    id: "c10",
-    client: "Blue Ridge Plumbing",
-    title: "Water Heater Replacement: Complete Guide",
-    type: "Blog",
-    keyword: "water heater replacement cost",
-    seoTask: "SEO-1156",
-    publishStatus: "Draft",
-    uploadStatus: "Blocked",
-    publishedUrl: "",
-    pageViews: 0,
-    engagementTime: "—",
-    formSubmissions: 0,
-    calls: 0,
-    bookedLeads: 0,
-    performanceStatus: "New",
-  },
-];
+*/
 
-const uploadItems: UploadItem[] = [
-  { id: "u1", client: "Blue Ridge Plumbing", seoTask: "SEO-1122", title: "Emergency Plumber Near Me", writer: "Alex R.", seoOwner: "Jamie T.", uploadOwner: "Casey L.", status: "Ready To Upload", cms: "WordPress", dueDate: "Jun 2", uploadDate: "", blocker: ""},
-  { id: "u2", client: "Harbor Auto Group",   seoTask: "SEO-1131", title: "Used Car Buying Guide 2024", writer: "Morgan S.", seoOwner: "Riley D.", uploadOwner: "Casey L.", status: "Client Approval", cms: "WordPress", dueDate: "Jun 5", uploadDate: "", blocker: ""},
-  { id: "u3", client: "Sunbelt HVAC",        seoTask: "SEO-1149", title: "Furnace Repair Phoenix Signs", writer: "Taylor B.", seoOwner: "Jamie T.", uploadOwner: "Pat M.", status: "SEO Review", cms: "HubSpot", dueDate: "Jun 3", uploadDate: "", blocker: ""},
-  { id: "u4", client: "Apex Roofing Co.",    seoTask: "SEO-1144", title: "How Long Does a Roof Last?", writer: "Jordan K.", seoOwner: "Riley D.", uploadOwner: "Casey L.", status: "Needs Revision", cms: "WordPress", dueDate: "May 30", uploadDate: "", blocker: "Content quality issues flagged by editor"},
-  { id: "u5", client: "Blue Ridge Plumbing", seoTask: "SEO-1156", title: "Water Heater Replacement Guide", writer: "Alex R.", seoOwner: "Jamie T.", uploadOwner: "Pat M.", status: "Blocked", cms: "WordPress", dueDate: "May 28", uploadDate: "", blocker: "Client hasn't provided updated brand guidelines"},
-  { id: "u6", client: "Metro Dental Group",  seoTask: "SEO-1138", title: "Dental Implants Cost Phoenix", writer: "Sam L.", seoOwner: "Riley D.", uploadOwner: "Casey L.", status: "Indexed", cms: "WordPress", dueDate: "May 10", uploadDate: "May 12", blocker: ""},
-  { id: "u7", client: "Apex Roofing Co.",    seoTask: "SEO-1042", title: "Roofing Materials Denver Homes", writer: "Jordan K.", seoOwner: "Jamie T.", uploadOwner: "Pat M.", status: "Indexed", cms: "WordPress", dueDate: "Apr 22", uploadDate: "Apr 24", blocker: ""},
-  { id: "u8", client: "Pacific Dental",      seoTask: "SEO-1103", title: "Invisalign vs Braces San Diego", writer: "Morgan S.", seoOwner: "Riley D.", uploadOwner: "Casey L.", status: "Uploaded", cms: "Webflow", dueDate: "May 18", uploadDate: "May 19", blocker: ""},
-];
+
+// Upload items not yet connected to a real source.
+const uploadItems: UploadItem[] = [];
 
 //  Status Maps 
 
@@ -322,40 +166,15 @@ const quickActions: QuickAction[] = [
   { label: "View Published URL",      description: "Open live page in browser",         icon: "", color: "bg-indigo-50 text-indigo-600", disabled: true, disabledReason: "Not yet available — coming at launch" },
 ];
 
-//  KPI Data 
+//  KPI Data — not yet connected; arrays are empty.
+//  When a CMS/analytics integration lands, populate these from the API.
 
-const kpiData = [
-  { kpiId: "content-pages-published",        title: "Pages Published",               value: "47",   trend: "up"as const, trendValue: "+6",    iconBg: "#EFF6FF", iconColor: "#2563EB"},
-  { kpiId: "content-blogs-published",        title: "Blogs Published",               value: "112",  trend: "up"as const, trendValue: "+18",   iconBg: "#F5F3FF", iconColor: "#7C3AED"},
-  { kpiId: "content-pending-uploads",        title: "Pending Uploads",               value: "14",   trend: "down"as const, trendValue: "-3",    iconBg: "#FFFBEB", iconColor: "#D97706"},
-  { kpiId: "content-uploads-completed",      title: "Uploads Completed",             value: "38",   trend: "up"as const, trendValue: "+9",    iconBg: "#ECFDF5", iconColor: "#059669"},
-  { kpiId: "content-awaiting-seo-approval",  title: "Awaiting SEO Approval",         value: "7",    trend: "neutral"as const, trendValue: "",   iconBg: "#F0FDF4", iconColor: "#16A34A"},
-  { kpiId: "content-awaiting-client-approval", title: "Awaiting Client Approval",    value: "5",    trend: "neutral"as const, trendValue: "",   iconBg: "#FFF7ED", iconColor: "#EA580C"},
-  { kpiId: "content-avg-engagement-rate",    title: "Avg. Engagement Rate",          value: "3.8%", trend: "up"as const, trendValue: "+0.4%", iconBg: "#F0F9FF", iconColor: "#0284C7"},
-  { kpiId: "content-organic-leads",          title: "Organic Leads From Content",    value: "83",   trend: "up"as const, trendValue: "+14",   iconBg: "#ECFDF5", iconColor: "#059669"},
-  { kpiId: "content-booked-leads",           title: "Booked Leads From Content",     value: "29",   trend: "up"as const, trendValue: "+7",    iconBg: "#FFF1F2", iconColor: "#E11D48"},
-];
+type KpiItem = { kpiId: string; title: string; value: string; trend: "up"|"down"|"neutral"; trendValue: string; iconBg: string; iconColor: string };
+const kpiData: KpiItem[] = [];
 
-const engagementMetrics = [
-  { label: "Page Views",           value: "28,410", sub: "+12% vs prev period"},
-  { label: "Blog Views",           value: "19,880", sub: "+18% vs prev period"},
-  { label: "Avg. Engagement Time", value: "3m 02s", sub: "+0:18 vs prev period"},
-  { label: "Scroll Depth",         value: "62%",    sub: "+4% vs prev period"},
-  { label: "Clicks",               value: "4,210",  sub: "+320 vs prev period"},
-  { label: "Form Submissions",     value: "148",    sub: "+22 vs prev period"},
-  { label: "Calls",                value: "96",     sub: "+11 vs prev period"},
-  { label: "Booked Leads",         value: "29",     sub: "+7 vs prev period"},
-];
+const engagementMetrics: { label: string; value: string; sub: string }[] = [];
 
-const uploadStatusSummary = [
-  { label: "SEO Tasks w/ Content Pending", value: "14", color: "#7C3AED"},
-  { label: "Content Drafted",              value: "6",  color: "#2563EB"},
-  { label: "Content Approved",             value: "5",  color: "#059669"},
-  { label: "Content Uploaded",             value: "8",  color: "#0284C7"},
-  { label: "Content Indexed",              value: "30", color: "#16A34A"},
-  { label: "Content Needs Revision",       value: "3",  color: "#D97706"},
-  { label: "Blocked Uploads",              value: "2",  color: "#DC2626"},
-];
+const uploadStatusSummary: { label: string; value: string; color: string }[] = [];
 
 //  Top / Low Performing 
 

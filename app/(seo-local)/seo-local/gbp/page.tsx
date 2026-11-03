@@ -21,12 +21,7 @@ interface GbpClient extends Record<string, unknown> {
 }
 
 const clients: GbpClient[] = [
-  { client: "Apex Roofing Co.",    city: "Denver, CO",     status: "optimized",     reviewScore: 4.8, totalReviews: 184, monthlyViews: "6.2K",  completeness: 96 },
-  { client: "Pacific Dental",      city: "San Diego, CA",  status: "optimized",     reviewScore: 4.9, totalReviews: 221, monthlyViews: "9.1K",  completeness: 100 },
-  { client: "Harbor Auto Group",   city: "Phoenix, AZ",    status: "needs-review",  reviewScore: 4.3, totalReviews: 97,  monthlyViews: "3.9K",  completeness: 72 },
-  { client: "Summit Landscaping",  city: "Denver, CO",     status: "optimized",     reviewScore: 4.7, totalReviews: 58,  monthlyViews: "2.8K",  completeness: 88 },
-  { client: "Metro Dental",        city: "Denver, CO",     status: "needs-review",  reviewScore: 4.1, totalReviews: 34,  monthlyViews: "1.4K",  completeness: 58 },
-  { client: "Blue Ridge Plumbing", city: "Asheville, NC",  status: "setting-up",    reviewScore: 0,   totalReviews: 4,   monthlyViews: "—",     completeness: 22 },
+  // No data — not yet connected to a real API source
 ];
 
 const columns: Column<GbpClient>[] = [
@@ -59,15 +54,11 @@ const columns: Column<GbpClient>[] = [
 ];
 
 const activityItems: ActivityItem[] = [
-  { id: "1", actor: "Lisa P.",   action: "completed GBP audit for",       target: "Apex Roofing Co.",       timestamp: "2h ago",  type: "task",  avatarColor: "#ec4899"},
-  { id: "2", actor: "Jordan M.", action: "updated business hours for",    target: "Pacific Dental",          timestamp: "5h ago",  type: "task",  avatarColor: "var(--rtm-blue)"},
-  { id: "3", actor: "System",    action: "detected incomplete profile for",target: "Blue Ridge Plumbing",   timestamp: "8h ago",  type: "alert", avatarColor: "#64748b"},
-  { id: "4", actor: "Lisa P.",   action: "added 12 new photos to",        target: "Summit Landscaping GBP", timestamp: "1d ago",  type: "task",  avatarColor: "#ec4899"},
+  // No data — not yet connected to a real API source
 ];
 
 const alerts: AlertItem[] = [
-  { id: "1", severity: "warning", title: "2 GBP profiles need review",              description: "Harbor Auto and Metro Dental profiles have incomplete or outdated information.", action: "Fix"},
-  { id: "2", severity: "info",    title: "Pacific Dental reached 100% completeness", description: "Profile is fully optimized with all fields, photos, and categories set.",       action: "View"},
+  // No data — not yet connected to a real API source
 ];
 
 const quickActions: QuickAction[] = [

@@ -76,53 +76,7 @@ function makeMapPackWeeks(
 }
 
 const MAP_PACK_CLIENTS: MapPackClient[] = [
-  {
-    id: "mc001",
-    name: "Apex Roofing Solutions",
-    keywords: [
-      { keyword: "roofing company denver", currentPosition: 2, packAppearanceRate: 85, avgPosition: 2.1, weeks: makeMapPackWeeks(2, 0.85) },
-      { keyword: "roof repair near me", currentPosition: 1, packAppearanceRate: 92, avgPosition: 1.4, weeks: makeMapPackWeeks(1, 0.92) },
-      { keyword: "emergency roofer", currentPosition: 3, packAppearanceRate: 71, avgPosition: 2.8, weeks: makeMapPackWeeks(3, 0.71) },
-      { keyword: "storm damage roofing", currentPosition: null, packAppearanceRate: 38, avgPosition: null, weeks: makeMapPackWeeks(4, 0.38) },
-    ],
-  },
-  {
-    id: "mc003",
-    name: "Pacific Dental Group",
-    keywords: [
-      { keyword: "dentist san diego", currentPosition: 1, packAppearanceRate: 97, avgPosition: 1.2, weeks: makeMapPackWeeks(1, 0.97) },
-      { keyword: "emergency dentist near me", currentPosition: 2, packAppearanceRate: 88, avgPosition: 1.9, weeks: makeMapPackWeeks(2, 0.88) },
-      { keyword: "teeth cleaning san diego", currentPosition: 1, packAppearanceRate: 95, avgPosition: 1.1, weeks: makeMapPackWeeks(1, 0.95) },
-      { keyword: "invisalign san diego", currentPosition: 3, packAppearanceRate: 74, avgPosition: 2.6, weeks: makeMapPackWeeks(3, 0.74) },
-    ],
-  },
-  {
-    id: "mc005",
-    name: "Harbor Auto Group",
-    keywords: [
-      { keyword: "car dealership phoenix", currentPosition: 3, packAppearanceRate: 62, avgPosition: 2.9, weeks: makeMapPackWeeks(3, 0.62) },
-      { keyword: "used cars phoenix az", currentPosition: null, packAppearanceRate: 29, avgPosition: null, weeks: makeMapPackWeeks(4, 0.29) },
-      { keyword: "auto dealer near me", currentPosition: 2, packAppearanceRate: 77, avgPosition: 2.3, weeks: makeMapPackWeeks(2, 0.77) },
-    ],
-  },
-  {
-    id: "mc004",
-    name: "Blue Ridge Plumbing Co.",
-    keywords: [
-      { keyword: "plumber asheville nc", currentPosition: 1, packAppearanceRate: 91, avgPosition: 1.3, weeks: makeMapPackWeeks(1, 0.91) },
-      { keyword: "emergency plumbing", currentPosition: 2, packAppearanceRate: 83, avgPosition: 2.0, weeks: makeMapPackWeeks(2, 0.83) },
-      { keyword: "drain cleaning near me", currentPosition: null, packAppearanceRate: 44, avgPosition: null, weeks: makeMapPackWeeks(4, 0.44) },
-    ],
-  },
-  {
-    id: "mc015",
-    name: "Pinnacle Chiropractic",
-    keywords: [
-      { keyword: "chiropractor near me", currentPosition: 1, packAppearanceRate: 96, avgPosition: 1.2, weeks: makeMapPackWeeks(1, 0.96) },
-      { keyword: "back pain doctor", currentPosition: 2, packAppearanceRate: 82, avgPosition: 2.1, weeks: makeMapPackWeeks(2, 0.82) },
-      { keyword: "sports injury chiropractic", currentPosition: 3, packAppearanceRate: 67, avgPosition: 2.7, weeks: makeMapPackWeeks(3, 0.67) },
-    ],
-  },
+  // No data — not yet connected to a real API source
 ];
 
 // ─── Map Pack Position micro-chart ────────────────────────────────────────────
@@ -241,53 +195,7 @@ function makeMapsRankWeeks(startRank: number, endRank: number, n = 13): MapsRank
 }
 
 const MAPS_RANK_CLIENTS: MapsRankClient[] = [
-  {
-    id: "mc001",
-    name: "Apex Roofing Solutions",
-    keywords: [
-      { keyword: "roofing company denver", currentRank: 2, peakRank: 1, avgRank: 2.3, weeks: makeMapsRankWeeks(5, 2) },
-      { keyword: "roof repair near me", currentRank: 1, peakRank: 1, avgRank: 1.6, weeks: makeMapsRankWeeks(4, 1) },
-      { keyword: "emergency roofer", currentRank: 4, peakRank: 3, avgRank: 4.8, weeks: makeMapsRankWeeks(8, 4) },
-      { keyword: "storm damage roofing", currentRank: 11, peakRank: 7, avgRank: 13.2, weeks: makeMapsRankWeeks(18, 11) },
-    ],
-  },
-  {
-    id: "mc003",
-    name: "Pacific Dental Group",
-    keywords: [
-      { keyword: "dentist san diego", currentRank: 1, peakRank: 1, avgRank: 1.4, weeks: makeMapsRankWeeks(3, 1) },
-      { keyword: "emergency dentist near me", currentRank: 2, peakRank: 1, avgRank: 2.1, weeks: makeMapsRankWeeks(5, 2) },
-      { keyword: "teeth cleaning san diego", currentRank: 1, peakRank: 1, avgRank: 1.2, weeks: makeMapsRankWeeks(2, 1) },
-      { keyword: "invisalign san diego", currentRank: 5, peakRank: 3, avgRank: 6.4, weeks: makeMapsRankWeeks(10, 5) },
-    ],
-  },
-  {
-    id: "mc005",
-    name: "Harbor Auto Group",
-    keywords: [
-      { keyword: "car dealership phoenix", currentRank: 7, peakRank: 5, avgRank: 9.1, weeks: makeMapsRankWeeks(14, 7) },
-      { keyword: "used cars phoenix az", currentRank: 14, peakRank: 11, avgRank: 16.3, weeks: makeMapsRankWeeks(21, 14) },
-      { keyword: "auto dealer near me", currentRank: 4, peakRank: 3, avgRank: 5.2, weeks: makeMapsRankWeeks(9, 4) },
-    ],
-  },
-  {
-    id: "mc004",
-    name: "Blue Ridge Plumbing Co.",
-    keywords: [
-      { keyword: "plumber asheville nc", currentRank: 1, peakRank: 1, avgRank: 1.7, weeks: makeMapsRankWeeks(4, 1) },
-      { keyword: "emergency plumbing", currentRank: 2, peakRank: 1, avgRank: 2.4, weeks: makeMapsRankWeeks(5, 2) },
-      { keyword: "drain cleaning near me", currentRank: 8, peakRank: 6, avgRank: 10.1, weeks: makeMapsRankWeeks(15, 8) },
-    ],
-  },
-  {
-    id: "mc015",
-    name: "Pinnacle Chiropractic",
-    keywords: [
-      { keyword: "chiropractor near me", currentRank: 1, peakRank: 1, avgRank: 1.3, weeks: makeMapsRankWeeks(3, 1) },
-      { keyword: "back pain doctor", currentRank: 3, peakRank: 2, avgRank: 3.7, weeks: makeMapsRankWeeks(7, 3) },
-      { keyword: "sports injury chiropractic", currentRank: 6, peakRank: 4, avgRank: 7.8, weeks: makeMapsRankWeeks(12, 6) },
-    ],
-  },
+  // No data — not yet connected to a real API source
 ];
 
 // ─── Maps Rank mini chart ─────────────────────────────────────────────────────
@@ -396,53 +304,7 @@ function makeGrid(center: number, spread: number): GridPoint[] {
 }
 
 const GRID_CLIENTS: GridClient[] = [
-  {
-    id: "mc001",
-    name: "Apex Roofing Solutions",
-    city: "Denver, CO",
-    keywords: [
-      { keyword: "roofing company", grid: makeGrid(1, 1.8) },
-      { keyword: "roof repair", grid: makeGrid(2, 2.1) },
-      { keyword: "storm damage roofing", grid: makeGrid(5, 2.8) },
-    ],
-  },
-  {
-    id: "mc003",
-    name: "Pacific Dental Group",
-    city: "San Diego, CA",
-    keywords: [
-      { keyword: "dentist", grid: makeGrid(1, 1.2) },
-      { keyword: "emergency dentist", grid: makeGrid(2, 1.9) },
-      { keyword: "invisalign", grid: makeGrid(3, 2.4) },
-    ],
-  },
-  {
-    id: "mc005",
-    name: "Harbor Auto Group",
-    city: "Phoenix, AZ",
-    keywords: [
-      { keyword: "car dealership", grid: makeGrid(5, 2.2) },
-      { keyword: "auto dealer", grid: makeGrid(4, 2.0) },
-    ],
-  },
-  {
-    id: "mc004",
-    name: "Blue Ridge Plumbing Co.",
-    city: "Asheville, NC",
-    keywords: [
-      { keyword: "plumber", grid: makeGrid(1, 1.5) },
-      { keyword: "emergency plumbing", grid: makeGrid(2, 2.3) },
-    ],
-  },
-  {
-    id: "mc015",
-    name: "Pinnacle Chiropractic",
-    city: "Nashville, TN",
-    keywords: [
-      { keyword: "chiropractor", grid: makeGrid(1, 1.4) },
-      { keyword: "back pain doctor", grid: makeGrid(3, 2.2) },
-    ],
-  },
+  // No data — not yet connected to a real API source
 ];
 
 // ─── Grid cell ────────────────────────────────────────────────────────────────
@@ -599,42 +461,62 @@ export default function SeoLocalPerformancePage() {
   const [dateRange, setDateRange] = useState<DateRangeState>(DEFAULT_DATE_RANGE);
 
   // ── Local Map Pack state ─────────────────────────────────────────────────
-  const [mapPackClientId, setMapPackClientId] = useState(MAP_PACK_CLIENTS[0].id);
+  const [mapPackClientId, setMapPackClientId] = useState(MAP_PACK_CLIENTS[0]?.id ?? "");
 
   // ── Maps Search Rankings state ────────────────────────────────────────────
-  const [mapsClientId, setMapsClientId] = useState(MAPS_RANK_CLIENTS[0].id);
+  const [mapsClientId, setMapsClientId] = useState(MAPS_RANK_CLIENTS[0]?.id ?? "");
 
   // ── Grid Ranking state ────────────────────────────────────────────────────
-  const [gridClientId, setGridClientId] = useState(GRID_CLIENTS[0].id);
+  const [gridClientId, setGridClientId] = useState(GRID_CLIENTS[0]?.id ?? "");
   const [gridKeywordIdx, setGridKeywordIdx] = useState(0);
 
   // Derived
   const rangeLabel = describeDateRange(dateRange);
 
   const mapPackClient = useMemo(
-    () => MAP_PACK_CLIENTS.find((c) => c.id === mapPackClientId)!,
+    () => MAP_PACK_CLIENTS.find((c) => c.id === mapPackClientId) ?? null,
     [mapPackClientId]
   );
 
   const mapsClient = useMemo(
-    () => MAPS_RANK_CLIENTS.find((c) => c.id === mapsClientId)!,
+    () => MAPS_RANK_CLIENTS.find((c) => c.id === mapsClientId) ?? null,
     [mapsClientId]
   );
 
   const gridClient = useMemo(
-    () => GRID_CLIENTS.find((c) => c.id === gridClientId)!,
+    () => GRID_CLIENTS.find((c) => c.id === gridClientId) ?? null,
     [gridClientId]
   );
 
-  const safeKeywordIdx = Math.min(gridKeywordIdx, gridClient.keywords.length - 1);
-  const activeGridKeyword = gridClient.keywords[safeKeywordIdx];
-  const gStats = gridStats(activeGridKeyword.grid);
+  const safeKeywordIdx = gridClient ? Math.min(gridKeywordIdx, gridClient.keywords.length - 1) : 0;
+  const activeGridKeyword = gridClient ? gridClient.keywords[safeKeywordIdx] : undefined;
+  const gStats = activeGridKeyword ? gridStats(activeGridKeyword.grid) : { inTop3: 0, inTop10: 0, total: 0, avgRank: null };
 
   // Reset keyword index when client changes
   const handleGridClientChange = (id: string) => {
     setGridClientId(id);
     setGridKeywordIdx(0);
   };
+
+  if (MAP_PACK_CLIENTS.length === 0 && MAPS_RANK_CLIENTS.length === 0 && GRID_CLIENTS.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest mb-1">SEO-Local</p>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>SEO & Local Performance</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>3-Pack, Maps rankings, and local grid tracking.</p>
+        </div>
+        <div className="rounded-xl border px-4 py-10 text-center" style={{ borderColor: "var(--rtm-border-light)", borderStyle: "dashed", background: "var(--rtm-bg)" }}>
+          <p className="text-sm font-semibold mb-1" style={{ color: "var(--rtm-text-secondary)" }}>No SEO & Local performance data yet</p>
+          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Connect a local rank-tracking API to see map pack positions, local grid data, and keyword trends. Layout and controls are ready.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!mapPackClient || !mapsClient || !gridClient) return null;
+  // At this point all clients are non-null; keyword access is safe
+  const activeGridKw = activeGridKeyword!;
 
   return (
     <div className="space-y-6">
@@ -1230,7 +1112,7 @@ export default function SeoLocalPerformancePage() {
 
         {/* The actual grid */}
         <SectionWrapper
-          title={`${gridClient.name} — "${activeGridKeyword.keyword}" — 5×5 Geo-Grid`}
+          title={`${gridClient.name} — "${activeGridKw.keyword}" — 5×5 Geo-Grid`}
           description={`${gridClient.city} · center = business location (★) · color = rank tier`}
         >
           <div className="space-y-4">
@@ -1246,7 +1128,7 @@ export default function SeoLocalPerformancePage() {
                 borderColor: "var(--rtm-border-light)",
               }}
             >
-              {activeGridKeyword.grid.map((point) => (
+              {activeGridKw.grid.map((point) => (
                 <GridCell
                   key={`${point.row}-${point.col}`}
                   point={point}

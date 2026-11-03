@@ -76,126 +76,7 @@ function makeWeeks(
 }
 
 const CLIENT_DATA: ClientOrganicData[] = [
-  {
-    id: "mc001",
-    name: "Apex Roofing Solutions",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(18.4, 11.2, 820, 1340, 0.5),
-    positionDelta: -7.2,
-    sessionsDelta: 520,
-  },
-  {
-    id: "mc002",
-    name: "Sunbelt HVAC & Air",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(22.1, 14.8, 610, 990, 0.4),
-    positionDelta: -7.3,
-    sessionsDelta: 380,
-  },
-  {
-    id: "mc003",
-    name: "Pacific Dental Group",
-    services: ["SEO / GBP", "Yelp Ads"],
-    weeks: makeWeeks(9.8, 6.1, 1450, 2100, 0.3),
-    positionDelta: -3.7,
-    sessionsDelta: 650,
-  },
-  {
-    id: "mc004",
-    name: "Blue Ridge Plumbing Co.",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(31.5, 19.4, 340, 620, 0.6),
-    positionDelta: -12.1,
-    sessionsDelta: 280,
-  },
-  {
-    id: "mc005",
-    name: "Harbor Auto Group",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(14.2, 10.6, 2200, 2850, 0.3),
-    positionDelta: -3.6,
-    sessionsDelta: 650,
-  },
-  {
-    id: "mc010",
-    name: "Clearwater Insurance Agency",
-    services: ["SEO", "GBP"],
-    weeks: makeWeeks(26.0, 17.3, 510, 780, 0.5),
-    positionDelta: -8.7,
-    sessionsDelta: 270,
-  },
-  {
-    id: "mc011",
-    name: "Ridgeline Construction LLC",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(38.2, 24.1, 190, 420, 0.7),
-    positionDelta: -14.1,
-    sessionsDelta: 230,
-  },
-  {
-    id: "mc012",
-    name: "Nova MedSpa & Aesthetics",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(11.5, 7.8, 980, 1560, 0.35),
-    positionDelta: -3.7,
-    sessionsDelta: 580,
-  },
-  {
-    id: "mc013",
-    name: "Desert Solar Energy",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(19.7, 13.2, 730, 1080, 0.45),
-    positionDelta: -6.5,
-    sessionsDelta: 350,
-  },
-  {
-    id: "mc015",
-    name: "Pinnacle Chiropractic",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(8.4, 5.3, 1100, 1680, 0.25),
-    positionDelta: -3.1,
-    sessionsDelta: 580,
-  },
-  {
-    id: "mc016",
-    name: "Capital Contractors Group",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(42.0, 28.5, 150, 340, 0.8),
-    positionDelta: -13.5,
-    sessionsDelta: 190,
-  },
-  {
-    id: "mc017",
-    name: "Eastside Veterinary Clinic",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(13.6, 9.1, 860, 1290, 0.3),
-    positionDelta: -4.5,
-    sessionsDelta: 430,
-  },
-  {
-    id: "mc018",
-    name: "Ironclad Security Systems",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(29.3, 20.4, 280, 510, 0.55),
-    positionDelta: -8.9,
-    sessionsDelta: 230,
-  },
-  {
-    id: "mc019",
-    name: "Coastal Wellness Center",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(17.1, 11.8, 940, 1410, 0.4),
-    positionDelta: -5.3,
-    sessionsDelta: 470,
-  },
-  {
-    id: "mc020",
-    name: "Frontier Logistics Inc.",
-    services: ["SEO / GBP"],
-    weeks: makeWeeks(33.8, 22.6, 220, 390, 0.65),
-    positionDelta: -11.2,
-    sessionsDelta: 170,
-  },
+  // No data — not yet connected to a real API source
 ];
 
 // ─── Week count from DateRangeState ──────────────────────────────────────────
@@ -373,14 +254,15 @@ function DeltaBadge({ value, unit, invertGood = false }: { value: number; unit: 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function OrganicPerformancePage() {
-  const [selectedId, setSelectedId] = useState<string>(CLIENT_DATA[0].id);
+  const [selectedId, setSelectedId] = useState<string>(CLIENT_DATA[0]?.id ?? "");
   const [dateRange, setDateRange] = useState<DateRangeState>(DEFAULT_DATE_RANGE);
 
-  const client = CLIENT_DATA.find((c) => c.id === selectedId)!;
+  const client = CLIENT_DATA.find((c) => c.id === selectedId) ?? null;
   const numWeeks = weeksFromDateRange(dateRange);
 
   // Slice weeks to the selected duration window
   const slicedWeeks = useMemo(() => {
+    if (!client) return [];
     return client.weeks.slice(client.weeks.length - numWeeks);
   }, [client, numWeeks]);
 
@@ -389,8 +271,8 @@ export default function OrganicPerformancePage() {
   const weekLabels = slicedWeeks.map((w) => w.week);
 
   // Summarize the sliced window
-  const currentPos = positionData[positionData.length - 1];
-  const startPos = positionData[0];
+  const currentPos = positionData[positionData.length - 1] ?? 0;
+  const startPos = positionData[0] ?? 0;
   const posDelta = Math.round((currentPos - startPos) * 10) / 10;
 
   const currentSess = sessionData[sessionData.length - 1];
@@ -404,6 +286,24 @@ export default function OrganicPerformancePage() {
     dateRange.mode === "preset"
       ? dateRange.presetDays
       : numWeeks * 7;
+
+  if (CLIENT_DATA.length === 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest mb-1" style={{ color: "var(--rtm-text-muted)" }}>SEO-Local</p>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--rtm-text-primary)" }}>Organic Performance</h1>
+          <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>Aggregate organic traffic and position tracking.</p>
+        </div>
+        <div className="rounded-xl border px-4 py-10 text-center" style={{ borderColor: "var(--rtm-border-light)", borderStyle: "dashed", background: "var(--rtm-bg)" }}>
+          <p className="text-sm font-semibold mb-1" style={{ color: "var(--rtm-text-secondary)" }}>No organic performance data yet</p>
+          <p className="text-xs" style={{ color: "var(--rtm-text-muted)" }}>Connect Google Search Console or a rank-tracking API to see organic traffic, position, and session trends. Layout and controls are ready.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!client) return null;
 
   return (
     <div className="space-y-6">

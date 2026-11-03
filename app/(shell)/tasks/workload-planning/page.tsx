@@ -93,17 +93,20 @@ interface DeptRow {
   taskRoute: string;
 }
 
+// Routes use encodeURIComponent on each canonical department name from VALID_DEPARTMENTS.
+// Lookup entries for legacy stored values are kept only as a fallback; canonical names
+// are the primary path and always resolve through the dynamic fallback below.
 const DEPT_TASK_ROUTES: Record<string, string> = {
-  SEO:                "/projects/tasks?department=SEO",
-  GBP:                "/projects/tasks?department=GBP",
-  PPC:                "/projects/tasks?department=PPC",
-  "Meta Ads":         "/projects/tasks?department=Meta+Ads",
-  Reporting:          "/projects/tasks?department=Reporting",
-  "Web Development":  "/projects/tasks?department=Web+Development",
-  Design:             "/projects/tasks?department=Design",
-  Content:            "/projects/tasks?department=Content",
-  "Account Management": "/projects/tasks?department=Account+Management",
-  Billing:            "/projects/tasks?department=Billing",
+  "Account Management":   `/projects/tasks?department=${encodeURIComponent("Account Management")}`,
+  Sales:                  `/projects/tasks?department=${encodeURIComponent("Sales")}`,
+  Billing:                `/projects/tasks?department=${encodeURIComponent("Billing")}`,
+  Content:                `/projects/tasks?department=${encodeURIComponent("Content")}`,
+  "Web Development & Design": `/projects/tasks?department=${encodeURIComponent("Web Development & Design")}`,
+  "SEO & Local":          `/projects/tasks?department=${encodeURIComponent("SEO & Local")}`,
+  "Paid Advertising":     `/projects/tasks?department=${encodeURIComponent("Paid Advertising")}`,
+  Reporting:              `/projects/tasks?department=${encodeURIComponent("Reporting")}`,
+  "Local Service Ads":    `/projects/tasks?department=${encodeURIComponent("Local Service Ads")}`,
+  "IT & Security":        `/projects/tasks?department=${encodeURIComponent("IT & Security")}`,
 };
 
 // ---------------------------------------------------------------------------

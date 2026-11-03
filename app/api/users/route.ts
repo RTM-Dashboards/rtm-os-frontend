@@ -149,10 +149,18 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     }
   }
 
+  // ── ?department= filter ────────────────────────────────────────────────────
+  // Workspace settings pages request users for a specific department (their
+  // own workspace's canonical department), not the caller's. This param is
+  // respected only for SystemAdmin/Executive (who may see any department)
+  // and for Manager when the requested department is their own.
+  const filterDept = req.nextUrl.searchParams.get("department") ?? null;
+
   try {
     if (actor.role === "SystemAdmin" || actor.role === "Executive") {
-      // Full visibility.
+      // Full visibility, optionally narrowed to one department.
       const rows = await prisma.user.findMany({
+        where:   filterDept ? { department: filterDept } : undefined,
         select:  USER_SELECT,
         orderBy: { email: "asc" },
       });
@@ -173,7 +181,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       //
       // If the Manager themselves has no department set, fall through to Member
       // behaviour (only themselves) — they cannot scope a department filter.
+      //
+      // If ?department= is present and is NOT the caller's own department,
+      // return 403 — a Manager may not peek at another department's roster.
       if (actor.department) {
+        if (filterDept && filterDept !== actor.department) {
+          return NextResponse.json(
+            { error: "Managers may only view their own department's users." },
+            { status: 403 },
+          );
+        }
         const rows = await prisma.user.findMany({
           where: {
             OR: [

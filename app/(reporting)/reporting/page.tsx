@@ -54,18 +54,13 @@ const kpiData = {
   reportsSentThisMonth:            41,
 };
 
+//  Data types for rows (empty arrays — not yet connected to real API)
+interface CalendarRow { date: string; client: string; type: string; owner: string; status: string; next: string; }
+interface ExecClientRow { client: string; am: string; health: string; revenue: string; renewalDate: string; upsell: string; }
+
 //  Report Queue mock data 
-const reportQueueData = [
-  { client: "Apex Roofing",        am: "Sarah M.",   type: "Monthly SEO",      period: "May 2025",  owner: "Jake T.",   due: "Jun 7",  status: "Drafting",                    qa: "Pending QA",       amReview: "Pending AM Review",    delivery: "Ready To Send",    next: "Submit for QA"},
-  { client: "Pacific Dental",      am: "Chris L.",   type: "Monthly Paid Ads", period: "May 2025",  owner: "Mia K.",    due: "Jun 5",  status: "QA Review",                   qa: "QA In Progress",   amReview: "Pending AM Review",    delivery: "Ready To Send",    next: "Complete QA"},
-  { client: "Harbor Auto",         am: "Tom R.",     type: "Monthly GBP",      period: "May 2025",  owner: "Nina P.",   due: "Jun 8",  status: "Data Gathering",              qa: "Pending QA",       amReview: "Pending AM Review",    delivery: "Ready To Send",    next: "Complete data pull"},
-  { client: "Summit Landscaping",  am: "Dana W.",    type: "Monthly SEO",      period: "May 2025",  owner: "Leo S.",    due: "May 30", status: "Overdue",                     qa: "Pending QA",       amReview: "Pending AM Review",    delivery: "Ready To Send",    next: "Escalate to owner"},
-  { client: "Metro Dental",        am: "Sarah M.",   type: "Monthly LSA",      period: "May 2025",  owner: "Jake T.",   due: "Jun 10", status: "Waiting For Department Input",qa: "Pending QA",       amReview: "Pending AM Review",    delivery: "Ready To Send",    next: "Chase LSA team"},
-  { client: "Coastal Plumbing",    am: "Chris L.",   type: "Monthly Yelp",     period: "May 2025",  owner: "Mia K.",    due: "Jun 1",  status: "Sent",                        qa: "Approved",         amReview: "Approved By AM",       delivery: "Sent",             next: "—"},
-  { client: "BlueSky HVAC",        am: "Tom R.",     type: "Monthly Meta Ads", period: "May 2025",  owner: "Nina P.",   due: "Jun 6",  status: "AM Review",                   qa: "Approved",         amReview: "In Review",            delivery: "Ready To Send",    next: "AM to approve"},
-  { client: "Prestige Auto",       am: "Dana W.",    type: "Monthly Google Ads",period: "May 2025", owner: "Leo S.",    due: "Jun 9",  status: "Not Started",                 qa: "Pending QA",       amReview: "Pending AM Review",    delivery: "Ready To Send",    next: "Begin data gathering"},
-  { client: "Urban Dental",        am: "Sarah M.",   type: "Monthly Content",  period: "May 2025",  owner: "Jake T.",   due: "Jun 11", status: "Needs Revision",              qa: "Issues Found",     amReview: "Revision Requested",   delivery: "Ready To Send",    next: "Apply QA revisions"},
-  { client: "Skyline Roofing",     am: "Chris L.",   type: "Monthly Web Dev",  period: "May 2025",  owner: "Mia K.",    due: "Jun 4",  status: "Ready To Send",               qa: "Approved",         amReview: "Approved By AM",       delivery: "Ready To Send",    next: "Send to client"},
+const reportQueueData: unknown[] = [
+  // No data — not yet connected to a real API source
 ];
 
 const reportStatusColor: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
@@ -84,14 +79,8 @@ const reportStatusColor: Record<string, "success"| "warning"| "error"| "info"| "
 // Department Inputs data is now real — loaded from /api/report-inputs via useReportInputs hook
 
 //  QA Workflow mock data 
-const qaData = [
-  { report: "Monthly Paid Ads",  client: "Pacific Dental",     qaOwner: "Mia K.",   qaStatus: "QA In Progress",     issues: 0, revOwner: "—",        due: "Jun 5",  approval: "Pending"},
-  { report: "Monthly SEO",       client: "Apex Roofing",       qaOwner: "Jake T.",  qaStatus: "Pending QA",         issues: 0, revOwner: "—",        due: "Jun 7",  approval: "Pending"},
-  { report: "Monthly Content",   client: "Urban Dental",       qaOwner: "Nina P.",  qaStatus: "Issues Found",       issues: 3, revOwner: "Jake T.",  due: "Jun 11", approval: "Pending"},
-  { report: "Monthly Meta Ads",  client: "BlueSky HVAC",       qaOwner: "Leo S.",   qaStatus: "Approved",           issues: 0, revOwner: "—",        due: "Jun 6",  approval: "Approved"},
-  { report: "Monthly Web Dev",   client: "Skyline Roofing",    qaOwner: "Tom R.",   qaStatus: "Approved",           issues: 0, revOwner: "—",        due: "Jun 4",  approval: "Approved"},
-  { report: "Monthly Google Ads",client: "Prestige Auto",      qaOwner: "Mia K.",   qaStatus: "Pending QA",         issues: 0, revOwner: "—",        due: "Jun 9",  approval: "Pending"},
-  { report: "Monthly LSA",       client: "Metro Dental",       qaOwner: "Leo S.",   qaStatus: "Revision Requested", issues: 2, revOwner: "Jake T.",  due: "Jun 10", approval: "Pending"},
+const qaData: unknown[] = [
+  // No data — not yet connected to a real API source
 ];
 
 const qaStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
@@ -107,14 +96,8 @@ const qaStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pe
 // (same source as the /reporting/am-review sub-page)
 
 //  Client Delivery mock data 
-const deliveryData = [
-  { client: "Skyline Roofing",   report: "Monthly Web Dev",    method: "Email",          sent: "Jun 4",  status: "Viewed",           feedback: "Happy with results",  followUp: false },
-  { client: "Coastal Plumbing",  report: "Monthly Yelp",       method: "Portal",         sent: "Jun 1",  status: "Sent",             feedback: "",                    followUp: false },
-  { client: "BlueSky HVAC",      report: "Monthly Meta Ads",   method: "Email",          sent: "—",      status: "Ready To Send",    feedback: "",                    followUp: false },
-  { client: "Pacific Dental",    report: "Monthly Paid Ads",   method: "Email + Portal", sent: "—",      status: "Ready To Send",    feedback: "",                    followUp: false },
-  { client: "Apex Roofing",      report: "Monthly SEO",        method: "Email",          sent: "—",      status: "Ready To Send",    feedback: "",                    followUp: true },
-  { client: "Metro Dental",      report: "Monthly LSA",        method: "Portal",         sent: "Jun 2",  status: "Feedback Received",feedback: "Wants call to review",followUp: true },
-  { client: "Harbor Auto",       report: "Monthly GBP",        method: "Email",          sent: "May 31", status: "Follow-up Needed", feedback: "No response",         followUp: true },
+const deliveryData: unknown[] = [
+  // No data — not yet connected to a real API source
 ];
 
 const deliveryStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
@@ -154,18 +137,8 @@ const emptyBuilderForm = {
 };
 
 //  Reporting Calendar mock data 
-const calendarData = [
-  { date: "Jun 4, 2025",  client: "Skyline Roofing",   type: "Monthly Web Dev",     owner: "Mia K.",    status: "Sent",           next: "—"},
-  { date: "Jun 5, 2025",  client: "Pacific Dental",    type: "Monthly Paid Ads",    owner: "Mia K.",    status: "QA Review",      next: "Complete QA"},
-  { date: "Jun 6, 2025",  client: "BlueSky HVAC",      type: "Monthly Meta Ads",    owner: "Nina P.",   status: "AM Review",      next: "AM to approve"},
-  { date: "Jun 7, 2025",  client: "Apex Roofing",      type: "Monthly SEO",         owner: "Jake T.",   status: "Drafting",       next: "Submit for QA"},
-  { date: "Jun 8, 2025",  client: "Harbor Auto",       type: "Monthly GBP",         owner: "Nina P.",   status: "Data Gathering", next: "Complete data pull"},
-  { date: "Jun 9, 2025",  client: "Prestige Auto",     type: "Monthly Google Ads",  owner: "Leo S.",    status: "Not Started",    next: "Begin data gathering"},
-  { date: "Jun 10, 2025", client: "Metro Dental",      type: "Monthly LSA",         owner: "Jake T.",   status: "Waiting For Dept Input", next: "Chase LSA team"},
-  { date: "Jun 11, 2025", client: "Urban Dental",      type: "Monthly Content",     owner: "Jake T.",   status: "Needs Revision", next: "Apply QA revisions"},
-  { date: "May 30, 2025", client: "Summit Landscaping",type: "Monthly SEO",         owner: "Leo S.",    status: "Overdue",        next: "Escalate to owner"},
-  { date: "Jun 1, 2025",  client: "Coastal Plumbing",  type: "Monthly Yelp",        owner: "Mia K.",    status: "Sent",           next: "—"},
-  { date: "Jun 2, 2025",  client: "Metro Dental",      type: "Monthly LSA (Apr)",   owner: "Jake T.",   status: "Sent",           next: "Follow-up call scheduled"},
+const calendarData: CalendarRow[] = [
+  // No data — not yet connected to a real API source
 ];
 
 const calendarStatusVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {
@@ -193,14 +166,8 @@ const execPortfolioData = [
   { metric: "AM Approval Rate",       value: "88%",   trend: "-1% MoM",  status: "Warning"},
 ];
 
-const execClientHealthData = [
-  { client: "Apex Roofing",        health: "Healthy", revenue: "$4,200", renewalDate: "Sep 2025", upsell: "None",    am: "Sarah M."},
-  { client: "Pacific Dental",      health: "Warning", revenue: "$6,800", renewalDate: "Jul 2025", upsell: "Yelp",    am: "Chris L."},
-  { client: "Harbor Auto",         health: "Healthy", revenue: "$3,500", renewalDate: "Oct 2025", upsell: "None",    am: "Tom R."},
-  { client: "Metro Dental",        health: "At Risk", revenue: "$5,100", renewalDate: "Jun 2025", upsell: "None",    am: "Sarah M."},
-  { client: "BlueSky HVAC",        health: "Healthy", revenue: "$4,600", renewalDate: "Nov 2025", upsell: "LSA",     am: "Tom R."},
-  { client: "Prestige Auto",       health: "Healthy", revenue: "$7,200", renewalDate: "Dec 2025", upsell: "GBP",     am: "Dana W."},
-  { client: "Skyline Roofing",     health: "Healthy", revenue: "$3,800", renewalDate: "Aug 2025", upsell: "None",    am: "Chris L."},
+const execClientHealthData: ExecClientRow[] = [
+  // No data — not yet connected to a real API source
 ];
 
 const execHealthVariant: Record<string, "success"| "warning"| "error"| "info"| "pending"| "neutral"> = {

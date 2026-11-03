@@ -1,6 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { requireDept } from "@/lib/auth/vocab";
+
+const DEPT = requireDept("Sales");
 import Link from "next/link";
 // Service catalogue and discount config are now DB-backed.
 // See /sales/settings/service-catalog and /api/sales/service-catalog.
@@ -34,20 +37,38 @@ import {
   AFFILIATES_WIDGETS,
 } from "@/lib/sales/widget-config";
 
-// ─── Role mock (from auth context in production) ─────────────────────────────
-// In production this value comes from auth context and varies at runtime.
-type UserRole = "Department Head" | "Manager" | "Specialist" | "Coordinator";
-const CURRENT_ROLE: UserRole = "Manager" as UserRole;
-const CAN_ACCESS = CURRENT_ROLE === "Department Head" || CURRENT_ROLE === "Manager";
+// ─── Types ───────────────────────────────────────────────────────────────────
+interface MeRecord {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department: string | null;
+  status: string;
+}
+interface TeamMemberRecord {
+  id: string;
+  name: string;
+  role: string;
+  status: string;
+}
 
-// ─── Team Members mock ────────────────────────────────────────────────────────
-const TEAM_MEMBERS = [
-  { name: "Ryan B.",    role: "Department Head",   access: "Full Access", status: "Active"   },
-  { name: "Tina G.",    role: "Sr. Sales Executive",access: "Edit",        status: "Active"   },
-  { name: "Carlos V.",  role: "Sales Executive",    access: "Edit",        status: "Active"   },
-  { name: "Megan S.",   role: "Sales Coordinator",  access: "View",        status: "Active"   },
-  { name: "David L.",   role: "Business Dev Rep",   access: "View",        status: "Inactive" },
-];
+// ─── Role-to-access mapping ───────────────────────────────────────────────────
+// Maps real DB roles to the access level shown in the team table.
+function roleToAccess(role: string): string {
+  switch (role) {
+    case "SystemAdmin":
+    case "Executive":  return "Full Access";
+    case "Manager":    return "Full Access";
+    case "Member":     return "Edit";
+    default:           return "View";
+  }
+}
+
+// ─── Can the signed-in user see this settings page ────────────────────────────
+function canAccess(role: string): boolean {
+  return role === "SystemAdmin" || role === "Executive" || role === "Manager";
+}
 
 // ─── Pipeline stages — sourced from the canonical list ───────────────────────
 // The single source of truth is lib/sales/pipeline-stages.ts.
@@ -119,7 +140,39 @@ function Row({ label, value }: { label: string; value: string | number }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SalesSettingsPage() {
-  if (!CAN_ACCESS) {
+  const [me, setMe] = useState<MeRecord | null>(null);
+  const [team, setTeam] = useState<TeamMemberRecord[]>([]);
+  const [meLoading, setMeLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/me", { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: MeRecord | null) => {
+        if (d) setMe(d);
+      })
+      .finally(() => setMeLoading(false));
+
+    // Fetch Sales dept users for the team table, scoped to this workspace's
+    // canonical department regardless of who is viewing the page.
+    fetch(`/api/users?department=${encodeURIComponent(DEPT)}`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { users: TeamMemberRecord[] } | null) => {
+        if (d?.users) setTeam(d.users);
+      })
+      .catch(() => {/* show empty team list */});
+  }, []);
+
+  if (meLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <p className="text-sm" style={{ color: "var(--rtm-text-muted)" }}>Loading settings…</p>
+      </div>
+    );
+  }
+
+  const accessGranted = me ? canAccess(me.role) : false;
+
+  if (!accessGranted) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <div className="rounded-xl border p-10 text-center max-w-md"
@@ -167,25 +220,32 @@ export default function SalesSettingsPage() {
               </tr>
             </thead>
             <tbody>
-              {TEAM_MEMBERS.map((m, i) => (
+              {(team.length > 0 ? team : []).map((m, i) => (
                 <tr key={m.name} style={{
                   borderBottom: "1px solid var(--rtm-border)",
                   background: i % 2 === 0 ? "var(--rtm-bg)" : "var(--rtm-surface)",
                 }}>
-                  <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>{m.name}</td>
+                  <td className="px-4 py-2.5 font-semibold" style={{ color: "var(--rtm-text-primary)" }}>
+                    {m.name}{me && m.id === me.id ? <span className="ml-1 text-[9px] font-bold px-1 py-0.5 rounded" style={{ background: "#ECFDF5", color: "#059669" }}>you</span> : null}
+                  </td>
                   <td className="px-4 py-2.5" style={{ color: "var(--rtm-text-secondary)" }}>{m.role}</td>
                   <td className="px-4 py-2.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{
-                        background: m.access === "Full Access" ? "#EFF6FF" : m.access === "Edit" ? "#ECFDF5" : "#F3F4F6",
-                        color: m.access === "Full Access" ? "#1D4ED8" : m.access === "Edit" ? "#059669" : "#6B7280",
-                      }}>
-                      {m.access}
-                    </span>
+                    {(() => {
+                      const access = roleToAccess(m.role);
+                      return (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{
+                            background: access === "Full Access" ? "#EFF6FF" : access === "Edit" ? "#ECFDF5" : "#F3F4F6",
+                            color: access === "Full Access" ? "#1D4ED8" : access === "Edit" ? "#059669" : "#6B7280",
+                          }}>
+                          {access}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="text-[10px] font-semibold" style={{ color: m.status === "Active" ? "#059669" : "#6B7280" }}>
-                      {m.status}
+                    <span className="text-[10px] font-semibold" style={{ color: m.status === "active" ? "#059669" : "#6B7280" }}>
+                      {m.status === "active" ? "Active" : "Inactive"}
                     </span>
                   </td>
                 </tr>

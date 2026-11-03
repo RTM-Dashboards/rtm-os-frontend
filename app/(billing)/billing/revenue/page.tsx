@@ -14,10 +14,11 @@
 //                          ["Paid","Cancelled","Draft","Ready To Send"]
 //   Invoice counts by status
 //
-// NOT COMPUTABLE FROM CURRENT SCHEMA:
-//   MRR / ARR       — requires a recurring-billing Contract model (none exists).
-//                     The sales-contracts table holds signed deals, not active
-//                     subscriptions with billing cycles. No revenue projection.
+// NOT COMPUTABLE FROM THIS PAGE:
+//   MRR / ARR       — invoices do not carry billing-cycle or subscription state.
+//                     MRR is computed on the adjacent Recurring Revenue page
+//                     (/billing/recurring-revenue) from signed contracts that
+//                     carry a monthlyValue field.
 //   Revenue by dept — invoices do not carry a department field.
 //   Revenue by service type — invoices do not carry a service-type breakdown.
 //   Month-over-month trend — no historical invoices in the database yet.
@@ -197,16 +198,18 @@ export default function RevenueDashboardPage() {
         </div>
       )}
 
-      {/* Not-connected panels (MRR/ARR, trends, dept breakdown) */}
+      {/* MRR/ARR lives on the Recurring Revenue page, not here */}
       <SectionWrapper
-        title="MRR / ARR — Not Connected"
-        description="Monthly and annual recurring revenue require a subscription billing model. The current schema (invoices + signed contracts) does not carry billing cycle / subscription state. No figure is shown."
+        title="MRR / ARR"
+        description="Monthly and annual recurring revenue are computed from signed contracts on the Recurring Revenue page. Invoices alone do not carry billing-cycle or subscription state."
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <EmptyCard title="MRR" note="Requires recurring billing model" />
-          <EmptyCard title="ARR" note="Requires recurring billing model" />
-          <EmptyCard title="New Revenue" note="No historical baseline to diff against" />
-          <EmptyCard title="Expansion Revenue" note="No upsell tracking in current schema" />
+        <div className="rounded-xl border px-4 py-5 text-center" style={{ borderColor: "var(--rtm-border-light)", borderStyle: "dashed", background: "var(--rtm-bg)" }}>
+          <p className="text-sm mb-3" style={{ color: "var(--rtm-text-muted)" }}>
+            MRR is computed on the Recurring Revenue page from contracts that carry a monthly value.
+          </p>
+          <Link href="/billing/recurring-revenue" className="rtm-btn-primary text-sm inline-flex items-center gap-1">
+            View Recurring Revenue →
+          </Link>
         </div>
       </SectionWrapper>
 

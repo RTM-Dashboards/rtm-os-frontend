@@ -21,12 +21,7 @@ interface YelpClient extends Record<string, unknown> {
 }
 
 const clients: YelpClient[] = [
-  { client: "Apex Roofing Co.",    city: "Denver, CO",    status: "active",  rating: 4.7, reviews: 42,  monthlyLeads: 18, completeness: 92 },
-  { client: "Pacific Dental",      city: "San Diego, CA", status: "claimed", rating: 4.8, reviews: 78,  monthlyLeads: 31, completeness: 100 },
-  { client: "Harbor Auto Group",   city: "Phoenix, AZ",   status: "active",  rating: 4.2, reviews: 29,  monthlyLeads: 11, completeness: 78 },
-  { client: "Summit Landscaping",  city: "Denver, CO",    status: "active",  rating: 4.5, reviews: 17,  monthlyLeads: 6,  completeness: 70 },
-  { client: "Metro Dental",        city: "Denver, CO",    status: "active",  rating: 3.8, reviews: 11,  monthlyLeads: 3,  completeness: 55 },
-  { client: "Blue Ridge Plumbing", city: "Asheville, NC", status: "pending", rating: 0,   reviews: 0,   monthlyLeads: 0,  completeness: 20 },
+  // No data — not yet connected to a real API source
 ];
 
 const columns: Column<YelpClient>[] = [
@@ -60,15 +55,11 @@ const columns: Column<YelpClient>[] = [
 ];
 
 const activityItems: ActivityItem[] = [
-  { id: "1", actor: "Lisa P.",   action: "responded to 3-star review for",  target: "Apex Roofing Co.",    timestamp: "3h ago",  type: "task",  avatarColor: "#ec4899"},
-  { id: "2", actor: "Jordan M.", action: "updated service categories for",  target: "Pacific Dental",       timestamp: "6h ago",  type: "task",  avatarColor: "var(--rtm-blue)"},
-  { id: "3", actor: "System",    action: "new 5-star review received for",  target: "Pacific Dental",       timestamp: "9h ago",  type: "alert", avatarColor: "#64748b"},
-  { id: "4", actor: "Lisa P.",   action: "claimed listing for",             target: "Blue Ridge Plumbing",  timestamp: "2d ago",  type: "task",  avatarColor: "#ec4899"},
+  // No data — not yet connected to a real API source
 ];
 
 const alerts: AlertItem[] = [
-  { id: "1", severity: "warning", title: "Blue Ridge Plumbing listing pending",         description: "Yelp claim verification still pending. Follow up to complete.", action: "Follow Up"},
-  { id: "2", severity: "info",    title: "Pacific Dental fully claimed & growing",      description: "78 reviews this month — highest across all Yelp clients.",     action: "View"},
+  // No data — not yet connected to a real API source
 ];
 
 const quickActions: QuickAction[] = [

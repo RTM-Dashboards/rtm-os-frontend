@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { KpiSettingsSection } from "@/components/settings/KpiSettingsSection";
+import { requireDept } from "@/lib/auth/vocab";
+
+const DEPT = requireDept("Web Development & Design");
+
+interface LiveUser { id: string; name: string; role: string | null; status: string; department: string | null; }
 
 interface MeUser { name: string; email: string; role: string | null; department: string | null; }
 function useMe(): MeUser | null {
@@ -50,13 +55,7 @@ function SaveToast({ onClose }: { onClose: () => void }) {
   );
 }
 
-const teamMembers = [
-  { name: "Chris D.", role: "Department Head", access: "Full Access", status: "Active", clients: 9, lastActive: "Today, 9:30 AM"},
-  { name: "Zoe A.", role: "Lead Developer", access: "Edit", status: "Active", clients: 6, lastActive: "Today, 8:00 AM"},
-  { name: "Ben M.", role: "UI/UX Designer", access: "Edit", status: "Active", clients: 5, lastActive: "Yesterday, 7:00 PM"},
-  { name: "Hana T.", role: "Frontend Developer", access: "Edit", status: "Active", clients: 3, lastActive: "Today, 9:45 AM"},
-  { name: "Luis G.", role: "Web Coordinator", access: "View", status: "Inactive", clients: 0, lastActive: "2 weeks ago"},
-];
+
 
 const workspacePermissions = [
   { label: "Manage Web Projects", enabled: true },
@@ -94,6 +93,14 @@ export default function WebDevelopmentDesignSettingsPage() {
   const [permissions, setPermissions] = useState(workspacePermissions);
   const [notifications, setNotifications] = useState(notificationPrefs);
   const [showSaveToast, setShowSaveToast] = useState(false);
+  const [liveTeam, setLiveTeam] = useState<LiveUser[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/users?department=${encodeURIComponent(DEPT)}`, { credentials: "include" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { users: LiveUser[] } | null) => { if (d?.users) setLiveTeam(d.users); })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -138,7 +145,7 @@ export default function WebDevelopmentDesignSettingsPage() {
         <div className="px-5 py-3 flex items-center justify-between"style={{ background: "var(--rtm-bg)", borderBottom: "1px solid var(--rtm-border)"}}>
           <div>
             <h3 className="text-sm font-bold"style={{ color: "var(--rtm-text-primary)"}}>Team Members</h3>
-            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{teamMembers.length} members</p>
+            <p className="text-xs mt-0.5"style={{ color: "var(--rtm-text-muted)"}}>{liveTeam.length} members</p>
           </div>
           <button
             disabled
@@ -159,23 +166,26 @@ export default function WebDevelopmentDesignSettingsPage() {
               </tr>
             </thead>
             <tbody>
-              {teamMembers.map((m, i) => (
-                <tr key={m.name} style={{ borderBottom: i < teamMembers.length - 1 ? "1px solid var(--rtm-border-light)": "none"}}>
+              {liveTeam.length === 0 && (
+                <tr><td colSpan={6} className="px-4 py-6 text-center text-xs" style={{ color: "var(--rtm-text-muted)" }}>No team members found for this department.</td></tr>
+              )}
+              {liveTeam.map((m, i) => (
+                <tr key={m.id} style={{ borderBottom: i < liveTeam.length - 1 ? "1px solid var(--rtm-border-light)": "none"}}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"style={{ background: "var(--rtm-blue)"}}>{m.name.charAt(0)}</div>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"style={{ background: "var(--rtm-blue)"}}>{(m.name ?? "?").charAt(0)}</div>
                       <span className="font-medium whitespace-nowrap"style={{ color: "var(--rtm-text-primary)"}}>{m.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-xs whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{m.role}</td>
+                  <td className="px-4 py-3 text-xs whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)"}}>{m.role ?? "—"}</td>
                   <td className="px-4 py-3">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"style={{ background: `${accessColors[m.access]}18`, color: accessColors[m.access] }}>{m.access}</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)" }}>{m.role ?? "—"}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={m.status === "Active"? { background: "#05966918", color: "#059669"} : { background: "#78716C18", color: "#78716C"}}>{m.status}</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"style={m.status === "active"? { background: "#05966918", color: "#059669"} : { background: "#78716C18", color: "#78716C"}}>{m.status}</span>
                   </td>
-                  <td className="px-4 py-3 text-xs text-center"style={{ color: "var(--rtm-text-secondary)"}}>{m.clients}</td>
-                  <td className="px-4 py-3 text-xs whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>{m.lastActive}</td>
+                  <td className="px-4 py-3 text-xs text-center"style={{ color: "var(--rtm-text-secondary)"}}>—</td>
+                  <td className="px-4 py-3 text-xs whitespace-nowrap"style={{ color: "var(--rtm-text-muted)"}}>—</td>
                 </tr>
               ))}
             </tbody>

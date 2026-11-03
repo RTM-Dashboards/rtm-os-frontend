@@ -11,7 +11,10 @@ import WorkspaceTaskPage, {
   type WorkspaceTask,
 } from "@/components/workspace/WorkspaceTaskPage";
 import { getWorkspace } from "@/lib/workspaces";
+import { requireDept } from "@/lib/auth/vocab";
 import type { TaskListItem } from "@/app/api/tasks/route";
+
+const DEPT = requireDept("Billing");
 
 const workspace = getWorkspace("billing")!;
 
@@ -37,8 +40,8 @@ function mapToWorkspaceTask(t: TaskListItem): WorkspaceTask {
     title:      t.label,
     client:     t.clientId ?? "",
     project:    t.projectName ?? "",
-    department: t.department ?? "Billing",
-    service:    t.department ?? "Billing",
+    department: t.department ?? DEPT,
+    service:    t.department ?? DEPT,
     source:     "Task Blueprint",
     assignee:   t.ownerName ?? "Unassigned",
     priority:   priorityMap[t.priority ?? ""] ?? "Medium",
@@ -53,7 +56,7 @@ export default function BillingTasksPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/tasks?department=Billing")
+    fetch(`/api/tasks?department=${encodeURIComponent(DEPT)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { tasks: TaskListItem[] } | null) => {
         if (d?.tasks) setTasks(d.tasks.map(mapToWorkspaceTask));

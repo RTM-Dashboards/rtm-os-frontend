@@ -21,11 +21,7 @@ interface SeoClient extends Record<string, unknown> {
 }
 
 const clients: SeoClient[] = [
-  { client: "Apex Roofing Co.",    topKeyword: "roof repair denver",   position: 3, domainAuthority: 42, backlinks: 318, monthlyImpressions: "12.4K", status: "on-track"},
-  { client: "Sunbelt HVAC",        topKeyword: "hvac phoenix",         position: 7, domainAuthority: 35, backlinks: 204, monthlyImpressions: "8.1K",  status: "needs-work"},
-  { client: "Pacific Dental",      topKeyword: "dentist san diego",    position: 2, domainAuthority: 51, backlinks: 512, monthlyImpressions: "18.2K", status: "on-track"},
-  { client: "Summit Landscaping",  topKeyword: "landscaping denver",   position: 5, domainAuthority: 38, backlinks: 187, monthlyImpressions: "6.8K",  status: "on-track"},
-  { client: "Blue Ridge Plumbing", topKeyword: "plumber asheville",    position: 4, domainAuthority: 29, backlinks: 134, monthlyImpressions: "4.2K",  status: "needs-work"},
+  // No data — not yet connected to a real API source
 ];
 
 const columns: Column<SeoClient>[] = [
@@ -62,15 +58,11 @@ const columns: Column<SeoClient>[] = [
 const sparkImpressions = [8.2, 8.8, 9.1, 8.7, 9.5, 10.2, 9.8, 10.8, 11.2, 10.9, 11.8, 12.4];
 
 const activityItems: ActivityItem[] = [
-  { id: "1", actor: "Lisa P.",   action: "completed keyword audit for",      target: "Apex Roofing Co.",             timestamp: "2h ago",  type: "task",  avatarColor: "#ec4899"},
-  { id: "2", actor: "Jordan M.", action: "updated keyword strategy for",     target: "Sunbelt HVAC",                 timestamp: "4h ago",  type: "task",  avatarColor: "var(--rtm-blue)"},
-  { id: "3", actor: "System",    action: "detected ranking drop for",        target: "Blue Ridge — plumber asheville",timestamp: "6h ago", type: "alert", avatarColor: "#64748b"},
-  { id: "4", actor: "Jordan M.", action: "submitted content brief for",      target: "Pacific Dental",               timestamp: "8h ago",  type: "task",  avatarColor: "var(--rtm-blue)"},
+  // No data — not yet connected to a real API source
 ];
 
 const alerts: AlertItem[] = [
-  { id: "1", severity: "warning", title: "2 clients have ranking drops this week",    description: "Sunbelt HVAC and Blue Ridge Plumbing lost ground on primary keywords.", action: "Review"},
-  { id: "2", severity: "info",    title: "3 clients holding top-3 positions",         description: "Apex Roofing, Pacific Dental, and Blue Ridge all holding top spots.", action: "View"},
+  // No data — not yet connected to a real API source
 ];
 
 const quickActions: QuickAction[] = [

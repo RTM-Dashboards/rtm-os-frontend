@@ -2,6 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import type { TaskListItem } from "@/app/api/tasks/route";
+import { requireDept } from "@/lib/auth/vocab";
+
+const DEPT = requireDept("Sales");
 
 import type { WorkspaceTask, WorkspaceTaskStatus, WorkspaceTaskPriority } from "@/components/workspace/WorkspaceTaskPage";
 import { useWidgetPreferences } from "@/components/sales/widgets/useWidgetPreferences";
@@ -29,7 +32,7 @@ function pgToWorkspaceTask(t: TaskListItem): WorkspaceTask {
     title:      t.label,
     client:     t.clientId,       // real clientId from Business row
     project:    t.projectName,
-    department: t.department ?? "Sales",
+    department: t.department ?? DEPT,
     service:    "",
     source:     "Blueprint" as WorkspaceTask["source"],
     assignee:   t.ownerName ?? "Unassigned",
@@ -84,7 +87,7 @@ export default function SalesTasksPage() {
   // AUDIT_REVIEW_TASKS removed: those three items were invented sample content
   // with no Postgres rows. They are not displayed.
   useEffect(() => {
-    fetch("/api/tasks?department=Sales")
+    fetch(`/api/tasks?department=${encodeURIComponent(DEPT)}`)
       .then((r) => r.ok ? r.json() as Promise<{ tasks: TaskListItem[] }> : Promise.reject(r.status))
       .then(({ tasks: pgTasks }) => {
         setTasks(pgTasks.map(pgToWorkspaceTask));

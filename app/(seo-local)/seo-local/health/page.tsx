@@ -6,13 +6,16 @@ import { getWorkspace } from "@/lib/workspaces";
 
 const workspace = getWorkspace("seo-local")!;
 
-const clients = [
-  { name: "Apex Roofing",        seo: 92, gbp: 88, yelp: 84,  status: "success"as const, label: "Strong"},
-  { name: "Pacific Dental",      seo: 88, gbp: 95, yelp: 90,  status: "success"as const, label: "Strong"},
-  { name: "Harbor Auto Group",   seo: 71, gbp: 76, yelp: 65,  status: "warning"as const, label: "Watch"},
-  { name: "Summit Landscaping",  seo: 84, gbp: 80, yelp: 72,  status: "success"as const, label: "Good"},
-  { name: "Metro Dental",        seo: 63, gbp: 58, yelp: 55,  status: "warning"as const, label: "Needs Work"},
-  { name: "Blue Ridge Plumbing", seo: 45, gbp: 40, yelp: 0,   status: "info"as const, label: "New"},
+interface ClientHealthRow {
+  name: string;
+  seo: number;
+  gbp: number;
+  yelp: number;
+  status: "success" | "warning" | "info" | "neutral" | "error" | "pending";
+  label: string;
+}
+const clients: ClientHealthRow[] = [
+  // No data — not yet connected to a real API source
 ];
 
 export default function SeoLocalHealthPage() {

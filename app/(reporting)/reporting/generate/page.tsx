@@ -43,12 +43,7 @@ interface RecentReport {
 }
 
 const RECENT_REPORTS: RecentReport[] = [
-  { id: "r-001", name: "Horizon Dental — Monthly SEO — Jul 2025", client: "Horizon Dental", type: "Monthly SEO", generatedBy: "Aaron Park", generatedAt: "2025-07-22 09:15 AM", status: "Sent"},
-  { id: "r-002", name: "Summit Auto Group — Monthly PPC — Jul 2025", client: "Summit Auto Group", type: "Monthly PPC", generatedBy: "Ryan Torres", generatedAt: "2025-07-22 08:45 AM", status: "Sent"},
-  { id: "r-003", name: "Prestige Law Group — QBR — Q2 2025", client: "Prestige Law Group", type: "QBR", generatedBy: "Priya Nair", generatedAt: "2025-07-10 10:00 AM", status: "Sent"},
-  { id: "r-004", name: "BlueSky Roofing — Monthly Meta Ads — Jul 2025", client: "BlueSky Roofing", type: "Monthly Meta Ads", generatedBy: "Lily Chen", generatedAt: "2025-07-21 02:30 PM", status: "Draft"},
-  { id: "r-005", name: "Executive Portfolio Summary — Week 29", client: "All Clients", type: "Executive Summary", generatedBy: "Marcus Webb", generatedAt: "2025-07-21 07:00 AM", status: "Sent"},
-  { id: "r-006", name: "GreenLeaf HVAC — Monthly GBP — Jul 2025", client: "GreenLeaf HVAC", type: "Monthly GBP", generatedBy: "Daniel Okonkwo", generatedAt: "2025-07-20 11:00 AM", status: "Failed"},
+  // No data — not yet connected to a real API source
 ];
 
 const STATUS_CFG = {
