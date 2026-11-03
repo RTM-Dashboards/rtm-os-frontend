@@ -763,6 +763,43 @@ model Business {
   // The Contract row is NOT created for imported clients — this is a reference only.
   contractRef         String   @default("")
 
+  // ── Fields migrated from master_clients (20261104) ───────────────────────────
+  // These fields previously existed only on master_clients and have no
+  // equivalent on businesses. Moving them here retires the third table.
+  //
+  // industry: free-form label, e.g. "Home Services – Roofing". TEXT empty default.
+  industry            String   @default("")
+
+  // workflowStatus: operational status of the work being done for this client.
+  // Values: "Not Started" | "Pending Review" | "In Progress" |
+  //         "Awaiting Client" | "Escalated" | "Complete"
+  workflowStatus      String   @default("Not Started")
+
+  // clientHealth: computed health tier, cached here for direct queries.
+  // Values: "Excellent" | "Good" | "At Risk" | "Critical"
+  // The adapter recomputes this from billing signals at read-time; this column
+  // is a write-through cache that can also be updated explicitly.
+  clientHealth        String   @default("Good")
+
+  // priority: computed priority tier, cached here for direct queries.
+  // Values: "High" | "Medium" | "Low"
+  priority            String   @default("Medium")
+
+  // lastActivity: ISO date string (YYYY-MM-DD) or descriptive text of the
+  // most recent meaningful client interaction. Empty until set.
+  lastActivity        String   @default("")
+
+  // nextRequiredAction: free-text description of the next action required for
+  // this client. The adapter computes this via computeNextAction(); this
+  // column is the persisted value / manual override.
+  nextRequiredAction  String   @default("")
+
+  // notes: free-text notes about this client. In master_clients this was
+  // stored as JSONB [] but MasterClient.notes is typed as string and all
+  // consumers render it as a plain string. Using TEXT here resolves that
+  // mismatch.
+  notes               String   @default("")
+
   // Audit timestamps — ISO-8601 strings, matching existing model conventions
   createdAt           String   @default("")
   updatedAt           String   @default("")
