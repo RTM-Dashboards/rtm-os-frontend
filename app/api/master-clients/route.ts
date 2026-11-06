@@ -1,8 +1,8 @@
 // RTM OS — Master Clients API Route (adapter)
 //
-// master_clients has been retired. This route now reads from `clients` and
-// `businesses` and returns the identical external shape so no consuming page
-// needs to change.
+// master_clients has been retired. This route now reads from `clients`,
+// `businesses`, `proposals`, `opportunities`, and `onboarding_records`
+// and returns the identical external shape so no consuming page needs to change.
 //
 // Field-source map (every field the original route returned):
 //
@@ -14,8 +14,10 @@
 //   email                  → clients.email
 //   currentStatus          → derived from businesses fields (see deriveCurrentStatus)
 //   workflowStatus         → businesses.workflowStatus  (new column)
-//   salesStatus            → "" (no sales table yet; field is not on businesses)
-//   salesOwner             → "" (no sales table yet)
+//   salesStatus            → opportunities.stage (via proposals → opportunityId → opportunities)
+//                            or "" when no proposal/opportunity exists.
+//   salesOwner             → opportunities.assignedRep (same join path)
+//                            or "" when no proposal/opportunity exists.
 //   billingStatus          → businesses.billingStatus
 //   invoiceStatus          → businesses.invoiceStatus  (canonical invoice status)
 //   paymentStatus          → businesses.paymentStatus
@@ -25,13 +27,14 @@
 //   activationStatus       → businesses.activationStatus
 //   onboardingStatus       → businesses.onboardingStatus
 //   activeServices         → businesses.activeServices
-//   activationChecklist    → {} (not stored on businesses; AM uses onboarding_records)
+//   activationChecklist    → built from onboarding_records.fieldAssignments
+//                            (pattern follows AM onboarding pages; see buildActivationChecklist)
 //   monthlyValue           → businesses.monthlyValueCents / 100  (number, not string)
 //   billingOwner           → "" (not stored on businesses; no consumer writes it)
 //   commissionStatus       → "" (not stored on businesses)
-//   clientHealth           → businesses.clientHealth  (new column; adapter also recomputes)
-//   priority               → businesses.priority  (new column; adapter also recomputes)
-//   avatarColor            → "" (not stored on businesses; shell page falls back gracefully)
+//   clientHealth           → override/derived (see Task 1 notes below)
+//   priority               → override/derived (see Task 1 notes below)
+//   avatarColor            → deterministic from businesses.id (Task 2; palette from billing page)
 //   renewalDate            → businesses.renewalDate ?? ""
 //   renewalStatus          → businesses.renewalStatus
 //   affiliateName          → "" (not stored on businesses)
@@ -48,38 +51,64 @@
 //   createdAt              → businesses.createdAt
 //   updatedAt              → businesses.updatedAt
 //
+// ── Task 1: clientHealth and priority override vs. derived ───────────────────
+//
+//   businesses.clientHealth / businesses.priority columns now default to ''.
+//   Empty string → compute from billing signals (derived).
+//   Non-empty string → human override that wins over the computation.
+//
+//   The API response includes two extra fields per value:
+//     clientHealthSource: "stored" | "computed"
+//     prioritySource:     "stored" | "computed"
+//   Consuming pages can use these to show an override badge.
+//
+//   computeHealth() reads:
+//     billingStatus, paymentStatus, cancellationStatus, activationStatus
+//   computePriority() reads:
+//     computeHealth() result, billingStatus
+//
+// ── Task 2: avatarColor ───────────────────────────────────────────────────────
+//
+//   Derived deterministically from businesses.id using the same 8-color palette
+//   and polynomial hash already used by app/(billing)/billing/client-portfolio/page.tsx.
+//   Palette: ["#6366f1","#0ea5e9","#10b981","#f59e0b","#ef4444","#8b5cf6","#ec4899","#14b8a6"]
+//   Hash:    sum of (h * 31 + charCode) modulo palette length.
+//   Never empty. Stable across reloads. No column. No migration.
+//
+// ── Task 3: salesStatus, salesOwner, activationChecklist ─────────────────────
+//
+//   salesStatus / salesOwner:
+//     Join path: businesses → proposals (via businesses.clientId matching
+//     proposals.clientInfo.contactEmail, OR via businesses.ghlOpportunityId
+//     matching proposals.opportunityId) → opportunities (proposals.opportunityId).
+//     In practice: fetch all proposals for the business's associated email;
+//     pick the most recent non-draft; resolve its opportunityId to opportunities.
+//     Read: opportunities.stage → salesStatus, opportunities.assignedRep → salesOwner.
+//     Returns "" / "" when no proposal or opportunity exists.
+//
+//   activationChecklist:
+//     Read from onboarding_records WHERE clientId = businesses.clientId.
+//     Pattern follows AM projects page (fetch ?clientId=<clientId>).
+//     Builds an ActivationChecklist from the record's stored state and
+//     businesses columns (kickoffCompleted, kickoffDate).
+//     Returns all-false checklist when no onboarding record exists.
+//
+// ── Still unsourced (10 fields) ───────────────────────────────────────────────
+//
+//   billingOwner, commissionStatus, recentEvents, affiliateName,
+//   referralSource, referralRevenue, stripeCustomerId, stripeSubscriptionId,
+//   stripeInvoiceId, stripeSyncStatus.
+//   Each returns its zero/empty value. The shell page and DeptClientDetailDrawer
+//   guard every optional field before rendering it.
+//
 // monthlyValue conversion:
 //   businesses.monthlyValueCents is INTEGER (cents). The adapter divides by 100
-//   to produce a number matching MasterClient.monthlyValue. The old master_clients
-//   column stored this as TEXT (e.g. "5350"), but MasterClient.monthlyValue is
-//   typed as `number` and all consumers treat it as a number. We return a number.
+//   to produce a number matching MasterClient.monthlyValue.
 //
 // id space change:
 //   The old route used mc001…mc020 as id values. The adapter now returns
 //   businesses.id (a UUID/string). No consumer stores, routes, or links by
-//   the old mc-style id in any page or live route:
-//     - Department pages use c.id only as a React key.
-//     - The reporting pages populate a <select> with c.id as value and send
-//       that value as clientId to /api/report-schedules — which persists it
-//       to the report_schedules record only; no cross-table FK lookup is done.
-//     - The shell page upserts via POST with an id it generates locally;
-//       the id it generates is now a businesses row id since the POST path
-//       inserts into businesses.
-//     - The communications route queries Business.clientId (Client.id), not
-//       the master-clients id. It also reads from a local JSON file for the
-//       clientMap, which is independent of master_clients.
-//     - lib/account-management/am-client-success-data.ts uses mc004/mc011 only
-//       in mock data that is not linked to a DB table; no live query uses those.
-//     - lib/engine/mock-data.ts similarly uses mc-style ids as comments only.
-//   Conclusion: returning businesses.id is safe. No live consumer breaks.
-//
-// Fields that cannot be sourced (no column exists anywhere):
-//   salesStatus, salesOwner, billingOwner, commissionStatus, avatarColor,
-//   affiliateName, referralSource, referralRevenue, upgradeDowngradeStatus,
-//   activationChecklist, recentEvents, stripeCustomerId, stripeSubscriptionId,
-//   stripeInvoiceId, stripeSyncStatus.
-//   Each returns its zero/empty value (see map above). The shell page and
-//   DeptClientDetailDrawer guard every optional field before rendering it.
+//   the old mc-style id in any page or live route.
 //
 // Auth guard: getSessionUser — unchanged.
 
@@ -89,6 +118,7 @@ import { prisma } from "@/lib/db/prisma";
 import {
   computeHealth,
   computePriority,
+  type ActivationChecklist,
 } from "@/lib/mock/master-clients";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -127,6 +157,29 @@ interface BusinessRow {
   lastActivity: string;
   nextRequiredAction: string;
   notes: string;
+}
+
+interface ProposalRow {
+  id: string;
+  status: string;
+  opportunityId: string | null;
+  leadId: string | null;
+  clientInfo: Record<string, string> | null;
+}
+
+interface OpportunityRow {
+  id: string;
+  stage: string;
+  assignedRep: string;
+}
+
+interface OnboardingRecordRow {
+  id: string;
+  clientId: string;
+  businessId: string;
+  status: string;
+  salesPrefill: Record<string, unknown>;
+  fieldAssignments: Record<string, { fieldId: string; status: string; value: string }>;
 }
 
 interface ClientRow {
@@ -181,18 +234,177 @@ function deriveCurrentStatus(biz: BusinessRow): string {
   return "Lead";
 }
 
+// ── Task 2: Deterministic avatar colour ──────────────────────────────────────
+//
+// Same 8-colour palette and polynomial hash used by the billing client-portfolio
+// page (app/(billing)/billing/client-portfolio/page.tsx, lines 97-107).
+// Stable across reloads; never empty; no column; no migration required.
+
+const AVATAR_COLORS = [
+  "#6366f1", "#0ea5e9", "#10b981", "#f59e0b",
+  "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6",
+];
+
+function deriveAvatarColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+// ── Task 3a: Build activationChecklist from onboarding_records ───────────────
+//
+// The AM projects page fetches /api/onboarding-records?clientId=<clientId>
+// and reads the resulting record to drive checklist state.
+// We follow the same pattern: the record's existence and fieldAssignments
+// tell us which checklist items are complete.
+//
+// Source: onboarding_records WHERE clientId = businesses.clientId.
+//   onboardingRecordCreated  → record exists
+//   activationTasksCreated   → businesses.kickoffCompleted is proxied; in practice,
+//                              when an onboarding record exists the project task list
+//                              was already created (AM flow requires it first).
+//                              We use the record's status != 'Draft' as the signal.
+//   kickoffCallCompleted     → businesses.kickoffCompleted column
+//   kickoffNeeded            → businesses.kickoffDate column present or kickoffCompleted
+//   invoicePaid              → businesses.invoiceStatus
+//   billingCleared           → businesses.cleared
+//   contractConfirmed        → businesses.contractRef non-empty (or billingStatus Paid+)
+//   servicesConfirmed        → businesses.activeServices non-empty
+//   clientContactVerified    → clients.email non-empty
+//   amAssigned               → businesses.assignedAM != "Unassigned"
+
+function buildActivationChecklist(
+  biz: BusinessRow,
+  client: ClientRow | undefined,
+  onboardingRecord: OnboardingRecordRow | null,
+): ActivationChecklist {
+  const recordExists = onboardingRecord !== null;
+  const recordActive = recordExists && onboardingRecord!.status !== "Draft";
+
+  return {
+    invoicePaid:
+      biz.invoiceStatus === "Paid" ||
+      biz.invoiceStatus === "paid" ||
+      biz.paymentStatus === "Paid" ||
+      biz.paymentStatus === "paid",
+    billingCleared:
+      biz.cleared ?? false,
+    contractConfirmed:
+      (biz.contractRef != null && biz.contractRef !== "") ||
+      biz.billingStatus === "Paid" ||
+      biz.billingStatus === "Cleared",
+    servicesConfirmed:
+      Array.isArray(biz.activeServices) && biz.activeServices.length > 0,
+    clientContactVerified:
+      !!(client?.email && client.email.trim() !== ""),
+    amAssigned:
+      biz.assignedAM !== "Unassigned" && biz.assignedAM !== "",
+    // activationTasksCreated: an onboarding record in an active status signals
+    // that the project + task list was created (AM flow requires it first).
+    activationTasksCreated: recordActive,
+    onboardingRecordCreated: recordExists,
+    kickoffNeeded:
+      biz.kickoffCompleted ||
+      (biz.kickoffDate != null && biz.kickoffDate !== "") ||
+      recordExists,
+    kickoffCallCompleted:
+      biz.kickoffCompleted ?? false,
+  };
+}
+
+// ── Task 3b: Resolve salesStatus and salesOwner ───────────────────────────────
+//
+// Join path:
+//   businesses.clientId → clients.id → clients.email
+//   proposals WHERE clientInfo->>'contactEmail' = clients.email  (most recent non-draft)
+//   proposals.opportunityId → opportunities.stage / opportunities.assignedRep
+//
+// Fallback: businesses.ghlOpportunityId → opportunities (direct match) when
+// no proposal-email match is found.
+// Returns { salesStatus: "", salesOwner: "" } when no match exists.
+
+interface SalesFields {
+  salesStatus: string;
+  salesOwner: string;
+}
+
+function resolveSalesFields(
+  biz: BusinessRow,
+  clientEmail: string,
+  proposals: ProposalRow[],
+  opportunityMap: Map<string, OpportunityRow>,
+): SalesFields {
+  const empty: SalesFields = { salesStatus: "", salesOwner: "" };
+
+  // 1. Find the best proposal for this business.
+  //    Prefer proposals whose clientInfo.contactEmail matches the client's email.
+  //    Among those, prefer non-draft, most recently created (proposal list is sorted DESC).
+  let bestProposal: ProposalRow | undefined;
+
+  if (clientEmail) {
+    const emailNorm = clientEmail.toLowerCase().trim();
+    bestProposal = proposals.find(
+      (p) =>
+        p.clientInfo?.contactEmail?.toLowerCase().trim() === emailNorm &&
+        p.status !== "draft" &&
+        p.opportunityId
+    );
+    if (!bestProposal) {
+      // Relax: include drafts
+      bestProposal = proposals.find(
+        (p) =>
+          p.clientInfo?.contactEmail?.toLowerCase().trim() === emailNorm &&
+          p.opportunityId
+      );
+    }
+  }
+
+  // 2. Fallback: match via businesses.ghlOpportunityId directly to opportunities.
+  if (!bestProposal && biz.ghlOpportunityId) {
+    const opp = opportunityMap.get(biz.ghlOpportunityId);
+    if (opp) {
+      return {
+        salesStatus: opp.stage ?? "",
+        salesOwner:  opp.assignedRep ?? "",
+      };
+    }
+  }
+
+  if (!bestProposal?.opportunityId) return empty;
+
+  const opp = opportunityMap.get(bestProposal.opportunityId);
+  if (!opp) return empty;
+
+  return {
+    salesStatus: opp.stage ?? "",
+    salesOwner:  opp.assignedRep ?? "",
+  };
+}
+
 // ── Row → MasterClient shape ─────────────────────────────────────────────────
 
-function toMasterClientShape(biz: BusinessRow, client: ClientRow | undefined) {
+function toMasterClientShape(
+  biz: BusinessRow,
+  client: ClientRow | undefined,
+  proposals: ProposalRow[],
+  opportunityMap: Map<string, OpportunityRow>,
+  onboardingRecord: OnboardingRecordRow | null,
+) {
   const clientName =
     client?.fullName?.trim() ||
     client?.company?.trim() ||
     biz.displayName ||
     biz.domain;
 
-  // Recompute health and priority from billing signals so they stay consistent
-  // even if the stored columns weren't updated. computeHealth / computePriority
-  // are pure functions imported from lib/mock/master-clients.ts.
+  const clientEmail = client?.email ?? "";
+
+  // ── Task 1: clientHealth / priority — override vs. derived ──────────────────
+  //
+  // businesses.clientHealth / priority now default to '' (migration 20261201).
+  // Empty  → compute from billing signals (derived).
+  // Non-empty → explicit human override that wins.
+  //
+  // The response includes *Source fields so the UI can show an override badge.
   const billingStatus = biz.billingStatus as Parameters<typeof computeHealth>[0]["billingStatus"];
   const paymentStatus = biz.paymentStatus as Parameters<typeof computeHealth>[0]["paymentStatus"];
   const cancellationStatus = biz.cancellationStatus as Parameters<typeof computeHealth>[0]["cancellationStatus"];
@@ -201,13 +413,24 @@ function toMasterClientShape(biz: BusinessRow, client: ClientRow | undefined) {
   const computedHealth = computeHealth({ billingStatus, paymentStatus, cancellationStatus, activationStatus });
   const computedPriority = computePriority(computedHealth, billingStatus);
 
-  // Prefer the stored value if it was explicitly set; fall back to computed.
-  const clientHealth = biz.clientHealth && biz.clientHealth !== "Good"
-    ? biz.clientHealth
-    : computedHealth;
-  const priority = biz.priority && biz.priority !== "Medium"
-    ? biz.priority
-    : computedPriority;
+  const storedHealth = biz.clientHealth?.trim() ?? "";
+  const storedPriority = biz.priority?.trim() ?? "";
+
+  const clientHealth = storedHealth !== "" ? storedHealth : computedHealth;
+  const priority     = storedPriority !== "" ? storedPriority : computedPriority;
+  const clientHealthSource: "stored" | "computed" = storedHealth !== "" ? "stored" : "computed";
+  const prioritySource: "stored" | "computed"     = storedPriority !== "" ? "stored" : "computed";
+
+  // ── Task 2: deterministic avatar colour ─────────────────────────────────────
+  const avatarColor = deriveAvatarColor(biz.id);
+
+  // ── Task 3a: activationChecklist from onboarding_records ────────────────────
+  const activationChecklist = buildActivationChecklist(biz, client, onboardingRecord);
+
+  // ── Task 3b: salesStatus / salesOwner from proposals → opportunities ────────
+  const { salesStatus, salesOwner } = resolveSalesFields(
+    biz, clientEmail, proposals, opportunityMap
+  );
 
   return {
     id:                     biz.id,
@@ -215,11 +438,11 @@ function toMasterClientShape(biz: BusinessRow, client: ClientRow | undefined) {
     clientName,
     industry:               biz.industry ?? "",
     assignedAM:             biz.assignedAM ?? "",
-    email:                  client?.email ?? "",
+    email:                  clientEmail,
     currentStatus:          deriveCurrentStatus(biz),
     workflowStatus:         biz.workflowStatus ?? "Not Started",
-    salesStatus:            "",
-    salesOwner:             "",
+    salesStatus,
+    salesOwner,
     billingStatus,
     invoiceStatus:          biz.invoiceStatus ?? "",
     paymentStatus:          biz.paymentStatus ?? "",
@@ -229,7 +452,7 @@ function toMasterClientShape(biz: BusinessRow, client: ClientRow | undefined) {
     activationStatus:       biz.activationStatus ?? "",
     onboardingStatus:       biz.onboardingStatus ?? "",
     activeServices:         biz.activeServices ?? [],
-    activationChecklist:    {},
+    activationChecklist,
     // monthlyValue: businesses.monthlyValueCents / 100
     // businesses stores cents as INTEGER; MasterClient.monthlyValue is number.
     // Division produces a number, matching the type and what consumers expect.
@@ -237,8 +460,10 @@ function toMasterClientShape(biz: BusinessRow, client: ClientRow | undefined) {
     billingOwner:           "",
     commissionStatus:       "",
     clientHealth,
+    clientHealthSource,
     priority,
-    avatarColor:            "",
+    prioritySource,
+    avatarColor,
     renewalDate:            biz.renewalDate ?? "",
     renewalStatus:          biz.renewalStatus ?? "",
     affiliateName:          "",
@@ -292,6 +517,81 @@ async function buildClientMap(businesses: BusinessRow[]): Promise<Map<string, Cl
   return new Map(clients.map((c) => [c.id, c]));
 }
 
+// ── Task 3: fetch proposals, opportunities, onboarding records ────────────────
+
+async function fetchAllProposals(): Promise<ProposalRow[]> {
+  // Fetch all proposals, most-recent first, so resolveSalesFields can pick
+  // the best candidate with a simple .find().
+  return prisma.$queryRawUnsafe<ProposalRow[]>(
+    `SELECT id, status, "opportunityId", "leadId", "clientInfo" FROM proposals ORDER BY "createdAt" DESC`
+  );
+}
+
+async function fetchProposalsByEmail(email: string): Promise<ProposalRow[]> {
+  if (!email) return [];
+  return prisma.$queryRawUnsafe<ProposalRow[]>(
+    `SELECT id, status, "opportunityId", "leadId", "clientInfo"
+     FROM proposals
+     WHERE "clientInfo"->>'contactEmail' = $1
+     ORDER BY "createdAt" DESC`,
+    email
+  );
+}
+
+async function fetchOpportunitiesByIds(ids: string[]): Promise<OpportunityRow[]> {
+  const uniq = [...new Set(ids.filter(Boolean))];
+  if (uniq.length === 0) return [];
+  const placeholders = uniq.map((_, i) => `$${i + 1}`).join(", ");
+  return prisma.$queryRawUnsafe<OpportunityRow[]>(
+    `SELECT id, stage, "assignedRep" FROM opportunities WHERE id IN (${placeholders})`,
+    ...uniq
+  );
+}
+
+async function buildOpportunityMap(
+  proposals: ProposalRow[],
+  ghlOppIds: string[],
+): Promise<Map<string, OpportunityRow>> {
+  const oppIds = [
+    ...proposals.map((p) => p.opportunityId).filter((id): id is string => !!id),
+    ...ghlOppIds.filter(Boolean),
+  ];
+  const opps = await fetchOpportunitiesByIds(oppIds);
+  return new Map(opps.map((o) => [o.id, o]));
+}
+
+async function fetchOnboardingRecordByClientId(
+  clientId: string
+): Promise<OnboardingRecordRow | null> {
+  if (!clientId) return null;
+  const rows = await prisma.$queryRawUnsafe<OnboardingRecordRow[]>(
+    `SELECT id, "clientId", "businessId", status, "salesPrefill", "fieldAssignments"
+     FROM onboarding_records
+     WHERE "clientId" = $1
+     ORDER BY "createdAt" DESC
+     LIMIT 1`,
+    clientId
+  );
+  return rows[0] ?? null;
+}
+
+async function buildOnboardingRecordMap(
+  businesses: BusinessRow[],
+): Promise<Map<string, OnboardingRecordRow>> {
+  const clientIds = [...new Set(businesses.map((b) => b.clientId).filter(Boolean))];
+  if (clientIds.length === 0) return new Map();
+  const placeholders = clientIds.map((_, i) => `$${i + 1}`).join(", ");
+  // DISTINCT ON to get one record per clientId (most recent).
+  const rows = await prisma.$queryRawUnsafe<OnboardingRecordRow[]>(
+    `SELECT DISTINCT ON ("clientId") id, "clientId", "businessId", status, "salesPrefill", "fieldAssignments"
+     FROM onboarding_records
+     WHERE "clientId" IN (${placeholders})
+     ORDER BY "clientId", "createdAt" DESC`,
+    ...clientIds
+  );
+  return new Map(rows.map((r) => [r.clientId, r]));
+}
+
 // ── GET ────────────────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
@@ -305,14 +605,60 @@ export async function GET(req: NextRequest) {
     const biz = await fetchBusinessById(id);
     if (!biz) return NextResponse.json({ error: "client not found" }, { status: 404 });
     const client = biz.clientId ? await fetchClientById(biz.clientId) : null;
-    return NextResponse.json({ client: toMasterClientShape(biz, client ?? undefined) });
+    const clientEmail = client?.email ?? "";
+
+    // Fetch proposals for this client by email, build opportunity map, get onboarding record.
+    const [proposals, onboardingRecord] = await Promise.all([
+      fetchProposalsByEmail(clientEmail),
+      biz.clientId ? fetchOnboardingRecordByClientId(biz.clientId) : Promise.resolve(null),
+    ]);
+    const ghlOppIds = biz.ghlOpportunityId ? [biz.ghlOpportunityId] : [];
+    const opportunityMap = await buildOpportunityMap(proposals, ghlOppIds);
+
+    return NextResponse.json({
+      client: toMasterClientShape(
+        biz,
+        client ?? undefined,
+        proposals,
+        opportunityMap,
+        onboardingRecord,
+      ),
+    });
   }
 
-  const businesses = await fetchAllBusinesses();
-  const clientMap = await buildClientMap(businesses);
-  const clients = businesses.map((biz) =>
-    toMasterClientShape(biz, clientMap.get(biz.clientId))
-  );
+  // List path: fetch all supporting data in parallel.
+  const [businesses, allProposals] = await Promise.all([
+    fetchAllBusinesses(),
+    fetchAllProposals(),
+  ]);
+
+  const [clientMap, onboardingMap, opportunityMap] = await Promise.all([
+    buildClientMap(businesses),
+    buildOnboardingRecordMap(businesses),
+    buildOpportunityMap(
+      allProposals,
+      businesses.map((b) => b.ghlOpportunityId ?? "").filter(Boolean),
+    ),
+  ]);
+
+  const clients = businesses.map((biz) => {
+    const client = clientMap.get(biz.clientId);
+    const clientEmail = client?.email ?? "";
+    // Filter proposals to those relevant to this client by email.
+    const bizProposals = clientEmail
+      ? allProposals.filter(
+          (p) => p.clientInfo?.contactEmail?.toLowerCase().trim() === clientEmail.toLowerCase().trim()
+        )
+      : [];
+    return toMasterClientShape(
+      biz,
+      client,
+      bizProposals,
+      opportunityMap,
+      onboardingMap.get(biz.clientId) ?? null,
+    );
+  });
+
   return NextResponse.json({ clients });
 }
 
@@ -451,7 +797,16 @@ export async function POST(req: NextRequest) {
   const biz = await fetchBusinessById(id);
   if (!biz) return NextResponse.json({ error: "upsert failed" }, { status: 500 });
   const client = biz.clientId ? await fetchClientById(biz.clientId) : null;
-  return NextResponse.json({ client: toMasterClientShape(biz, client ?? undefined) });
+  const clientEmail = client?.email ?? "";
+  const [proposals, onboardingRecord] = await Promise.all([
+    fetchProposalsByEmail(clientEmail),
+    biz.clientId ? fetchOnboardingRecordByClientId(biz.clientId) : Promise.resolve(null),
+  ]);
+  const ghlOppIds = biz.ghlOpportunityId ? [biz.ghlOpportunityId] : [];
+  const opportunityMap = await buildOpportunityMap(proposals, ghlOppIds);
+  return NextResponse.json({
+    client: toMasterClientShape(biz, client ?? undefined, proposals, opportunityMap, onboardingRecord),
+  });
 }
 
 // ── PATCH — partial update a business record ──────────────────────────────────
@@ -639,5 +994,14 @@ export async function PATCH(req: NextRequest) {
   const updated = await fetchBusinessById(id);
   if (!updated) return NextResponse.json({ error: "read-back failed" }, { status: 500 });
   const client = updated.clientId ? await fetchClientById(updated.clientId) : null;
-  return NextResponse.json({ client: toMasterClientShape(updated, client ?? undefined) });
+  const updatedEmail = client?.email ?? "";
+  const [patchProposals, patchOnboarding] = await Promise.all([
+    fetchProposalsByEmail(updatedEmail),
+    updated.clientId ? fetchOnboardingRecordByClientId(updated.clientId) : Promise.resolve(null),
+  ]);
+  const patchGhlOppIds = updated.ghlOpportunityId ? [updated.ghlOpportunityId] : [];
+  const patchOppMap = await buildOpportunityMap(patchProposals, patchGhlOppIds);
+  return NextResponse.json({
+    client: toMasterClientShape(updated, client ?? undefined, patchProposals, patchOppMap, patchOnboarding),
+  });
 }
