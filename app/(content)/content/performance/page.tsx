@@ -289,11 +289,20 @@ export default function ContentPerformancePage() {
           {/* SEO Owner */}
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>SEO Owner</span>
-            <select className={selectCls} style={selectStyle} value={extra.seoOwner} onChange={(e) => setExtra_("seoOwner", e.target.value)}>
-              <option value="all">All Owners</option>
-              <option value="Jamie T.">Jamie T.</option>
-              <option value="Riley D.">Riley D.</option>
-            </select>
+            {contentLoading && (
+              <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>Loading…</span>
+            )}
+            {!contentLoading && contentError && (
+              <span className="text-[10px] text-red-500">Failed to load.</span>
+            )}
+            {!contentLoading && !contentError && (
+              <select className={selectCls} style={selectStyle} value={extra.seoOwner} onChange={(e) => setExtra_("seoOwner", e.target.value)}>
+                <option value="all">All Owners</option>
+                {contentUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            )}
           </div>
           {/* Writer */}
           <div className="flex items-center gap-1.5">

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { fetchCurrentUser } from "@/lib/users/users-api";
 import type { CommunicationLogEntry, CommunicationLogEntryType } from "@/lib/sales/types";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -42,6 +43,14 @@ export function AddLogEntryModal({ opportunityId: _opportunityId, onSubmit, onCl
   const [durationMinutes, setDurationMinutes] = useState("");
   const [attachmentNote, setAttachmentNote] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // Resolve the signed-in user so loggedBy reflects who actually saved the entry.
+  // fetchCurrentUser() is the established pattern (proposals/page.tsx:1574).
+  const [currentUserName, setCurrentUserName] = useState<string | null>(null);
+  useEffect(() => {
+    fetchCurrentUser().then((u) => {
+      if (u) setCurrentUserName(u.name);
+    }).catch(() => { /* leave null — handleSubmit falls back to empty string */ });
+  }, []);
 
   const showDuration = type === "call" || type === "meeting-notes";
   const showTranscriptProminent = type === "call-transcript";
@@ -62,7 +71,7 @@ export function AddLogEntryModal({ opportunityId: _opportunityId, onSubmit, onCl
       title: title.trim(),
       summary: summary.trim(),
       fullContent: fullContent.trim(),
-      loggedBy: "Jordan M.",
+      loggedBy: currentUserName ?? "",
       participants: participants
         .split(",")
         .map((p) => p.trim())

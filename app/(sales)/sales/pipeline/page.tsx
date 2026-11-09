@@ -10,7 +10,7 @@ import { updateOpportunityStage, addLogEntryToOpportunity } from "@/lib/sales/op
 import type { OpportunityRecord, CommunicationLog, CommunicationLogEntry } from "@/lib/sales/types";
 import { CommunicationLogPanel } from "@/components/sales/communication-log/CommunicationLogPanel";
 import type { PipelineStageDefinition } from "@/lib/sales/pipeline-stages";
-import { useDepartmentUsers, type UserRecord } from "@/lib/users/users-api";
+import { useDepartmentUsers, resolveRep, type UserRecord } from "@/lib/users/users-api";
 
 const workspace = getWorkspace("sales")!;
 
@@ -2611,6 +2611,7 @@ function OpportunityDetailDrawer({
   addNote,
   commLog,
   onAddCommLogEntry,
+  repUsers = [],
 }: {
   opp: Opportunity;
   followUps: FollowUp[];
@@ -2621,6 +2622,7 @@ function OpportunityDetailDrawer({
   addNote: (oppId: string, text: string) => void;
   commLog?: CommunicationLog;
   onAddCommLogEntry?: (opportunityId: string, entry: CommunicationLogEntry) => void;
+  repUsers?: UserRecord[];
 }) {
   const [activityLog] = useState([
     ...MOCK_ACTIVITY_LOG,
@@ -2658,7 +2660,7 @@ function OpportunityDetailDrawer({
               ["Contact", opp.clientName],
               ["Phone", opp.phone],
               ["Email", opp.email],
-              ["Assigned Rep", opp.assignedRep],
+              ["Assigned Rep", resolveRep(opp.assignedRep, repUsers)],
               ["Est. Monthly Value", fmtCurrency(opp.estimatedValue) + "/mo"],
               ["Expected Close", opp.expectedCloseDate],
               ["Contract Length", opp.contractLength],
@@ -2846,7 +2848,7 @@ function IntegrationCard({
   );
 }
 
-function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon, onMarkLost }: { opp: Opportunity; onClose: () => void; commLog?: CommunicationLog; onAddCommLogEntry?: (opportunityId: string, entry: CommunicationLogEntry) => void; onMarkWon?: (id: string) => void; onMarkLost?: (id: string) => void; }) {
+function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon, onMarkLost, repUsers = [] }: { opp: Opportunity; onClose: () => void; commLog?: CommunicationLog; onAddCommLogEntry?: (opportunityId: string, entry: CommunicationLogEntry) => void; onMarkWon?: (id: string) => void; onMarkLost?: (id: string) => void; repUsers?: UserRecord[]; }) {
   const [activeTab, setActiveTab] = useState<DrawerTab>("Client Overview");
   const stageCfg = getStageCfg(opp.stage);
   const weightedRevenue = Math.round((opp.estimatedValue * opp.probability) / 100);
@@ -2912,7 +2914,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
                   <DrawerField label="Affiliate Source"value={opp.affiliateSource !== "—"? (
                     <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full border"style={{ background: "#ECFDF5", color: "#059669", borderColor: "#A7F3D0"}}>{opp.affiliateSource}</span>
                   ) : "—"} />
-                  <DrawerField label="Assigned Sales Rep"value={opp.assignedRep} />
+                  <DrawerField label="Assigned Sales Rep"value={resolveRep(opp.assignedRep, repUsers)} />
                   <DrawerField label="GHL Source"value={opp.ghl?.ghlSource || "—"} />
                 </div>
               </DrawerSection>
@@ -3485,6 +3487,7 @@ function OpportunityCard({
   onAddNote,
   onCreateAudit,
   onCreateProposal,
+  repUsers = [],
 }: {
   opp: Opportunity & { activeWizardId?: string };
   stageCfg: StageConfig;
@@ -3498,6 +3501,7 @@ function OpportunityCard({
   onAddNote?: (oppId: string) => void;
   onCreateAudit?: (oppId: string) => void;
   onCreateProposal?: (oppId: string) => void;
+  repUsers?: UserRecord[];
 }) {
   const hasWizard = !!opp.activeWizardId;
   return (
@@ -3535,7 +3539,7 @@ function OpportunityCard({
         )}
       </div>
       <div className="flex items-center justify-between gap-1">
-        <span className="text-[10px] font-semibold"style={{ color: "var(--rtm-text-muted)"}}>{opp.assignedRep}</span>
+        <span className="text-[10px] font-semibold"style={{ color: "var(--rtm-text-muted)"}}>{resolveRep(opp.assignedRep, repUsers)}</span>
         <span className="text-[10px]"style={{ color: opp.daysInStage > 7 ? "#DC2626": "var(--rtm-text-muted)"}}>
           {opp.daysInStage}d in stage
         </span>
@@ -3566,7 +3570,7 @@ const ALL_PIPELINE_STAGES: PipelineStage[] = [
   "Proposal Approved", "Sales Handoff", "Closed Won", "Closed Lost",
 ];
 
-function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp, onMarkWon, onMarkLost, onEditOpp, onAddNote, onCreateAudit, onCreateProposal }: {
+function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp, onMarkWon, onMarkLost, onEditOpp, onAddNote, onCreateAudit, onCreateProposal, repUsers = [] }: {
   opportunities: Opportunity[];
   onView: (opp: Opportunity) => void;
   onChangeStage: (oppId: string, stage: PipelineStage) => void;
@@ -3577,6 +3581,7 @@ function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp,
   onAddNote?: (oppId: string) => void;
   onCreateAudit?: (oppId: string) => void;
   onCreateProposal?: (oppId: string) => void;
+  repUsers?: UserRecord[];
 }) {
   return (
     <div className="overflow-x-auto rounded-xl border"style={{ borderColor: "var(--rtm-border)"}}>
@@ -3606,7 +3611,7 @@ function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp,
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap font-semibold"style={{ color: "var(--rtm-text-primary)", borderRight: "1px solid var(--rtm-border)"}}>{opp.businessName}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ color: "var(--rtm-text-secondary)", borderRight: "1px solid var(--rtm-border)"}}>{opp.industry}</td>
-                <td className="px-3 py-2.5 whitespace-nowrap font-semibold"style={{ color: "var(--rtm-text-primary)", borderRight: "1px solid var(--rtm-border)"}}>{opp.assignedRep}</td>
+                <td className="px-3 py-2.5 whitespace-nowrap font-semibold"style={{ color: "var(--rtm-text-primary)", borderRight: "1px solid var(--rtm-border)"}}>{resolveRep(opp.assignedRep, repUsers)}</td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}><LeadSourceBadge source={opp.leadSource} /></td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}>
                   {opp.affiliateSource !== "—"? (
@@ -3660,7 +3665,7 @@ function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp,
 
 //  Analytics Section 
 
-function PipelineAnalytics({ opportunities }: { opportunities: Opportunity[] }) {
+function PipelineAnalytics({ opportunities, repUsers = [] }: { opportunities: Opportunity[]; repUsers?: UserRecord[] }) {
   const stages = STAGE_CONFIG.map((sc) => ({
     label: sc.label, color: sc.color, bg: sc.bg, border: sc.border,
     count: opportunities.filter((o) => o.stage === sc.label).length,
@@ -3802,7 +3807,7 @@ function PipelineAnalytics({ opportunities }: { opportunities: Opportunity[] }) 
           <tbody>
             {repPerf.map((r, i) => (
               <tr key={r.rep} style={{ background: i % 2 === 0 ? "var(--rtm-bg)": "var(--rtm-surface)", borderBottom: "1px solid var(--rtm-border)"}}>
-                <td className="px-4 py-2.5 font-bold"style={{ color: "var(--rtm-text-primary)"}}>{r.rep}</td>
+                <td className="px-4 py-2.5 font-bold"style={{ color: "var(--rtm-text-primary)"}}>{resolveRep(r.rep, repUsers)}</td>
                 <td className="px-4 py-2.5">{r.total}</td>
                 <td className="px-4 py-2.5"style={{ color: "#2563EB"}}>{r.open}</td>
                 <td className="px-4 py-2.5 font-semibold"style={{ color: "#059669"}}>{r.won}</td>
@@ -4506,7 +4511,7 @@ function SalesPipelinePageInner() {
   return (
     <div className="space-y-7">
       <PipelineToastContainer toasts={pipelineToasts} dismiss={(id) => setPipelineToasts(prev => prev.filter(t => t.id !== id))} />
-      {drawerOpp && <OpportunityDrawer opp={drawerOpp} onClose={() => setDrawerOpp(null)} commLog={commLogs[drawerOpp.id] ?? { opportunityId: drawerOpp.id, entries: [] }} onAddCommLogEntry={handleAddCommLogEntry} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} />}
+      {drawerOpp && <OpportunityDrawer opp={drawerOpp} onClose={() => setDrawerOpp(null)} commLog={commLogs[drawerOpp.id] ?? { opportunityId: drawerOpp.id, entries: [] }} onAddCommLogEntry={handleAddCommLogEntry} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} repUsers={salesUsers} />}
       {detailOpp && (
         <OpportunityDetailDrawer
           opp={detailOpp}
@@ -4518,6 +4523,7 @@ function SalesPipelinePageInner() {
           addNote={handleAddNote}
           commLog={commLogs[detailOpp.id] ?? { opportunityId: detailOpp.id, entries: [] }}
           onAddCommLogEntry={handleAddCommLogEntry}
+          repUsers={salesUsers}
         />
       )}
       {showFollowUpModal && (
@@ -5350,7 +5356,7 @@ function SalesPipelinePageInner() {
                         <div className="flex items-center justify-center py-6 rounded-lg border border-dashed"style={{ borderColor: stageCfg.border }}>
                           <p className="text-[11px]"style={{ color: stageCfg.color, opacity: 0.5 }}>No opportunities</p>
                         </div>
-                      ) : cards.map((opp) => <OpportunityCard key={opp.id} opp={opp as Opportunity & { activeWizardId?: string }} stageCfg={stageCfg} onView={setDrawerOpp} onOpenDetail={setDetailOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} />)}
+                      ) : cards.map((opp) => <OpportunityCard key={opp.id} opp={opp as Opportunity & { activeWizardId?: string }} stageCfg={stageCfg} onView={setDrawerOpp} onOpenDetail={setDetailOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} repUsers={salesUsers} />)}
                     </div>
                   </div>
                 );
@@ -5367,10 +5373,10 @@ function SalesPipelinePageInner() {
               {filtered.length} {filtered.length === 1 ? "opportunity": "opportunities"}
             </span>
           </div>
-          <PipelineTable opportunities={filtered} onView={setDrawerOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} />
+          <PipelineTable opportunities={filtered} onView={setDrawerOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} repUsers={salesUsers} />
         </div>
       )}
-      {viewMode === "analytics"&& <PipelineAnalytics opportunities={filtered} />}
+      {viewMode === "analytics"&& <PipelineAnalytics opportunities={filtered} repUsers={salesUsers} />}
       <div className="p-4 rounded-xl border"style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)"}}>
         <h3 className="text-xs font-bold uppercase tracking-wide mb-3"style={{ color: "var(--rtm-text-muted)"}}>Pipeline Summary</h3>
         <div className="flex flex-wrap gap-3">

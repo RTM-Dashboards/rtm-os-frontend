@@ -12,7 +12,7 @@ import type {
   ActivationStatus,
   HealthStatus,
 } from "@/lib/mock/master-clients";
-import { useDepartmentUsers } from "@/lib/users/users-api";
+import { useDepartmentUsers, resolveRep } from "@/lib/users/users-api";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES  (local-only display aliases — sourced from master-clients)
@@ -167,6 +167,7 @@ function ClientDrawer({
   client: MasterClient;
   onClose: () => void;
 }) {
+  const { users: amUsers } = useDepartmentUsers("Account Management");
   const cl = client.activationChecklist;
   const checklistTotal = Object.values(cl).length;
   const checklistDone = Object.values(cl).filter(Boolean).length;
@@ -231,7 +232,7 @@ function ClientDrawer({
               </div>
               <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Assigned AM</p>
-                <p className="text-sm font-semibold text-slate-800 dark:text-white">{client.assignedAM}</p>
+                <p className="text-sm font-semibold text-slate-800 dark:text-white">{resolveRep(client.assignedAM, amUsers)}</p>
               </div>
               <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3">
                 <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Monthly Value</p>
@@ -752,6 +753,7 @@ function RowActions({
 export default function ClientsPage() {
   // Data: seed from MASTER_CLIENTS singleton, hydrate from file-backed API on mount
   const [clients, setClients] = useState<MasterClient[]>(MASTER_CLIENTS);
+  const { users: amUsers } = useDepartmentUsers("Account Management");
   const [showAddModal, setShowAddModal] = useState(false);
 
   const [searchQuery,       setSearchQuery]       = useState("");
@@ -1090,7 +1092,7 @@ export default function ClientsPage() {
 
                   {/* AM */}
                   <td className="px-4 py-3">
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{client.assignedAM}</span>
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300 whitespace-nowrap">{resolveRep(client.assignedAM, amUsers)}</span>
                   </td>
 
                   {/* Referral Source */}
