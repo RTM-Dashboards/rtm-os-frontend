@@ -12,6 +12,7 @@ import type {
   ActivationStatus,
   HealthStatus,
 } from "@/lib/mock/master-clients";
+import { useDepartmentUsers } from "@/lib/users/users-api";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES  (local-only display aliases — sourced from master-clients)
@@ -464,10 +465,12 @@ function AddClientModal({
     email: "",
     industry: "",
     monthlyValue: "",
-    assignedAM: "Unassigned",
+    assignedAM: "",
     activeServices: "",
   });
   const [error, setError] = useState("");
+  const { users: amUsers, loading: amLoading, error: amError } =
+    useDepartmentUsers("Account Management");
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -607,21 +610,32 @@ function AddClientModal({
             >
               Assigned AM
             </label>
-            <select
-              value={form.assignedAM}
-              onChange={(e) => setForm((f) => ({ ...f, assignedAM: e.target.value }))}
-              className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none"
-              style={{
-                borderColor: "var(--rtm-border)",
-                background: "var(--rtm-bg)",
-                color: "var(--rtm-text-primary)",
-              }}
-            >
-              <option value="Unassigned">Unassigned</option>
-              <option>Jordan M.</option>
-              <option>Sarah K.</option>
-              <option>Alex R.</option>
-            </select>
+            {amLoading && (
+              <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>Loading…</p>
+            )}
+            {!amLoading && amError && (
+              <p className="text-sm py-1 text-red-500">Failed to load account managers.</p>
+            )}
+            {!amLoading && !amError && amUsers.length === 0 && (
+              <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>No one in Account Management has signed in yet.</p>
+            )}
+            {!amLoading && !amError && amUsers.length > 0 && (
+              <select
+                value={form.assignedAM}
+                onChange={(e) => setForm((f) => ({ ...f, assignedAM: e.target.value }))}
+                className="w-full text-sm px-3 py-2 rounded-lg border focus:outline-none"
+                style={{
+                  borderColor: "var(--rtm-border)",
+                  background: "var(--rtm-bg)",
+                  color: "var(--rtm-text-primary)",
+                }}
+              >
+                <option value="">-- Select AM --</option>
+                {amUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div className="flex gap-2 pt-2">

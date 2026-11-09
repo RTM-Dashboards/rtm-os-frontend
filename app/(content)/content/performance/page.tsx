@@ -10,6 +10,7 @@ import PerformanceFilters, {
 } from "@/components/performance/PerformanceFilters";
 import { getWorkspace } from "@/lib/workspaces";
 import { useEnabledKpis } from "@/lib/hooks/useEnabledKpis";
+import { useDepartmentUsers } from "@/lib/users/users-api";
 
 const workspace = getWorkspace("content")!;
 
@@ -204,6 +205,8 @@ export default function ContentPerformancePage() {
   const [extra, setExtra] = useState<ExtraFilterState>(DEFAULT_EXTRA);
   const [activeTab, setActiveTab] = useState<"engagement"| "upload">("engagement");
   const { isEnabled } = useEnabledKpis("content");
+  const { users: contentUsers, loading: contentLoading, error: contentError } =
+    useDepartmentUsers("Content");
 
   const enabledKpiData = kpiData.filter((k) => isEnabled(k.kpiId));
 
@@ -295,14 +298,20 @@ export default function ContentPerformancePage() {
           {/* Writer */}
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wide"style={{ color: "var(--rtm-text-muted)"}}>Writer</span>
-            <select className={selectCls} style={selectStyle} value={extra.writer} onChange={(e) => setExtra_("writer", e.target.value)}>
-              <option value="all">All Writers</option>
-              <option value="Alex R.">Alex R.</option>
-              <option value="Morgan S.">Morgan S.</option>
-              <option value="Taylor B.">Taylor B.</option>
-              <option value="Jordan K.">Jordan K.</option>
-              <option value="Sam L.">Sam L.</option>
-            </select>
+            {contentLoading && (
+              <span className="text-[10px]" style={{ color: "var(--rtm-text-muted)" }}>Loading…</span>
+            )}
+            {!contentLoading && contentError && (
+              <span className="text-[10px] text-red-500">Failed to load.</span>
+            )}
+            {!contentLoading && !contentError && (
+              <select className={selectCls} style={selectStyle} value={extra.writer} onChange={(e) => setExtra_("writer", e.target.value)}>
+                <option value="all">All Writers</option>
+                {contentUsers.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
       </div>

@@ -172,7 +172,7 @@ export const STEP1_BUSINESS_INFO_FIELDS: IntakeField[] = [
     label: "Assigned Sales Rep",
     type: "select",
     required: true,
-    options: ["Jordan M.", "Sarah K.", "Mike T.", "Ryan B.", "Tina G.", "Carlos V.", "Megan S."],
+    options: [], // populated at render time from the Sales department user list
   },
 ];
 

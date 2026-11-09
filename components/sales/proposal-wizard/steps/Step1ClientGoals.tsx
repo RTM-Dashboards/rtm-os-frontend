@@ -25,6 +25,7 @@ import {
   NEW_BUILD_INTEREST_OPTIONS,
   MANAGED_HOSTING_INTEREST_OPTIONS,
 } from "@/lib/sales/intake-config";
+import { useDepartmentUsers } from "@/lib/users/users-api";
 import type { ProposalWizardState } from "../ProposalWizard";
 import type {
   HomeServicesIntakeRecord,
@@ -165,7 +166,7 @@ function buildSampleIntakeRecord(): HomeServicesIntakeRecord {
     ],
     // ─ Section 5: Sales Context ──────────────────────────────────────
     leadSource: "Google Ads",
-    assignedRep: "Jordan M.",
+    assignedRep: "",
     referralSource: "",
     affiliatePartner: "",
     howHeardAboutUs: "Google search",
@@ -1452,6 +1453,9 @@ export function Step1ClientGoals({ state, onUpdate }: Step1ClientGoalsProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.intakeRecord]);
 
+  const { users: salesReps, loading: salesRepsLoading, error: salesRepsError } =
+    useDepartmentUsers("Sales");
+
   function setField<K extends keyof HomeServicesIntakeRecord>(
     key: K,
     value: HomeServicesIntakeRecord[K]
@@ -2385,12 +2389,35 @@ export function Step1ClientGoals({ state, onUpdate }: Step1ClientGoalsProps) {
             onChange={(v) => setField("leadSource", v)}
             options={sourceOptions}
           />
-          <SelectInput
-            label="Assigned Rep"
-            value={intake.assignedRep}
-            onChange={(v) => setField("assignedRep", v)}
-            options={["Jordan M.", "Sarah K.", "Mike T.", "Alex R."]}
-          />
+          <div>
+            <FieldLabel>Assigned Rep</FieldLabel>
+            {salesRepsLoading && (
+              <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>Loading reps…</p>
+            )}
+            {!salesRepsLoading && salesRepsError && (
+              <p className="text-sm py-1 text-red-500">Failed to load reps.</p>
+            )}
+            {!salesRepsLoading && !salesRepsError && salesReps.length === 0 && (
+              <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>No one in Sales has signed in yet.</p>
+            )}
+            {!salesRepsLoading && !salesRepsError && salesReps.length > 0 && (
+              <select
+                value={intake.assignedRep}
+                onChange={(e) => setField("assignedRep", e.target.value)}
+                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                style={{
+                  background: "var(--rtm-bg)",
+                  borderColor: "var(--rtm-border)",
+                  color: "var(--rtm-text-primary)",
+                }}
+              >
+                <option value="">Select…</option>
+                {salesReps.map((u) => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
           {intake.leadSource === "Referral" && (
             <TextInput
               label="Referral Source"

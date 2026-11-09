@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useDepartmentUsers } from "@/lib/users/users-api";
 import Link from "next/link";
 import { KpiCard, SectionWrapper, StatusBadge } from "@/components/ui";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
@@ -902,12 +903,38 @@ function Textarea({ placeholder, rows = 3 }: { placeholder?: string; rows?: numb
 }
 
 function AssignOwnerModal({ record, onClose }: { record: OffboardingClient; onClose: () => void }) {
+  const { users: amUsers, loading: amLoading, error: amError } =
+    useDepartmentUsers("Account Management");
+  const [newAMOwner, setNewAMOwner] = useState("");
   return (
     <Modal title="Assign Owner"onClose={onClose}>
       <div className="flex flex-col gap-4">
         <FieldRow label="Client"><Input defaultValue={record.client} /></FieldRow>
         <FieldRow label="Current AM Owner"><Input defaultValue={record.amOwner} /></FieldRow>
-        <FieldRow label="New AM Owner"><Select options={["Rachel T.", "Jordan M.", "Amanda B.", "Derek S."]} defaultValue={record.amOwner} /></FieldRow>
+        <FieldRow label="New AM Owner">
+          {amLoading && (
+            <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>Loading…</p>
+          )}
+          {!amLoading && amError && (
+            <p className="text-sm py-1 text-red-500">Failed to load account managers.</p>
+          )}
+          {!amLoading && !amError && amUsers.length === 0 && (
+            <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>No one in Account Management has signed in yet.</p>
+          )}
+          {!amLoading && !amError && amUsers.length > 0 && (
+            <select
+              value={newAMOwner}
+              onChange={(e) => setNewAMOwner(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-sm"
+              style={{ borderColor: "var(--rtm-border)", background: "var(--rtm-surface)", color: "var(--rtm-text-primary)" }}
+            >
+              <option value="">-- Select AM --</option>
+              {amUsers.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </select>
+          )}
+        </FieldRow>
         <FieldRow label="New Operations Owner"><Select options={["Marcus L.", "Diana F."]} defaultValue={record.operationsOwner} /></FieldRow>
         <FieldRow label="Notes"><Textarea placeholder="Reason for reassignment..."/></FieldRow>
         <div className="flex justify-end gap-2 pt-2">
