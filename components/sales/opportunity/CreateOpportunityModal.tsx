@@ -6,6 +6,7 @@ import {
   OPPORTUNITY_PRIORITIES,
 } from "@/lib/sales/intake-config";
 import type { OpportunityRecord } from "@/lib/sales/types";
+import { useDepartmentUsers } from "@/lib/users/users-api";
 import {
   createOpportunityFromLead,
   createOpportunityManual,
@@ -57,8 +58,6 @@ interface CreateOpportunityModalProps {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const ASSIGNED_REPS = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
 
 const LEAD_SOURCE_OPTIONS = [
   "Direct Sales",
@@ -122,7 +121,7 @@ export function CreateOpportunityModal({
     // LeadData.website prefilled; rep can correct before submitting
     website: leadData?.website ?? "",
     leadSource: leadData?.leadSource ?? "",
-    assignedRep: leadData?.assignedRep ?? ASSIGNED_REPS[0],
+    assignedRep: leadData?.assignedRep ?? "",
     // Pre-fill service interest from lead.requestedServices if present
     serviceInterest: leadData?.requestedServices ?? [],
     estimatedMonthlyValue: "",
@@ -134,6 +133,8 @@ export function CreateOpportunityModal({
 
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [created, setCreated] = useState<OpportunityRecord | null>(null);
+
+  const { users: salesUsers, loading: salesLoading, error: salesError } = useDepartmentUsers("Sales");
 
   const prefilled = !!leadData;
 
@@ -535,18 +536,30 @@ export function CreateOpportunityModal({
             <div>
               {fieldLabel("Assigned Rep")}
               {prefilled && prefilledBadge()}
-              <select
-                value={form.assignedRep}
-                onChange={(e) => set("assignedRep", e.target.value)}
-                className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none mt-1"
-                style={inputStyle}
-              >
-                {ASSIGNED_REPS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+              {salesLoading && (
+                <p className="text-sm py-2 mt-1" style={{ color: "var(--rtm-text-muted)" }}>Loading reps…</p>
+              )}
+              {!salesLoading && salesError && (
+                <p className="text-sm py-2 mt-1 text-red-500">Failed to load reps.</p>
+              )}
+              {!salesLoading && !salesError && salesUsers.length === 0 && (
+                <p className="text-sm py-2 mt-1" style={{ color: "var(--rtm-text-muted)" }}>No Sales users found.</p>
+              )}
+              {!salesLoading && !salesError && salesUsers.length > 0 && (
+                <select
+                  value={form.assignedRep}
+                  onChange={(e) => set("assignedRep", e.target.value)}
+                  className="w-full text-sm rounded-lg border px-3 py-2 focus:outline-none mt-1"
+                  style={inputStyle}
+                >
+                  <option value="">Select rep…</option>
+                  {salesUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Priority */}

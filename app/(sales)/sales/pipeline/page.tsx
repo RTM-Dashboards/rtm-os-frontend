@@ -10,6 +10,7 @@ import { updateOpportunityStage, addLogEntryToOpportunity } from "@/lib/sales/op
 import type { OpportunityRecord, CommunicationLog, CommunicationLogEntry } from "@/lib/sales/types";
 import { CommunicationLogPanel } from "@/components/sales/communication-log/CommunicationLogPanel";
 import type { PipelineStageDefinition } from "@/lib/sales/pipeline-stages";
+import { useDepartmentUsers, type UserRecord } from "@/lib/users/users-api";
 
 const workspace = getWorkspace("sales")!;
 
@@ -1967,6 +1968,229 @@ function SelectOpportunityModal({
             style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>Cancel</button>
           <button onClick={() => onConfirm(oppId)}
             className="text-sm px-4 py-2 rounded-lg font-bold" style={{ background: "#059669", color: "#fff" }}>Confirm</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── EditOpportunityModal ──────────────────────────────────────────────────────
+// Fields saved via PATCH /api/sales-opportunities using the fixed allow-list in
+// buildUpdateData — the route iterates the allow-list, NOT the request body.
+// Unknown fields return 400.  No schema-injection risk.
+
+const EDIT_OPP_PRIORITIES: Priority[] = ["Low", "Medium", "High", "Urgent"];
+
+function EditOpportunityModal({
+  opp,
+  onClose,
+  onSaved,
+  salesUsers,
+  salesLoading,
+  salesError,
+}: {
+  opp: Opportunity;
+  onClose: () => void;
+  onSaved: (updated: Opportunity) => void;
+  salesUsers: UserRecord[];
+  salesLoading: boolean;
+  salesError: string | null;
+}) {
+  const [form, setForm] = useState({
+    businessName: opp.businessName,
+    clientName: opp.clientName,
+    contactName: opp.primaryContact || opp.clientName,
+    contactPhone: opp.phone,
+    contactEmail: opp.email,
+    website: opp.website,
+    industry: opp.industry,
+    stage: opp.stage as PipelineStage,
+    priority: opp.priority as Priority,
+    assignedRep: opp.assignedRep,
+    estimatedMonthlyValue: String(opp.estimatedValue ?? ""),
+    expectedCloseDate: opp.expectedCloseDate,
+    contractLength: opp.contractLength,
+    nextAction: opp.nextAction,
+  });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    setForm(prev => ({ ...prev, [key]: value }));
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setSaveError(null);
+    try {
+      // Allow-list patch — only the fields we expose in this modal.
+      // buildUpdateData in the route uses an explicit allow-list; unknown keys return 400.
+      const patch: Record<string, unknown> = {
+        id: opp.id,
+        businessName: form.businessName.trim(),
+        clientName: form.clientName.trim(),
+        contactName: form.contactName.trim(),
+        contactPhone: form.contactPhone.trim(),
+        contactEmail: form.contactEmail.trim(),
+        website: form.website.trim() || null,
+        industry: form.industry.trim() || null,
+        stage: form.stage,
+        priority: form.priority,
+        assignedRep: form.assignedRep,
+        estimatedMonthlyValue: form.estimatedMonthlyValue !== "" ? Number(form.estimatedMonthlyValue) : 0,
+        expectedCloseDate: form.expectedCloseDate,
+        contractLength: form.contractLength.trim() || null,
+        nextAction: form.nextAction.trim() || null,
+      };
+      const res = await fetch("/api/sales-opportunities", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      const { record } = await res.json() as { record: Record<string, unknown> };
+      // Merge returned record fields back into the Opportunity shape so the
+      // parent can update its in-memory list without a full reload.
+      const merged: Opportunity = {
+        ...opp,
+        businessName: (record.businessName as string) ?? opp.businessName,
+        clientName: (record.clientName as string) ?? opp.clientName,
+        primaryContact: (record.primaryContact as string | null) ?? opp.primaryContact,
+        phone: (record.phone as string | null) ?? opp.phone,
+        email: (record.email as string | null) ?? opp.email,
+        website: (record.website as string | null) ?? opp.website,
+        industry: (record.industry as string | null) ?? opp.industry,
+        stage: ((record.stage as PipelineStage) ?? opp.stage),
+        priority: ((record.priority as Priority) ?? opp.priority),
+        assignedRep: (record.assignedRep as string) ?? opp.assignedRep,
+        estimatedValue: typeof record.estimatedMonthlyValue === "number" ? record.estimatedMonthlyValue : opp.estimatedValue,
+        expectedCloseDate: (record.expectedCloseDate as string) ?? opp.expectedCloseDate,
+        contractLength: (record.contractLength as string | null) ?? opp.contractLength,
+        nextAction: (record.nextAction as string | null) ?? opp.nextAction,
+      };
+      onSaved(merged);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls = "w-full text-sm rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500";
+  const inputStyle = { background: "var(--rtm-bg)", borderColor: "var(--rtm-border)", color: "var(--rtm-text-primary)" };
+  const labelCls = "text-[10px] font-bold uppercase tracking-wide block mb-1";
+  const labelStyle = { color: "var(--rtm-text-muted)" };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(2px)" }}>
+      <div className="w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col" style={{ background: "var(--rtm-bg)", border: "1px solid var(--rtm-border)", maxHeight: "90vh" }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b flex-shrink-0" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <div>
+            <h2 className="text-base font-bold" style={{ color: "var(--rtm-text-primary)" }}>Edit Opportunity</h2>
+            <p className="text-xs mt-0.5 font-mono" style={{ color: "var(--rtm-text-muted)" }}>{opp.id}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-lg font-bold" style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)" }}>×</button>
+        </div>
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+          {/* Business */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls} style={labelStyle}>Business Name</label>
+              <input className={inputCls} style={inputStyle} value={form.businessName} onChange={e => set("businessName", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Industry</label>
+              <input className={inputCls} style={inputStyle} value={form.industry} onChange={e => set("industry", e.target.value)} placeholder="e.g. HVAC, Dental" />
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Contact Name</label>
+              <input className={inputCls} style={inputStyle} value={form.contactName} onChange={e => set("contactName", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Client Display Name</label>
+              <input className={inputCls} style={inputStyle} value={form.clientName} onChange={e => set("clientName", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Phone</label>
+              <input className={inputCls} style={inputStyle} value={form.contactPhone} onChange={e => set("contactPhone", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Email</label>
+              <input className={inputCls} style={inputStyle} value={form.contactEmail} onChange={e => set("contactEmail", e.target.value)} type="email" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls} style={labelStyle}>Website</label>
+              <input className={inputCls} style={inputStyle} value={form.website} onChange={e => set("website", e.target.value)} placeholder="https://" />
+            </div>
+          </div>
+          {/* Pipeline */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3 border-t" style={{ borderColor: "var(--rtm-border)" }}>
+            <div>
+              <label className={labelCls} style={labelStyle}>Stage</label>
+              <select className={inputCls} style={inputStyle} value={form.stage} onChange={e => set("stage", e.target.value as PipelineStage)}>
+                {ALL_PIPELINE_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Priority</label>
+              <select className={inputCls} style={inputStyle} value={form.priority} onChange={e => set("priority", e.target.value as Priority)}>
+                {EDIT_OPP_PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Assigned Rep</label>
+              {salesLoading && <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>Loading reps…</p>}
+              {!salesLoading && salesError && <p className="text-sm py-1 text-red-500">Failed to load reps.</p>}
+              {!salesLoading && !salesError && salesUsers.length === 0 && (
+                <p className="text-sm py-1" style={{ color: "var(--rtm-text-muted)" }}>No one in Sales has signed in yet.</p>
+              )}
+              {!salesLoading && !salesError && salesUsers.length > 0 && (
+                <select className={inputCls} style={inputStyle} value={form.assignedRep} onChange={e => set("assignedRep", e.target.value)}>
+                  <option value="">-- Select rep --</option>
+                  {salesUsers.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              )}
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Est. Monthly Value ($)</label>
+              <input className={inputCls} style={inputStyle} type="number" min="0" value={form.estimatedMonthlyValue} onChange={e => set("estimatedMonthlyValue", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Expected Close Date</label>
+              <input className={inputCls} style={inputStyle} type="date" value={form.expectedCloseDate} onChange={e => set("expectedCloseDate", e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls} style={labelStyle}>Contract Length</label>
+              <input className={inputCls} style={inputStyle} value={form.contractLength} onChange={e => set("contractLength", e.target.value)} placeholder="e.g. 12 months" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls} style={labelStyle}>Next Action</label>
+              <input className={inputCls} style={inputStyle} value={form.nextAction} onChange={e => set("nextAction", e.target.value)} placeholder="What happens next?" />
+            </div>
+          </div>
+        </div>
+        {/* Footer */}
+        {saveError && (
+          <div className="px-6 py-2 text-xs font-semibold" style={{ color: "#DC2626", background: "#FEF2F2" }}>
+            {saveError}
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t flex-shrink-0" style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}>
+          <button onClick={onClose} disabled={saving}
+            className="text-sm px-4 py-2 rounded-lg font-semibold border"
+            style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-secondary)", borderColor: "var(--rtm-border)" }}>
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={saving}
+            className="text-sm px-5 py-2 rounded-lg font-bold"
+            style={{ background: "#2563EB", color: "#fff", opacity: saving ? 0.7 : 1 }}>
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
         </div>
       </div>
     </div>
@@ -3987,6 +4211,8 @@ function SalesPipelinePageInner() {
   // Track fetch state so the board shows a visible error instead of a silent empty state.
   const [opportunityLoadState, setOpportunityLoadState] = useState<"loading" | "loaded" | "error">("loading");
   const [showCreateOpportunityModal, setShowCreateOpportunityModal] = useState(false);
+  const [editOppTarget, setEditOppTarget] = useState<Opportunity | null>(null);
+  const { users: salesUsers, loading: salesLoading, error: salesError } = useDepartmentUsers("Sales");
   const [showFollowUpModal, setShowFollowUpModal] = useState<{ oppId?: string } | null>(null);
   const [showAuditPicker, setShowAuditPicker] = useState(false);
   const [stalledFollowUpDone, setStalledFollowUpDone] = useState<Set<string>>(new Set());
@@ -4157,7 +4383,37 @@ function SalesPipelinePageInner() {
   }
 
   function handleEditOpp(opp: Opportunity) {
-    setDetailOpp(opp);
+    setEditOppTarget(opp);
+  }
+
+  function handleEditOppSaved(updated: Opportunity) {
+    // Update opportunityRecords so the row reflects the saved values without
+    // a full page reload. We merge only the fields returned from the PATCH.
+    setOpportunityRecords(prev =>
+      prev.map(r => {
+        if (r.id !== updated.id) return r;
+        const merged: OpportunityRecord = {
+          ...r,
+          businessName: updated.businessName,
+          clientName: updated.clientName,
+          contactName: updated.primaryContact || updated.clientName,
+          contactPhone: updated.phone,
+          contactEmail: updated.email,
+          website: updated.website || undefined,
+          industry: updated.industry || undefined,
+          stage: updated.stage,
+          priority: updated.priority,
+          assignedRep: updated.assignedRep,
+          estimatedMonthlyValue: updated.estimatedValue ?? r.estimatedMonthlyValue,
+          expectedCloseDate: updated.expectedCloseDate,
+          contractLength: updated.contractLength || undefined,
+          nextAction: updated.nextAction || undefined,
+        };
+        return merged;
+      })
+    );
+    setEditOppTarget(null);
+    addPipelineToast("Opportunity saved", "success");
   }
 
   function handleCreateAudit(oppId: string) {
@@ -4279,6 +4535,16 @@ function SalesPipelinePageInner() {
           opportunities={mergedOpportunities}
           onClose={() => setShowAuditPicker(false)}
           onConfirm={(oppId) => { setShowAuditPicker(false); window.location.href = `/sales/proposals?new=true&opportunityId=${oppId}`; }}
+        />
+      )}
+      {editOppTarget && (
+        <EditOpportunityModal
+          opp={editOppTarget}
+          onClose={() => setEditOppTarget(null)}
+          onSaved={handleEditOppSaved}
+          salesUsers={salesUsers}
+          salesLoading={salesLoading}
+          salesError={salesError}
         />
       )}
       {showCreateOpportunityModal && (
@@ -4820,15 +5086,17 @@ function SalesPipelinePageInner() {
                           </button>
                           <button
                             onClick={() => {
-                              const reps = ["Jordan M.", "Sarah K.", "Mike T.", "Alex R."];
-                              const next = reps.find(r => r !== (stalledReassigned[deal.id] ?? deal.assignedRep)) ?? reps[0];
-                              setStalledReassigned(prev => ({ ...prev, [deal.id]: next }));
+                              if (salesUsers.length === 0) return;
+                              const currentId = stalledReassigned[deal.id] ?? deal.assignedRep;
+                              const next = salesUsers.find(u => u.id !== currentId) ?? salesUsers[0];
+                              setStalledReassigned(prev => ({ ...prev, [deal.id]: next.id }));
                               // D4: softened — preview data, does not persist
-                              addPipelineToast(`View updated: showing ${next} for ${deal.client} (preview only — not saved).`, "info");
+                              addPipelineToast(`View updated: showing ${next.name} for ${deal.client} (preview only — not saved).`, "info");
                             }}
-                            className="text-[10px] font-semibold px-2 py-1 rounded border transition-all"
+                            disabled={salesLoading || !!salesError || salesUsers.length === 0}
+                            className="text-[10px] font-semibold px-2 py-1 rounded border transition-all disabled:opacity-40"
                             style={{ background: "var(--rtm-bg)", color: "var(--rtm-text-muted)", borderColor: "var(--rtm-border)" }}>
-                            Reassign
+                            {salesLoading ? "Loading…" : salesUsers.length === 0 ? "No reps" : "Reassign"}
                           </button>
                         </div>
                       </td>

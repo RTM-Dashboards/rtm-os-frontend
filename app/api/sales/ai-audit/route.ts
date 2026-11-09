@@ -349,6 +349,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Degradation case: model not configured.
     // PageSpeed and website fetch cannot help here — return immediately with
     // a clear configuration finding.
+    console.error("[ai-audit] ANTHROPIC_API_KEY is not set in the server environment. AI audit cannot run.");
     const notConfigured: AiAuditResult = {
       websiteUrl,
       pageSpeed: null,
@@ -458,6 +459,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
       if (!anthropicResponse.ok) {
         const status = anthropicResponse.status;
+        const bodyPreview = await anthropicResponse.text().catch(() => "");
+        console.error(
+          `[ai-audit] Anthropic responded with HTTP ${status}. Body (first 200 chars): ${bodyPreview.slice(0, 200)}`
+        );
         if (status === 401) {
           throw new Error(
             "Anthropic API key rejected (401). Verify ANTHROPIC_API_KEY in Vercel environment variables."
@@ -468,6 +473,16 @@ export async function POST(request: Request): Promise<NextResponse> {
 
       const data = await anthropicResponse.json();
       aiText = data?.content?.[0]?.text ?? "";
+      if (!aiText) {
+        console.error(
+          "[ai-audit] Anthropic call succeeded but content[0].text is missing or empty. "
+          + `model=${data?.model ?? "unknown"} stop_reason=${data?.stop_reason ?? "unknown"}`
+        );
+      } else {
+        console.log(
+          `[ai-audit] Anthropic response received: ${aiText.length} chars, model=${data?.model ?? "unknown"}`
+        );
+      }
     } catch (err) {
       if (
         err instanceof Error &&

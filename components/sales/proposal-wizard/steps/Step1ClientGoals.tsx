@@ -1157,7 +1157,7 @@ function PlatformBlock({
                       </svg>
                     </span>
                     <input
-                      type="url"
+                      type="text"
                       value={val}
                       onChange={(e) => setFieldValue(field.id, e.target.value)}
                       placeholder={field.placeholder}
@@ -1690,7 +1690,7 @@ export function Step1ClientGoals({ state, onUpdate }: Step1ClientGoalsProps) {
             value={intake.website}
             onChange={(v) => setField("website", v)}
             placeholder="https://www.example.com"
-            type="url"
+            type="text"
           />
         </div>
 
@@ -1876,7 +1876,7 @@ export function Step1ClientGoals({ state, onUpdate }: Step1ClientGoalsProps) {
                 value={intake.website2.url}
                 onChange={(v) => setWebsiteField("url", v)}
                 placeholder="https://www.yourbusiness.com"
-                type="url"
+                type="text"
                 helpText="The main domain name for your website"
               />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
