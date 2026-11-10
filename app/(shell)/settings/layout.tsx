@@ -35,7 +35,7 @@ const SETTINGS_NAV: SettingsSection[] = [
       { label: "Service Catalog",    href: "/settings/service-catalog" },
       { label: "Line Items",         href: "/settings/line-items" },
       { label: "Pricing Rules",      href: "/settings/pricing-rules" },
-      { label: "Packages & Bundles", href: "/settings/packages" },
+      // Packages & Bundles moved to Sales workspace: /sales/settings/packages
     ],
   },
   {

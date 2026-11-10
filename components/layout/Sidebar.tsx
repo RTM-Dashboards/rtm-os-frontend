@@ -101,7 +101,19 @@ const navItems: NavItem[] = [
   { label: "Admin Settings",          href: "/admin/settings",             icon: IconSettings,     section: "admin"},
 
   // ── Departments ───────────────────────────────────────────────
-  { label: "Sales",               href: "/sales",              icon: IconTrending,  section: "departments", badge: "24"},
+  {
+    label: "Sales",
+    href: "/sales",
+    icon: IconTrending,
+    section: "departments",
+    badge: "24",
+    children: [
+      // Package Builder: Sales-owned; visible to Sales, Executive, SystemAdmin.
+      // Department-scoping in visibleNavItems already restricts this workspace
+      // to the Sales department (plus full-access roles), so no extra tag needed.
+      { label: "Packages & Bundles", href: "/sales/settings/packages" },
+    ],
+  },
   { label: "Billing",             href: "/billing",            icon: IconCreditCard,section: "departments"},
   { label: "Account Management",  href: "/account-management", icon: IconBuilding,  section: "departments"},
   { label: "Content",             href: "/content",            icon: IconFile,      section: "departments"},
@@ -278,6 +290,7 @@ export default function Sidebar({ open, onClose, user, role, department }: Sideb
     "/projects":                 true,
     "/reporting":                true,
     "/operations/workflows":     true,
+    "/sales":                    true,
   }));
 
   const toggleExpand = (href: string) => {

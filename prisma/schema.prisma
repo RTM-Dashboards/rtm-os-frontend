@@ -1837,3 +1837,57 @@ model ProjectTemplateBlueprint {
   @@index([blueprintId], name: "idx_ptb_blueprint")
   @@map("project_template_blueprints")
 }
+
+// ── Package ───────────────────────────────────────────────────────────────────
+// Package Builder: a named, priced bundle of catalogue services.
+// Sales-owned feature; lives in the Sales workspace.
+//
+// Mirrors ProjectTemplate / ProjectTemplateBlueprint exactly:
+//   header record (packages) + ordered junction rows (package_items).
+//
+// Fields derive directly from the ConfigPlaceholder spec on the placeholder
+// page (app/(shell)/settings/packages/page.tsx). No extra fields beyond
+// the spec except `quantity` on package_items — authorised because
+// service_catalog_items carries quantityUnit and quantityOptions, so a
+// bundle of "three locations" cannot be expressed without it.
+//
+// serviceId on package_items is a soft string reference (no hard FK) so
+// retired catalogue items remain resolvable from saved packages, matching
+// the same soft-ref pattern proposals already use for serviceId.
+
+model Package {
+  id                String   @id
+  name              String
+  code              String   @unique
+  price             Float    @default(0)
+  billingFrequency  String   @default("")  @map("billing_frequency")
+  description       String   @default("")
+  recommendedFor    String[] @default([])  @map("recommended_for")
+  minBudget         Float    @default(0)   @map("min_budget")
+  maxBudget         Float    @default(0)   @map("max_budget")
+  isActive          Boolean  @default(true)  @map("is_active")
+  isFeatured        Boolean  @default(false) @map("is_featured")
+  createdAt         String   @default("")  @map("created_at")
+  updatedAt         String   @default("")  @map("updated_at")
+  createdByUserId   String?  @map("created_by_user_id")
+
+  items             PackageItem[]
+
+  @@map("packages")
+}
+
+model PackageItem {
+  id         String  @id
+  packageId  String  @map("package_id")
+  serviceId  String  @map("service_id")
+  position   Int     @default(0)
+  quantity   Int     @default(1)
+
+  package    Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, serviceId])
+  @@unique([packageId, position])
+  @@index([packageId], name: "idx_pi_package")
+  @@index([serviceId], name: "idx_pi_service")
+  @@map("package_items")
+}

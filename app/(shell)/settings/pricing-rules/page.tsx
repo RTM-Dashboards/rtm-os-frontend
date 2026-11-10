@@ -25,7 +25,7 @@ export default function PricingRulesPage() {
       relatedSections={[
         { label: "Services",          href: "/settings/services" },
         { label: "Service Catalog",   href: "/settings/service-catalog" },
-        { label: "Packages & Bundles", href: "/settings/packages" },
+        { label: "Packages & Bundles", href: "/sales/settings/packages" },
         { label: "Proposal Rules",    href: "/settings/proposal-rules" },
       ]}
     />

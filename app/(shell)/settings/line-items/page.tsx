@@ -25,7 +25,7 @@ export default function LineItemsPage() {
       relatedSections={[
         { label: "Services",      href: "/settings/services" },
         { label: "Pricing Rules", href: "/settings/pricing-rules" },
-        { label: "Packages",      href: "/settings/packages" },
+        { label: "Packages",      href: "/sales/settings/packages" },
       ]}
     />
   );

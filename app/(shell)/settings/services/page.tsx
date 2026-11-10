@@ -28,7 +28,7 @@ export default function ServicesPage() {
         { label: "Service Catalog",   href: "/settings/service-catalog" },
         { label: "Line Items",        href: "/settings/line-items" },
         { label: "Pricing Rules",     href: "/settings/pricing-rules" },
-        { label: "Packages & Bundles", href: "/settings/packages" },
+        { label: "Packages & Bundles", href: "/sales/settings/packages" },
       ]}
     />
   );

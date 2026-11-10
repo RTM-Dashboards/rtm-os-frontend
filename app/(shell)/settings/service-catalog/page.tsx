@@ -26,7 +26,7 @@ export default function ServiceCatalogPage() {
       relatedSections={[
         { label: "Services",           href: "/settings/services" },
         { label: "Pricing Rules",      href: "/settings/pricing-rules" },
-        { label: "Packages & Bundles", href: "/settings/packages" },
+        { label: "Packages & Bundles", href: "/sales/settings/packages" },
         { label: "Audit Goal Configuration", href: "/settings/audit-goal-config" },
       ]}
     />
