@@ -66,6 +66,25 @@ export interface BudgetLineItem {
   snapshotName?: string;
   snapshotUnitMonthlyPrice?: number;
   snapshotSetupFee?: number;
+
+  // ─── Package fields ────────────────────────────────────────────────────────────────────────────────────────
+  //
+  // These three optional fields tag a line item as belonging to a package block.
+  // All three are absent on existing line items; absence means "normal service line",
+  // so the 18 existing proposals render exactly as before.
+  //
+  // packageId    — the Package.id that owns this block; groups lines for mismatch detection
+  // packageName  — snapshotted at insertion (the package name as it read when added)
+  // lineKind     — "service"          : a service line within a package block
+  //                "package-discount" : the synthetic discount line for the package
+  //
+  // A discount line uses serviceId = "__package-discount__" (a reserved sentinel that
+  // is never a real catalogue id), department = "Package", isRecurring and
+  // monthlySubtotal / setupSubtotal carry the negative discount amount per the
+  // billingFrequency bucket rule defined in lib/sales/budget-engine.ts.
+  packageId?:   string;
+  packageName?: string;
+  lineKind?:    "service" | "package-discount";
 }
 
 // ─── Budget Result ────────────────────────────────────────────────────────────
@@ -419,4 +438,205 @@ export function computeDiscountedSummary(
     grandTotalFirstMonth,
     grandTotalMonthlyOngoing,
   };
+}
+
+// ─── computePackageSubtotals ──────────────────────────────────────────────────
+
+/**
+ * Groups BudgetLineItem[] by packageId and returns, per package:
+ *   - packageId:    the package id
+ *   - packageName:  snapshotted name from the first line item in the block
+ *   - gross:        sum of monthlySubtotal + setupSubtotal for lineKind="service" lines
+ *   - discount:     the negative amount on the lineKind="package-discount" line
+ *                   (0 when no discount line found; negative number means saving)
+ *   - net:          gross + discount  (positive; discount is already negative)
+ *   - storedPrice:  the package's stored price as supplied by the caller
+ *   - matched:      true when net === storedPrice (within $0.01 floating-point tolerance)
+ *
+ * Lines without a packageId are ignored.
+ *
+ * Signature:
+ *   computePackageSubtotals(
+ *     lineItems:    BudgetLineItem[],
+ *     storedPrices: Record<packageId, number>
+ *   ): PackageSubtotalResult[]
+ */
+
+export interface PackageSubtotalResult {
+  packageId:   string;
+  packageName: string;
+  /** Sum of monthlySubtotal + setupSubtotal for all lineKind="service" lines */
+  gross:       number;
+  /** The discount amount (negative number), 0 if no discount line present */
+  discount:    number;
+  /** gross + discount — the effective net package cost */
+  net:         number;
+  /** The package's stored price supplied by the caller */
+  storedPrice: number;
+  /** true when |net - storedPrice| < 0.01 */
+  matched:     boolean;
+}
+
+export function computePackageSubtotals(
+  lineItems:    BudgetLineItem[],
+  storedPrices: Record<string, number>
+): PackageSubtotalResult[] {
+  // Group lines by packageId
+  const groups = new Map<string, BudgetLineItem[]>();
+  for (const item of lineItems) {
+    if (!item.packageId) continue;
+    const bucket = groups.get(item.packageId) ?? [];
+    bucket.push(item);
+    groups.set(item.packageId, bucket);
+  }
+
+  const results: PackageSubtotalResult[] = [];
+
+  for (const [packageId, lines] of groups) {
+    const serviceLines  = lines.filter((l) => l.lineKind === "service");
+    const discountLines = lines.filter((l) => l.lineKind === "package-discount");
+
+    // Gross: sum of both subtotal buckets for service lines
+    const gross = serviceLines.reduce(
+      (sum, l) => sum + l.monthlySubtotal + l.setupSubtotal,
+      0
+    );
+
+    // Discount: the stored negative amount on the discount line
+    // (sum in case somehow two are present — should never happen)
+    const discount = discountLines.reduce(
+      (sum, l) => sum + l.monthlySubtotal + l.setupSubtotal,
+      0
+    );
+
+    const net         = parseFloat((gross + discount).toFixed(2));
+    const storedPrice = storedPrices[packageId] ?? 0;
+    const matched     = Math.abs(net - storedPrice) < 0.01;
+
+    // packageName: use first service line's packageName, then discount line's, then id
+    const packageName =
+      serviceLines[0]?.packageName ??
+      discountLines[0]?.packageName ??
+      packageId;
+
+    results.push({ packageId, packageName, gross, discount, net, storedPrice, matched });
+  }
+
+  return results;
+}
+
+// ─── buildPackageLineItems ────────────────────────────────────────────────────
+
+/**
+ * Builds the flat block of BudgetLineItems for a package insertion.
+ *
+ * Returns:
+ *   - one line per package item at FULL catalogue price (lineKind: "service")
+ *   - one "Package discount" line (lineKind: "package-discount") with a NEGATIVE amount
+ *
+ * Discount bucket rule (from billingFrequency):
+ *   "Monthly" | "Quarterly" | "Annually"  → recurring bucket
+ *     discount line: isRecurring=true,  monthlySubtotal = packagePrice - recurringTotal
+ *   "One-time"                            → one-time bucket
+ *     discount line: isRecurring=false, setupSubtotal   = packagePrice - oneTimeTotal
+ *
+ * Everything outside the discount bucket passes through at catalogue price with
+ * no discount applied — only the matching bucket is discounted.
+ *
+ * All service prices are snapshotted at call time (same contract as buildLineItemFromService).
+ * The packageName is also snapshotted so a later package rename does not affect
+ * existing proposals.
+ */
+export function buildPackageLineItems(
+  pkg: {
+    id:               string;
+    name:             string;
+    price:            number;
+    billingFrequency: string;
+    items: Array<{ serviceId: string; quantity: number }>;
+  },
+  catalogLookup: (id: string) => BudgetServiceDefinition | undefined
+): BudgetLineItem[] {
+  const result: BudgetLineItem[] = [];
+
+  const isRecurringFreq =
+    pkg.billingFrequency === "Monthly"   ||
+    pkg.billingFrequency === "Quarterly" ||
+    pkg.billingFrequency === "Annually";
+
+  // Build service lines at full catalogue price
+  for (const item of pkg.items) {
+    const def = catalogLookup(item.serviceId);
+    if (!def) continue; // defensive: skip services missing from catalogue
+
+    const quantity          = item.quantity > 0 ? item.quantity : 1;
+    const unitMonthlyPrice  = def.defaultMonthlyPrice;
+    const setupFee          = def.defaultSetupFee;
+    const monthlySubtotal   = quantity * unitMonthlyPrice;
+    const setupSubtotal     = setupFee;
+
+    result.push({
+      serviceId:   def.id,
+      label:       def.label,
+      department:  def.department,
+      quantity,
+      unitMonthlyPrice,
+      setupFee,
+      monthlySubtotal,
+      setupSubtotal,
+      isRecurring: def.isRecurring,
+      snapshotName:             def.label,
+      snapshotUnitMonthlyPrice: def.defaultMonthlyPrice,
+      snapshotSetupFee:         def.defaultSetupFee,
+      // Package fields — snapshotted at insertion time
+      packageId:   pkg.id,
+      packageName: pkg.name,
+      lineKind:    "service",
+    });
+  }
+
+  // Compute the discount amount
+  //
+  // Recurring bucket: sum of monthlySubtotals for isRecurring lines
+  // One-time bucket:  sum of setupSubtotals for !isRecurring lines
+  //
+  // The discount closes the gap between packagePrice and the matching bucket.
+  // Lines in the other bucket pass through untouched at catalogue price.
+  const recurringTotal = result
+    .filter((l) => l.isRecurring)
+    .reduce((s, l) => s + l.monthlySubtotal, 0);
+
+  const oneTimeTotal = result
+    .filter((l) => !l.isRecurring)
+    .reduce((s, l) => s + l.setupSubtotal, 0);
+
+  const discountAmount = isRecurringFreq
+    ? parseFloat((pkg.price - recurringTotal).toFixed(2))   // negative when pkg cheaper
+    : parseFloat((pkg.price - oneTimeTotal).toFixed(2));
+
+  // Only insert a discount line when the amounts actually differ
+  // (i.e. the package price is not equal to the catalogue total).
+  if (discountAmount !== 0) {
+    const discountLine: BudgetLineItem = {
+      serviceId:   "__package-discount__" as BudgetServiceId,
+      label:       `Package Discount — ${pkg.name}`,
+      department:  "Package",
+      quantity:    1,
+      unitMonthlyPrice: 0,
+      setupFee:         0,
+      // Place the discount in the matching bucket; zero out the other.
+      monthlySubtotal:  isRecurringFreq  ? discountAmount : 0,
+      setupSubtotal:    !isRecurringFreq ? discountAmount : 0,
+      isRecurring:      isRecurringFreq,
+      snapshotName:             `Package Discount — ${pkg.name}`,
+      snapshotUnitMonthlyPrice: 0,
+      snapshotSetupFee:         0,
+      packageId:   pkg.id,
+      packageName: pkg.name,
+      lineKind:    "package-discount",
+    };
+    result.push(discountLine);
+  }
+
+  return result;
 }

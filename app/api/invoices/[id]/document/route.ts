@@ -70,6 +70,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { getSessionUser, requireRole } from "@/lib/auth";
+import type { BudgetLineItem } from "@/lib/sales/budget-engine";
 
 // ── Money formatter (mirrors formatCents in billing/page.tsx) ─────────────────
 
@@ -106,21 +107,6 @@ function esc(s: string | null | undefined): string {
     .replace(/'/g, "&#39;");
 }
 
-// ── Line item type (BudgetLineItem shape from the handoff / invoice) ──────────
-
-interface BudgetLineItem {
-  serviceId?:      string;
-  label?:          string;
-  department?:     string;
-  quantity?:       number;
-  unitMonthlyPrice?: number;
-  setupFee?:       number;
-  monthlySubtotal?: number;
-  setupSubtotal?:  number;
-  isRecurring?:    boolean;
-}
-
-// ── Address helper ────────────────────────────────────────────────────────────
 
 interface MasterAddress {
   street?:  string;
@@ -242,6 +228,30 @@ function buildHtml(data: InvoiceDocData): string {
 
   // Build line item rows
   const lineRows = lineItems.map((li) => {
+    // ── package-discount lines render as a "Package Saving" row ───────────
+    // Before this change, a discount line rendered as an ordinary service row
+    // with a negative number and no explanation. After: green background, label
+    // "Package Saving — <packageName>", no Qty/Unit column, saving amount shown
+    // as a positive "−$X" saving rather than a confusing negative service price.
+    if (li.lineKind === "package-discount") {
+      const pkgName   = esc(li.packageName ?? "");
+      const savingLabel = pkgName ? `Package Saving \u2014 ${pkgName}` : "Package Saving";
+      // The saving amount is stored as a negative in monthlySubtotal or setupSubtotal.
+      const rawAmount = (li.monthlySubtotal ?? 0) + (li.setupSubtotal ?? 0);
+      const savingAmt = formatCents(Math.abs(rawAmount)); // display positive
+      const periodCell = (hasPeriod && periodStr) ? `<td class="td"></td>` : "";
+      return `
+      <tr style="background:#F0FDF4">
+        <td class="td" colspan="2" style="color:#15803D;font-weight:600">
+          ${savingLabel}<br>
+          <span class="type-tag" style="color:#16A34A">Package discount</span>
+        </td>
+        <td class="td td-num" style="color:#15803D;font-weight:700">&mdash;</td>
+        ${periodCell}
+        <td class="td td-num" style="color:#15803D;font-weight:700">&minus;${savingAmt}</td>
+      </tr>`;
+    }
+
     const label    = esc(li.label       || li.serviceId || "Service");
     const qty      = li.quantity ?? 1;
     const isRecurring = li.isRecurring !== false;

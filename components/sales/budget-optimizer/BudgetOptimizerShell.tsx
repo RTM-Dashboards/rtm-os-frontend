@@ -15,9 +15,11 @@ import {
   buildLineItemFromService,
   computeBudget,
   computeLineItemSubtotal,
+  computePackageSubtotals,
   type BudgetLineItem,
   type BudgetResult,
 } from "@/lib/sales/budget-engine";
+import { PackagePicker, type PackageRow } from "./PackagePicker";
 import type { ProposalDiscount } from "@/lib/sales/types";
 import { ServiceAllocationTable, type LineItemQuantities } from "./ServiceAllocationTable";
 import { BudgetSummaryPanel } from "./BudgetSummaryPanel";
@@ -217,6 +219,16 @@ export function BudgetOptimizerShell({
    */
   const [manualMonthlyPrices, setManualMonthlyPrices] = useState<Record<string, number>>({});
 
+  /**
+   * Set of packageIds currently inserted into the proposal.
+   * Used by PackagePicker to show Insert / Remove state and by handleRemovePackage
+   * to filter the flat lineItems array by packageId.
+   *
+   * Stored as a React state Set so the picker re-renders when packages are
+   * added or removed without depending on a full lineItems scan on every render.
+   */
+  const [insertedPackageIds, setInsertedPackageIds] = useState<Set<string>>(new Set());
+
   // Track whether the initial bootstrap from recommendations has run so we
   // do not overwrite manual edits the rep makes after the table is populated.
   const bootstrapped = useRef(false);
@@ -263,6 +275,22 @@ export function BudgetOptimizerShell({
     const existingSet = new Set(lineItems.map((i) => i.serviceId));
     return activeCatalogServices.filter((s) => !existingSet.has(s.id));
   }, [lineItems, activeCatalogServices]);
+
+  /**
+   * Stores { [packageId]: storedPrice } so computePackageSubtotals can compare
+   * the current net against the package's price at insertion time.
+   * Updated by handleInsertPackage / handleRemovePackage.
+   */
+  const [packageStoredPrices, setPackageStoredPrices] = useState<Record<string, number>>({});
+
+  /**
+   * Per-package subtotals: gross, discount, net, storedPrice, matched.
+   * Recomputed whenever lineItems change so the mismatch indicator stays live.
+   */
+  const packageSubtotals = useMemo(
+    () => computePackageSubtotals(effectiveLineItems, packageStoredPrices),
+    [effectiveLineItems, packageStoredPrices]
+  );
 
   // ─── Propagate line items + budget result to parent ────────────────────────
   // Fires whenever effectiveLineItems or budgetResult changes, so the wizard
@@ -467,6 +495,41 @@ export function BudgetOptimizerShell({
     }
   }
 
+  // ─── Package insert / remove (──────────────────────────────────────────────────────────────────────────────
+  //
+  // handleInsertPackage: appends the full package block (service lines + discount
+  //   line) returned by buildPackageLineItems. All prices are snapshotted at this
+  //   moment; a later package edit cannot retroactively change the proposal.
+  //
+  // handleRemovePackage: removes ALL lines belonging to the package (both service
+  //   lines and the discount line) by filtering on packageId. The discount line
+  //   goes with it automatically.
+  //
+  // Multiple packages: each call appends an independent group. Two packages produce
+  //   two packageId groups in the flat array. PackagePicker shows both as inserted.
+
+  function handleInsertPackage(newLines: BudgetLineItem[], pkg: PackageRow) {
+    setLineItems((prev) => [...prev, ...newLines]);
+    setInsertedPackageIds((prev) => new Set([...prev, pkg.id]));
+    // Snapshot the stored price at insertion time so the mismatch indicator
+    // has a stable reference even if the package row is later edited.
+    setPackageStoredPrices((prev) => ({ ...prev, [pkg.id]: pkg.price }));
+  }
+
+  function handleRemovePackage(packageId: string) {
+    setLineItems((prev) => prev.filter((l) => l.packageId !== packageId));
+    setInsertedPackageIds((prev) => {
+      const next = new Set(prev);
+      next.delete(packageId);
+      return next;
+    });
+    setPackageStoredPrices((prev) => {
+      const next = { ...prev };
+      delete next[packageId];
+      return next;
+    });
+  }
+
   function handleDiscountChange(updatedDiscount: ProposalDiscount) {
     setInternalDiscount(updatedDiscount);
     onDiscountChange?.(updatedDiscount);
@@ -567,6 +630,38 @@ export function BudgetOptimizerShell({
           </button>
         ))}
       </div>
+
+      {/* ── Package Picker ─────────────────────────────────────────────────────────── */}
+      <PackagePicker
+        insertedPackageIds={insertedPackageIds}
+        catalogLookup={getCatalogServiceById}
+        onInsert={handleInsertPackage}
+        onRemove={handleRemovePackage}
+      />
+
+      {/* ── Package mismatch indicator ─────────────────────────────────────── */}
+      {/* Shown whenever a package's current net diverges from its stored price. */}
+      {/* Triggers on price change, qty change, or line removal.                */}
+      {packageSubtotals.some((s) => !s.matched) && (
+        <div
+          className="rounded-lg border px-4 py-3 space-y-1.5"
+          style={{ background: "#FFFBF5", borderColor: "#FED7AA" }}
+        >
+          <p className="text-xs font-bold" style={{ color: "#C2410C" }}>
+            Package price mismatch
+          </p>
+          {packageSubtotals
+            .filter((s) => !s.matched)
+            .map((s) => (
+              <p key={s.packageId} className="text-xs" style={{ color: "#92400E" }}>
+                <strong>{s.packageName}</strong>: current net{" "}
+                <strong>${s.net.toLocaleString()}</strong> &ne; stored price{" "}
+                <strong>${s.storedPrice.toLocaleString()}</strong>. Adjust the
+                discount line to reconcile, or leave as-is.
+              </p>
+            ))}
+        </div>
+      )}
 
       {/* ── Service Allocation Table ──────────────────────────────────────── */}
       <ServiceAllocationTable

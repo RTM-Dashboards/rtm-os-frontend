@@ -16,7 +16,11 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import SalesSettingsBreadcrumb from "@/components/sales/settings/SalesSettingsBreadcrumb";
 import type { PackageRow, PackageItemRow } from "@/app/api/sales/packages/route";
 import type { ServiceCatalogRow } from "@/app/api/sales/service-catalog/route";
-import { AUDIT_GOALS } from "@/lib/sales/audit-goal-config";
+// AUDIT_GOAL_CONFIG (Vocabulary B) is used here so that package recommendedFor ids
+// match the ids the audit engine keys off in audit-config.ts (goal-leads, goal-seo, etc.).
+// AUDIT_GOALS (Vocabulary A) is the settings-admin schema and is scoped to the
+// audit-goal-config settings page; it must not be used here.
+import { AUDIT_GOAL_CONFIG } from "@/lib/sales/intake-config";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -94,7 +98,7 @@ function GoalMultiselect({ value, onChange }: GoalMultiselectProps) {
 
   return (
     <div className="flex flex-wrap gap-2">
-      {AUDIT_GOALS.map((goal) => {
+      {AUDIT_GOAL_CONFIG.map((goal) => {
         const selected = selectedSet.has(goal.id);
         return (
           <button
@@ -112,7 +116,7 @@ function GoalMultiselect({ value, onChange }: GoalMultiselectProps) {
               borderColor: "var(--rtm-border)",
             }}
           >
-            {selected ? "✓ " : ""}{goal.name}
+            {selected ? "✓ " : ""}{goal.label}
           </button>
         );
       })}
