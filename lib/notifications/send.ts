@@ -30,6 +30,13 @@ export interface NotificationInput {
   raisedById?:         string;
   escalationLevel?:    1 | 2;
   escalationParentId?: string;
+  /**
+   * Optional: the id of the user who performed the action that triggered
+   * this notification. When supplied, createNotification will skip the
+   * insert and log a "self-notification skipped" line if recipientId ===
+   * actorId. This prevents the acting user from notifying themselves.
+   */
+  actorId?: string;
 }
 
 /**
@@ -39,6 +46,17 @@ export interface NotificationInput {
 export async function createNotification(
   input: NotificationInput,
 ): Promise<string | null> {
+  // Self-notification guard: if the acting user is the resolved recipient,
+  // skip the insert rather than notifying them about their own action.
+  // This is the single canonical place for this check; it covers all five
+  // trigger sites without duplicating the logic at each call site.
+  if (input.actorId && input.actorId === input.recipientId) {
+    console.log(
+      `[notifications] self-notification skipped — actorId === recipientId (${input.actorId}), type: ${input.type}`,
+    );
+    return null;
+  }
+
   try {
     const id = makeId();
     await prisma.notification.create({

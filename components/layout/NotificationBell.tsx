@@ -16,10 +16,16 @@ interface DBNotification {
 
 // ─── Priority colours keyed on type ──────────────────────────────────────────
 const TYPE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  task_assigned:      { bg: "#EFF6FF", text: "#1D4ED8", dot: "#3B82F6" },
-  concern_raised:     { bg: "#FFF7ED", text: "#C2410C", dot: "#F97316" },
-  concern_escalated:  { bg: "#FFF0F0", text: "#B91C1C", dot: "#EF4444" },
-  concern_resolved:   { bg: "#F0FDF4", text: "#15803D", dot: "#22C55E" },
+  task_assigned:                { bg: "#EFF6FF", text: "#1D4ED8", dot: "#3B82F6" },
+  concern_raised:               { bg: "#FFF7ED", text: "#C2410C", dot: "#F97316" },
+  concern_escalated:            { bg: "#FFF0F0", text: "#B91C1C", dot: "#EF4444" },
+  concern_resolved:             { bg: "#F0FDF4", text: "#15803D", dot: "#22C55E" },
+  // Handoff / invoice / clearance types (commit 6872959)
+  handoff_submitted_to_billing: { bg: "#F5F3FF", text: "#6D28D9", dot: "#8B5CF6" },
+  handoff_processed:            { bg: "#ECFDF5", text: "#065F46", dot: "#10B981" },
+  invoice_raised:               { bg: "#FFF7ED", text: "#92400E", dot: "#F59E0B" },
+  invoice_paid:                 { bg: "#F0FDF4", text: "#14532D", dot: "#22C55E" },
+  clearance_granted:            { bg: "#EFF6FF", text: "#1E40AF", dot: "#60A5FA" },
 };
 
 function typeCfg(type: string) {
@@ -28,12 +34,24 @@ function typeCfg(type: string) {
 
 function typeLabel(type: string): string {
   const map: Record<string, string> = {
-    task_assigned:     "Task",
-    concern_raised:    "Concern",
-    concern_escalated: "Escalated",
-    concern_resolved:  "Resolved",
+    task_assigned:                "Task",
+    concern_raised:               "Concern",
+    concern_escalated:            "Escalated",
+    concern_resolved:             "Resolved",
+    // Handoff / invoice / clearance types (commit 6872959)
+    handoff_submitted_to_billing: "Handoff to Billing",
+    handoff_processed:            "Handoff Processed",
+    invoice_raised:               "Invoice Raised",
+    invoice_paid:                 "Invoice Paid",
+    clearance_granted:            "Clearance Granted",
   };
-  return map[type] ?? type;
+  // Safe default: convert snake_case to Title Case rather than leaking the
+  // raw key string to users when a future unknown type is added.
+  if (map[type]) return map[type];
+  return type
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 }
 
 function relativeDate(dateStr: string): string {

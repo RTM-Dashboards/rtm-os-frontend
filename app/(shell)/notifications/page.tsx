@@ -29,14 +29,27 @@ interface DBNotification {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TYPE_CFG: Record<string, { bg: string; color: string; label: string }> = {
-  task_assigned:     { bg: "#EFF6FF", color: "#1D4ED8", label: "Task Assigned" },
-  concern_raised:    { bg: "#FFF7ED", color: "#C2410C", label: "Concern Raised" },
-  concern_escalated: { bg: "#FFF0F0", color: "#B91C1C", label: "Escalated" },
-  concern_resolved:  { bg: "#F0FDF4", color: "#166534", label: "Resolved" },
+  task_assigned:                { bg: "#EFF6FF", color: "#1D4ED8", label: "Task Assigned" },
+  concern_raised:               { bg: "#FFF7ED", color: "#C2410C", label: "Concern Raised" },
+  concern_escalated:            { bg: "#FFF0F0", color: "#B91C1C", label: "Escalated" },
+  concern_resolved:             { bg: "#F0FDF4", color: "#166534", label: "Resolved" },
+  // Handoff / invoice / clearance types (commit 6872959)
+  handoff_submitted_to_billing: { bg: "#F5F3FF", color: "#6D28D9", label: "Handoff to Billing" },
+  handoff_processed:            { bg: "#ECFDF5", color: "#065F46", label: "Handoff Processed" },
+  invoice_raised:               { bg: "#FFF7ED", color: "#92400E", label: "Invoice Raised" },
+  invoice_paid:                 { bg: "#F0FDF4", color: "#14532D", label: "Invoice Paid" },
+  clearance_granted:            { bg: "#EFF6FF", color: "#1E40AF", label: "Clearance Granted" },
 };
 
 function typeCfg(type: string) {
-  return TYPE_CFG[type] ?? { bg: "#F1F5F9", color: "#475569", label: type };
+  if (TYPE_CFG[type]) return TYPE_CFG[type];
+  // Safe default for future unknown types: render message with a neutral badge
+  // whose label converts snake_case → Title Case rather than leaking raw keys.
+  const label = type
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+  return { bg: "#F1F5F9", color: "#475569", label };
 }
 
 function TypeBadge({ type }: { type: string }) {

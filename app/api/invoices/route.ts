@@ -373,6 +373,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (postAuthError) return NextResponse.json({ error: postAuthError }, { status: postAuthStatus! });
   const postRoleGate = requireRole(postUser!, "Manager");
   if (postRoleGate) return NextResponse.json({ error: postRoleGate.error }, { status: postRoleGate.status });
+  // postActorId is used to pass actorId to createNotification (self-notification guard).
+  const postActorId = postUser?.id ?? undefined;
 
   let body: unknown;
   try {
@@ -520,6 +522,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
             type:    "invoice_raised",
             message: `Billing raised invoice ${row.invoiceNumber} for ${bizDomain || "your client"}${monthlyStr}. It is now in Billing's queue.`,
             link:    "/billing/invoices",
+            actorId: postActorId,
           });
         })
         .catch(() => { /* swallowed — action must not fail on notification errors */ });
@@ -546,6 +549,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (patchAuthError) return NextResponse.json({ error: patchAuthError }, { status: patchAuthStatus! });
   const patchRoleGate = requireRole(patchUser!, "Manager");
   if (patchRoleGate) return NextResponse.json({ error: patchRoleGate.error }, { status: patchRoleGate.status });
+  // patchActorId is used to pass actorId to createNotification (self-notification guard).
+  const patchActorId = patchUser?.id ?? undefined;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
@@ -668,6 +673,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
               type:    "invoice_paid",
               message: `Invoice ${row.invoiceNumber} for ${bizLabel || "your client"}${amountStr} has been paid. Close the opportunity in the Sales Pipeline.`,
               link:    "/sales/pipeline",
+              actorId: patchActorId,
             });
           })
           .catch(() => { /* swallowed — action must not fail on notification errors */ });

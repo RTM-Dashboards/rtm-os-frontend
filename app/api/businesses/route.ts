@@ -309,6 +309,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   if (patchAuthError) return NextResponse.json({ error: patchAuthError }, { status: patchAuthStatus! });
   const patchRoleGate = requireRole(patchUser!, "Manager");
   if (patchRoleGate) return NextResponse.json({ error: patchRoleGate.error }, { status: patchRoleGate.status });
+  // patchActorId is used to pass actorId to createNotification (self-notification guard).
+  const patchActorId = patchUser?.id ?? undefined;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
@@ -387,6 +389,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
             type:    "clearance_granted",
             message: `Billing cleared ${bizLabel} — Account Management can begin onboarding. Check the client activation queue.`,
             link:    "/account-management/clients",
+            actorId: patchActorId,
           });
         })
         .catch(() => { /* swallowed — action must not fail on notification errors */ });

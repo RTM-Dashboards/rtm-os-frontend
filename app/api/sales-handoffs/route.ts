@@ -246,7 +246,8 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
   // submitting it to Billing) is routine work for both Sales and Billing Members.
   const { user: patchUser, error: patchAuthError, status: patchAuthStatus } = await getSessionUser(req);
   if (patchAuthError) return NextResponse.json({ error: patchAuthError }, { status: patchAuthStatus! });
-  void patchUser;
+  // patchUser is used to pass actorId to createNotification (self-notification guard).
+  const actorId = patchUser?.id ?? undefined;
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
@@ -336,6 +337,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
             type:    "handoff_submitted_to_billing",
             message: `Sales submitted a handoff for ${row.clientName}${monthlyStr}. Review and process it in Billing Activation.`,
             link:    "/billing/activation",
+            actorId,
           });
         })
         .catch(() => { /* swallowed — action must not fail on notification errors */ });
@@ -359,6 +361,7 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
             type:    "handoff_processed",
             message: `Billing processed your handoff for ${row.clientName}. A client record has been created — the deal is live.`,
             link:    "/sales/handoffs",
+            actorId,
           });
         })
         .catch(() => { /* swallowed */ });
