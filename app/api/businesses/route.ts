@@ -24,6 +24,8 @@ import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { normalizeDomain } from "@/lib/clients/domain";
 import { getSessionUser, requireRole } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications/send";
+import { resolveNotifRecipient } from "@/lib/notifications/resolve-recipient";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -364,6 +366,32 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
       );
     }
     const row = await prisma.business.update({ where: { id }, data });
+
+    // ── Notification 5: Clearance granted ───────────────────────────────────
+    // Fire when cleared transitions false → true.
+    // Recipient: businesses.assignedAM, through the helper, falling back
+    // to Account Management.
+    // Guard: only when the patch sets it true and it was false before.
+    if (patch.cleared === true && !existing.cleared) {
+      resolveNotifRecipient(row.assignedAM || null, "Account Management")
+        .then((recipientId) => {
+          if (!recipientId) {
+            console.warn(
+              `[notifications] clearance_granted: no recipient found — businessId ${id}, assignedAM "${row.assignedAM}"`,
+            );
+            return;
+          }
+          const bizLabel = row.displayName || row.domain || id;
+          return createNotification({
+            recipientId,
+            type:    "clearance_granted",
+            message: `Billing cleared ${bizLabel} — Account Management can begin onboarding. Check the client activation queue.`,
+            link:    "/account-management/clients",
+          });
+        })
+        .catch(() => { /* swallowed — action must not fail on notification errors */ });
+    }
+
     return NextResponse.json({ record: rowToRecord(row) });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

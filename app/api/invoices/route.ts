@@ -52,6 +52,8 @@ import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { allocateInvoiceNumber } from "@/lib/billing/invoice-number";
 import { getSessionUser, requireRole } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications/send";
+import { resolveNotifRecipient } from "@/lib/notifications/resolve-recipient";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -237,6 +239,66 @@ async function syncBusinessCachedSummary(businessId: string): Promise<void> {
       billingStatus,
     },
   });
+}
+
+// ── Notification helpers ──────────────────────────────────────────────────────
+
+/**
+ * Return the preparedBy value from a SalesHandoff, or null if not found.
+ * Used to resolve the notification recipient for invoice_raised.
+ */
+async function resolveHandoffPreparedBy(salesHandoffId: string): Promise<string | null> {
+  try {
+    const handoff = await prisma.salesHandoff.findUnique({
+      where:  { id: salesHandoffId },
+      select: { preparedBy: true },
+    });
+    return handoff?.preparedBy ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Return the domain string for a Business, used in notification messages.
+ * Falls back to an empty string rather than throwing.
+ */
+async function resolveBizDomain(businessId: string): Promise<string> {
+  try {
+    const biz = await prisma.business.findUnique({
+      where:  { id: businessId },
+      select: { domain: true, displayName: true },
+    });
+    return biz?.displayName || biz?.domain || "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Walk invoice → handoff → contract → assignedRep to find the Sales rep
+ * responsible for the deal. Returns the assignedRep string (may be a user id
+ * or a display name) or null.
+ *
+ * Join path: Invoice.salesHandoffId → SalesHandoff.contractId →
+ *            Contract.assignedRep
+ */
+async function resolveInvoiceSalesRep(salesHandoffId: string): Promise<string | null> {
+  try {
+    const handoff = await prisma.salesHandoff.findUnique({
+      where:  { id: salesHandoffId },
+      select: { contractId: true },
+    });
+    if (!handoff?.contractId) return null;
+
+    const contract = await prisma.contract.findUnique({
+      where:  { id: handoff.contractId },
+      select: { assignedRep: true },
+    });
+    return contract?.assignedRep ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
@@ -434,6 +496,39 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       );
     });
 
+    // ── Notification 3: Invoice raised ──────────────────────────────────────
+    // Recipient: the rep on the linked handoff via salesHandoffId, resolved
+    // through the helper falling back to Sales.
+    // If no handoff is linked, skip and log why.
+    if (record.salesHandoffId) {
+      const handoffIdForNotif = record.salesHandoffId;
+      resolveHandoffPreparedBy(handoffIdForNotif)
+        .then(async (preparedBy) => {
+          const recipientId = await resolveNotifRecipient(preparedBy, "Sales");
+          if (!recipientId) {
+            console.warn(
+              `[notifications] invoice_raised: no recipient found — invoice ${row.id}, salesHandoffId ${handoffIdForNotif}`,
+            );
+            return;
+          }
+          const monthlyStr = row.monthlyValueCents
+            ? ` — $${(row.monthlyValueCents / 100).toLocaleString("en-US", { minimumFractionDigits: 0 })}/mo`
+            : "";
+          const bizDomain = await resolveBizDomain(row.businessId);
+          return createNotification({
+            recipientId,
+            type:    "invoice_raised",
+            message: `Billing raised invoice ${row.invoiceNumber} for ${bizDomain || "your client"}${monthlyStr}. It is now in Billing's queue.`,
+            link:    "/billing/invoices",
+          });
+        })
+        .catch(() => { /* swallowed — action must not fail on notification errors */ });
+    } else {
+      console.info(
+        `[notifications] invoice_raised: invoice ${row.id} has no salesHandoffId — no recipient to notify`,
+      );
+    }
+
     return NextResponse.json(
       { invoice: rowToRecord(row), ...(syncFailed ? { syncFailed: true } : {}) },
       { status: 201 },
@@ -540,6 +635,47 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
           err,
         );
       });
+    }
+
+    // ── Notification 4: Invoice paid ───────────────────────────────────────────
+    // Fire when BOTH invoiceStatus and paymentStatus transition to "Paid"
+    // in this single PATCH request (guard: at least one was not "Paid" before).
+    // Recipient: Invoice.salesHandoffId → SalesHandoff.contractId →
+    //            Contract.assignedRep, through the helper, falling back to Sales.
+    // If the invoice has no handoff, skip and log.
+    const wasAlreadyPaid =
+      existing.invoiceStatus === "Paid" && existing.paymentStatus === "Paid";
+    const isNowPaid =
+      row.invoiceStatus === "Paid" && row.paymentStatus === "Paid";
+    if (isNowPaid && !wasAlreadyPaid) {
+      const handoffIdForPaid = row.salesHandoffId;
+      if (handoffIdForPaid) {
+        resolveInvoiceSalesRep(handoffIdForPaid)
+          .then(async (assignedRep) => {
+            const recipientId = await resolveNotifRecipient(assignedRep, "Sales");
+            if (!recipientId) {
+              console.warn(
+                `[notifications] invoice_paid: no recipient found — invoice ${row.id}, salesHandoffId ${handoffIdForPaid}`,
+              );
+              return;
+            }
+            const bizLabel = await resolveBizDomain(row.businessId);
+            const amountStr = row.contractAmountCents
+              ? ` ($${(row.contractAmountCents / 100).toLocaleString("en-US", { minimumFractionDigits: 0 })})`
+              : "";
+            return createNotification({
+              recipientId,
+              type:    "invoice_paid",
+              message: `Invoice ${row.invoiceNumber} for ${bizLabel || "your client"}${amountStr} has been paid. Close the opportunity in the Sales Pipeline.`,
+              link:    "/sales/pipeline",
+            });
+          })
+          .catch(() => { /* swallowed — action must not fail on notification errors */ });
+      } else {
+        console.info(
+          `[notifications] invoice_paid: invoice ${row.id} has no salesHandoffId — no recipient to notify`,
+        );
+      }
     }
 
     return NextResponse.json({ invoice: rowToRecord(row), ...(syncFailed ? { syncFailed: true } : {}) });

@@ -29,6 +29,8 @@ import { prisma } from "@/lib/db/prisma";
 import { Prisma } from "@prisma/client";
 import { parseBillingFields } from "@/lib/billing/handoff-summary-parser";
 import { getSessionUser } from "@/lib/auth";
+import { createNotification } from "@/lib/notifications/send";
+import { resolveNotifRecipient } from "@/lib/notifications/resolve-recipient";
 
 // ── Types (inline — matches the interface in lib/sales/handoff-engine.ts) ─────
 
@@ -312,6 +314,56 @@ export async function PATCH(req: NextRequest): Promise<NextResponse> {
     }
 
     const row = await prisma.salesHandoff.update({ where: { id }, data });
+
+    // ── Notification 1: Handoff submitted to Billing ─────────────────────────
+    // Fire when submittedToBilling transitions false → true.
+    // Recipient: Billing's main person (no billingOwner field on handoffs).
+    // Guard: only when the patch sets it true and it was false before.
+    if (patch.submittedToBilling === true && !existing.submittedToBilling) {
+      resolveNotifRecipient(null, "Billing")
+        .then((recipientId) => {
+          if (!recipientId) {
+            console.warn(
+              `[notifications] handoff_submitted_to_billing: no recipient found — handoff ${id}`,
+            );
+            return;
+          }
+          const monthlyStr = row.monthlyValueCents
+            ? ` — $${(row.monthlyValueCents / 100).toLocaleString("en-US", { minimumFractionDigits: 0 })}/mo`
+            : "";
+          return createNotification({
+            recipientId,
+            type:    "handoff_submitted_to_billing",
+            message: `Sales submitted a handoff for ${row.clientName}${monthlyStr}. Review and process it in Billing Activation.`,
+            link:    "/billing/activation",
+          });
+        })
+        .catch(() => { /* swallowed — action must not fail on notification errors */ });
+    }
+
+    // ── Notification 2: Handoff processed by Billing ─────────────────────────
+    // Fire when processed transitions false → true.
+    // Recipient: the handoff's preparedBy, resolved through the helper,
+    // falling back to Sales.
+    if (patch.processed === true && !existing.processed) {
+      resolveNotifRecipient(row.preparedBy || null, "Sales")
+        .then((recipientId) => {
+          if (!recipientId) {
+            console.warn(
+              `[notifications] handoff_processed: no recipient found — handoff ${id}, preparedBy "${row.preparedBy}"`,
+            );
+            return;
+          }
+          return createNotification({
+            recipientId,
+            type:    "handoff_processed",
+            message: `Billing processed your handoff for ${row.clientName}. A client record has been created — the deal is live.`,
+            link:    "/sales/handoffs",
+          });
+        })
+        .catch(() => { /* swallowed */ });
+    }
+
     return NextResponse.json({ handoff: rowToRecord(row) });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
