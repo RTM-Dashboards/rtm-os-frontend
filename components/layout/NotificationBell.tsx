@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useNotificationCount } from "./NotificationCountContext";
 
 // ─── Types (minimal — only what the dropdown needs) ──────────────────────────
 interface DBNotification {
@@ -79,8 +80,13 @@ export default function NotificationBell() {
   const [items,   setItems]   = useState<DBNotification[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const unreadCount = items.filter((n) => !n.readAt).length;
-  const badge = formatBadge(unreadCount);
+  // Shared count from NotificationCountContext — same value as the Sidebar badge.
+  const { unreadCount: sharedCount, refreshCount } = useNotificationCount();
+  // Derive local unread from loaded items when the panel has been opened;
+  // fall back to the shared poll count while the panel is closed and items
+  // have not been loaded yet.
+  const localUnread = items.length > 0 ? items.filter((n) => !n.readAt).length : sharedCount;
+  const badge = formatBadge(localUnread);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchNotifications = useCallback(async () => {
@@ -98,33 +104,12 @@ export default function NotificationBell() {
     }
   }, []);
 
-  // Fetch on open, and poll count every 60s while closed.
+  // Fetch full notification list when the panel opens.
   useEffect(() => {
     if (open) {
       void fetchNotifications();
     }
   }, [open, fetchNotifications]);
-
-  // Badge count poll (lightweight — count endpoint only).
-  useEffect(() => {
-    let mounted = true;
-    async function pollCount() {
-      try {
-        const res = await fetch("/api/notifications/count", { credentials: "include" });
-        if (res.ok && mounted) {
-          const data = await res.json() as { unread: number };
-          // If count changed since last fetch and panel is closed, bump items length hint.
-          // Full data arrives when the panel opens.
-          if (!open && data.unread !== unreadCount) {
-            // We don't have content yet; just mark items dirty so next open refetches.
-            setItems((prev) => prev); // noop — triggers refetch on next open via dep
-          }
-        }
-      } catch { /* non-critical */ }
-    }
-    const t = setInterval(() => { void pollCount(); }, 60_000);
-    return () => { mounted = false; clearInterval(t); };
-  }, [open, unreadCount]);
 
   // Close on outside click.
   useEffect(() => {
@@ -146,6 +131,8 @@ export default function NotificationBell() {
       headers:     { "Content-Type": "application/json" },
       body:        JSON.stringify({ id }),
     }).catch(() => { /* non-critical */ });
+    // Sync the shared badge so Sidebar reflects the change immediately.
+    void refreshCount();
   }
 
   async function markAllRead() {
@@ -156,6 +143,8 @@ export default function NotificationBell() {
       headers:     { "Content-Type": "application/json" },
       body:        JSON.stringify({ all: true }),
     }).catch(() => { /* non-critical */ });
+    // Sync the shared badge so Sidebar reflects the change immediately.
+    void refreshCount();
   }
 
   function openNotification(n: DBNotification) {

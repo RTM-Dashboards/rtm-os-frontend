@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useNotificationCount } from "./NotificationCountContext";
 import {
   IconDashboard,
   IconBuilding,
@@ -28,7 +29,7 @@ const IconCommand = ({ className }: { className?: string }) => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
   </svg>
 );
-import { useEffect } from "react";
+
 
 interface NavItem {
   label: string;
@@ -264,23 +265,9 @@ export default function Sidebar({ open, onClose, user, role, department }: Sideb
   const isAdminOnly   = isFullAccess; // same set: admins see admin items
   const ownDeptHref   = department ? (DEPT_TO_HREF[department] ?? null) : null;
 
-  // Live notification badge — fetched from DB, not mock data
-  const [notifUnread, setNotifUnread] = useState<number>(0);
-  useEffect(() => {
-    let mounted = true;
-    async function fetchCount() {
-      try {
-        const res = await fetch("/api/notifications/count", { credentials: "include" });
-        if (res.ok && mounted) {
-          const data = await res.json() as { unread: number };
-          setNotifUnread(data.unread ?? 0);
-        }
-      } catch { /* non-critical */ }
-    }
-    void fetchCount();
-    const t = setInterval(() => { void fetchCount(); }, 60_000);
-    return () => { mounted = false; clearInterval(t); };
-  }, []);
+  // Live notification badge — shared count from NotificationCountContext
+  // (one poller per tab; both Sidebar and NotificationBell read the same value).
+  const { unreadCount: notifUnread } = useNotificationCount();
   const notifBadge = notifUnread >= 100 ? "99+" : notifUnread > 0 ? String(notifUnread) : undefined;
 
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(() => ({
