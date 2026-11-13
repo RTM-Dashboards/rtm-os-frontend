@@ -172,7 +172,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // signed contract to Billing is ordinary work — not Manager-only.
   const { user: postUser, error: postAuthError, status: postAuthStatus } = await getSessionUser(req);
   if (postAuthError) return NextResponse.json({ error: postAuthError }, { status: postAuthStatus! });
-  void postUser;
+  // Use the signed-in user's id as preparedBy for new records. The client
+  // body's preparedBy is intentionally ignored — the server is the
+  // authoritative source of identity, same pattern as AddLogEntryModal
+  // (loggedBy) and the proposals page (fetchCurrentUser). If auth resolves
+  // but postUser is somehow null, store an empty string rather than a name.
+  const newPreparedBy = postUser?.id ?? "";
 
   let body: unknown;
   try {
@@ -193,7 +198,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     clientName:           record.clientName           ?? "",
     contractNumber:       record.contractNumber       ?? "",
     contractId:           record.contractId           ?? "",
-    preparedBy:           record.preparedBy           ?? "",
+    preparedBy:           newPreparedBy,
     createdAt:            record.createdAt            ?? "",
     status:               record.status               ?? "not-started",
     checklist:            (record.checklist           ?? []) as unknown as Prisma.InputJsonValue,

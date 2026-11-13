@@ -18,6 +18,7 @@ import { submitHandoffToBilling } from "@/lib/sales/sales-handoffs-api";
 import { computeReadyToSubmit, computeHandoffCompletion } from "@/lib/sales/handoff-engine";
 import { HANDOFF_CHECKLIST } from "@/lib/sales/handoff-config";
 import type { HandoffRecord } from "@/lib/sales/handoff-engine";
+import { useDepartmentUsers, resolveRep } from "@/lib/users/users-api";
 
 
 // ─── Status display helpers ───────────────────────────────────────────────────
@@ -286,6 +287,7 @@ function CollapsibleChecklist({ children }: { children: React.ReactNode }) {
 function HandoffListView() {
   const router = useRouter();
   const [handoffs, setHandoffs] = useState<HandoffRecord[]>(getAllHandoffs());
+  const { users: salesUsers } = useDepartmentUsers("Sales");
 
   useEffect(() => {
     loadHandoffs()
@@ -463,7 +465,7 @@ function HandoffListView() {
                         className="px-4 py-3"
                         style={{ color: "var(--rtm-text-secondary)" }}
                       >
-                        {handoff.preparedBy}
+                        {resolveRep(handoff.preparedBy, salesUsers)}
                       </td>
                       <td
                         className="px-4 py-3 whitespace-nowrap"
@@ -542,6 +544,7 @@ function HandoffDetailView({
   const [loading, setLoading] = useState(!handoff);
   const [handoffSubmitted, setHandoffSubmitted] = useState(false);
   const [createdProject, setCreatedProject] = useState<ProjectRecord | null>(null);
+  const { users: salesUsers } = useDepartmentUsers("Sales");
 
   // Load from file-backed API on mount
   useEffect(() => {
@@ -658,7 +661,7 @@ function HandoffDetailView({
           </h1>
           <p className="text-sm mt-1" style={{ color: "var(--rtm-text-secondary)" }}>
             {handoff.contractNumber} · {handoff.handoffNumber} · Prepared by{" "}
-            {handoff.preparedBy}
+            {resolveRep(handoff.preparedBy, salesUsers)}
           </p>
         </div>
       </div>
@@ -685,7 +688,7 @@ function HandoffDetailView({
               clientName={handoff.clientName}
               contractNumber={handoff.contractNumber}
               contractId={handoff.contractId}
-              preparedBy={handoff.preparedBy}
+              preparedBy={resolveRep(handoff.preparedBy, salesUsers)}
               initialSummaryFields={summaryFields}
               persistedHandoffNumber={handoff.handoffNumber}
               persistedHandoffId={handoff.id}

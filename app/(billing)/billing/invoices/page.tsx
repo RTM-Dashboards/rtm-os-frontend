@@ -634,6 +634,7 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
 }) {
   const [activeTab, setActiveTab] = useState("details");
   useEffect(() => { if (row) setActiveTab("details"); }, [row?.id]);
+  const { users: salesUsers } = useDepartmentUsers("Sales");
   if (!row) return null;
 
   const submittedDate = row.submittedAt
@@ -663,7 +664,7 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
               { label: "Contact Name",    value: row.contactName ?? null },
               { label: "Contact Email",   value: row.contactEmail ?? null },
               { label: "Contact Phone",   value: row.contactPhone ?? null },
-              { label: "Prepared By",     value: row.preparedBy },
+              { label: "Prepared By",     value: resolveRep(row.preparedBy, salesUsers) },
               { label: "Submitted",       value: submittedDate ?? null },
               { label: "Services Sold",   value: row.servicesSold || null },
               { label: "Payment Terms",   value: row.paymentTerms ?? null },
@@ -747,7 +748,7 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
           <div className="space-y-0">
             {[
               { date: "Today",                   label: "Billing Review",     detail: "Handoff reviewed in Invoice Action Center",     color: "#3B82F6" },
-              { date: submittedDate ?? "Recent", label: "Sales Handoff Sent", detail: `Prepared by ${row.preparedBy}`,                  color: "#059669" },
+              { date: submittedDate ?? "Recent", label: "Sales Handoff Sent", detail: `Prepared by ${resolveRep(row.preparedBy, salesUsers)}`,                  color: "#059669" },
               { date: "Earlier",                 label: "Deal Closed Won",    detail: "Opportunity moved to Closed Won in Sales Pipeline", color: "#6B7280" },
             ].map((event, i, arr) => (
               <div key={i} className="flex gap-3 pb-4">
@@ -772,7 +773,7 @@ function HandoffReviewDrawer({ row, onClose, linkedInvoice }: {
       open={!!row}
       onClose={onClose}
       title={`${row.client} — Sales Handoff`}
-      subtitle={row.domain ? `Domain: ${row.domain} · Prepared by ${row.preparedBy}` : `No domain — Prepared by ${row.preparedBy}`}
+      subtitle={row.domain ? `Domain: ${row.domain} · Prepared by ${resolveRep(row.preparedBy, salesUsers)}` : `No domain — Prepared by ${resolveRep(row.preparedBy, salesUsers)}`}
       tabs={tabs}
       activeTab={activeTab}
       onTabChange={setActiveTab}
@@ -1577,6 +1578,8 @@ function MarkPaidFlowModal({ invoice, onClose, onDone }: {
 export default function BillingInvoicesPage() {
   // Real Billing users for resolving billingOwner ids to display names in the table/drawer.
   const { users: billingUsers } = useDepartmentUsers("Billing");
+  // Real Sales users for resolving preparedBy ids to display names.
+  const { users: salesUsers } = useDepartmentUsers("Sales");
 
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [invoicesLoading, setInvoicesLoading] = useState(true);
@@ -1844,7 +1847,7 @@ export default function BillingInvoicesPage() {
       department: "Sales",
       service: "Sales",
       source: "Manual Task",
-      assignee: row.preparedBy || "Sales Team",
+      assignee: resolveRep(row.preparedBy, salesUsers) || "Sales Team",
       priority: "High",
       status: "Pending",
       dueDate,
@@ -1865,8 +1868,8 @@ export default function BillingInvoicesPage() {
         throw new Error(err.error ?? `HTTP ${res.status}`);
       }
       // Write confirmed — safe to tell the user it worked.
-      log(`Info request sent to Sales for ${row.client} (prepared by ${row.preparedBy}) — ${missingNote || "no specific missing fields"}`);
-      showToast(`Missing info requested from ${row.preparedBy || "Sales"} for ${row.client} — task created on Sales Tasks`, "info");
+      log(`Info request sent to Sales for ${row.client} (prepared by ${resolveRep(row.preparedBy, salesUsers)}) — ${missingNote || "no specific missing fields"}`);
+      showToast(`Missing info requested from ${resolveRep(row.preparedBy, salesUsers) || "Sales"} for ${row.client} — task created on Sales Tasks`, "info");
     } catch (err) {
       // Write failed — tell the user the request did NOT reach Sales.
       const msg = err instanceof Error ? err.message : String(err);

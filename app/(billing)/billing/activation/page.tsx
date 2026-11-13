@@ -33,6 +33,7 @@ import { fetchSalesHandoffs, markHandoffProcessed } from "@/lib/sales/sales-hand
 import { fetchContractById } from "@/lib/sales/contracts-store";
 import type { HandoffRecord } from "@/lib/sales/handoff-engine";
 import { normalizeDomain } from "@/lib/clients/domain";
+import { useDepartmentUsers, resolveRep } from "@/lib/users/users-api";
 import TaskAccessCard from "@/components/tasks/TaskAccessCard";
 import BillingChangeRequestsPanel from "@/components/billing/BillingChangeRequestsPanel";
 
@@ -283,6 +284,7 @@ function SalesHandoffsPanel({
   const pending = handoffs.filter(
     (h) => h.submittedToBilling === true && h.processed !== true
   );
+  const { users: salesUsers } = useDepartmentUsers("Sales");
 
   // Track processing state per-handoff
   const [processingId, setProcessingId] = React.useState<string | null>(null);
@@ -628,7 +630,7 @@ function SalesHandoffsPanel({
                       <span><span className="font-semibold">MRR:</span> ${(handoff.monthlyValueCents / 100).toLocaleString()}/mo</span>
                     )}
                     <span className="" style={{ color: "var(--rtm-text-muted)" }}>
-                      Prepared by {handoff.preparedBy}
+                      Prepared by {resolveRep(handoff.preparedBy, salesUsers)}
                     </span>
                     {handoff.submittedToBillingAt && (
                       <span style={{ color: "var(--rtm-text-muted)" }}>
