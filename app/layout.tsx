@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Montserrat, Geist_Mono } from "next/font/google";
+import { NotificationCountProvider } from "@/components/layout/NotificationCountContext";
 import "./globals.css";
 
 const montserrat = Montserrat({
@@ -27,7 +28,9 @@ export default function RootLayout({
     <html
       lang="en" className={`${montserrat.variable} ${geistMono.variable} h-full`}
     >
-      <body className="h-full antialiased">{children}</body>
+      <body className="h-full antialiased">
+        <NotificationCountProvider>{children}</NotificationCountProvider>
+      </body>
     </html>
   );
 }

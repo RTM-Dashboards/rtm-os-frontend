@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import TopNav from "./TopNav";
-import { NotificationCountProvider } from "./NotificationCountContext";
 import { createClient } from "@/lib/supabase/client";
 
 interface AppShellProps {
@@ -53,7 +52,6 @@ export default function AppShell({ children }: AppShellProps) {
   }, []);
 
   return (
-    <NotificationCountProvider>
     <div className="flex h-screen overflow-hidden" style={{ background: "var(--background)" }}>
       <Sidebar
         open={sidebarOpen}
@@ -72,6 +70,5 @@ export default function AppShell({ children }: AppShellProps) {
         </main>
       </div>
     </div>
-    </NotificationCountProvider>
   );
 }
