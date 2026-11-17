@@ -637,6 +637,7 @@ export function BudgetOptimizerShell({
         catalogLookup={getCatalogServiceById}
         onInsert={handleInsertPackage}
         onRemove={handleRemovePackage}
+        lineItems={effectiveLineItems}
       />
 
       {/* ── Package mismatch indicator ─────────────────────────────────────── */}
