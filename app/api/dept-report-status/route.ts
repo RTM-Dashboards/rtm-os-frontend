@@ -1,21 +1,20 @@
 // RTM OS — Department Report Status API Route
 //
-// Persistence layer: reads/writes data/dept-report-status.json (project root).
+// Persistence layer: Postgres table `dept_report_status`.
+// Migrated from data/dept-report-status.json (fs.writeFileSync)
+// which was silently discarded on every Vercel deploy.
 //
-// Stores lightweight status overrides keyed by reportId. The full mock report
-// content stays in lib/reporting/mock-data.ts; only the user-driven status
-// transitions and their timestamps are persisted here so they survive page
-// refreshes without a full backend.
+// External shape is unchanged:
+//   GET  /api/dept-report-status → { records: DeptReportStatusRecord[] }
+//   POST /api/dept-report-status → body: { reportId: string; status: string }
+//                                  → { record: DeptReportStatusRecord }
+//                                  (server assigns/overwrites updatedAt; upsert by reportId)
 //
-// GET  /api/dept-report-status              → { records: DeptReportStatusRecord[] }
-// POST /api/dept-report-status              → body: { reportId: string; status: string }
-//                                             → { record: DeptReportStatusRecord }
-//                                             (server assigns/overwrites updatedAt)
+// Auth guard: getSessionUser — matches the original file-backed route.
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db/prisma";
 
 // ── Types (inline — server-only route, do not import from client modules) ─────
 
@@ -25,36 +24,26 @@ export interface DeptReportStatusRecord {
   updatedAt: string; // ISO-8601
 }
 
-interface StatusFile {
-  records: DeptReportStatusRecord[];
+// ── DB row type ───────────────────────────────────────────────────────────────
+
+interface StatusRow {
+  reportId: string;
+  status: string;
+  updatedAt: string;
 }
 
-// ── File path ──────────────────────────────────────────────────────────────────
-
-const DATA_FILE = path.join(
-  process.cwd(),
-  "data",
-  "dept-report-status.json"
-);
-
-// ── File I/O ───────────────────────────────────────────────────────────────────
-
-function readRecords(): DeptReportStatusRecord[] {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as StatusFile;
-    if (!Array.isArray(parsed.records)) throw new Error("bad shape");
-    return parsed.records;
-  } catch {
-    return [];
-  }
+function rowToRecord(row: StatusRow): DeptReportStatusRecord {
+  return {
+    reportId:  row.reportId,
+    status:    row.status,
+    updatedAt: row.updatedAt,
+  };
 }
 
-function writeRecords(records: DeptReportStatusRecord[]): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ records }, null, 2), "utf-8");
-}
+// ── Allow-list for POST body fields ──────────────────────────────────────────
+
+const POST_ALLOW_LIST = ["reportId", "status"] as const;
+const POST_ALLOW_SET = new Set<string>(POST_ALLOW_LIST);
 
 // ── GET ────────────────────────────────────────────────────────────────────────
 
@@ -63,8 +52,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (error) return NextResponse.json({ error }, { status: status! });
   void user;
 
-  const records = readRecords();
-  return NextResponse.json({ records });
+  const rows = await prisma.$queryRawUnsafe<StatusRow[]>(
+    `SELECT * FROM dept_report_status ORDER BY "updatedAt" DESC`
+  );
+  return NextResponse.json({ records: rows.map(rowToRecord) });
 }
 
 // ── POST ───────────────────────────────────────────────────────────────────────
@@ -81,11 +72,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const payload = body as { reportId?: unknown; status?: unknown };
+  const rawBody = body as Record<string, unknown>;
+
+  // Reject keys not on allow-list.
+  const unknownKeys = Object.keys(rawBody).filter((k) => !POST_ALLOW_SET.has(k));
+  if (unknownKeys.length > 0) {
+    return NextResponse.json(
+      { error: `Unknown field(s): ${unknownKeys.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   if (
-    !payload ||
-    typeof payload.reportId !== "string" ||
-    typeof payload.status !== "string"
+    !rawBody ||
+    typeof rawBody.reportId !== "string" ||
+    typeof rawBody.status !== "string"
   ) {
     return NextResponse.json(
       { error: "Body must include reportId (string) and status (string)" },
@@ -93,26 +94,25 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const records = readRecords();
+  const now = new Date().toISOString();
 
   // Upsert — one record per reportId.
-  const existing = records.findIndex((r) => r.reportId === payload.reportId);
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO dept_report_status ("reportId", status, "updatedAt")
+     VALUES ($1,$2,$3)
+     ON CONFLICT ("reportId") DO UPDATE SET
+       status      = EXCLUDED.status,
+       "updatedAt" = EXCLUDED."updatedAt"`,
+    rawBody.reportId as string,
+    rawBody.status as string,
+    now
+  );
+
   const record: DeptReportStatusRecord = {
-    reportId: payload.reportId as string,
-    status: payload.status as string,
-    updatedAt: new Date().toISOString(),
+    reportId:  rawBody.reportId as string,
+    status:    rawBody.status as string,
+    updatedAt: now,
   };
 
-  if (existing >= 0) {
-    records[existing] = record;
-  } else {
-    records.push(record);
-  }
-
-  try {
-    writeRecords(records);
-    return NextResponse.json({ record });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  return NextResponse.json({ record });
 }

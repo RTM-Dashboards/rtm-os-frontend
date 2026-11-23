@@ -1,22 +1,23 @@
 // RTM OS — Pending Offboarding Records API Route
 //
-// Persistence layer: reads/writes data/pending-offboarding-records.json (project root).
+// Persistence layer: Postgres table `pending_offboarding_records`.
+// Migrated from data/pending-offboarding-records.json (fs.writeFileSync)
+// which was silently discarded on every Vercel deploy.
 //
-// This is the file-backed persistence layer for the cross-workspace
-// Billing → AM offboarding signal, replacing the unreliable in-memory module
-// singleton that caused cross-route-group desync between the Billing
-// Cancellations page ((billing) route group) and the AM Offboarding page
-// ((account-management) route group).
+// External shape is unchanged:
+//   GET  /api/pending-offboarding-records → { records: OffboardingRecord[] }
+//   POST /api/pending-offboarding-records → body: AddOffboardingPayload
+//                                           → { record: OffboardingRecord }
+//                                           (server runs construction logic, assigns id)
 //
-// GET  /api/pending-offboarding-records           → { records: OffboardingRecord[] }
-// POST /api/pending-offboarding-records           → body: AddOffboardingPayload
-//                                                   → { record: OffboardingRecord }
-//                                                   (server runs construction logic, assigns id)
+// Auth guard: getSessionUser — matches the original file-backed route.
+//
+// id: auto-incremented as 'ob-billing-N' using MAX(id) to avoid collisions
+// across multiple server instances (Postgres is authoritative).
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import fs from "fs";
-import path from "path";
+import { prisma } from "@/lib/db/prisma";
 
 // ── Types (inline — mirrors offboarding-data.ts; do not import from client module) ──
 
@@ -171,49 +172,88 @@ export interface AddOffboardingPayload {
   billingOwner?: string;
 }
 
-interface RecordFile {
-  records: OffboardingRecord[];
+// ── DB row type ───────────────────────────────────────────────────────────────
+
+interface OffboardingRow {
+  id: string;
+  client: string;
+  accountManager: string;
+  offboardingOwner: string;
+  cancellationDate: string;
+  targetCompletionDate: string;
+  actualCompletionDate: string | null;
+  offboardingStatus: string;
+  finalBillingStatus: string;
+  assetTransferStatus: string;
+  accessRemovalStatus: string;
+  completionPct: unknown; // Prisma returns NUMERIC as Decimal object
+  mrr: unknown;
+  arr: unknown;
+  reason: string;
+  departmentsInvolved: unknown;
+  services: unknown;
+  checklist: unknown;
+  departmentTasks: unknown;
+  assetTransfers: unknown;
+  accessRemovals: unknown;
+  finalBilling: unknown;
+  knowledgeArchive: unknown;
+  aiSummary: unknown;
+  activityTimeline: unknown;
+  createdAt: string;
 }
 
-// ── File path ──────────────────────────────────────────────────────────────────
-
-const DATA_FILE = path.join(
-  process.cwd(),
-  "data",
-  "pending-offboarding-records.json"
-);
-
-// ── File I/O ───────────────────────────────────────────────────────────────────
-
-function readRecords(): OffboardingRecord[] {
-  try {
-    const raw = fs.readFileSync(DATA_FILE, "utf-8");
-    const parsed = JSON.parse(raw) as RecordFile;
-    if (!Array.isArray(parsed.records)) throw new Error("bad shape");
-    return parsed.records;
-  } catch {
-    return [];
+function rowToRecord(row: OffboardingRow): OffboardingRecord {
+  // Prisma returns NUMERIC columns as Decimal objects; Number() coerces all variants.
+  function parseNum(v: unknown): number {
+    return Number(v) || 0;
   }
+  function parseJson<T>(v: unknown): T {
+    if (typeof v === "string") return JSON.parse(v) as T;
+    return v as T;
+  }
+  return {
+    id:                    row.id,
+    client:                row.client,
+    accountManager:        row.accountManager,
+    offboardingOwner:      row.offboardingOwner,
+    cancellationDate:      row.cancellationDate,
+    targetCompletionDate:  row.targetCompletionDate,
+    actualCompletionDate:  row.actualCompletionDate,
+    offboardingStatus:     row.offboardingStatus as OffboardingStatus,
+    finalBillingStatus:    row.finalBillingStatus as FinalBillingStatus,
+    assetTransferStatus:   row.assetTransferStatus as AssetTransferStatus,
+    accessRemovalStatus:   row.accessRemovalStatus as AccessRemovalStatus,
+    completionPct:         parseNum(row.completionPct),
+    mrr:                   parseNum(row.mrr),
+    arr:                   parseNum(row.arr),
+    reason:                row.reason as CancellationReason,
+    departmentsInvolved:   parseJson<string[]>(row.departmentsInvolved),
+    services:              parseJson<string[]>(row.services),
+    checklist:             parseJson<ChecklistItem[]>(row.checklist),
+    departmentTasks:       parseJson<DepartmentTask[]>(row.departmentTasks),
+    assetTransfers:        parseJson<AssetTransfer[]>(row.assetTransfers),
+    accessRemovals:        parseJson<AccessRemoval[]>(row.accessRemovals),
+    finalBilling:          parseJson<FinalBilling>(row.finalBilling),
+    knowledgeArchive:      parseJson<KnowledgeArchive>(row.knowledgeArchive),
+    aiSummary:             parseJson<AISummary>(row.aiSummary),
+    activityTimeline:      parseJson<ActivityEvent[]>(row.activityTimeline),
+  };
 }
 
-function writeRecords(records: OffboardingRecord[]): void {
-  const dir = path.dirname(DATA_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DATA_FILE, JSON.stringify({ records }, null, 2), "utf-8");
-}
+// ── Allow-list for POST body fields (all fields of AddOffboardingPayload) ────
 
-// ── Id counter ────────────────────────────────────────────────────────────────
-
-let _nextId = 1;
-
-function nextId(existing: OffboardingRecord[]): string {
-  const max = existing.reduce((n, r) => {
-    const m = r.id.match(/^ob-billing-(\d+)$/);
-    return m ? Math.max(n, parseInt(m[1], 10)) : n;
-  }, 0);
-  _nextId = Math.max(_nextId, max + 1);
-  return `ob-billing-${_nextId++}`;
-}
+const POST_ALLOW_LIST = [
+  "client",
+  "accountManager",
+  "reason",
+  "mrr",
+  "arr",
+  "offboardingOwner",
+  "billingHandoffNotes",
+  "billingOwner",
+] as const;
+const POST_ALLOW_SET = new Set<string>(POST_ALLOW_LIST);
 
 // ── Construction logic (mirrors addPendingOffboardingRecord in offboarding-data.ts) ──
 
@@ -303,8 +343,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   if (error) return NextResponse.json({ error }, { status: status! });
   void user;
 
-  const records = readRecords();
-  return NextResponse.json({ records });
+  const rows = await prisma.$queryRawUnsafe<OffboardingRow[]>(
+    `SELECT * FROM pending_offboarding_records ORDER BY "createdAt" ASC`
+  );
+  return NextResponse.json({ records: rows.map(rowToRecord) });
 }
 
 // ── POST ───────────────────────────────────────────────────────────────────────
@@ -321,12 +363,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const payload = body as AddOffboardingPayload;
+  const rawBody = body as Record<string, unknown>;
+
+  // Reject keys not on allow-list.
+  const unknownKeys = Object.keys(rawBody).filter((k) => !POST_ALLOW_SET.has(k));
+  if (unknownKeys.length > 0) {
+    return NextResponse.json(
+      { error: `Unknown field(s): ${unknownKeys.join(", ")}` },
+      { status: 400 }
+    );
+  }
+
   if (
-    !payload ||
-    typeof payload.client !== "string" ||
-    typeof payload.accountManager !== "string" ||
-    typeof payload.reason !== "string"
+    !rawBody ||
+    typeof rawBody.client !== "string" ||
+    typeof rawBody.accountManager !== "string" ||
+    typeof rawBody.reason !== "string"
   ) {
     return NextResponse.json(
       { error: "Body must include client, accountManager, reason" },
@@ -334,15 +386,67 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   }
 
-  const records = readRecords();
-  const id = nextId(records);
-  const record = buildRecord(payload, id);
-  records.push(record);
+  // Derive next id from the database — safe across multiple instances.
+  const maxRow = await prisma.$queryRawUnsafe<{ maxn: string | null }[]>(
+    `SELECT MAX(CAST(REPLACE(id, 'ob-billing-', '') AS INTEGER)) AS maxn
+     FROM pending_offboarding_records
+     WHERE id ~ '^ob-billing-[0-9]+$'`
+  );
+  const maxN = parseInt(maxRow[0]?.maxn ?? "0", 10);
+  const id = `ob-billing-${maxN + 1}`;
 
-  try {
-    writeRecords(records);
-    return NextResponse.json({ record });
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
-  }
+  const payload: AddOffboardingPayload = {
+    client:              rawBody.client as string,
+    accountManager:      rawBody.accountManager as string,
+    reason:              rawBody.reason as CancellationReason,
+    mrr:                 typeof rawBody.mrr === "number" ? rawBody.mrr : undefined,
+    arr:                 typeof rawBody.arr === "number" ? rawBody.arr : undefined,
+    offboardingOwner:    typeof rawBody.offboardingOwner === "string" ? rawBody.offboardingOwner : undefined,
+    billingHandoffNotes: typeof rawBody.billingHandoffNotes === "string" ? rawBody.billingHandoffNotes : undefined,
+    billingOwner:        typeof rawBody.billingOwner === "string" ? rawBody.billingOwner : undefined,
+  };
+
+  const record = buildRecord(payload, id);
+  const createdAt = new Date().toISOString();
+
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO pending_offboarding_records
+       (id, client, "accountManager", "offboardingOwner", "cancellationDate",
+        "targetCompletionDate", "actualCompletionDate", "offboardingStatus",
+        "finalBillingStatus", "assetTransferStatus", "accessRemovalStatus",
+        "completionPct", mrr, arr, reason, "departmentsInvolved", services,
+        checklist, "departmentTasks", "assetTransfers", "accessRemovals",
+        "finalBilling", "knowledgeArchive", "aiSummary", "activityTimeline", "createdAt")
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,
+             $16::jsonb,$17::jsonb,$18::jsonb,$19::jsonb,$20::jsonb,$21::jsonb,
+             $22::jsonb,$23::jsonb,$24::jsonb,$25::jsonb,$26)`,
+    record.id,
+    record.client,
+    record.accountManager,
+    record.offboardingOwner,
+    record.cancellationDate,
+    record.targetCompletionDate,
+    record.actualCompletionDate,
+    record.offboardingStatus,
+    record.finalBillingStatus,
+    record.assetTransferStatus,
+    record.accessRemovalStatus,
+    record.completionPct,
+    record.mrr,
+    record.arr,
+    record.reason,
+    JSON.stringify(record.departmentsInvolved),
+    JSON.stringify(record.services),
+    JSON.stringify(record.checklist),
+    JSON.stringify(record.departmentTasks),
+    JSON.stringify(record.assetTransfers),
+    JSON.stringify(record.accessRemovals),
+    JSON.stringify(record.finalBilling),
+    JSON.stringify(record.knowledgeArchive),
+    JSON.stringify(record.aiSummary),
+    JSON.stringify(record.activityTimeline),
+    createdAt
+  );
+
+  return NextResponse.json({ record });
 }
