@@ -246,6 +246,12 @@ interface Opportunity {
   primaryContact: string;
   email: string;
   phone: string;
+  // Canonical contact fields (written by the PATCH and by createOpportunityFromLead).
+  // Optional here because the retired mock data array pre-dates these columns;
+  // all real DB rows always have them (non-nullable with default "").
+  contactName?: string;
+  contactPhone?: string;
+  contactEmail?: string;
   assignedRep: string;
   leadSource: LeadSource;
   affiliateSource: string;
@@ -1997,20 +2003,20 @@ function EditOpportunityModal({
   salesError: string | null;
 }) {
   const [form, setForm] = useState({
-    businessName: opp.businessName,
-    clientName: opp.clientName,
-    contactName: opp.primaryContact || opp.clientName,
-    contactPhone: opp.phone,
-    contactEmail: opp.email,
-    website: opp.website,
-    industry: opp.industry,
+    businessName: opp.businessName ?? "",
+    clientName: opp.clientName ?? "",
+    contactName: opp.contactName || opp.primaryContact || opp.clientName || "",
+    contactPhone: opp.contactPhone || opp.phone || "",
+    contactEmail: opp.contactEmail || opp.email || "",
+    website: opp.website ?? "",
+    industry: opp.industry ?? "",
     stage: opp.stage as PipelineStage,
     priority: opp.priority as Priority,
-    assignedRep: opp.assignedRep,
+    assignedRep: opp.assignedRep ?? "",
     estimatedMonthlyValue: String(opp.estimatedValue ?? ""),
-    expectedCloseDate: opp.expectedCloseDate,
-    contractLength: opp.contractLength,
-    nextAction: opp.nextAction,
+    expectedCloseDate: opp.expectedCloseDate ?? "",
+    contractLength: opp.contractLength ?? "",
+    nextAction: opp.nextAction ?? "",
   });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -2058,6 +2064,9 @@ function EditOpportunityModal({
         ...opp,
         businessName: (record.businessName as string) ?? opp.businessName,
         clientName: (record.clientName as string) ?? opp.clientName,
+        contactName: (record.contactName as string) ?? opp.contactName,
+        contactPhone: (record.contactPhone as string) ?? opp.contactPhone,
+        contactEmail: (record.contactEmail as string) ?? opp.contactEmail,
         primaryContact: (record.primaryContact as string | null) ?? opp.primaryContact,
         phone: (record.phone as string | null) ?? opp.phone,
         email: (record.email as string | null) ?? opp.email,
@@ -4401,9 +4410,9 @@ function SalesPipelinePageInner() {
           ...r,
           businessName: updated.businessName,
           clientName: updated.clientName,
-          contactName: updated.primaryContact || updated.clientName,
-          contactPhone: updated.phone,
-          contactEmail: updated.email,
+          contactName: updated.contactName || updated.primaryContact || updated.clientName,
+          contactPhone: updated.contactPhone || updated.phone || "",
+          contactEmail: updated.contactEmail || updated.email || "",
           website: updated.website || undefined,
           industry: updated.industry || undefined,
           stage: updated.stage,
@@ -5230,6 +5239,7 @@ function SalesPipelinePageInner() {
                       addPipelineToast(`Sync failed: ${message}`, "danger");
                     }
                   }}
+                  onEdit={(rec) => handleEditOpp(rec as unknown as Opportunity)}
                 />
               ))}
             </div>

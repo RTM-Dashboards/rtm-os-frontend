@@ -12,6 +12,8 @@ interface OpportunityCardProps {
   onStartProposal: (id: string) => void;
   /** Called after a sync attempt with the outcome. Page owns the toast. */
   onSync?: (outcome: "synced" | "skipped" | "failed", message: string) => void;
+  /** Called when the user clicks Edit Opportunity. Page opens the edit modal. */
+  onEdit?: (opp: OpportunityRecord) => void;
 }
 
 // ─── Stage Colors ─────────────────────────────────────────────────────────────
@@ -60,6 +62,7 @@ export function OpportunityCard({
   onStageChange,
   onStartProposal,
   onSync,
+  onEdit,
 }: OpportunityCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [stageMenuOpen, setStageMenuOpen] = useState(false);
@@ -191,7 +194,7 @@ export function OpportunityCard({
               <button
                 className="block w-full text-left px-3 py-2 text-xs hover:opacity-80"
                 style={{ color: "var(--rtm-text-primary)" }}
-                onClick={() => setMenuOpen(false)}
+                onClick={() => { setMenuOpen(false); onEdit?.(opportunity); }}
               >
                 Edit Opportunity
               </button>
