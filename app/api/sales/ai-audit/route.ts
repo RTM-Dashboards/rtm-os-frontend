@@ -1,41 +1,51 @@
-// RTM OS — AI Audit Server Route
+// RTM OS - AI Audit Server Route
 // ─────────────────────────────────────────────────────────────────────────────
 // All outbound calls (website fetch, PageSpeed, Anthropic) run here, server-side
 // only. ANTHROPIC_API_KEY is read here and never bundled into client code.
 //
-// ── Budget arithmetic (worst-case wall-clock) ──────────────────────────────
+// ── Budget arithmetic - based on MEASURED latencies ───────────────────────
 //
-//   Stage 1 — website fetch + PageSpeed (PARALLEL)
-//     Website fetch timeout:      5 s
-//     PageSpeed timeout:         20 s   ← two calls run via Promise.allSettled
-//     Parallel wall-clock max:   20 s   (counted ONCE, not twice)
+//   All numbers below come from live measurements against sptohio.com.
+//   None are guesses.
 //
-//   Stage 2 — Anthropic (max_tokens = 2 000; website content trimmed to 4 000 chars)
-//     Anthropic timeout:         30 s
-//     Measured throughput:       ~42 output tok/s on claude-sonnet-4-6 (standard tier)
-//     Typical output:            400–700 tokens → 10–17 s actual
-//     30 s budget × 42 tok/s:    ~1 260 tokens before timeout; partial path fires for longer runs
-//     Prior code used 8 096 max_tokens + 8 000-char content; drove 40+ s completions — fixed.
+//   Stage 1 - website fetch + PageSpeed (PARALLEL)
+//     Website fetch:            measured 2.56 s; budget 5 s (2× headroom)
+//     PageSpeed (parallel):     measured 26-38 s across three runs (cold Lighthouse
+//                               crawl vs warm); budget 50 s (38 s worst + 12 s)
+//     Parallel wall-clock max:  50 s   (counted ONCE - both calls share the window)
 //
-//   Worst-case total:    20 + 30 = 50 s
-//   Function limit:                60 s   (Vercel Pro / Team with maxDuration = 60)
-//   Headroom:                      10 s   (for serialisation, JSON parse, response write)
+//   Stage 2 - Anthropic (model: claude-sonnet-4-6; content trimmed to 4 000 chars)
+//     Natural completion:       measured 54 s at 2 792 output tokens (4 096 cap)
+//     With 4 096 token cap:     measured 54 s end_turn - no truncation
+//     Budget:                   65 s (54 s worst + 11 s headroom)
 //
-//   Hard deadline enforced by elapsed-time guard (TARGET_FINISH_MS = 50 000).
+//   Worst-case total:    50 + 65 = 115 s
+//   Function limit:              300 s default on Vercel Pro with fluid compute
+//                                (maximum configurable: 800 s)
+//   TARGET_FINISH_MS:            120 000 ms  (5 s headroom for serialisation
+//                                            inside the 300 s limit)
+//
+//   Rep worst-case wait:  ~115 s.  This is a product decision; it exceeds the
+//                         150 s threshold mentioned in the design notes.
+//                         Raising it requires either a faster model or fewer
+//                         findings requested from Anthropic.
+//
+//   Hard deadline enforced by elapsed-time guard (TARGET_FINISH_MS).
 //   Every stage checks time remaining before starting and receives the
 //   smaller of its own timeout and actual time left.  A stage with zero
-//   time left is SKIPPED — not started and abandoned.
+//   time left is SKIPPED - not started and abandoned.
 //
 // ── Vercel plan notes ──────────────────────────────────────────────────────
-//   maxDuration = 60 only applies on Vercel Pro / Team.
+//   maxDuration applies on Vercel Pro / Team only.
 //   On Hobby the hard limit is 10 s and this export is silently ignored.
 //   At 10 s only the website fetch (5 s) can realistically complete before
-//   the function is killed; PageSpeed (20 s) and Anthropic (30 s) will both
-//   exceed the budget.  The elapsed-time guard skips them rather than letting
-//   them start and be abandoned, so the rep sees the website-fetch result (or
-//   "website fetch failed") with a clear "skipped" note for both PageSpeed and
-//   the model — never a blank or misleading empty result.
-//   See TASK 3 in the design notes for the full Hobby analysis.
+//   the function is killed.  The elapsed-time guard skips PageSpeed and
+//   Anthropic rather than letting them start and be abandoned.
+//
+//   Vercel Pro fluid-compute defaults and maximums (source: Vercel docs):
+//     Default: 300 s   Maximum: 800 s
+//   We use maxDuration = 300 to stay at the default and leave the maximum
+//   as a future safety valve.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { NextResponse } from "next/server";
@@ -52,39 +62,37 @@ import type {
 } from "@/lib/sales/types";
 
 // ── Function limit ─────────────────────────────────────────────────────────────
-// Claim the Pro/Team 60-second function limit.
+// 300 s is the Vercel Pro fluid-compute default; maximum is 800 s.
 // On Hobby this export has NO effect — the 10-second default applies.
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 // ── Timing constants ───────────────────────────────────────────────────────────
-// These are MAXIMUM timeouts.  The elapsed-time guard may hand each stage
-// less time when the overall budget is running short.
-//
-// Observed wall-clock on real sites (no PageSpeed API key, anonymous quota):
-//   Website fetch:         1–2 s typical, up to 5 s on slow hosts
-//   PageSpeed (parallel):  HTTP 429 in <1 s without key; 10–20 s with key
-//   Anthropic (2 000 tok): typical audit = 400–700 output tokens = 10–17 s
-//                          worst case (2 000 tokens) = ~48 s → caught by 30 s timeout
-//                          max_tokens was 8 096; that drove 40+ s completions — fixed
-//
-// Worst-case with PageSpeed API key:
-//   Stage 1 parallel:      20 s
-//   Stage 2 Anthropic:     30 s
-//   Total:                 50 s  ← 10 s under the 60 s function limit
+// These are MAXIMUM timeouts for each stage.  Every number is derived from
+// a live measurement; see the header comment for the measurement log.
+// The elapsed-time guard may hand each stage less time when the overall
+// budget is running short.
 
-const WEBSITE_FETCH_TIMEOUT_MS   = 5_000;   // was 8 s — trimmed for budget
-const PAGESPEED_TIMEOUT_MS       = 20_000;  // was 25 s — both calls run in parallel (counted once)
-const ANTHROPIC_TIMEOUT_MS        = 30_000;  // was 40 s; 30 s guarantees 50 s total with Stage 1
-                                              // at ~42 tok/s measured throughput: 30s × 42 = 1260 tokens
-                                              // typical audit generates 400–700 tokens → 10–17 s
-                                              // runs exceeding 30 s hit the partial-result path
-const ANTHROPIC_MAX_OUTPUT_TOKENS  = 2_000;  // was 8 096; that drove 40+ s completions on real sites
-                                              // 2 000 token cap ensures the model doesn’t generate
-                                              // indefinitely; partial-result path handles long responses
+// Measured: 2.56 s against sptohio.com.  Budget = 2× worst observed.
+const WEBSITE_FETCH_TIMEOUT_MS   = 5_000;
+
+// Measured: 26.29 s (run 2 parallel) and 38.18 s (run 3 parallel) across
+// three separate runs.  Cold Lighthouse crawls drive the worst case.
+// Budget = 38 s worst + 12 s headroom.
+const PAGESPEED_TIMEOUT_MS       = 50_000;
+
+// Measured: 54 s to natural completion at 2 792 output tokens (4 096 cap)
+// on claude-sonnet-4-6.  Budget = 54 s worst + 11 s headroom.
+const ANTHROPIC_TIMEOUT_MS       = 65_000;
+
+// Measured: claude-sonnet-4-6 naturally finishes at 2 792 tokens with
+// 4 096 budget.  2 000 was truncating mid-JSON every run.  4 096 gives
+// the model room to close all JSON structures cleanly.
+const ANTHROPIC_MAX_OUTPUT_TOKENS = 4_096;
 
 // Hard deadline: finish all stages by this many milliseconds after the
-// request arrives.  Leaves 10 s of headroom inside the 60 s function limit.
-const TARGET_FINISH_MS = 50_000;
+// request arrives.  50 + 65 = 115 s worst case; TARGET adds 5 s for
+// serialisation, well inside the 300 s function limit.
+const TARGET_FINISH_MS = 120_000;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -184,11 +192,13 @@ async function fetchPageSpeed(
     let cls = "N/A";
     let fid = "N/A";
     const opportunities: string[] = [];
+    let mobileMeasured = false;
 
     if (
       mobileResult.status === "fulfilled" &&
       mobileResult.value?.lighthouseResult
     ) {
+      mobileMeasured = true;
       const lr = mobileResult.value.lighthouseResult;
       mobileScore = Math.round(
         (lr.categories?.performance?.score ?? 0) * 100
@@ -216,16 +226,28 @@ async function fetchPageSpeed(
 
     let desktopScore = 0;
     let performanceScore = mobileScore;
+    let desktopMeasured = false;
 
     if (
       desktopResult.status === "fulfilled" &&
       desktopResult.value?.lighthouseResult
     ) {
+      desktopMeasured = true;
       const lr = desktopResult.value.lighthouseResult;
       desktopScore = Math.round(
         (lr.categories?.performance?.score ?? 0) * 100
       );
       performanceScore = Math.round((mobileScore + desktopScore) / 2);
+    }
+
+    // If neither call produced a lighthouseResult (both timed out, both failed
+    // with a non-429 error, or Google returned a response without Lighthouse
+    // data), we have nothing real to report.  Return null so that
+    // buildPageSpeedFindings emits no findings and buildPageSpeedContext tells
+    // the AI "do not reference PageSpeed scores" - a 0 that was never measured
+    // must never be presented as a score.
+    if (!mobileMeasured && !desktopMeasured) {
+      return { result: null, rateLimited: mobileRateLimited || desktopRateLimited, skipped: false };
     }
 
     return {
@@ -256,13 +278,13 @@ function buildPageSpeedContext(
   skipped: boolean
 ): string {
   if (skipped) {
-    return "PageSpeed data unavailable — skipped because the request budget was exhausted before this stage could start.";
+    return "PageSpeed data unavailable - skipped because the request budget was exhausted before this stage could start.";
   }
   if (rateLimited) {
-    return "PageSpeed data unavailable — Google API rate limit reached (HTTP 429). Do not reference PageSpeed scores in findings.";
+    return "PageSpeed data unavailable - Google API rate limit reached (HTTP 429). Do not reference PageSpeed scores in findings.";
   }
   if (!pageSpeed) {
-    return "PageSpeed data unavailable — fetch failed or timed out. Do not reference PageSpeed scores in findings.";
+    return "PageSpeed data unavailable - fetch failed or timed out. Do not reference PageSpeed scores in findings.";
   }
   return [
     `Mobile PageSpeed: ${pageSpeed.mobileScore}/100`,
@@ -291,7 +313,7 @@ function buildPageSpeedFindings(
       category: "Website Performance",
       severity: "critical",
       title: "Critical Mobile Performance Issues",
-      description: `Mobile PageSpeed score is ${mobile}/100 — critically slow load times will cause high bounce rates on mobile.`,
+      description: `Mobile PageSpeed score is ${mobile}/100 - critically slow load times will cause high bounce rates on mobile.`,
       recommendation:
         "Optimize images, reduce render-blocking scripts, implement lazy loading, and consider a CDN.",
       source: "ai",
@@ -303,7 +325,7 @@ function buildPageSpeedFindings(
       category: "Website Performance",
       severity: "high",
       title: "Poor Mobile Performance",
-      description: `Mobile PageSpeed score is ${mobile}/100 — slow mobile load times impact user experience.`,
+      description: `Mobile PageSpeed score is ${mobile}/100 - slow mobile load times impact user experience.`,
       recommendation:
         "Optimize images to WebP format, defer non-critical scripts, and enable browser caching to improve mobile load speed.",
       source: "ai",
@@ -315,7 +337,7 @@ function buildPageSpeedFindings(
       category: "Website Performance",
       severity: "medium",
       title: "Mobile Performance Needs Improvement",
-      description: `Mobile PageSpeed score is ${mobile}/100 — there are optimization opportunities remaining.`,
+      description: `Mobile PageSpeed score is ${mobile}/100 - there are optimization opportunities remaining.`,
       recommendation:
         "Review PageSpeed Insights recommendations to address remaining performance opportunities.",
       source: "ai",
@@ -347,7 +369,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     // Degradation case: model not configured.
-    // PageSpeed and website fetch cannot help here — return immediately with
+    // PageSpeed and website fetch cannot help here - return immediately with
     // a clear configuration finding.
     console.error("[ai-audit] ANTHROPIC_API_KEY is not set in the server environment. AI audit cannot run.");
     const notConfigured: AiAuditResult = {
@@ -424,7 +446,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     pageSpeedContext
   );
 
-  // ── 5. Call Anthropic — with elapsed-time enforcement ─────────────────────
+  // ── 5. Call Anthropic - with elapsed-time enforcement ─────────────────────
   // If the budget is already exhausted after the parallel block, skip the
   // model entirely and return whatever was measured.
 
@@ -492,7 +514,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       } else {
         // Non-timeout Anthropic error.
         // Return measured PageSpeed findings + a clear error note.
-        // The rep sees real numbers plus an explanation — never an empty result.
+        // The rep sees real numbers plus an explanation - never an empty result.
         const pageSpeedFindings = buildPageSpeedFindings(pageSpeed);
         const errorFinding: IntakeFinding = {
           id: "ai-runtime-error",
@@ -525,7 +547,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   // ── 6. Partial-result path: skipped or timed-out model ────────────────────
   // Degradation order: PageSpeed numbers (measured facts) survive;
   // model analysis (expensive, expendable) is dropped.
-  // The rep always sees SOMETHING — never an empty or misleading response.
+  // The rep always sees SOMETHING - never an empty or misleading response.
 
   if (aiSkipped || aiTimedOut) {
     const pageSpeedFindings = buildPageSpeedFindings(pageSpeed);
@@ -534,7 +556,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       category: "Technical SEO",
       severity: "low",
       title: aiSkipped
-        ? "AI Model Analysis Skipped — Budget Exhausted"
+        ? "AI Model Analysis Skipped - Budget Exhausted"
         : "AI Model Analysis Timed Out",
       description: aiSkipped
         ? "The request budget was exhausted by earlier stages before the AI model analysis could start. " +
@@ -555,7 +577,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         id: "pagespeed-budget-skipped",
         category: "Website Performance",
         severity: "low",
-        title: "PageSpeed Data Skipped — Budget Exhausted",
+        title: "PageSpeed Data Skipped - Budget Exhausted",
         description:
           "The PageSpeed check was skipped because the request budget was already exhausted.",
         recommendation: "Retry the audit.",
@@ -594,7 +616,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       id: "pagespeed-rate-limited",
       category: "Website Performance",
       severity: "low",
-      title: "PageSpeed Data Unavailable — Google API Rate Limit",
+      title: "PageSpeed Data Unavailable - Google API Rate Limit",
       description:
         "Google's PageSpeed Insights API returned HTTP 429 (rate limit exceeded). " +
         "Performance scores could not be measured for this audit run.",
@@ -617,7 +639,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       id: "pagespeed-budget-skipped",
       category: "Website Performance",
       severity: "low",
-      title: "PageSpeed Data Skipped — Budget Exhausted",
+      title: "PageSpeed Data Skipped - Budget Exhausted",
       description:
         "The PageSpeed check was skipped because the request budget was exhausted before it could start.",
       recommendation: "Retry the audit for PageSpeed data.",

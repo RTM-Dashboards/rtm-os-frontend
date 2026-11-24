@@ -141,15 +141,29 @@ export function parseAiAuditResponse(
     };
   }
 
+  let droppedCount = 0;
+
   const serviceResults: AiAuditServiceResult[] = (parsed.serviceResults ?? []).map(
     (sr, sIdx) => {
-      const findings: IntakeFinding[] = (sr.findings ?? []).map(
-        (f: IntakeFinding, fIdx: number) => ({
+      const findings: IntakeFinding[] = (sr.findings ?? [])
+        .filter((f: IntakeFinding, fIdx: number) => {
+          const hasTitle = typeof f.title === "string" && f.title.trim().length > 0;
+          const hasDescription = typeof f.description === "string" && f.description.trim().length > 0;
+          if (!hasTitle || !hasDescription) {
+            droppedCount++;
+            console.warn(
+              `[ai-audit] Dropped malformed finding at serviceId=${sr.serviceId} idx=${fIdx}: ` +
+              `missing ${!hasTitle ? "title" : "description"}`
+            );
+            return false;
+          }
+          return true;
+        })
+        .map((f: IntakeFinding, fIdx: number) => ({
           ...f,
           id: f.id || `ai-${sr.serviceId}-${sIdx}-${fIdx}`,
           source: "ai" as const,
-        })
-      );
+        }));
       return {
         serviceId: sr.serviceId,
         serviceLabel: sr.serviceLabel,
@@ -160,6 +174,10 @@ export function parseAiAuditResponse(
       };
     }
   );
+
+  if (droppedCount > 0) {
+    console.log(`[ai-audit] parseAiAuditResponse: dropped ${droppedCount} malformed finding(s) missing title or description.`);
+  }
 
   const allFindings: IntakeFinding[] = serviceResults.flatMap((sr) => sr.findings);
 
