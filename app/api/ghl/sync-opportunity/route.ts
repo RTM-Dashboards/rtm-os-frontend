@@ -176,9 +176,17 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
 
   try {
     // ── Stage map: derive from config table ───────────────────────────────────────────
-    // Built once per request. If the table is empty (pre-seed), the map is empty
-    // and any stage lookup below will throw the named error — the correct failure.
+    // Built once per request. If the table is empty (pre-seed), fail early with a
+    // message that correctly describes the state: the config is empty, not one
+    // specific stage is missing.
     const rtmToGhlStage = await buildRtmToGhlStageMap();
+
+    if (Object.keys(rtmToGhlStage).length === 0) {
+      throw new Error(
+        `The pipeline_stages configuration table is empty — no stages have been saved yet. ` +
+        `Go to Settings → Pipeline Configuration, save your stage list, then retry the sync.`
+      );
+    }
 
     // ── Pipeline resolution ──────────────────────────────────────────────────────────
     // Priority: (1) ghlPipelineId from request body, (2) GHL_OPPORTUNITY_PIPELINE_ID env,
@@ -221,8 +229,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         // silently landing the opportunity in the wrong column.
         if (!(input.stage in rtmToGhlStage)) {
           throw new Error(
-            `RTM stage "${input.stage}" is not in the pipeline_stages config table. ` +
-            `Add the stage in Settings → Pipeline Configuration before syncing.`
+            `RTM stage "${input.stage}" is not in the pipeline_stages config table ` +
+            `(${Object.keys(rtmToGhlStage).length} stage${Object.keys(rtmToGhlStage).length === 1 ? "" : "s"} configured: ` +
+            `${Object.keys(rtmToGhlStage).join(", ") || "none"}). ` +
+            `Add this stage in Settings → Pipeline Configuration before syncing.`
           );
         }
 
