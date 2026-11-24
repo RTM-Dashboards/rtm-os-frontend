@@ -1994,6 +1994,7 @@ function EditOpportunityModal({
   salesUsers,
   salesLoading,
   salesError,
+  stageList,
 }: {
   opp: Opportunity;
   onClose: () => void;
@@ -2001,6 +2002,8 @@ function EditOpportunityModal({
   salesUsers: UserRecord[];
   salesLoading: boolean;
   salesError: string | null;
+  /** Live stage names from /api/pipeline-stages; falls back to ALL_PIPELINE_STAGES. */
+  stageList: string[];
 }) {
   const [form, setForm] = useState({
     businessName: opp.businessName ?? "",
@@ -2142,7 +2145,7 @@ function EditOpportunityModal({
             <div>
               <label className={labelCls} style={labelStyle}>Stage</label>
               <select className={inputCls} style={inputStyle} value={form.stage} onChange={e => set("stage", e.target.value as PipelineStage)}>
-                {ALL_PIPELINE_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                {stageList.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
@@ -2222,9 +2225,11 @@ function RowActionsMenu({
   onCreateProposal,
 }: {
   opp: Opportunity;
-  allStages: PipelineStage[];
+  /** Stage names from the live config; typed string to decouple from the
+   *  compile-time PipelineStage union (which covers mock-data entries). */
+  allStages: string[];
   onView: (opp: Opportunity) => void;
-  onChangeStage: (oppId: string, stage: PipelineStage) => void;
+  onChangeStage: (oppId: string, stage: string) => void;
   onCreateFollowUp: (oppId: string) => void;
   onMarkWon?: (oppId: string) => void;
   onMarkLost?: (oppId: string) => void;
@@ -2613,6 +2618,7 @@ const MOCK_ACTIVITY_LOG = [
 function OpportunityDetailDrawer({
   opp,
   followUps,
+  stageList,
   onClose,
   onStartProposal,
   onChangeStage,
@@ -2624,9 +2630,11 @@ function OpportunityDetailDrawer({
 }: {
   opp: Opportunity;
   followUps: FollowUp[];
+  /** Live stage names; used for the Change Stage submenu. */
+  stageList: string[];
   onClose: () => void;
   onStartProposal: (opp: Opportunity) => void;
-  onChangeStage: (oppId: string, stage: PipelineStage) => void;
+  onChangeStage: (oppId: string, stage: string) => void;
   onCreateFollowUp: (oppId: string) => void;
   addNote: (oppId: string, text: string) => void;
   commLog?: CommunicationLog;
@@ -2761,7 +2769,7 @@ function OpportunityDetailDrawer({
                 className="absolute bottom-full left-0 mb-1 z-50 rounded-xl border shadow-lg py-1 min-w-[200px]"
                 style={{ background: "var(--rtm-surface)", borderColor: "var(--rtm-border)" }}
                 onMouseLeave={() => setShowDrawerStageMenu(false)}>
-                {ALL_PIPELINE_STAGES.map(stage => {
+                {stageList.map(stage => {
                   const cfg = STAGE_CONFIG.find(s => s.label === stage);
                   const isCurrent = opp.stage === stage;
                   return (
@@ -3486,6 +3494,7 @@ function OpportunityDrawer({ opp, onClose, commLog, onAddCommLogEntry, onMarkWon
 function OpportunityCard({
   opp,
   stageCfg,
+  stageList,
   onView,
   onOpenDetail,
   onChangeStage,
@@ -3500,9 +3509,11 @@ function OpportunityCard({
 }: {
   opp: Opportunity & { activeWizardId?: string };
   stageCfg: StageConfig;
+  /** Live stage names; used for the Change Stage submenu. */
+  stageList: string[];
   onView: (opp: Opportunity) => void;
   onOpenDetail: (opp: Opportunity) => void;
-  onChangeStage: (oppId: string, stage: PipelineStage) => void;
+  onChangeStage: (oppId: string, stage: string) => void;
   onCreateFollowUp: (oppId: string) => void;
   onMarkWon?: (oppId: string) => void;
   onMarkLost?: (oppId: string) => void;
@@ -3523,7 +3534,7 @@ function OpportunityCard({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0" onClick={e => e.stopPropagation()}>
           <PriorityBadge priority={opp.priority} />
-          <RowActionsMenu opp={opp} allStages={ALL_PIPELINE_STAGES} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} onMarkWon={onMarkWon} onMarkLost={onMarkLost} onEditOpp={onEditOpp} onAddNote={onAddNote} onCreateAudit={onCreateAudit} onCreateProposal={onCreateProposal} />
+          <RowActionsMenu opp={opp} allStages={stageList} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} onMarkWon={onMarkWon} onMarkLost={onMarkLost} onEditOpp={onEditOpp} onAddNote={onAddNote} onCreateAudit={onCreateAudit} onCreateProposal={onCreateProposal} />
         </div>
       </div>
       <div className="flex items-center justify-between gap-2">
@@ -3573,16 +3584,22 @@ function OpportunityCard({
 
 //  Pipeline Table View 
 
-const ALL_PIPELINE_STAGES: PipelineStage[] = [
-  "Lead", "Discovery", "Qualified", "Audit Requested", "Audit In Progress",
+// ALL_PIPELINE_STAGES is the compile-time fallback for liveAllStages.
+// It matches DEFAULT_PIPELINE_STAGES in lib/sales/pipeline-stages.ts (11 stages).
+// The PipelineStage union above is kept at 13 to satisfy the internal mock-data
+// array (which has Lead/Discovery/Qualified entries); do not expand this list.
+const ALL_PIPELINE_STAGES: string[] = [
+  "Sales Intake", "Audit Requested", "Audit In Progress",
   "Proposal Draft", "Proposal Sent", "Negotiation", "Verbal Approval",
   "Proposal Approved", "Sales Handoff", "Closed Won", "Closed Lost",
 ];
 
-function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp, onMarkWon, onMarkLost, onEditOpp, onAddNote, onCreateAudit, onCreateProposal, repUsers = [] }: {
+function PipelineTable({ opportunities, stageList, onView, onChangeStage, onCreateFollowUp, onMarkWon, onMarkLost, onEditOpp, onAddNote, onCreateAudit, onCreateProposal, repUsers = [] }: {
   opportunities: Opportunity[];
+  /** Live stage names for the Change Stage submenu. */
+  stageList: string[];
   onView: (opp: Opportunity) => void;
-  onChangeStage: (oppId: string, stage: PipelineStage) => void;
+  onChangeStage: (oppId: string, stage: string) => void;
   onCreateFollowUp: (oppId: string) => void;
   onMarkWon?: (oppId: string) => void;
   onMarkLost?: (oppId: string) => void;
@@ -3656,7 +3673,7 @@ function PipelineTable({ opportunities, onView, onChangeStage, onCreateFollowUp,
                 </td>
                 <td className="px-3 py-2.5 whitespace-nowrap"style={{ borderRight: "1px solid var(--rtm-border)"}}><PriorityBadge priority={opp.priority} /></td>
                 <td className="px-3 py-2.5 whitespace-nowrap"onClick={(e) => e.stopPropagation()}>
-                  <RowActionsMenu opp={opp} allStages={ALL_PIPELINE_STAGES} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} onMarkWon={onMarkWon} onMarkLost={onMarkLost} onEditOpp={onEditOpp} onAddNote={onAddNote} onCreateAudit={onCreateAudit} onCreateProposal={onCreateProposal} />
+                  <RowActionsMenu opp={opp} allStages={stageList} onView={onView} onChangeStage={onChangeStage} onCreateFollowUp={onCreateFollowUp} onMarkWon={onMarkWon} onMarkLost={onMarkLost} onEditOpp={onEditOpp} onAddNote={onAddNote} onCreateAudit={onCreateAudit} onCreateProposal={onCreateProposal} />
                 </td>
               </tr>
             );
@@ -4234,7 +4251,7 @@ function SalesPipelinePageInner() {
   const [pipelineToasts, setPipelineToasts] = useState<PipelineToast[]>([]);
   const pipelineToastCounter = useRef(0);
   // Local mutable stage overrides for pipeline opportunities
-  const [stageOverrides, setStageOverrides] = useState<Record<string, PipelineStage>>({});
+  const [stageOverrides, setStageOverrides] = useState<Record<string, string>>({});
   // Local follow-up additions keyed by opp id
   const [extraFollowUps, setExtraFollowUps] = useState<Record<string, FollowUp[]>>({});
   // Track activeWizardId per opportunity
@@ -4329,7 +4346,7 @@ function SalesPipelinePageInner() {
     setTimeout(() => setPipelineToasts(prev => prev.filter(t => t.id !== id)), 4500);
   }
 
-  function handleChangeStage(oppId: string, stage: PipelineStage) {
+  function handleChangeStage(oppId: string, stage: string) {
     // Optimistic local update
     setStageOverrides(prev => ({ ...prev, [oppId]: stage }));
     // Also update opportunityRecords so both sub-tabs reflect the change
@@ -4525,6 +4542,7 @@ function SalesPipelinePageInner() {
         <OpportunityDetailDrawer
           opp={detailOpp}
           followUps={detailOpp.followUps}
+          stageList={liveAllStages}
           onClose={() => setDetailOpp(null)}
           onStartProposal={handleStartProposal}
           onChangeStage={handleChangeStage}
@@ -4560,6 +4578,7 @@ function SalesPipelinePageInner() {
           salesUsers={salesUsers}
           salesLoading={salesLoading}
           salesError={salesError}
+          stageList={liveAllStages}
         />
       )}
       {showCreateOpportunityModal && (
@@ -5366,7 +5385,7 @@ function SalesPipelinePageInner() {
                         <div className="flex items-center justify-center py-6 rounded-lg border border-dashed"style={{ borderColor: stageCfg.border }}>
                           <p className="text-[11px]"style={{ color: stageCfg.color, opacity: 0.5 }}>No opportunities</p>
                         </div>
-                      ) : cards.map((opp) => <OpportunityCard key={opp.id} opp={opp as Opportunity & { activeWizardId?: string }} stageCfg={stageCfg} onView={setDrawerOpp} onOpenDetail={setDetailOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} repUsers={salesUsers} />)}
+                      ) : cards.map((opp) => <OpportunityCard key={opp.id} opp={opp as Opportunity & { activeWizardId?: string }} stageCfg={stageCfg} stageList={liveAllStages} onView={setDrawerOpp} onOpenDetail={setDetailOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} repUsers={salesUsers} />)}
                     </div>
                   </div>
                 );
@@ -5383,7 +5402,7 @@ function SalesPipelinePageInner() {
               {filtered.length} {filtered.length === 1 ? "opportunity": "opportunities"}
             </span>
           </div>
-          <PipelineTable opportunities={filtered} onView={setDrawerOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} repUsers={salesUsers} />
+          <PipelineTable opportunities={filtered} stageList={liveAllStages} onView={setDrawerOpp} onChangeStage={handleChangeStage} onCreateFollowUp={(oppId) => setShowFollowUpModal({ oppId })} onMarkWon={handleMarkWon} onMarkLost={handleMarkLost} onEditOpp={handleEditOpp} onAddNote={(id) => handleAddNote(id)} onCreateAudit={handleCreateAudit} onCreateProposal={handleCreateProposal} repUsers={salesUsers} />
         </div>
       )}
       {viewMode === "analytics"&& <PipelineAnalytics opportunities={filtered} repUsers={salesUsers} />}
